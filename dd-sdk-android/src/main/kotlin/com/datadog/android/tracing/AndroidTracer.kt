@@ -7,13 +7,13 @@
 package com.datadog.android.tracing
 
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.Logger
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.tracing.internal.data.NoOpWriter
 import com.datadog.android.tracing.internal.handlers.AndroidSpanLogsHandler
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
@@ -102,9 +102,7 @@ class AndroidTracer internal constructor(
         private val globalTags: MutableMap<String, String> = mutableMapOf()
 
         constructor() : this(
-            AndroidSpanLogsHandler(
-                Logger.Builder().setLoggerName(TRACE_LOGGER_NAME).build()
-            )
+            AndroidSpanLogsHandler(Datadog.globalSdkCore)
         )
 
         // region Public API
@@ -118,14 +116,20 @@ class AndroidTracer internal constructor(
             val rumFeature = datadogCore?.rumFeature
 
             if (tracingFeature == null) {
-                devLogger.e(
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
                     TRACING_NOT_ENABLED_ERROR_MESSAGE + "\n" +
                         Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
                 )
             }
 
             if (bundleWithRumEnabled && rumFeature == null) {
-                devLogger.e(RUM_NOT_ENABLED_ERROR_MESSAGE)
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    RUM_NOT_ENABLED_ERROR_MESSAGE
+                )
                 bundleWithRumEnabled = false
             }
             return AndroidTracer(
@@ -241,8 +245,6 @@ class AndroidTracer internal constructor(
         // the minimum closed spans required for triggering a flush and deliver
         // everything to the writer
         internal const val DEFAULT_PARTIAL_MIN_FLUSH = 5
-
-        internal const val TRACE_LOGGER_NAME = "trace"
 
         internal const val TRACE_ID_BIT_SIZE = 63
 

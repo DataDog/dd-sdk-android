@@ -13,15 +13,14 @@ import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.internal.persistence.serializeToByteArray
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 
 internal open class SingleItemDataWriter<T : Any>(
     internal val fileOrchestrator: FileOrchestrator,
     internal val serializer: Serializer<T>,
     internal val fileWriter: FileWriter,
-    internal val internalLogger: Logger,
+    internal val internalLogger: InternalLogger,
     internal val filePersistenceConfig: FilePersistenceConfig
 ) : DataWriter<T> {
 
@@ -61,7 +60,9 @@ internal open class SingleItemDataWriter<T : Any>(
 
     private fun checkEventSize(eventSize: Int): Boolean {
         if (eventSize > filePersistenceConfig.maxItemSize) {
-            internalLogger.errorWithTelemetry(
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 ERROR_LARGE_DATA.format(
                     Locale.US,
                     eventSize,

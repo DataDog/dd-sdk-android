@@ -6,6 +6,7 @@
 
 package com.datadog.android.rx
 
+import android.annotation.SuppressLint
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
@@ -117,6 +118,7 @@ class DatadogRxExtTest {
         )
     }
 
+    @SuppressLint("CheckResult")
     @Test
     fun `M send an error event W exception in the stream {Completable}`() {
         // WHEN

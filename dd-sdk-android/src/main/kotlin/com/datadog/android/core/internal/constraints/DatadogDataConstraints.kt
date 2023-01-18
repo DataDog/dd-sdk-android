@@ -6,8 +6,9 @@
 
 package com.datadog.android.core.internal.constraints
 
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.toMutableMap
+import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 
 internal typealias StringTransform = (String) -> String?
@@ -20,15 +21,27 @@ internal class DatadogDataConstraints : DataConstraints {
         val convertedTags = tags.mapNotNull {
             val tag = convertTag(it)
             if (tag == null) {
-                devLogger.e("\"$it\" is an invalid tag, and was ignored.")
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    "\"$it\" is an invalid tag, and was ignored."
+                )
             } else if (tag != it) {
-                devLogger.w("tag \"$it\" was modified to \"$tag\" to match our constraints.")
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    "tag \"$it\" was modified to \"$tag\" to match our constraints."
+                )
             }
             tag
         }
         val discardedCount = convertedTags.size - MAX_TAG_COUNT
         if (discardedCount > 0) {
-            devLogger.w("too many tags were added, $discardedCount had to be discarded.")
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                "too many tags were added, $discardedCount had to be discarded."
+            )
         }
         return convertedTags.take(MAX_TAG_COUNT)
     }
@@ -46,15 +59,25 @@ internal class DatadogDataConstraints : DataConstraints {
             // passed.
             @Suppress("SENSELESS_COMPARISON")
             if (it.key == null) {
-                devLogger.e("\"$it\" is an invalid attribute, and was ignored.")
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    "\"$it\" is an invalid attribute, and was ignored."
+                )
                 null
             } else if (it.key in reservedKeys) {
-                devLogger.e("\"$it\" key was in the reservedKeys set, and was dropped.")
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    "\"$it\" key was in the reservedKeys set, and was dropped."
+                )
                 null
             } else {
                 val key = convertAttributeKey(it.key, prefixDotCount)
                 if (key != it.key) {
-                    devLogger.w(
+                    internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.USER,
                         "Key \"${it.key}\" " +
                             "was modified to \"$key\" to match our constraints."
                     )
@@ -68,7 +91,11 @@ internal class DatadogDataConstraints : DataConstraints {
                 attributesGroupName,
                 discardedCount
             )
-            devLogger.w(warningMessage)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                warningMessage
+            )
         }
         return convertedAttributes.take(MAX_ATTR_COUNT).toMutableMap()
     }
@@ -78,7 +105,9 @@ internal class DatadogDataConstraints : DataConstraints {
             val sanitizedKey =
                 entry.key.replace(Regex("[^a-zA-Z0-9\\-_.@$]"), "_")
             if (sanitizedKey != entry.key) {
-                devLogger.w(
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
                     CUSTOM_TIMING_KEY_REPLACED_WARNING.format(
                         Locale.US,
                         entry.key,

@@ -11,9 +11,9 @@ import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
-import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.net.DataUploader
 import com.datadog.android.v2.core.internal.storage.BatchConfirmation
@@ -856,7 +856,8 @@ internal class DataUploadRunnableTest {
                     UploadStatus.HTTP_CLIENT_ERROR,
                     UploadStatus.UNKNOWN_ERROR,
                     UploadStatus.INVALID_TOKEN_ERROR,
-                    UploadStatus.SUCCESS
+                    UploadStatus.SUCCESS,
+                    UploadStatus.REQUEST_CREATION_ERROR
                 )
             )
         }

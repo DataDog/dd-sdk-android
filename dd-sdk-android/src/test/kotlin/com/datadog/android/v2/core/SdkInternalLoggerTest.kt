@@ -7,23 +7,31 @@
 package com.datadog.android.v2.core
 
 import android.util.Log
+import com.datadog.android.Datadog
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
@@ -35,7 +43,28 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class SdkInternalLoggerTest {
 
-    private val testedInternalLogger = SdkInternalLogger
+    @Mock
+    lateinit var mockDevLogHandler: LogcatLogHandler
+
+    @Mock
+    lateinit var mockSdkLogHandler: LogcatLogHandler
+
+    private lateinit var testedInternalLogger: SdkInternalLogger
+
+    @BeforeEach
+    fun `set up`() {
+        testedInternalLogger = SdkInternalLogger(
+            devLogHandlerFactory = { mockDevLogHandler },
+            sdkLogHandlerFactory = { mockSdkLogHandler }
+        )
+        Datadog.initialized.set(true)
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        Datadog.initialized.set(false)
+        Datadog.globalSdkCore = NoOpSdkCore()
+    }
 
     @Test
     fun `𝕄 send dev log 𝕎 log { USER target }`(
@@ -45,25 +74,47 @@ internal class SdkInternalLoggerTest {
         // Given
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
         val fakeThrowable = forge.aNullable { forge.aThrowable() }
-        val fakeAttributes = forge.exhaustiveAttributes()
 
         // When
         testedInternalLogger.log(
             fakeLevel,
             InternalLogger.Target.USER,
             fakeMessage,
-            fakeThrowable,
-            fakeAttributes
+            fakeThrowable
         )
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
+        verify(mockDevLogHandler)
+            .log(
                 fakeLevel.toLogLevel(),
                 fakeMessage,
-                fakeThrowable,
-                fakeAttributes
+                fakeThrowable
             )
+    }
+
+    @Test
+    fun `𝕄 send dev log with condition 𝕎 log { USER target }`(
+        @IntForgery(min = Log.VERBOSE, max = (Log.ASSERT + 1)) sdkVerbosity: Int
+    ) {
+        // Given
+        val mockSdkCore: SdkCore = mock()
+        whenever(mockSdkCore.getVerbosity()) doReturn sdkVerbosity
+        Datadog.globalSdkCore = mockSdkCore
+
+        // When
+        testedInternalLogger = SdkInternalLogger(
+            sdkLogHandlerFactory = { mockSdkLogHandler }
+        )
+
+        // Then
+        val predicate = testedInternalLogger.devLogger.predicate
+        for (i in 0..10) {
+            if (i >= sdkVerbosity) {
+                Assertions.assertThat(predicate(i)).isTrue
+            } else {
+                Assertions.assertThat(predicate(i)).isFalse
+            }
+        }
     }
 
     @Test
@@ -74,24 +125,21 @@ internal class SdkInternalLoggerTest {
         // Given
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
         val fakeThrowable = forge.aNullable { forge.aThrowable() }
-        val fakeAttributes = forge.exhaustiveAttributes()
 
         // When
         testedInternalLogger.log(
             fakeLevel,
             InternalLogger.Target.MAINTAINER,
             fakeMessage,
-            fakeThrowable,
-            fakeAttributes
+            fakeThrowable
         )
 
         // Then
-        verify(logger.mockSdkLogHandler)
-            .handleLog(
+        verify(mockSdkLogHandler)
+            .log(
                 fakeLevel.toLogLevel(),
                 fakeMessage,
-                fakeThrowable,
-                fakeAttributes
+                fakeThrowable
             )
     }
 
@@ -102,15 +150,13 @@ internal class SdkInternalLoggerTest {
     ) {
         // Given
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.INFO, InternalLogger.Level.DEBUG)
-        val fakeAttributes = forge.exhaustiveAttributes()
 
         // When
         testedInternalLogger.log(
             fakeLevel,
             InternalLogger.Target.TELEMETRY,
             fakeMessage,
-            null,
-            fakeAttributes
+            null
         )
 
         // Then
@@ -125,15 +171,13 @@ internal class SdkInternalLoggerTest {
     ) {
         // Given
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.WARN, InternalLogger.Level.ERROR)
-        val fakeAttributes = forge.exhaustiveAttributes()
 
         // When
         testedInternalLogger.log(
             fakeLevel,
             InternalLogger.Target.TELEMETRY,
             fakeMessage,
-            null,
-            fakeAttributes
+            null
         )
 
         // Then
@@ -149,15 +193,13 @@ internal class SdkInternalLoggerTest {
         // Given
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
         val fakeThrowable = forge.aThrowable()
-        val fakeAttributes = forge.exhaustiveAttributes()
 
         // When
         testedInternalLogger.log(
             fakeLevel,
             InternalLogger.Target.TELEMETRY,
             fakeMessage,
-            fakeThrowable,
-            fakeAttributes
+            fakeThrowable
         )
 
         // Then
@@ -167,6 +209,7 @@ internal class SdkInternalLoggerTest {
 
     private fun InternalLogger.Level.toLogLevel(): Int {
         return when (this) {
+            InternalLogger.Level.VERBOSE -> Log.VERBOSE
             InternalLogger.Level.DEBUG -> Log.DEBUG
             InternalLogger.Level.INFO -> Log.INFO
             InternalLogger.Level.WARN -> Log.WARN
@@ -175,13 +218,12 @@ internal class SdkInternalLoggerTest {
     }
 
     companion object {
-        val logger = LoggerTestConfiguration()
         val rumMonitor = GlobalRumMonitorTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, rumMonitor)
+            return listOf(rumMonitor)
         }
     }
 }

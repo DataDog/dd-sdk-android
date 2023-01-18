@@ -7,13 +7,12 @@
 package com.datadog.android.core.internal.persistence.file
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.v2.api.InternalLogger
 import java.io.File
 import java.io.FileNotFoundException
 import java.util.Locale
 
-internal class FileMover(val internalLogger: Logger) {
+internal class FileMover(val internalLogger: InternalLogger) {
 
     /**
      * Deletes the file or directory (recursively if needed).
@@ -25,10 +24,20 @@ internal class FileMover(val internalLogger: Logger) {
         return try {
             target.deleteRecursively()
         } catch (e: FileNotFoundException) {
-            internalLogger.errorWithTelemetry(ERROR_DELETE.format(Locale.US, target.path), e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                ERROR_DELETE.format(Locale.US, target.path),
+                e
+            )
             false
         } catch (e: SecurityException) {
-            internalLogger.errorWithTelemetry(ERROR_DELETE.format(Locale.US, target.path), e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                ERROR_DELETE.format(Locale.US, target.path),
+                e
+            )
             false
         }
     }
@@ -40,20 +49,39 @@ internal class FileMover(val internalLogger: Logger) {
     @WorkerThread
     fun moveFiles(srcDir: File, destDir: File): Boolean {
         if (!srcDir.existsSafe()) {
-            internalLogger.i(INFO_MOVE_NO_SRC.format(Locale.US, srcDir.path))
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.MAINTAINER,
+                INFO_MOVE_NO_SRC.format(Locale.US, srcDir.path)
+            )
             return true
         }
         if (!srcDir.isDirectorySafe()) {
-            internalLogger.errorWithTelemetry(ERROR_MOVE_NOT_DIR.format(Locale.US, srcDir.path))
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                ERROR_MOVE_NOT_DIR.format(Locale.US, srcDir.path)
+            )
             return false
         }
         if (!destDir.existsSafe()) {
             if (!destDir.mkdirsSafe()) {
-                internalLogger.errorWithTelemetry(ERROR_MOVE_NO_DST.format(Locale.US, srcDir.path))
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    targets = listOf(
+                        InternalLogger.Target.MAINTAINER,
+                        InternalLogger.Target.TELEMETRY
+                    ),
+                    ERROR_MOVE_NO_DST.format(Locale.US, srcDir.path)
+                )
                 return false
             }
         } else if (!destDir.isDirectorySafe()) {
-            internalLogger.errorWithTelemetry(ERROR_MOVE_NOT_DIR.format(Locale.US, destDir.path))
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                ERROR_MOVE_NOT_DIR.format(Locale.US, destDir.path)
+            )
             return false
         }
 

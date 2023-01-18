@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.recorder
 
 import android.os.Handler
-import com.datadog.android.sessionreplay.utils.ForgeConfigurator
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.times

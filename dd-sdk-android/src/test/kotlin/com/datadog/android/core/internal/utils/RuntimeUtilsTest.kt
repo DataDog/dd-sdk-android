@@ -6,25 +6,14 @@
 
 package com.datadog.android.core.internal.utils
 
-import android.util.Log
-import com.datadog.android.Datadog
-import com.datadog.android.log.internal.logger.ConditionalLogHandler
-import com.datadog.android.utils.config.LoggerTestConfiguration
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.NoOpSdkCore
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -38,47 +27,6 @@ import java.util.Locale
 )
 internal class RuntimeUtilsTest {
 
-    @BeforeEach
-    fun `set up`() {
-        Datadog.initialized.set(true)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        Datadog.initialized.set(false)
-        Datadog.globalSdkCore = NoOpSdkCore()
-    }
-
-    // region devLogger
-
-    @Test
-    fun `M build conditional Log handler W buildDevLogger()`(
-        @IntForgery(min = Log.VERBOSE, max = (Log.ASSERT + 1)) level: Int
-    ) {
-        // Given
-        val mockSdkCore: SdkCore = mock()
-        whenever(mockSdkCore.getVerbosity()) doReturn level
-        Datadog.globalSdkCore = mockSdkCore
-
-        // When
-        val handler = buildDevLogHandler()
-
-        // Then
-        assertThat(handler).isInstanceOf(ConditionalLogHandler::class.java)
-
-        val condition = handler.condition
-
-        for (i in 0..10) {
-            if (i >= level) {
-                assertThat(condition(i, null)).isTrue()
-            } else {
-                assertThat(condition(i, null)).isFalse()
-            }
-        }
-    }
-
-    // endregion
-
     // region warnDeprecated
 
     @Test
@@ -91,8 +39,9 @@ internal class RuntimeUtilsTest {
         warnDeprecated(target, since, until)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             WARN_DEPRECATED.format(
                 Locale.US,
                 target,
@@ -113,8 +62,9 @@ internal class RuntimeUtilsTest {
         warnDeprecated(target, since, until, alternative)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             WARN_DEPRECATED_WITH_ALT.format(
                 Locale.US,
                 target,
@@ -128,7 +78,7 @@ internal class RuntimeUtilsTest {
     // endregion
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

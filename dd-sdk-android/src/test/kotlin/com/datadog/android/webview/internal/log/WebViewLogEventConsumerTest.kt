@@ -7,12 +7,12 @@
 package com.datadog.android.webview.internal.log
 
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.storage.DataWriter
@@ -99,8 +99,8 @@ internal class WebViewLogEventConsumerTest {
             mockSdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
         ) doReturn mockWebViewLogsFeatureScope
 
-        whenever(mockWebViewLogsFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+        whenever(mockWebViewLogsFeatureScope.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
 
@@ -241,15 +241,13 @@ internal class WebViewLogEventConsumerTest {
         )
 
         // Then
-        verify(logger.mockSdkLogHandler).handleLog(
-            eq(ERROR_WITH_TELEMETRY_LEVEL),
+        verify(logger.mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            targets = eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
             eq(WebViewLogEventConsumer.JSON_PARSING_ERROR_MESSAGE),
             argThat {
                 expectedThrowable.isAssignableFrom(this::class.java)
-            },
-            eq(emptyMap()),
-            eq(emptySet()),
-            eq(null)
+            }
         )
     }
 
@@ -298,7 +296,7 @@ internal class WebViewLogEventConsumerTest {
     // endregion
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

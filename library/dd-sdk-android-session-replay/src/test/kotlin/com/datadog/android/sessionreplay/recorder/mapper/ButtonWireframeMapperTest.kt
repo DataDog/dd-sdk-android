@@ -9,10 +9,10 @@ package com.datadog.android.sessionreplay.recorder.mapper
 import android.graphics.Typeface
 import android.widget.Button
 import android.widget.TextView
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.aMockView
 import com.datadog.android.sessionreplay.recorder.densityNormalized
-import com.datadog.android.sessionreplay.utils.ForgeConfigurator
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge

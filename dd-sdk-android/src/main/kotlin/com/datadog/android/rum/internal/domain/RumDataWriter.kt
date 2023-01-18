@@ -11,8 +11,6 @@ import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.serializeToByteArray
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.Logger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
@@ -22,6 +20,7 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import java.io.File
 import java.util.Locale
@@ -29,7 +28,7 @@ import java.util.Locale
 internal class RumDataWriter(
     private val serializer: Serializer<Any>,
     private val fileWriter: FileWriter,
-    private val internalLogger: Logger,
+    private val internalLogger: InternalLogger,
     private val lastViewEventFile: File
 ) : DataWriter<Any> {
 
@@ -84,7 +83,9 @@ internal class RumDataWriter(
         if (lastViewEventFile.parentFile?.existsSafe() == true) {
             fileWriter.writeData(lastViewEventFile, data, false)
         } else {
-            sdkLogger.i(
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.MAINTAINER,
                 LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(Locale.US, lastViewEventFile.parent)
             )
         }

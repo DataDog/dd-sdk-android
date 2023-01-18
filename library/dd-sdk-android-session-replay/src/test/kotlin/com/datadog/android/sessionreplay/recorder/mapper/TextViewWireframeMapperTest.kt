@@ -7,8 +7,8 @@
 package com.datadog.android.sessionreplay.recorder.mapper
 
 import android.widget.TextView
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.recorder.aMockView
-import com.datadog.android.sessionreplay.utils.ForgeConfigurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever

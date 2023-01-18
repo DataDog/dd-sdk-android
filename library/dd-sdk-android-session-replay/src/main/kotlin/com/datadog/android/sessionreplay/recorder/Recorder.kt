@@ -7,10 +7,13 @@
 package com.datadog.android.sessionreplay.recorder
 
 import android.app.Activity
+import android.view.Window
 
 internal interface Recorder {
 
-    fun startRecording(activity: Activity)
+    fun startRecording(windows: List<Window>, ownerActivity: Activity)
 
-    fun stopRecording(activity: Activity)
+    fun stopRecording(windows: List<Window>)
+
+    fun stopRecording()
 }

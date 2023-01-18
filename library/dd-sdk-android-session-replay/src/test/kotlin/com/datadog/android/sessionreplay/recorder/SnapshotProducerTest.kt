@@ -6,18 +6,24 @@
 
 package com.datadog.android.sessionreplay.recorder
 
+import android.content.res.Resources.Theme
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.widget.Toolbar
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.mapper.AllowAllWireframeMapper
+import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.recorder.mapper.ViewScreenshotWireframeMapper
-import com.datadog.android.sessionreplay.utils.ForgeConfigurator
+import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.ThemeUtils
+import com.datadog.android.sessionreplay.utils.copy
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -49,26 +55,43 @@ internal class SnapshotProducerTest {
     @Mock
     lateinit var mockGenericWireframeMapper: AllowAllWireframeMapper
 
-    @Mock
-    lateinit var mockViewWireframe: MobileSegment.Wireframe
+    @Forgery
+    lateinit var fakeViewWireframe: MobileSegment.Wireframe
 
-    @Mock
-    lateinit var mockShapeScreenshotWireframe: MobileSegment.Wireframe.ShapeWireframe
+    @Forgery
+    lateinit var fakeShapeScreenShotWireframe: MobileSegment.Wireframe.ShapeWireframe
 
     @Mock
     lateinit var mockViewUtils: ViewUtils
 
+    @Mock
+    lateinit var mockTheme: Theme
+
+    @Mock
+    lateinit var mockStringUtils: StringUtils
+
+    @Mock
+    lateinit var mockThemeUtils: ThemeUtils
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        // making sure the root has shapeStyle
+        fakeViewWireframe = fakeViewWireframe.copy(shapeStyle = forge.getForgery())
+        fakeShapeScreenShotWireframe = fakeShapeScreenShotWireframe.copy(shapeStyle = forge.getForgery())
         whenever(mockViewScreenshotWireframeMapper.map(any(), eq(fakePixelDensity)))
-            .thenReturn(mockShapeScreenshotWireframe)
+            .thenReturn(fakeShapeScreenShotWireframe)
         whenever(mockGenericWireframeMapper.map(any(), eq(fakePixelDensity)))
-            .thenReturn(mockViewWireframe)
+            .thenReturn(fakeViewWireframe)
         whenever(mockGenericWireframeMapper.imageMapper)
             .thenReturn(mockViewScreenshotWireframeMapper)
         whenever(mockViewUtils.checkIfNotVisible(any())).thenReturn(false)
         whenever(mockViewUtils.checkIfSystemNoise(any())).thenReturn(false)
-        testedSnapshotProducer = SnapshotProducer(mockGenericWireframeMapper, mockViewUtils)
+        testedSnapshotProducer = SnapshotProducer(
+            mockGenericWireframeMapper,
+            mockViewUtils,
+            mockStringUtils,
+            mockThemeUtils
+        )
     }
 
     // region Default Tests
@@ -79,10 +102,10 @@ internal class SnapshotProducerTest {
         val fakeRoot = forge.aMockView<View>()
 
         // When
-        val snapshot = testedSnapshotProducer.produce(fakeRoot, fakePixelDensity)
+        val snapshot = testedSnapshotProducer.produce(mockTheme, fakeRoot, fakePixelDensity)
 
         // Then
-        val expectedSnapshot = fakeRoot.toNode()
+        val expectedSnapshot = fakeRoot.toNode(viewMappedWireframe = fakeViewWireframe)
         assertThat(snapshot).isEqualTo(expectedSnapshot).usingRecursiveComparison()
     }
 
@@ -92,10 +115,10 @@ internal class SnapshotProducerTest {
         val fakeRoot = forge.aMockViewWithChildren(2, 0, 2)
 
         // When
-        val snapshot = testedSnapshotProducer.produce(fakeRoot, fakePixelDensity)
+        val snapshot = testedSnapshotProducer.produce(mockTheme, fakeRoot, fakePixelDensity)
 
         // Then
-        val expectedSnapshot = fakeRoot.toNode()
+        val expectedSnapshot = fakeRoot.toNode(viewMappedWireframe = fakeViewWireframe)
         assertThat(snapshot).isEqualTo(expectedSnapshot).usingRecursiveComparison()
     }
 
@@ -111,7 +134,7 @@ internal class SnapshotProducerTest {
             .apply { whenever(mockViewUtils.checkIfNotVisible(this)).thenReturn(true) }
 
         // Then
-        assertThat(testedSnapshotProducer.produce(fakeRoot, fakePixelDensity)).isNull()
+        assertThat(testedSnapshotProducer.produce(mockTheme, fakeRoot, fakePixelDensity)).isNull()
     }
 
     // endregion
@@ -126,7 +149,7 @@ internal class SnapshotProducerTest {
             .apply { whenever(mockViewUtils.checkIfSystemNoise(this)).thenReturn(true) }
 
         // Then
-        assertThat(testedSnapshotProducer.produce(fakeRoot, fakePixelDensity)).isNull()
+        assertThat(testedSnapshotProducer.produce(mockTheme, fakeRoot, fakePixelDensity)).isNull()
     }
 
     // endregion
@@ -143,31 +166,89 @@ internal class SnapshotProducerTest {
         }
 
         // When
-        val snapshot = testedSnapshotProducer.produce(mockToolBar, fakePixelDensity)
+        val snapshot = testedSnapshotProducer.produce(mockTheme, mockToolBar, fakePixelDensity)
 
         // Then
         val shapeWireframe = snapshot?.wireframe as MobileSegment.Wireframe.ShapeWireframe
-        assertThat(shapeWireframe).isEqualTo(mockShapeScreenshotWireframe)
+        assertThat(shapeWireframe).isEqualTo(fakeShapeScreenShotWireframe)
+    }
+
+    // endregion
+
+    // region no root wireframe background
+
+    @Test
+    fun `M use the Theme W produce() { view root does not have a ShapeStyle }`(forge: Forge) {
+        // Given
+        val fakeRoot = forge.aMockView<View>()
+        val fakeWireframe = forge.getForgery<MobileSegment.Wireframe>().copy(shapeStyle = null)
+        whenever(mockGenericWireframeMapper.map(any(), eq(fakePixelDensity)))
+            .thenReturn(fakeWireframe)
+        val fakeThemeColor = forge.aPositiveInt()
+        val fakeThemeHexColor = forge.aStringMatching("#[0-9a-f]{6}ff")
+        whenever(
+            mockStringUtils.formatColorAndAlphaAsHexa(
+                fakeThemeColor,
+                BaseWireframeMapper.OPAQUE_ALPHA_VALUE
+            )
+        ).thenReturn(fakeThemeHexColor)
+        whenever(mockThemeUtils.resolveThemeColor(mockTheme)).thenReturn(fakeThemeColor)
+        var expectedNode = fakeRoot.toNode(viewMappedWireframe = fakeWireframe)
+        val themeResolvedShapeStyle = MobileSegment.ShapeStyle(
+            backgroundColor = fakeThemeHexColor,
+            opacity = 1f
+        )
+        expectedNode = expectedNode.copy(
+            wireframe = expectedNode.wireframe.copy(shapeStyle = themeResolvedShapeStyle)
+        )
+
+        // When
+        val node = testedSnapshotProducer.produce(mockTheme, fakeRoot, fakePixelDensity)
+
+        // Then
+        assertThat(node).isEqualTo(expectedNode)
+    }
+
+    @Test
+    fun `M do nothing W produce() { view root does not have a ShapeStyle, theme has no color }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeRoot = forge.aMockView<View>()
+        val fakeWireframe = forge.getForgery<MobileSegment.Wireframe>().copy(shapeStyle = null)
+        whenever(mockGenericWireframeMapper.map(any(), eq(fakePixelDensity)))
+            .thenReturn(fakeWireframe)
+        whenever(mockThemeUtils.resolveThemeColor(mockTheme)).thenReturn(null)
+        val expectedNode = fakeRoot.toNode(viewMappedWireframe = fakeWireframe)
+
+        // When
+        val node = testedSnapshotProducer.produce(mockTheme, fakeRoot, fakePixelDensity)
+
+        // Then
+        assertThat(node).isEqualTo(expectedNode)
     }
 
     // endregion
 
     // region Internals
 
-    private fun View.toNode(level: Int = 0): Node {
+    private fun View.toNode(
+        level: Int = 0,
+        viewMappedWireframe: MobileSegment.Wireframe
+    ): Node {
         val children = if (this is ViewGroup) {
             val nodes = mutableListOf<Node>()
             for (i in 0 until childCount) {
-                nodes.add(this.getChildAt(i).toNode(level + 1))
+                nodes.add(this.getChildAt(i).toNode(level + 1, viewMappedWireframe))
             }
             nodes
         } else {
             emptyList()
         }
         return Node(
-            wireframe = mockViewWireframe,
+            wireframe = viewMappedWireframe,
             children = children,
-            parents = List(level) { mockViewWireframe }
+            parents = List(level) { viewMappedWireframe }
         )
     }
 

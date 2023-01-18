@@ -6,19 +6,30 @@
 
 package com.datadog.android.sessionreplay.recorder
 
+import android.content.res.Resources.Theme
 import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.recorder.mapper.GenericWireframeMapper
+import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.ThemeUtils
+import com.datadog.android.sessionreplay.utils.copy
+import com.datadog.android.sessionreplay.utils.shapeStyle
 import java.util.LinkedList
 
 internal class SnapshotProducer(
     private val wireframeMapper: GenericWireframeMapper,
-    private val viewUtils: ViewUtils = ViewUtils()
+    private val viewUtils: ViewUtils = ViewUtils(),
+    private val stringUtils: StringUtils = StringUtils,
+    private val themeUtils: ThemeUtils = ThemeUtils
 ) {
 
-    fun produce(rootView: View, pixelsDensity: Float): Node? {
-        return convertViewToNode(rootView, pixelsDensity, LinkedList())
+    fun produce(theme: Theme, rootView: View, pixelsDensity: Float): Node? {
+        val snapshot = convertViewToNode(rootView, pixelsDensity, LinkedList()) ?: return null
+        // we call this at the end because we are waiting to see if the ViewMapper was able to
+        // resolve the root background from any drawable
+        return resolveRootBackgroundFromTheme(theme, rootView, snapshot)
     }
 
     @Suppress("ComplexMethod", "ReturnCount")
@@ -61,5 +72,25 @@ internal class SnapshotProducer(
             wireframe = wireframe,
             parents = parents
         )
+    }
+
+    private fun resolveRootBackgroundFromTheme(theme: Theme, rootView: View, snapshot: Node): Node {
+        val rootShapeStyle = snapshot.wireframe.shapeStyle()
+        // we add a shapeStyle based on the Theme color in case the
+        // root wireframe does not have a ShapeStyle
+        if (rootShapeStyle == null) {
+            themeUtils.resolveThemeColor(theme)?.let {
+                val colorAndAlphaAsHexa = stringUtils.formatColorAndAlphaAsHexa(
+                    it,
+                    BaseWireframeMapper.OPAQUE_ALPHA_VALUE
+                )
+                val shapeStyle = MobileSegment.ShapeStyle(
+                    backgroundColor = colorAndAlphaAsHexa,
+                    opacity = rootView.alpha
+                )
+                return snapshot.copy(wireframe = snapshot.wireframe.copy(shapeStyle = shapeStyle))
+            }
+        }
+        return snapshot
     }
 }

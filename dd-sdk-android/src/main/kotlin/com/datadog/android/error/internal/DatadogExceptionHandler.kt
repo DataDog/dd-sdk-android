@@ -9,13 +9,12 @@ package com.datadog.android.error.internal
 import android.content.Context
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.thread.waitToIdle
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.isWorkManagerInitialized
 import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
 import java.lang.ref.WeakReference
@@ -39,32 +38,51 @@ internal class DatadogExceptionHandler(
                 mapOf(
                     "threadName" to t.name,
                     "throwable" to e,
-                    "syncWrite" to true,
                     "timestamp" to System.currentTimeMillis(),
                     "message" to createCrashMessage(e),
-                    "type" to "crash",
+                    "type" to "jvm_crash",
                     "loggerName" to LOGGER_NAME
                 )
             )
         } else {
-            devLogger.i("Logs feature is not registered, won't report crash as log.")
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                MISSING_LOGS_FEATURE_INFO
+            )
         }
 
-        // TODO RUMM-2697 Use message bus to communicate with RUM
         // write a RUM Error too
-        (GlobalRum.get() as? AdvancedRumMonitor)?.addCrash(
-            createCrashMessage(e),
-            RumErrorSource.SOURCE,
-            e
-        )
+        val rumFeature = sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+        if (rumFeature != null) {
+            rumFeature.sendEvent(
+                mapOf(
+                    "type" to "jvm_crash",
+                    "throwable" to e,
+                    "message" to createCrashMessage(e)
+                )
+            )
+        } else {
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                MISSING_RUM_FEATURE_INFO
+            )
+        }
 
+        // TODO RUMM-0000 If DatadogExceptionHandler goes into dedicated module (module of 1 class
+        //  only?), we have to wait for the write in some other way
         // give some time to the persistence executor service to finish its tasks
         val coreFeature = (Datadog.globalSdkCore as? DatadogCore)?.coreFeature
         if (coreFeature != null) {
             val idled = (coreFeature.persistenceExecutorService as? ThreadPoolExecutor)
                 ?.waitToIdle(MAX_WAIT_FOR_IDLE_TIME_IN_MS) ?: true
             if (!idled) {
-                devLogger.w(EXECUTOR_NOT_IDLED_WARNING_MESSAGE)
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    EXECUTOR_NOT_IDLED_WARNING_MESSAGE
+                )
             }
         }
 
@@ -113,5 +131,9 @@ internal class DatadogExceptionHandler(
         internal const val EXECUTOR_NOT_IDLED_WARNING_MESSAGE =
             "Datadog SDK is in an unexpected state due to an ongoing crash. " +
                 "Some events could be lost."
+        internal const val MISSING_LOGS_FEATURE_INFO =
+            "Logs feature is not registered, won't report crash as log."
+        internal const val MISSING_RUM_FEATURE_INFO =
+            "RUM feature is not registered, won't report crash as RUM event."
     }
 }

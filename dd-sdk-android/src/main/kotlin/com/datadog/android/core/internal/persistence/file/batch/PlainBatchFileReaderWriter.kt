@@ -9,10 +9,8 @@ package com.datadog.android.core.internal.persistence.file.batch
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.EventMeta
 import com.datadog.android.core.internal.persistence.file.lengthSafe
-import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.use
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.v2.api.InternalLogger
 import com.google.gson.JsonParseException
 import java.io.File
 import java.io.FileOutputStream
@@ -26,7 +24,7 @@ import kotlin.math.max
  * Stores data in the TLV format as meta+data, use only for RUM/Log/Trace events.
  */
 internal class PlainBatchFileReaderWriter(
-    private val internalLogger: Logger,
+    private val internalLogger: InternalLogger,
     private val metaGenerator: (data: ByteArray) -> ByteArray = {
         EventMeta().asBytes
     },
@@ -47,10 +45,20 @@ internal class PlainBatchFileReaderWriter(
             lockFileAndWriteData(file, append, data)
             true
         } catch (e: IOException) {
-            internalLogger.errorWithTelemetry(ERROR_WRITE.format(Locale.US, file.path), e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                ERROR_WRITE.format(Locale.US, file.path),
+                e
+            )
             false
         } catch (e: SecurityException) {
-            internalLogger.errorWithTelemetry(ERROR_WRITE.format(Locale.US, file.path), e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                ERROR_WRITE.format(Locale.US, file.path),
+                e
+            )
             false
         }
     }
@@ -62,10 +70,20 @@ internal class PlainBatchFileReaderWriter(
         return try {
             readFileData(file)
         } catch (e: IOException) {
-            internalLogger.errorWithTelemetry(ERROR_READ.format(Locale.US, file.path), e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                ERROR_READ.format(Locale.US, file.path),
+                e
+            )
             emptyList()
         } catch (e: SecurityException) {
-            internalLogger.errorWithTelemetry(ERROR_READ.format(Locale.US, file.path), e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                ERROR_READ.format(Locale.US, file.path),
+                e
+            )
             emptyList()
         }
     }
@@ -130,7 +148,12 @@ internal class PlainBatchFileReaderWriter(
                 val meta = try {
                     metaParser(metaReadResult.data)
                 } catch (e: JsonParseException) {
-                    internalLogger.e(ERROR_FAILED_META_PARSE, e)
+                    internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.MAINTAINER,
+                        ERROR_FAILED_META_PARSE,
+                        e
+                    )
                     continue
                 }
 
@@ -140,8 +163,11 @@ internal class PlainBatchFileReaderWriter(
 
         if (remaining != 0 || (inputLength > 0 && result.isEmpty())) {
             val message = WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
-            devLogger.e(message)
-            internalLogger.errorWithTelemetry(message)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                message
+            )
         }
 
         return result
@@ -167,7 +193,9 @@ internal class PlainBatchFileReaderWriter(
 
         val blockType = headerBuffer.short
         if (blockType != expectedBlockType.identifier) {
-            internalLogger.e(
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
                 "Unexpected block type identifier=$blockType met," +
                     " was expecting $expectedBlockType(${expectedBlockType.identifier})"
             )
@@ -198,12 +226,16 @@ internal class PlainBatchFileReaderWriter(
     private fun checkReadExpected(expected: Int, actual: Int, operation: String): Boolean {
         return if (expected != actual) {
             if (actual != -1) {
-                internalLogger.e(
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
                     "Number of bytes read for operation='$operation' doesn't" +
                         " match with expected: expected=$expected, actual=$actual"
                 )
             } else {
-                internalLogger.e(
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
                     "Unexpected EOF at the operation=$operation"
                 )
             }

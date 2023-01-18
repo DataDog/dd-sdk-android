@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.utils
 
-import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.v2.api.InternalLogger
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
@@ -38,7 +38,15 @@ internal inline fun retryWithDelay(
             wasSuccessful = try {
                 block()
             } catch (e: Exception) {
-                sdkLogger.errorWithTelemetry("Internal operation failed", e)
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    targets = listOf(
+                        InternalLogger.Target.MAINTAINER,
+                        InternalLogger.Target.TELEMETRY
+                    ),
+                    "Internal operation failed",
+                    e
+                )
                 return false
             }
             loopTimeOrigin = System.nanoTime()

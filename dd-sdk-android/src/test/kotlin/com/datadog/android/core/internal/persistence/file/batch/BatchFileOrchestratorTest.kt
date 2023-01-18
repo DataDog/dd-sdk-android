@@ -8,11 +8,8 @@ package com.datadog.android.core.internal.persistence.file.batch
 
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.log.internal.utils.DEBUG_WITH_TELEMETRY_LEVEL
-import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -31,6 +28,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -54,7 +53,7 @@ internal class BatchFileOrchestratorTest {
     lateinit var tempDir: File
 
     @Mock
-    lateinit var mockLogHandler: LogHandler
+    lateinit var mockLogger: InternalLogger
 
     @StringForgery
     lateinit var fakeRootDirName: String
@@ -68,14 +67,16 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             fakeRootDir,
             TEST_PERSISTENCE_CONFIG,
-            Logger(mockLogHandler)
+            mockLogger
         )
     }
 
     // region getWritableFile
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
     fun `𝕄 warn 𝕎 getWritableFile() {root is not a dir}`(
+        forceNewFile: Boolean,
         @StringForgery fileName: String
     ) {
         // Given
@@ -84,22 +85,24 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             notADir,
             TEST_PERSISTENCE_CONFIG,
-            Logger(mockLogHandler)
+            mockLogger
         )
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
         )
     }
 
-    @Test
-    fun `𝕄 warn 𝕎 getWritableFile() {root can't be created}`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `𝕄 warn 𝕎 getWritableFile() {root can't be created}`(forceNewFile: Boolean) {
         // Given
         val corruptedDir = mock<File>()
         whenever(corruptedDir.exists()).thenReturn(false)
@@ -108,22 +111,24 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             corruptedDir,
             TEST_PERSISTENCE_CONFIG,
-            Logger(mockLogHandler)
+            mockLogger
         )
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
         )
     }
 
-    @Test
-    fun `𝕄 warn 𝕎 getWritableFile() {root is not writeable}`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `𝕄 warn 𝕎 getWritableFile() {root is not writeable}`(forceNewFile: Boolean) {
         // Given
         val restrictedDir = mock<File>()
         whenever(restrictedDir.exists()).thenReturn(true)
@@ -133,34 +138,40 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             restrictedDir,
             TEST_PERSISTENCE_CONFIG,
-            Logger(mockLogHandler)
+            mockLogger
         )
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
         )
     }
 
-    @Test
-    fun `𝕄 create the rootDirectory 𝕎 getWritableFile() {root does not exist}`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `𝕄 create the rootDirectory 𝕎 getWritableFile() {root does not exist}`(
+        forceNewFile: Boolean
+    ) {
         // Given
         fakeRootDir.deleteRecursively()
 
         // When
-        testedOrchestrator.getWritableFile()
+        testedOrchestrator.getWritableFile(forceNewFile)
 
         // Then
         assertThat(fakeRootDir).exists().isDirectory()
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
     fun `𝕄 delete obsolete files 𝕎 getWritableFile()`(
+        forceNewFile: Boolean,
         @LongForgery(min = OLD_FILE_THRESHOLD, max = Int.MAX_VALUE.toLong()) oldFileAge: Long
     ) {
         // Given
@@ -176,7 +187,7 @@ internal class BatchFileOrchestratorTest {
 
         // When
         val start = System.currentTimeMillis()
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
         val end = System.currentTimeMillis()
 
         // Then
@@ -191,14 +202,15 @@ internal class BatchFileOrchestratorTest {
         assertThat(youngFile).exists()
     }
 
-    @Test
-    fun `𝕄 return new File 𝕎 getWritableFile() {no available file}`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `𝕄 return new File 𝕎 getWritableFile() {no available file}`(forceNewFile: Boolean) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
 
         // When
         val start = System.currentTimeMillis()
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
         val end = System.currentTimeMillis()
 
         // Then
@@ -230,8 +242,10 @@ internal class BatchFileOrchestratorTest {
         assertThat(previousFile.readText()).isEqualTo(previousData)
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
     fun `𝕄 return new File 𝕎 getWritableFile() {previous file is too old}`(
+        forceNewFile: Boolean,
         @StringForgery(size = SMALL_ITEM_SIZE) previousData: String
     ) {
         // Given
@@ -243,7 +257,7 @@ internal class BatchFileOrchestratorTest {
 
         // When
         val start = System.currentTimeMillis()
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
         val end = System.currentTimeMillis()
 
         // Then
@@ -256,8 +270,10 @@ internal class BatchFileOrchestratorTest {
         assertThat(previousFile.readText()).isEqualTo(previousData)
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
     fun `𝕄 return new File 𝕎 getWritableFile() {previous file is unknown}`(
+        forceNewFile: Boolean,
         @StringForgery(size = SMALL_ITEM_SIZE) previousData: String
     ) {
         // Given
@@ -268,7 +284,7 @@ internal class BatchFileOrchestratorTest {
 
         // When
         val start = System.currentTimeMillis()
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
         val end = System.currentTimeMillis()
 
         // Then
@@ -281,8 +297,9 @@ internal class BatchFileOrchestratorTest {
         assertThat(previousFile.readText()).isEqualTo(previousData)
     }
 
-    @Test
-    fun `𝕄 return new File 𝕎 getWritableFile() {previous file is deleted}`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `𝕄 return new File 𝕎 getWritableFile() {previous file is deleted}`(forceNewFile: Boolean) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         val previousFile = testedOrchestrator.getWritableFile()
@@ -293,7 +310,7 @@ internal class BatchFileOrchestratorTest {
 
         // When
         val start = System.currentTimeMillis()
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
         val end = System.currentTimeMillis()
 
         // Then
@@ -306,8 +323,10 @@ internal class BatchFileOrchestratorTest {
         assertThat(previousFile).doesNotExist()
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
     fun `𝕄 return new File 𝕎 getWritableFile() {previous file is too large}`(
+        forceNewFile: Boolean,
         @StringForgery(size = MAX_BATCH_SIZE) previousData: String
     ) {
         // Given
@@ -319,7 +338,7 @@ internal class BatchFileOrchestratorTest {
 
         // When
         val start = System.currentTimeMillis()
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
         val end = System.currentTimeMillis()
 
         // Then
@@ -332,8 +351,10 @@ internal class BatchFileOrchestratorTest {
         assertThat(previousFile.readText()).isEqualTo(previousData)
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
     fun `𝕄 return new File 𝕎 getWritableFile() {previous file has too many items}`(
+        forceNewFile: Boolean,
         forge: Forge
     ) {
         // Given
@@ -357,7 +378,7 @@ internal class BatchFileOrchestratorTest {
 
             // When
             val start = System.currentTimeMillis()
-            val nextFile = testedOrchestrator.getWritableFile()
+            val nextFile = testedOrchestrator.getWritableFile(forceNewFile)
             val end = System.currentTimeMillis()
 
             // Then
@@ -374,8 +395,10 @@ internal class BatchFileOrchestratorTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
     fun `𝕄 discard File 𝕎 getWritableFile() {previous files take too much disk space}`(
+        forceNewFile: Boolean,
         @StringForgery(size = MAX_BATCH_SIZE) previousData: String
     ) {
         // Given
@@ -391,7 +414,7 @@ internal class BatchFileOrchestratorTest {
 
         // When
         val start = System.currentTimeMillis()
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
         val end = System.currentTimeMillis()
 
         // Then
@@ -402,8 +425,9 @@ internal class BatchFileOrchestratorTest {
         assertThat(result.name.toLong())
             .isBetween(start, end)
         assertThat(files.first()).doesNotExist()
-        verify(mockLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_DISK_FULL.format(
                 Locale.US,
                 files.size * previousData.length,
@@ -411,6 +435,34 @@ internal class BatchFileOrchestratorTest {
                 (files.size * previousData.length) - MAX_DISK_SPACE
             )
         )
+    }
+
+    // endregion
+
+    // region getNewWritableFile
+
+    @Test
+    fun `𝕄 return new File 𝕎 getWritableFile() {forceNewFile=true}`() {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val firstFile = testedOrchestrator.getWritableFile()
+
+        // When
+        val start = System.currentTimeMillis()
+        val secondFile = testedOrchestrator.getWritableFile(forceNewFile = true)
+        val end = System.currentTimeMillis()
+
+        // Then
+        checkNotNull(firstFile)
+        assertThat(firstFile)
+            .doesNotExist()
+            .hasParent(fakeRootDir)
+        checkNotNull(secondFile)
+        assertThat(secondFile)
+            .doesNotExist()
+            .hasParent(fakeRootDir)
+        assertThat(secondFile.name.toLong())
+            .isBetween(start, end)
     }
 
     // endregion
@@ -427,7 +479,7 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             notADir,
             TEST_PERSISTENCE_CONFIG,
-            Logger(mockLogHandler)
+            mockLogger
         )
 
         // When
@@ -435,8 +487,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
         )
     }
@@ -451,7 +504,7 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             corruptedDir,
             TEST_PERSISTENCE_CONFIG,
-            Logger(mockLogHandler)
+            mockLogger
         )
 
         // When
@@ -459,8 +512,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -476,7 +530,7 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             restrictedDir,
             TEST_PERSISTENCE_CONFIG,
-            Logger(mockLogHandler)
+            mockLogger
         )
 
         // When
@@ -484,8 +538,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -601,7 +656,7 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             notADir,
             TEST_PERSISTENCE_CONFIG,
-            Logger(mockLogHandler)
+            mockLogger
         )
 
         // When
@@ -609,8 +664,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isEmpty()
-        verify(mockLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
         )
     }
@@ -625,7 +681,7 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             corruptedDir,
             TEST_PERSISTENCE_CONFIG,
-            Logger(mockLogHandler)
+            mockLogger
         )
 
         // When
@@ -633,8 +689,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isEmpty()
-        verify(mockLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -650,7 +707,7 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             restrictedDir,
             TEST_PERSISTENCE_CONFIG,
-            Logger(mockLogHandler)
+            mockLogger
         )
 
         // When
@@ -658,8 +715,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isEmpty()
-        verify(mockLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -787,7 +845,7 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             notADir,
             TEST_PERSISTENCE_CONFIG,
-            Logger(mockLogHandler)
+            mockLogger
         )
 
         // When
@@ -795,8 +853,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
         )
     }
@@ -811,7 +870,7 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             corruptedDir,
             TEST_PERSISTENCE_CONFIG,
-            Logger(mockLogHandler)
+            mockLogger
         )
 
         // When
@@ -819,8 +878,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -836,7 +896,7 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             restrictedDir,
             TEST_PERSISTENCE_CONFIG,
-            Logger(mockLogHandler)
+            mockLogger
         )
 
         // When
@@ -844,8 +904,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -857,7 +918,7 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isEqualTo(fakeRootDir)
-        verifyZeroInteractions(mockLogHandler)
+        verifyZeroInteractions(mockLogger)
     }
 
     @Test
@@ -883,7 +944,7 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(results).containsExactlyElementsOf(List(4) { fakeRootDir })
-        verifyZeroInteractions(mockLogHandler)
+        verifyZeroInteractions(mockLogger)
     }
 
     // endregion
@@ -917,9 +978,10 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNotNull()
-        verify(mockLogHandler)
-            .handleLog(
-                DEBUG_WITH_TELEMETRY_LEVEL,
+        verify(mockLogger)
+            .log(
+                InternalLogger.Level.DEBUG,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 BatchFileOrchestrator.DEBUG_DIFFERENT_ROOT
                     .format(Locale.US, fakeFile.path, fakeRootDir.path)
             )
@@ -937,9 +999,10 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogHandler)
-            .handleLog(
-                ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockLogger)
+            .log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 BatchFileOrchestrator.ERROR_NOT_BATCH_FILE.format(Locale.US, fakeFile.path)
             )
     }

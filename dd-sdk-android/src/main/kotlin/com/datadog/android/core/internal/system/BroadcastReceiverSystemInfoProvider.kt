@@ -14,8 +14,8 @@ import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.utils.debugWithTelemetry
+import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.v2.api.InternalLogger
 import kotlin.math.roundToInt
 
 internal class BroadcastReceiverSystemInfoProvider(
@@ -36,7 +36,14 @@ internal class BroadcastReceiverSystemInfoProvider(
                 handlePowerSaveIntent(context)
             }
             else -> {
-                sdkLogger.debugWithTelemetry("Received unknown broadcast intent: [$action]")
+                internalLogger.log(
+                    InternalLogger.Level.DEBUG,
+                    targets = listOf(
+                        InternalLogger.Target.MAINTAINER,
+                        InternalLogger.Target.TELEMETRY
+                    ),
+                    "Received unknown broadcast intent: [$action]"
+                )
             }
         }
     }
