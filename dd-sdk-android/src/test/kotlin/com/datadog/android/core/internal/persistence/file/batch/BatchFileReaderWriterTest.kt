@@ -6,10 +6,10 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
-import com.datadog.android.log.Logger
 import com.datadog.android.security.Encryption
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -20,6 +20,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -33,10 +34,13 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class BatchFileReaderWriterTest {
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Test
     fun `𝕄 create BatchFileReaderWriter 𝕎 create() { without encryption }`() {
         // When
-        val readerWriter = BatchFileReaderWriter.create(Logger(logger.mockSdkLogHandler), null)
+        val readerWriter = BatchFileReaderWriter.create(mockInternalLogger, null)
         // Then
         assertThat(readerWriter)
             .isInstanceOf(PlainBatchFileReaderWriter::class.java)
@@ -47,7 +51,7 @@ internal class BatchFileReaderWriterTest {
         // When
         val mockEncryption = mock<Encryption>()
         val readerWriter = BatchFileReaderWriter.create(
-            Logger(logger.mockSdkLogHandler),
+            mockInternalLogger,
             mockEncryption
         )
 
@@ -62,7 +66,7 @@ internal class BatchFileReaderWriterTest {
     }
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

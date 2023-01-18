@@ -7,9 +7,9 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.core.internal.utils.orEmpty
-import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.model.LogEvent
+import com.datadog.android.v2.api.context.NetworkInfo
+import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -47,7 +47,7 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
                     id = userInfo?.id,
                     name = userInfo?.name,
                     email = userInfo?.email,
-                    additionalProperties = userInfo?.additionalProperties.orEmpty()
+                    additionalProperties = userInfo?.additionalProperties?.toMutableMap().orEmpty()
 
                 )
             },

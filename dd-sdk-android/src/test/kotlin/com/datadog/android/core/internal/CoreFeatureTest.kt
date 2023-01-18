@@ -27,8 +27,8 @@ import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvi
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
-import com.datadog.android.log.internal.user.DatadogUserInfoProvider
-import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
+import com.datadog.android.core.internal.user.DatadogUserInfoProvider
+import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.ndk.NoOpNdkCrashHandler
@@ -112,9 +112,6 @@ internal class CoreFeatureTest {
 
     @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
     lateinit var fakeSdkInstanceId: String
-
-    @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
-    lateinit var fakeEnvName: String
 
     @BeforeEach
     fun `set up`() {
@@ -816,8 +813,6 @@ internal class CoreFeatureTest {
                         CoreFeature.DATADOG_STORAGE_DIR_NAME.format(Locale.US, fakeSdkInstanceId)
                     )
                 )
-                assertThat(it.timeProvider)
-                    .isInstanceOf(KronosTimeProvider::class.java)
             }
     }
 

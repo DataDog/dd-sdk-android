@@ -19,8 +19,9 @@ import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -44,7 +45,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import android.util.Log as AndroidLog
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -83,8 +83,9 @@ internal class LoggerBuilderTest {
         val handler = testedLogger.handler
 
         assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
-        verify(logger.mockDevLogHandler).handleLog(
-            AndroidLog.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Logger.SDK_NOT_INITIALIZED_WARNING_MESSAGE + "\n" +
                 Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
         )
@@ -105,8 +106,9 @@ internal class LoggerBuilderTest {
         val handler = testedLogger.handler
 
         assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
-        verify(logger.mockDevLogHandler).handleLog(
-            AndroidLog.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Logger.SDK_NOT_INITIALIZED_WARNING_MESSAGE + "\n" +
                 Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
         )
@@ -256,7 +258,7 @@ internal class LoggerBuilderTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

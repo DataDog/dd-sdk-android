@@ -6,13 +6,11 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
-import android.util.Log
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -60,14 +58,14 @@ internal class ConsentAwareFileMigratorTest {
     lateinit var mockExecutorService: ExecutorService
 
     @Mock
-    lateinit var mockLogHander: LogHandler
+    lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`() {
         testedMigrator = ConsentAwareFileMigrator(
             mockFileMover,
             mockExecutorService,
-            Logger(mockLogHander)
+            mockInternalLogger
         )
     }
 
@@ -95,7 +93,7 @@ internal class ConsentAwareFileMigratorTest {
             val wipeOperation = firstValue as WipeDataMigrationOperation
             assertThat(wipeOperation.targetDir).isSameAs(pendingDir)
             assertThat(wipeOperation.fileMover).isSameAs(mockFileMover)
-            assertThat(wipeOperation.internalLogger.handler).isSameAs(mockLogHander)
+            assertThat(wipeOperation.internalLogger).isSameAs(mockInternalLogger)
         }
     }
 
@@ -122,7 +120,7 @@ internal class ConsentAwareFileMigratorTest {
             val wipeOperation = firstValue as WipeDataMigrationOperation
             assertThat(wipeOperation.targetDir).isSameAs(pendingDir)
             assertThat(wipeOperation.fileMover).isSameAs(mockFileMover)
-            assertThat(wipeOperation.internalLogger.handler).isSameAs(mockLogHander)
+            assertThat(wipeOperation.internalLogger).isSameAs(mockInternalLogger)
         }
     }
 
@@ -149,7 +147,7 @@ internal class ConsentAwareFileMigratorTest {
             val wipeOperation = firstValue as WipeDataMigrationOperation
             assertThat(wipeOperation.targetDir).isSameAs(pendingDir)
             assertThat(wipeOperation.fileMover).isSameAs(mockFileMover)
-            assertThat(wipeOperation.internalLogger.handler).isSameAs(mockLogHander)
+            assertThat(wipeOperation.internalLogger).isSameAs(mockInternalLogger)
         }
     }
 
@@ -176,7 +174,7 @@ internal class ConsentAwareFileMigratorTest {
             val wipeOperation = firstValue as WipeDataMigrationOperation
             assertThat(wipeOperation.targetDir).isSameAs(pendingDir)
             assertThat(wipeOperation.fileMover).isSameAs(mockFileMover)
-            assertThat(wipeOperation.internalLogger.handler).isSameAs(mockLogHander)
+            assertThat(wipeOperation.internalLogger).isSameAs(mockInternalLogger)
         }
     }
 
@@ -206,7 +204,7 @@ internal class ConsentAwareFileMigratorTest {
             assertThat(moveOperation.fromDir).isSameAs(pendingDir)
             assertThat(moveOperation.toDir).isSameAs(grantedDir)
             assertThat(moveOperation.fileMover).isSameAs(mockFileMover)
-            assertThat(moveOperation.internalLogger.handler).isSameAs(mockLogHander)
+            assertThat(moveOperation.internalLogger).isSameAs(mockInternalLogger)
         }
     }
 
@@ -285,8 +283,9 @@ internal class ConsentAwareFileMigratorTest {
         )
 
         // Then
-        verify(mockLogHander).handleLog(
-            Log.ERROR,
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
             DataMigrator.ERROR_REJECTED,
             throwable = exception
         )

@@ -7,7 +7,6 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
-import android.util.Log
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
@@ -20,15 +19,14 @@ import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -51,7 +49,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.util.GlobalTracer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.AfterEach
@@ -94,6 +91,9 @@ internal class DatadogExceptionHandlerTest {
     lateinit var mockLogsFeatureScope: FeatureScope
 
     @Mock
+    lateinit var mockRumFeatureScope: FeatureScope
+
+    @Mock
     lateinit var mockWorkManager: WorkManagerImpl
 
     @Forgery
@@ -116,6 +116,7 @@ internal class DatadogExceptionHandlerTest {
         mockChoreographerInstance()
 
         whenever(mockSdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)) doReturn mockLogsFeatureScope
+        whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         Datadog.initialize(
             appContext.mockInstance,
@@ -143,7 +144,28 @@ internal class DatadogExceptionHandlerTest {
         Thread.setDefaultUncaughtExceptionHandler(originalHandler)
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", null)
         Datadog.stop()
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
+    }
+
+    // region Forward to Logs
+
+    @Test
+    fun `M log dev info W caught exception { no Logs feature registered }`() {
+        // Given
+        whenever(mockSdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)) doReturn null
+
+        Thread.setDefaultUncaughtExceptionHandler(null)
+        testedHandler.register()
+        val currentThread = Thread.currentThread()
+
+        // When
+        testedHandler.uncaughtException(currentThread, fakeThrowable)
+
+        // Then
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            DatadogExceptionHandler.MISSING_LOGS_FEATURE_INFO
+        )
     }
 
     @Test
@@ -173,90 +195,13 @@ internal class DatadogExceptionHandlerTest {
                 mapOf(
                     "threadName" to currentThread.name,
                     "throwable" to fakeThrowable,
-                    "syncWrite" to true,
                     "message" to fakeThrowable.message,
-                    "type" to "crash",
+                    "type" to "jvm_crash",
                     "loggerName" to DatadogExceptionHandler.LOGGER_NAME
                 )
             )
         }
         verifyZeroInteractions(mockPreviousHandler)
-    }
-
-    @Test
-    fun `M wait for the executor to idle W exception caught`() {
-        // Given
-        val mockScheduledThreadExecutor: ThreadPoolExecutor = mock()
-        (Datadog.globalSdkCore as DatadogCore).coreFeature
-            .persistenceExecutorService = mockScheduledThreadExecutor
-        Thread.setDefaultUncaughtExceptionHandler(null)
-        testedHandler.register()
-        val currentThread = Thread.currentThread()
-
-        // When
-        testedHandler.uncaughtException(currentThread, fakeThrowable)
-
-        // Then
-        verify(mockScheduledThreadExecutor)
-            .waitToIdle(DatadogExceptionHandler.MAX_WAIT_FOR_IDLE_TIME_IN_MS)
-        verify(logger.mockDevLogHandler, never()).handleLog(
-            Log.WARN,
-            DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE
-        )
-    }
-
-    @Test
-    fun `M log warning message W exception caught { executor could not be idled }`() {
-        // Given
-        val mockScheduledThreadExecutor: ThreadPoolExecutor = mock {
-            whenever(it.taskCount).thenReturn(2)
-            whenever(it.completedTaskCount).thenReturn(0)
-        }
-        (Datadog.globalSdkCore as DatadogCore).coreFeature
-            .persistenceExecutorService = mockScheduledThreadExecutor
-        Thread.setDefaultUncaughtExceptionHandler(null)
-        testedHandler.register()
-        val currentThread = Thread.currentThread()
-
-        // When
-        testedHandler.uncaughtException(currentThread, fakeThrowable)
-
-        // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
-            DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE
-        )
-    }
-
-    @Test
-    fun `M schedule the worker W logging an exception`() {
-        // Given
-        whenever(
-            mockWorkManager.enqueueUniqueWork(
-                ArgumentMatchers.anyString(),
-                any(),
-                any<OneTimeWorkRequest>()
-            )
-        ) doReturn mock()
-
-        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
-        Thread.setDefaultUncaughtExceptionHandler(null)
-        testedHandler.register()
-        val currentThread = Thread.currentThread()
-
-        // When
-        testedHandler.uncaughtException(currentThread, fakeThrowable)
-
-        // Then
-        verify(mockWorkManager)
-            .enqueueUniqueWork(
-                eq(UPLOAD_WORKER_NAME),
-                eq(ExistingWorkPolicy.REPLACE),
-                argThat<OneTimeWorkRequest> {
-                    this.workSpec.workerClassName == UploadWorker::class.java.canonicalName &&
-                        this.tags.contains(TAG_DATADOG_UPLOAD)
-                }
-            )
     }
 
     @Test
@@ -284,9 +229,8 @@ internal class DatadogExceptionHandlerTest {
                 mapOf(
                     "threadName" to currentThread.name,
                     "throwable" to fakeThrowable,
-                    "syncWrite" to true,
                     "message" to fakeThrowable.message,
-                    "type" to "crash",
+                    "type" to "jvm_crash",
                     "loggerName" to DatadogExceptionHandler.LOGGER_NAME
                 )
             )
@@ -320,9 +264,8 @@ internal class DatadogExceptionHandlerTest {
                 mapOf(
                     "threadName" to currentThread.name,
                     "throwable" to throwable,
-                    "syncWrite" to true,
                     "message" to "Application crash detected: ${throwable.javaClass.canonicalName}",
-                    "type" to "crash",
+                    "type" to "jvm_crash",
                     "loggerName" to DatadogExceptionHandler.LOGGER_NAME
                 )
             )
@@ -356,9 +299,8 @@ internal class DatadogExceptionHandlerTest {
                 mapOf(
                     "threadName" to currentThread.name,
                     "throwable" to throwable,
-                    "syncWrite" to true,
                     "message" to "Application crash detected: ${throwable.javaClass.simpleName}",
-                    "type" to "crash",
+                    "type" to "jvm_crash",
                     "loggerName" to DatadogExceptionHandler.LOGGER_NAME
                 )
             )
@@ -401,9 +343,8 @@ internal class DatadogExceptionHandlerTest {
                 mapOf(
                     "threadName" to thread.name,
                     "throwable" to fakeThrowable,
-                    "syncWrite" to true,
                     "message" to fakeThrowable.message,
-                    "type" to "crash",
+                    "type" to "jvm_crash",
                     "loggerName" to DatadogExceptionHandler.LOGGER_NAME
                 )
             )
@@ -411,8 +352,110 @@ internal class DatadogExceptionHandlerTest {
         verify(mockPreviousHandler).uncaughtException(thread, fakeThrowable)
     }
 
+    // endregion
+
     @Test
-    fun `M register RUM Error W RumMonitor registered { exception with message }`() {
+    fun `M wait for the executor to idle W exception caught`() {
+        // Given
+        val mockScheduledThreadExecutor: ThreadPoolExecutor = mock()
+        (Datadog.globalSdkCore as DatadogCore).coreFeature
+            .persistenceExecutorService = mockScheduledThreadExecutor
+        Thread.setDefaultUncaughtExceptionHandler(null)
+        testedHandler.register()
+        val currentThread = Thread.currentThread()
+
+        // When
+        testedHandler.uncaughtException(currentThread, fakeThrowable)
+
+        // Then
+        verify(mockScheduledThreadExecutor)
+            .waitToIdle(DatadogExceptionHandler.MAX_WAIT_FOR_IDLE_TIME_IN_MS)
+        verify(logger.mockInternalLogger, never()).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE
+        )
+    }
+
+    @Test
+    fun `M log warning message W exception caught { executor could not be idled }`() {
+        // Given
+        val mockScheduledThreadExecutor: ThreadPoolExecutor = mock {
+            whenever(it.taskCount).thenReturn(2)
+            whenever(it.completedTaskCount).thenReturn(0)
+        }
+        (Datadog.globalSdkCore as DatadogCore).coreFeature
+            .persistenceExecutorService = mockScheduledThreadExecutor
+        Thread.setDefaultUncaughtExceptionHandler(null)
+        testedHandler.register()
+        val currentThread = Thread.currentThread()
+
+        // When
+        testedHandler.uncaughtException(currentThread, fakeThrowable)
+
+        // Then
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE
+        )
+    }
+
+    @Test
+    fun `M schedule the worker W logging an exception`() {
+        // Given
+        whenever(
+            mockWorkManager.enqueueUniqueWork(
+                ArgumentMatchers.anyString(),
+                any(),
+                any<OneTimeWorkRequest>()
+            )
+        ) doReturn mock()
+
+        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
+        Thread.setDefaultUncaughtExceptionHandler(null)
+        testedHandler.register()
+        val currentThread = Thread.currentThread()
+
+        // When
+        testedHandler.uncaughtException(currentThread, fakeThrowable)
+
+        // Then
+        verify(mockWorkManager)
+            .enqueueUniqueWork(
+                eq(UPLOAD_WORKER_NAME),
+                eq(ExistingWorkPolicy.REPLACE),
+                argThat<OneTimeWorkRequest> {
+                    this.workSpec.workerClassName == UploadWorker::class.java.canonicalName &&
+                        this.tags.contains(TAG_DATADOG_UPLOAD)
+                }
+            )
+    }
+
+    // region Forward to RUM
+
+    @Test
+    fun `M log dev info W caught exception { no RUM feature registered }`() {
+        // Given
+        whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn null
+
+        Thread.setDefaultUncaughtExceptionHandler(null)
+        testedHandler.register()
+        val currentThread = Thread.currentThread()
+
+        // When
+        testedHandler.uncaughtException(currentThread, fakeThrowable)
+
+        // Then
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            DatadogExceptionHandler.MISSING_RUM_FEATURE_INFO
+        )
+    }
+
+    @Test
+    fun `M register RUM Error W RUM feature is registered { exception with message }`() {
         // Given
         val currentThread = Thread.currentThread()
 
@@ -420,16 +463,27 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         // Then
-        verify(rumMonitor.mockInstance).addCrash(
-            fakeThrowable.message!!,
-            RumErrorSource.SOURCE,
-            fakeThrowable
-        )
+        argumentCaptor<Any> {
+            verify(mockRumFeatureScope).sendEvent(capture())
+
+            assertThat(lastValue).isInstanceOf(Map::class.java)
+
+            @Suppress("UNCHECKED_CAST")
+            val crashEvent = lastValue as Map<String, Any?>
+
+            assertThat(crashEvent).isEqualTo(
+                mapOf(
+                    "type" to "jvm_crash",
+                    "throwable" to fakeThrowable,
+                    "message" to fakeThrowable.message
+                )
+            )
+        }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
     }
 
     @RepeatedTest(2)
-    fun `M register RUM Error W RumMonitor registered { exception without message }`(
+    fun `M register RUM Error W RUM feature is registered { exception without message }`(
         forge: Forge
     ) {
         // Given
@@ -440,16 +494,27 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.uncaughtException(currentThread, throwable)
 
         // Then
-        verify(rumMonitor.mockInstance).addCrash(
-            "Application crash detected: ${throwable.javaClass.canonicalName}",
-            RumErrorSource.SOURCE,
-            throwable
-        )
+        argumentCaptor<Any> {
+            verify(mockRumFeatureScope).sendEvent(capture())
+
+            assertThat(lastValue).isInstanceOf(Map::class.java)
+
+            @Suppress("UNCHECKED_CAST")
+            val crashEvent = lastValue as Map<String, Any?>
+
+            assertThat(crashEvent).isEqualTo(
+                mapOf(
+                    "type" to "jvm_crash",
+                    "throwable" to throwable,
+                    "message" to "Application crash detected: ${throwable.javaClass.canonicalName}"
+                )
+            )
+        }
         verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
     }
 
     @Test
-    fun `M register RUM Error W RumMonitor registered { exception without message or class }`() {
+    fun `M register RUM Error W RUM feature is registered { exception without message or class }`() {
         // Given
         val currentThread = Thread.currentThread()
         val throwable = object : RuntimeException() {}
@@ -458,49 +523,26 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.uncaughtException(currentThread, throwable)
 
         // Then
-        verify(rumMonitor.mockInstance).addCrash(
-            "Application crash detected: ${throwable.javaClass.simpleName}",
-            RumErrorSource.SOURCE,
-            throwable
-        )
-        verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
-    }
-
-    @Test
-    fun `M not add RUM information W no RUM Monitor registered`() {
-        // Given
-        val currentThread = Thread.currentThread()
-        GlobalRum.isRegistered.set(false)
-        val now = System.currentTimeMillis()
-
-        // When
-        testedHandler.uncaughtException(currentThread, fakeThrowable)
-
-        // Then
         argumentCaptor<Any> {
-            verify(mockLogsFeatureScope).sendEvent(capture())
+            verify(mockRumFeatureScope).sendEvent(capture())
 
             assertThat(lastValue).isInstanceOf(Map::class.java)
 
             @Suppress("UNCHECKED_CAST")
-            val logEvent =
-                (lastValue as Map<String, Any?>).toMutableMap()
-            val timestamp = logEvent.remove("timestamp") as? Long
+            val crashEvent = lastValue as Map<String, Any?>
 
-            assertThat(timestamp).isCloseTo(now, Offset.offset(200))
-            assertThat(logEvent).isEqualTo(
+            assertThat(crashEvent).isEqualTo(
                 mapOf(
-                    "threadName" to currentThread.name,
-                    "throwable" to fakeThrowable,
-                    "syncWrite" to true,
-                    "message" to fakeThrowable.message,
-                    "type" to "crash",
-                    "loggerName" to DatadogExceptionHandler.LOGGER_NAME
+                    "type" to "jvm_crash",
+                    "throwable" to throwable,
+                    "message" to "Application crash detected: ${throwable.javaClass.simpleName}"
                 )
             )
         }
-        verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
+        verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
     }
+
+    // endregion
 
     private fun Forge.aThrowableWithoutMessage(): Throwable {
         val exceptionClass = anElementFrom(
@@ -526,14 +568,13 @@ internal class DatadogExceptionHandlerTest {
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
         val mainLooper = MainLooperTestConfiguration()
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, rumMonitor, mainLooper)
+            return listOf(logger, appContext, mainLooper)
         }
     }
 }

@@ -6,6 +6,9 @@
 
 package com.datadog.android.sessionreplay.net
 
+import com.datadog.android.sessionreplay.gson.safeGetAsJsonArray
+import com.datadog.android.sessionreplay.gson.safeGetAsJsonObject
+import com.datadog.android.sessionreplay.gson.safeGetAsLong
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.utils.SessionReplayRumContext
@@ -15,25 +18,25 @@ import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 
 /**
- *  Maps a batch to a List<Pair<MobileSegment, SerializedMobileSegment>> for uploading.
+ *  Maps a batch to a Pair<MobileSegment, SerializedMobileSegment> for uploading.
  *  This class is meant for internal usage.
  */
 class BatchesToSegmentsMapper {
 
     @Suppress("UndocumentedPublicFunction")
-    fun map(batchData: List<ByteArray>): List<Pair<MobileSegment, JsonObject>> {
+    fun map(batchData: List<ByteArray>): Pair<MobileSegment, JsonObject>? {
         return groupBatchDataIntoSegments(batchData)
     }
 
     // region Internal
 
-    private fun groupBatchDataIntoSegments(batchData: List<ByteArray>):
-        List<Pair<MobileSegment, JsonObject>> {
-        return batchData
+    private fun groupBatchDataIntoSegments(batchData: List<ByteArray>): Pair<MobileSegment, JsonObject>? {
+        val reducedEnrichedRecord = batchData
+            .asSequence()
             .mapNotNull {
                 @Suppress("SwallowedException")
                 try {
-                    JsonParser.parseString(String(it)).asJsonObject
+                    JsonParser.parseString(String(it)).safeGetAsJsonObject()
                 } catch (e: JsonParseException) {
                     // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
                     null
@@ -42,73 +45,109 @@ class BatchesToSegmentsMapper {
                     null
                 }
             }
-            .map {
-                val applicationId = it.get(EnrichedRecord.APPLICATION_ID_KEY).asString
-                val sessionId = it.get(EnrichedRecord.SESSION_ID_KEY).asString
-                val viewId = it.get(EnrichedRecord.VIEW_ID_KEY).asString
-                val context = SessionReplayRumContext(applicationId, sessionId, viewId)
-                val records = it.get(EnrichedRecord.RECORDS_KEY).asJsonArray
-                Pair(context, records)
-            }
-            .groupBy { it.first }
-            .mapValues {
-                it.value.fold(JsonArray()) { acc, pair ->
-                    acc.addAll(pair.second)
-                    acc
+            .mapNotNull {
+                val records = it.records()
+                val rumContext = it.rumContext()
+                if (records == null || rumContext == null || records.isEmpty) {
+                    null
+                } else {
+                    Pair(rumContext, records)
                 }
             }
-            .filter { !it.value.isEmpty }
-            .mapNotNull { entry ->
-                @Suppress("SwallowedException")
-                try {
-                    groupToSegmentsPair(entry)
-                } catch (e: JsonParseException) {
-                    // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
-                    null
-                } catch (e: IllegalStateException) {
-                    // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
-                    null
-                }
-            }
+            .reduceOrNull { accumulator, pair ->
+                val records = accumulator.second
+                val newRecords = pair.second
+                records.addAll(newRecords)
+                Pair(accumulator.first, records)
+            } ?: return null
+
+        return mapToSegment(reducedEnrichedRecord.first, reducedEnrichedRecord.second)
     }
 
-    private fun groupToSegmentsPair(entry: Map.Entry<SessionReplayRumContext, JsonArray>):
-        Pair<MobileSegment, JsonObject> {
-        val records = entry.value
-            .map { it.asJsonObject }
-            .sortedBy {
-                it.getAsJsonPrimitive(TIMESTAMP_KEY).asLong
+    @Suppress("ReturnCount")
+    private fun mapToSegment(rumContext: SessionReplayRumContext, records: JsonArray):
+        Pair<MobileSegment, JsonObject>? {
+        val orderedRecords = records
+            .asSequence()
+            .mapNotNull {
+                it.safeGetAsJsonObject()
+            }
+            .mapNotNull {
+                val timestamp = it.timestamp()
+                if (timestamp == null) {
+                    null
+                } else {
+                    Pair(it, timestamp)
+                }
+            }
+            .sortedBy { it.second }
+            .map { it.first }
+            .fold(JsonArray()) { acc, jsonObject ->
+                acc.add(jsonObject)
+                acc
             }
 
-        // we are filtering out empty records so we are safe to call first/last functions
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        val startTimestamp = records.first().getAsJsonPrimitive(TIMESTAMP_KEY).asLong
+        if (orderedRecords.isEmpty) {
+            return null
+        }
 
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        val stopTimestamp = records.last().getAsJsonPrimitive(TIMESTAMP_KEY).asLong
-        val hasFullSnapshotRecord = hasFullSnapshotRecord(records)
+        val startTimestamp = orderedRecords.firstOrNull()?.safeGetAsJsonObject()?.timestamp()
+        val stopTimestamp = orderedRecords.lastOrNull()?.safeGetAsJsonObject()?.timestamp()
+
+        if (startTimestamp == null || stopTimestamp == null) {
+            // this is just to avoid having kotlin warnings but the elements
+            // without timestamp property were already removed in the logic above
+            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
+            return null
+        }
+
+        val hasFullSnapshotRecord = hasFullSnapshotRecord(orderedRecords)
         val segment = MobileSegment(
-            application = MobileSegment.Application(entry.key.applicationId),
-            session = MobileSegment.Session(entry.key.sessionId),
-            view = MobileSegment.View(entry.key.viewId),
+            application = MobileSegment.Application(rumContext.applicationId),
+            session = MobileSegment.Session(rumContext.sessionId),
+            view = MobileSegment.View(rumContext.viewId),
             start = startTimestamp,
             end = stopTimestamp,
-            recordsCount = records.size.toLong(),
+            recordsCount = orderedRecords.size().toLong(),
             // TODO: RUMM-2518 Find a way or alternative to provide a reliable indexInView
             indexInView = null,
             hasFullSnapshot = hasFullSnapshotRecord,
             source = MobileSegment.Source.ANDROID,
             records = emptyList()
         )
-        val segmentAsJsonObject = segment.toJson().asJsonObject
-        segmentAsJsonObject.add(RECORDS_KEY, entry.value)
+        val segmentAsJsonObject = segment.toJson().safeGetAsJsonObject() ?: return null
+        segmentAsJsonObject.add(RECORDS_KEY, orderedRecords)
         return Pair(segment, segmentAsJsonObject)
     }
 
-    private fun hasFullSnapshotRecord(records: List<JsonObject>) =
+    private fun hasFullSnapshotRecord(records: JsonArray) =
         records.firstOrNull {
-            it.getAsJsonPrimitive(RECORD_TYPE_KEY).asLong == FULL_SNAPSHOT_RECORD_TYPE
+            it.asJsonObject.getAsJsonPrimitive(RECORD_TYPE_KEY)?.safeGetAsLong() ==
+                FULL_SNAPSHOT_RECORD_TYPE
         } != null
+
+    private fun JsonObject.records(): JsonArray? {
+        return get(EnrichedRecord.RECORDS_KEY)?.safeGetAsJsonArray()
+    }
+
+    private fun JsonObject.timestamp(): Long? {
+        return getAsJsonPrimitive(TIMESTAMP_KEY)?.safeGetAsLong()
+    }
+
+    private fun JsonObject.rumContext(): SessionReplayRumContext? {
+        val applicationId = get(EnrichedRecord.APPLICATION_ID_KEY)?.asString
+        val sessionId = get(EnrichedRecord.SESSION_ID_KEY)?.asString
+        val viewId = get(EnrichedRecord.VIEW_ID_KEY)?.asString
+        if (applicationId == null || sessionId == null || viewId == null) {
+            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
+            return null
+        }
+        return SessionReplayRumContext(
+            applicationId = applicationId,
+            sessionId = sessionId,
+            viewId = viewId
+        )
+    }
 
     // endregion
 

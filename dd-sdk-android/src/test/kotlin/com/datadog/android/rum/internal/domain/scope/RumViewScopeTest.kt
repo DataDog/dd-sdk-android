@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.domain.scope
 
 import android.app.Activity
 import android.os.Build
-import android.util.Log
 import android.view.Display
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -16,7 +15,6 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
-import com.datadog.android.log.internal.utils.DEBUG_WITH_TELEMETRY_LEVEL
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -39,12 +37,13 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.TimeInfo
@@ -252,8 +251,8 @@ internal class RumViewScopeTest {
             .thenReturn(fakeHasReplay)
         whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
-        whenever(mockRumFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
 
@@ -521,11 +520,11 @@ internal class RumViewScopeTest {
                 .isEqualTo(anotherScope.getRumContext().actionId)
         }
 
-        verify(logger.mockSdkLogHandler)
-            .handleLog(
-                DEBUG_WITH_TELEMETRY_LEVEL,
-                RumViewScope.RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.DEBUG,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            RumViewScope.RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE
+        )
     }
 
     @Test
@@ -566,8 +565,6 @@ internal class RumViewScopeTest {
             assertThat(rumContext["view_url"]).isNull()
             assertThat(rumContext["action_id"]).isNull()
         }
-
-        verifyZeroInteractions(logger.mockSdkLogHandler)
     }
 
     @Test
@@ -617,11 +614,11 @@ internal class RumViewScopeTest {
                 .isNull()
         }
 
-        verify(logger.mockSdkLogHandler)
-            .handleLog(
-                DEBUG_WITH_TELEMETRY_LEVEL,
-                RumViewScope.RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.DEBUG,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            RumViewScope.RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE
+        )
     }
 
     // endregion
@@ -3025,8 +3022,9 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
 
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             RumViewScope.ACTION_DROPPED_WARNING.format(
                 Locale.US,
                 (fakeEvent as RumRawEvent.StartAction).type,
@@ -3034,7 +3032,7 @@ internal class RumViewScopeTest {
             )
         )
 
-        verifyNoMoreInteractions(logger.mockDevLogHandler)
+        verifyNoMoreInteractions(logger.mockInternalLogger)
     }
 
     @Test
@@ -3058,8 +3056,9 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
 
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             RumViewScope.ACTION_DROPPED_WARNING.format(
                 Locale.US,
                 (fakeEvent as RumRawEvent.StartAction).type,
@@ -3067,7 +3066,7 @@ internal class RumViewScopeTest {
             )
         )
 
-        verifyNoMoreInteractions(logger.mockDevLogHandler)
+        verifyNoMoreInteractions(logger.mockInternalLogger)
     }
 
     @Test
@@ -6877,8 +6876,9 @@ internal class RumViewScopeTest {
                     hasDuration(1)
                 }
         }
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             RumViewScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, testedScope.name)
         )
     }
@@ -6913,7 +6913,7 @@ internal class RumViewScopeTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

@@ -6,15 +6,15 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import android.util.Log
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aStringNotMatchingSet
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -73,16 +73,14 @@ internal class RumEventSourceExtTest {
         ViewEvent.Source.tryFromSource(fakeInvalidSource)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            eq(Log.ERROR),
+        verify(logger.mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.USER),
             eq(
                 UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
                     .format(Locale.US, fakeInvalidSource)
             ),
-            argThat { this is NoSuchElementException },
-            eq(emptyMap()),
-            eq(emptySet()),
-            eq(null)
+            argThat { this is NoSuchElementException }
         )
     }
 
@@ -107,16 +105,14 @@ internal class RumEventSourceExtTest {
         ActionEvent.Source.tryFromSource(fakeInvalidSource)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            eq(Log.ERROR),
+        verify(logger.mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.USER),
             eq(
                 UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
                     .format(Locale.US, fakeInvalidSource)
             ),
-            argThat { this is NoSuchElementException },
-            eq(emptyMap()),
-            eq(emptySet()),
-            eq(null)
+            argThat { this is NoSuchElementException }
         )
     }
 
@@ -126,7 +122,9 @@ internal class RumEventSourceExtTest {
 
     @Test
     fun `M resolve the ErrorEvent source W errorEventSource`() {
-        assertThat(ErrorEvent.ErrorEventSource.tryFromSource(fakeValidRumSource)?.toJson()?.asString)
+        assertThat(
+            ErrorEvent.ErrorEventSource.tryFromSource(fakeValidRumSource)?.toJson()?.asString
+        )
             .isEqualTo(fakeValidRumSource)
     }
 
@@ -141,16 +139,14 @@ internal class RumEventSourceExtTest {
         ErrorEvent.ErrorEventSource.tryFromSource(fakeInvalidSource)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            eq(Log.ERROR),
+        verify(logger.mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.USER),
             eq(
                 UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
                     .format(Locale.US, fakeInvalidSource)
             ),
-            argThat { this is NoSuchElementException },
-            eq(emptyMap()),
-            eq(emptySet()),
-            eq(null)
+            argThat { this is NoSuchElementException }
         )
     }
 
@@ -175,16 +171,14 @@ internal class RumEventSourceExtTest {
         ResourceEvent.Source.tryFromSource(fakeInvalidSource)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            eq(Log.ERROR),
+        verify(logger.mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.USER),
             eq(
                 UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
                     .format(Locale.US, fakeInvalidSource)
             ),
-            argThat { this is NoSuchElementException },
-            eq(emptyMap()),
-            eq(emptySet()),
-            eq(null)
+            argThat { this is NoSuchElementException }
         )
     }
 
@@ -209,23 +203,21 @@ internal class RumEventSourceExtTest {
         LongTaskEvent.Source.tryFromSource(fakeInvalidSource)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            eq(Log.ERROR),
+        verify(logger.mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.USER),
             eq(
                 UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
                     .format(Locale.US, fakeInvalidSource)
             ),
-            argThat { this is NoSuchElementException },
-            eq(emptyMap()),
-            eq(emptySet()),
-            eq(null)
+            argThat { this is NoSuchElementException }
         )
     }
 
     // endregion
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

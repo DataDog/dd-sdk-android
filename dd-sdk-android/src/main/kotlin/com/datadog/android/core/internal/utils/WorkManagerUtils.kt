@@ -13,7 +13,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import com.datadog.android.core.internal.data.upload.UploadWorker
-import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.v2.api.InternalLogger
 import java.lang.IllegalStateException
 import java.util.concurrent.TimeUnit
 
@@ -30,7 +30,12 @@ internal fun cancelUploadWorker(context: Context) {
         val workManager = WorkManager.getInstance(context)
         workManager.cancelAllWorkByTag(TAG_DATADOG_UPLOAD)
     } catch (e: IllegalStateException) {
-        sdkLogger.errorWithTelemetry(CANCEL_ERROR_MESSAGE, e)
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            CANCEL_ERROR_MESSAGE,
+            e
+        )
     }
 }
 
@@ -51,9 +56,18 @@ internal fun triggerUploadWorker(context: Context) {
             ExistingWorkPolicy.REPLACE,
             uploadWorkRequest
         )
-        sdkLogger.i(UPLOAD_WORKER_WAS_SCHEDULED)
+        internalLogger.log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.MAINTAINER,
+            UPLOAD_WORKER_WAS_SCHEDULED
+        )
     } catch (e: Exception) {
-        sdkLogger.errorWithTelemetry(SETUP_ERROR_MESSAGE, e)
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            SETUP_ERROR_MESSAGE,
+            e
+        )
     }
 }
 

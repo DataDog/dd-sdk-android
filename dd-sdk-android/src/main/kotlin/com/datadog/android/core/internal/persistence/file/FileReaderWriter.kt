@@ -6,8 +6,8 @@
 
 package com.datadog.android.core.internal.persistence.file
 
-import com.datadog.android.log.Logger
 import com.datadog.android.security.Encryption
+import com.datadog.android.v2.api.InternalLogger
 
 internal interface FileReaderWriter : FileWriter, FileReader {
     companion object {
@@ -16,7 +16,7 @@ internal interface FileReaderWriter : FileWriter, FileReader {
          * Creates either plain [PlainFileReaderWriter] or [PlainFileReaderWriter] wrapped in
          * [EncryptedFileReaderWriter] if encryption is provided.
          */
-        fun create(internalLogger: Logger, encryption: Encryption?): FileReaderWriter {
+        fun create(internalLogger: InternalLogger, encryption: Encryption?): FileReaderWriter {
             return if (encryption == null) {
                 PlainFileReaderWriter(internalLogger)
             } else {

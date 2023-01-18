@@ -11,7 +11,7 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.utils.cancelUploadWorker
 import com.datadog.android.core.internal.utils.isWorkManagerInitialized
 import com.datadog.android.core.internal.utils.triggerUploadWorker
-import com.datadog.android.core.model.NetworkInfo
+import com.datadog.android.v2.api.context.NetworkInfo
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 

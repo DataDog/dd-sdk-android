@@ -8,8 +8,8 @@ package com.datadog.android.v2.core.internal.net
 
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.system.AndroidInfoProvider
-import com.datadog.android.log.Logger
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
 import com.nhaarman.mockitokotlin2.any
@@ -64,7 +64,7 @@ internal class DataOkHttpUploaderTest {
     lateinit var mockRequestFactory: RequestFactory
 
     @Mock
-    lateinit var mockLogger: Logger
+    lateinit var mockLogger: InternalLogger
 
     @Mock
     lateinit var mockCallFactory: Call.Factory
@@ -495,6 +495,51 @@ internal class DataOkHttpUploaderTest {
         verifyRequest(fakeDatadogRequest)
     }
 
+    @Test
+    fun `M return RequestCreationError W upload() { request factory throws }`(
+        @Forgery fakeException: Exception,
+        @StringForgery batch: List<String>,
+        @StringForgery batchMeta: String
+    ) {
+        // Given
+        val batchData = batch.map { it.toByteArray() }
+        val batchMetadata = batchMeta.toByteArray()
+        whenever(mockRequestFactory.create(fakeContext, batchData, batchMetadata))
+            .doThrow(fakeException)
+
+        // When
+        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.REQUEST_CREATION_ERROR)
+        verifyZeroInteractions(mockCallFactory)
+    }
+
+    @Test
+    fun `M log the exception to telemetry W upload() { request factory throws }`(
+        @Forgery fakeException: Exception,
+        @StringForgery batch: List<String>,
+        @StringForgery batchMeta: String
+    ) {
+        // Given
+        val batchData = batch.map { it.toByteArray() }
+        val batchMetadata = batchMeta.toByteArray()
+        whenever(mockRequestFactory.create(fakeContext, batchData, batchMetadata))
+            .doThrow(fakeException)
+
+        // When
+        testedUploader.upload(fakeContext, batchData, batchMetadata)
+
+        // Then
+        verify(mockLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            "Unable to create the request due to probably bad data format." +
+                " The batch will be dropped.",
+            fakeException
+        )
+    }
+
     // endregion
 
     @Test
@@ -523,7 +568,9 @@ internal class DataOkHttpUploaderTest {
         testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        verify(mockLogger).w(
+        verify(mockLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
             DataOkHttpUploader.WARNING_USER_AGENT_HEADER_RESERVED
         )
     }

@@ -6,7 +6,8 @@
 
 package com.datadog.android.v2.core.internal
 
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.v2.api.InternalLogger
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.util.Locale
@@ -21,7 +22,12 @@ internal class Sha256HashGenerator : HashGenerator {
 
             hashBytes.joinToString(separator = "") { "%02x".format(Locale.US, it) }
         } catch (e: NoSuchAlgorithmException) {
-            devLogger.e(SHA_256_HASH_GENERATION_ERROR, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                SHA_256_HASH_GENERATION_ERROR,
+                e
+            )
             null
         }
     }

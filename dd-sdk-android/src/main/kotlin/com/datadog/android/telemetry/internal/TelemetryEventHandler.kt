@@ -10,8 +10,8 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
-import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
@@ -23,6 +23,7 @@ import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.storage.DataWriter
@@ -109,12 +110,20 @@ internal class TelemetryEventHandler(
         val eventIdentity = event.identity
 
         if (seenInCurrentSession.contains(eventIdentity)) {
-            sdkLogger.i(ALREADY_SEEN_EVENT_MESSAGE.format(Locale.US, eventIdentity))
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.MAINTAINER,
+                ALREADY_SEEN_EVENT_MESSAGE.format(Locale.US, eventIdentity)
+            )
             return false
         }
 
         if (seenInCurrentSession.size >= maxEventCountPerSession) {
-            sdkLogger.i(MAX_EVENT_NUMBER_REACHED_MESSAGE)
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.MAINTAINER,
+                MAX_EVENT_NUMBER_REACHED_MESSAGE
+            )
             return false
         }
 

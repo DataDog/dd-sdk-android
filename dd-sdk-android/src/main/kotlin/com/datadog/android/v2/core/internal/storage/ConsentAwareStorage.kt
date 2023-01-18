@@ -42,6 +42,7 @@ internal class ConsentAwareStorage(
     @WorkerThread
     override fun writeCurrentBatch(
         datadogContext: DatadogContext,
+        forceNewBatch: Boolean,
         callback: (EventBatchWriter) -> Unit
     ) {
         val orchestrator = when (datadogContext.trackingConsent) {
@@ -53,7 +54,7 @@ internal class ConsentAwareStorage(
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // command is never null
             executorService.submit {
-                val batchFile = orchestrator?.getWritableFile()
+                val batchFile = orchestrator?.getWritableFile(forceNewBatch)
                 val metadataFile = if (batchFile != null) {
                     orchestrator.getMetadataFile(batchFile)
                 } else {
@@ -78,8 +79,7 @@ internal class ConsentAwareStorage(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
                 ERROR_WRITE_CONTEXT_EXECUTION_REJECTED,
-                rje,
-                emptyMap()
+                rje
             )
         }
     }
@@ -179,9 +179,7 @@ internal class ConsentAwareStorage(
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                WARNING_DELETE_FAILED.format(Locale.US, batchFile.path),
-                null,
-                emptyMap()
+                WARNING_DELETE_FAILED.format(Locale.US, batchFile.path)
             )
         }
     }
@@ -193,9 +191,7 @@ internal class ConsentAwareStorage(
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                WARNING_DELETE_FAILED.format(Locale.US, metadataFile.path),
-                null,
-                emptyMap()
+                WARNING_DELETE_FAILED.format(Locale.US, metadataFile.path)
             )
         }
     }

@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal
 /**
  * Source type of the error (the language or platform impacting the error stacktrace format).
  * @see [RumMonitor]
-*/
+ */
 internal enum class RumErrorSourceType {
     ANDROID,
     BROWSER,

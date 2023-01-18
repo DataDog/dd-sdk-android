@@ -9,7 +9,7 @@ package com.datadog.android.core.internal.persistence.file.advanced
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.utils.retryWithDelay
-import com.datadog.android.log.Logger
+import com.datadog.android.v2.api.InternalLogger
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -21,15 +21,23 @@ internal class MoveDataMigrationOperation(
     internal val fromDir: File?,
     internal val toDir: File?,
     internal val fileMover: FileMover,
-    internal val internalLogger: Logger
+    internal val internalLogger: InternalLogger
 ) : DataMigrationOperation {
 
     @WorkerThread
     override fun run() {
         if (fromDir == null) {
-            internalLogger.w(WARN_NULL_SOURCE_DIR)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                WARN_NULL_SOURCE_DIR
+            )
         } else if (toDir == null) {
-            internalLogger.w(WARN_NULL_DEST_DIR)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                WARN_NULL_DEST_DIR
+            )
         } else {
             retryWithDelay(MAX_RETRY, RETRY_DELAY_NS) {
                 fileMover.moveFiles(fromDir, toDir)

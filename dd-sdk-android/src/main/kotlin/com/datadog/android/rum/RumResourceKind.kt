@@ -29,9 +29,8 @@ enum class RumResourceKind(internal val value: String) {
     MEDIA("media"),
     OTHER("other");
 
-    companion object {
+    internal companion object {
 
-        @JvmStatic
         internal fun fromMimeType(mimeType: String): RumResourceKind {
             val baseType = mimeType.substringBefore('/').lowercase(Locale.US)
             val subtype = mimeType.substringAfter('/').substringBefore(';').lowercase(Locale.US)

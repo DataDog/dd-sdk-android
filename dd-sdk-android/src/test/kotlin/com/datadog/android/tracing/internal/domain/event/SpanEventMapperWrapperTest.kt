@@ -6,11 +6,11 @@
 
 package com.datadog.android.tracing.internal.domain.event
 
-import android.util.Log
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.tracing.model.SpanEvent
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -87,8 +87,9 @@ internal class SpanEventMapperWrapperTest {
         testedEventMapper.map(mockSpanEvent)
 
         // THEN
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             SpanEventMapperWrapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(
                 Locale.US,
                 mockSpanEvent.toString()
@@ -97,7 +98,7 @@ internal class SpanEventMapperWrapperTest {
     }
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

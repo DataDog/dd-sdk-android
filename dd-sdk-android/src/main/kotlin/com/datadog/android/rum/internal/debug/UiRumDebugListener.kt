@@ -23,10 +23,11 @@ import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import androidx.core.view.setPadding
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
+import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 import kotlin.math.pow
 
@@ -40,7 +41,9 @@ internal class UiRumDebugListener :
     private val advancedRumMonitor by lazy {
         val monitor = GlobalRum.get() as? AdvancedRumMonitor
         if (monitor == null) {
-            devLogger.w(
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 MISSING_RUM_MONITOR_TYPE.format(
                     Locale.US,
                     AdvancedRumMonitor::class.qualifiedName
@@ -69,7 +72,11 @@ internal class UiRumDebugListener :
 
         val contentView = findContentView(activity)
         if (contentView == null) {
-            devLogger.w(CANNOT_FIND_CONTENT_VIEW_MESSAGE)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                CANNOT_FIND_CONTENT_VIEW_MESSAGE
+            )
             return
         }
 

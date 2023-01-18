@@ -7,10 +7,8 @@
 package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.core.internal.event.NoOpEventMapper
-import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.event.EventMapper
-import com.datadog.android.log.internal.utils.warningWithTelemetry
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
@@ -22,6 +20,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 
 internal data class RumEventMapper(
@@ -60,7 +59,12 @@ internal data class RumEventMapper(
             is TelemetryDebugEvent,
             is TelemetryErrorEvent -> event
             else -> {
-                sdkLogger.warningWithTelemetry(
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    targets = listOf(
+                        InternalLogger.Target.MAINTAINER,
+                        InternalLogger.Target.TELEMETRY
+                    ),
                     NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
                         .format(Locale.US, event.javaClass.simpleName)
                 )
@@ -80,17 +84,23 @@ internal data class RumEventMapper(
         // but it can happen that if used from Java code to have null values. In this case we will
         // log a warning and we will use the original event.
         return if (event is ViewEvent && (mappedEvent == null || mappedEvent != event)) {
-            devLogger.w(
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event)
             )
             event
         } else if (mappedEvent == null) {
-            devLogger.w(
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event)
             )
             null
         } else if (mappedEvent !== event) {
-            devLogger.w(
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, event)
             )
             null

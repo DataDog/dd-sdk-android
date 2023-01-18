@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.data.upload
 
 import android.content.Context
-import android.util.Log
 import androidx.work.ListenableWorker
 import androidx.work.Worker
 import androidx.work.WorkerParameters
@@ -15,9 +14,10 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
@@ -539,8 +539,9 @@ internal class UploadWorkerTest {
         val result = testedWorker.doWork()
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Datadog.MESSAGE_NOT_INITIALIZED
         )
         verifyZeroInteractions(mockFeatureA, mockBatchReaderA, mockUploaderA)
@@ -630,6 +631,7 @@ internal class UploadWorkerTest {
     ) : Storage {
         override fun writeCurrentBatch(
             datadogContext: DatadogContext,
+            forceNewBatch: Boolean,
             callback: (EventBatchWriter) -> Unit
         ) {
             fail("we don't expect this one to be called")
@@ -659,7 +661,7 @@ internal class UploadWorkerTest {
     // endregion
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
 
         @TestConfigurationsProvider

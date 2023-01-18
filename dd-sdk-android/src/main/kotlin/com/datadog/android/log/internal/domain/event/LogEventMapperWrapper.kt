@@ -6,9 +6,10 @@
 
 package com.datadog.android.log.internal.domain.event
 
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.model.LogEvent
+import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 
 internal class LogEventMapperWrapper(
@@ -18,10 +19,18 @@ internal class LogEventMapperWrapper(
     override fun map(event: LogEvent): LogEvent? {
         val mappedEvent = wrappedEventMapper.map(event)
         return if (mappedEvent == null) {
-            devLogger.w(EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event))
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event)
+            )
             null
         } else if (mappedEvent !== event) {
-            devLogger.w(NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, event))
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, event)
+            )
             null
         } else {
             mappedEvent

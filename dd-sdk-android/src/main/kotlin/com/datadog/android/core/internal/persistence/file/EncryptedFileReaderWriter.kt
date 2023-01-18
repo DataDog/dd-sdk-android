@@ -7,9 +7,9 @@
 package com.datadog.android.core.internal.persistence.file
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.security.Encryption
+import com.datadog.android.v2.api.InternalLogger
 import java.io.File
 
 internal class EncryptedFileReaderWriter(
@@ -25,14 +25,22 @@ internal class EncryptedFileReaderWriter(
         append: Boolean
     ): Boolean {
         if (append) {
-            sdkLogger.e(APPEND_MODE_NOT_SUPPORTED_MESSAGE)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                APPEND_MODE_NOT_SUPPORTED_MESSAGE
+            )
             return false
         }
 
         val encryptedData = encryption.encrypt(data)
 
         if (data.isNotEmpty() && encryptedData.isEmpty()) {
-            devLogger.e(BAD_ENCRYPTION_RESULT_MESSAGE)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                BAD_ENCRYPTION_RESULT_MESSAGE
+            )
             return false
         }
 

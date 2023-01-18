@@ -6,42 +6,29 @@
 
 package com.datadog.android.rum.internal.ndk
 
-import android.util.Log
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.file.FileReader
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
-import com.datadog.android.core.internal.system.AndroidInfoProvider
-import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.assertj.ErrorEventAssert
-import com.datadog.android.rum.assertj.ViewEventAssert
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
-import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.core.internal.storage.DataWriter
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.android.v2.api.context.NetworkInfo
+import com.datadog.android.v2.api.context.UserInfo
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.firstValue
-import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.isNull
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -56,6 +43,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.ArgumentCaptor
 import org.mockito.Captor
 import org.mockito.Mock
@@ -65,12 +54,10 @@ import org.mockito.quality.Strictness
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService
-import com.datadog.android.v2.api.context.UserInfo as UserInfoV2
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -82,16 +69,16 @@ internal class DatadogNdkCrashHandlerTest {
     lateinit var mockExecutorService: ExecutorService
 
     @Mock
-    lateinit var mockNdkCrashLogDeserializer: Deserializer<NdkCrashLog>
+    lateinit var mockNdkCrashLogDeserializer: Deserializer<String, NdkCrashLog>
 
     @Mock
-    lateinit var mockRumEventDeserializer: Deserializer<Any>
+    lateinit var mockRumEventDeserializer: Deserializer<String, JsonObject>
 
     @Mock
-    lateinit var mockNetworkInfoDeserializer: Deserializer<NetworkInfo>
+    lateinit var mockNetworkInfoDeserializer: Deserializer<String, NetworkInfo>
 
     @Mock
-    lateinit var mockUserInfoDeserializer: Deserializer<UserInfo>
+    lateinit var mockUserInfoDeserializer: Deserializer<String, UserInfo>
 
     @Mock
     lateinit var mockSdkCore: SdkCore
@@ -103,13 +90,7 @@ internal class DatadogNdkCrashHandlerTest {
     lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock
-    lateinit var mockRumWriter: DataWriter<Any>
-
-    @Mock
-    lateinit var mockRumEventBatchWriter: EventBatchWriter
-
-    @Mock
-    lateinit var mockLogHandler: LogHandler
+    lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockRumFileReader: BatchFileReader
@@ -119,14 +100,8 @@ internal class DatadogNdkCrashHandlerTest {
 
     lateinit var fakeNdkCacheDir: File
 
-    @Forgery
-    lateinit var fakeAndroidInfoProvider: AndroidInfoProvider
-
     @Captor
     lateinit var captureRunnable: ArgumentCaptor<Runnable>
-
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
 
     @TempDir
     lateinit var tempDir: File
@@ -154,11 +129,6 @@ internal class DatadogNdkCrashHandlerTest {
             mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
         ) doReturn mockRumFeatureScope
 
-        whenever(mockRumFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
-            callback.invoke(fakeDatadogContext, mockRumEventBatchWriter)
-        }
-
         testedHandler = DatadogNdkCrashHandler(
             tempDir,
             mockExecutorService,
@@ -166,11 +136,9 @@ internal class DatadogNdkCrashHandlerTest {
             mockRumEventDeserializer,
             mockNetworkInfoDeserializer,
             mockUserInfoDeserializer,
-            internalLogger = Logger(mockLogHandler),
-            mockTimeProvider,
+            mockInternalLogger,
             mockRumFileReader,
-            mockEnvFileReader,
-            fakeAndroidInfoProvider
+            mockEnvFileReader
         )
     }
 
@@ -277,12 +245,12 @@ internal class DatadogNdkCrashHandlerTest {
         File(fakeNdkCacheDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfo)
 
         // When
-        testedHandler.handleNdkCrash(mockSdkCore, mockRumWriter)
+        testedHandler.handleNdkCrash(mockSdkCore)
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
         captureRunnable.firstValue.run()
-        verifyZeroInteractions(mockSdkCore, mockRumWriter)
+        verifyZeroInteractions(mockSdkCore)
     }
 
     @Test
@@ -301,12 +269,12 @@ internal class DatadogNdkCrashHandlerTest {
         whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn null
 
         // When
-        testedHandler.handleNdkCrash(mockSdkCore, mockRumWriter)
+        testedHandler.handleNdkCrash(mockSdkCore)
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
         captureRunnable.firstValue.run()
-        verifyZeroInteractions(mockSdkCore, mockRumWriter, mockLogHandler)
+        verifyZeroInteractions(mockSdkCore, mockInternalLogger)
     }
 
     @Test
@@ -320,20 +288,20 @@ internal class DatadogNdkCrashHandlerTest {
         whenever(mockSdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)) doReturn null
 
         // When
-        testedHandler.handleNdkCrash(mockSdkCore, mockRumWriter)
+        testedHandler.handleNdkCrash(mockSdkCore)
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
         verifyZeroInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
 
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.INFO,
-                DatadogNdkCrashHandler.INFO_LOGS_FEATURE_NOT_REGISTERED
-            )
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            DatadogNdkCrashHandler.INFO_LOGS_FEATURE_NOT_REGISTERED
+        )
 
-        verifyZeroInteractions(mockRumWriter, mockLogHandler, mockLogsFeatureScope)
+        verifyZeroInteractions(mockInternalLogger, mockLogsFeatureScope)
     }
 
     @Test
@@ -347,14 +315,14 @@ internal class DatadogNdkCrashHandlerTest {
         val expectedLogEvent = createLogEvent(ndkCrashLog, null, null, null)
 
         // When
-        testedHandler.handleNdkCrash(mockSdkCore, mockRumWriter)
+        testedHandler.handleNdkCrash(mockSdkCore)
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
         verifyZeroInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
-        verifyZeroInteractions(mockRumWriter, mockLogHandler)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -376,14 +344,14 @@ internal class DatadogNdkCrashHandlerTest {
         val expectedLogEvent = createLogEvent(ndkCrashLog, networkInfo, userInfo, null)
 
         // When
-        testedHandler.handleNdkCrash(mockSdkCore, mockRumWriter)
+        testedHandler.handleNdkCrash(mockSdkCore)
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
         verifyZeroInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
-        verifyZeroInteractions(mockRumWriter, mockLogHandler)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -403,14 +371,14 @@ internal class DatadogNdkCrashHandlerTest {
         val expectedLogEvent = createLogEvent(ndkCrashLog, null, null, null)
 
         // When
-        testedHandler.handleNdkCrash(mockSdkCore, mockRumWriter)
+        testedHandler.handleNdkCrash(mockSdkCore)
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
         verifyZeroInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
-        verifyZeroInteractions(mockRumWriter, mockLogHandler)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -418,96 +386,38 @@ internal class DatadogNdkCrashHandlerTest {
         @StringForgery crashData: String,
         @StringForgery viewEventStr: String,
         @Forgery ndkCrashLog: NdkCrashLog,
-        @Forgery viewEvent: ViewEvent,
-        @Forgery fakeUserInfo: UserInfo,
-        forge: Forge
+        @Forgery fakeViewEvent: ViewEvent
     ) {
         // Given
-        val fakeServerOffset =
-            forge.aLong(min = -ndkCrashLog.timestamp, max = Long.MAX_VALUE - ndkCrashLog.timestamp)
-        whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeServerOffset)
         testedHandler.lastSerializedNdkCrashLog = crashData
         testedHandler.lastSerializedRumViewEvent = viewEventStr
         whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
-        val fakeViewEvent = viewEvent.copy(
-            date = System.currentTimeMillis() - forge.aLong(
-                min = 0L,
-                max = DatadogNdkCrashHandler.VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD - 1000
-            ),
-            usr = ViewEvent.Usr(
-                id = fakeUserInfo.id,
-                name = fakeUserInfo.name,
-                email = fakeUserInfo.email,
-                additionalProperties = fakeUserInfo.additionalProperties
-            )
-        )
 
         whenever(mockRumEventDeserializer.deserialize(viewEventStr))
-            .doReturn(fakeViewEvent)
+            .doReturn(fakeViewEvent.toJson().asJsonObject)
         val expectedLogEvent = createLogEvent(ndkCrashLog, null, null, fakeViewEvent)
 
         // When
-        testedHandler.handleNdkCrash(mockSdkCore, mockRumWriter)
+        testedHandler.handleNdkCrash(mockSdkCore)
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
         verifyZeroInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
-        argumentCaptor<Any> {
-            verify(mockRumWriter, times(2)).write(eq(mockRumEventBatchWriter), capture())
-
-            ErrorEventAssert.assertThat(firstValue as ErrorEvent)
-                .hasApplicationId(fakeViewEvent.application.id)
-                .hasSessionId(fakeViewEvent.session.id)
-                .hasView(
-                    fakeViewEvent.view.id,
-                    fakeViewEvent.view.name,
-                    fakeViewEvent.view.url
-                )
-                .hasMessage(
-                    DatadogNdkCrashHandler.LOG_CRASH_MSG.format(
-                        Locale.US,
-                        ndkCrashLog.signalName
-                    )
-                )
-                .hasStackTrace(ndkCrashLog.stacktrace)
-                .isCrash(true)
-                .hasErrorSource(RumErrorSource.SOURCE)
-                .hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
-                .hasTimestamp(ndkCrashLog.timestamp + fakeServerOffset)
-                .hasUserInfo(
-                    UserInfoV2(
-                        fakeViewEvent.usr?.id,
-                        fakeViewEvent.usr?.name,
-                        fakeViewEvent.usr?.email,
-                        fakeViewEvent.usr?.additionalProperties ?: mutableMapOf()
-                    )
-                )
-                .hasErrorType(ndkCrashLog.signalName)
-                .hasLiteSessionPlan()
-                .hasDeviceInfo(
-                    fakeAndroidInfoProvider.deviceName,
-                    fakeAndroidInfoProvider.deviceModel,
-                    fakeAndroidInfoProvider.deviceBrand,
-                    fakeAndroidInfoProvider.deviceType.toErrorSchemaType(),
-                    fakeAndroidInfoProvider.architecture
-                )
-                .hasOsInfo(
-                    fakeAndroidInfoProvider.osName,
-                    fakeAndroidInfoProvider.osVersion,
-                    fakeAndroidInfoProvider.osMajorVersion
-                )
-
-            ViewEventAssert.assertThat(secondValue as ViewEvent)
-                .hasVersion(fakeViewEvent.dd.documentVersion + 1)
-                .hasCrashCount((fakeViewEvent.view.crash?.count ?: 0) + 1)
-                .isActive(false)
-        }
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
     }
 
-    @Test
-    fun `𝕄 send log + RUM error 𝕎 handleNdkCrash() {with RUM last view, view without usr}`(
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            "missing_property",
+            "wrong_type",
+            "missing_id_property",
+            "wrong_id_type"
+        ]
+    )
+    fun `𝕄 send log + RUM view+error 𝕎 handleNdkCrash() {with corrupted RUM last view}`(
+        corruptionType: String,
         @StringForgery crashData: String,
         @StringForgery viewEventStr: String,
         @Forgery ndkCrashLog: NdkCrashLog,
@@ -515,169 +425,48 @@ internal class DatadogNdkCrashHandlerTest {
         forge: Forge
     ) {
         // Given
-        val fakeServerOffset =
-            forge.aLong(min = -ndkCrashLog.timestamp, max = Long.MAX_VALUE - ndkCrashLog.timestamp)
-        whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeServerOffset)
         testedHandler.lastSerializedNdkCrashLog = crashData
         testedHandler.lastSerializedRumViewEvent = viewEventStr
         whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
-        val fakeViewEvent = viewEvent.copy(
-            date = System.currentTimeMillis() - forge.aLong(
-                min = 0L,
-                max = DatadogNdkCrashHandler.VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD - 1000
-            ),
-            usr = null
-        )
+        val fakeViewJson = viewEvent.toJson().asJsonObject
 
-        whenever(mockRumEventDeserializer.deserialize(viewEventStr))
-            .doReturn(fakeViewEvent)
-        val expectedLogEvent = createLogEvent(ndkCrashLog, null, null, fakeViewEvent)
-
-        // When
-        testedHandler.handleNdkCrash(mockSdkCore, mockRumWriter)
-
-        // Then
-        verify(mockExecutorService).submit(captureRunnable.capture())
-        verifyZeroInteractions(mockSdkCore)
-        captureRunnable.firstValue.run()
-        argumentCaptor<Any> {
-            verify(mockRumWriter, times(2)).write(eq(mockRumEventBatchWriter), capture())
-
-            ErrorEventAssert.assertThat(firstValue as ErrorEvent)
-                .hasApplicationId(fakeViewEvent.application.id)
-                .hasSessionId(fakeViewEvent.session.id)
-                .hasView(
-                    fakeViewEvent.view.id,
-                    fakeViewEvent.view.name,
-                    fakeViewEvent.view.url
-                )
-                .hasMessage(
-                    DatadogNdkCrashHandler.LOG_CRASH_MSG.format(
-                        Locale.US,
-                        ndkCrashLog.signalName
-                    )
-                )
-                .hasStackTrace(ndkCrashLog.stacktrace)
-                .isCrash(true)
-                .hasErrorSource(RumErrorSource.SOURCE)
-                .hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
-                .hasTimestamp(ndkCrashLog.timestamp + fakeServerOffset)
-                .hasNoUserInfo()
-                .hasErrorType(ndkCrashLog.signalName)
-                .hasLiteSessionPlan()
-                .hasDeviceInfo(
-                    fakeAndroidInfoProvider.deviceName,
-                    fakeAndroidInfoProvider.deviceModel,
-                    fakeAndroidInfoProvider.deviceBrand,
-                    fakeAndroidInfoProvider.deviceType.toErrorSchemaType(),
-                    fakeAndroidInfoProvider.architecture
-                )
-                .hasOsInfo(
-                    fakeAndroidInfoProvider.osName,
-                    fakeAndroidInfoProvider.osVersion,
-                    fakeAndroidInfoProvider.osMajorVersion
-                )
-
-            ViewEventAssert.assertThat(secondValue as ViewEvent)
-                .hasVersion(fakeViewEvent.dd.documentVersion + 1)
-                .hasCrashCount((fakeViewEvent.view.crash?.count ?: 0) + 1)
-                .isActive(false)
-        }
-        verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
-    }
-
-    @Test
-    fun `𝕄 send log 𝕎 handleNdkCrash() {with RUM last view, view is too old}`(
-        @StringForgery crashData: String,
-        @StringForgery viewEventStr: String,
-        @Forgery ndkCrashLog: NdkCrashLog,
-        @Forgery viewEvent: ViewEvent,
-        @Forgery fakeUserInfo: UserInfo,
-        forge: Forge
-    ) {
-        // Given
-        val fakeServerOffset =
-            forge.aLong(min = -ndkCrashLog.timestamp, max = Long.MAX_VALUE - ndkCrashLog.timestamp)
-        whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeServerOffset)
-        testedHandler.lastSerializedNdkCrashLog = crashData
-        testedHandler.lastSerializedRumViewEvent = viewEventStr
-        whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
-        val fakeViewEvent = viewEvent.copy(
-            date = System.currentTimeMillis() - forge.aLong(
-                min = DatadogNdkCrashHandler.VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD + 1
-            ),
-            usr = ViewEvent.Usr(
-                id = fakeUserInfo.id,
-                name = fakeUserInfo.name,
-                email = fakeUserInfo.email,
-                additionalProperties = fakeUserInfo.additionalProperties
+        val corruptedProperty = forge.anElementFrom("application", "session", "view")
+        when (corruptionType) {
+            "missing_property" -> fakeViewJson.remove(corruptedProperty)
+            "wrong_type" -> fakeViewJson.add(
+                corruptedProperty,
+                forge.anElementFrom(JsonPrimitive(forge.anAlphabeticalString()), JsonArray())
             )
-        )
-        whenever(mockRumEventDeserializer.deserialize(viewEventStr))
-            .doReturn(fakeViewEvent)
-        val expectedLogEvent = createLogEvent(ndkCrashLog, null, null, fakeViewEvent)
-        val expectedErrorEventSource = with(fakeViewEvent.source) {
-            if (this != null) {
-                ErrorEvent.ErrorEventSource.fromJson(this.toJson().asString)
-            } else {
-                null
-            }
+            "missing_id_property" -> fakeViewJson.get(corruptedProperty)
+                .asJsonObject
+                .remove("id")
+            "wrong_id_type" -> fakeViewJson.get(corruptedProperty)
+                .asJsonObject.add(
+                    "id",
+                    forge.anElementFrom(JsonArray(), JsonObject())
+                )
         }
 
+        whenever(mockRumEventDeserializer.deserialize(viewEventStr))
+            .doReturn(fakeViewJson)
+
+        val expectedLogEvent = createLogEvent(ndkCrashLog, null, null, null)
+
         // When
-        testedHandler.handleNdkCrash(mockSdkCore, mockRumWriter)
+        testedHandler.handleNdkCrash(mockSdkCore)
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
         verifyZeroInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
-        argumentCaptor<Any> {
-            verify(mockRumWriter, times(1)).write(eq(mockRumEventBatchWriter), capture())
-
-            ErrorEventAssert.assertThat(firstValue as ErrorEvent)
-                .hasApplicationId(fakeViewEvent.application.id)
-                .hasSessionId(fakeViewEvent.session.id)
-                .hasView(
-                    fakeViewEvent.view.id,
-                    fakeViewEvent.view.name,
-                    fakeViewEvent.view.url
-                )
-                .hasMessage(
-                    DatadogNdkCrashHandler.LOG_CRASH_MSG.format(
-                        Locale.US,
-                        ndkCrashLog.signalName
-                    )
-                )
-                .hasStackTrace(ndkCrashLog.stacktrace)
-                .isCrash(true)
-                .hasErrorSource(RumErrorSource.SOURCE)
-                .hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
-                .hasTimestamp(ndkCrashLog.timestamp + fakeServerOffset)
-                .hasUserInfo(
-                    UserInfoV2(
-                        fakeViewEvent.usr?.id,
-                        fakeViewEvent.usr?.name,
-                        fakeViewEvent.usr?.email,
-                        fakeViewEvent.usr?.additionalProperties ?: mutableMapOf()
-                    )
-                )
-                .hasErrorType(ndkCrashLog.signalName)
-                .hasLiteSessionPlan()
-                .hasSource(expectedErrorEventSource)
-                .hasDeviceInfo(
-                    fakeAndroidInfoProvider.deviceName,
-                    fakeAndroidInfoProvider.deviceModel,
-                    fakeAndroidInfoProvider.deviceBrand,
-                    fakeAndroidInfoProvider.deviceType.toErrorSchemaType(),
-                    fakeAndroidInfoProvider.architecture
-                )
-                .hasOsInfo(
-                    fakeAndroidInfoProvider.osName,
-                    fakeAndroidInfoProvider.osVersion,
-                    fakeAndroidInfoProvider.osMajorVersion
-                )
-        }
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
+        verify(mockInternalLogger)
+            .log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.MAINTAINER),
+                eq(DatadogNdkCrashHandler.WARN_CANNOT_READ_VIEW_INFO_DATA),
+                throwable = any()
+            )
     }
 
     @Test
@@ -685,39 +474,28 @@ internal class DatadogNdkCrashHandlerTest {
         @StringForgery crashData: String,
         @StringForgery viewEventStr: String,
         @Forgery ndkCrashLog: NdkCrashLog,
-        @Forgery viewEvent: ViewEvent,
-        forge: Forge
+        @Forgery fakeViewEvent: ViewEvent
     ) {
         // Given
-        val fakeServerOffset =
-            forge.aLong(min = -ndkCrashLog.timestamp, max = Long.MAX_VALUE - ndkCrashLog.timestamp)
-        whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeServerOffset)
+        whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn null
         testedHandler.lastSerializedNdkCrashLog = crashData
         testedHandler.lastSerializedRumViewEvent = viewEventStr
         whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
-        val fakeViewEvent = viewEvent.copy(
-            date = System.currentTimeMillis() - forge.aLong(
-                min = 0L,
-                max = DatadogNdkCrashHandler.VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD - 1000
-            )
-        )
         whenever(mockRumEventDeserializer.deserialize(viewEventStr))
-            .doReturn(fakeViewEvent)
-        whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn null
+            .doReturn(fakeViewEvent.toJson().asJsonObject)
 
         // When
-        testedHandler.handleNdkCrash(mockSdkCore, mockRumWriter)
+        testedHandler.handleNdkCrash(mockSdkCore)
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
         verifyZeroInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
-        verifyZeroInteractions(mockRumWriter, mockRumEventBatchWriter)
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.INFO,
-                DatadogNdkCrashHandler.INFO_RUM_FEATURE_NOT_REGISTERED
-            )
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            DatadogNdkCrashHandler.INFO_RUM_FEATURE_NOT_REGISTERED
+        )
     }
 
     // region Internal
@@ -742,29 +520,17 @@ internal class DatadogNdkCrashHandlerTest {
         }
         return mapOf(
             "loggerName" to DatadogNdkCrashHandler.LOGGER_NAME,
-            "type" to "crash",
+            "type" to "ndk_crash",
             "message" to DatadogNdkCrashHandler.LOG_CRASH_MSG.format(
                 Locale.US,
                 ndkCrashLog.signalName
             ),
             "attributes" to attributes,
             "timestamp" to ndkCrashLog.timestamp,
-            "bundleWithTraces" to false,
-            "bundleWithRum" to false,
             "networkInfo" to networkInfo,
             "userInfo" to userInfo
         )
     }
 
     // endregion
-
-    companion object {
-        val logger = LoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
-    }
 }

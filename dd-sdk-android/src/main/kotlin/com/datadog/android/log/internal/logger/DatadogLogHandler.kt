@@ -8,12 +8,13 @@ package com.datadog.android.log.internal.logger
 
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.storage.DataWriter
@@ -67,7 +68,11 @@ internal class DatadogLogHandler(
                     }
                 }
             } else {
-                devLogger.i("Requested to write log, but Logs feature is not registered.")
+                internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    InternalLogger.Target.USER,
+                    "Requested to write log, but Logs feature is not registered."
+                )
             }
         }
 
@@ -114,7 +119,11 @@ internal class DatadogLogHandler(
                     }
                 }
             } else {
-                devLogger.i("Requested to write log, but Logs feature is not registered.")
+                internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    InternalLogger.Target.USER,
+                    "Requested to write log, but Logs feature is not registered."
+                )
             }
         }
 
