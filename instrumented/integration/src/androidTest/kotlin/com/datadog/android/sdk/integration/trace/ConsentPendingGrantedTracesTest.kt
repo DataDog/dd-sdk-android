@@ -11,6 +11,7 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.tools.unit.ConditionWatcher
 import org.junit.Rule
@@ -40,7 +41,7 @@ internal class ConsentPendingGrantedTracesTest : TracesTest() {
 
         ConditionWatcher {
             // Check sent requests
-            val handledRequests = mockServerRule.getRequests()
+            val handledRequests = mockServerRule.getRequests(RuntimeConfig.tracesEndpointUrl)
             verifyExpectedSpans(handledRequests, mockServerRule.activity.getSentSpans())
             verifyExpectedLogs(handledRequests, mockServerRule.activity.getSentLogs())
             true

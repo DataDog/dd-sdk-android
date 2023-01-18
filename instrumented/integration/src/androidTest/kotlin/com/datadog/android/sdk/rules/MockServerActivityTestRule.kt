@@ -64,10 +64,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
         mockWebServer.setDispatcher(
             object : Dispatcher() {
                 override fun dispatch(request: RecordedRequest): MockResponse {
-                    val requestUrl = request.requestUrl.toString()
-                    if (keepRequests &&
-                        !requestUrl.startsWith(RuntimeConfig.sessionReplayEndpointUrl)
-                    ) {
+                    if (keepRequests) {
                         // for now the SR requests will be dropped as we do not support them
                         // in our integration tests
                         handleRequest(request)
@@ -121,6 +118,12 @@ internal open class MockServerActivityTestRule<T : Activity>(
     fun getRequests(): List<HandledRequest> {
         Log.i(TAG, "Caught ${requests.size} requests")
         return requests.toList()
+    }
+
+    fun getRequests(endpoint: String): List<HandledRequest> {
+        val filteredRequests = requests.filter { it.url?.startsWith(endpoint) ?: false }.toList()
+        Log.i(TAG, "Caught ${filteredRequests.size} requests for endpoint: $endpoint")
+        return filteredRequests
     }
 
     fun getConnectionUrl(): String = mockWebServer.url("/").toString().removeSuffix("/")

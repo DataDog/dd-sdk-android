@@ -11,6 +11,7 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
 import com.datadog.tools.unit.ConditionWatcher
 import org.junit.Rule
@@ -39,7 +40,7 @@ internal class ConsentPendingNotGrantedFragmentTrackingTest : FragmentTrackingTe
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
         ConditionWatcher {
-            verifyNoRumPayloadSent(mockServerRule.getRequests())
+            verifyNoRumPayloadSent(mockServerRule.getRequests(RuntimeConfig.rumEndpointUrl))
             true
         }.doWait(timeoutMs = FINAL_WAIT_MS)
     }
