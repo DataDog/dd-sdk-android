@@ -19,6 +19,7 @@ internal class ConfigurationForgeryFactory :
             tracesConfig = forge.getForgery(),
             crashReportConfig = forge.getForgery(),
             rumConfig = forge.getForgery(),
+            sessionReplayConfig = forge.getForgery(),
             additionalConfig = forge.aMap { aString() to aString() }
         )
     }

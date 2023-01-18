@@ -78,4 +78,17 @@ enum class DatadogSite(val siteName: String) {
             EU1 -> DatadogEndpoint.RUM_EU1
         }
     }
+
+    /**
+     * Returns the endpoint to use to upload RUM Events to this site.
+     */
+    fun sessionReplayEndpoint(): String {
+        return when (this) {
+            US1 -> DatadogEndpoint.SESSION_REPLAY_US1
+            US3 -> DatadogEndpoint.SESSION_REPLAY_US3
+            US5 -> DatadogEndpoint.SESSION_REPLAY_US5
+            US1_FED -> DatadogEndpoint.SESSION_REPLAY_US1_FED
+            EU1 -> DatadogEndpoint.SESSION_REPLAY_EU1
+        }
+    }
 }
