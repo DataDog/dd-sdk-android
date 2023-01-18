@@ -13,12 +13,8 @@ package com.datadog.android.sessionreplay
 interface RecordCallback {
 
     /**
-     * Called when we started recording the current screen.
+     * Notifies when a view session replay record was sent.
+     * @param viewId as String
      */
-    fun onStartRecording()
-
-    /**
-     * Called when we stopped recording the current screen.
-     */
-    fun onStopRecording()
+    fun onRecordForViewSent(viewId: String)
 }

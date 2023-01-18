@@ -185,7 +185,10 @@ internal class RumResourceScope(
         sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val user = datadogContext.userInfo
-                val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext)
+                val hasReplay = featuresContextResolver.resolveHasReplay(
+                    datadogContext,
+                    rumContext.viewId.orEmpty()
+                )
                 val duration = resolveResourceDuration(eventTime)
                 val resourceEvent = ResourceEvent(
                     date = eventTimestamp,
@@ -299,7 +302,10 @@ internal class RumResourceScope(
         sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val user = datadogContext.userInfo
-                val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext)
+                val hasReplay = featuresContextResolver.resolveHasReplay(
+                    datadogContext,
+                    rumContext.viewId.orEmpty()
+                )
                 val errorEvent = ErrorEvent(
                     date = eventTimestamp,
                     error = ErrorEvent.Error(

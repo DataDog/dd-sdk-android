@@ -11,11 +11,11 @@ import com.datadog.android.v2.api.context.DatadogContext
 
 internal class FeaturesContextResolver {
 
-    fun resolveHasReplay(context: DatadogContext): Boolean {
+    fun resolveHasReplay(context: DatadogContext, viewId: String): Boolean {
         val sessionReplayContext =
             context.featuresContext[SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME]
         return (
-            sessionReplayContext?.get(SessionReplayFeature.IS_RECORDING_CONTEXT_KEY)
+            sessionReplayContext?.get(viewId)
                 as? Boolean
             ) ?: false
     }

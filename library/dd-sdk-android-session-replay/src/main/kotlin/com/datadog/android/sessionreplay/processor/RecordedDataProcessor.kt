@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.processor
 
 import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
+import com.datadog.android.sessionreplay.RecordCallback
 import com.datadog.android.sessionreplay.RecordWriter
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.Node
@@ -27,6 +28,7 @@ internal class RecordedDataProcessor(
     private val timeProvider: TimeProvider,
     private val executorService: ExecutorService,
     private val writer: RecordWriter,
+    private val recordCallback: RecordCallback,
     private val mutationResolver: MutationResolver = MutationResolver(),
     private val nodeFlattener: NodeFlattener = NodeFlattener()
 ) : Processor {
@@ -194,6 +196,18 @@ internal class RecordedDataProcessor(
             // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
             return null
         }
+
+        // Because the runnable will be executed in another thread it can happen in case there is
+        // an exception in the chain that the record cannot be sent. In this case we will have
+        // a RUM view with `has_replay:true` but with no actual records. This is a corner case
+        // that we discussed with the RUM team and unfortunately and was accepted as there is
+        // another safety net logic in the player that handles this situation. Unfortunately this
+        // is a constraint that we must accept as this whole `has_replay` logic was thought for
+        // the browser SR sdk and not for mobile which handles features inter - communication
+        // completely differently. In any case have in mind that after a discussion with the
+        // browser team it appears that this situation may arrive also on their end and was
+        // accepted.
+        recordCallback.onRecordForViewSent(newRumContext.viewId)
         val runnable = runnableFactory(timestamp, newRumContext.copy(), prevRumContext.copy())
 
         prevRumContext = newRumContext

@@ -34,6 +34,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
@@ -190,6 +191,9 @@ internal open class RumViewScope(
         }
 
         return if (isViewComplete()) {
+            sdkCore.updateFeatureContext(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME) {
+                it.remove(viewId)
+            }
             null
         } else {
             this
@@ -379,7 +383,10 @@ internal open class RumViewScope(
             ?.withWriteContext { datadogContext, eventBatchWriter ->
 
                 val user = datadogContext.userInfo
-                val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext)
+                val hasReplay = featuresContextResolver.resolveHasReplay(
+                    datadogContext,
+                    rumContext.viewId.orEmpty()
+                )
 
                 val errorEvent = ErrorEvent(
                     date = event.eventTime.timestamp + serverTimeOffsetInMs,
@@ -684,7 +691,7 @@ internal open class RumViewScope(
             ?.withWriteContext { datadogContext, eventBatchWriter ->
 
                 val user = datadogContext.userInfo
-                val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext)
+                val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext, viewId)
 
                 val viewEvent = ViewEvent(
                     date = eventTimestamp,
@@ -904,7 +911,7 @@ internal open class RumViewScope(
             ?.withWriteContext { datadogContext, eventBatchWriter ->
 
                 val user = datadogContext.userInfo
-                val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext)
+                val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext, viewId)
 
                 val longTaskEvent = LongTaskEvent(
                     date = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),

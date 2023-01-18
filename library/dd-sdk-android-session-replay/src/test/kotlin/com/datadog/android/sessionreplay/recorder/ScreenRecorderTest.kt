@@ -12,7 +12,6 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
-import com.datadog.android.sessionreplay.RecordCallback
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.processor.Processor
 import com.datadog.android.sessionreplay.recorder.callback.NoOpWindowCallback
@@ -26,7 +25,6 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -65,9 +63,6 @@ internal class ScreenRecorderTest {
 
     lateinit var mockActivity: Activity
 
-    @Mock
-    lateinit var mockRecordCallback: RecordCallback
-
     @BeforeEach
     fun `set up`(forge: Forge) {
         mockActivity = forge.aMockedActivity()
@@ -75,8 +70,7 @@ internal class ScreenRecorderTest {
         testedRecorder = ScreenRecorder(
             mockProcessor,
             mockSnapshotProducer,
-            mockTimeProvider,
-            mockRecordCallback
+            mockTimeProvider
         )
     }
 
@@ -352,53 +346,6 @@ internal class ScreenRecorderTest {
         fakeWindowsList.forEach {
             verify(it, never()).callback = any()
         }
-    }
-
-    // endregion
-
-    // region Record Callback
-
-    @Test
-    fun `M notify the callback W startRecording()`(forge: Forge) {
-        // Given
-        val mockWindows = forge.aMockedWindowsList()
-
-        // When
-        testedRecorder.startRecording(mockWindows, mockActivity)
-
-        // Then
-        verify(mockRecordCallback).onStartRecording()
-        verifyNoMoreInteractions(mockRecordCallback)
-    }
-
-    @Test
-    fun `M notify the callback W stopRecording(windows)`(forge: Forge) {
-        // Given
-        val mockWindows = forge.aMockedWindowsList()
-        testedRecorder.startRecording(mockWindows, mockActivity)
-
-        // When
-        testedRecorder.stopRecording(mockWindows)
-
-        // Then
-        verify(mockRecordCallback).onStartRecording()
-        verify(mockRecordCallback).onStopRecording()
-        verifyNoMoreInteractions(mockRecordCallback)
-    }
-
-    @Test
-    fun `M notify the callback W stopRecording`(forge: Forge) {
-        // Given
-        val mockWindows = forge.aMockedWindowsList()
-        testedRecorder.startRecording(mockWindows, mockActivity)
-
-        // When
-        testedRecorder.stopRecording()
-
-        // Then
-        verify(mockRecordCallback).onStartRecording()
-        verify(mockRecordCallback).onStopRecording()
-        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     // endregion

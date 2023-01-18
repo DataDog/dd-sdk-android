@@ -9,8 +9,6 @@ package com.datadog.android.sessionreplay.recorder
 import android.app.Activity
 import android.view.ViewTreeObserver
 import android.view.Window
-import com.datadog.android.sessionreplay.NoOpRecordCallback
-import com.datadog.android.sessionreplay.RecordCallback
 import com.datadog.android.sessionreplay.processor.Processor
 import com.datadog.android.sessionreplay.recorder.callback.NoOpWindowCallback
 import com.datadog.android.sessionreplay.recorder.callback.RecorderWindowCallback
@@ -21,8 +19,7 @@ import java.util.WeakHashMap
 internal class ScreenRecorder(
     private val processor: Processor,
     private val snapshotProducer: SnapshotProducer,
-    private val timeProvider: TimeProvider,
-    private val recordCallback: RecordCallback = NoOpRecordCallback()
+    private val timeProvider: TimeProvider
 ) : Recorder {
     internal val windowsListeners: WeakHashMap<Window, ViewTreeObserver.OnDrawListener> =
         WeakHashMap()
@@ -44,12 +41,10 @@ internal class ScreenRecorder(
             decorView.viewTreeObserver?.addOnDrawListener(onDrawListener)
             wrapWindowCallback(window, screenDensity)
         }
-        recordCallback.onStartRecording()
     }
 
     override fun stopRecording(windows: List<Window>) {
         stopRecordingAndRemove(windows)
-        recordCallback.onStopRecording()
     }
 
     override fun stopRecording() {
@@ -58,7 +53,6 @@ internal class ScreenRecorder(
             unwrapWindowCallback(it.key)
         }
         windowsListeners.clear()
-        recordCallback.onStopRecording()
     }
 
     private fun stopRecordingAndRemove(windows: List<Window>) {

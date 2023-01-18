@@ -10,19 +10,10 @@ import com.datadog.android.sessionreplay.RecordCallback
 import com.datadog.android.v2.api.SdkCore
 
 internal class SessionReplayRecordCallback(private val sdkCore: SdkCore) : RecordCallback {
-    override fun onStartRecording() {
-        updateRecording(true)
-    }
 
-    override fun onStopRecording() {
-        updateRecording(false)
-    }
-
-    private fun updateRecording(isRecording: Boolean) {
-        sdkCore.updateFeatureContext(
-            SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME
-        ) {
-            it[SessionReplayFeature.IS_RECORDING_CONTEXT_KEY] = isRecording
+    override fun onRecordForViewSent(viewId: String) {
+        sdkCore.updateFeatureContext(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME) {
+            it[viewId] = true
         }
     }
 }

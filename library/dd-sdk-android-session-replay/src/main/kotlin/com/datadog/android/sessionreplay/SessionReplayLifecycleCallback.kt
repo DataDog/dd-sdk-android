@@ -46,11 +46,11 @@ class SessionReplayLifecycleCallback(
             rumContextProvider,
             timeProvider,
             processorExecutorService,
-            recordWriter
+            recordWriter,
+            recordCallback
         ),
         SnapshotProducer(privacy.mapper()),
-        timeProvider,
-        recordCallback
+        timeProvider
     )
 
     // region callback

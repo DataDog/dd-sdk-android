@@ -170,8 +170,12 @@ internal class RumResourceScopeTest {
         whenever(mockContextProvider.context) doReturn fakeDatadogContext
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         doAnswer { false }.whenever(mockDetector).isFirstPartyUrl(any<String>())
-        whenever(mockFeaturesContextResolver.resolveHasReplay(fakeDatadogContext))
-            .thenReturn(fakeHasReplay)
+        whenever(
+            mockFeaturesContextResolver.resolveHasReplay(
+                fakeDatadogContext,
+                fakeParentContext.viewId.orEmpty()
+            )
+        ).thenReturn(fakeHasReplay)
         whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)

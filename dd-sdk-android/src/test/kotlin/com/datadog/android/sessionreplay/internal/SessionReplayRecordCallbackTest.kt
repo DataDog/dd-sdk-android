@@ -6,10 +6,14 @@
 
 package com.datadog.android.sessionreplay.internal
 
+import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.SdkCore
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -19,11 +23,14 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.UUID
 
 @Extensions(
+    ExtendWith(ForgeExtension::class),
     ExtendWith(MockitoExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
 internal class SessionReplayRecordCallbackTest {
 
     @Mock
@@ -36,9 +43,12 @@ internal class SessionReplayRecordCallbackTest {
     }
 
     @Test
-    fun `M update session replay context W onStartRecording`() {
+    fun `M update session replay context W onRecordForViewSent`(forge: Forge) {
+        // Given
+        val fakeViewId = forge.getForgery<UUID>().toString()
+
         // When
-        testedRecordCallback.onStartRecording()
+        testedRecordCallback.onRecordForViewSent(fakeViewId)
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
@@ -51,29 +61,8 @@ internal class SessionReplayRecordCallbackTest {
             lastValue.invoke(featureContext)
 
             assertThat(
-                featureContext[SessionReplayFeature.IS_RECORDING_CONTEXT_KEY] as? Boolean
+                featureContext[fakeViewId] as? Boolean
             ).isTrue
-        }
-    }
-
-    @Test
-    fun `M update session replay context W onStopRecording`() {
-        // When
-        testedRecordCallback.onStopRecording()
-
-        // Then
-        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockDatadogCore).updateFeatureContext(
-                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
-                capture()
-            )
-
-            val featureContext = mutableMapOf<String, Any?>()
-            lastValue.invoke(featureContext)
-
-            assertThat(
-                featureContext[SessionReplayFeature.IS_RECORDING_CONTEXT_KEY] as? Boolean
-            ).isFalse
         }
     }
 }
