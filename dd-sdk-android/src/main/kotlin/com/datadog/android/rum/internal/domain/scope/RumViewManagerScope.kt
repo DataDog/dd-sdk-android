@@ -14,7 +14,7 @@ import android.os.SystemClock
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.internalLogger
@@ -34,7 +34,7 @@ internal class RumViewManagerScope(
     private val sdkCore: SdkCore,
     private val backgroundTrackingEnabled: Boolean,
     private val trackFrustrations: Boolean,
-    internal val firstPartyHostDetector: FirstPartyHostDetector,
+    internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
@@ -106,7 +106,7 @@ internal class RumViewManagerScope(
             this,
             sdkCore,
             event,
-            firstPartyHostDetector,
+            firstPartyHostHeaderTypeResolver,
             cpuVitalMonitor,
             memoryVitalMonitor,
             frameRateVitalMonitor,
@@ -174,7 +174,7 @@ internal class RumViewManagerScope(
             RUM_BACKGROUND_VIEW_NAME,
             event.eventTime,
             emptyMap(),
-            firstPartyHostDetector,
+            firstPartyHostHeaderTypeResolver,
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
@@ -192,7 +192,7 @@ internal class RumViewManagerScope(
             RUM_APP_LAUNCH_VIEW_NAME,
             event.eventTime,
             emptyMap(),
-            firstPartyHostDetector,
+            firstPartyHostHeaderTypeResolver,
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),

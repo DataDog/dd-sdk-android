@@ -12,7 +12,7 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.privacy.ConsentProvider
@@ -62,7 +62,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var mockPersistenceExecutor: ExecutorService
     lateinit var mockKronosClock: KronosClock
     lateinit var mockContextRef: WeakReference<Context?>
-    lateinit var mockFirstPartyHostDetector: FirstPartyHostDetector
+    lateinit var mockFirstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver
 
     lateinit var mockTimeProvider: TimeProvider
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
@@ -118,7 +118,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         mockKronosClock = mock()
         // Mockito cannot mock WeakReference by some reason
         mockContextRef = WeakReference(appContext.mockInstance)
-        mockFirstPartyHostDetector = mock()
+        mockFirstPartyHostHeaderTypeResolver = mock()
 
         mockTimeProvider = mock()
         mockNetworkInfoProvider = mock()
@@ -153,7 +153,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.okHttpClient) doReturn mockOkHttpClient
         whenever(mockInstance.kronosClock) doReturn mockKronosClock
         whenever(mockInstance.contextRef) doReturn mockContextRef
-        whenever(mockInstance.firstPartyHostDetector) doReturn mockFirstPartyHostDetector
+        whenever(mockInstance.firstPartyHostHeaderTypeResolver) doReturn mockFirstPartyHostHeaderTypeResolver
 
         whenever(mockInstance.timeProvider) doReturn mockTimeProvider
         whenever(mockInstance.networkInfoProvider) doReturn mockNetworkInfoProvider

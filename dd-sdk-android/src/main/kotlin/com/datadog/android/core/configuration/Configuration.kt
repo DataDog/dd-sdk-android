@@ -47,6 +47,7 @@ import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.security.Encryption
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.v2.api.InternalLogger
 import okhttp3.Authenticator
 import java.net.Proxy
@@ -71,7 +72,7 @@ internal constructor(
     internal data class Core(
         val needsClearTextHttp: Boolean,
         val enableDeveloperModeWhenDebuggable: Boolean,
-        val firstPartyHosts: List<String>,
+        val firstPartyHostsWithHeaderTypes: Map<String, Set<TracingHeaderType>>,
         val batchSize: BatchSize,
         val uploadFrequency: UploadFrequency,
         val proxy: Proxy?,
@@ -183,16 +184,39 @@ internal constructor(
          * Sets the list of first party hosts.
          * Requests made to a URL with any one of these hosts (or any subdomain) will:
          * - be considered a first party resource and categorised as such in your RUM dashboard;
-         * - be wrapped in a Span and have trace id injected to get a full flame-graph in APM.
+         * - be wrapped in a Span and have DataDog trace id injected to get a full flame-graph in APM.
          * @param hosts a list of all the hosts that you own.
          * See [DatadogInterceptor]
          */
         fun setFirstPartyHosts(hosts: List<String>): Builder {
+            val sanitizedHosts = hostsSanitizer.sanitizeHosts(
+                hosts,
+                NETWORK_REQUESTS_TRACKING_FEATURE_NAME
+            )
             coreConfig = coreConfig.copy(
-                firstPartyHosts = hostsSanitizer.sanitizeHosts(
-                    hosts,
-                    NETWORK_REQUESTS_TRACKING_FEATURE_NAME
-                )
+                firstPartyHostsWithHeaderTypes = sanitizedHosts.associateWith { setOf(TracingHeaderType.DATADOG) }
+            )
+            return this
+        }
+
+        /**
+         * Sets the list of first party hosts and specifies the type of HTTP headers used for
+         * distributed tracing.
+         * Requests made to a URL with any one of these hosts (or any subdomain) will:
+         * - be considered a first party resource and categorised as such in your RUM dashboard;
+         * - be wrapped in a Span and have trace id of the specified types injected to get a
+         * full flame-graph in APM. Multiple header types are supported for each host.
+         * @param hostsWithHeaderType a list of all the hosts that you own and the tracing headers
+         * to be used for each host.
+         * See [DatadogInterceptor]
+         */
+        fun setFirstPartyHostsWithHeaderType(hostsWithHeaderType: Map<String, Set<TracingHeaderType>>): Builder {
+            val sanitizedHosts = hostsSanitizer.sanitizeHosts(
+                hostsWithHeaderType.keys.toList(),
+                NETWORK_REQUESTS_TRACKING_FEATURE_NAME
+            )
+            coreConfig = coreConfig.copy(
+                firstPartyHostsWithHeaderTypes = hostsWithHeaderType.filterKeys { sanitizedHosts.contains(it) }
             )
             return this
         }
@@ -678,7 +702,7 @@ internal constructor(
         internal val DEFAULT_CORE_CONFIG = Core(
             needsClearTextHttp = false,
             enableDeveloperModeWhenDebuggable = false,
-            firstPartyHosts = emptyList(),
+            firstPartyHostsWithHeaderTypes = emptyMap(),
             batchSize = BatchSize.MEDIUM,
             uploadFrequency = UploadFrequency.AVERAGE,
             proxy = null,
