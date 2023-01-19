@@ -9,13 +9,14 @@ package com.datadog.android
 import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.telemetry
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.android.v2.core.internal.HashGenerator
@@ -56,7 +57,11 @@ object Datadog {
         trackingConsent: TrackingConsent
     ) {
         if (initialized.get()) {
-            devLogger.w(MESSAGE_ALREADY_INITIALIZED)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                MESSAGE_ALREADY_INITIALIZED
+            )
             return
         }
 
@@ -65,7 +70,11 @@ object Datadog {
         )
 
         if (sdkInstanceId == null) {
-            devLogger.e(CANNOT_CREATE_SDK_INSTANCE_ID_ERROR)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                CANNOT_CREATE_SDK_INSTANCE_ID_ERROR
+            )
             return
         }
 
@@ -173,7 +182,7 @@ object Datadog {
                 id,
                 name,
                 email,
-                extraInfo.toMutableMap()
+                extraInfo
             )
         )
     }

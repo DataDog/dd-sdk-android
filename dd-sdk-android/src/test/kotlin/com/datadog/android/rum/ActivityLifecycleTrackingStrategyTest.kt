@@ -41,7 +41,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal abstract class ActivityLifecycleTrackingStrategyTest<T> : ObjectTest<T>()
-    where T : ActivityLifecycleTrackingStrategy {
+        where T : ActivityLifecycleTrackingStrategy {
 
     lateinit var testedStrategy: T
 

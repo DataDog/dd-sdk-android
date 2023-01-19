@@ -6,9 +6,8 @@
 
 package com.datadog.android.rum.internal.ndk
 
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -33,11 +32,11 @@ internal class NdkCrashLogDeserializerTest {
     lateinit var testedDeserializer: NdkCrashLogDeserializer
 
     @Mock
-    lateinit var mockLogHandler: LogHandler
+    lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`() {
-        testedDeserializer = NdkCrashLogDeserializer(Logger(mockLogHandler))
+        testedDeserializer = NdkCrashLogDeserializer(mockInternalLogger)
     }
 
     @Test

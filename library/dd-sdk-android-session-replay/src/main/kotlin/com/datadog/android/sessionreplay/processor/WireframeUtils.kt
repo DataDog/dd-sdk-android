@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.processor
 
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.hasOpaqueBackground
 import kotlin.math.max
 
 internal class WireframeUtils {
@@ -51,7 +52,7 @@ internal class WireframeUtils {
             return false
         }
         topWireframes.forEach {
-            if (it.bounds().isCovering(wireframeBounds)) {
+            if (it.bounds().isCovering(wireframeBounds) && it.hasOpaqueBackground()) {
                 return false
             }
         }

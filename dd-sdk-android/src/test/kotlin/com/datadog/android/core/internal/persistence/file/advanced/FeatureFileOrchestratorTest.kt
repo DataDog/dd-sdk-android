@@ -8,10 +8,9 @@ package com.datadog.android.core.internal.persistence.file.advanced
 
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
 import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
@@ -48,7 +47,7 @@ internal class FeatureFileOrchestratorTest {
     lateinit var mockExecutorService: ExecutorService
 
     @Mock
-    lateinit var mockLogHandler: LogHandler
+    lateinit var mockInternalLogger: InternalLogger
 
     @StringForgery
     lateinit var fakeFeatureName: String
@@ -74,7 +73,7 @@ internal class FeatureFileOrchestratorTest {
             fakeStorageDir,
             fakeFeatureName,
             mockExecutorService,
-            Logger(mockLogHandler)
+            mockInternalLogger
         )
 
         // Then
@@ -94,7 +93,7 @@ internal class FeatureFileOrchestratorTest {
             fakeStorageDir,
             fakeFeatureName,
             mockExecutorService,
-            Logger(mockLogHandler)
+            mockInternalLogger
         )
 
         // Then
@@ -114,7 +113,7 @@ internal class FeatureFileOrchestratorTest {
             fakeStorageDir,
             fakeFeatureName,
             mockExecutorService,
-            Logger(mockLogHandler)
+            mockInternalLogger
         )
 
         // Then

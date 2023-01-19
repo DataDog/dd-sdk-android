@@ -9,7 +9,6 @@
 package com.datadog.android.core.internal
 
 import android.app.Application
-import android.util.Log
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
@@ -18,11 +17,12 @@ import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureUploadConfiguration
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.NoOpContextProvider
 import com.datadog.android.v2.core.internal.data.upload.DataUploadScheduler
@@ -44,6 +44,7 @@ import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -268,6 +269,7 @@ internal class SdkFeatureTest {
 
     @Test
     fun `𝕄 provide write context 𝕎 withWriteContext(callback)`(
+        @BoolForgery forceNewBatch: Boolean,
         @Forgery fakeContext: DatadogContext,
         @Mock mockBatchWriter: EventBatchWriter
     ) {
@@ -276,13 +278,19 @@ internal class SdkFeatureTest {
         val callback = mock<(DatadogContext, EventBatchWriter) -> Unit>()
         whenever(coreFeature.mockInstance.contextProvider.context) doReturn fakeContext
 
-        whenever(mockStorage.writeCurrentBatch(eq(fakeContext), any())) doAnswer {
-            val storageCallback = it.getArgument<(EventBatchWriter) -> Unit>(1)
+        whenever(
+            mockStorage.writeCurrentBatch(
+                eq(fakeContext),
+                eq(forceNewBatch),
+                any()
+            )
+        ) doAnswer {
+            val storageCallback = it.getArgument<(EventBatchWriter) -> Unit>(2)
             storageCallback.invoke(mockBatchWriter)
         }
 
         // When
-        testedFeature.withWriteContext(callback)
+        testedFeature.withWriteContext(forceNewBatch, callback = callback)
 
         // Then
         verify(callback).invoke(
@@ -292,7 +300,9 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 withWriteContext(callback) { no Datadog context }`() {
+    fun `𝕄 do nothing 𝕎 withWriteContext(callback) { no Datadog context }`(
+        @BoolForgery forceNewBatch: Boolean
+    ) {
         // Given
         testedFeature.storage = mockStorage
         val callback = mock<(DatadogContext, EventBatchWriter) -> Unit>()
@@ -300,7 +310,7 @@ internal class SdkFeatureTest {
         whenever(coreFeature.mockInstance.contextProvider) doReturn NoOpContextProvider()
 
         // When
-        testedFeature.withWriteContext(callback)
+        testedFeature.withWriteContext(forceNewBatch, callback = callback)
 
         // Then
         verifyZeroInteractions(mockStorage)
@@ -330,11 +340,11 @@ internal class SdkFeatureTest {
         testedFeature.sendEvent(fakeEvent)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.INFO,
-                SdkFeature.NO_EVENT_RECEIVER.format(Locale.US, fakeFeatureName)
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            SdkFeature.NO_EVENT_RECEIVER.format(Locale.US, fakeFeatureName)
+        )
     }
 
     // endRegion
@@ -342,7 +352,7 @@ internal class SdkFeatureTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

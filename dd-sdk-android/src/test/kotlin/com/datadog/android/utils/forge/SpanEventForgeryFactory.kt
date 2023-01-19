@@ -9,9 +9,9 @@ package com.datadog.android.utils.forge
 import com.datadog.android.core.internal.utils.orEmpty
 import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.core.internal.utils.toMutableMap
-import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.tracing.model.SpanEvent
+import com.datadog.android.v2.api.context.NetworkInfo
+import com.datadog.android.v2.api.context.UserInfo
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.concurrent.TimeUnit
@@ -55,7 +55,7 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
                     id = userInfo?.id,
                     name = userInfo?.name,
                     email = userInfo?.email,
-                    additionalProperties = userInfo?.additionalProperties.orEmpty()
+                    additionalProperties = userInfo?.additionalProperties?.toMutableMap().orEmpty()
                 ),
                 network = SpanEvent.Network(
                     SpanEvent.Client(

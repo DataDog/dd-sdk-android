@@ -7,13 +7,12 @@
 package com.datadog.android.tracing.internal.data
 
 import com.datadog.android.event.EventMapper
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.tracing.model.SpanEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.storage.ContextAwareMapper
@@ -66,7 +65,7 @@ internal class TraceWriterTest {
     lateinit var mockSerializer: ContextAwareSerializer<SpanEvent>
 
     @Mock
-    lateinit var mockInternalLogger: Logger
+    lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockTracingFeatureScope: FeatureScope
@@ -85,8 +84,8 @@ internal class TraceWriterTest {
             mockSdkCore.getFeature(TracingFeature.TRACING_FEATURE_NAME)
         ) doReturn mockTracingFeatureScope
 
-        whenever(mockTracingFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+        whenever(mockTracingFeatureScope.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
 
@@ -257,7 +256,9 @@ internal class TraceWriterTest {
         verifyNoMoreInteractions(mockEventBatchWriter)
 
         verify(mockInternalLogger)
-            .errorWithTelemetry(
+            .log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 TraceWriter.ERROR_SERIALIZING.format(Locale.US, SpanEvent::class.java.simpleName),
                 fakeThrowable
             )
@@ -277,7 +278,7 @@ internal class TraceWriterTest {
 
         // THEN
         verify(mockSdkCore, times(1)).getFeature(TracingFeature.TRACING_FEATURE_NAME)
-        verify(mockTracingFeatureScope, times(1)).withWriteContext(any())
+        verify(mockTracingFeatureScope, times(1)).withWriteContext(any(), any())
 
         verifyNoMoreInteractions(mockSdkCore, mockTracingFeatureScope)
 

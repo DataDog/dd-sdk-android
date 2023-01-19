@@ -8,8 +8,7 @@ package com.datadog.android.core.internal.persistence.file
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.utils.use
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.v2.api.InternalLogger
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -20,7 +19,7 @@ import java.util.Locale
  */
 @Suppress("unused")
 internal class PlainFileReaderWriter(
-    private val internalLogger: Logger
+    private val internalLogger: InternalLogger
 ) : FileReaderWriter {
 
     // region FileWriter+FileReader
@@ -35,10 +34,20 @@ internal class PlainFileReaderWriter(
             lockFileAndWriteData(file, append, data)
             true
         } catch (e: IOException) {
-            internalLogger.errorWithTelemetry(ERROR_WRITE.format(Locale.US, file.path), e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                ERROR_WRITE.format(Locale.US, file.path),
+                e
+            )
             false
         } catch (e: SecurityException) {
-            internalLogger.errorWithTelemetry(ERROR_WRITE.format(Locale.US, file.path), e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                ERROR_WRITE.format(Locale.US, file.path),
+                e
+            )
             false
         }
     }
@@ -49,20 +58,44 @@ internal class PlainFileReaderWriter(
     ): ByteArray {
         return try {
             if (!file.exists()) {
-                internalLogger.errorWithTelemetry(ERROR_READ.format(Locale.US, file.path))
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    targets = listOf(
+                        InternalLogger.Target.MAINTAINER,
+                        InternalLogger.Target.TELEMETRY
+                    ),
+                    ERROR_READ.format(Locale.US, file.path)
+                )
                 EMPTY_BYTE_ARRAY
             } else if (file.isDirectory) {
-                internalLogger.errorWithTelemetry(ERROR_READ.format(Locale.US, file.path))
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    targets = listOf(
+                        InternalLogger.Target.MAINTAINER,
+                        InternalLogger.Target.TELEMETRY
+                    ),
+                    ERROR_READ.format(Locale.US, file.path)
+                )
                 EMPTY_BYTE_ARRAY
             } else {
                 @Suppress("UnsafeThirdPartyFunctionCall") // necessary catch blocks exist
                 file.readBytes()
             }
         } catch (e: IOException) {
-            internalLogger.errorWithTelemetry(ERROR_READ.format(Locale.US, file.path), e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                ERROR_READ.format(Locale.US, file.path),
+                e
+            )
             EMPTY_BYTE_ARRAY
         } catch (e: SecurityException) {
-            internalLogger.errorWithTelemetry(ERROR_READ.format(Locale.US, file.path), e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                ERROR_READ.format(Locale.US, file.path),
+                e
+            )
             EMPTY_BYTE_ARRAY
         }
     }

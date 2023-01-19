@@ -6,9 +6,8 @@
 
 package com.datadog.android.core.internal.thread
 
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
+import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.v2.api.InternalLogger
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
@@ -27,12 +26,22 @@ internal fun sleepSafe(durationMs: Long): Boolean {
             // Restore the interrupted status
             Thread.currentThread().interrupt()
         } catch (se: SecurityException) {
-            sdkLogger.e("Thread was unable to set its own interrupted state", se)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                "Thread was unable to set its own interrupted state",
+                se
+            )
         }
         return true
     } catch (e: IllegalArgumentException) {
         // This means we tried sleeping for a negative time
-        sdkLogger.w("Thread tried to sleep for a negative amount of time", e)
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            "Thread tried to sleep for a negative amount of time",
+            e
+        )
         return false
     }
 }
@@ -41,7 +50,7 @@ internal fun sleepSafe(durationMs: Long): Boolean {
  * Logs any exception raised during the execution. Tested indirectly using
  * the tests of [LoggingThreadPoolExecutor] and [LoggingScheduledThreadPoolExecutor].
  */
-internal fun loggingAfterExecute(task: Runnable?, t: Throwable?, logger: Logger) {
+internal fun loggingAfterExecute(task: Runnable?, t: Throwable?, logger: InternalLogger) {
     var throwable = t
     if (t == null && task is Future<*> && task.isDone) {
         try {
@@ -56,13 +65,19 @@ internal fun loggingAfterExecute(task: Runnable?, t: Throwable?, logger: Logger)
                 Thread.currentThread().interrupt()
             } catch (se: SecurityException) {
                 // this should not happen
-                sdkLogger.e("Thread was unable to set its own interrupted state", se)
+                logger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    "Thread was unable to set its own interrupted state",
+                    se
+                )
             }
         }
     }
     if (throwable != null) {
         logger.log(
-            ERROR_WITH_TELEMETRY_LEVEL,
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
             throwable
         )

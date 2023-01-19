@@ -6,11 +6,10 @@
 
 package com.datadog.android.webview
 
-import android.util.Log
-import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.utils.assertj.JsonElementAssert.Companion.assertThat
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
@@ -19,8 +18,6 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
@@ -138,8 +135,9 @@ internal class MixedWebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
-        verify(logger.mockSdkLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
             MixedWebViewEventConsumer.WRONG_EVENT_TYPE_ERROR_MESSAGE.format(
                 US,
                 fakeUnknownEventType
@@ -171,8 +169,9 @@ internal class MixedWebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
-        verify(logger.mockSdkLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             MixedWebViewEventConsumer.WEB_EVENT_MISSING_TYPE_ERROR_MESSAGE.format(
                 US,
                 fakeWebEvent
@@ -204,8 +203,9 @@ internal class MixedWebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
-        verify(logger.mockSdkLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             MixedWebViewEventConsumer.WEB_EVENT_MISSING_WRAPPED_EVENT.format(US, fakeWebEvent)
         )
     }
@@ -244,18 +244,16 @@ internal class MixedWebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeBadJsonFormatEvent)
 
         // Then
-        verify(logger.mockSdkLogHandler).handleLog(
-            eq(ERROR_WITH_TELEMETRY_LEVEL),
+        verify(logger.mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            targets = eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
             eq(
                 MixedWebViewEventConsumer.WEB_EVENT_PARSING_ERROR_MESSAGE.format(
                     US,
                     fakeBadJsonFormatEvent
                 )
             ),
-            argThat<Throwable> { this is JsonParseException },
-            any(),
-            any(),
-            anyOrNull()
+            argThat { this is JsonParseException }
         )
     }
 
@@ -280,7 +278,7 @@ internal class MixedWebViewEventConsumerTest {
     // endregion
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

@@ -16,12 +16,9 @@ import androidx.fragment.app.Fragment
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
-import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.hasUserData
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.utils.debugWithTelemetry
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -37,6 +34,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.DataWriter
@@ -268,7 +266,12 @@ internal open class RumViewScope(
                     currentRumContext.clear()
                     currentRumContext.putAll(newRumContext.toMap())
                 } else {
-                    sdkLogger.debugWithTelemetry(
+                    internalLogger.log(
+                        InternalLogger.Level.DEBUG,
+                        targets = listOf(
+                            InternalLogger.Target.MAINTAINER,
+                            InternalLogger.Target.TELEMETRY
+                        ),
                         RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE
                     )
                 }
@@ -305,7 +308,11 @@ internal open class RumViewScope(
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
                 return
             } else {
-                devLogger.w(ACTION_DROPPED_WARNING.format(Locale.US, event.type, event.name))
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    ACTION_DROPPED_WARNING.format(Locale.US, event.type, event.name)
+                )
                 return
             }
         }
@@ -359,7 +366,11 @@ internal open class RumViewScope(
         val rumContext = getRumContext()
 
         val updatedAttributes = addExtraAttributes(event.attributes)
-        val isFatal = updatedAttributes.remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean
+        val isFatal = updatedAttributes
+            .remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean == true || event.isFatal
+        // if a cross-platform crash was already reported, do not send its native version
+        if (crashCount > 0 && isFatal) return
+
         val errorType = event.type ?: event.throwable?.javaClass?.canonicalName
         val throwableMessage = event.throwable?.message ?: ""
         val message = if (throwableMessage.isNotBlank() && event.message != throwableMessage) {
@@ -380,7 +391,7 @@ internal open class RumViewScope(
                         message = message,
                         source = event.source.toSchemaSource(),
                         stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
-                        isCrash = event.isFatal || (isFatal ?: false),
+                        isCrash = isFatal,
                         type = errorType,
                         sourceType = event.sourceType.toSchemaSourceType()
                     ),
@@ -432,7 +443,7 @@ internal open class RumViewScope(
                 writer.write(eventBatchWriter, errorEvent)
             }
 
-        if (event.isFatal) {
+        if (isFatal) {
             errorCount++
             crashCount++
             sendViewUpdate(event, writer)
@@ -523,7 +534,12 @@ internal open class RumViewScope(
                 currentRumContext.clear()
                 currentRumContext.putAll(newRumContext.toMap())
             } else {
-                sdkLogger.debugWithTelemetry(
+                internalLogger.log(
+                    InternalLogger.Level.DEBUG,
+                    targets = listOf(
+                        InternalLogger.Target.MAINTAINER,
+                        InternalLogger.Target.TELEMETRY
+                    ),
                     RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE
                 )
             }
@@ -750,7 +766,11 @@ internal open class RumViewScope(
     private fun resolveViewDuration(event: RumRawEvent): Long {
         val duration = event.eventTime.nanoTime - startedNanos
         return if (duration <= 0) {
-            devLogger.w(NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, name))
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, name)
+            )
             1
         } else {
             duration

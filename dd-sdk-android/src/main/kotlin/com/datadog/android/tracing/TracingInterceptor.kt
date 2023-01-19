@@ -14,11 +14,10 @@ import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.percent
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.utils.warningWithTelemetry
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.opentracing.DDTracer
 import com.datadog.trace.api.DDTags
@@ -85,7 +84,11 @@ internal constructor(
 
     init {
         if (localFirstPartyHostHeaderTypeResolver.isEmpty() && firstPartyHostResolver.isEmpty()) {
-            devLogger.w(WARNING_TRACING_NO_HOSTS)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                WARNING_TRACING_NO_HOSTS
+            )
         }
     }
 
@@ -231,7 +234,12 @@ internal constructor(
         val updatedRequest = try {
             updateRequest(request, tracer, span, isSampled).build()
         } catch (e: IllegalStateException) {
-            sdkLogger.warningWithTelemetry("Failed to update intercepted OkHttp request", e)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                "Failed to update intercepted OkHttp request",
+                e
+            )
             request
         }
 
@@ -264,7 +272,11 @@ internal constructor(
     private fun resolveTracer(): Tracer? {
         val tracingFeature = (Datadog.globalSdkCore as? DatadogCore)?.tracingFeature
         return if (tracingFeature == null) {
-            devLogger.w(WARNING_TRACING_DISABLED)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                WARNING_TRACING_DISABLED
+            )
             null
         } else if (GlobalTracer.isRegistered()) {
             // clear the localTracer reference if any
@@ -284,7 +296,11 @@ internal constructor(
             val globalHeaderTypes = firstPartyHostResolver.getAllHeaderTypes()
             val allHeaders = localHeaderTypes.plus(globalHeaderTypes)
             localTracerReference.compareAndSet(null, localTracerFactory(allHeaders))
-            devLogger.w(WARNING_DEFAULT_TRACER)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                WARNING_DEFAULT_TRACER
+            )
         }
         return localTracerReference.get()
     }
@@ -526,7 +542,7 @@ internal constructor(
 
     // endregion
 
-    companion object {
+    internal companion object {
         internal const val SPAN_NAME = "okhttp.request"
 
         internal const val RESOURCE_NAME_404 = "404"

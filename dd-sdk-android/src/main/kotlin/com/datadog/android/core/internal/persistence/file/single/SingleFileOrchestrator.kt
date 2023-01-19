@@ -17,8 +17,12 @@ internal class SingleFileOrchestrator(
 
     // region FileOrchestrator
 
+    /**
+     * @param forceNewFile Does not have any effect on this method and it is only used to comply
+     * with the [FileOrchestrator] interface.
+     */
     @WorkerThread
-    override fun getWritableFile(): File? {
+    override fun getWritableFile(forceNewFile: Boolean): File? {
         file.parentFile?.mkdirsSafe()
         return file
     }

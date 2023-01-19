@@ -13,8 +13,9 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.opentracing.DDSpanContext
@@ -1171,9 +1172,10 @@ internal open class TracingInterceptorTest {
 
         verifyZeroInteractions(mockLocalTracer)
         verifyZeroInteractions(mockTracer)
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 TracingInterceptor.WARNING_TRACING_DISABLED
             )
     }
@@ -1204,9 +1206,10 @@ internal open class TracingInterceptorTest {
         verify(localSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(localSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 TracingInterceptor.WARNING_DEFAULT_TRACER
             )
     }
@@ -1249,9 +1252,10 @@ internal open class TracingInterceptorTest {
         verify(mockSpan).finish()
         assertThat(response1).isSameAs(expectedResponse1)
         assertThat(response2).isSameAs(expectedResponse2)
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 TracingInterceptor.WARNING_DEFAULT_TRACER
             )
     }
@@ -1411,9 +1415,10 @@ internal open class TracingInterceptorTest {
         testedInterceptor = instantiateTestedInterceptor { mockLocalTracer }
 
         verifyZeroInteractions(mockTracer, mockLocalTracer)
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 TracingInterceptor.WARNING_TRACING_NO_HOSTS
             )
     }
@@ -1521,7 +1526,7 @@ internal open class TracingInterceptorTest {
         const val HOSTNAME_PATTERN =
             "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{1,4}[a-zA-Z0-9]{2,3})\\.)+" +
                 "([A-Za-z]|[A-Za-z][A-Za-z0-9-]{1,2}[A-Za-z0-9])"
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

@@ -7,26 +7,29 @@
 package com.datadog.android.rum.internal.ndk
 
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.v2.api.InternalLogger
 import com.google.gson.JsonParseException
 import java.util.Locale
 
 internal class NdkCrashLogDeserializer(
-    private val internalLogger: Logger
-) : Deserializer<NdkCrashLog> {
+    private val internalLogger: InternalLogger
+) : Deserializer<String, NdkCrashLog> {
 
     override fun deserialize(model: String): NdkCrashLog? {
         return try {
             NdkCrashLog.fromJson(model)
         } catch (e: JsonParseException) {
-            internalLogger.errorWithTelemetry(
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
                 e
             )
             null
         } catch (e: IllegalStateException) {
-            internalLogger.errorWithTelemetry(
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
                 e
             )

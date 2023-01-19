@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay.internal
 import android.app.Application
 import android.content.Context
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.sessionreplay.LifecycleCallback
 import com.datadog.android.sessionreplay.RecordWriter
 import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
@@ -17,6 +17,7 @@ import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
 import com.datadog.android.v2.api.FeatureEventReceiver
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
@@ -90,7 +91,11 @@ internal class SessionReplayFeature(
 
     override fun onReceive(event: Any) {
         if (event !is Map<*, *>) {
-            devLogger.w(UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName))
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName)
+            )
             return
         }
 
@@ -98,7 +103,11 @@ internal class SessionReplayFeature(
             val keepSession = event[RUM_KEEP_SESSION_BUS_MESSAGE_KEY] as? Boolean
 
             if (keepSession == null) {
-                devLogger.w(EVENT_MISSING_MANDATORY_FIELDS)
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    EVENT_MISSING_MANDATORY_FIELDS
+                )
                 return
             }
 
@@ -108,7 +117,9 @@ internal class SessionReplayFeature(
                 stopRecording()
             }
         } else {
-            devLogger.w(
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(
                     Locale.US,
                     event[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY]

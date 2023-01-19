@@ -8,8 +8,7 @@ package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.hasUserData
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
@@ -22,6 +21,7 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.DataWriter
@@ -261,7 +261,11 @@ internal class RumResourceScope(
     private fun resolveResourceDuration(eventTime: Time): Long {
         val duration = eventTime.nanoTime - startedNanos
         return if (duration <= 0) {
-            devLogger.w(NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, url))
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, url)
+            )
             1
         } else {
             duration

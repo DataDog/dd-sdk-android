@@ -7,14 +7,14 @@
 package com.datadog.android.core.internal.persistence
 
 /**
- * The Serializer<T> generic interface. Should be implemented by any custom serializer.
+ * The Deserializer<P, R> generic interface. Should be implemented by any custom deserializer.
  */
-internal interface Deserializer<T : Any> {
+internal interface Deserializer<P : Any, R : Any> {
 
     /**
-     * Deserializes the data into a String.
-     * @return the model represented by the given String, or null when deserialization
-     * is impossible
+     * Deserializes the data from the given payload type into given output type.
+     * @return the model represented by the given payload, or null when deserialization
+     * is impossible.
      */
-    fun deserialize(model: String): T?
+    fun deserialize(model: P): R?
 }

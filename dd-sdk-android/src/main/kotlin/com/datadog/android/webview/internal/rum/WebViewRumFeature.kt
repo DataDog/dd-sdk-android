@@ -8,7 +8,7 @@ package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
-import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
@@ -38,8 +38,11 @@ internal class WebViewRumFeature(
     private fun createDataWriter(): DataWriter<Any> {
         return RumDataWriter(
             serializer = RumEventSerializer(),
-            fileWriter = BatchFileReaderWriter.create(sdkLogger, coreFeature.localDataEncryption),
-            internalLogger = sdkLogger,
+            fileWriter = BatchFileReaderWriter.create(
+                internalLogger,
+                coreFeature.localDataEncryption
+            ),
+            internalLogger = internalLogger,
             lastViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
 
         )

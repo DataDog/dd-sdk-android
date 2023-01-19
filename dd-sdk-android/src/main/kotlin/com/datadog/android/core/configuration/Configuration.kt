@@ -16,7 +16,7 @@ import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogInterceptor
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.event.NoOpEventMapper
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
@@ -48,6 +48,7 @@ import com.datadog.android.security.Encryption
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.tracing.TracingHeaderType
+import com.datadog.android.v2.api.InternalLogger
 import okhttp3.Authenticator
 import java.net.Proxy
 import java.util.Locale
@@ -668,7 +669,11 @@ internal constructor(
                 @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
                 block()
             } else {
-                devLogger.e(ERROR_FEATURE_DISABLED.format(Locale.US, feature.featureName, method))
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    ERROR_FEATURE_DISABLED.format(Locale.US, feature.featureName, method)
+                )
             }
         }
 
@@ -686,7 +691,7 @@ internal constructor(
 
     // endregion
 
-    companion object {
+    internal companion object {
         internal const val DEFAULT_SAMPLING_RATE: Float = 100f
         internal const val DEFAULT_TELEMETRY_SAMPLING_RATE: Float = 20f
         internal const val DEFAULT_LONG_TASK_THRESHOLD_MS = 100L

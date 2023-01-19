@@ -8,7 +8,6 @@ package com.datadog.android.rum
 
 import android.content.Context
 import android.os.Looper
-import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.sampling.RateBasedSampler
@@ -19,8 +18,9 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -184,8 +184,9 @@ internal class RumMonitorBuilderTest {
         val monitor = testedBuilder.build()
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             RumMonitor.Builder.RUM_NOT_ENABLED_ERROR_MESSAGE + "\n" +
                 Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
         )
@@ -201,8 +202,9 @@ internal class RumMonitorBuilderTest {
         val monitor = testedBuilder.build()
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             RumMonitor.Builder.INVALID_APPLICATION_ID_ERROR_MESSAGE
         )
         check(monitor is NoOpRumMonitor)
@@ -211,7 +213,7 @@ internal class RumMonitorBuilderTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

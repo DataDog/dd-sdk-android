@@ -12,14 +12,27 @@ import com.datadog.android.sessionreplay.processor.EnrichedRecord
 import com.datadog.android.v2.api.SdkCore
 
 internal class SessionReplayRecordWriter(private val sdkCore: SdkCore) : RecordWriter {
+    private var lastRumContextId: String = ""
     override fun write(record: EnrichedRecord) {
+        val forceNewBatch = resolveForceNewBatch(record)
         sdkCore.getFeature(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME)
-            ?.withWriteContext { _, eventBatchWriter ->
+            ?.withWriteContext(forceNewBatch) { _, eventBatchWriter ->
                 val serializedRecord = record.toJson().toByteArray(Charsets.UTF_8)
                 synchronized(this) {
                     @Suppress("ThreadSafety") // called from the worker thread
                     eventBatchWriter.write(serializedRecord, null)
                 }
             }
+    }
+
+    private fun resolveForceNewBatch(record: EnrichedRecord): Boolean {
+        val newRumContextId = resoleRumContextId(record)
+        val forceNewBatch = lastRumContextId != newRumContextId
+        lastRumContextId = newRumContextId
+        return forceNewBatch
+    }
+
+    private fun resoleRumContextId(record: EnrichedRecord): String {
+        return "${record.applicationId}-${record.sessionId}-${record.viewId}"
     }
 }

@@ -7,7 +7,6 @@
 package com.datadog.android.v2.core
 
 import android.app.Application
-import android.util.Log
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
@@ -15,10 +14,9 @@ import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.core.model.UserInfo
+import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.plugin.DatadogContext
 import com.datadog.android.plugin.DatadogRumContext
 import com.datadog.android.privacy.TrackingConsent
@@ -26,12 +24,14 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.FeatureEventReceiver
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.TimeInfo
+import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
@@ -66,6 +66,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -158,6 +159,7 @@ internal class DatadogCoreTest {
     ) {
         // Given
         testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean())
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
         whenever(testedCore.coreFeature.userInfoProvider) doReturn mockUserInfoProvider
 
@@ -303,11 +305,11 @@ internal class DatadogCoreTest {
         testedCore.setEventReceiver(feature, fakeReceiver)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.INFO,
-                DatadogCore.MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, feature)
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            DatadogCore.MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, feature)
+        )
     }
 
     @Test
@@ -327,11 +329,11 @@ internal class DatadogCoreTest {
         testedCore.setEventReceiver(feature, fakeReceiver)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.INFO,
-                DatadogCore.EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, feature)
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            DatadogCore.EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, feature)
+        )
     }
 
     @Test
@@ -359,6 +361,7 @@ internal class DatadogCoreTest {
     ) {
         // Given
         testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean())
         val mockTimeProvider = mock<TimeProvider>()
         whenever(testedCore.coreFeature.timeProvider) doReturn mockTimeProvider
         whenever(mockTimeProvider.getServerOffsetNanos()) doReturn TimeUnit.MILLISECONDS.toNanos(
@@ -390,6 +393,7 @@ internal class DatadogCoreTest {
     fun `𝕄 provide time info without correction 𝕎 time() {NoOpTimeProvider}`() {
         // Given
         testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean())
         whenever(testedCore.coreFeature.timeProvider) doReturn NoOpTimeProvider()
 
         // When
@@ -491,7 +495,7 @@ internal class DatadogCoreTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val mainLooper = MainLooperTestConfiguration()
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

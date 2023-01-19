@@ -17,11 +17,13 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.DataWriter
@@ -120,6 +122,10 @@ internal class RumViewManagerScope(
         event: RumRawEvent,
         writer: DataWriter<Any>
     ) {
+        if (event is RumRawEvent.AddError && event.throwable is ANRException) {
+            // RUMM-2931 ignore ANR detected when the app is not in foreground
+            return
+        }
         val isValidBackgroundEvent = event.javaClass in validBackgroundEventTypes
         val isSilentOrphanEvent = event.javaClass in silentOrphanEventTypes
 
@@ -131,7 +137,11 @@ internal class RumViewManagerScope(
             viewScope.handleEvent(event, writer)
             childrenScopes.add(viewScope)
         } else if (!isSilentOrphanEvent) {
-            devLogger.w(MESSAGE_MISSING_VIEW)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                MESSAGE_MISSING_VIEW
+            )
         }
     }
 
@@ -148,7 +158,11 @@ internal class RumViewManagerScope(
             viewScope.handleEvent(event, actualWriter)
             childrenScopes.add(viewScope)
         } else if (!isSilentOrphanEvent) {
-            devLogger.w(MESSAGE_MISSING_VIEW)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                MESSAGE_MISSING_VIEW
+            )
         }
     }
 

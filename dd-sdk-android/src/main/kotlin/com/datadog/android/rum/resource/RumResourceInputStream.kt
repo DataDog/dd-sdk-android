@@ -170,7 +170,7 @@ class RumResourceInputStream(
 
     // endregion
 
-    companion object {
+    internal companion object {
         internal const val METHOD: String = "GET"
 
         internal const val ERROR_CLOSE = "Error closing input stream"

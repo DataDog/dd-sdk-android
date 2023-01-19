@@ -6,9 +6,9 @@
 
 package com.datadog.android.sessionreplay.processor
 
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.Node
-import com.datadog.android.sessionreplay.utils.ForgeConfigurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.whenever

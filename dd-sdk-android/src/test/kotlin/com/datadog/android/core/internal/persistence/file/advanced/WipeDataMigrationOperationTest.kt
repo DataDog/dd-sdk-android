@@ -6,11 +6,9 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
-import android.util.Log
 import com.datadog.android.core.internal.persistence.file.FileMover
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
@@ -48,14 +46,14 @@ internal class WipeDataMigrationOperationTest {
     lateinit var mockFileMover: FileMover
 
     @Mock
-    lateinit var mockLogHander: LogHandler
+    lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`() {
         testedOperation = WipeDataMigrationOperation(
             fakeTargetDirectory,
             mockFileMover,
-            Logger(mockLogHander)
+            mockInternalLogger
         )
     }
 
@@ -65,7 +63,7 @@ internal class WipeDataMigrationOperationTest {
         testedOperation = WipeDataMigrationOperation(
             null,
             mockFileMover,
-            Logger(mockLogHander)
+            mockInternalLogger
         )
 
         // When
@@ -73,8 +71,9 @@ internal class WipeDataMigrationOperationTest {
 
         // Then
         verifyZeroInteractions(mockFileMover)
-        verify(mockLogHander).handleLog(
-            Log.WARN,
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
             WipeDataMigrationOperation.WARN_NULL_DIR
         )
     }

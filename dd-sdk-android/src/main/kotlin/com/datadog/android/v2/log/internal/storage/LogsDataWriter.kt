@@ -9,14 +9,14 @@ package com.datadog.android.v2.log.internal.storage
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.serializeToByteArray
-import com.datadog.android.log.Logger
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.internal.storage.DataWriter
 
 internal class LogsDataWriter(
     internal val serializer: Serializer<LogEvent>,
-    private val internalLogger: Logger
+    private val internalLogger: InternalLogger
 ) : DataWriter<LogEvent> {
 
     @WorkerThread

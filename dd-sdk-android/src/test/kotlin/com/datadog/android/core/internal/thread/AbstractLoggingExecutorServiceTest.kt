@@ -6,9 +6,8 @@
 
 package com.datadog.android.core.internal.thread
 
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.forge.aThrowable
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.isA
@@ -41,7 +40,7 @@ internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> 
     lateinit var testedExecutor: T
 
     @Mock
-    lateinit var mockLogger: Logger
+    lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`() {
@@ -66,7 +65,7 @@ internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> 
         Thread.sleep(DEFAULT_SLEEP_DURATION_MS)
 
         // Then
-        verifyZeroInteractions(mockLogger)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -78,7 +77,7 @@ internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> 
         Thread.sleep(DEFAULT_SLEEP_DURATION_MS)
 
         // Then
-        verifyZeroInteractions(mockLogger)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -95,9 +94,10 @@ internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> 
         Thread.sleep(DEFAULT_SLEEP_DURATION_MS)
 
         // Then
-        verify(mockLogger)
+        verify(mockInternalLogger)
             .log(
-                ERROR_WITH_TELEMETRY_LEVEL,
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
                 throwable
             )
@@ -118,7 +118,7 @@ internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> 
         // Then
         assertThat(futureTask.isDone).isTrue
 
-        verifyZeroInteractions(mockLogger)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -132,7 +132,7 @@ internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> 
         // Then
         assertThat(futureTask.isDone).isTrue
 
-        verifyZeroInteractions(mockLogger)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -151,9 +151,10 @@ internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> 
         // Then
         assertThat(futureTask.isDone).isTrue
 
-        verify(mockLogger)
+        verify(mockInternalLogger)
             .log(
-                ERROR_WITH_TELEMETRY_LEVEL,
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
                 throwable
             )
@@ -171,12 +172,12 @@ internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> 
         // Then
         assertThat(futureTask.isCancelled).isTrue
 
-        verify(mockLogger)
+        verify(mockInternalLogger)
             .log(
-                eq(ERROR_WITH_TELEMETRY_LEVEL),
+                eq(InternalLogger.Level.ERROR),
+                targets = eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
                 eq(ERROR_UNCAUGHT_EXECUTION_EXCEPTION),
-                isA<CancellationException>(),
-                eq(emptyMap())
+                isA<CancellationException>()
             )
     }
 
