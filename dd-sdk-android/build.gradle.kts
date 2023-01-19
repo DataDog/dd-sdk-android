@@ -127,7 +127,7 @@ android {
 }
 
 dependencies {
-    // TODO Invert the Dependency Once SDKCore is ready. RUMM-2338
+    // TODO RUMM-2338 Invert the Dependency Once SDKCore is ready.
     api(project(":library:dd-sdk-android-session-replay"))
 
     implementation(libs.kotlin)

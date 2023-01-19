@@ -19,7 +19,7 @@ import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtProperty
 
 /**
- * A rule to detekt TODO comments without a Jira task.
+ * A rule to detekt to-do comments without a Jira task.
  * @active
  */
 class TodoWithoutTask : Rule() {
