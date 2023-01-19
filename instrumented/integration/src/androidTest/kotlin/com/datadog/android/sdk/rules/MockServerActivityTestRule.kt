@@ -28,6 +28,7 @@ import okhttp3.mockwebserver.SocketPolicy
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.zip.GZIPInputStream
 
@@ -145,7 +146,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
         val content = if (encoding == "gzip") {
             request.unzip()
         } else {
-            String(request.body.readByteArray(), Charsets.UTF_8)
+            String(request.body.clone().readByteArray(), Charsets.UTF_8)
         }
 
         val jsonBody = if (contentType == "application/json") {
@@ -160,7 +161,8 @@ internal open class MockServerActivityTestRule<T : Activity>(
                 headers = request.headers,
                 method = request.method,
                 jsonBody = jsonBody,
-                textBody = content
+                textBody = content,
+                requestBuffer = request.body.clone()
             )
         )
     }
