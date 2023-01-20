@@ -6,34 +6,49 @@
 
 package com.datadog.android.webview.internal.rum
 
+import android.content.Context
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
+import com.datadog.android.v2.api.FeatureStorageConfiguration
+import com.datadog.android.v2.api.RequestFactory
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
+import com.datadog.android.v2.rum.internal.net.RumRequestFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class WebViewRumFeature(
+    endpointUrl: String,
     private val coreFeature: CoreFeature
-) {
+) : StorageBackedFeature {
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
     internal val initialized = AtomicBoolean(false)
 
-    // region SdkFeature
+    // region Feature
 
-    fun initialize() {
+    override val name: String = WEB_RUM_FEATURE_NAME
+
+    override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
         dataWriter = createDataWriter()
         initialized.set(true)
     }
+
+    override val requestFactory: RequestFactory = RumRequestFactory(endpointUrl)
+    override val storageConfiguration: FeatureStorageConfiguration =
+        FeatureStorageConfiguration.DEFAULT
 
     fun stop() {
         dataWriter = NoOpDataWriter()
         initialized.set(false)
     }
+
+    // endregion
 
     private fun createDataWriter(): DataWriter<Any> {
         return RumDataWriter(
@@ -44,11 +59,8 @@ internal class WebViewRumFeature(
             ),
             internalLogger = internalLogger,
             lastViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
-
         )
     }
-
-    // endregion
 
     companion object {
         internal const val WEB_RUM_FEATURE_NAME = "web-rum"

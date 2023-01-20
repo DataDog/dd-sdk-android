@@ -49,10 +49,14 @@ import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.v2.api.FeatureEventReceiver
+import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
+import com.datadog.android.v2.rum.internal.net.RumRequestFactory
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -62,10 +66,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("TooManyFunctions")
 internal class RumFeature(
-    private val sdkCore: SdkCore,
+    private val configuration: Configuration.Feature.RUM,
     private val coreFeature: CoreFeature,
     private val ndkCrashEventHandler: NdkCrashEventHandler = DatadogNdkCrashEventHandler()
-) : FeatureEventReceiver {
+) : StorageBackedFeature, FeatureEventReceiver {
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
     internal val initialized = AtomicBoolean(false)
 
@@ -91,10 +95,16 @@ internal class RumFeature(
     internal lateinit var anrDetectorRunnable: ANRDetectorRunnable
     internal lateinit var anrDetectorHandler: Handler
     internal lateinit var appContext: Context
+    internal lateinit var sdkCore: SdkCore
 
-    // region SdkFeature
+    // region Feature
 
-    fun initialize(context: Context, configuration: Configuration.Feature.RUM) {
+    override val name: String = RUM_FEATURE_NAME
+
+    override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
+        this.sdkCore = sdkCore
+        this.appContext = appContext
+
         dataWriter = createDataWriter(configuration)
 
         samplingRate = configuration.samplingRate
@@ -111,14 +121,16 @@ internal class RumFeature(
 
         initializeANRDetector()
 
-        registerTrackingStrategies(context)
-
-        appContext = context.applicationContext
+        registerTrackingStrategies(appContext)
 
         sdkCore.setEventReceiver(RUM_FEATURE_NAME, this)
 
         initialized.set(true)
     }
+
+    override val requestFactory: RequestFactory = RumRequestFactory(configuration.endpointUrl)
+    override val storageConfiguration: FeatureStorageConfiguration =
+        FeatureStorageConfiguration.DEFAULT
 
     fun stop() {
         sdkCore.removeEventReceiver(RUM_FEATURE_NAME)
@@ -142,6 +154,8 @@ internal class RumFeature(
         vitalExecutorService = NoOpScheduledExecutorService()
     }
 
+    // endregion
+
     private fun createDataWriter(
         configuration: Configuration.Feature.RUM
     ): DataWriter<Any> {
@@ -158,8 +172,6 @@ internal class RumFeature(
             lastViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
         )
     }
-
-    // endregion
 
     // region FeatureEventReceiver
 

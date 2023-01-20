@@ -331,14 +331,14 @@ internal class DatadogCore(
             )
             features[LogsFeature.LOGS_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
-                logsFeature = LogsFeature(this).also {
-                    it.initialize(configuration)
+                logsFeature = LogsFeature(configuration).also {
+                    it.onInitialize(this, appContext)
                 }
             }
             features[WebViewLogsFeature.WEB_LOGS_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
-                webViewLogsFeature = WebViewLogsFeature().also {
-                    it.initialize()
+                webViewLogsFeature = WebViewLogsFeature(configuration.endpointUrl).also {
+                    it.onInitialize(this, appContext)
                 }
             }
         }
@@ -355,8 +355,8 @@ internal class DatadogCore(
             )
             features[CrashReportsFeature.CRASH_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
-                crashReportsFeature = CrashReportsFeature(this).also {
-                    it.initialize(appContext)
+                crashReportsFeature = CrashReportsFeature().also {
+                    it.onInitialize(this, appContext)
                 }
             }
         }
@@ -373,8 +373,8 @@ internal class DatadogCore(
             )
             features[TracingFeature.TRACING_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
-                tracingFeature = TracingFeature(this).also {
-                    it.initialize(configuration)
+                tracingFeature = TracingFeature(configuration).also {
+                    it.onInitialize(this, appContext)
                 }
             }
         }
@@ -402,14 +402,14 @@ internal class DatadogCore(
             )
             features[RumFeature.RUM_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
-                rumFeature = RumFeature(this, coreFeature).also {
-                    it.initialize(appContext, configuration)
+                rumFeature = RumFeature(configuration, coreFeature).also {
+                    it.onInitialize(this, appContext)
                 }
             }
             features[WebViewRumFeature.WEB_RUM_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
-                webViewRumFeature = WebViewRumFeature(coreFeature).also {
-                    it.initialize()
+                webViewRumFeature = WebViewRumFeature(configuration.endpointUrl, coreFeature).also {
+                    it.onInitialize(this, appContext)
                 }
             }
         }
@@ -426,8 +426,8 @@ internal class DatadogCore(
             )
             features[SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
-                sessionReplayFeature = SessionReplayFeature(this).also {
-                    it.initialize(appContext, configuration)
+                sessionReplayFeature = SessionReplayFeature(configuration).also {
+                    it.onInitialize(this, appContext)
                 }
             }
         }

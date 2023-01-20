@@ -62,8 +62,8 @@ internal class LoggerBuilderTest {
     fun `set up`() {
         val mockCore = mock<DatadogCore>()
         whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
-        val logsFeature = LogsFeature(mockCore)
-        logsFeature.initialize(fakeConfig)
+        val logsFeature = LogsFeature(fakeConfig)
+        logsFeature.onInitialize(mockCore, mock())
         whenever(mockCore.logsFeature) doReturn logsFeature
 
         Datadog.globalSdkCore = mockCore
