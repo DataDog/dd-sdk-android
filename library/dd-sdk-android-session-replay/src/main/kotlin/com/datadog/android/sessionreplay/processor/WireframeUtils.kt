@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.processor
 
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.hasOpaqueBackground
+import com.datadog.android.sessionreplay.utils.shapeStyle
 import kotlin.math.max
 
 internal class WireframeUtils {
@@ -42,21 +43,30 @@ internal class WireframeUtils {
         }
     }
 
-    @Suppress("ReturnCount")
-    internal fun checkIsValidWireframe(
+    internal fun checkWireframeIsCovered(
         wireframe: MobileSegment.Wireframe,
         topWireframes: List<MobileSegment.Wireframe>
     ): Boolean {
         val wireframeBounds = wireframe.bounds()
-        if (wireframeBounds.width <= 0 || wireframeBounds.height <= 0) {
-            return false
-        }
         topWireframes.forEach {
             if (it.bounds().isCovering(wireframeBounds) && it.hasOpaqueBackground()) {
-                return false
+                return true
             }
         }
-        return true
+        return false
+    }
+
+    internal fun checkWireframeIsValid(wireframe: MobileSegment.Wireframe): Boolean {
+        val wireframeBounds = wireframe.bounds()
+        return (
+            wireframeBounds.width > 0 &&
+                wireframeBounds.height > 0 &&
+                !(
+                    wireframe is MobileSegment.Wireframe.ShapeWireframe &&
+                        wireframe.shapeStyle == null &&
+                        wireframe.border == null
+                    )
+            )
     }
 
     private fun Bounds.isCovering(other: Bounds): Boolean {

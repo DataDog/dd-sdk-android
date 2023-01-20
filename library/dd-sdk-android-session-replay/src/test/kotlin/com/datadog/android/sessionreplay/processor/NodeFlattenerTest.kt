@@ -43,8 +43,8 @@ internal class NodeFlattenerTest {
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockWireframeUtils.checkIsValidWireframe(any(), any()))
-            .thenReturn(true)
+        whenever(mockWireframeUtils.checkWireframeIsValid(any())).thenReturn(true)
+        whenever(mockWireframeUtils.checkWireframeIsCovered(any(), any())).thenReturn(false)
         testedNodeFlattener = NodeFlattener(mockWireframeUtils)
     }
 
@@ -106,8 +106,29 @@ internal class NodeFlattenerTest {
 
         val randomIndex = forge.anInt(min = 0, max = expectedList.size)
         val excludedWireframe = expectedList.removeAt(randomIndex)
-        whenever(mockWireframeUtils.checkIsValidWireframe(eq(excludedWireframe), any()))
+        whenever(mockWireframeUtils.checkWireframeIsValid(eq(excludedWireframe)))
             .thenReturn(false)
+
+        // When
+        val wireframes = testedNodeFlattener.flattenNode(fakeSnapshot)
+
+        // Then
+        assertThat(wireframes).isEqualTo(expectedList)
+    }
+
+    @Test
+    fun `M filter out the covered wireframe W process`(forge: Forge) {
+        // Given
+        val expectedList: MutableList<MobileSegment.Wireframe> =
+            Array<MobileSegment.Wireframe>(forge.anInt(min = 10, max = 20)) {
+                forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+            }.toMutableList()
+        val fakeSnapshot = generateTreeFromList(expectedList)
+
+        val randomIndex = forge.anInt(min = 0, max = expectedList.size)
+        val excludedWireframe = expectedList.removeAt(randomIndex)
+        whenever(mockWireframeUtils.checkWireframeIsCovered(eq(excludedWireframe), any()))
+            .thenReturn(true)
 
         // When
         val wireframes = testedNodeFlattener.flattenNode(fakeSnapshot)
