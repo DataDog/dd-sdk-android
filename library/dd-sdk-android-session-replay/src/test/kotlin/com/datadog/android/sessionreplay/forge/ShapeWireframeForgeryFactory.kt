@@ -21,10 +21,7 @@ internal class ShapeWireframeForgeryFactory :
             height = forge.aPositiveLong(strict = true),
             shapeStyle = forge.aNullable { getForgery() },
             border = forge.aNullable {
-                MobileSegment.ShapeBorder(
-                    forge.aStringMatching("#[0-9A-F]{6}FF"),
-                    forge.aPositiveLong(strict = true)
-                )
+                getForgery()
             },
             clip = forge.aNullable {
                 getForgery()
