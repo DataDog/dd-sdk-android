@@ -65,7 +65,7 @@ kotlinGrammarParser = "9b264ee"
 jsonSchemaValidator = "1.12.1"
 
 # Integrations
-realm = "10.12.0"
+realm = "10.13.1-transformer-api"
 sqlDelight = "1.5.1"
 coil = "1.0.0"
 fresco = "2.3.0"
