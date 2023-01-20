@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal
 
+import android.content.Context
 import android.util.Log
 import androidx.annotation.AnyThread
 import com.datadog.android.core.configuration.Configuration
@@ -16,12 +17,16 @@ import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.internal.domain.event.LogEventSerializer
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.v2.api.FeatureEventReceiver
+import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
+import com.datadog.android.v2.log.internal.net.LogsRequestFactory
 import com.datadog.android.v2.log.internal.storage.LogsDataWriter
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
@@ -29,24 +34,37 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class LogsFeature(
-    private val sdkCore: SdkCore
-) : FeatureEventReceiver {
+    private val configuration: Configuration.Feature.Logs
+) : StorageBackedFeature, FeatureEventReceiver {
 
     internal var dataWriter: DataWriter<LogEvent> = NoOpDataWriter()
+    internal lateinit var sdkCore: SdkCore
     internal val initialized = AtomicBoolean(false)
     private val logGenerator = DatadogLogGenerator()
 
-    internal fun initialize(configuration: Configuration.Feature.Logs) {
+    // region Feature
+
+    override val name: String = LOGS_FEATURE_NAME
+
+    override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
+        this.sdkCore = sdkCore
         sdkCore.setEventReceiver(LOGS_FEATURE_NAME, this)
+
         dataWriter = createDataWriter(configuration)
         initialized.set(true)
     }
+
+    override val requestFactory: RequestFactory = LogsRequestFactory(configuration.endpointUrl)
+    override val storageConfiguration: FeatureStorageConfiguration =
+        FeatureStorageConfiguration.DEFAULT
 
     internal fun stop() {
         sdkCore.removeEventReceiver(LOGS_FEATURE_NAME)
         dataWriter = NoOpDataWriter()
         initialized.set(false)
     }
+
+    // endregion
 
     // region FeatureEventReceiver
 

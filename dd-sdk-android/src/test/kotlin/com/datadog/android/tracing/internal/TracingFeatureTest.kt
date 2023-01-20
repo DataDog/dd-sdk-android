@@ -10,7 +10,10 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.tracing.internal.data.TraceWriter
 import com.datadog.android.tracing.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.tracing.internal.net.TracesRequestFactory
+import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -35,20 +38,20 @@ internal class TracingFeatureTest {
     private lateinit var testedFeature: TracingFeature
 
     @Forgery
-    lateinit var fakeConfigurationFeature: Configuration.Feature.Tracing
+    lateinit var fakeConfiguration: Configuration.Feature.Tracing
 
     @Mock
     lateinit var mockSdkCore: SdkCore
 
     @BeforeEach
     fun `set up`() {
-        testedFeature = TracingFeature(mockSdkCore)
+        testedFeature = TracingFeature(fakeConfiguration)
     }
 
     @Test
     fun `𝕄 initialize writer 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(fakeConfigurationFeature)
+        testedFeature.onInitialize(mockSdkCore, mock())
 
         // Then
         assertThat(testedFeature.dataWriter)
@@ -58,12 +61,33 @@ internal class TracingFeatureTest {
     @Test
     fun `𝕄 use the eventMapper 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(fakeConfigurationFeature)
+        testedFeature.onInitialize(mockSdkCore, mock())
 
         // Then
         val dataWriter = testedFeature.dataWriter as? TraceWriter
         val spanEventMapperWrapper = dataWriter?.eventMapper as? SpanEventMapperWrapper
         val spanEventMapper = spanEventMapperWrapper?.wrappedEventMapper
-        assertThat(spanEventMapper).isSameAs(fakeConfigurationFeature.spanEventMapper)
+        assertThat(spanEventMapper).isSameAs(fakeConfiguration.spanEventMapper)
+    }
+
+    @Test
+    fun `𝕄 provide tracing feature name 𝕎 name()`() {
+        // When+Then
+        assertThat(testedFeature.name)
+            .isEqualTo(TracingFeature.TRACING_FEATURE_NAME)
+    }
+
+    @Test
+    fun `𝕄 provide tracing request factory 𝕎 requestFactory()`() {
+        // When+Then
+        assertThat(testedFeature.requestFactory)
+            .isInstanceOf(TracesRequestFactory::class.java)
+    }
+
+    @Test
+    fun `𝕄 provide default storage configuration 𝕎 storageConfiguration()`() {
+        // When+Then
+        assertThat(testedFeature.storageConfiguration)
+            .isEqualTo(FeatureStorageConfiguration.DEFAULT)
     }
 }

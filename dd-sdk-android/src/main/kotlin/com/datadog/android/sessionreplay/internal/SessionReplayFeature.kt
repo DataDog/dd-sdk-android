@@ -13,20 +13,23 @@ import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.sessionreplay.LifecycleCallback
 import com.datadog.android.sessionreplay.RecordWriter
 import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
+import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
 import com.datadog.android.v2.api.FeatureEventReceiver
+import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.StorageBackedFeature
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class SessionReplayFeature(
-    private val sdkCore: SdkCore,
+    private val configuration: Configuration.Feature.SessionReplay,
     private val sessionReplayCallbackProvider:
-        (RecordWriter, Configuration.Feature.SessionReplay) ->
-        LifecycleCallback = { recordWriter, configuration ->
+        (SdkCore, RecordWriter) -> LifecycleCallback = { sdkCore, recordWriter ->
             SessionReplayLifecycleCallback(
                 SessionReplayRumContextProvider(sdkCore),
                 configuration.privacy,
@@ -35,28 +38,39 @@ internal class SessionReplayFeature(
                 SessionReplayRecordCallback(sdkCore)
             )
         }
-) : FeatureEventReceiver {
+) : StorageBackedFeature, FeatureEventReceiver {
 
     internal lateinit var appContext: Context
+    internal lateinit var sdkCore: SdkCore
     private var isRecording = AtomicBoolean(false)
     internal var sessionReplayCallback: LifecycleCallback = NoOpLifecycleCallback()
 
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
     internal val initialized = AtomicBoolean(false)
 
-    // region SDKFeature
+    // region Feature
 
-    internal fun initialize(
-        context: Context,
-        configuration: Configuration.Feature.SessionReplay
+    override val name: String = SESSION_REPLAY_FEATURE_NAME
+
+    override fun onInitialize(
+        sdkCore: SdkCore,
+        appContext: Context
     ) {
+        this.sdkCore = sdkCore
+        this.appContext = appContext
+
         sdkCore.setEventReceiver(SESSION_REPLAY_FEATURE_NAME, this)
-        appContext = context
         dataWriter = createDataWriter()
-        sessionReplayCallback = sessionReplayCallbackProvider(dataWriter, configuration)
+        sessionReplayCallback = sessionReplayCallbackProvider(sdkCore, dataWriter)
         initialized.set(true)
         startRecording()
     }
+
+    override val requestFactory: RequestFactory =
+        SessionReplayRequestFactory(configuration.endpointUrl)
+
+    override val storageConfiguration: FeatureStorageConfiguration =
+        FeatureStorageConfiguration.DEFAULT
 
     internal fun stop() {
         stopRecording()
@@ -65,11 +79,11 @@ internal class SessionReplayFeature(
         initialized.set(false)
     }
 
+    // endregion
+
     private fun createDataWriter(): RecordWriter {
         return SessionReplayRecordWriter(sdkCore)
     }
-
-    // endregion
 
     // region SessionReplayFeature
 

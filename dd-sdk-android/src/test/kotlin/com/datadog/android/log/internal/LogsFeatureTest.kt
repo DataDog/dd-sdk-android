@@ -20,12 +20,14 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.datadog.android.v2.log.internal.net.LogsRequestFactory
 import com.datadog.android.v2.log.internal.storage.LogsDataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -36,6 +38,7 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -138,13 +141,13 @@ internal class LogsFeatureTest {
             }
         )
 
-        testedFeature = LogsFeature(mockSdkCore)
+        testedFeature = LogsFeature(fakeConfigurationFeature)
     }
 
     @Test
     fun `𝕄 initialize data writer 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(fakeConfigurationFeature)
+        testedFeature.onInitialize(mockSdkCore, mock())
 
         // Then
         assertThat(testedFeature.dataWriter)
@@ -154,7 +157,7 @@ internal class LogsFeatureTest {
     @Test
     fun `𝕄 use the eventMapper 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(fakeConfigurationFeature)
+        testedFeature.onInitialize(mockSdkCore, mock())
 
         // Then
         val dataWriter = testedFeature.dataWriter as? LogsDataWriter
@@ -166,6 +169,27 @@ internal class LogsFeatureTest {
         ).isSameAs(
             fakeConfigurationFeature.logsEventMapper
         )
+    }
+
+    @Test
+    fun `𝕄 provide logs feature name 𝕎 name()`() {
+        // When+Then
+        assertThat(testedFeature.name)
+            .isEqualTo(LogsFeature.LOGS_FEATURE_NAME)
+    }
+
+    @Test
+    fun `𝕄 provide logs request factory 𝕎 requestFactory()`() {
+        // When+Then
+        assertThat(testedFeature.requestFactory)
+            .isInstanceOf(LogsRequestFactory::class.java)
+    }
+
+    @Test
+    fun `𝕄 provide default storage configuration 𝕎 storageConfiguration()`() {
+        // When+Then
+        assertThat(testedFeature.storageConfiguration)
+            .isEqualTo(FeatureStorageConfiguration.DEFAULT)
     }
 
     // region FeatureEventReceiver#onReceive
@@ -286,6 +310,7 @@ internal class LogsFeatureTest {
     ) {
         // Given
         testedFeature.dataWriter = mockDataWriter
+        testedFeature.sdkCore = mockSdkCore
         val fakeThrowable = forge.aThrowable()
         val event = mapOf(
             "type" to "jvm_crash",
@@ -358,6 +383,7 @@ internal class LogsFeatureTest {
             }
         }
         testedFeature.dataWriter = mockDataWriter
+        testedFeature.sdkCore = mockSdkCore
         val fakeThrowable = forge.aThrowable()
         val event = mapOf(
             "type" to "jvm_crash",
@@ -423,6 +449,7 @@ internal class LogsFeatureTest {
             }
         }
         testedFeature.dataWriter = mockDataWriter
+        testedFeature.sdkCore = mockSdkCore
         val fakeThrowable = forge.aThrowable()
         val event = mapOf(
             "type" to "jvm_crash",
@@ -503,6 +530,7 @@ internal class LogsFeatureTest {
     ) {
         // Given
         testedFeature.dataWriter = mockDataWriter
+        testedFeature.sdkCore = mockSdkCore
         val fakeAttributes = forge.exhaustiveAttributes()
         val event = mutableMapOf<String, Any?>(
             "type" to "ndk_crash",
@@ -551,6 +579,7 @@ internal class LogsFeatureTest {
     ) {
         // Given
         testedFeature.dataWriter = mockDataWriter
+        testedFeature.sdkCore = mockSdkCore
         val fakeAttributes = forge.exhaustiveAttributes()
         val event = mutableMapOf<String, Any?>(
             "type" to "ndk_crash",
@@ -600,6 +629,7 @@ internal class LogsFeatureTest {
     ) {
         // Given
         testedFeature.dataWriter = mockDataWriter
+        testedFeature.sdkCore = mockSdkCore
         val fakeAttributes = forge.exhaustiveAttributes()
         val event = mutableMapOf<String, Any?>(
             "type" to "ndk_crash",
@@ -701,6 +731,7 @@ internal class LogsFeatureTest {
     ) {
         // Given
         testedFeature.dataWriter = mockDataWriter
+        testedFeature.sdkCore = mockSdkCore
         val fakeAttributes = forge.exhaustiveAttributes()
         val event = mutableMapOf<String, Any?>(
             "type" to "span_log",
