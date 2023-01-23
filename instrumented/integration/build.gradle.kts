@@ -112,4 +112,4 @@ dependencies {
     }
 }
 
-kotlinConfig(false)
+kotlinConfig()

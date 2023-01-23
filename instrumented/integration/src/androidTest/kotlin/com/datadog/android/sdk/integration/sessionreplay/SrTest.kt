@@ -30,28 +30,32 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
         expectedSrData: ExpectedSrData
     ) {
         val records = handledRequests
-                .mapNotNull {
-                   it.extractSrSegmentAsJson()?.asJsonObject
-                }
-                .flatMap { it.getAsJsonArray("records") }
-                .map {
-                    val asJsonObject = it.asJsonObject
-                    // we need to remove the timestamp property as `withIgnoringFields` does
-                    // not work for json objects
-                    asJsonObject.remove("timestamp")
-                    asJsonObject
-                }
+            .mapNotNull {
+                it.extractSrSegmentAsJson()?.asJsonObject
+            }
+            .flatMap { it.getAsJsonArray("records") }
+            .map {
+                val asJsonObject = it.asJsonObject
+                // we need to remove the timestamp property as `withIgnoringFields` does
+                // not work for json objects
+                asJsonObject.remove("timestamp")
+                asJsonObject
+            }
         assertThat(records).usingRecursiveFieldByFieldElementComparator(
-                RecursiveComparisonConfiguration
-                        .builder()
-                        .withComparatorForType(jsonPrimitivesComparator,
-                                JsonPrimitive::class.java).build())
-                .containsAll(expectedSrData.records.map {
+            RecursiveComparisonConfiguration
+                .builder()
+                .withComparatorForType(
+                    jsonPrimitivesComparator,
+                    JsonPrimitive::class.java
+                ).build()
+        )
+            .containsAll(
+                expectedSrData.records.map {
                     val asJsonObject = it.asJsonObject
                     asJsonObject.remove("timestamp")
                     asJsonObject
-                })
-
+                }
+            )
     }
 
     private fun HandledRequest.extractSrSegmentAsJson(): JsonElement? {
@@ -64,6 +68,7 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
         return null
     }
 
+    @Suppress("NestedBlockDepth")
     private fun resolveSrSegmentBodyFromRequest(buffer: Buffer): ByteArray {
         // Example of a multipart form segment body:
 
@@ -106,41 +111,38 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
     }
 
     private val jsonPrimitivesComparator: (o1: JsonPrimitive, o2: JsonPrimitive) -> Int =
-            { o1, o2 ->
-                if (comparingFloatAndLazilyParsedNumber(o1, o2)) {
-                    // when comparing a float with a LazilyParsedNumber the `JsonPrimitive#equals`
-                    // method uses Double.parseValue(value) to convert the value from the
-                    // LazilyParsedNumber and this method uses an extra precision. This will
-                    // create assertion issues because even though the original values
-                    // are the same the parsed values are no longer matching.
-                    if (o1.asString.toDouble() == o2.asString.toDouble()) {
-                        0
-                    } else {
-                        -1
-                    }
+        { o1, o2 ->
+            if (comparingFloatAndLazilyParsedNumber(o1, o2)) {
+                // when comparing a float with a LazilyParsedNumber the `JsonPrimitive#equals`
+                // method uses Double.parseValue(value) to convert the value from the
+                // LazilyParsedNumber and this method uses an extra precision. This will
+                // create assertion issues because even though the original values
+                // are the same the parsed values are no longer matching.
+                if (o1.asString.toDouble() == o2.asString.toDouble()) {
+                    0
                 } else {
-                    if (o1 == o2) {
-                        0
-                    } else {
-                        -1
-                    }
+                    -1
+                }
+            } else {
+                if (o1 == o2) {
+                    0
+                } else {
+                    -1
                 }
             }
+        }
 
     private fun comparingFloatAndLazilyParsedNumber(o1: JsonPrimitive, o2: JsonPrimitive): Boolean {
         return (o1.isNumber && o2.isNumber) &&
-                (o1.asNumber is Float || o2.asNumber is Float) &&
-                (o1.asNumber is LazilyParsedNumber || o2.asNumber is LazilyParsedNumber)
+            (o1.asNumber is Float || o2.asNumber is Float) &&
+            (o1.asNumber is LazilyParsedNumber || o2.asNumber is LazilyParsedNumber)
     }
 
-
     companion object {
+        internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
         private val SEGMENT_FORM_DATA_REGEX =
             Regex("content-disposition: form-data; name=\"segment\"; filename=\"(.+)\"")
         private val CONTENT_LENGTH_REGEX =
             Regex("content-length: (\\d+)")
-        private val MULTIPART_FORM_HEADER_REGEX =
-            Regex("multipart/form-data; boundary=(.+)")
-        internal val FINAL_WAIT_MS = TimeUnit.SECONDS.toMillis(30)
     }
 }

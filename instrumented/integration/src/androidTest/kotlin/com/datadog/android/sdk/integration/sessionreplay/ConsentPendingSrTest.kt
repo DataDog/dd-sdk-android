@@ -9,17 +9,18 @@ package com.datadog.android.sdk.integration.sessionreplay
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.integration.log.LogsTest
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.tools.unit.ConditionWatcher
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-
-internal class ConsentGrantedSrTest : SrSnapshotTest() {
+internal class ConsentPendingSrTest : SrSnapshotTest() {
 
     @get:Rule
     val rule = SessionReplayTestRule(
         SessionReplayPlaygroundActivity::class.java,
-        trackingConsent = TrackingConsent.GRANTED,
+        trackingConsent = TrackingConsent.PENDING,
         keepRequests = true
     )
 
@@ -30,11 +31,8 @@ internal class ConsentGrantedSrTest : SrSnapshotTest() {
 
         ConditionWatcher {
             // verify the captured log events into the MockedWebServer
-            verifyExpectedSrData(
-                rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl),
-                runInstrumentationScenario(rule)
-            )
+            assertThat(rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)).isEmpty()
             true
-        }.doWait(timeoutMs = INITIAL_WAIT_MS)
+        }.doWait(timeoutMs = LogsTest.INITIAL_WAIT_MS)
     }
 }

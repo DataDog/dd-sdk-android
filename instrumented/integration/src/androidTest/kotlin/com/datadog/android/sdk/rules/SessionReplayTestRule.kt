@@ -10,7 +10,6 @@ import android.app.Activity
 import android.content.Intent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.utils.addExtras
-import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
 
 internal open class SessionReplayTestRule<T : Activity>(
     activityClass: Class<T>,
@@ -22,12 +21,12 @@ internal open class SessionReplayTestRule<T : Activity>(
     // region ActivityTestRule
 
     override fun beforeActivityLaunched() {
-        removeCallbacks(listOf(SessionReplayLifecycleCallback::class.java))
+        removeCallbacks(listOf(Class.forName(SESSION_REPLAY_LIFECYCLE_CALLBACK_CLASS_NAME)))
         super.beforeActivityLaunched()
     }
 
     override fun afterActivityFinished() {
-        removeCallbacks(listOf(SessionReplayLifecycleCallback::class.java))
+        removeCallbacks(listOf(Class.forName(SESSION_REPLAY_LIFECYCLE_CALLBACK_CLASS_NAME)))
         super.afterActivityFinished()
     }
 
@@ -36,4 +35,9 @@ internal open class SessionReplayTestRule<T : Activity>(
     }
 
     // endregion
+
+    companion object {
+        private const val SESSION_REPLAY_LIFECYCLE_CALLBACK_CLASS_NAME =
+            "com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback"
+    }
 }

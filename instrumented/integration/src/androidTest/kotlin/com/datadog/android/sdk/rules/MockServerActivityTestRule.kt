@@ -28,7 +28,6 @@ import okhttp3.mockwebserver.SocketPolicy
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.zip.GZIPInputStream
 
