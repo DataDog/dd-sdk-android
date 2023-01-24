@@ -75,14 +75,11 @@ import java.util.Locale
     ExtendWith(ApiLevelExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
-@MockitoSettings()
+@MockitoSettings
 @ForgeConfiguration(value = Configurator::class)
 internal class ConfigurationBuilderTest {
 
     lateinit var testedBuilder: Configuration.Builder
-
-    @StringForgery
-    lateinit var fakeEnvName: String
 
     @BeforeEach
     fun `set up`() {

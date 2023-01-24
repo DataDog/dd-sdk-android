@@ -452,6 +452,12 @@ DEPRECATED open class com.datadog.android.rum.webview.RumWebViewClient : android
 interface com.datadog.android.security.Encryption
   fun encrypt(ByteArray): ByteArray
   fun decrypt(ByteArray): ByteArray
+data class com.datadog.android.sessionreplay.internal.SessionReplayConfiguration
+  class Builder
+    fun useSite(com.datadog.android.DatadogSite): Builder
+    fun useCustomEndpoint(String): Builder
+    fun setPrivacy(com.datadog.android.sessionreplay.SessionReplayPrivacy): Builder
+    fun build(): SessionReplayConfiguration
 class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
   constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
   override fun onCorruption(android.database.sqlite.SQLiteDatabase)
