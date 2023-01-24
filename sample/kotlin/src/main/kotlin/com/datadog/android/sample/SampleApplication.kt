@@ -148,8 +148,7 @@ class SampleApplication : Application() {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .sampleTelemetry(100f)
             .setFirstPartyHosts(tracedHosts)

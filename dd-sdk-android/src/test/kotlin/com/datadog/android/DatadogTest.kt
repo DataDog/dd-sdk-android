@@ -180,8 +180,7 @@ internal class DatadogTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         ).build()
 
         // When
@@ -200,8 +199,7 @@ internal class DatadogTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         ).build()
 
         // When
@@ -282,8 +280,7 @@ internal class DatadogTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .build()
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
@@ -305,8 +302,7 @@ internal class DatadogTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .build()
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)

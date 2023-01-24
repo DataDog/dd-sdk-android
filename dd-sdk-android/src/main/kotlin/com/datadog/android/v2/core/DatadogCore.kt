@@ -30,6 +30,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.sessionreplay.internal.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.api.Feature
@@ -303,7 +304,8 @@ internal class DatadogCore(
         initializeTracingFeature(mutableConfig.tracesConfig)
         initializeRumFeature(mutableConfig.rumConfig)
         initializeCrashReportFeature(mutableConfig.crashReportConfig)
-        initializeSessionReplayFeature(mutableConfig.sessionReplayConfig)
+        // TODO RUMM-0000 Temporary thing, will be solved in next commit
+        initializeSessionReplayFeature(SessionReplayConfiguration.Builder().build())
 
         coreFeature.ndkCrashHandler.handleNdkCrash(this)
 
@@ -360,7 +362,7 @@ internal class DatadogCore(
         }
     }
 
-    private fun initializeSessionReplayFeature(configuration: Configuration.Feature.SessionReplay?) {
+    private fun initializeSessionReplayFeature(configuration: SessionReplayConfiguration?) {
         if (configuration != null) {
             val sessionReplayFeature = SessionReplayFeature(configuration)
             this.sessionReplayFeature = sessionReplayFeature

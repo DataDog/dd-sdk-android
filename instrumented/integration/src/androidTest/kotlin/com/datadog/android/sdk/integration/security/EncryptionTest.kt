@@ -141,8 +141,7 @@ internal class EncryptionTest {
                 logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
-                rumEnabled = true,
-                sessionReplayEnabled = true
+                rumEnabled = true
             )
             .setEncryption(encryption)
             .build()

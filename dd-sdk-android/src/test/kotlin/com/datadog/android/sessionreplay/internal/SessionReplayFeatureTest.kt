@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
@@ -55,7 +54,7 @@ internal class SessionReplayFeatureTest {
     private lateinit var testedFeature: SessionReplayFeature
 
     @Forgery
-    lateinit var fakeConfigurationFeature: Configuration.Feature.SessionReplay
+    lateinit var fakeConfigurationFeature: SessionReplayConfiguration
 
     @Mock
     lateinit var mockSessionReplayLifecycleCallback: SessionReplayLifecycleCallback

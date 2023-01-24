@@ -84,7 +84,7 @@ enum com.datadog.android.core.configuration.BatchSize
   - LARGE
 data class com.datadog.android.core.configuration.Configuration
   class Builder
-    constructor(Boolean, Boolean, Boolean, Boolean, Boolean)
+    constructor(Boolean, Boolean, Boolean, Boolean)
     fun build(): Configuration
     fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
     fun setFirstPartyHosts(List<String>): Builder
@@ -94,7 +94,6 @@ data class com.datadog.android.core.configuration.Configuration
     fun useCustomTracesEndpoint(String): Builder
     fun useCustomCrashReportsEndpoint(String): Builder
     fun useCustomRumEndpoint(String): Builder
-    fun useCustomSessionReplayEndpoint(String): Builder
     fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
     fun disableInteractionTracking(): Builder
     fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
@@ -116,7 +115,6 @@ data class com.datadog.android.core.configuration.Configuration
     fun setAdditionalConfiguration(Map<String, Any>): Builder
     fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
     fun setEncryption(com.datadog.android.security.Encryption): Builder
-    fun setSessionReplayPrivacy(com.datadog.android.sessionreplay.SessionReplayPrivacy): Builder
     fun setVitalsUpdateFrequency(VitalsUpdateFrequency): Builder
 data class com.datadog.android.core.configuration.Credentials
   constructor(String, String, String, String?, String? = null)
@@ -238,7 +236,6 @@ enum com.datadog.android.plugin.Feature
   - CRASH
   - TRACE
   - RUM
-  - SESSION_REPLAY
 enum com.datadog.android.privacy.TrackingConsent
   - GRANTED
   - NOT_GRANTED

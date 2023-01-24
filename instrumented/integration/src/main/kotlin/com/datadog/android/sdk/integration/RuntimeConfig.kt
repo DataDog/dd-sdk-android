@@ -66,8 +66,7 @@ internal object RuntimeConfig {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .useCustomLogsEndpoint(logsEndpointUrl)
             .useCustomRumEndpoint(rumEndpointUrl)
