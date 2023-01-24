@@ -7,10 +7,9 @@
 package com.datadog.android.v2.core
 
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.api.FeatureStorageConfiguration
-import com.datadog.android.v2.api.FeatureUploadConfiguration
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
@@ -26,11 +25,7 @@ internal class NoOpSdkCore : SdkCore {
         )
     }
 
-    override fun registerFeature(
-        featureName: String,
-        storageConfiguration: FeatureStorageConfiguration,
-        uploadConfiguration: FeatureUploadConfiguration
-    ) = Unit
+    override fun registerFeature(feature: Feature) = Unit
 
     override fun getFeature(featureName: String): FeatureScope? = null
 

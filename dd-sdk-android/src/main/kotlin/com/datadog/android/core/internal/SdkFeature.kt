@@ -22,11 +22,14 @@ import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.FeatureStorageConfiguration
-import com.datadog.android.v2.api.FeatureUploadConfiguration
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.RequestFactory
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.NoOpContextProvider
 import com.datadog.android.v2.core.internal.data.upload.DataFlusher
@@ -44,9 +47,7 @@ import java.util.concurrent.atomic.AtomicReference
 @Suppress("TooManyFunctions")
 internal class SdkFeature(
     internal val coreFeature: CoreFeature,
-    private val featureName: String,
-    private val storageConfiguration: FeatureStorageConfiguration,
-    private val uploadConfiguration: FeatureUploadConfiguration
+    internal val wrappedFeature: Feature
 ) : FeatureScope {
 
     internal val initialized = AtomicBoolean(false)
@@ -60,14 +61,15 @@ internal class SdkFeature(
 
     // region SDK Feature
 
-    fun initialize(context: Context, plugins: List<DatadogPlugin>) {
+    fun initialize(sdkCore: SdkCore, context: Context, plugins: List<DatadogPlugin>) {
         if (initialized.get()) {
             return
         }
 
-        storage = createStorage(featureName, storageConfiguration)
-
-        setupUploader()
+        if (wrappedFeature is StorageBackedFeature) {
+            storage = createStorage(wrappedFeature.name, wrappedFeature.storageConfiguration)
+            setupUploader(wrappedFeature.requestFactory)
+        }
 
         registerPlugins(
             plugins,
@@ -81,11 +83,9 @@ internal class SdkFeature(
             coreFeature.trackingConsentProvider
         )
 
-        onInitialize()
+        wrappedFeature.onInitialize(sdkCore, context)
 
         initialized.set(true)
-
-        onPostInitialized()
     }
 
     fun isInitialized(): Boolean {
@@ -106,10 +106,7 @@ internal class SdkFeature(
             uploader = NoOpDataUploader()
             fileOrchestrator = NoOpFileOrchestrator()
 
-            onStop()
-
             initialized.set(false)
-            onPostStopped()
         }
     }
 
@@ -145,32 +142,11 @@ internal class SdkFeature(
             internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                NO_EVENT_RECEIVER.format(Locale.US, featureName)
+                NO_EVENT_RECEIVER.format(Locale.US, wrappedFeature.name)
             )
         } else {
             receiver.onReceive(event)
         }
-    }
-
-    // endregion
-
-    // region Lifecycle
-
-    // TODO RUMM-0000 Should be moved out, to the public API of feature registration
-    @Suppress("EmptyFunctionBlock")
-    fun onInitialize() {
-    }
-
-    @Suppress("EmptyFunctionBlock")
-    fun onPostInitialized() {
-    }
-
-    @Suppress("EmptyFunctionBlock")
-    fun onStop() {
-    }
-
-    @Suppress("EmptyFunctionBlock")
-    fun onPostStopped() {
     }
 
     // endregion
@@ -196,9 +172,9 @@ internal class SdkFeature(
         featurePlugins.clear()
     }
 
-    private fun setupUploader() {
+    private fun setupUploader(requestFactory: RequestFactory) {
         uploadScheduler = if (coreFeature.isMainProcess) {
-            uploader = createUploader(uploadConfiguration)
+            uploader = createUploader(requestFactory)
             DataUploadScheduler(
                 storage,
                 uploader,
@@ -252,9 +228,9 @@ internal class SdkFeature(
         )
     }
 
-    private fun createUploader(uploadConfiguration: FeatureUploadConfiguration): DataUploader {
+    private fun createUploader(requestFactory: RequestFactory): DataUploader {
         return DataOkHttpUploader(
-            requestFactory = uploadConfiguration.requestFactory,
+            requestFactory = requestFactory,
             internalLogger = internalLogger,
             callFactory = coreFeature.okHttpClient,
             sdkVersion = coreFeature.sdkVersion,

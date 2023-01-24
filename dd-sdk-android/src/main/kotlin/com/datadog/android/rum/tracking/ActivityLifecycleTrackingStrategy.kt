@@ -32,7 +32,7 @@ abstract class ActivityLifecycleTrackingStrategy :
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
                 "In order to use the RUM automatic tracking feature you will have" +
-                    "to use the Application context when initializing the SDK"
+                    " to use the Application context when initializing the SDK"
             )
         }
     }

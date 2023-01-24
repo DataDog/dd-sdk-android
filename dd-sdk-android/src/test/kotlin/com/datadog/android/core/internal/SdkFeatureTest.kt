@@ -20,9 +20,12 @@ import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
-import com.datadog.android.v2.api.FeatureUploadConfiguration
+import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.NoOpContextProvider
 import com.datadog.android.v2.core.internal.data.upload.DataUploadScheduler
@@ -75,8 +78,17 @@ internal class SdkFeatureTest {
     @Mock
     lateinit var mockStorage: Storage
 
+    @Mock
+    lateinit var mockWrappedFeature: StorageBackedFeature
+
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
     @Forgery
     lateinit var fakeConsent: TrackingConsent
+
+    @Forgery
+    lateinit var fakeStorageConfiguration: FeatureStorageConfiguration
 
     @StringForgery
     lateinit var fakeFeatureName: String
@@ -86,23 +98,22 @@ internal class SdkFeatureTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(coreFeature.mockTrackingConsentProvider.getConsent()) doReturn fakeConsent
+        whenever(mockWrappedFeature.name) doReturn fakeFeatureName
+        whenever(mockWrappedFeature.requestFactory) doReturn mock()
+        whenever(mockWrappedFeature.storageConfiguration) doReturn fakeStorageConfiguration
 
         mockPlugins = forge.aList { mock() }
 
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
-            featureName = fakeFeatureName,
-            storageConfiguration = forge.getForgery(),
-            uploadConfiguration = FeatureUploadConfiguration(
-                requestFactory = mock()
-            )
+            wrappedFeature = mockWrappedFeature
         )
     }
 
     @Test
     fun `𝕄 mark itself as initialized 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
 
         // Then
         assertThat(testedFeature.isInitialized()).isTrue()
@@ -111,7 +122,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 initialize uploader 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
 
         // Then
         assertThat(testedFeature.uploadScheduler)
@@ -128,9 +139,36 @@ internal class SdkFeatureTest {
     }
 
     @Test
+    fun `𝕄 not initialize storage and uploader 𝕎 initialize() { simple feature }`() {
+        // Given
+        val mockSimpleFeature = mock<Feature>().apply {
+            whenever(name) doReturn fakeFeatureName
+        }
+        testedFeature = SdkFeature(
+            coreFeature = coreFeature.mockInstance,
+            wrappedFeature = mockSimpleFeature
+        )
+
+        // When
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
+
+        // Then
+        assertThat(testedFeature.isInitialized()).isTrue
+
+        assertThat(testedFeature.uploadScheduler)
+            .isInstanceOf(NoOpUploadScheduler::class.java)
+        assertThat(testedFeature.uploader)
+            .isInstanceOf(NoOpDataUploader::class.java)
+        assertThat(testedFeature.storage)
+            .isInstanceOf(NoOpStorage::class.java)
+        assertThat(testedFeature.fileOrchestrator)
+            .isInstanceOf(NoOpFileOrchestrator::class.java)
+    }
+
+    @Test
     fun `𝕄 register plugins 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
 
         // Then
         argumentCaptor<DatadogPluginConfig> {
@@ -151,7 +189,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 register plugins as TrackingConsentCallback 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
 
         // Then
         mockPlugins.forEach {
@@ -162,7 +200,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 unregister plugins 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
         mockPlugins.forEach {
             verify(it).register(any())
         }
@@ -180,7 +218,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 stop scheduler 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
         val mockUploadScheduler: UploadScheduler = mock()
         testedFeature.uploadScheduler = mockUploadScheduler
 
@@ -194,7 +232,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 cleanup data 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
 
         // When
         testedFeature.stop()
@@ -213,7 +251,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 mark itself as not initialized 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
 
         // When
         testedFeature.stop()
@@ -225,14 +263,14 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 initialize only once 𝕎 initialize() twice`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
         val uploadScheduler = testedFeature.uploadScheduler
         val uploader = testedFeature.uploader
         val storage = testedFeature.storage
         val fileOrchestrator = testedFeature.fileOrchestrator
 
         // When
-        testedFeature.initialize(appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
 
         // Then
         assertThat(testedFeature.uploadScheduler).isSameAs(uploadScheduler)
@@ -247,7 +285,7 @@ internal class SdkFeatureTest {
         whenever(testedFeature.coreFeature.isMainProcess) doReturn false
 
         // When
-        testedFeature.initialize(appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
 
         // Then
         assertThat(testedFeature.uploadScheduler).isInstanceOf(NoOpUploadScheduler::class.java)

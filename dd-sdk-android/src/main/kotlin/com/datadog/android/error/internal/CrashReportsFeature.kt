@@ -4,14 +4,19 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.error.internal
 
 import android.content.Context
+import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.SdkCore
 import java.util.concurrent.atomic.AtomicBoolean
 
-internal class CrashReportsFeature : Feature {
+internal class CrashReportsFeature(
+    internal val plugins: List<DatadogPlugin>
+) : Feature {
 
     internal val initialized = AtomicBoolean(false)
     internal var originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
