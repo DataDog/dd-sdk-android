@@ -31,21 +31,15 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
-import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.tracing.internal.TracingFeature
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.api.FeatureStorageConfiguration
-import com.datadog.android.v2.api.FeatureUploadConfiguration
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.ContextProvider
-import com.datadog.android.v2.log.internal.net.LogsRequestFactory
-import com.datadog.android.v2.rum.internal.net.RumRequestFactory
-import com.datadog.android.v2.tracing.internal.net.TracesRequestFactory
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import java.util.Locale
@@ -60,7 +54,7 @@ import java.util.concurrent.TimeUnit
  */
 @Suppress("TooManyFunctions")
 internal class DatadogCore(
-    context: Context,
+    internal val context: Context,
     internal val credentials: Credentials,
     configuration: Configuration,
     internal val instanceId: String
@@ -127,19 +121,22 @@ internal class DatadogCore(
         }
 
     /** @inheritDoc */
-    override fun registerFeature(
-        featureName: String,
-        storageConfiguration: FeatureStorageConfiguration,
-        uploadConfiguration: FeatureUploadConfiguration
-    ) {
-        val feature = SdkFeature(
+    override fun registerFeature(feature: Feature) {
+        val sdkFeature = SdkFeature(
             coreFeature,
-            featureName,
-            storageConfiguration,
-            uploadConfiguration
+            feature
         )
-
-        features[featureName] = feature
+        features[feature.name] = sdkFeature
+        // TODO RUMM-2943 get rid of plugins -> only NDK crash reporting
+        sdkFeature.initialize(
+            this,
+            context.applicationContext,
+            if (feature is CrashReportsFeature) {
+                feature.plugins
+            } else {
+                emptyList()
+            }
+        )
     }
 
     /** @inheritDoc */
@@ -302,11 +299,11 @@ internal class DatadogCore(
 
         applyAdditionalConfiguration(mutableConfig.additionalConfig)
 
-        initializeLogsFeature(mutableConfig.logsConfig, appContext)
-        initializeTracingFeature(mutableConfig.tracesConfig, appContext)
-        initializeRumFeature(mutableConfig.rumConfig, appContext)
-        initializeCrashReportFeature(mutableConfig.crashReportConfig, appContext)
-        initializeSessionReplayFeature(mutableConfig.sessionReplayConfig, appContext)
+        initializeLogsFeature(mutableConfig.logsConfig)
+        initializeTracingFeature(mutableConfig.tracesConfig)
+        initializeRumFeature(mutableConfig.rumConfig)
+        initializeCrashReportFeature(mutableConfig.crashReportConfig)
+        initializeSessionReplayFeature(mutableConfig.sessionReplayConfig)
 
         coreFeature.ndkCrashHandler.handleNdkCrash(this)
 
@@ -316,74 +313,35 @@ internal class DatadogCore(
         sendConfigurationTelemetryEvent(configuration)
     }
 
-    private fun initializeLogsFeature(
-        configuration: Configuration.Feature.Logs?,
-        appContext: Context
-    ) {
+    private fun initializeLogsFeature(configuration: Configuration.Feature.Logs?) {
         if (configuration != null) {
-            registerFeature(
-                LogsFeature.LOGS_FEATURE_NAME,
-                LogsRequestFactory(configuration.endpointUrl)
-            )
-            registerFeature(
-                WebViewLogsFeature.WEB_LOGS_FEATURE_NAME,
-                LogsRequestFactory(configuration.endpointUrl)
-            )
-            features[LogsFeature.LOGS_FEATURE_NAME]?.let {
-                it.initialize(appContext, configuration.plugins)
-                logsFeature = LogsFeature(configuration).also {
-                    it.onInitialize(this, appContext)
-                }
-            }
-            features[WebViewLogsFeature.WEB_LOGS_FEATURE_NAME]?.let {
-                it.initialize(appContext, configuration.plugins)
-                webViewLogsFeature = WebViewLogsFeature(configuration.endpointUrl).also {
-                    it.onInitialize(this, appContext)
-                }
-            }
+            val logsFeature = LogsFeature(configuration)
+            this.logsFeature = logsFeature
+            registerFeature(logsFeature)
+
+            val webViewLogsFeature = WebViewLogsFeature(configuration.endpointUrl)
+            this.webViewLogsFeature = webViewLogsFeature
+            registerFeature(webViewLogsFeature)
         }
     }
 
-    private fun initializeCrashReportFeature(
-        configuration: Configuration.Feature.CrashReport?,
-        appContext: Context
-    ) {
+    private fun initializeCrashReportFeature(configuration: Configuration.Feature.CrashReport?) {
         if (configuration != null) {
-            registerFeature(
-                CrashReportsFeature.CRASH_FEATURE_NAME,
-                LogsRequestFactory(configuration.endpointUrl)
-            )
-            features[CrashReportsFeature.CRASH_FEATURE_NAME]?.let {
-                it.initialize(appContext, configuration.plugins)
-                crashReportsFeature = CrashReportsFeature().also {
-                    it.onInitialize(this, appContext)
-                }
-            }
+            val crashReportsFeature = CrashReportsFeature(configuration.plugins)
+            this.crashReportsFeature = crashReportsFeature
+            registerFeature(crashReportsFeature)
         }
     }
 
-    private fun initializeTracingFeature(
-        configuration: Configuration.Feature.Tracing?,
-        appContext: Context
-    ) {
+    private fun initializeTracingFeature(configuration: Configuration.Feature.Tracing?) {
         if (configuration != null) {
-            registerFeature(
-                TracingFeature.TRACING_FEATURE_NAME,
-                TracesRequestFactory(configuration.endpointUrl)
-            )
-            features[TracingFeature.TRACING_FEATURE_NAME]?.let {
-                it.initialize(appContext, configuration.plugins)
-                tracingFeature = TracingFeature(configuration).also {
-                    it.onInitialize(this, appContext)
-                }
-            }
+            val tracingFeature = TracingFeature(configuration)
+            this.tracingFeature = tracingFeature
+            registerFeature(tracingFeature)
         }
     }
 
-    private fun initializeRumFeature(
-        configuration: Configuration.Feature.RUM?,
-        appContext: Context
-    ) {
+    private fun initializeRumFeature(configuration: Configuration.Feature.RUM?) {
         if (configuration != null) {
             if (coreFeature.rumApplicationId.isNullOrBlank()) {
                 internalLogger.log(
@@ -392,64 +350,22 @@ internal class DatadogCore(
                     WARNING_MESSAGE_APPLICATION_ID_IS_NULL
                 )
             }
-            registerFeature(
-                RumFeature.RUM_FEATURE_NAME,
-                RumRequestFactory(configuration.endpointUrl)
-            )
-            registerFeature(
-                WebViewRumFeature.WEB_RUM_FEATURE_NAME,
-                RumRequestFactory(configuration.endpointUrl)
-            )
-            features[RumFeature.RUM_FEATURE_NAME]?.let {
-                it.initialize(appContext, configuration.plugins)
-                rumFeature = RumFeature(configuration, coreFeature).also {
-                    it.onInitialize(this, appContext)
-                }
-            }
-            features[WebViewRumFeature.WEB_RUM_FEATURE_NAME]?.let {
-                it.initialize(appContext, configuration.plugins)
-                webViewRumFeature = WebViewRumFeature(configuration.endpointUrl, coreFeature).also {
-                    it.onInitialize(this, appContext)
-                }
-            }
+            val rumFeature = RumFeature(configuration, coreFeature)
+            this.rumFeature = rumFeature
+            registerFeature(rumFeature)
+
+            val webViewRumFeature = WebViewRumFeature(configuration.endpointUrl, coreFeature)
+            this.webViewRumFeature = webViewRumFeature
+            registerFeature(webViewRumFeature)
         }
     }
 
-    private fun initializeSessionReplayFeature(
-        configuration: Configuration.Feature.SessionReplay?,
-        appContext: Context
-    ) {
+    private fun initializeSessionReplayFeature(configuration: Configuration.Feature.SessionReplay?) {
         if (configuration != null) {
-            registerFeature(
-                SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME,
-                SessionReplayRequestFactory(configuration.endpointUrl)
-            )
-            features[SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME]?.let {
-                it.initialize(appContext, configuration.plugins)
-                sessionReplayFeature = SessionReplayFeature(configuration).also {
-                    it.onInitialize(this, appContext)
-                }
-            }
+            val sessionReplayFeature = SessionReplayFeature(configuration)
+            this.sessionReplayFeature = sessionReplayFeature
+            registerFeature(sessionReplayFeature)
         }
-    }
-
-    private fun registerFeature(
-        featureName: String,
-        requestFactory: RequestFactory
-    ) {
-        val filePersistenceConfig = coreFeature.buildFilePersistenceConfig()
-        registerFeature(
-            featureName,
-            storageConfiguration = FeatureStorageConfiguration(
-                maxItemSize = filePersistenceConfig.maxItemSize,
-                maxItemsPerBatch = filePersistenceConfig.maxItemsPerBatch,
-                maxBatchSize = filePersistenceConfig.maxBatchSize,
-                oldBatchThreshold = filePersistenceConfig.oldFileThreshold
-            ),
-            uploadConfiguration = FeatureUploadConfiguration(
-                requestFactory = requestFactory
-            )
-        )
     }
 
     @Suppress("FunctionMaxLength")

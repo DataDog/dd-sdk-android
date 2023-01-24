@@ -25,15 +25,9 @@ interface SdkCore {
     /**
      * Registers a feature to this instance of the Datadog SDK.
      *
-     * @param featureName the name of the feature
-     * @param storageConfiguration the configuration for storing tracked data
-     * @param uploadConfiguration the configuration for uploading stored data
+     * @param feature the feature to be registered.
      */
-    fun registerFeature(
-        featureName: String,
-        storageConfiguration: FeatureStorageConfiguration,
-        uploadConfiguration: FeatureUploadConfiguration
-    )
+    fun registerFeature(feature: Feature)
 
     /**
      * Retrieves a registered feature.

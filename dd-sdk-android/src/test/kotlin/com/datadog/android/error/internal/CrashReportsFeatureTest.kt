@@ -45,7 +45,7 @@ internal class CrashReportsFeatureTest {
 
     @BeforeEach
     fun `set up crash reports`() {
-        testedFeature = CrashReportsFeature()
+        testedFeature = CrashReportsFeature(plugins = emptyList())
         jvmExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
     }
 
