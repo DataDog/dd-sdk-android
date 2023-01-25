@@ -9,9 +9,9 @@ package com.datadog.android.sessionreplay.internal.net
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsJsonArray
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsJsonObject
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsLong
+import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
+import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.processor.EnrichedRecord
-import com.datadog.android.sessionreplay.utils.SessionReplayRumContext
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
@@ -21,9 +21,8 @@ import com.google.gson.JsonParser
  *  Maps a batch to a Pair<MobileSegment, SerializedMobileSegment> for uploading.
  *  This class is meant for internal usage.
  */
-class BatchesToSegmentsMapper {
+internal class BatchesToSegmentsMapper {
 
-    @Suppress("UndocumentedPublicFunction")
     fun map(batchData: List<ByteArray>): Pair<MobileSegment, JsonObject>? {
         return groupBatchDataIntoSegments(batchData)
     }
@@ -116,14 +115,14 @@ class BatchesToSegmentsMapper {
             records = emptyList()
         )
         val segmentAsJsonObject = segment.toJson().safeGetAsJsonObject() ?: return null
-        segmentAsJsonObject.add(com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper.Companion.RECORDS_KEY, orderedRecords)
+        segmentAsJsonObject.add(RECORDS_KEY, orderedRecords)
         return Pair(segment, segmentAsJsonObject)
     }
 
     private fun hasFullSnapshotRecord(records: JsonArray) =
         records.firstOrNull {
-            it.asJsonObject.getAsJsonPrimitive(com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper.Companion.RECORD_TYPE_KEY)?.safeGetAsLong() ==
-                com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper.Companion.FULL_SNAPSHOT_RECORD_TYPE
+            it.asJsonObject.getAsJsonPrimitive(RECORD_TYPE_KEY)?.safeGetAsLong() ==
+                FULL_SNAPSHOT_RECORD_TYPE
         } != null
 
     private fun JsonObject.records(): JsonArray? {
@@ -131,7 +130,7 @@ class BatchesToSegmentsMapper {
     }
 
     private fun JsonObject.timestamp(): Long? {
-        return getAsJsonPrimitive(com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper.Companion.TIMESTAMP_KEY)?.safeGetAsLong()
+        return getAsJsonPrimitive(TIMESTAMP_KEY)?.safeGetAsLong()
     }
 
     private fun JsonObject.rumContext(): SessionReplayRumContext? {

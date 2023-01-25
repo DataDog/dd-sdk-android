@@ -51,7 +51,7 @@ internal class SessionReplayRequestFactoryTest {
     lateinit var testedRequestFactory: SessionReplayRequestFactory
 
     @Mock
-    lateinit var mockBatchesToSegmentsMapper: com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
+    lateinit var mockBatchesToSegmentsMapper: BatchesToSegmentsMapper
 
     @Mock
     lateinit var mockRequestBodyFactory: RequestBodyFactory

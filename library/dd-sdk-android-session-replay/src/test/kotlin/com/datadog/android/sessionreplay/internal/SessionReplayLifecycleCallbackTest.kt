@@ -13,10 +13,10 @@ import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.recorder.Recorder
-import com.datadog.android.sessionreplay.recorder.callback.RecorderFragmentLifecycleCallback
-import com.datadog.android.sessionreplay.utils.RumContextProvider
-import com.datadog.android.sessionreplay.utils.TimeProvider
+import com.datadog.android.sessionreplay.internal.recorder.Recorder
+import com.datadog.android.sessionreplay.internal.recorder.callback.RecorderFragmentLifecycleCallback
+import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
+import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock

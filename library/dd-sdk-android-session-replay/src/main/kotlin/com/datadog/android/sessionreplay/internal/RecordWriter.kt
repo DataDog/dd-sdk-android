@@ -6,12 +6,12 @@
 
 package com.datadog.android.sessionreplay.internal
 
-import com.datadog.android.sessionreplay.processor.EnrichedRecord
+import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 
 /**
  * Will persists the serialized EnrichedRecord in the allocated Session Replay caching location.
  */
-interface RecordWriter {
+internal interface RecordWriter {
     /**
      * Writes the record to disk.
      * @param record to write

@@ -9,9 +9,9 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.widget.TextView
+import com.datadog.android.sessionreplay.internal.recorder.aMockView
+import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.recorder.aMockView
-import com.datadog.android.sessionreplay.recorder.densityNormalized
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -186,7 +186,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         val fakeDrawableAlpha = fakeStyleColor
             .substring(1)
             .toLong(16)
-            .and(BaseWireframeMapperTest.ALPHA_MASK)
+            .and(ALPHA_MASK)
             .toInt()
         val mockDrawable = mock<ColorDrawable> {
             whenever(it.color).thenReturn(fakeDrawableColor)

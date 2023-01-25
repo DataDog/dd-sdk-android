@@ -14,8 +14,8 @@ import android.os.Build
 import android.view.View
 import androidx.annotation.RequiresApi
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.recorder.aMockView
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.recorder.aMockView
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.mock

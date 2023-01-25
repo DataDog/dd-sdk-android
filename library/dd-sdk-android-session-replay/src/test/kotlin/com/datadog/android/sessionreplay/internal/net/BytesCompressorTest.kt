@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.internal.net
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.processor.EnrichedRecord
+import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

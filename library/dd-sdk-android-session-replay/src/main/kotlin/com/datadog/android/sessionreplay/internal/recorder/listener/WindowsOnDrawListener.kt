@@ -11,11 +11,11 @@ import android.content.res.Configuration
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
-import com.datadog.android.sessionreplay.processor.Processor
-import com.datadog.android.sessionreplay.recorder.Debouncer
-import com.datadog.android.sessionreplay.recorder.OrientationChanged
-import com.datadog.android.sessionreplay.recorder.SnapshotProducer
-import com.datadog.android.sessionreplay.recorder.densityNormalized
+import com.datadog.android.sessionreplay.internal.processor.Processor
+import com.datadog.android.sessionreplay.internal.recorder.Debouncer
+import com.datadog.android.sessionreplay.internal.recorder.OrientationChanged
+import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
+import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import java.lang.ref.WeakReference
 
 internal class WindowsOnDrawListener(

@@ -10,12 +10,12 @@ import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.sessionreplay.internal.RecordCallback
 import com.datadog.android.sessionreplay.internal.RecordWriter
+import com.datadog.android.sessionreplay.internal.recorder.Node
+import com.datadog.android.sessionreplay.internal.recorder.OrientationChanged
+import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
+import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
+import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.recorder.Node
-import com.datadog.android.sessionreplay.recorder.OrientationChanged
-import com.datadog.android.sessionreplay.utils.RumContextProvider
-import com.datadog.android.sessionreplay.utils.SessionReplayRumContext
-import com.datadog.android.sessionreplay.utils.TimeProvider
 import java.lang.NullPointerException
 import java.util.LinkedList
 import java.util.concurrent.ExecutorService

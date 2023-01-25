@@ -7,7 +7,8 @@
 package com.datadog.android.sessionreplay.internal.time
 
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.sessionreplay.utils.TimeProvider
+import com.datadog.android.sessionreplay.internal.utils.TimeProvider
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.SdkCore
 
 internal class SessionReplayTimeProvider(
@@ -21,7 +22,7 @@ internal class SessionReplayTimeProvider(
     }
 
     private fun resolveRumViewTimestampOffset(): Long {
-        val rumFeatureContext = sdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)
+        val rumFeatureContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
         val timestampOffset = rumFeatureContext[RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY]
         return if (timestampOffset is Long) timestampOffset else 0L
     }

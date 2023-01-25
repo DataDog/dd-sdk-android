@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.forge
 
-import com.datadog.android.sessionreplay.utils.SessionReplayRumContext
+import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.UUID

@@ -10,7 +10,7 @@ package com.datadog.android.sessionreplay.internal
  * Notifies the receiver whenever the screen is recorded or not.
  * For internal usage only.
  */
-interface RecordCallback {
+internal interface RecordCallback {
 
     /**
      * Notifies when a view session replay record was sent.

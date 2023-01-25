@@ -8,10 +8,10 @@ package com.datadog.android.sessionreplay.internal.recorder.callback
 
 import android.view.MotionEvent
 import android.view.Window
+import com.datadog.android.sessionreplay.internal.processor.Processor
+import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.processor.Processor
-import com.datadog.android.sessionreplay.recorder.densityNormalized
-import com.datadog.android.sessionreplay.utils.TimeProvider
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
 

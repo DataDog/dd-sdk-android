@@ -13,9 +13,8 @@ import java.util.zip.Deflater
  *  Compresses the payload data using the ZIP compression algorithm.
  *  This class is meant for internal usage.
  */
-class BytesCompressor {
+internal class BytesCompressor {
 
-    @Suppress("UndocumentedPublicFunction")
     fun compressBytes(uncompressedData: ByteArray): ByteArray {
         // Create the compressor with highest level of compression.
         val deflater = Deflater(COMPRESSION_LEVEL)

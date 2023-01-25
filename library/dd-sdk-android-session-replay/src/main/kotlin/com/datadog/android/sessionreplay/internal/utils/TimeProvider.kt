@@ -10,8 +10,7 @@ package com.datadog.android.sessionreplay.internal.utils
  * Provides the current device timestamp.
  * Meant for internal usage.
  */
-interface TimeProvider {
+internal interface TimeProvider {
 
-    @Suppress("UndocumentedPublicFunction")
     fun getDeviceTimestamp(): Long
 }

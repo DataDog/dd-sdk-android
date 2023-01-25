@@ -14,7 +14,7 @@ import java.util.UUID
  * @param sessionId the current RUM session id
  * @param viewId the current RUM view id
  */
-data class SessionReplayRumContext(
+internal data class SessionReplayRumContext(
     val applicationId: String = NULL_UUID,
     val sessionId: String = NULL_UUID,
     val viewId: String = NULL_UUID

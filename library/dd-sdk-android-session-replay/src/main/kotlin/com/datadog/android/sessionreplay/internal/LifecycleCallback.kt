@@ -14,7 +14,7 @@ import android.app.Application
  * activity can be recorded or not based on the `onActivityResume`, `onActivityPause` callbacks.
  * This is only meant for internal usage and later will change visibility from public to internal.
  */
-interface LifecycleCallback : Application.ActivityLifecycleCallbacks {
+internal interface LifecycleCallback : Application.ActivityLifecycleCallbacks {
 
     /**
      * Registers the callback on the Application lifecycle.

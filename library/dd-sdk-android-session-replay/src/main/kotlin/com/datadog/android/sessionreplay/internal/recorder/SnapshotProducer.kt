@@ -9,13 +9,13 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.content.res.Resources.Theme
 import android.view.View
 import android.view.ViewGroup
+import com.datadog.android.sessionreplay.internal.recorder.mapper.BaseWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.GenericWireframeMapper
+import com.datadog.android.sessionreplay.internal.utils.StringUtils
+import com.datadog.android.sessionreplay.internal.utils.ThemeUtils
+import com.datadog.android.sessionreplay.internal.utils.copy
+import com.datadog.android.sessionreplay.internal.utils.shapeStyle
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
-import com.datadog.android.sessionreplay.recorder.mapper.GenericWireframeMapper
-import com.datadog.android.sessionreplay.utils.StringUtils
-import com.datadog.android.sessionreplay.utils.ThemeUtils
-import com.datadog.android.sessionreplay.utils.copy
-import com.datadog.android.sessionreplay.utils.shapeStyle
 import java.util.LinkedList
 
 internal class SnapshotProducer(

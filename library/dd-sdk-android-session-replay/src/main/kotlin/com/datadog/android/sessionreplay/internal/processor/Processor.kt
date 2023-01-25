@@ -6,9 +6,9 @@
 
 package com.datadog.android.sessionreplay.internal.processor
 
+import com.datadog.android.sessionreplay.internal.recorder.Node
+import com.datadog.android.sessionreplay.internal.recorder.OrientationChanged
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.recorder.Node
-import com.datadog.android.sessionreplay.recorder.OrientationChanged
 
 internal interface Processor {
 

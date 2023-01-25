@@ -6,9 +6,9 @@
 
 package com.datadog.android.sessionreplay
 
-import com.datadog.android.sessionreplay.recorder.mapper.AllowAllWireframeMapper
-import com.datadog.android.sessionreplay.recorder.mapper.GenericWireframeMapper
-import com.datadog.android.sessionreplay.recorder.mapper.MaskAllWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.AllowAllWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.GenericWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllWireframeMapper
 
 /**
  * Defines the Session Replay privacy policy when recording the sessions.

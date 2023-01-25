@@ -11,13 +11,13 @@ import android.app.Application
 import android.os.Bundle
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.processor.RecordedDataProcessor
-import com.datadog.android.sessionreplay.recorder.Recorder
-import com.datadog.android.sessionreplay.recorder.ScreenRecorder
-import com.datadog.android.sessionreplay.recorder.SnapshotProducer
-import com.datadog.android.sessionreplay.recorder.callback.RecorderFragmentLifecycleCallback
-import com.datadog.android.sessionreplay.utils.RumContextProvider
-import com.datadog.android.sessionreplay.utils.TimeProvider
+import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
+import com.datadog.android.sessionreplay.internal.recorder.Recorder
+import com.datadog.android.sessionreplay.internal.recorder.ScreenRecorder
+import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
+import com.datadog.android.sessionreplay.internal.recorder.callback.RecorderFragmentLifecycleCallback
+import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
+import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -25,8 +25,7 @@ import java.util.concurrent.TimeUnit
 /**
  * The SessionReplay implementation of the [LifecycleCallback].
  */
-@SuppressWarnings("UndocumentedPublicFunction")
-class SessionReplayLifecycleCallback(
+internal class SessionReplayLifecycleCallback(
     rumContextProvider: RumContextProvider,
     privacy: SessionReplayPrivacy,
     recordWriter: RecordWriter,

@@ -6,8 +6,8 @@
 
 package com.datadog.android.sessionreplay.forge
 
+import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.processor.EnrichedRecord
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.UUID

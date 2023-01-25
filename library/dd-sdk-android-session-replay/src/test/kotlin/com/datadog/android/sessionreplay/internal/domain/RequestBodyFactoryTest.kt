@@ -6,8 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal.domain
 
+import com.datadog.android.sessionreplay.internal.net.BytesCompressor
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.net.BytesCompressor
 import com.datadog.android.utils.forge.Configurator
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any

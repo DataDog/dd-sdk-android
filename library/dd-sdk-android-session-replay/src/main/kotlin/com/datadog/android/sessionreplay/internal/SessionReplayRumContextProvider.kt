@@ -6,17 +6,16 @@
 
 package com.datadog.android.sessionreplay.internal
 
-import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.sessionreplay.utils.RumContextProvider
-import com.datadog.android.sessionreplay.utils.SessionReplayRumContext
+import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
+import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.SdkCore
 
 internal class SessionReplayRumContextProvider(
     private val sdkCore: SdkCore
 ) : RumContextProvider {
     override fun getRumContext(): SessionReplayRumContext {
-        val rumContext = sdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)
+        val rumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
         return SessionReplayRumContext(
             applicationId = rumContext["application_id"] as? String ?: RumContext.NULL_UUID,
             sessionId = rumContext["session_id"] as? String ?: RumContext.NULL_UUID,

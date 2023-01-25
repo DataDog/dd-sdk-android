@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay.internal.utils
 /**
  * Provides the [SessionReplayRumContext] into the Session Replay module.
  */
-interface RumContextProvider {
+internal interface RumContextProvider {
     /**
      * Returns the current RUM context as [SessionReplayRumContext].
      */

@@ -9,11 +9,11 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.app.Activity
 import android.view.ViewTreeObserver
 import android.view.Window
-import com.datadog.android.sessionreplay.processor.Processor
-import com.datadog.android.sessionreplay.recorder.callback.NoOpWindowCallback
-import com.datadog.android.sessionreplay.recorder.callback.RecorderWindowCallback
-import com.datadog.android.sessionreplay.recorder.listener.WindowsOnDrawListener
-import com.datadog.android.sessionreplay.utils.TimeProvider
+import com.datadog.android.sessionreplay.internal.processor.Processor
+import com.datadog.android.sessionreplay.internal.recorder.callback.NoOpWindowCallback
+import com.datadog.android.sessionreplay.internal.recorder.callback.RecorderWindowCallback
+import com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener
+import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import java.util.WeakHashMap
 
 internal class ScreenRecorder(

@@ -6,9 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal.processor
 
+import com.datadog.android.sessionreplay.internal.utils.hasOpaqueBackground
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.utils.hasOpaqueBackground
-import com.datadog.android.sessionreplay.utils.shapeStyle
 import kotlin.math.max
 
 internal class WireframeUtils {

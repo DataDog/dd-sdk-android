@@ -12,8 +12,8 @@ import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.RippleDrawable
 import android.os.Build
 import android.view.View
+import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.recorder.densityNormalized
 
 internal class ViewWireframeMapper :
     BaseWireframeMapper<View, MobileSegment.Wireframe.ShapeWireframe>() {

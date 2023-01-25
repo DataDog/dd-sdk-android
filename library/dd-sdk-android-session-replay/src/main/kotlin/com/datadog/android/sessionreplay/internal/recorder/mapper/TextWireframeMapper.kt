@@ -9,8 +9,8 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.Typeface
 import android.view.Gravity
 import android.widget.TextView
+import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.recorder.densityNormalized
 
 internal open class TextWireframeMapper(
     private val viewWireframeMapper: ViewWireframeMapper = ViewWireframeMapper()

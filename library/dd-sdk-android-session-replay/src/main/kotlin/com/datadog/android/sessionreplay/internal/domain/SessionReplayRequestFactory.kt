@@ -19,7 +19,7 @@ import java.util.UUID
 
 internal class SessionReplayRequestFactory(
     private val endpoint: String,
-    private val batchToSegmentsMapper: com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper = com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper(),
+    private val batchToSegmentsMapper: BatchesToSegmentsMapper = BatchesToSegmentsMapper(),
     private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory()
 ) : RequestFactory {
 

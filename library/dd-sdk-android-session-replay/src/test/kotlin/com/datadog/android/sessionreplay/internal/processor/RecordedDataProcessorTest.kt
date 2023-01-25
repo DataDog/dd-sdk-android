@@ -9,13 +9,13 @@ package com.datadog.android.sessionreplay.internal.processor
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.RecordCallback
 import com.datadog.android.sessionreplay.internal.RecordWriter
+import com.datadog.android.sessionreplay.internal.recorder.Node
+import com.datadog.android.sessionreplay.internal.recorder.OrientationChanged
+import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
+import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
+import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileIncrementalData
-import com.datadog.android.sessionreplay.recorder.Node
-import com.datadog.android.sessionreplay.recorder.OrientationChanged
-import com.datadog.android.sessionreplay.utils.RumContextProvider
-import com.datadog.android.sessionreplay.utils.SessionReplayRumContext
-import com.datadog.android.sessionreplay.utils.TimeProvider
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.inOrder
@@ -263,7 +263,7 @@ internal class RecordedDataProcessorTest {
             whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
             fakeFlattenedSnapshot
         }.flatten()
-        val fakeMutationData: MobileSegment.MobileIncrementalData.MobileMutationData =
+        val fakeMutationData: MobileIncrementalData.MobileMutationData =
             forge.getForgery()
         whenever(
             mockMutationResolver.resolveMutations(
@@ -521,7 +521,7 @@ internal class RecordedDataProcessorTest {
             whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
             fakeFlattenedSnapshot
         }.flatten()
-        val fakeMutationData: MobileSegment.MobileIncrementalData.MobileMutationData =
+        val fakeMutationData: MobileIncrementalData.MobileMutationData =
             forge.getForgery()
         whenever(
             mockMutationResolver.resolveMutations(
@@ -638,7 +638,7 @@ internal class RecordedDataProcessorTest {
         val incrementalSnapshotRecord = captor.firstValue.records[2] as
             MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord
         val viewportResizeData = incrementalSnapshotRecord.data as
-            MobileSegment.MobileIncrementalData.ViewportResizeData
+            MobileIncrementalData.ViewportResizeData
         assertThat(viewportResizeData.height).isEqualTo(fakeOrientationChanged.height.toLong())
         assertThat(viewportResizeData.width).isEqualTo(fakeOrientationChanged.width.toLong())
         verify(mockRecordCallback).onRecordForViewSent(fakeRumContext.viewId)

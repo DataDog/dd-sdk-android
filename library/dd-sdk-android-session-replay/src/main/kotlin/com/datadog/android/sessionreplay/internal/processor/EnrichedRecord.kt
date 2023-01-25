@@ -14,8 +14,7 @@ import com.google.gson.JsonObject
  * Wraps the Session Replay records together with the related Rum Context.
  * Intended for internal usage.
  */
-@Suppress("UndocumentedPublicProperty")
-data class EnrichedRecord(
+internal data class EnrichedRecord(
     val applicationId: String,
     val sessionId: String,
     val viewId: String,

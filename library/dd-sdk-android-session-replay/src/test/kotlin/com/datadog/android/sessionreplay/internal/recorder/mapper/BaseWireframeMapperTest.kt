@@ -10,8 +10,8 @@ import android.graphics.Typeface
 import android.view.Gravity
 import android.view.View
 import android.widget.TextView
+import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.recorder.densityNormalized
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.FloatForgery

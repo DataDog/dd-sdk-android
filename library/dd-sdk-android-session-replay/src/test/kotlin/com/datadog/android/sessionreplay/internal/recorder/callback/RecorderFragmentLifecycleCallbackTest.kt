@@ -10,7 +10,7 @@ import android.app.Activity
 import android.app.Dialog
 import android.view.Window
 import androidx.fragment.app.DialogFragment
-import com.datadog.android.sessionreplay.recorder.Recorder
+import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
