@@ -39,6 +39,7 @@ internal class SessionReplayRequestFactory(
     ): Request {
         val serializedSegmentPair = batchToSegmentsMapper.map(batchData)
         if (serializedSegmentPair == null) {
+            @Suppress("ThrowingInternalException")
             throw InvalidPayloadFormatException(
                 "The payload format was broken and an upload" +
                     " request could not be created"
