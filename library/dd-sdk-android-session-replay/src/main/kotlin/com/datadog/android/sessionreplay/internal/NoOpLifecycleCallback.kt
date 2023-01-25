@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay.internal
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
-import com.datadog.android.sessionreplay.LifecycleCallback
 
 internal class NoOpLifecycleCallback : LifecycleCallback {
     override fun register(appContext: Application) {}

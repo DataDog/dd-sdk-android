@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay
 
 import android.app.Application
 import com.datadog.android.sessionreplay.internal.NoOpLifecycleCallback
+import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration

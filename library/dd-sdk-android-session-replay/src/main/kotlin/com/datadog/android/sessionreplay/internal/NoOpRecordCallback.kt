@@ -6,14 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal
 
-import com.datadog.android.sessionreplay.SessionReplayFeature
-import com.datadog.android.v2.api.SdkCore
-
-internal class SessionReplayRecordCallback(private val sdkCore: SdkCore) : RecordCallback {
+internal class NoOpRecordCallback : RecordCallback {
 
     override fun onRecordForViewSent(viewId: String) {
-        sdkCore.updateFeatureContext(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME) {
-            it[viewId] = true
-        }
     }
 }
