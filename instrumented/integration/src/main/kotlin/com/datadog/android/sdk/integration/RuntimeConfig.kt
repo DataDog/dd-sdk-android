@@ -11,6 +11,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.log.Logger
+import com.datadog.android.sessionreplay.internal.SessionReplayConfiguration
 import com.datadog.android.tracing.AndroidTracer
 import java.util.UUID
 
@@ -71,8 +72,12 @@ internal object RuntimeConfig {
             .useCustomLogsEndpoint(logsEndpointUrl)
             .useCustomRumEndpoint(rumEndpointUrl)
             .useCustomTracesEndpoint(tracesEndpointUrl)
-            .useCustomSessionReplayEndpoint(sessionReplayEndpointUrl)
             .setUploadFrequency(UploadFrequency.FREQUENT)
+    }
+
+    fun sessionReplayConfigBuilder(): SessionReplayConfiguration.Builder {
+        return SessionReplayConfiguration.Builder()
+            .useCustomEndpoint(sessionReplayEndpointUrl)
     }
 
     val keyValuePairsTags = mapOf(

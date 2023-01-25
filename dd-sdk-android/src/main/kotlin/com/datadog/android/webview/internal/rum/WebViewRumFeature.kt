@@ -43,7 +43,7 @@ internal class WebViewRumFeature(
     override val storageConfiguration: FeatureStorageConfiguration =
         FeatureStorageConfiguration.DEFAULT
 
-    fun stop() {
+    override fun onStop() {
         dataWriter = NoOpDataWriter()
         initialized.set(false)
     }

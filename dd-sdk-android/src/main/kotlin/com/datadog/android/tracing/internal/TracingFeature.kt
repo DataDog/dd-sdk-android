@@ -42,7 +42,7 @@ internal class TracingFeature(
     override val storageConfiguration: FeatureStorageConfiguration =
         FeatureStorageConfiguration.DEFAULT
 
-    fun stop() {
+    override fun onStop() {
         dataWriter = NoOpWriter()
         initialized.set(false)
     }

@@ -14,6 +14,7 @@ import com.datadog.android.core.internal.utils.telemetry
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.UserInfo
@@ -222,23 +223,12 @@ object Datadog {
     }
 
     /**
-     * Stops the session recording.
+     * TODO RUMM-0000 Temporary thing until we decide on the SDK instance handling.
      *
-     * Session Replay feature will only work for recorded
-     * sessions.
+     * @param feature Feature to register.
      */
-    fun stopSessionRecording() {
-        (globalSdkCore as? DatadogCore)?.sessionReplayFeature?.stopRecording()
-    }
-
-    /**
-     * Starts/resumes the session recording.
-     *
-     * Session Replay feature will only work for recorded
-     * sessions.
-     */
-    fun startSessionRecording() {
-        (globalSdkCore as? DatadogCore)?.sessionReplayFeature?.startRecording()
+    fun registerFeature(feature: Feature) {
+        globalSdkCore.registerFeature(feature)
     }
 
     /**

@@ -36,6 +36,8 @@ import com.datadog.android.sample.picture.CoilImageLoader
 import com.datadog.android.sample.picture.FrescoImageLoader
 import com.datadog.android.sample.picture.PicassoImageLoader
 import com.datadog.android.sample.user.UserFragment
+import com.datadog.android.sessionreplay.internal.SessionReplayConfiguration
+import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.tracing.TracingInterceptor
@@ -113,6 +115,15 @@ class SampleApplication : Application() {
             preferences.getTrackingConsent()
         )
         Datadog.setVerbosity(Log.VERBOSE)
+
+        val sessionReplayConfig = SessionReplayConfiguration.Builder().apply {
+            if (BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL.isNotBlank()) {
+                useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
+            }
+        }.build()
+        val sessionReplayFeature = SessionReplayFeature(sessionReplayConfig)
+        Datadog.registerFeature(sessionReplayFeature)
+
         Datadog.enableRumDebugging(true)
         setUserInfo(
             preferences.getUserId(),
@@ -211,9 +222,6 @@ class SampleApplication : Application() {
         }
         if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
             configBuilder.useCustomRumEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
-        }
-        if (BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL.isNotBlank()) {
-            configBuilder.useCustomSessionReplayEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
         }
         return configBuilder.build()
     }

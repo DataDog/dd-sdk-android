@@ -67,14 +67,14 @@ internal class CrashReportsFeatureTest {
     }
 
     @Test
-    fun `𝕄 restore original crash handler 𝕎 stop()`() {
+    fun `𝕄 restore original crash handler 𝕎 onStop()`() {
         // Given
         val mockOriginalHandler: Thread.UncaughtExceptionHandler = mock()
         Thread.setDefaultUncaughtExceptionHandler(mockOriginalHandler)
 
         // When
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
-        testedFeature.stop()
+        testedFeature.onStop()
 
         // Then
         val finalHandler = Thread.getDefaultUncaughtExceptionHandler()

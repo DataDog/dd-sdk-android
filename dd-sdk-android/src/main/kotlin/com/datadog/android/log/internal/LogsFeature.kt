@@ -58,7 +58,7 @@ internal class LogsFeature(
     override val storageConfiguration: FeatureStorageConfiguration =
         FeatureStorageConfiguration.DEFAULT
 
-    internal fun stop() {
+    override fun onStop() {
         sdkCore.removeEventReceiver(LOGS_FEATURE_NAME)
         dataWriter = NoOpDataWriter()
         initialized.set(false)

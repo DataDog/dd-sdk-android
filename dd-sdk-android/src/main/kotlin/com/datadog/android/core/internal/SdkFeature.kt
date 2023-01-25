@@ -99,6 +99,8 @@ internal class SdkFeature(
 
     fun stop() {
         if (initialized.get()) {
+            wrappedFeature.onStop()
+
             unregisterPlugins()
             uploadScheduler.stopScheduling()
             uploadScheduler = NoOpUploadScheduler()

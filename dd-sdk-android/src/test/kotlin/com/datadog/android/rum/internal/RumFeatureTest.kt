@@ -318,12 +318,12 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 use noop viewTrackingStrategy 𝕎 stop()`() {
+    fun `𝕄 use noop viewTrackingStrategy 𝕎 onStop()`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
-        testedFeature.stop()
+        testedFeature.onStop()
 
         // Then
         assertThat(testedFeature.viewTrackingStrategy)
@@ -331,12 +331,12 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 use noop userActionTrackingStrategy 𝕎 stop()`() {
+    fun `𝕄 use noop userActionTrackingStrategy 𝕎 onStop()`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
-        testedFeature.stop()
+        testedFeature.onStop()
 
         // Then
         assertThat(testedFeature.actionTrackingStrategy)
@@ -344,7 +344,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 unregister strategies 𝕎 stop()`() {
+    fun `𝕄 unregister strategies 𝕎 onStop()`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
         val mockActionTrackingStrategy: UserActionTrackingStrategy = mock()
@@ -355,7 +355,7 @@ internal class RumFeatureTest {
         testedFeature.longTaskTrackingStrategy = mockLongTaskTrackingStrategy
 
         // When
-        testedFeature.stop()
+        testedFeature.onStop()
 
         // Then
         verify(mockActionTrackingStrategy).unregister(appContext.mockInstance)
@@ -364,24 +364,24 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 reset eventMapper 𝕎 stop()`() {
+    fun `𝕄 reset eventMapper 𝕎 onStop()`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
-        testedFeature.stop()
+        testedFeature.onStop()
 
         // Then
         assertThat(testedFeature.rumEventMapper).isInstanceOf(NoOpEventMapper::class.java)
     }
 
     @Test
-    fun `𝕄 reset data writer 𝕎 stop()`() {
+    fun `𝕄 reset data writer 𝕎 onStop()`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
-        testedFeature.stop()
+        testedFeature.onStop()
 
         // Then
         assertThat(testedFeature.dataWriter).isInstanceOf(NoOpDataWriter::class.java)
@@ -423,26 +423,26 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 shut down vital executor 𝕎 stop()`() {
+    fun `𝕄 shut down vital executor 𝕎 onStop()`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
         val mockVitalExecutorService: ScheduledThreadPoolExecutor = mock()
         testedFeature.vitalExecutorService = mockVitalExecutorService
 
         // When
-        testedFeature.stop()
+        testedFeature.onStop()
 
         // Then
         verify(mockVitalExecutorService).shutdownNow()
     }
 
     @Test
-    fun `𝕄 reset vital executor 𝕎 stop()`() {
+    fun `𝕄 reset vital executor 𝕎 onStop()`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
-        testedFeature.stop()
+        testedFeature.onStop()
 
         // Then
         assertThat(testedFeature.vitalExecutorService)
@@ -450,12 +450,12 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 reset vital monitors 𝕎 stop()`() {
+    fun `𝕄 reset vital monitors 𝕎 onStop()`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
-        testedFeature.stop()
+        testedFeature.onStop()
 
         // Then
         assertThat(testedFeature.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)

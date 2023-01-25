@@ -122,12 +122,12 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `M unregister the Session Replay lifecycle callback W stop()`() {
+    fun `M unregister the Session Replay lifecycle callback W onStop()`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
-        testedFeature.stop()
+        testedFeature.onStop()
 
         // Then
         verify(mockSessionReplayLifecycleCallback)
@@ -135,12 +135,12 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `M reset the Session Replay lifecycle callback W stop()`() {
+    fun `M reset the Session Replay lifecycle callback W onStop()`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
-        testedFeature.stop()
+        testedFeature.onStop()
 
         // Then
         assertThat(testedFeature.sessionReplayCallback)
@@ -268,6 +268,21 @@ internal class SessionReplayFeatureTest {
         testedFeature.startRecording()
 
         // Then
+        verifyZeroInteractions(mockSessionReplayLifecycleCallback)
+    }
+
+    @Test
+    fun `M log warning and do nothing W startRecording() { feature is not initialized }`() {
+        // When
+        testedFeature.startRecording()
+
+        // Then
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                SessionReplayFeature.CANNOT_START_RECORDING_NOT_INITIALIZED
+            )
         verifyZeroInteractions(mockSessionReplayLifecycleCallback)
     }
 
