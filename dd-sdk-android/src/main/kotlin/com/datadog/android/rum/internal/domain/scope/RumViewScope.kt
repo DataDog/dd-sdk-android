@@ -34,7 +34,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.sessionreplay.internal.SessionReplayFeature
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
@@ -143,7 +143,7 @@ internal open class RumViewScope(
     // endregion
 
     init {
-        sdkCore.updateFeatureContext(RumFeature.RUM_FEATURE_NAME) {
+        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
             it.putAll(getRumContext().toMap())
             it[RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY] = serverTimeOffsetInMs
         }
@@ -191,7 +191,7 @@ internal open class RumViewScope(
         }
 
         return if (isViewComplete()) {
-            sdkCore.updateFeatureContext(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME) {
+            sdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME) {
                 it.remove(viewId)
             }
             null
@@ -256,7 +256,7 @@ internal open class RumViewScope(
                 viewUrl = null,
                 actionId = null
             )
-            sdkCore.updateFeatureContext(RumFeature.RUM_FEATURE_NAME) { currentRumContext ->
+            sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) { currentRumContext ->
                 val canUpdate = when {
                     currentRumContext["session_id"] != this.sessionId -> {
                         // we have a new session, so whatever is in the Global context is
@@ -379,7 +379,7 @@ internal open class RumViewScope(
             event.message
         }
 
-        sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
 
                 val user = datadogContext.userInfo
@@ -527,7 +527,7 @@ internal open class RumViewScope(
         // update the Rum Context to make it available for Logs/Trace bundling
         val newRumContext = getRumContext()
 
-        sdkCore.updateFeatureContext(RumFeature.RUM_FEATURE_NAME) { currentRumContext ->
+        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) { currentRumContext ->
             val canUpdate = when {
                 currentRumContext["session_id"] != sessionId -> true
                 currentRumContext["view_id"] == viewId -> true
@@ -687,7 +687,7 @@ internal open class RumViewScope(
         val refreshRateInfo = lastFrameRateInfo
         val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo) ?: false
 
-        sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
 
                 val user = datadogContext.userInfo
@@ -825,7 +825,7 @@ internal open class RumViewScope(
 
         val attributes = GlobalRum.globalAttributes
 
-        sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val user = datadogContext.userInfo
 
@@ -907,7 +907,7 @@ internal open class RumViewScope(
         val timestamp = event.eventTime.timestamp + serverTimeOffsetInMs
         val isFrozenFrame = event.durationNs > FROZEN_FRAME_THRESHOLD_NS
 
-        sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
 
                 val user = datadogContext.userInfo

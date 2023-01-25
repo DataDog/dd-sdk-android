@@ -6,14 +6,14 @@
 
 package com.datadog.android.rum.internal
 
-import com.datadog.android.sessionreplay.internal.SessionReplayFeature
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.context.DatadogContext
 
 internal class FeaturesContextResolver {
 
     fun resolveHasReplay(context: DatadogContext, viewId: String): Boolean {
         val sessionReplayContext =
-            context.featuresContext[SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME]
+            context.featuresContext[Feature.SESSION_REPLAY_FEATURE_NAME]
         return (
             sessionReplayContext?.get(viewId)
                 as? Boolean

@@ -10,10 +10,10 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.DataWriter
@@ -204,7 +204,7 @@ internal class RumActionScope(
         val eventLongTaskCount = longTaskCount
         val eventResourceCount = resourceCount
 
-        sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val user = datadogContext.userInfo
                 val hasReplay = featuresContextResolver.resolveHasReplay(

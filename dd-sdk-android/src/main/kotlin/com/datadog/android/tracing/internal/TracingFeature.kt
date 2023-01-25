@@ -14,6 +14,7 @@ import com.datadog.android.tracing.internal.data.TraceWriter
 import com.datadog.android.tracing.internal.domain.event.DdSpanToSpanEventMapper
 import com.datadog.android.tracing.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.tracing.internal.domain.event.SpanEventSerializer
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
@@ -31,7 +32,7 @@ internal class TracingFeature(
 
     // region Feature
 
-    override val name: String = TRACING_FEATURE_NAME
+    override val name: String = Feature.TRACING_FEATURE_NAME
 
     override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
         dataWriter = createDataWriter(sdkCore, configuration)
@@ -60,9 +61,5 @@ internal class TracingFeature(
             serializer = SpanEventSerializer(),
             internalLogger = internalLogger
         )
-    }
-
-    companion object {
-        internal const val TRACING_FEATURE_NAME = "tracing"
     }
 }

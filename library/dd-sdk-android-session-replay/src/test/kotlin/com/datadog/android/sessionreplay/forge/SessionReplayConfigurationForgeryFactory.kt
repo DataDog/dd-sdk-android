@@ -4,10 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.utils.forge
+package com.datadog.android.sessionreplay.forge
 
+import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.internal.SessionReplayConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 

@@ -30,7 +30,6 @@ internal class Configurator :
         forge.addFactory(UserInfoForgeryFactory())
         forge.addFactory(FilePersistenceConfigForgeryFactory())
         forge.addFactory(AndroidInfoProviderForgeryFactory())
-        forge.addFactory(SessionReplayConfigurationForgeryFactory())
         forge.addFactory(FeatureStorageConfigurationForgeryFactory())
 
         // IO
@@ -79,9 +78,6 @@ internal class Configurator :
         forge.addFactory(ProcessInfoForgeryFactory())
         forge.addFactory(DeviceInfoForgeryFactory())
         forge.addFactory(DatadogContextForgeryFactory())
-
-        // Session Replay
-        forge.addFactory(MobileSegmentForgeryFactory())
 
         forge.useJvmFactories()
     }

@@ -9,11 +9,11 @@ package com.datadog.android.log.internal.logger
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.internalLogger
-import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
@@ -48,7 +48,7 @@ internal class DatadogLogHandler(
 
         val resolvedTimeStamp = timestamp ?: System.currentTimeMillis()
         if (sampler.sample()) {
-            val logsFeature = sdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)
+            val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
             if (logsFeature != null) {
                 val threadName = Thread.currentThread().name
                 logsFeature.withWriteContext { datadogContext, eventBatchWriter ->
@@ -97,7 +97,7 @@ internal class DatadogLogHandler(
 
         val resolvedTimeStamp = timestamp ?: System.currentTimeMillis()
         if (sampler.sample()) {
-            val logsFeature = sdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)
+            val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
             if (logsFeature != null) {
                 val threadName = Thread.currentThread().name
                 logsFeature.withWriteContext { datadogContext, eventBatchWriter ->

@@ -28,6 +28,7 @@ import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.TimeInfo
@@ -255,7 +256,7 @@ internal class DatadogCoreTest {
         testedCore.coreFeature.contextProvider = mockContextProvider
 
         // When
-        testedCore.updateFeatureContext(RumFeature.RUM_FEATURE_NAME) {
+        testedCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
             it.putAll(context)
             it.putAll(fakeRumContext.toMap())
         }
@@ -470,9 +471,9 @@ internal class DatadogCoreTest {
         testedCore.crashReportsFeature = mockCrashReportsFeature
 
         val sdkFeatureMocks = listOf(
-            RumFeature.RUM_FEATURE_NAME,
-            TracingFeature.TRACING_FEATURE_NAME,
-            LogsFeature.LOGS_FEATURE_NAME,
+            Feature.RUM_FEATURE_NAME,
+            Feature.TRACING_FEATURE_NAME,
+            Feature.LOGS_FEATURE_NAME,
             WebViewLogsFeature.WEB_LOGS_FEATURE_NAME,
             WebViewRumFeature.WEB_RUM_FEATURE_NAME
         ).map {

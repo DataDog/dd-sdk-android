@@ -12,9 +12,9 @@ import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.rum.RumSessionListener
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.DataWriter
@@ -66,7 +66,7 @@ internal class RumSessionScope(
     )
 
     init {
-        sdkCore.updateFeatureContext(RumFeature.RUM_FEATURE_NAME) {
+        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
             it.putAll(getRumContext().toMap())
         }
     }

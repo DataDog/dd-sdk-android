@@ -9,12 +9,11 @@ package com.datadog.android.log.internal.domain
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.extension.asLogStatus
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
@@ -90,7 +89,7 @@ internal class DatadogLogGeneratorTest {
             ),
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(
-                    RumFeature.RUM_FEATURE_NAME,
+                    Feature.RUM_FEATURE_NAME,
                     mapOf(
                         "application_id" to fakeRumContext.applicationId,
                         "session_id" to fakeRumContext.sessionId,
@@ -99,7 +98,7 @@ internal class DatadogLogGeneratorTest {
                     )
                 )
                 put(
-                    TracingFeature.TRACING_FEATURE_NAME,
+                    Feature.TRACING_FEATURE_NAME,
                     mapOf(
                         "context@$fakeThreadName" to mapOf(
                             "span_id" to fakeSpanId,
@@ -650,7 +649,7 @@ internal class DatadogLogGeneratorTest {
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(
-                    TracingFeature.TRACING_FEATURE_NAME,
+                    Feature.TRACING_FEATURE_NAME,
                     mapOf(
                         "context@$fakeOtherThreadName" to mapOf(
                             "span_id" to fakeOtherThreadSpanId,
@@ -690,7 +689,7 @@ internal class DatadogLogGeneratorTest {
         // GIVEN
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                remove(TracingFeature.TRACING_FEATURE_NAME)
+                remove(Feature.TRACING_FEATURE_NAME)
             }
         )
 
@@ -777,7 +776,7 @@ internal class DatadogLogGeneratorTest {
         // GIVEN
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                remove(RumFeature.RUM_FEATURE_NAME)
+                remove(Feature.RUM_FEATURE_NAME)
             }
         )
 

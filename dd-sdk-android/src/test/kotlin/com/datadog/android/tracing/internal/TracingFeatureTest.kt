@@ -10,6 +10,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.tracing.internal.data.TraceWriter
 import com.datadog.android.tracing.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.tracing.internal.net.TracesRequestFactory
@@ -74,7 +75,7 @@ internal class TracingFeatureTest {
     fun `𝕄 provide tracing feature name 𝕎 name()`() {
         // When+Then
         assertThat(testedFeature.name)
-            .isEqualTo(TracingFeature.TRACING_FEATURE_NAME)
+            .isEqualTo(Feature.TRACING_FEATURE_NAME)
     }
 
     @Test

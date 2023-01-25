@@ -111,16 +111,17 @@ android {
 
 dependencies {
 
-    api(project(":dd-sdk-android"))
-    api(project(":dd-sdk-android-ktx"))
-    api(project(":dd-sdk-android-ndk"))
-    api(project(":dd-sdk-android-rx"))
-    api(project(":dd-sdk-android-timber"))
-    api(project(":dd-sdk-android-coil"))
-    api(project(":dd-sdk-android-glide"))
-    api(project(":dd-sdk-android-fresco"))
-    api(project(":dd-sdk-android-sqldelight"))
-    api(project(":dd-sdk-android-compose"))
+    implementation(project(":dd-sdk-android"))
+    implementation(project(":library:dd-sdk-android-session-replay"))
+    implementation(project(":dd-sdk-android-ktx"))
+    implementation(project(":dd-sdk-android-ndk"))
+    implementation(project(":dd-sdk-android-rx"))
+    implementation(project(":dd-sdk-android-timber"))
+    implementation(project(":dd-sdk-android-coil"))
+    implementation(project(":dd-sdk-android-glide"))
+    implementation(project(":dd-sdk-android-fresco"))
+    implementation(project(":dd-sdk-android-sqldelight"))
+    implementation(project(":dd-sdk-android-compose"))
 
     implementation(libs.kotlin)
 

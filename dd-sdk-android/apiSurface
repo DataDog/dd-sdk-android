@@ -448,22 +448,6 @@ DEPRECATED open class com.datadog.android.rum.webview.RumWebViewClient : android
 interface com.datadog.android.security.Encryption
   fun encrypt(ByteArray): ByteArray
   fun decrypt(ByteArray): ByteArray
-data class com.datadog.android.sessionreplay.internal.SessionReplayConfiguration
-  class Builder
-    fun useSite(com.datadog.android.DatadogSite): Builder
-    fun useCustomEndpoint(String): Builder
-    fun setPrivacy(com.datadog.android.sessionreplay.SessionReplayPrivacy): Builder
-    fun build(): SessionReplayConfiguration
-class com.datadog.android.sessionreplay.internal.SessionReplayFeature : com.datadog.android.v2.api.StorageBackedFeature, com.datadog.android.v2.api.FeatureEventReceiver
-  constructor(SessionReplayConfiguration)
-  override val name: String
-  override fun onInitialize(com.datadog.android.v2.api.SdkCore, android.content.Context)
-  override val requestFactory: com.datadog.android.v2.api.RequestFactory
-  override val storageConfiguration: com.datadog.android.v2.api.FeatureStorageConfiguration
-  override fun onStop()
-  fun stopRecording()
-  fun startRecording()
-  override fun onReceive(Any)
 class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
   constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
   override fun onCorruption(android.database.sqlite.SQLiteDatabase)
@@ -493,6 +477,11 @@ interface com.datadog.android.v2.api.Feature
   val name: String
   fun onInitialize(SdkCore, android.content.Context)
   fun onStop()
+  companion object 
+    const val LOGS_FEATURE_NAME: String
+    const val RUM_FEATURE_NAME: String
+    const val TRACING_FEATURE_NAME: String
+    const val SESSION_REPLAY_FEATURE_NAME: String
 interface com.datadog.android.v2.api.FeatureConfiguration
   fun register(SdkCore)
 interface com.datadog.android.v2.api.FeatureEventReceiver

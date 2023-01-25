@@ -1,9 +1,14 @@
-package com.datadog.android.sessionreplay.internal
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.sessionreplay
 
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
 
 /**
  * An object describing the configuration of the Session Replay.

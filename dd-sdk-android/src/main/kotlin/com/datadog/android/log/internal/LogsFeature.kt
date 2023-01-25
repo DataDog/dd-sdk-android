@@ -16,6 +16,7 @@ import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.internal.domain.event.LogEventSerializer
 import com.datadog.android.log.model.LogEvent
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
@@ -44,11 +45,11 @@ internal class LogsFeature(
 
     // region Feature
 
-    override val name: String = LOGS_FEATURE_NAME
+    override val name: String = Feature.LOGS_FEATURE_NAME
 
     override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
         this.sdkCore = sdkCore
-        sdkCore.setEventReceiver(LOGS_FEATURE_NAME, this)
+        sdkCore.setEventReceiver(name, this)
 
         dataWriter = createDataWriter(configuration)
         initialized.set(true)
@@ -59,7 +60,7 @@ internal class LogsFeature(
         FeatureStorageConfiguration.DEFAULT
 
     override fun onStop() {
-        sdkCore.removeEventReceiver(LOGS_FEATURE_NAME)
+        sdkCore.removeEventReceiver(name)
         dataWriter = NoOpDataWriter()
         initialized.set(false)
     }
@@ -133,7 +134,7 @@ internal class LogsFeature(
         @Suppress("UnsafeThirdPartyFunctionCall") // argument is good
         val lock = CountDownLatch(1)
 
-        sdkCore.getFeature(LOGS_FEATURE_NAME)
+        sdkCore.getFeature(name)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val log = logGenerator.generateLog(
                     DatadogLogGenerator.CRASH,
@@ -190,7 +191,7 @@ internal class LogsFeature(
             return
         }
 
-        sdkCore.getFeature(LOGS_FEATURE_NAME)
+        sdkCore.getFeature(name)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val log = logGenerator.generateLog(
                     DatadogLogGenerator.CRASH,
@@ -232,7 +233,7 @@ internal class LogsFeature(
             return
         }
 
-        sdkCore.getFeature(LOGS_FEATURE_NAME)
+        sdkCore.getFeature(name)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val log = logGenerator.generateLog(
                     Log.VERBOSE,
@@ -269,7 +270,6 @@ internal class LogsFeature(
         private const val NETWORK_INFO_EVENT_KEY = "networkInfo"
         private const val THREAD_NAME_EVENT_KEY = "threadName"
 
-        internal const val LOGS_FEATURE_NAME = "logs"
         internal const val UNSUPPORTED_EVENT_TYPE =
             "Logs feature receive an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =

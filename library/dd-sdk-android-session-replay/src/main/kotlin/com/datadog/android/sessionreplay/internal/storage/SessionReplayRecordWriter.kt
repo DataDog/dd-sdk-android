@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.internal.storage
 
 import com.datadog.android.sessionreplay.RecordWriter
-import com.datadog.android.sessionreplay.internal.SessionReplayFeature
+import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.sessionreplay.processor.EnrichedRecord
 import com.datadog.android.v2.api.SdkCore
 

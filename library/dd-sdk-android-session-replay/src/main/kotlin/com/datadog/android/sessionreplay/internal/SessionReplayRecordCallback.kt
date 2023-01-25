@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal
 
 import com.datadog.android.sessionreplay.RecordCallback
+import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.v2.api.SdkCore
 
 internal class SessionReplayRecordCallback(private val sdkCore: SdkCore) : RecordCallback {

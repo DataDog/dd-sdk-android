@@ -6,10 +6,10 @@
 
 package com.datadog.android.webview.internal.rum
 
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -53,7 +53,7 @@ internal class WebViewRumEventContextProviderTest {
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(
-                    RumFeature.RUM_FEATURE_NAME,
+                    Feature.RUM_FEATURE_NAME,
                     mapOf(
                         "application_id" to fakeRumContext.applicationId,
                         "session_id" to fakeRumContext.sessionId,
@@ -99,7 +99,7 @@ internal class WebViewRumEventContextProviderTest {
         }
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(RumFeature.RUM_FEATURE_NAME, rumContext)
+                put(Feature.RUM_FEATURE_NAME, rumContext)
             }
         )
 
@@ -128,7 +128,7 @@ internal class WebViewRumEventContextProviderTest {
         }
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(RumFeature.RUM_FEATURE_NAME, rumContext)
+                put(Feature.RUM_FEATURE_NAME, rumContext)
             }
         )
 
@@ -157,7 +157,7 @@ internal class WebViewRumEventContextProviderTest {
         }
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(RumFeature.RUM_FEATURE_NAME, rumContext)
+                put(Feature.RUM_FEATURE_NAME, rumContext)
             }
         )
 
@@ -193,7 +193,7 @@ internal class WebViewRumEventContextProviderTest {
         }
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(RumFeature.RUM_FEATURE_NAME, rumContext)
+                put(Feature.RUM_FEATURE_NAME, rumContext)
             }
         )
 
@@ -229,7 +229,7 @@ internal class WebViewRumEventContextProviderTest {
         }
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(RumFeature.RUM_FEATURE_NAME, rumContext)
+                put(Feature.RUM_FEATURE_NAME, rumContext)
             }
         )
 
@@ -265,7 +265,7 @@ internal class WebViewRumEventContextProviderTest {
         }
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(RumFeature.RUM_FEATURE_NAME, rumContext)
+                put(Feature.RUM_FEATURE_NAME, rumContext)
             }
         )
 
@@ -302,7 +302,7 @@ internal class WebViewRumEventContextProviderTest {
         }
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(RumFeature.RUM_FEATURE_NAME, rumContext)
+                put(Feature.RUM_FEATURE_NAME, rumContext)
             }
         )
 
@@ -341,7 +341,7 @@ internal class WebViewRumEventContextProviderTest {
         }
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(RumFeature.RUM_FEATURE_NAME, rumContext)
+                put(Feature.RUM_FEATURE_NAME, rumContext)
             }
         )
 
@@ -380,7 +380,7 @@ internal class WebViewRumEventContextProviderTest {
         }
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(RumFeature.RUM_FEATURE_NAME, rumContext)
+                put(Feature.RUM_FEATURE_NAME, rumContext)
             }
         )
 
@@ -419,7 +419,7 @@ internal class WebViewRumEventContextProviderTest {
         }
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(RumFeature.RUM_FEATURE_NAME, rumContext)
+                put(Feature.RUM_FEATURE_NAME, rumContext)
             }
         )
 

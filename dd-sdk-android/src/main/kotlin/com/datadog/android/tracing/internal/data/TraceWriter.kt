@@ -8,9 +8,9 @@ package com.datadog.android.tracing.internal.data
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.event.EventMapper
-import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.tracing.model.SpanEvent
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
@@ -35,7 +35,7 @@ internal class TraceWriter(
 
     override fun write(trace: MutableList<DDSpan>?) {
         if (trace == null) return
-        sdkCore.getFeature(TracingFeature.TRACING_FEATURE_NAME)
+        sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 trace.forEach { span ->
                     @Suppress("ThreadSafety") // called in the worker context

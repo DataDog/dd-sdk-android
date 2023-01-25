@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.internal
 
-import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.context.DatadogContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -46,8 +46,7 @@ internal class FeaturesContextResolverTest {
         val fakeSdkContext = forge.getForgery<DatadogContext>()
             .copy(
                 featuresContext = mapOf(
-                    SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME to
-                        mapOf(fakeViewId.toString() to true)
+                    Feature.SESSION_REPLAY_FEATURE_NAME to mapOf(fakeViewId to true)
                 )
 
             )
@@ -66,8 +65,7 @@ internal class FeaturesContextResolverTest {
         val fakeSdkContext = forge.getForgery<DatadogContext>()
             .copy(
                 featuresContext = mapOf(
-                    SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME to
-                        mapOf(fakeViewId.toString() to false)
+                    Feature.SESSION_REPLAY_FEATURE_NAME to mapOf(fakeViewId to false)
                 )
 
             )
@@ -99,7 +97,7 @@ internal class FeaturesContextResolverTest {
         val fakeSdkContext = forge.getForgery<DatadogContext>()
             .copy(
                 featuresContext = mapOf(
-                    SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME to
+                    Feature.SESSION_REPLAY_FEATURE_NAME to
                         forge.aMap { forge.aString() to forge.aString() }
                 )
             )

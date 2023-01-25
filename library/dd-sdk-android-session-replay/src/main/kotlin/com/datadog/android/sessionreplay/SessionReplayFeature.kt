@@ -4,18 +4,19 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal
+package com.datadog.android.sessionreplay
 
 import android.app.Application
 import android.content.Context
 import com.datadog.android.core.internal.utils.internalLogger
-import com.datadog.android.sessionreplay.LifecycleCallback
-import com.datadog.android.sessionreplay.RecordWriter
-import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
+import com.datadog.android.sessionreplay.internal.NoOpLifecycleCallback
+import com.datadog.android.sessionreplay.internal.SessionReplayRecordCallback
+import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
@@ -62,7 +63,7 @@ class SessionReplayFeature internal constructor(
 
     // region Feature
 
-    override val name: String = SESSION_REPLAY_FEATURE_NAME
+    override val name: String = Feature.SESSION_REPLAY_FEATURE_NAME
 
     override fun onInitialize(
         sdkCore: SdkCore,

@@ -7,10 +7,10 @@
 package com.datadog.android.tracing.internal.data
 
 import com.datadog.android.event.EventMapper
-import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.tracing.model.SpanEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
@@ -81,7 +81,7 @@ internal class TraceWriterTest {
     @BeforeEach
     fun `set up`() {
         whenever(
-            mockSdkCore.getFeature(TracingFeature.TRACING_FEATURE_NAME)
+            mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         ) doReturn mockTracingFeatureScope
 
         whenever(mockTracingFeatureScope.withWriteContext(any(), any())) doAnswer {
@@ -277,7 +277,7 @@ internal class TraceWriterTest {
         testedWriter.write(ddSpans)
 
         // THEN
-        verify(mockSdkCore, times(1)).getFeature(TracingFeature.TRACING_FEATURE_NAME)
+        verify(mockSdkCore, times(1)).getFeature(Feature.TRACING_FEATURE_NAME)
         verify(mockTracingFeatureScope, times(1)).withWriteContext(any(), any())
 
         verifyNoMoreInteractions(mockSdkCore, mockTracingFeatureScope)
