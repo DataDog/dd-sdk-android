@@ -130,6 +130,7 @@ enum com.datadog.android.core.configuration.VitalsUpdateFrequency
   - AVERAGE
   - RARE
   - NEVER
+var internalLogger: com.datadog.android.v2.api.InternalLogger
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
 interface com.datadog.android.event.SpanEventMapper : EventMapper<com.datadog.android.tracing.model.SpanEvent>

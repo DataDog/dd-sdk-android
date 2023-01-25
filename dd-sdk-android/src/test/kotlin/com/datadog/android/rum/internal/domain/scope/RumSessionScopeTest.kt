@@ -119,7 +119,7 @@ internal class RumSessionScopeTest {
 
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
-        whenever(mockSdkCore.getFeature(RumSessionScope.SESSION_REPLAY_FEATURE_NAME)) doReturn
+        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
             mockSessionReplayFeatureScope
 
         initializeTestedScope()
@@ -968,7 +968,7 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockSdkCore.getFeature(RumSessionScope.SESSION_REPLAY_FEATURE_NAME))
+        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME))
             .thenReturn(null)
 
         // When

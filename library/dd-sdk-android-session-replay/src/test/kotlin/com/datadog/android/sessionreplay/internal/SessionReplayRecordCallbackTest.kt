@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.internal
 
 import com.datadog.android.sessionreplay.SessionReplayFeature
-import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.v2.api.SdkCore
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
@@ -31,7 +31,7 @@ import java.util.UUID
     ExtendWith(MockitoExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class SessionReplayRecordCallbackTest {
 
     @Mock

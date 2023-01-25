@@ -6,9 +6,9 @@
 
 package com.datadog.android.sessionreplay.internal.domain
 
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.net.BytesCompressor
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.utils.forge.Configurator
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.whenever
@@ -37,7 +37,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class RequestBodyFactoryTest {
 
     lateinit var testedRequestBodyFactory: RequestBodyFactory

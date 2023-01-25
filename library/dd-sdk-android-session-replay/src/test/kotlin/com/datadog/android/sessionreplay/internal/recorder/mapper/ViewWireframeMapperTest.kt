@@ -148,7 +148,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
             whenever(it.color).thenReturn(fakeDrawableColor)
             whenever(it.alpha).thenReturn(fakeDrawableAlpha)
         }
-        val mockInsetDrawable: InsetDrawable = mock<InsetDrawable> {
+        val mockInsetDrawable = mock<InsetDrawable> {
             whenever(it.drawable).thenReturn(mockDrawable)
         }
         val mockView = forge.aMockView<View>().apply {
@@ -191,7 +191,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
             whenever(it.color).thenReturn(fakeDrawableColor)
             whenever(it.alpha).thenReturn(fakeDrawableAlpha)
         }
-        val mockInsetDrawable: InsetDrawable = mock<InsetDrawable> {
+        val mockInsetDrawable = mock<InsetDrawable> {
             whenever(it.drawable).thenReturn(mockDrawable)
         }
         val mockView = forge.aMockView<View>().apply {
@@ -230,7 +230,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
             whenever(it.color).thenReturn(fakeDrawableColor)
             whenever(it.alpha).thenReturn(fakeDrawableAlpha)
         }
-        val mockRipple: RippleDrawable = mock<RippleDrawable> {
+        val mockRipple = mock<RippleDrawable> {
             whenever(it.numberOfLayers).thenReturn(forge.anInt(min = 1))
             whenever(it.getDrawable(0)).thenReturn(mockDrawable)
         }
@@ -274,7 +274,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
             whenever(it.color).thenReturn(fakeDrawableColor)
             whenever(it.alpha).thenReturn(fakeDrawableAlpha)
         }
-        val mockRipple: RippleDrawable = mock<RippleDrawable> {
+        val mockRipple = mock<RippleDrawable> {
             whenever(it.numberOfLayers).thenReturn(forge.anInt(min = 1))
             whenever(it.getDrawable(0)).thenReturn(mockDrawable)
         }

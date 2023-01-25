@@ -10,6 +10,7 @@ import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.SdkCore
+import java.util.UUID
 
 internal class SessionReplayRumContextProvider(
     private val sdkCore: SdkCore
@@ -17,9 +18,13 @@ internal class SessionReplayRumContextProvider(
     override fun getRumContext(): SessionReplayRumContext {
         val rumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
         return SessionReplayRumContext(
-            applicationId = rumContext["application_id"] as? String ?: RumContext.NULL_UUID,
-            sessionId = rumContext["session_id"] as? String ?: RumContext.NULL_UUID,
-            viewId = rumContext["view_id"] as? String ?: RumContext.NULL_UUID
+            applicationId = rumContext["application_id"] as? String ?: NULL_UUID,
+            sessionId = rumContext["session_id"] as? String ?: NULL_UUID,
+            viewId = rumContext["view_id"] as? String ?: NULL_UUID
         )
+    }
+
+    companion object {
+        val NULL_UUID = UUID(0, 0).toString()
     }
 }

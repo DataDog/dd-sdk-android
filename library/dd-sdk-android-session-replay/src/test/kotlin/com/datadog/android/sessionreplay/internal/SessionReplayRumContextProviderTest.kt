@@ -6,13 +6,11 @@
 
 package com.datadog.android.sessionreplay.internal
 
-import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.SdkCore
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -32,7 +30,7 @@ import java.util.UUID
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class SessionReplayRumContextProviderTest {
 
     lateinit var testedSessionReplayContextProvider: SessionReplayRumContextProvider
@@ -47,22 +45,22 @@ internal class SessionReplayRumContextProviderTest {
 
     @Test
     fun `M provide a valid Rum context W getRumContext()`(
-        @Forgery fakeRumContext: RumContext,
-        forgery: Forge
+        @Forgery fakeApplicationId: UUID,
+        @Forgery fakeSessionId: UUID,
+        @Forgery fakeViewId: UUID
     ) {
         // When
-        val fakeViewId = forgery.getForgery<UUID>().toString()
-        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn mapOf(
-            "application_id" to fakeRumContext.applicationId,
-            "session_id" to fakeRumContext.sessionId,
-            "view_id" to fakeViewId
+        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn mapOf(
+            "application_id" to fakeApplicationId.toString(),
+            "session_id" to fakeSessionId.toString(),
+            "view_id" to fakeViewId.toString()
         )
         val context = testedSessionReplayContextProvider.getRumContext()
 
         // Then
-        assertThat(context.applicationId).isEqualTo(fakeRumContext.applicationId)
-        assertThat(context.sessionId).isEqualTo(fakeRumContext.sessionId)
-        assertThat(context.viewId).isEqualTo(fakeViewId)
+        assertThat(context.applicationId).isEqualTo(fakeApplicationId.toString())
+        assertThat(context.sessionId).isEqualTo(fakeSessionId.toString())
+        assertThat(context.viewId).isEqualTo(fakeViewId.toString())
     }
 
     @Test
@@ -71,8 +69,8 @@ internal class SessionReplayRumContextProviderTest {
         val context = testedSessionReplayContextProvider.getRumContext()
 
         // Then
-        assertThat(context.applicationId).isEqualTo(RumContext.NULL_UUID)
-        assertThat(context.sessionId).isEqualTo(RumContext.NULL_UUID)
-        assertThat(context.viewId).isEqualTo(RumContext.NULL_UUID)
+        assertThat(context.applicationId).isEqualTo(SessionReplayRumContextProvider.NULL_UUID)
+        assertThat(context.sessionId).isEqualTo(SessionReplayRumContextProvider.NULL_UUID)
+        assertThat(context.viewId).isEqualTo(SessionReplayRumContextProvider.NULL_UUID)
     }
 }

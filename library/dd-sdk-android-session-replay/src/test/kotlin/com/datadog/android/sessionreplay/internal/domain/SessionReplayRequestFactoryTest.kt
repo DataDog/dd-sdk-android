@@ -7,11 +7,11 @@
 package com.datadog.android.sessionreplay.internal.domain
 
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
-import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.sessionreplay.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -45,7 +45,7 @@ import org.mockito.quality.Strictness
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class SessionReplayRequestFactoryTest {
 
     lateinit var testedRequestFactory: SessionReplayRequestFactory

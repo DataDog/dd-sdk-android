@@ -6,13 +6,11 @@
 
 package com.datadog.android.sessionreplay.internal.time
 
-import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.SdkCore
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.LongForgery
-import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -30,7 +28,6 @@ import org.mockito.quality.Strictness
 
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
 internal class SessionReplayTimeProviderTest {
 
     @Mock
@@ -54,9 +51,9 @@ internal class SessionReplayTimeProviderTest {
     ) {
         // Given
         val fakeFeaturesContext =
-            mapOf(RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY to fakeTimestampOffset)
+            mapOf(SessionReplayTimeProvider.RUM_VIEW_TIMESTAMP_OFFSET to fakeTimestampOffset)
         whenever(
-            mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)
+            mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
         ) doReturn fakeFeaturesContext
 
         // When
@@ -69,7 +66,7 @@ internal class SessionReplayTimeProviderTest {
     @Test
     fun `M return the current timestamp W getDeviceTimestamp() {no entry for offset value}`() {
         // Given
-        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn emptyMap()
+        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn emptyMap()
 
         // When
         val deviceTimestamp = testedTimeProvider.getDeviceTimestamp()

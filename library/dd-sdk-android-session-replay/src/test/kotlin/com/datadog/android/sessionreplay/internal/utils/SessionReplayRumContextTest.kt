@@ -24,7 +24,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-class SessionReplayRumContextTest {
+internal class SessionReplayRumContextTest {
 
     @Test
     fun `M return true W isNotValid() { RumContext is not valid }`() {

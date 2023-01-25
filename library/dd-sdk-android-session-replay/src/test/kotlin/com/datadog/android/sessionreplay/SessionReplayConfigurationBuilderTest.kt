@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay
 
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
-import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -22,7 +22,7 @@ import org.junit.jupiter.api.extension.Extensions
 @Extensions(
     ExtendWith(ForgeExtension::class)
 )
-@ForgeConfiguration(value = Configurator::class)
+@ForgeConfiguration(value = ForgeConfigurator::class)
 internal class SessionReplayConfigurationBuilderTest {
 
     lateinit var testedBuilder: SessionReplayConfiguration.Builder

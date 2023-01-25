@@ -7,13 +7,13 @@
 package com.datadog.android.sessionreplay
 
 import android.app.Application
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.NoOpLifecycleCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
-import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.sessionreplay.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.sessionreplay.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class SessionReplayFeatureTest {
 
     private lateinit var testedFeature: SessionReplayFeature

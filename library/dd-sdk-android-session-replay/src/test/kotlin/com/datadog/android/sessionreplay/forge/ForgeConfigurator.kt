@@ -8,11 +8,15 @@ package com.datadog.android.sessionreplay.forge
 
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.jvm.useJvmFactories
 
 internal class ForgeConfigurator : BaseConfigurator() {
 
     override fun configure(forge: Forge) {
         super.configure(forge)
+
+        // Core
+        forge.addFactory(DatadogContextForgeryFactory())
 
         // Gson
         forge.addFactory(GsonJsonArrayForgeryFactory())
@@ -41,5 +45,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(ShapeBorderForgeryFactory())
         forge.addFactory(SessionReplayConfigurationForgeryFactory())
         forge.addFactory(MobileSegmentForgeryFactory())
+
+        forge.useJvmFactories()
     }
 }
