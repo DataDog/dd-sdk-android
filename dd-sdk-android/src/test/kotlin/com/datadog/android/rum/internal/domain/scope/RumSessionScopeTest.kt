@@ -9,11 +9,11 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.RumSessionListener
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
@@ -119,7 +119,7 @@ internal class RumSessionScopeTest {
 
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
-        whenever(mockSdkCore.getFeature(RumSessionScope.SESSION_REPLAY_FEATURE_NAME)) doReturn
+        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
             mockSessionReplayFeatureScope
 
         initializeTestedScope()
@@ -140,7 +140,7 @@ internal class RumSessionScopeTest {
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore).updateFeatureContext(eq(RumFeature.RUM_FEATURE_NAME), capture())
+            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), capture())
 
             val rumContext = mutableMapOf<String, Any?>()
             lastValue.invoke(rumContext)
@@ -968,7 +968,7 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockSdkCore.getFeature(RumSessionScope.SESSION_REPLAY_FEATURE_NAME))
+        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME))
             .thenReturn(null)
 
         // When

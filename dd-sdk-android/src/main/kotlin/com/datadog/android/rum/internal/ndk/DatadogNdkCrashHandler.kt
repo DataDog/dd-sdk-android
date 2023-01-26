@@ -15,8 +15,7 @@ import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.NetworkInfo
@@ -250,7 +249,7 @@ internal class DatadogNdkCrashHandler(
         ndkCrashLog: NdkCrashLog,
         lastViewEvent: JsonObject
     ) {
-        val rumFeature = sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+        val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         if (rumFeature != null) {
             rumFeature.sendEvent(
                 mapOf(
@@ -281,7 +280,7 @@ internal class DatadogNdkCrashHandler(
         lastNetworkInfo: NetworkInfo?,
         lastUserInfo: UserInfo?
     ) {
-        val logsFeature = sdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)
+        val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         if (logsFeature != null) {
             logsFeature.sendEvent(
                 mapOf(

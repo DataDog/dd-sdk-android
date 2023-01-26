@@ -8,9 +8,9 @@ package com.datadog.android.tracing.internal.handlers
 
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
@@ -74,7 +74,7 @@ internal class AndroidSpanLogsHandlerTest {
         whenever(mockSpan.spanId) doReturn BigInteger.valueOf(fakeSpanId)
 
         whenever(
-            mockSdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)
+            mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         ) doReturn mockLogsFeatureScope
 
         testedLogHandler = AndroidSpanLogsHandler(
@@ -442,7 +442,7 @@ internal class AndroidSpanLogsHandlerTest {
         @StringForgery event: String
     ) {
         // When
-        whenever(mockSdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)) doReturn null
+        whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
         testedLogHandler.log(event, mockSpan)
 
         // Then

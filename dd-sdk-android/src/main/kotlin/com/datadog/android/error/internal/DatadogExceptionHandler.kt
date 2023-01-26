@@ -12,8 +12,7 @@ import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.isWorkManagerInitialized
 import com.datadog.android.core.internal.utils.triggerUploadWorker
-import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
@@ -32,7 +31,7 @@ internal class DatadogExceptionHandler(
 
     override fun uncaughtException(t: Thread, e: Throwable) {
         // write the log immediately
-        val logsFeature = sdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)
+        val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         if (logsFeature != null) {
             logsFeature.sendEvent(
                 mapOf(
@@ -53,7 +52,7 @@ internal class DatadogExceptionHandler(
         }
 
         // write a RUM Error too
-        val rumFeature = sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+        val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         if (rumFeature != null) {
             rumFeature.sendEvent(
                 mapOf(

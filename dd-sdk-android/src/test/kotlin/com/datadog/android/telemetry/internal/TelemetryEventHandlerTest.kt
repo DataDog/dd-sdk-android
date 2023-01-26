@@ -12,7 +12,6 @@ import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -29,6 +28,7 @@ import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
@@ -119,7 +119,7 @@ internal class TelemetryEventHandlerTest {
             source = "android",
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(
-                    RumFeature.RUM_FEATURE_NAME,
+                    Feature.RUM_FEATURE_NAME,
                     mapOf(
                         "application_id" to fakeRumContext.applicationId,
                         "session_id" to fakeRumContext.sessionId,
@@ -137,7 +137,7 @@ internal class TelemetryEventHandlerTest {
         whenever(mockConfigurationSampler.sample()) doReturn true
 
         whenever(
-            mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+            mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         ) doReturn mockRumFeatureScope
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
@@ -181,7 +181,7 @@ internal class TelemetryEventHandlerTest {
         val debugRawEvent = forge.createRumRawTelemetryDebugEvent()
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                remove(RumFeature.RUM_FEATURE_NAME)
+                remove(Feature.RUM_FEATURE_NAME)
             }
         )
         val noRumContext = RumContext(
@@ -226,7 +226,7 @@ internal class TelemetryEventHandlerTest {
         val errorRawEvent = forge.createRumRawTelemetryErrorEvent()
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                remove(RumFeature.RUM_FEATURE_NAME)
+                remove(Feature.RUM_FEATURE_NAME)
             }
         )
         val noRumContext = RumContext(
@@ -271,7 +271,7 @@ internal class TelemetryEventHandlerTest {
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent()
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                remove(RumFeature.RUM_FEATURE_NAME)
+                remove(Feature.RUM_FEATURE_NAME)
             }
         )
         val noRumContext = RumContext(

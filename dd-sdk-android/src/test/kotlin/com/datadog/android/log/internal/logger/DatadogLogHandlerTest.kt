@@ -9,18 +9,16 @@ package com.datadog.android.log.internal.logger
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
-import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.extension.asLogStatus
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
@@ -112,12 +110,12 @@ internal class DatadogLogHandlerTest {
                 serverTimeOffsetMs = 0L
             ),
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(RumFeature.RUM_FEATURE_NAME, fakeRumContext.toMap())
+                put(Feature.RUM_FEATURE_NAME, fakeRumContext.toMap())
             }
         )
 
         whenever(
-            mockSdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)
+            mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         ) doReturn mockLogsFeatureScope
         whenever(mockLogsFeatureScope.withWriteContext(any(), any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
@@ -569,7 +567,7 @@ internal class DatadogLogHandlerTest {
         val now = System.currentTimeMillis()
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                remove(RumFeature.RUM_FEATURE_NAME)
+                remove(Feature.RUM_FEATURE_NAME)
             }
         )
         testedHandler = DatadogLogHandler(
@@ -632,7 +630,7 @@ internal class DatadogLogHandlerTest {
         )
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(TracingFeature.TRACING_FEATURE_NAME, tracingContext)
+                put(Feature.TRACING_FEATURE_NAME, tracingContext)
             }
         )
 

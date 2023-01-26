@@ -17,14 +17,13 @@ import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
-import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
@@ -115,8 +114,8 @@ internal class DatadogExceptionHandlerTest {
     fun `set up`() {
         mockChoreographerInstance()
 
-        whenever(mockSdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)) doReturn mockLogsFeatureScope
-        whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn mockLogsFeatureScope
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         Datadog.initialize(
             appContext.mockInstance,
@@ -151,7 +150,7 @@ internal class DatadogExceptionHandlerTest {
     @Test
     fun `M log dev info W caught exception { no Logs feature registered }`() {
         // Given
-        whenever(mockSdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)) doReturn null
+        whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
 
         Thread.setDefaultUncaughtExceptionHandler(null)
         testedHandler.register()
@@ -437,7 +436,7 @@ internal class DatadogExceptionHandlerTest {
     @Test
     fun `M log dev info W caught exception { no RUM feature registered }`() {
         // Given
-        whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn null
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
 
         Thread.setDefaultUncaughtExceptionHandler(null)
         testedHandler.register()

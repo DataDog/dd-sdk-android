@@ -16,6 +16,7 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
@@ -102,7 +103,7 @@ internal class AndroidTracerTest {
         fakeEnvName = forge.anAlphabeticalString()
         fakeToken = forge.anHexadecimalString()
 
-        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn mapOf(
+        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn mapOf(
             "application_id" to fakeRumContext.applicationId,
             "session_id" to fakeRumContext.sessionId,
             "view_id" to fakeRumContext.viewId,
@@ -248,7 +249,7 @@ internal class AndroidTracerTest {
     ) {
         // Given
         val fakeViewId = forge.getForgery<UUID>().toString()
-        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn mapOf(
+        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn mapOf(
             "application_id" to fakeRumContext.applicationId,
             "session_id" to fakeRumContext.sessionId,
             "view_id" to fakeViewId,
@@ -271,7 +272,7 @@ internal class AndroidTracerTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn mapOf(
+        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn mapOf(
             "application_id" to fakeRumContext.applicationId,
             "session_id" to fakeRumContext.sessionId,
             "action_id" to fakeRumContext.actionId
@@ -293,7 +294,7 @@ internal class AndroidTracerTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn mapOf(
+        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn mapOf(
             "application_id" to fakeRumContext.applicationId,
             "session_id" to fakeRumContext.sessionId,
             "view_id" to null,
@@ -317,7 +318,7 @@ internal class AndroidTracerTest {
     ) {
         // Given
         val fakeActionId = forge.getForgery<UUID>().toString()
-        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn mapOf(
+        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn mapOf(
             "application_id" to fakeRumContext.applicationId,
             "session_id" to fakeRumContext.sessionId,
             "view_id" to fakeRumContext.actionId,
@@ -341,7 +342,7 @@ internal class AndroidTracerTest {
     ) {
         // Given
         val fakeRumContext = forge.getForgery(RumContext::class.java).copy(actionId = null)
-        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn mapOf(
+        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn mapOf(
             "application_id" to fakeRumContext.applicationId,
             "session_id" to fakeRumContext.sessionId,
             "view_id" to fakeRumContext.actionId
@@ -364,7 +365,7 @@ internal class AndroidTracerTest {
     ) {
         // Given
         val fakeRumContext = forge.getForgery(RumContext::class.java).copy(actionId = null)
-        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn mapOf(
+        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn mapOf(
             "application_id" to fakeRumContext.applicationId,
             "session_id" to fakeRumContext.sessionId,
             "view_id" to fakeRumContext.actionId,
@@ -582,7 +583,7 @@ internal class AndroidTracerTest {
         // but since we are using mock here, let's use thread-safe map instead.
         val tracingContext = ConcurrentHashMap<String, Any?>()
         whenever(
-            mockSdkCore.updateFeatureContext(eq(TracingFeature.TRACING_FEATURE_NAME), any())
+            mockSdkCore.updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any())
         ) doAnswer {
             val callback = it.getArgument<(context: MutableMap<String, Any?>) -> Unit>(1)
             callback.invoke(tracingContext)

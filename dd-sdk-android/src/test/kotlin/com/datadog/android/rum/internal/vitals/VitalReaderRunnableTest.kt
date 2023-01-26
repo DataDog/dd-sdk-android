@@ -6,10 +6,10 @@
 
 package com.datadog.android.rum.internal.vitals
 
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -72,7 +72,7 @@ internal class VitalReaderRunnableTest {
         val rumContext = mapOf<String, Any?>(
             "view_type" to RumViewScope.RumViewType.FOREGROUND
         )
-        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn rumContext
+        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn rumContext
         testedRunnable = VitalReaderRunnable(
             mockSdkCore,
             mockReader,
@@ -110,7 +110,7 @@ internal class VitalReaderRunnableTest {
         val rumContext = mapOf<String, Any?>(
             "view_type" to viewType
         )
-        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn rumContext
+        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn rumContext
 
         // When
         testedRunnable.run()
@@ -127,7 +127,7 @@ internal class VitalReaderRunnableTest {
         val rumContext = mapOf<String, Any?>(
             "view_type" to Any()
         )
-        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn rumContext
+        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn rumContext
 
         // When
         testedRunnable.run()

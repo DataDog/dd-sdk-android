@@ -13,7 +13,6 @@ import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.rum.RumSessionListener
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -23,6 +22,7 @@ import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
@@ -48,7 +48,7 @@ internal class TelemetryEventHandler(
 
         seenInCurrentSession.add(event.identity)
 
-        sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val timestamp = event.eventTime.timestamp + datadogContext.time.serverTimeOffsetMs
                 val telemetryEvent: Any? = when (event.type) {
@@ -243,7 +243,7 @@ internal class TelemetryEventHandler(
     }
 
     private fun DatadogContext.rumContext(): RumContext {
-        val rumContext = featuresContext[RumFeature.RUM_FEATURE_NAME].orEmpty()
+        val rumContext = featuresContext[Feature.RUM_FEATURE_NAME].orEmpty()
         return RumContext.fromFeatureContext(rumContext)
     }
 

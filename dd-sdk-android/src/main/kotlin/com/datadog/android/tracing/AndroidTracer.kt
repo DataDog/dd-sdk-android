@@ -9,10 +9,9 @@ package com.datadog.android.tracing
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.tracing.internal.data.NoOpWriter
 import com.datadog.android.tracing.internal.handlers.AndroidSpanLogsHandler
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
@@ -55,7 +54,7 @@ class AndroidTracer internal constructor(
                 if (activeContext != null) {
                     val activeSpanId = activeContext.toSpanId()
                     val activeTraceId = activeContext.toTraceId()
-                    sdkCore.updateFeatureContext(TracingFeature.TRACING_FEATURE_NAME) {
+                    sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
                         it["context@$threadName"] = mapOf(
                             "span_id" to activeSpanId,
                             "trace_id" to activeTraceId
@@ -66,7 +65,7 @@ class AndroidTracer internal constructor(
 
             override fun afterScopeClosed() {
                 val threadName = Thread.currentThread().name
-                sdkCore.updateFeatureContext(TracingFeature.TRACING_FEATURE_NAME) {
+                sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
                     it.remove("context@$threadName")
                 }
             }
@@ -220,7 +219,7 @@ class AndroidTracer internal constructor(
 
     private fun DDSpanBuilder.withRumContext(): DDSpanBuilder {
         return if (bundleWithRum) {
-            val rumContext = sdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)
+            val rumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
             withTag(LogAttributes.RUM_APPLICATION_ID, rumContext["application_id"] as? String)
                 .withTag(LogAttributes.RUM_SESSION_ID, rumContext["session_id"] as? String)
                 .withTag(LogAttributes.RUM_VIEW_ID, rumContext["view_id"] as? String)

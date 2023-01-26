@@ -11,14 +11,13 @@ import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
@@ -115,7 +114,7 @@ internal class LogsFeatureTest {
         fakeServerTimeOffset = forge.aLong(min = -now, max = Long.MAX_VALUE - now)
 
         whenever(
-            mockSdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)
+            mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         ) doReturn mockLogsFeatureScope
 
         whenever(mockLogsFeatureScope.withWriteContext(any(), any())) doAnswer {
@@ -128,9 +127,9 @@ internal class LogsFeatureTest {
                 serverTimeOffsetMs = fakeServerTimeOffset
             ),
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(RumFeature.RUM_FEATURE_NAME, fakeRumContext.toMap())
+                put(Feature.RUM_FEATURE_NAME, fakeRumContext.toMap())
                 put(
-                    TracingFeature.TRACING_FEATURE_NAME,
+                    Feature.TRACING_FEATURE_NAME,
                     mapOf(
                         "context@$fakeThreadName" to mapOf(
                             "span_id" to fakeSpanId,
@@ -175,7 +174,7 @@ internal class LogsFeatureTest {
     fun `𝕄 provide logs feature name 𝕎 name()`() {
         // When+Then
         assertThat(testedFeature.name)
-            .isEqualTo(LogsFeature.LOGS_FEATURE_NAME)
+            .isEqualTo(Feature.LOGS_FEATURE_NAME)
     }
 
     @Test

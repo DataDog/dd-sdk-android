@@ -48,6 +48,7 @@ import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
@@ -99,7 +100,7 @@ internal class RumFeature(
 
     // region Feature
 
-    override val name: String = RUM_FEATURE_NAME
+    override val name: String = Feature.RUM_FEATURE_NAME
 
     override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
         this.sdkCore = sdkCore
@@ -123,7 +124,7 @@ internal class RumFeature(
 
         registerTrackingStrategies(appContext)
 
-        sdkCore.setEventReceiver(RUM_FEATURE_NAME, this)
+        sdkCore.setEventReceiver(name, this)
 
         initialized.set(true)
     }
@@ -133,7 +134,7 @@ internal class RumFeature(
         FeatureStorageConfiguration.DEFAULT
 
     override fun onStop() {
-        sdkCore.removeEventReceiver(RUM_FEATURE_NAME)
+        sdkCore.removeEventReceiver(name)
 
         unregisterTrackingStrategies(appContext)
 
@@ -319,7 +320,6 @@ internal class RumFeature(
     companion object {
         internal val startupTimeNs: Long = System.nanoTime()
 
-        internal const val RUM_FEATURE_NAME = "rum"
         internal const val VIEW_TIMESTAMP_OFFSET_IN_MS_KEY = "view_timestamp_offset"
         internal const val UNSUPPORTED_EVENT_TYPE =
             "RUM feature receive an event of unsupported type=%s."

@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.forge
 
-import com.datadog.android.sessionreplay.recorder.Node
+import com.datadog.android.sessionreplay.internal.recorder.Node
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 

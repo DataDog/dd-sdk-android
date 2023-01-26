@@ -11,7 +11,10 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.SdkInternalLogger
 import java.util.Locale
 
-internal var internalLogger: InternalLogger = SdkInternalLogger()
+// TODO RUMM-2948 Temporary thing, we probably shouldn't expose it in such way to modules,
+//  at least as var
+@Suppress("UndocumentedPublicProperty")
+var internalLogger: InternalLogger = SdkInternalLogger()
 
 internal val telemetry: Telemetry = Telemetry()
 

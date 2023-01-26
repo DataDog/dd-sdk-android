@@ -8,12 +8,12 @@ package com.datadog.android.rum.internal.ndk
 
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.utils.internalLogger
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.internal.domain.scope.tryFromSource
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
@@ -27,7 +27,7 @@ internal class DatadogNdkCrashEventHandler(
 
     @Suppress("ComplexCondition")
     override fun handleEvent(event: Map<*, *>, sdkCore: SdkCore, rumWriter: DataWriter<Any>) {
-        val rumFeature = sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+        val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
 
         if (rumFeature == null) {
             internalLogger.log(

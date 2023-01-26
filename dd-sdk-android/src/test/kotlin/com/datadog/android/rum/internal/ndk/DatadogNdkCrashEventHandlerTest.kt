@@ -10,13 +10,13 @@ import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.ErrorEventAssert
 import com.datadog.android.rum.assertj.ViewEventAssert
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
@@ -84,7 +84,7 @@ internal class DatadogNdkCrashEventHandlerTest {
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
@@ -375,7 +375,7 @@ internal class DatadogNdkCrashEventHandlerTest {
     ) {
         // Given
         val fakeViewEventJson = viewEvent.toJson().asJsonObject
-        whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn null
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
         val fakeEvent = mapOf(
             "timestamp" to fakeTimestamp,
             "signalName" to fakeSignalName,

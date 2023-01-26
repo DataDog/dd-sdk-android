@@ -7,8 +7,8 @@
 package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.core.internal.utils.internalLogger
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 
@@ -21,7 +21,7 @@ internal class WebViewRumEventContextProvider {
         if (rumFeatureDisabled) {
             return null
         }
-        val rumContext = datadogContext.featuresContext[RumFeature.RUM_FEATURE_NAME]
+        val rumContext = datadogContext.featuresContext[Feature.RUM_FEATURE_NAME]
         val rumApplicationId = rumContext?.get("application_id") as? String
         val rumSessionId = rumContext?.get("session_id") as? String
         return if (rumApplicationId == null ||

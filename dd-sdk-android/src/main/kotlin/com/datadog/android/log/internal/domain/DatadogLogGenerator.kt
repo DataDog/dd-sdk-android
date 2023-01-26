@@ -9,8 +9,7 @@ package com.datadog.android.log.internal.domain
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.utils.buildLogDateFormat
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.tracing.internal.TracingFeature
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
@@ -250,7 +249,7 @@ internal class DatadogLogGenerator(
     ): MutableMap<String, Any?> {
         val combinedAttributes = mutableMapOf<String, Any?>().apply { putAll(attributes) }
         if (bundleWithTraces) {
-            datadogContext.featuresContext[TracingFeature.TRACING_FEATURE_NAME]?.let {
+            datadogContext.featuresContext[Feature.TRACING_FEATURE_NAME]?.let {
                 val threadLocalContext = it["context@$threadName"] as? Map<*, *>
                 if (threadLocalContext != null) {
                     combinedAttributes[LogAttributes.DD_TRACE_ID] = threadLocalContext["trace_id"]
@@ -259,7 +258,7 @@ internal class DatadogLogGenerator(
             }
         }
         if (bundleWithRum) {
-            datadogContext.featuresContext[RumFeature.RUM_FEATURE_NAME]?.let {
+            datadogContext.featuresContext[Feature.RUM_FEATURE_NAME]?.let {
                 combinedAttributes[LogAttributes.RUM_APPLICATION_ID] = it["application_id"]
                 combinedAttributes[LogAttributes.RUM_SESSION_ID] = it["session_id"]
                 combinedAttributes[LogAttributes.RUM_VIEW_ID] = it["view_id"]

@@ -72,6 +72,8 @@ android {
     }
 }
 dependencies {
+    implementation(project(":dd-sdk-android"))
+    implementation(libs.okHttp)
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAppCompat)

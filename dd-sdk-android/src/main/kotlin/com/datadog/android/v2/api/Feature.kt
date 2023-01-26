@@ -31,4 +31,28 @@ interface Feature {
      * itself and release resources held.
      */
     fun onStop()
+
+    companion object {
+        // names of main features to have a single place where they are defined
+
+        /**
+         * Logs feature name.
+         */
+        const val LOGS_FEATURE_NAME: String = "logs"
+
+        /**
+         * RUM feature name.
+         */
+        const val RUM_FEATURE_NAME: String = "rum"
+
+        /**
+         * Tracing feature name.
+         */
+        const val TRACING_FEATURE_NAME: String = "tracing"
+
+        /**
+         * Session Replay feature name.
+         */
+        const val SESSION_REPLAY_FEATURE_NAME: String = "session-replay"
+    }
 }

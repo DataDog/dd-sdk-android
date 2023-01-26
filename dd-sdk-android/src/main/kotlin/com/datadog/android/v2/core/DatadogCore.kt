@@ -180,9 +180,9 @@ internal class DatadogCore(
             it.value.stop()
             // TODO RUMM-0000 Temporary thing
             when (it.key) {
-                LogsFeature.LOGS_FEATURE_NAME -> logsFeature = null
-                TracingFeature.TRACING_FEATURE_NAME -> tracingFeature = null
-                RumFeature.RUM_FEATURE_NAME -> rumFeature = null
+                Feature.LOGS_FEATURE_NAME -> logsFeature = null
+                Feature.TRACING_FEATURE_NAME -> tracingFeature = null
+                Feature.RUM_FEATURE_NAME -> rumFeature = null
                 CrashReportsFeature.CRASH_FEATURE_NAME -> crashReportsFeature = null
                 WebViewLogsFeature.WEB_LOGS_FEATURE_NAME -> webViewLogsFeature = null
                 WebViewRumFeature.WEB_RUM_FEATURE_NAME -> webViewRumFeature = null
@@ -220,7 +220,7 @@ internal class DatadogCore(
                 it.setFeatureContext(featureName, mutableContext)
                 mutableContext
             }
-            if (featureName == RumFeature.RUM_FEATURE_NAME) {
+            if (featureName == Feature.RUM_FEATURE_NAME) {
                 updateContextInPlugins(updatedContext)
             }
         }

@@ -10,10 +10,9 @@ import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.file.FileReader
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
@@ -122,11 +121,11 @@ internal class DatadogNdkCrashHandlerTest {
         }
 
         whenever(
-            mockSdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)
+            mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         ) doReturn mockLogsFeatureScope
 
         whenever(
-            mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+            mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         ) doReturn mockRumFeatureScope
 
         testedHandler = DatadogNdkCrashHandler(
@@ -285,7 +284,7 @@ internal class DatadogNdkCrashHandlerTest {
         // Given
         testedHandler.lastSerializedNdkCrashLog = crashData
         whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
-        whenever(mockSdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)) doReturn null
+        whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
 
         // When
         testedHandler.handleNdkCrash(mockSdkCore)
@@ -477,7 +476,7 @@ internal class DatadogNdkCrashHandlerTest {
         @Forgery fakeViewEvent: ViewEvent
     ) {
         // Given
-        whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn null
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
         testedHandler.lastSerializedNdkCrashLog = crashData
         testedHandler.lastSerializedRumViewEvent = viewEventStr
         whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
