@@ -18,6 +18,8 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.security.Encryption
+import com.datadog.android.sessionreplay.internal.SessionReplayConfiguration
+import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.setStaticValue
@@ -53,6 +55,9 @@ internal class EncryptionTest {
         val credentials = createCredentials()
 
         Datadog.initialize(targetContext, credentials, configuration, TrackingConsent.PENDING)
+
+        val sessionReplayConfig = SessionReplayConfiguration.Builder().build()
+        Datadog.registerFeature(SessionReplayFeature(sessionReplayConfig))
 
         val rumMonitor = RumMonitor.Builder().build()
         GlobalRum.registerIfAbsent(rumMonitor)
@@ -141,8 +146,7 @@ internal class EncryptionTest {
                 logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
-                rumEnabled = true,
-                sessionReplayEnabled = true
+                rumEnabled = true
             )
             .setEncryption(encryption)
             .build()

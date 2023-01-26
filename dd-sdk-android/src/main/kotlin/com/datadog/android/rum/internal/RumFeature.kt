@@ -132,7 +132,7 @@ internal class RumFeature(
     override val storageConfiguration: FeatureStorageConfiguration =
         FeatureStorageConfiguration.DEFAULT
 
-    fun stop() {
+    override fun onStop() {
         sdkCore.removeEventReceiver(RUM_FEATURE_NAME)
 
         unregisterTrackingStrategies(appContext)

@@ -32,7 +32,7 @@ internal class CrashReportsFeature(
         initialized.set(true)
     }
 
-    fun stop() {
+    override fun onStop() {
         resetOriginalExceptionHandler()
         initialized.set(false)
     }

@@ -25,4 +25,10 @@ interface Feature {
      * @param appContext Application context.
      */
     fun onInitialize(sdkCore: SdkCore, appContext: Context)
+
+    /**
+     * This method is called during feature de-initialization. At this stage feature should stop
+     * itself and release resources held.
+     */
+    fun onStop()
 }

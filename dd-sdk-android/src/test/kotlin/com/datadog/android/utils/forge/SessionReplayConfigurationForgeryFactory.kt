@@ -6,15 +6,15 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.internal.SessionReplayConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class ConfigurationSessionReplayForgeryFactory :
-    ForgeryFactory<Configuration.Feature.SessionReplay> {
-    override fun getForgery(forge: Forge): Configuration.Feature.SessionReplay {
-        return Configuration.Feature.SessionReplay(
+internal class SessionReplayConfigurationForgeryFactory :
+    ForgeryFactory<SessionReplayConfiguration> {
+    override fun getForgery(forge: Forge): SessionReplayConfiguration {
+        return SessionReplayConfiguration(
             endpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
             privacy = forge.aValueFrom(SessionReplayPrivacy::class.java)
         )

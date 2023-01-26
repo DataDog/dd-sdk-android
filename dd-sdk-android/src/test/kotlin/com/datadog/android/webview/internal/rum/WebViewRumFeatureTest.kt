@@ -88,12 +88,12 @@ internal class WebViewRumFeatureTest {
     }
 
     @Test
-    fun `𝕄 reset data writer 𝕎 stop()`() {
+    fun `𝕄 reset data writer 𝕎 onStop()`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, mock())
 
         // When
-        testedFeature.stop()
+        testedFeature.onStop()
 
         // Then
         assertThat(testedFeature.dataWriter).isInstanceOf(NoOpDataWriter::class.java)

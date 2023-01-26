@@ -261,6 +261,18 @@ internal class SdkFeatureTest {
     }
 
     @Test
+    fun `𝕄 call wrapped feature onStop 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        verify(mockWrappedFeature).onStop()
+    }
+
+    @Test
     fun `𝕄 initialize only once 𝕎 initialize() twice`() {
         // Given
         testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)

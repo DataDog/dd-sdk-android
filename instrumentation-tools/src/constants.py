@@ -11,5 +11,6 @@ IGNORED_TYPES = [
     "com.datadog.android.rum.model.ErrorEvent$Dd",
     "com.datadog.android.rum.model.LongTaskEvent$Dd",
     "com.datadog.android.telemetry.model.TelemetryDebugEvent$Dd",
-    "com.datadog.android.telemetry.model.TelemetryErrorEvent$Dd"
+    "com.datadog.android.telemetry.model.TelemetryErrorEvent$Dd",
+    "com.datadog.android.telemetry.model.TelemetryConfigurationEvent$Dd"
 ]

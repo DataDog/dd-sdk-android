@@ -24,6 +24,9 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useCustomTracesEndpoint(String): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useSite(com.datadog.android.DatadogSite): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
+ * apiMethodSignature: com.datadog.android.sessionreplay.internal.SessionReplayConfiguration$Builder#fun setPrivacy(com.datadog.android.sessionreplay.SessionReplayPrivacy): Builder
+ * apiMethodSignature: com.datadog.android.sessionreplay.internal.SessionReplayConfiguration$Builder#fun useCustomEndpoint(String): Builder
+ * apiMethodSignature: com.datadog.android.sessionreplay.internal.SessionReplayConfiguration$Builder#fun useSite(com.datadog.android.DatadogSite): Builder
  * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun setSessionListener(RumSessionListener): Builder
  * apiMethodSignature: com.datadog.android.log.Logger#fun log(Int, String, Throwable? = null, Map<String, Any?> = emptyMap())
  * apiMethodSignature: com.datadog.android.plugin.DatadogPluginConfig#constructor(android.content.Context, String, String, com.datadog.android.privacy.TrackingConsent)

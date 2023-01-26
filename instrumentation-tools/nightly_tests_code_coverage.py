@@ -72,7 +72,8 @@ def fetch_already_covered_apis(tests_directory_path: str) -> set:
         Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/rum'),
         Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/trace'),
         Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/webview'),
-        Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/main')
+        Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/main'),
+        Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/crash'),
     ]
     for feature in features:
         covered_apis.update(feature.fetch_test_cases())

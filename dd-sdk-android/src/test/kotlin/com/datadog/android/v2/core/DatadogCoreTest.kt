@@ -22,7 +22,6 @@ import com.datadog.android.plugin.DatadogRumContext
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
@@ -469,21 +468,27 @@ internal class DatadogCoreTest {
         testedCore.webViewRumFeature = mockWebViewRumFeature
         val mockCrashReportsFeature = mock<CrashReportsFeature>()
         testedCore.crashReportsFeature = mockCrashReportsFeature
-        val mockSessionReplayFeature = mock<SessionReplayFeature>()
-        testedCore.sessionReplayFeature = mockSessionReplayFeature
+
+        val sdkFeatureMocks = listOf(
+            RumFeature.RUM_FEATURE_NAME,
+            TracingFeature.TRACING_FEATURE_NAME,
+            LogsFeature.LOGS_FEATURE_NAME,
+            WebViewLogsFeature.WEB_LOGS_FEATURE_NAME,
+            WebViewRumFeature.WEB_RUM_FEATURE_NAME
+        ).map {
+            it to mock<SdkFeature>()
+        }
+
+        sdkFeatureMocks.forEach { testedCore.features += it }
 
         // When
         testedCore.stop()
 
         // Then
         verify(mockCoreFeature).stop()
-        verify(mockRumFeature).stop()
-        verify(mockTracingFeature).stop()
-        verify(mockLogsFeature).stop()
-        verify(mockWebViewRumFeature).stop()
-        verify(mockWebViewLogsFeature).stop()
-        verify(mockCrashReportsFeature).stop()
-        verify(mockSessionReplayFeature).stop()
+        sdkFeatureMocks.forEach {
+            verify(it.second).stop()
+        }
 
         assertThat(testedCore.rumFeature).isNull()
         assertThat(testedCore.tracingFeature).isNull()
@@ -491,7 +496,6 @@ internal class DatadogCoreTest {
         assertThat(testedCore.webViewLogsFeature).isNull()
         assertThat(testedCore.webViewRumFeature).isNull()
         assertThat(testedCore.crashReportsFeature).isNull()
-        assertThat(testedCore.sessionReplayFeature).isNull()
         assertThat(testedCore.contextProvider).isNull()
 
         assertThat(testedCore.features).isEmpty()

@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
@@ -55,7 +54,7 @@ internal class SessionReplayFeatureTest {
     private lateinit var testedFeature: SessionReplayFeature
 
     @Forgery
-    lateinit var fakeConfigurationFeature: Configuration.Feature.SessionReplay
+    lateinit var fakeConfigurationFeature: SessionReplayConfiguration
 
     @Mock
     lateinit var mockSessionReplayLifecycleCallback: SessionReplayLifecycleCallback
@@ -123,12 +122,12 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `M unregister the Session Replay lifecycle callback W stop()`() {
+    fun `M unregister the Session Replay lifecycle callback W onStop()`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
-        testedFeature.stop()
+        testedFeature.onStop()
 
         // Then
         verify(mockSessionReplayLifecycleCallback)
@@ -136,12 +135,12 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `M reset the Session Replay lifecycle callback W stop()`() {
+    fun `M reset the Session Replay lifecycle callback W onStop()`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
-        testedFeature.stop()
+        testedFeature.onStop()
 
         // Then
         assertThat(testedFeature.sessionReplayCallback)
@@ -269,6 +268,21 @@ internal class SessionReplayFeatureTest {
         testedFeature.startRecording()
 
         // Then
+        verifyZeroInteractions(mockSessionReplayLifecycleCallback)
+    }
+
+    @Test
+    fun `M log warning and do nothing W startRecording() { feature is not initialized }`() {
+        // When
+        testedFeature.startRecording()
+
+        // Then
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                SessionReplayFeature.CANNOT_START_RECORDING_NOT_INITIALIZED
+            )
         verifyZeroInteractions(mockSessionReplayLifecycleCallback)
     }
 

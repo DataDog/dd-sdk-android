@@ -73,8 +73,7 @@ internal open class NdkCrashService : CrashService() {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = rumEnabled,
-            sessionReplayEnabled = true
+            rumEnabled = rumEnabled
         ).sampleTelemetry(HUNDRED_PERCENT)
         if (ndkCrashReportsEnabled) {
             @Suppress("DEPRECATION")

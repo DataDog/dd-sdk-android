@@ -30,7 +30,6 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
@@ -72,7 +71,6 @@ internal class DatadogCore(
     internal var crashReportsFeature: CrashReportsFeature? = null
     internal var webViewLogsFeature: WebViewLogsFeature? = null
     internal var webViewRumFeature: WebViewRumFeature? = null
-    internal var sessionReplayFeature: SessionReplayFeature? = null
 
     // TODO RUMM-0000 handle context
     internal val contextProvider: ContextProvider?
@@ -178,21 +176,18 @@ internal class DatadogCore(
 
     /** @inheritDoc */
     override fun stop() {
-        logsFeature?.stop()
-        logsFeature = null
-        tracingFeature?.stop()
-        tracingFeature = null
-        rumFeature?.stop()
-        rumFeature = null
-        crashReportsFeature?.stop()
-        crashReportsFeature = null
-        webViewLogsFeature?.stop()
-        webViewLogsFeature = null
-        webViewRumFeature?.stop()
-        webViewRumFeature = null
-        sessionReplayFeature?.stop()
-        sessionReplayFeature = null
-
+        features.forEach {
+            it.value.stop()
+            // TODO RUMM-0000 Temporary thing
+            when (it.key) {
+                LogsFeature.LOGS_FEATURE_NAME -> logsFeature = null
+                TracingFeature.TRACING_FEATURE_NAME -> tracingFeature = null
+                RumFeature.RUM_FEATURE_NAME -> rumFeature = null
+                CrashReportsFeature.CRASH_FEATURE_NAME -> crashReportsFeature = null
+                WebViewLogsFeature.WEB_LOGS_FEATURE_NAME -> webViewLogsFeature = null
+                WebViewRumFeature.WEB_RUM_FEATURE_NAME -> webViewRumFeature = null
+            }
+        }
         features.clear()
 
         coreFeature.stop()
@@ -303,7 +298,6 @@ internal class DatadogCore(
         initializeTracingFeature(mutableConfig.tracesConfig)
         initializeRumFeature(mutableConfig.rumConfig)
         initializeCrashReportFeature(mutableConfig.crashReportConfig)
-        initializeSessionReplayFeature(mutableConfig.sessionReplayConfig)
 
         coreFeature.ndkCrashHandler.handleNdkCrash(this)
 
@@ -357,14 +351,6 @@ internal class DatadogCore(
             val webViewRumFeature = WebViewRumFeature(configuration.endpointUrl, coreFeature)
             this.webViewRumFeature = webViewRumFeature
             registerFeature(webViewRumFeature)
-        }
-    }
-
-    private fun initializeSessionReplayFeature(configuration: Configuration.Feature.SessionReplay?) {
-        if (configuration != null) {
-            val sessionReplayFeature = SessionReplayFeature(configuration)
-            this.sessionReplayFeature = sessionReplayFeature
-            registerFeature(sessionReplayFeature)
         }
     }
 
