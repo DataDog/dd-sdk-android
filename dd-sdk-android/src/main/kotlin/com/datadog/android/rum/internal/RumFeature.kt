@@ -97,6 +97,8 @@ internal class RumFeature(
     fun initialize(context: Context, configuration: Configuration.Feature.RUM) {
         dataWriter = createDataWriter(configuration)
 
+        appContext = context.applicationContext
+
         samplingRate = configuration.samplingRate
         telemetrySamplingRate = configuration.telemetrySamplingRate
         backgroundEventTracking = configuration.backgroundEventTracking
@@ -112,8 +114,6 @@ internal class RumFeature(
         initializeANRDetector()
 
         registerTrackingStrategies(context)
-
-        appContext = context.applicationContext
 
         sdkCore.setEventReceiver(RUM_FEATURE_NAME, this)
 
@@ -235,7 +235,9 @@ internal class RumFeature(
         initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor, periodInMs)
         initializeVitalMonitor(MemoryVitalReader(), memoryVitalMonitor, periodInMs)
 
-        val vitalFrameCallback = VitalFrameCallback(frameRateVitalMonitor) { initialized.get() }
+        val vitalFrameCallback = VitalFrameCallback(appContext, frameRateVitalMonitor) {
+            initialized.get()
+        }
         try {
             Choreographer.getInstance().postFrameCallback(vitalFrameCallback)
         } catch (e: IllegalStateException) {
