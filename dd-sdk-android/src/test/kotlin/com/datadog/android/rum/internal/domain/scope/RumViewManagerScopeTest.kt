@@ -9,9 +9,12 @@ package com.datadog.android.rum.internal.domain.scope
 import android.app.ActivityManager.RunningAppProcessInfo
 import android.os.Build
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
+import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -74,7 +77,7 @@ internal class RumViewManagerScopeTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockDetector: FirstPartyHostDetector
+    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockCpuVitalMonitor: VitalMonitor
@@ -121,7 +124,7 @@ internal class RumViewManagerScopeTest {
             mockSdkCore,
             true,
             fakeTrackFrustrations,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -211,7 +214,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.name).isEqualTo(fakeEvent.name)
                 assertThat(it.type).isEqualTo(RumViewScope.RumViewType.FOREGROUND)
                 assertThat(it.attributes).containsAllEntriesOf(fakeEvent.attributes)
-                assertThat(it.firstPartyHostDetector).isSameAs(mockDetector)
+                assertThat(it.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
             }
         assertThat(testedScope.applicationDisplayed).isTrue()
     }
@@ -237,7 +240,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.name).isEqualTo(fakeEvent.name)
                 assertThat(it.type).isEqualTo(RumViewScope.RumViewType.FOREGROUND)
                 assertThat(it.attributes).containsAllEntriesOf(fakeEvent.attributes)
-                assertThat(it.firstPartyHostDetector).isSameAs(mockDetector)
+                assertThat(it.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
             }
         assertThat(testedScope.applicationDisplayed).isTrue()
     }
@@ -356,6 +359,26 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
+    fun `𝕄 not start a bg ViewScope 𝕎 handleEvent { app displayed, event is background ANR}`() {
+        // Given
+        testedScope.applicationDisplayed = true
+        val fakeEvent = RumRawEvent.AddError(
+            message = ANRDetectorRunnable.ANR_MESSAGE,
+            source = RumErrorSource.SOURCE,
+            stacktrace = null,
+            throwable = ANRException(Thread.currentThread()),
+            isFatal = false,
+            attributes = emptyMap()
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(testedScope.childrenScopes).hasSize(0)
+    }
+
+    @Test
     fun `𝕄 not start a bg ViewScope 𝕎 handleEvent { bg disabled, event is relevant }`(
         forge: Forge
     ) {
@@ -365,7 +388,7 @@ internal class RumViewManagerScopeTest {
             sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
-            firstPartyHostDetector = mockDetector,
+            firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
@@ -391,7 +414,7 @@ internal class RumViewManagerScopeTest {
             sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
-            firstPartyHostDetector = mockDetector,
+            firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
@@ -421,7 +444,7 @@ internal class RumViewManagerScopeTest {
             sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
-            firstPartyHostDetector = mockDetector,
+            firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
@@ -512,7 +535,7 @@ internal class RumViewManagerScopeTest {
             sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
-            firstPartyHostDetector = mockDetector,
+            firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
@@ -553,7 +576,7 @@ internal class RumViewManagerScopeTest {
             sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
-            firstPartyHostDetector = mockDetector,
+            firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,

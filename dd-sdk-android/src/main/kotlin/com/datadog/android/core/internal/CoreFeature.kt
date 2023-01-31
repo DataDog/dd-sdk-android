@@ -21,7 +21,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.net.CurlInterceptor
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
 import com.datadog.android.core.internal.net.RotatingDnsResolver
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
@@ -94,7 +94,7 @@ internal class CoreFeature {
     internal val initialized = AtomicBoolean(false)
     internal var contextRef: WeakReference<Context?> = WeakReference(null)
 
-    internal var firstPartyHostDetector = FirstPartyHostDetector(emptyList())
+    internal var firstPartyHostHeaderTypeResolver = FirstPartyHostHeaderTypeResolver(emptyMap())
     internal var networkInfoProvider: NetworkInfoProvider = NoOpNetworkInfoProvider()
     internal var systemInfoProvider: SystemInfoProvider = NoOpSystemInfoProvider()
     internal var timeProvider: TimeProvider = NoOpTimeProvider()
@@ -147,7 +147,7 @@ internal class CoreFeature {
         resolveProcessInfo(appContext)
         initializeClockSync(appContext)
         setupOkHttpClient(configuration)
-        firstPartyHostDetector.addKnownHosts(configuration.firstPartyHosts)
+        firstPartyHostHeaderTypeResolver.addKnownHostsWithHeaderTypes(configuration.firstPartyHostsWithHeaderTypes)
         webViewTrackingHosts = configuration.webViewTrackingHosts
         androidInfoProvider = DefaultAndroidInfoProvider(appContext)
         setupExecutors()
@@ -504,7 +504,7 @@ internal class CoreFeature {
     }
 
     private fun cleanupProviders() {
-        firstPartyHostDetector = FirstPartyHostDetector(emptyList())
+        firstPartyHostHeaderTypeResolver = FirstPartyHostHeaderTypeResolver(emptyMap())
         networkInfoProvider = NoOpNetworkInfoProvider()
         systemInfoProvider = NoOpSystemInfoProvider()
         timeProvider = NoOpTimeProvider()

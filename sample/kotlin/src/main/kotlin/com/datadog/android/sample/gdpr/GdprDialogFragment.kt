@@ -28,6 +28,7 @@ internal class GdprDialogFragment : DialogFragment() {
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_gdpr, container, false)
         trackingConsentSelector = rootView.findViewById(R.id.tracking_consent_selector)
+        @Suppress("CheckInternal") // not a Kotlin check
         trackingConsentSelector.check(
             resolveButtonIdFromConsent(
                 Preferences.defaultPreferences(requireContext()).getTrackingConsent()

@@ -14,11 +14,12 @@ import android.os.SystemClock
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -33,7 +34,7 @@ internal class RumViewManagerScope(
     private val sdkCore: SdkCore,
     private val backgroundTrackingEnabled: Boolean,
     private val trackFrustrations: Boolean,
-    internal val firstPartyHostDetector: FirstPartyHostDetector,
+    internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
@@ -105,7 +106,7 @@ internal class RumViewManagerScope(
             this,
             sdkCore,
             event,
-            firstPartyHostDetector,
+            firstPartyHostHeaderTypeResolver,
             cpuVitalMonitor,
             memoryVitalMonitor,
             frameRateVitalMonitor,
@@ -121,6 +122,10 @@ internal class RumViewManagerScope(
         event: RumRawEvent,
         writer: DataWriter<Any>
     ) {
+        if (event is RumRawEvent.AddError && event.throwable is ANRException) {
+            // RUMM-2931 ignore ANR detected when the app is not in foreground
+            return
+        }
         val isValidBackgroundEvent = event.javaClass in validBackgroundEventTypes
         val isSilentOrphanEvent = event.javaClass in silentOrphanEventTypes
 
@@ -169,7 +174,7 @@ internal class RumViewManagerScope(
             RUM_BACKGROUND_VIEW_NAME,
             event.eventTime,
             emptyMap(),
-            firstPartyHostDetector,
+            firstPartyHostHeaderTypeResolver,
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
@@ -187,7 +192,7 @@ internal class RumViewManagerScope(
             RUM_APP_LAUNCH_VIEW_NAME,
             event.eventTime,
             emptyMap(),
-            firstPartyHostDetector,
+            firstPartyHostHeaderTypeResolver,
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),

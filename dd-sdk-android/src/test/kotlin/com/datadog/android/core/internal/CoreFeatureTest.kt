@@ -273,7 +273,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes first party hosts detector 𝕎 initialize`() {
+    fun `𝕄 initializes first party hosts resolver 𝕎 initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -284,8 +284,8 @@ internal class CoreFeatureTest {
         )
 
         // Then
-        assertThat(testedFeature.firstPartyHostDetector.knownHosts)
-            .containsAll(fakeConfig.firstPartyHosts.map { it.lowercase(Locale.US) })
+        assertThat(testedFeature.firstPartyHostHeaderTypeResolver.knownHosts.keys)
+            .containsAll(fakeConfig.firstPartyHostsWithHeaderTypes.keys.map { it.lowercase(Locale.US) })
     }
 
     @Test
@@ -945,7 +945,7 @@ internal class CoreFeatureTest {
         testedFeature.stop()
 
         // Then
-        assertThat(testedFeature.firstPartyHostDetector.knownHosts)
+        assertThat(testedFeature.firstPartyHostHeaderTypeResolver.knownHosts)
             .isEmpty()
         assertThat(testedFeature.networkInfoProvider)
             .isInstanceOf(NoOpNetworkInfoProvider::class.java)

@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
@@ -40,7 +40,7 @@ internal class RumResourceScope(
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
     serverTimeOffsetInMs: Long,
-    internal val firstPartyHostDetector: FirstPartyHostDetector,
+    internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     contextProvider: ContextProvider,
     private val featuresContextResolver: FeaturesContextResolver
 ) : RumScope {
@@ -276,7 +276,7 @@ internal class RumResourceScope(
     }
 
     private fun resolveResourceProvider(): ResourceEvent.Provider? {
-        return if (firstPartyHostDetector.isFirstPartyUrl(url)) {
+        return if (firstPartyHostHeaderTypeResolver.isFirstPartyUrl(url)) {
             ResourceEvent.Provider(
                 resolveDomain(url),
                 type = ResourceEvent.ProviderType.FIRST_PARTY
@@ -372,7 +372,7 @@ internal class RumResourceScope(
     }
 
     private fun resolveErrorProvider(): ErrorEvent.Provider? {
-        return if (firstPartyHostDetector.isFirstPartyUrl(url)) {
+        return if (firstPartyHostHeaderTypeResolver.isFirstPartyUrl(url)) {
             ErrorEvent.Provider(
                 domain = resolveDomain(url),
                 type = ErrorEvent.ProviderType.FIRST_PARTY
@@ -403,7 +403,7 @@ internal class RumResourceScope(
             parentScope: RumScope,
             sdkCore: SdkCore,
             event: RumRawEvent.StartResource,
-            firstPartyHostDetector: FirstPartyHostDetector,
+            firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
             timestampOffset: Long,
             contextProvider: ContextProvider,
             featuresContextResolver: FeaturesContextResolver
@@ -417,7 +417,7 @@ internal class RumResourceScope(
                 event.eventTime,
                 event.attributes,
                 timestampOffset,
-                firstPartyHostDetector,
+                firstPartyHostHeaderTypeResolver,
                 contextProvider,
                 featuresContextResolver
             )
