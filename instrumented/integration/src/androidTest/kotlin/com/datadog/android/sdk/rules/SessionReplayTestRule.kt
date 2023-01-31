@@ -9,10 +9,9 @@ package com.datadog.android.sdk.rules
 import android.app.Activity
 import android.content.Intent
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.utils.addExtras
 
-internal open class RumMockServerActivityTestRule<T : Activity>(
+internal open class SessionReplayTestRule<T : Activity>(
     activityClass: Class<T>,
     keepRequests: Boolean = false,
     trackingConsent: TrackingConsent = TrackingConsent.PENDING,
@@ -22,12 +21,12 @@ internal open class RumMockServerActivityTestRule<T : Activity>(
     // region ActivityTestRule
 
     override fun beforeActivityLaunched() {
-        removeCallbacks(listOf(ActivityViewTrackingStrategy::class.java))
+        removeCallbacks(listOf(Class.forName(SESSION_REPLAY_LIFECYCLE_CALLBACK_CLASS_NAME)))
         super.beforeActivityLaunched()
     }
 
     override fun afterActivityFinished() {
-        removeCallbacks(listOf(ActivityViewTrackingStrategy::class.java))
+        removeCallbacks(listOf(Class.forName(SESSION_REPLAY_LIFECYCLE_CALLBACK_CLASS_NAME)))
         super.afterActivityFinished()
     }
 
@@ -36,4 +35,9 @@ internal open class RumMockServerActivityTestRule<T : Activity>(
     }
 
     // endregion
+
+    companion object {
+        private const val SESSION_REPLAY_LIFECYCLE_CALLBACK_CLASS_NAME =
+            "com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback"
+    }
 }

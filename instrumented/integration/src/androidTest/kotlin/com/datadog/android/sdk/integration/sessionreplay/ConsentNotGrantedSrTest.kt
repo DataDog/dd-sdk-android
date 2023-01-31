@@ -4,42 +4,35 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sdk.integration.log
+package com.datadog.android.sdk.integration.sessionreplay
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.RuntimeConfig
-import com.datadog.android.sdk.rules.MockServerActivityTestRule
+import com.datadog.android.sdk.integration.log.LogsTest
+import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.tools.unit.ConditionWatcher
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
-
-@RunWith(AndroidJUnit4::class)
-@LargeTest
-internal class ConsentGrantedLogsTest : LogsTest() {
+internal class ConsentNotGrantedSrTest : SrSnapshotTest() {
 
     @get:Rule
-    val mockServerRule = MockServerActivityTestRule(
-        ActivityLifecycleLogs::class.java,
-        trackingConsent = TrackingConsent.GRANTED,
+    val rule = SessionReplayTestRule(
+        SessionReplayPlaygroundActivity::class.java,
+        trackingConsent = TrackingConsent.NOT_GRANTED,
         keepRequests = true
     )
 
     @Test
-    fun verifyActivityLogs() {
+    fun verifySessionFirstSnapshot() {
         // Wait to make sure all batches are consumed
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
         ConditionWatcher {
             // verify the captured log events into the MockedWebServer
-            verifyExpectedLogs(
-                mockServerRule.activity,
-                mockServerRule.getRequests(RuntimeConfig.logsEndpointUrl)
-            )
+            assertThat(rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)).isEmpty()
             true
-        }.doWait(timeoutMs = INITIAL_WAIT_MS)
+        }.doWait(timeoutMs = LogsTest.INITIAL_WAIT_MS)
     }
 }

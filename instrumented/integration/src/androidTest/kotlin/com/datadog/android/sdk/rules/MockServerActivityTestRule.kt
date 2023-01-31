@@ -64,10 +64,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
         mockWebServer.setDispatcher(
             object : Dispatcher() {
                 override fun dispatch(request: RecordedRequest): MockResponse {
-                    val requestUrl = request.requestUrl.toString()
-                    if (keepRequests &&
-                        !requestUrl.startsWith(RuntimeConfig.sessionReplayEndpointUrl)
-                    ) {
+                    if (keepRequests) {
                         // for now the SR requests will be dropped as we do not support them
                         // in our integration tests
                         handleRequest(request)
@@ -123,6 +120,12 @@ internal open class MockServerActivityTestRule<T : Activity>(
         return requests.toList()
     }
 
+    fun getRequests(endpoint: String): List<HandledRequest> {
+        val filteredRequests = requests.filter { it.url?.startsWith(endpoint) ?: false }.toList()
+        Log.i(TAG, "Caught ${filteredRequests.size} requests for endpoint: $endpoint")
+        return filteredRequests
+    }
+
     fun getConnectionUrl(): String = mockWebServer.url("/").toString().removeSuffix("/")
 
     // endregion
@@ -142,7 +145,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
         val content = if (encoding == "gzip") {
             request.unzip()
         } else {
-            String(request.body.readByteArray(), Charsets.UTF_8)
+            String(request.body.clone().readByteArray(), Charsets.UTF_8)
         }
 
         val jsonBody = if (contentType == "application/json") {
@@ -157,7 +160,8 @@ internal open class MockServerActivityTestRule<T : Activity>(
                 headers = request.headers,
                 method = request.method,
                 jsonBody = jsonBody,
-                textBody = content
+                textBody = content,
+                requestBuffer = request.body.clone()
             )
         )
     }

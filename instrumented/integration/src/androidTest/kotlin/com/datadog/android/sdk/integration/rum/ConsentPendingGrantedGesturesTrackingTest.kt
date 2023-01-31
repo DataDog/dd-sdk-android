@@ -11,6 +11,7 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.GesturesTrackingActivityTestRule
 import com.datadog.tools.unit.ConditionWatcher
 import org.junit.Rule
@@ -39,7 +40,10 @@ internal class ConsentPendingGrantedGesturesTrackingTest : GesturesTrackingTest(
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
         ConditionWatcher {
-            verifyExpectedEvents(mockServerRule.getRequests(), expectedEvents)
+            verifyExpectedEvents(
+                mockServerRule.getRequests(RuntimeConfig.rumEndpointUrl),
+                expectedEvents
+            )
             true
         }.doWait(timeoutMs = FINAL_WAIT_MS)
     }

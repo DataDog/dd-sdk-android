@@ -12,6 +12,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.RumInterceptor
 import com.datadog.android.rum.RumResourceAttributesProvider
+import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
@@ -78,7 +79,7 @@ internal class ResourceTrackingTest {
 
         ConditionWatcher {
             val resourceRequests =
-                mockServerRule.getRequests()
+                mockServerRule.getRequests(RuntimeConfig.rumEndpointUrl)
                     .rumEventsBy { it.has("resource") && it.get("type").asString == "resource" }
 
             resourceRequests.verifyEventMatches(
@@ -109,7 +110,7 @@ internal class ResourceTrackingTest {
 
         ConditionWatcher {
             val resourceRequests =
-                mockServerRule.getRequests()
+                mockServerRule.getRequests(RuntimeConfig.rumEndpointUrl)
                     .rumEventsBy { it.has("error") && it.get("type").asString == "error" }
 
             resourceRequests.verifyEventMatches(
