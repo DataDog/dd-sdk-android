@@ -62,6 +62,7 @@ class ConditionWatcher(
         }
     }
 
+    @Suppress("ThrowingInternalException") // not an issue in unit tests
     private fun reportTimeout(timeoutMs: Long, assertionError: AssertionError?) {
         val message = "Waiting took more than $timeoutMs milliseconds. Test stopped."
         if (assertionError == null) {

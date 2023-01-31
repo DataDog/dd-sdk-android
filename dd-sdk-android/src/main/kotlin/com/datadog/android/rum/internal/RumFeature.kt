@@ -248,7 +248,9 @@ internal class RumFeature(
         initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor, periodInMs)
         initializeVitalMonitor(MemoryVitalReader(), memoryVitalMonitor, periodInMs)
 
-        val vitalFrameCallback = VitalFrameCallback(frameRateVitalMonitor) { initialized.get() }
+        val vitalFrameCallback = VitalFrameCallback(appContext, frameRateVitalMonitor) {
+            initialized.get()
+        }
         try {
             Choreographer.getInstance().postFrameCallback(vitalFrameCallback)
         } catch (e: IllegalStateException) {

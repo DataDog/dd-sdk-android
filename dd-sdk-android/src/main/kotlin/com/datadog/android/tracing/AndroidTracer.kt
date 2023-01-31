@@ -89,6 +89,7 @@ class AndroidTracer internal constructor(
     class Builder
     internal constructor(private val logsHandler: LogHandler) {
 
+        private var tracingHeaderTypes: Set<TracingHeaderType> = setOf(TracingHeaderType.DATADOG)
         private var bundleWithRumEnabled: Boolean = true
 
         // TODO RUMM-0000 should have a nicer call chain
@@ -139,6 +140,15 @@ class AndroidTracer internal constructor(
                 logsHandler,
                 bundleWithRumEnabled
             )
+        }
+
+        /**
+         * Sets the tracing header styles that may be injected by this tracer.
+         * @param headerTypes the list of header types injected (default = datadog style headers)
+         */
+        fun setTracingHeaderTypes(headerTypes: Set<TracingHeaderType>): Builder {
+            this.tracingHeaderTypes = headerTypes
+            return this
         }
 
         /**
@@ -205,6 +215,11 @@ class AndroidTracer internal constructor(
                 Config.TAGS,
                 globalTags.map { "${it.key}:${it.value}" }.joinToString(",")
             )
+
+            val propagationStyles = tracingHeaderTypes.joinToString(",")
+            properties.setProperty(Config.PROPAGATION_STYLE_EXTRACT, propagationStyles)
+            properties.setProperty(Config.PROPAGATION_STYLE_INJECT, propagationStyles)
+
             return properties
         }
 

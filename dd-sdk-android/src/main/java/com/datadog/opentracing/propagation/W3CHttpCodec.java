@@ -22,22 +22,21 @@ import io.opentracing.propagation.TextMapExtract;
 import io.opentracing.propagation.TextMapInject;
 
 /**
- * A codec designed for HTTP transport via headers using B3 headers
+ * A codec designed for HTTP transport via headers using W3C traceparent header
  *
  * <p>TODO: there is fair amount of code duplication between DatadogHttpCodec and this class,
  * especially in part where TagContext is handled. We may want to refactor that and avoid special
  * handling of TagContext in other places (i.e. CompoundExtractor).
  */
-class B3HttpCodec {
+class W3CHttpCodec {
 
-  private static final String HEADER_KEY = "b3";
-  private static final String HEADER_VALUE = "%s-%s";
-  private static final String HEADER_VALUE_WITH_SAMPLING = "%s-%s-%s";
+  private static final String TRACEPARENT_KEY = "traceparent";
+  private static final String TRACEPARENT_VALUE = "00-0000000000000000%s-%s-0%s";
   private static final String SAMPLING_PRIORITY_ACCEPT = String.valueOf(1);
   private static final String SAMPLING_PRIORITY_DROP = String.valueOf(0);
   private static final int HEX_RADIX = 16;
 
-  private B3HttpCodec() {
+  private W3CHttpCodec() {
     // This class should not be created. This also makes code coverage checks happy.
   }
 
@@ -49,15 +48,10 @@ class B3HttpCodec {
         String traceId = context.getTraceId().toString(HEX_RADIX).toLowerCase(Locale.US);
         String spanId = context.getSpanId().toString(HEX_RADIX).toLowerCase(Locale.US);
 
-        if (context.lockSamplingPriority()) {
-          carrier.put(HEADER_KEY, String.format(HEADER_VALUE_WITH_SAMPLING,
+        carrier.put(TRACEPARENT_KEY, String.format(TRACEPARENT_VALUE,
                   traceId,
                   spanId,
                   convertSamplingPriority(context.getSamplingPriority())));
-        }
-        else{
-          carrier.put(HEADER_KEY, String.format(HEADER_VALUE, traceId, spanId));
-        }
 
       } catch (final NumberFormatException e) {
       }
@@ -95,30 +89,33 @@ class B3HttpCodec {
             continue;
           }
 
-          if (HEADER_KEY.equalsIgnoreCase(key)) {
+          if (TRACEPARENT_KEY.equalsIgnoreCase(key)) {
             String[] valueParts = value.split("-");
 
-            if (valueParts.length < 2 || valueParts.length > 4){
+            if (valueParts.length != 4){
               continue;
             }
 
-            final int traceIdLength = valueParts[0].length();
+            if (valueParts[0] == "ff"){
+              continue;
+            }
+
+            final int traceIdLength = valueParts[1].length();
             String trimmedValue;
             if (traceIdLength > 32) {
               traceId = BigInteger.ZERO;
               continue;
             } else if (traceIdLength > 16) {
-              trimmedValue = valueParts[0].substring(traceIdLength - 16);
+              trimmedValue = valueParts[1].substring(traceIdLength - 16);
             } else {
-              trimmedValue = valueParts[0];
+              trimmedValue = valueParts[1];
             }
             traceId = validateUInt64BitsID(trimmedValue, HEX_RADIX);
 
-            spanId = validateUInt64BitsID(valueParts[1], HEX_RADIX);
+            spanId = validateUInt64BitsID(valueParts[2], HEX_RADIX);
 
-            if(valueParts.length >= 3) {
-              samplingPriority = convertSamplingPriority(valueParts[2]);
-            }
+            samplingPriority = convertSamplingPriority(valueParts[3]);
+
           }
 
           if (taggedHeaders.containsKey(key)) {
@@ -131,13 +128,13 @@ class B3HttpCodec {
 
         if (!BigInteger.ZERO.equals(traceId)) {
           final ExtractedContext context =
-              new ExtractedContext(
-                  traceId,
-                  spanId,
-                  samplingPriority,
-                  null,
-                  Collections.<String, String>emptyMap(),
-                  tags);
+                  new ExtractedContext(
+                          traceId,
+                          spanId,
+                          samplingPriority,
+                          null,
+                          Collections.<String, String>emptyMap(),
+                          tags);
           context.lockSamplingPriority();
 
           return context;

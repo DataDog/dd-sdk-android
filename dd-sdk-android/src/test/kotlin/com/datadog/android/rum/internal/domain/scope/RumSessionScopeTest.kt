@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
@@ -73,7 +73,7 @@ internal class RumSessionScopeTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockDetector: FirstPartyHostDetector
+    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockCpuVitalMonitor: VitalMonitor
@@ -993,7 +993,7 @@ internal class RumSessionScopeTest {
             samplingRate,
             backgroundTrackingEnabled ?: fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,

@@ -6,16 +6,8 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import android.annotation.SuppressLint
-import android.app.Activity
-import android.content.Context
-import android.os.Build
-import android.view.WindowManager
 import androidx.annotation.WorkerThread
-import androidx.fragment.app.Fragment
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
@@ -55,12 +47,11 @@ internal open class RumViewScope(
     internal val name: String,
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
-    internal val firstPartyHostDetector: FirstPartyHostDetector,
+    internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     internal val cpuVitalMonitor: VitalMonitor,
     internal val memoryVitalMonitor: VitalMonitor,
     internal val frameRateVitalMonitor: VitalMonitor,
     private val contextProvider: ContextProvider,
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate(),
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
     internal val type: RumViewType = RumViewType.FOREGROUND,
@@ -130,7 +121,6 @@ internal open class RumViewScope(
         }
     }
 
-    private var refreshRateScale: Double = 1.0
     private var lastFrameRateInfo: VitalInfo? = null
     private var frameRateVitalListener: VitalListener = object : VitalListener {
         override fun onVitalUpdate(info: VitalInfo) {
@@ -151,8 +141,6 @@ internal open class RumViewScope(
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
         frameRateVitalMonitor.register(frameRateVitalListener)
-
-        detectRefreshRateScale(key)
     }
 
     // region RumScope
@@ -350,7 +338,7 @@ internal open class RumViewScope(
             this,
             sdkCore,
             updatedEvent,
-            firstPartyHostDetector,
+            firstPartyHostHeaderTypeResolver,
             serverTimeOffsetInMs,
             contextProvider,
             featuresContextResolver
@@ -370,7 +358,11 @@ internal open class RumViewScope(
         val rumContext = getRumContext()
 
         val updatedAttributes = addExtraAttributes(event.attributes)
-        val isFatal = updatedAttributes.remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean
+        val isFatal = updatedAttributes
+            .remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean == true || event.isFatal
+        // if a cross-platform crash was already reported, do not send its native version
+        if (crashCount > 0 && isFatal) return
+
         val errorType = event.type ?: event.throwable?.javaClass?.canonicalName
         val throwableMessage = event.throwable?.message ?: ""
         val message = if (throwableMessage.isNotBlank() && event.message != throwableMessage) {
@@ -394,7 +386,7 @@ internal open class RumViewScope(
                         message = message,
                         source = event.source.toSchemaSource(),
                         stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
-                        isCrash = event.isFatal || (isFatal ?: false),
+                        isCrash = isFatal,
                         type = errorType,
                         sourceType = event.sourceType.toSchemaSourceType()
                     ),
@@ -446,7 +438,7 @@ internal open class RumViewScope(
                 writer.write(eventBatchWriter, errorEvent)
             }
 
-        if (event.isFatal) {
+        if (isFatal) {
             errorCount++
             crashCount++
             sendViewUpdate(event, writer)
@@ -677,8 +669,6 @@ internal open class RumViewScope(
         val eventJsRefreshRate = performanceMetrics[RumPerformanceMetric.JS_FRAME_TIME]
             ?.toInversePerformanceMetric()
 
-        val eventRefreshRateScale = refreshRateScale
-
         val updatedDurationNs = resolveViewDuration(event)
         val rumContext = getRumContext()
 
@@ -714,8 +704,8 @@ internal open class RumViewScope(
                         cpuTicksPerSecond = eventCpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs },
                         memoryAverage = memoryInfo?.meanValue,
                         memoryMax = memoryInfo?.maxValue,
-                        refreshRateAverage = refreshRateInfo?.meanValue?.let { it * eventRefreshRateScale },
-                        refreshRateMin = refreshRateInfo?.minValue?.let { it * eventRefreshRateScale },
+                        refreshRateAverage = refreshRateInfo?.meanValue,
+                        refreshRateMin = refreshRateInfo?.minValue,
                         isSlowRendered = isSlowRendered,
                         frustration = ViewEvent.Frustration(eventFrustrationCount.toLong()),
                         flutterBuildTime = eventFlutterBuildTime,
@@ -981,29 +971,6 @@ internal open class RumViewScope(
         return stopped && activeResourceScopes.isEmpty() && (pending <= 0L)
     }
 
-    /*
-     * The refresh rate needs to be computed with each view because:
-     * - it requires a context with a UI (we can't get this from the application context);
-     * - it can change between different activities (based on window configuration)
-     */
-    @SuppressLint("NewApi")
-    @Suppress("DEPRECATION")
-    private fun detectRefreshRateScale(key: Any) {
-        val activity = when (key) {
-            is Activity -> key
-            is Fragment -> key.activity
-            is android.app.Fragment -> key.activity
-            else -> null
-        } ?: return
-
-        val display = if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.R) {
-            activity.display
-        } else {
-            (activity.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.defaultDisplay
-        } ?: return
-        refreshRateScale = STANDARD_FPS / display.refreshRate
-    }
-
     enum class RumViewType {
         NONE,
         FOREGROUND,
@@ -1036,7 +1003,7 @@ internal open class RumViewScope(
             parentScope: RumScope,
             sdkCore: SdkCore,
             event: RumRawEvent.StartView,
-            firstPartyHostDetector: FirstPartyHostDetector,
+            firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
             cpuVitalMonitor: VitalMonitor,
             memoryVitalMonitor: VitalMonitor,
             frameRateVitalMonitor: VitalMonitor,
@@ -1050,7 +1017,7 @@ internal open class RumViewScope(
                 event.name,
                 event.eventTime,
                 event.attributes,
-                firstPartyHostDetector,
+                firstPartyHostHeaderTypeResolver,
                 cpuVitalMonitor,
                 memoryVitalMonitor,
                 frameRateVitalMonitor,

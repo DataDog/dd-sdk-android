@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
@@ -91,7 +91,7 @@ internal class RumResourceScopeTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockDetector: FirstPartyHostDetector
+    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockContextProvider: ContextProvider
@@ -169,7 +169,7 @@ internal class RumResourceScopeTest {
 
         whenever(mockContextProvider.context) doReturn fakeDatadogContext
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
-        doAnswer { false }.whenever(mockDetector).isFirstPartyUrl(any<String>())
+        doAnswer { false }.whenever(mockResolver).isFirstPartyUrl(any<String>())
         whenever(
             mockFeaturesContextResolver.resolveHasReplay(
                 fakeDatadogContext,
@@ -191,7 +191,7 @@ internal class RumResourceScopeTest {
             fakeEventTime,
             fakeAttributes,
             fakeServerOffset,
-            mockDetector,
+            mockResolver,
             mockContextProvider,
             mockFeaturesContextResolver
         )
@@ -294,7 +294,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(fakeUrl)
+        doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -371,11 +371,11 @@ internal class RumResourceScopeTest {
             fakeEventTime,
             fakeAttributes,
             fakeServerOffset,
-            mockDetector,
+            mockResolver,
             mockContextProvider,
             mockFeaturesContextResolver
         )
-        doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
+        doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -745,7 +745,7 @@ internal class RumResourceScopeTest {
             fakeEventTime,
             fakeAttributes,
             fakeServerOffset,
-            mockDetector,
+            mockResolver,
             mockContextProvider,
             mockFeaturesContextResolver
         )
@@ -1168,11 +1168,11 @@ internal class RumResourceScopeTest {
             fakeEventTime,
             fakeAttributes,
             fakeServerOffset,
-            mockDetector,
+            mockResolver,
             mockContextProvider,
             mockFeaturesContextResolver
         )
-        doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
+        doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -1255,11 +1255,11 @@ internal class RumResourceScopeTest {
             fakeEventTime,
             fakeAttributes,
             fakeServerOffset,
-            mockDetector,
+            mockResolver,
             mockContextProvider,
             mockFeaturesContextResolver
         )
-        doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
+        doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -1331,7 +1331,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(fakeUrl)
+        doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl)
 
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
@@ -1404,7 +1404,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(fakeUrl)
+        doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl)
         val errorType = forge.aNullable { anAlphabeticalString() }
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
