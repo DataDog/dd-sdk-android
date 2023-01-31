@@ -299,7 +299,7 @@ internal class RecordedDataProcessorTest {
             fakeRootWidth,
             fakeRootHeight
         )
-        val fakeSnapshots = listOf(Node(wireframe = rootWireframe))
+        val fakeSnapshots = listOf(Node(wireframes = listOf(rootWireframe)))
         whenever(mockNodeFlattener.flattenNode(fakeSnapshots[0])).thenReturn(listOf(rootWireframe))
 
         // When
@@ -324,13 +324,14 @@ internal class RecordedDataProcessorTest {
         val fakeRootHeight = forge.aLong(min = 700)
         val fakeSnapshots = listOf(
             Node(
-                wireframe =
-                MobileSegment.Wireframe.ShapeWireframe(
-                    0,
-                    0,
-                    0,
-                    fakeRootWidth,
-                    fakeRootHeight
+                wireframes = listOf(
+                    MobileSegment.Wireframe.ShapeWireframe(
+                        0,
+                        0,
+                        0,
+                        fakeRootWidth,
+                        fakeRootHeight
+                    )
                 )
             )
         )
@@ -408,7 +409,7 @@ internal class RecordedDataProcessorTest {
             fakeRootWidth,
             fakeRootHeight
         )
-        val fakeSnapshot3 = listOf(Node(rootWireframe))
+        val fakeSnapshot3 = listOf(Node(wireframes = listOf(rootWireframe)))
         whenever(mockNodeFlattener.flattenNode(fakeSnapshot3[0])).thenReturn(listOf(rootWireframe))
 
         testedProcessor.processScreenSnapshots(fakeSnapshot1)
@@ -824,12 +825,14 @@ internal class RecordedDataProcessorTest {
 
     private fun Forge.aSingleLevelSnapshot(): Node {
         return Node(
-            MobileSegment.Wireframe.ShapeWireframe(
-                aLong(min = 0),
-                aLong(min = 0),
-                aLong(min = 0),
-                aLong(min = 0),
-                aLong(min = 0)
+            wireframes = listOf(
+                MobileSegment.Wireframe.ShapeWireframe(
+                    aLong(min = 0),
+                    aLong(min = 0),
+                    aLong(min = 0),
+                    aLong(min = 0),
+                    aLong(min = 0)
+                )
             )
         )
     }
@@ -844,7 +847,7 @@ internal class RecordedDataProcessorTest {
 
         @JvmStatic
         fun processorArguments(): List<Any> {
-            val fakeSnapshots = FORGE.aList { Node(wireframe = FORGE.getForgery()) }
+            val fakeSnapshots = FORGE.aList { Node(wireframes = FORGE.aList { FORGE.getForgery() }) }
             val fakeTouchRecords = FORGE.aList {
                 FORGE.getForgery<MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord>()
             }

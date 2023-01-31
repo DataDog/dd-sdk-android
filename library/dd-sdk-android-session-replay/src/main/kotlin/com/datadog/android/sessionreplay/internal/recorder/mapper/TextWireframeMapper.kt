@@ -16,20 +16,23 @@ internal open class TextWireframeMapper(
     private val viewWireframeMapper: ViewWireframeMapper = ViewWireframeMapper()
 ) : BaseWireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe>() {
 
-    override fun map(view: TextView, pixelsDensity: Float): MobileSegment.Wireframe.TextWireframe {
-        val shapeWireframe = viewWireframeMapper.map(view, pixelsDensity)
-        return MobileSegment.Wireframe.TextWireframe(
-            shapeWireframe.id,
-            shapeWireframe.x,
-            shapeWireframe.y,
-            shapeWireframe.width,
-            shapeWireframe.height,
-            shapeStyle = shapeWireframe.shapeStyle,
-            border = shapeWireframe.border,
-            text = resolveTextValue(view),
-            textStyle = resolveTextStyle(view, pixelsDensity),
-            textPosition = resolveTextPosition(view, pixelsDensity)
-        )
+    override fun map(view: TextView, pixelsDensity: Float):
+        List<MobileSegment.Wireframe.TextWireframe> {
+        val shapeWireframes = viewWireframeMapper.map(view, pixelsDensity)
+        return shapeWireframes.map { shapeWireframe ->
+            MobileSegment.Wireframe.TextWireframe(
+                shapeWireframe.id,
+                shapeWireframe.x,
+                shapeWireframe.y,
+                shapeWireframe.width,
+                shapeWireframe.height,
+                shapeStyle = shapeWireframe.shapeStyle,
+                border = shapeWireframe.border,
+                text = resolveTextValue(view),
+                textStyle = resolveTextStyle(view, pixelsDensity),
+                textPosition = resolveTextPosition(view, pixelsDensity)
+            )
+        }
     }
 
     protected open fun resolveTextValue(textView: TextView): String {

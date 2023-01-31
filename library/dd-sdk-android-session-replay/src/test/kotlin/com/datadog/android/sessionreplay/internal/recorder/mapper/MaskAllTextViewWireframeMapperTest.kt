@@ -67,11 +67,13 @@ internal class MaskAllTextViewWireframeMapperTest : BaseTextViewWireframeMapperT
         }
 
         // When
-        val textWireframe = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
 
         // Then
-        val expectedWireframe = mockTextView.toTextWireframe().copy(text = fakeMaskedStringValue)
-        assertThat(textWireframe).isEqualTo(expectedWireframe)
+        val expectedWireframes = mockTextView
+            .toTextWireframes()
+            .map { it.copy(text = fakeMaskedStringValue) }
+        assertThat(textWireframes).isEqualTo(expectedWireframes)
     }
 
     // endregion

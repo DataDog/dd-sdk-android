@@ -61,18 +61,19 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         }
 
         // When
-        val textWireframe = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
 
         // Then
-        val expectedWireframe = mockTextView.toTextWireframe()
-            .copy(
+        val expectedWireframes = mockTextView.toTextWireframes().map {
+            it.copy(
                 textStyle = MobileSegment.TextStyle(
                     expectedFontFamily,
                     fakeFontSize.toLong().densityNormalized(fakePixelDensity),
                     fakeStyleColor
                 )
             )
-        assertThat(textWireframe).isEqualTo(expectedWireframe)
+        }
+        assertThat(textWireframes).isEqualTo(expectedWireframes)
     }
 
     @ParameterizedTest
@@ -90,17 +91,18 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         }
 
         // When
-        val textWireframe = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
 
         // Then
-        val expectedWireframe = mockTextView.toTextWireframe().copy(
-            textPosition = MobileSegment
-                .TextPosition(
+        val expectedWireframes = mockTextView.toTextWireframes().map {
+            it.copy(
+                textPosition = MobileSegment.TextPosition(
                     padding = MobileSegment.Padding(0, 0, 0, 0),
                     alignment = expectedTextAlignment
                 )
-        )
-        assertThat(textWireframe).isEqualTo(expectedWireframe)
+            )
+        }
+        assertThat(textWireframes).isEqualTo(expectedWireframes)
     }
 
     @ParameterizedTest
@@ -119,17 +121,18 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         }
 
         // When
-        val textWireframe = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
 
         // Then
-        val expectedWireframe = mockTextView.toTextWireframe().copy(
-            textPosition = MobileSegment
-                .TextPosition(
+        val expectedWireframes = mockTextView.toTextWireframes().map {
+            it.copy(
+                textPosition = MobileSegment.TextPosition(
                     padding = MobileSegment.Padding(0, 0, 0, 0),
                     alignment = expectedTextAlignment
                 )
-        )
-        assertThat(textWireframe).isEqualTo(expectedWireframe)
+            )
+        }
+        assertThat(textWireframes).isEqualTo(expectedWireframes)
     }
 
     @Test
@@ -155,20 +158,22 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         )
 
         // When
-        val textWireframe = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
 
         // Then
-        val expectedWireframe = mockTextView.toTextWireframe().copy(
-            textPosition = MobileSegment.TextPosition(
-                padding = expectedWireframeTextPadding,
-                alignment = MobileSegment.Alignment(
-                    MobileSegment.Horizontal.LEFT,
-                    MobileSegment.Vertical
-                        .CENTER
+        val expectedWireframes = mockTextView.toTextWireframes().map {
+            it.copy(
+                textPosition = MobileSegment.TextPosition(
+                    padding = expectedWireframeTextPadding,
+                    alignment = MobileSegment.Alignment(
+                        MobileSegment.Horizontal.LEFT,
+                        MobileSegment.Vertical
+                            .CENTER
+                    )
                 )
             )
-        )
-        assertThat(textWireframe).isEqualTo(expectedWireframe)
+        }
+        assertThat(textWireframes).isEqualTo(expectedWireframes)
     }
 
     @Test
@@ -200,17 +205,18 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         }
 
         // When
-        val textWireframe = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
 
         // Then
-        val expectedWireframe = mockTextView.toTextWireframe().copy(
-            shapeStyle = MobileSegment
-                .ShapeStyle(
+        val expectedWireframes = mockTextView.toTextWireframes().map {
+            it.copy(
+                shapeStyle = MobileSegment.ShapeStyle(
                     backgroundColor = fakeStyleColor,
                     opacity = fakeViewAlpha,
                     cornerRadius = null
                 )
-        )
-        assertThat(textWireframe).isEqualTo(expectedWireframe)
+            )
+        }
+        assertThat(textWireframes).isEqualTo(expectedWireframes)
     }
 }

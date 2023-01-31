@@ -13,7 +13,8 @@ internal class ButtonWireframeMapper(
     private val textWireframeMapper: TextWireframeMapper = TextWireframeMapper()
 ) :
     WireframeMapper<Button, MobileSegment.Wireframe.TextWireframe> {
-    override fun map(view: Button, pixelsDensity: Float): MobileSegment.Wireframe.TextWireframe {
+    override fun map(view: Button, pixelsDensity: Float):
+        List<MobileSegment.Wireframe.TextWireframe> {
         return textWireframeMapper.map(view, pixelsDensity)
     }
 }

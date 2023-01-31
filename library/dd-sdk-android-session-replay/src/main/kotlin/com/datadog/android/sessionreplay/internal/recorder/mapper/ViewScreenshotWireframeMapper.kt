@@ -16,8 +16,9 @@ internal class ViewScreenshotWireframeMapper(
 ) : BaseWireframeMapper<View, MobileSegment.Wireframe.ShapeWireframe>() {
 
     override fun map(view: View, pixelsDensity: Float):
-        MobileSegment.Wireframe.ShapeWireframe {
-        return viewWireframeMapper.map(view, pixelsDensity)
-            .copy(border = MobileSegment.ShapeBorder("#000000ff", 1))
+        List<MobileSegment.Wireframe.ShapeWireframe> {
+        return viewWireframeMapper.map(view, pixelsDensity).map {
+            it.copy(border = MobileSegment.ShapeBorder("#000000ff", 1))
+        }
     }
 }

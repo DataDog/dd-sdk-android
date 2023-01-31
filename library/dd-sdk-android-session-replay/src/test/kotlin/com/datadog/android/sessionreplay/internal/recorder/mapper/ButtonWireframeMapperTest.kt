@@ -68,18 +68,19 @@ internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val buttonWireframe = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
+        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
 
         // Then
-        val expectedWireframe = mockButton.toTextWireframe()
-            .copy(
+        val expectedWireframes = mockButton.toTextWireframes().map {
+            it.copy(
                 textStyle = MobileSegment.TextStyle(
                     expectedFontFamily,
                     fakeFontSize.toLong().densityNormalized(fakePixelDensity),
                     fakeStyleColor
                 )
             )
-        assertThat(buttonWireframe).isEqualTo(expectedWireframe)
+        }
+        assertThat(buttonWireframes).isEqualTo(expectedWireframes)
     }
 
     @Test
@@ -92,11 +93,11 @@ internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val buttonWireframe = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
+        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
 
         // Then
-        val expectedWireframe = mockButton.toTextWireframe().copy(text = fakeText)
-        assertThat(buttonWireframe).isEqualTo(expectedWireframe)
+        val expectedWireframes = mockButton.toTextWireframes().map { it.copy(text = fakeText) }
+        assertThat(buttonWireframes).isEqualTo(expectedWireframes)
     }
 
     @ParameterizedTest
@@ -114,17 +115,18 @@ internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val buttonWireframe = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
+        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
 
         // Then
-        val expectedWireframe = mockButton.toTextWireframe().copy(
-            textPosition = MobileSegment
-                .TextPosition(
+        val expectedWireframes = mockButton.toTextWireframes().map {
+            it.copy(
+                textPosition = MobileSegment.TextPosition(
                     padding = MobileSegment.Padding(0, 0, 0, 0),
                     alignment = expectedTextAlignment
                 )
-        )
-        assertThat(buttonWireframe).isEqualTo(expectedWireframe)
+            )
+        }
+        assertThat(buttonWireframes).isEqualTo(expectedWireframes)
     }
 
     @ParameterizedTest
@@ -144,17 +146,18 @@ internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val buttonWireframe = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
+        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
 
         // Then
-        val expectedWireframe = mockButton.toTextWireframe().copy(
-            textPosition = MobileSegment
-                .TextPosition(
+        val expectedWireframes = mockButton.toTextWireframes().map {
+            it.copy(
+                textPosition = MobileSegment.TextPosition(
                     padding = MobileSegment.Padding(0, 0, 0, 0),
                     alignment = expectedTextAlignment
                 )
-        )
-        assertThat(buttonWireframe).isEqualTo(expectedWireframe)
+            )
+        }
+        assertThat(buttonWireframes).isEqualTo(expectedWireframes)
     }
 
     @Test
@@ -167,10 +170,10 @@ internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val buttonWireframe = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
+        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
 
         // Then
-        val expectedWireframe = mockButton.toTextWireframe().copy(text = fakeText)
-        assertThat(buttonWireframe).isEqualTo(expectedWireframe)
+        val expectedWireframes = mockButton.toTextWireframes().map { it.copy(text = fakeText) }
+        assertThat(buttonWireframes).isEqualTo(expectedWireframes)
     }
 }

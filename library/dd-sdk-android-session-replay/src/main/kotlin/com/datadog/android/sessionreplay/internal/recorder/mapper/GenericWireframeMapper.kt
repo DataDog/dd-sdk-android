@@ -19,7 +19,7 @@ internal abstract class GenericWireframeMapper(
     private val buttonMapper: ButtonWireframeMapper
 ) : WireframeMapper<View, MobileSegment.Wireframe> {
 
-    override fun map(view: View, pixelsDensity: Float): MobileSegment.Wireframe {
+    override fun map(view: View, pixelsDensity: Float): List<MobileSegment.Wireframe> {
         return when {
             Button::class.java.isAssignableFrom(view::class.java) -> {
                 buttonMapper.map(view as Button, pixelsDensity)

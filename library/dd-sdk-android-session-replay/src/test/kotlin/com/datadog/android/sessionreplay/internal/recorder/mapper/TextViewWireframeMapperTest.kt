@@ -42,10 +42,10 @@ internal class TextViewWireframeMapperTest : BaseTextViewWireframeMapperTest() {
         }
 
         // When
-        val textWireframe = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
 
         // Then
-        val expectedWireframe = mockTextView.toTextWireframe().copy(text = fakeText)
-        assertThat(textWireframe).isEqualTo(expectedWireframe)
+        val expectedWireframes = mockTextView.toTextWireframes().map { it.copy(text = fakeText) }
+        assertThat(textWireframes).isEqualTo(expectedWireframes)
     }
 }
