@@ -37,7 +37,10 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-internal class LogsFeature constructor(
+/**
+ * Logs feature class, which needs to be registered with Datadog SDK instance.
+ */
+class LogsFeature internal constructor(
     endpointUrl: String,
     internal val eventMapper: EventMapper<LogEvent>
 ) : StorageBackedFeature, FeatureEventReceiver {
@@ -308,7 +311,7 @@ internal class LogsFeature constructor(
 
     // endregion
 
-    companion object {
+    internal companion object {
 
         private const val TYPE_EVENT_KEY = "type"
         private const val TIMESTAMP_EVENT_KEY = "timestamp"

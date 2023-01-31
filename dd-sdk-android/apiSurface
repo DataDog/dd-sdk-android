@@ -220,6 +220,18 @@ class com.datadog.android.log.Logger
   fun addTag(String)
   fun removeTag(String)
   fun removeTagsWithKey(String)
+class com.datadog.android.log.internal.LogsFeature : com.datadog.android.v2.api.StorageBackedFeature, com.datadog.android.v2.api.FeatureEventReceiver
+  override val name: String
+  override fun onInitialize(com.datadog.android.v2.api.SdkCore, android.content.Context)
+  override val requestFactory: com.datadog.android.v2.api.RequestFactory
+  override val storageConfiguration: com.datadog.android.v2.api.FeatureStorageConfiguration
+  override fun onStop()
+  override fun onReceive(Any)
+  class Builder
+    fun useSite(com.datadog.android.DatadogSite): Builder
+    fun useCustomEndpoint(String): Builder
+    fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
+    fun build(): LogsFeature
 data class com.datadog.android.plugin.DatadogContext
   constructor(DatadogRumContext? = null)
 DEPRECATED interface com.datadog.android.plugin.DatadogPlugin : com.datadog.android.privacy.TrackingConsentProviderCallback

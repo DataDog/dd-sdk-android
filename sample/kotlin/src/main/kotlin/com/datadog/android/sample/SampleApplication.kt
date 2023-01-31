@@ -19,6 +19,7 @@ import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.ndk.NdkCrashReportsPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.GlobalRum
@@ -117,12 +118,21 @@ class SampleApplication : Application() {
         Datadog.setVerbosity(Log.VERBOSE)
 
         val sessionReplayConfig = SessionReplayConfiguration.Builder().apply {
+            useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
             if (BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL.isNotBlank()) {
                 useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
             }
         }.build()
         val sessionReplayFeature = SessionReplayFeature(sessionReplayConfig)
         Datadog.registerFeature(sessionReplayFeature)
+
+        val logsFeature = LogsFeature.Builder().apply {
+            useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
+            if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
+                useCustomEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
+            }
+        }.build()
+        Datadog.registerFeature(logsFeature)
 
         Datadog.enableRumDebugging(true)
         setUserInfo(
@@ -156,7 +166,6 @@ class SampleApplication : Application() {
     private fun createDatadogConfiguration(): Configuration {
         @Suppress("DEPRECATION")
         val configBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -214,7 +223,6 @@ class SampleApplication : Application() {
         }
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
-            configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
             configBuilder.useCustomCrashReportsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
         }
         if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
