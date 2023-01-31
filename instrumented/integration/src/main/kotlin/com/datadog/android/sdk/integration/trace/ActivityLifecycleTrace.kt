@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getTrackingConsent
@@ -39,6 +40,9 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
         val trackingConsent = intent.getTrackingConsent()
 
         Datadog.initialize(this, credentials, config, trackingConsent)
+        Datadog.registerFeature(
+            LogsFeature.Builder().useCustomEndpoint(RuntimeConfig.logsEndpointUrl).build()
+        )
         Datadog.setVerbosity(Log.VERBOSE)
 
         tracer = RuntimeConfig.tracer()

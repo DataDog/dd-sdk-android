@@ -82,7 +82,6 @@ class NdkCrashHandlerE2ETests {
             // need that to be able to read encrypted data written by NDK crash service
             config = Configuration
                 .Builder(
-                    logsEnabled = true,
                     tracesEnabled = true,
                     crashReportsEnabled = true,
                     rumEnabled = true

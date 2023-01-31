@@ -16,7 +16,6 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setUploadFrequency(UploadFrequency): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
- * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setInternalLogsEnabled(String, String): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setAdditionalConfiguration(Map<String, Any>): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useCustomCrashReportsEndpoint(String): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useCustomLogsEndpoint(String): Builder

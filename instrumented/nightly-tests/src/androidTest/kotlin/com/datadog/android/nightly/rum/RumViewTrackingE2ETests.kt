@@ -47,7 +47,6 @@ internal class RumViewTrackingE2ETests {
     fun rum_activity_view_tracking_strategy() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
@@ -70,7 +69,6 @@ internal class RumViewTrackingE2ETests {
     fun rum_activity_view_tracking_strategy_all_views_dropped() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
@@ -106,7 +104,6 @@ internal class RumViewTrackingE2ETests {
     fun rum_activity_view_tracking_strategy_custom_view_name() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
@@ -142,7 +139,6 @@ internal class RumViewTrackingE2ETests {
     fun rum_fragment_view_tracking_strategy() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
@@ -165,7 +161,6 @@ internal class RumViewTrackingE2ETests {
     fun rum_fragment_view_tracking_strategy_all_views_dropped() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
@@ -201,7 +196,6 @@ internal class RumViewTrackingE2ETests {
     fun rum_fragment_view_tracking_strategy_custom_view_name() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
@@ -237,7 +231,6 @@ internal class RumViewTrackingE2ETests {
     fun rum_navigation_view_tracking_strategy() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
@@ -265,7 +258,6 @@ internal class RumViewTrackingE2ETests {
     fun rum_navigation_view_tracking_strategy_all_views_dropped() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
@@ -302,7 +294,6 @@ internal class RumViewTrackingE2ETests {
     fun rum_navigation_view_tracking_strategy_custom_view_name() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
@@ -339,7 +330,6 @@ internal class RumViewTrackingE2ETests {
     fun rum_mixed_view_tracking_strategy_no_fragment_activity() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
@@ -362,7 +352,6 @@ internal class RumViewTrackingE2ETests {
     fun rum_mixed_view_tracking_strategy_fragment_activity() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true

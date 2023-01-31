@@ -61,7 +61,6 @@ internal class WebViewTrackingE2ETests {
     @Test
     fun web_view_page_view_tracking_allowed_hosts_at_bridge_level() {
         val config = defaultConfigurationBuilder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -81,7 +80,6 @@ internal class WebViewTrackingE2ETests {
     @Test
     fun web_view_no_allowed_host_no_tracking() {
         val config = defaultConfigurationBuilder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -160,7 +158,6 @@ internal class WebViewTrackingE2ETests {
 
     private fun initSdk(
         config: Configuration = defaultConfigurationBuilder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true

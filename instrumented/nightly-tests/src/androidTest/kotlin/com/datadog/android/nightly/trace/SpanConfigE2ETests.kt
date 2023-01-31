@@ -53,7 +53,6 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 config = defaultConfigurationBuilder(
-                    logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
@@ -77,7 +76,6 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 config = defaultConfigurationBuilder(
-                    logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
@@ -101,7 +99,6 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 config = defaultConfigurationBuilder(
-                    logsEnabled = true,
                     tracesEnabled = false,
                     rumEnabled = true,
                     crashReportsEnabled = true
@@ -126,7 +123,6 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 config = defaultConfigurationBuilder(
-                    logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
@@ -384,7 +380,6 @@ class SpanConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 config = Configuration
                     .Builder(
-                        logsEnabled = true,
                         tracesEnabled = true,
                         rumEnabled = true,
                         crashReportsEnabled = true

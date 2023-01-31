@@ -35,6 +35,7 @@ internal class ActivityLifecycleLogs : AppCompatActivity() {
         val trackingConsent = intent.getTrackingConsent()
 
         Datadog.initialize(this, credentials, config, trackingConsent)
+        Datadog.registerFeature(RuntimeConfig.logsFeatureBuilder().build())
         Datadog.setVerbosity(Log.VERBOSE)
 
         logger = RuntimeConfig.logger()
