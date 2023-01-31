@@ -22,6 +22,8 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
@@ -64,13 +66,17 @@ internal class LoggerBuilderTest {
     @Mock
     lateinit var mockEventMapper: EventMapper<LogEvent>
 
+    @Mock
+    lateinit var mockLogsFeatureScope: FeatureScope
+
     @BeforeEach
     fun `set up`() {
         val mockCore = mock<DatadogCore>()
         whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
+        whenever(mockCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn mockLogsFeatureScope
         val logsFeature = LogsFeature(fakeLogsEndpointUrl, mockEventMapper)
         logsFeature.onInitialize(mockCore, mock())
-        whenever(mockCore.logsFeature) doReturn logsFeature
+        whenever(mockLogsFeatureScope.unwrap<LogsFeature>()) doReturn logsFeature
 
         Datadog.globalSdkCore = mockCore
     }
@@ -103,7 +109,7 @@ internal class LoggerBuilderTest {
         val mockCore = mock<DatadogCore>()
         Datadog.globalSdkCore = mockCore
         whenever(mockCore.coreFeature) doReturn mock()
-        whenever(mockCore.logsFeature) doReturn null
+        whenever(mockCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
 
         // When
         val testedLogger = Logger.Builder().build()
@@ -127,7 +133,11 @@ internal class LoggerBuilderTest {
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
         assertThat(handler.writer).isSameAs(
-            (Datadog.globalSdkCore as DatadogCore).logsFeature!!.dataWriter
+            (
+                Datadog.globalSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)!!
+                    .unwrap<LogsFeature>()
+                )
+                .dataWriter
         )
         assertThat(handler.bundleWithTraces).isTrue
         assertThat(handler.sampler).isInstanceOf(RateBasedSampler::class.java)

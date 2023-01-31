@@ -509,6 +509,7 @@ interface com.datadog.android.v2.api.FeatureEventReceiver
 interface com.datadog.android.v2.api.FeatureScope
   fun withWriteContext(Boolean = false, (com.datadog.android.v2.api.context.DatadogContext, EventBatchWriter) -> Unit)
   fun sendEvent(Any)
+  fun <T: Feature> unwrap(): T
 data class com.datadog.android.v2.api.FeatureStorageConfiguration
   constructor(Long, Int, Long, Long)
   companion object 

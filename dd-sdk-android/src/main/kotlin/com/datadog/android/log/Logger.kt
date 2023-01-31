@@ -19,6 +19,7 @@ import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
@@ -222,7 +223,9 @@ internal constructor(internal var handler: LogHandler) {
         fun build(): Logger {
             val datadogCore = Datadog.globalSdkCore as? DatadogCore
             val coreFeature = datadogCore?.coreFeature
-            val logsFeature = datadogCore?.logsFeature
+            val logsFeature = datadogCore
+                ?.getFeature(Feature.LOGS_FEATURE_NAME)
+                ?.unwrap<LogsFeature>()
             val handler = when {
                 datadogLogsEnabled && logcatLogsEnabled -> {
                     CombinedLogHandler(
