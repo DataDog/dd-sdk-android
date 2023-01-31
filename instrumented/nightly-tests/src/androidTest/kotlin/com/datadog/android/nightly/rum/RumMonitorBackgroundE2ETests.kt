@@ -76,7 +76,10 @@ class RumMonitorBackgroundE2ETests {
     fun rum_rummonitor_stop_background_action_with_outcome() {
         val testMethodName = "rum_rummonitor_stop_background_action_with_outcome"
         val actionName = forge.anActionName()
-        val type = forge.aValueFrom(RumActionType::class.java)
+        val type = forge.aValueFrom(
+            RumActionType::class.java,
+            exclude = listOf(RumActionType.BACK)
+        )
         GlobalRum.get().startUserAction(
             type,
             actionName,

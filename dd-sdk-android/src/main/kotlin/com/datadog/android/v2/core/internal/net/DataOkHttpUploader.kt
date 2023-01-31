@@ -8,8 +8,7 @@ package com.datadog.android.v2.core.internal.net
 
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.system.AndroidInfoProvider
-import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.log.Logger
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
 import okhttp3.Call
@@ -21,7 +20,7 @@ import com.datadog.android.v2.api.Request as DatadogRequest
 
 internal class DataOkHttpUploader(
     val requestFactory: RequestFactory,
-    val internalLogger: Logger,
+    val internalLogger: InternalLogger,
     val callFactory: Call.Factory,
     val sdkVersion: String,
     val androidInfoProvider: AndroidInfoProvider
@@ -35,29 +34,35 @@ internal class DataOkHttpUploader(
         batch: List<ByteArray>,
         batchMeta: ByteArray?
     ): UploadStatus {
-        val request = requestFactory.create(context, batch, batchMeta)
+        val request = try {
+            requestFactory.create(context, batch, batchMeta)
+        } catch (e: Exception) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                "Unable to create the request due to probably bad data format." +
+                    " The batch will be dropped.",
+                e
+            )
+            return UploadStatus.REQUEST_CREATION_ERROR
+        }
 
         val uploadStatus = try {
             executeUploadRequest(request)
         } catch (e: Throwable) {
-            internalLogger.e("Unable to upload batch data.", e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                "Unable to upload batch data.",
+                e
+            )
             UploadStatus.NETWORK_ERROR
         }
 
         uploadStatus.logStatus(
             request.description,
             request.body.size,
-            devLogger,
-            ignoreInfo = false,
-            sendToTelemetry = false,
-            requestId = request.id
-        )
-        uploadStatus.logStatus(
-            request.description,
-            request.body.size,
             internalLogger,
-            ignoreInfo = true,
-            sendToTelemetry = true,
             requestId = request.id
         )
 
@@ -111,7 +116,11 @@ internal class DataOkHttpUploader(
 
         for ((header, value) in request.headers) {
             if (header.lowercase(Locale.US) == "user-agent") {
-                internalLogger.w(WARNING_USER_AGENT_HEADER_RESERVED)
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.MAINTAINER,
+                    WARNING_USER_AGENT_HEADER_RESERVED
+                )
                 continue
             }
             builder.addHeader(header, value)

@@ -20,10 +20,8 @@ import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.time.NoOpTimeProvider
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.plugin.DatadogContext
@@ -37,11 +35,12 @@ import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.FeatureUploadConfiguration
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.TimeInfo
+import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.ContextProvider
-import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
 import com.datadog.android.v2.log.internal.net.LogsRequestFactory
 import com.datadog.android.v2.rum.internal.net.RumRequestFactory
 import com.datadog.android.v2.tracing.internal.net.TracesRequestFactory
@@ -239,10 +238,18 @@ internal class DatadogCore(
     override fun setEventReceiver(featureName: String, receiver: FeatureEventReceiver) {
         val feature = features[featureName]
         if (feature == null) {
-            devLogger.i(MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, featureName))
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, featureName)
+            )
         } else {
             if (feature.eventReceiver.get() != null) {
-                devLogger.i(EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, featureName))
+                internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    InternalLogger.Target.USER,
+                    EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, featureName)
+                )
             }
             feature.eventReceiver.set(receiver)
         }
@@ -295,10 +302,7 @@ internal class DatadogCore(
         initializeRumFeature(mutableConfig.rumConfig, appContext)
         initializeCrashReportFeature(mutableConfig.crashReportConfig, appContext)
 
-        coreFeature.ndkCrashHandler.handleNdkCrash(
-            this,
-            rumFeature?.dataWriter ?: NoOpDataWriter()
-        )
+        coreFeature.ndkCrashHandler.handleNdkCrash(this)
 
         setupLifecycleMonitorCallback(appContext)
 
@@ -376,7 +380,11 @@ internal class DatadogCore(
     ) {
         if (configuration != null) {
             if (coreFeature.rumApplicationId.isNullOrBlank()) {
-                devLogger.w(WARNING_MESSAGE_APPLICATION_ID_IS_NULL)
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    WARNING_MESSAGE_APPLICATION_ID_IS_NULL
+                )
             }
             registerFeature(
                 RumFeature.RUM_FEATURE_NAME,
@@ -486,13 +494,28 @@ internal class DatadogCore(
             Runtime.getRuntime().addShutdownHook(hook)
         } catch (e: IllegalStateException) {
             // Most probably Runtime is already shutting down
-            sdkLogger.e("Unable to add shutdown hook, Runtime is already shutting down", e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                "Unable to add shutdown hook, Runtime is already shutting down",
+                e
+            )
             stop()
         } catch (e: IllegalArgumentException) {
             // can only happen if hook is already added, or already running
-            sdkLogger.e("Shutdown hook was rejected", e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                "Shutdown hook was rejected",
+                e
+            )
         } catch (e: SecurityException) {
-            sdkLogger.e("Security Manager denied adding shutdown hook ", e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                "Security Manager denied adding shutdown hook ",
+                e
+            )
         }
     }
 

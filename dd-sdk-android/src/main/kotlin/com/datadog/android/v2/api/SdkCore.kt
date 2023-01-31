@@ -7,9 +7,9 @@
 package com.datadog.android.v2.api
 
 import com.datadog.android.Datadog
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.context.TimeInfo
+import com.datadog.android.v2.api.context.UserInfo
 
 /**
  * SdkCore is the entry point to register Datadog features to the core registry.

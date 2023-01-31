@@ -7,16 +7,9 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import android.app.Activity
-import android.os.Build
-import android.util.Log
-import android.view.Display
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
-import com.datadog.android.log.internal.utils.DEBUG_WITH_TELEMETRY_LEVEL
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -39,12 +32,13 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.TimeInfo
@@ -69,7 +63,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.DoubleForgery
-import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -121,7 +114,7 @@ internal class RumViewScopeTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockDetector: FirstPartyHostDetector
+    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockCpuVitalMonitor: VitalMonitor
@@ -166,9 +159,6 @@ internal class RumViewScopeTest {
 
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
-
-    @Mock
-    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
     var fakeSourceViewEvent: ViewEvent.Source? = null
     var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
@@ -246,14 +236,13 @@ internal class RumViewScopeTest {
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         whenever(mockActionScope.handleEvent(any(), any())) doReturn mockActionScope
         whenever(mockActionScope.actionId) doReturn fakeActionId
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
         whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(true)
         whenever(mockFeaturesContextResolver.resolveHasReplay(fakeDatadogContext))
             .thenReturn(fakeHasReplay)
         whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
-        whenever(mockRumFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
 
@@ -264,12 +253,11 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockContextProvider,
-            mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             trackFrustrations = true
@@ -365,12 +353,11 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockContextProvider,
-            mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             type = fakeViewEventType,
@@ -476,12 +463,11 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockContextProvider,
-            mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             type = expectedViewType,
@@ -521,11 +507,11 @@ internal class RumViewScopeTest {
                 .isEqualTo(anotherScope.getRumContext().actionId)
         }
 
-        verify(logger.mockSdkLogHandler)
-            .handleLog(
-                DEBUG_WITH_TELEMETRY_LEVEL,
-                RumViewScope.RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.DEBUG,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            RumViewScope.RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE
+        )
     }
 
     @Test
@@ -566,8 +552,6 @@ internal class RumViewScopeTest {
             assertThat(rumContext["view_url"]).isNull()
             assertThat(rumContext["action_id"]).isNull()
         }
-
-        verifyZeroInteractions(logger.mockSdkLogHandler)
     }
 
     @Test
@@ -617,11 +601,11 @@ internal class RumViewScopeTest {
                 .isNull()
         }
 
-        verify(logger.mockSdkLogHandler)
-            .handleLog(
-                DEBUG_WITH_TELEMETRY_LEVEL,
-                RumViewScope.RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.DEBUG,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            RumViewScope.RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE
+        )
     }
 
     // endregion
@@ -679,12 +663,11 @@ internal class RumViewScopeTest {
             name,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockContextProvider,
-            mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             type = viewType,
@@ -736,12 +719,11 @@ internal class RumViewScopeTest {
             name,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockContextProvider,
-            mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             type = viewType,
@@ -1287,7 +1269,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -1444,7 +1426,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -1535,7 +1517,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -3025,8 +3007,9 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
 
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             RumViewScope.ACTION_DROPPED_WARNING.format(
                 Locale.US,
                 (fakeEvent as RumRawEvent.StartAction).type,
@@ -3034,7 +3017,7 @@ internal class RumViewScopeTest {
             )
         )
 
-        verifyNoMoreInteractions(logger.mockDevLogHandler)
+        verifyNoMoreInteractions(logger.mockInternalLogger)
     }
 
     @Test
@@ -3058,8 +3041,9 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
 
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             RumViewScope.ACTION_DROPPED_WARNING.format(
                 Locale.US,
                 (fakeEvent as RumRawEvent.StartAction).type,
@@ -3067,7 +3051,7 @@ internal class RumViewScopeTest {
             )
         )
 
-        verifyNoMoreInteractions(logger.mockDevLogHandler)
+        verifyNoMoreInteractions(logger.mockInternalLogger)
     }
 
     @Test
@@ -3353,7 +3337,7 @@ internal class RumViewScopeTest {
         assertThat(resourceScope.method).isSameAs(method)
         assertThat(resourceScope.eventTimestamp)
             .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-        assertThat(resourceScope.firstPartyHostDetector).isSameAs(mockDetector)
+        assertThat(resourceScope.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
     }
 
     @Test
@@ -3386,7 +3370,7 @@ internal class RumViewScopeTest {
         assertThat(resourceScope.method).isSameAs(method)
         assertThat(resourceScope.eventTimestamp)
             .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-        assertThat(resourceScope.firstPartyHostDetector).isSameAs(mockDetector)
+        assertThat(resourceScope.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
     }
 
     @Test
@@ -4288,13 +4272,26 @@ internal class RumViewScopeTest {
             sourceType = sourceType
         )
 
+        // Sending a second crash should not trigger a view update
+        val fakeNativeCrashEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            null,
+            true,
+            attributes,
+            sourceType = sourceType
+        )
+
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope
+            .handleEvent(fakeEvent, mockWriter)
+            ?.handleEvent(fakeNativeCrashEvent, mockWriter)
 
         // Then
         val expectedMessage = "$message: ${throwable.message}"
         argumentCaptor<Any> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue as ErrorEvent)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
@@ -4318,6 +4315,52 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                }
+            assertThat(lastValue as ViewEvent)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasLoadingTime(null)
+                    hasLoadingType(null)
+                    hasVersion(2)
+                    hasErrorCount(1)
+                    hasCrashCount(1)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasFrustrationCount(0)
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    isSlowRendered(false)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
                         fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
@@ -5781,19 +5824,14 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 detect slow refresh rate 𝕎 init()+onVitalUpdate()+handleEvent(KeepAlive) {Activity}`(
-        @FloatForgery(120.0f, 240.0f) deviceRefreshRate: Float,
+    fun `𝕄 detect slow refresh rate 𝕎 init()+onVitalUpdate()+handleEvent(KeepAlive)`(
         @DoubleForgery(30.0, 55.0) meanRefreshRate: Double,
         @DoubleForgery(0.0, 30.0) minRefreshRate: Double
     ) {
         // Given
         val mockActivity = mock<Activity>()
-        val mockDisplay = mock<Display>()
-        whenever(mockActivity.display) doReturn mockDisplay
-        whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
         reset(mockFrameRateVitalMonitor)
 
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
             mockSdkCore,
@@ -5801,12 +5839,11 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockContextProvider,
-            mockBuildSdkVersionProvider,
             featuresContextResolver = mockFeaturesContextResolver,
             viewUpdatePredicate = mockViewUpdatePredicate,
             trackFrustrations = fakeTrackFrustrations
@@ -5821,8 +5858,8 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(RumRawEvent.KeepAlive(), mockWriter)
 
         // Then
-        val expectedAverage = (meanRefreshRate * 60.0) / deviceRefreshRate
-        val expectedMinimum = (minRefreshRate * 60.0) / deviceRefreshRate
+        val expectedAverage = meanRefreshRate
+        val expectedMinimum = minRefreshRate
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
@@ -5874,19 +5911,13 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 detect high refresh rate 𝕎 init()+onVitalUpdate()+handleEvent(KeepAlive) {Activity}`(
-        @FloatForgery(120.0f, 240.0f) deviceRefreshRate: Float,
+    fun `𝕄 detect high refresh rate 𝕎 init()+onVitalUpdate()+handleEvent(KeepAlive)`(
         @DoubleForgery(55.0, 60.0) meanRefreshRate: Double,
         @DoubleForgery(50.0, 55.0) minRefreshRate: Double
     ) {
         // Given
         val mockActivity = mock<Activity>()
-        val mockDisplay = mock<Display>()
-        whenever(mockActivity.display) doReturn mockDisplay
-        whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
         reset(mockFrameRateVitalMonitor)
-
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
             mockSdkCore,
@@ -5894,12 +5925,11 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockContextProvider,
-            mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
@@ -5914,8 +5944,6 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(RumRawEvent.KeepAlive(), mockWriter)
 
         // Then
-        val expectedAverage = (meanRefreshRate * 60.0) / deviceRefreshRate
-        val expectedMinimum = (minRefreshRate * 60.0) / deviceRefreshRate
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
@@ -5933,389 +5961,7 @@ internal class RumViewScopeTest {
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
-                    hasRefreshRateMetric(expectedAverage, expectedMinimum)
-                    isActive(true)
-                    isSlowRendered(false)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasViewId(testedScope.viewId)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasLiteSessionPlan()
-                    hasReplay(fakeHasReplay)
-                    containsExactlyContextAttributes(fakeAttributes)
-                    hasSource(fakeSourceViewEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                }
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isSameAs(testedScope)
-    }
-
-    @Test
-    fun `𝕄 detect low refresh rate 𝕎 init()+onVitalUpdate()+handleEvent(KeepAlive) {Frag X}`(
-        @FloatForgery(120.0f, 240.0f) deviceRefreshRate: Float,
-        @DoubleForgery(30.0, 55.0) meanRefreshRate: Double,
-        @DoubleForgery(0.0, 30.0) minRefreshRate: Double
-    ) {
-        // Given
-        val mockFragment = mock<Fragment>()
-        val mockActivity = mock<FragmentActivity>()
-        val mockDisplay = mock<Display>()
-        whenever(mockFragment.activity) doReturn mockActivity
-        whenever(mockActivity.display) doReturn mockDisplay
-        whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
-        reset(mockFrameRateVitalMonitor)
-
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
-        val testedScope = RumViewScope(
-            mockParentScope,
-            mockSdkCore,
-            mockFragment,
-            fakeName,
-            fakeEventTime,
-            fakeAttributes,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockContextProvider,
-            mockBuildSdkVersionProvider,
-            mockViewUpdatePredicate,
-            mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations
-        )
-        val listenerCaptor = argumentCaptor<VitalListener> {
-            verify(mockFrameRateVitalMonitor).register(capture())
-        }
-        val listener = listenerCaptor.firstValue
-
-        // When
-        listener.onVitalUpdate(VitalInfo(1, minRefreshRate, meanRefreshRate * 2, meanRefreshRate))
-        val result = testedScope.handleEvent(RumRawEvent.KeepAlive(), mockWriter)
-
-        // Then
-        val expectedAverage = (meanRefreshRate * 60.0) / deviceRefreshRate
-        val expectedMinimum = (minRefreshRate * 60.0) / deviceRefreshRate
-        argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertThat(lastValue)
-                .apply {
-                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
-                    hasDurationGreaterThan(1)
-                    hasVersion(2)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasFrustrationCount(0)
-                    hasLongTaskCount(0)
-                    hasFrozenFrameCount(0)
-                    hasCpuMetric(null)
-                    hasMemoryMetric(null, null)
-                    hasRefreshRateMetric(expectedAverage, expectedMinimum)
-                    isActive(true)
-                    isSlowRendered(true)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasViewId(testedScope.viewId)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasLiteSessionPlan()
-                    hasReplay(fakeHasReplay)
-                    containsExactlyContextAttributes(fakeAttributes)
-                    hasSource(fakeSourceViewEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                }
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isSameAs(testedScope)
-    }
-
-    @Test
-    fun `𝕄 detect high refresh rate 𝕎 init()+onVitalUpdate()+handleEvent(KeepAlive) {Frag X}`(
-        @FloatForgery(120.0f, 240.0f) deviceRefreshRate: Float,
-        @DoubleForgery(55.0, 60.0) meanRefreshRate: Double,
-        @DoubleForgery(50.0, 55.0) minRefreshRate: Double
-    ) {
-        // Given
-        val mockFragment = mock<Fragment>()
-        val mockActivity = mock<FragmentActivity>()
-        val mockDisplay = mock<Display>()
-        whenever(mockFragment.activity) doReturn mockActivity
-        whenever(mockActivity.display) doReturn mockDisplay
-        whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
-        reset(mockFrameRateVitalMonitor)
-
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
-        val testedScope = RumViewScope(
-            mockParentScope,
-            mockSdkCore,
-            mockFragment,
-            fakeName,
-            fakeEventTime,
-            fakeAttributes,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockContextProvider,
-            mockBuildSdkVersionProvider,
-            mockViewUpdatePredicate,
-            mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations
-        )
-        val listenerCaptor = argumentCaptor<VitalListener> {
-            verify(mockFrameRateVitalMonitor).register(capture())
-        }
-        val listener = listenerCaptor.firstValue
-
-        // When
-        listener.onVitalUpdate(VitalInfo(1, minRefreshRate, meanRefreshRate * 2, meanRefreshRate))
-        val result = testedScope.handleEvent(RumRawEvent.KeepAlive(), mockWriter)
-
-        // Then
-        val expectedAverage = (meanRefreshRate * 60.0) / deviceRefreshRate
-        val expectedMinimum = (minRefreshRate * 60.0) / deviceRefreshRate
-        argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertThat(lastValue)
-                .apply {
-                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
-                    hasDurationGreaterThan(1)
-                    hasVersion(2)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasFrustrationCount(0)
-                    hasLongTaskCount(0)
-                    hasFrozenFrameCount(0)
-                    hasCpuMetric(null)
-                    hasMemoryMetric(null, null)
-                    hasRefreshRateMetric(expectedAverage, expectedMinimum)
-                    isActive(true)
-                    isSlowRendered(false)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasViewId(testedScope.viewId)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasLiteSessionPlan()
-                    hasReplay(fakeHasReplay)
-                    containsExactlyContextAttributes(fakeAttributes)
-                    hasSource(fakeSourceViewEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                }
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isSameAs(testedScope)
-    }
-
-    @Suppress("DEPRECATION")
-    @Test
-    fun `𝕄 detect low refresh rate 𝕎 init()+onVitalUpdate()+handleEvent(KeepAlive) {Fragment}`(
-        @FloatForgery(120.0f, 240.0f) deviceRefreshRate: Float,
-        @DoubleForgery(30.0, 55.0) meanRefreshRate: Double,
-        @DoubleForgery(0.0, 30.0) minRefreshRate: Double
-    ) {
-        // Given
-        val mockFragment = mock<android.app.Fragment>()
-        val mockActivity = mock<Activity>()
-        val mockDisplay = mock<Display>()
-        whenever(mockFragment.activity) doReturn mockActivity
-        whenever(mockActivity.display) doReturn mockDisplay
-        whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
-        reset(mockFrameRateVitalMonitor)
-
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
-        val testedScope = RumViewScope(
-            mockParentScope,
-            mockSdkCore,
-            mockFragment,
-            fakeName,
-            fakeEventTime,
-            fakeAttributes,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockContextProvider,
-            mockBuildSdkVersionProvider,
-            mockViewUpdatePredicate,
-            mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations
-        )
-        val listenerCaptor = argumentCaptor<VitalListener> {
-            verify(mockFrameRateVitalMonitor).register(capture())
-        }
-        val listener = listenerCaptor.firstValue
-
-        // When
-        listener.onVitalUpdate(VitalInfo(1, minRefreshRate, meanRefreshRate * 2, meanRefreshRate))
-        val result = testedScope.handleEvent(RumRawEvent.KeepAlive(), mockWriter)
-
-        // Then
-        val expectedAverage = (meanRefreshRate * 60.0) / deviceRefreshRate
-        val expectedMinimum = (minRefreshRate * 60.0) / deviceRefreshRate
-        argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertThat(lastValue)
-                .apply {
-                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
-                    hasDurationGreaterThan(1)
-                    hasVersion(2)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasFrustrationCount(0)
-                    hasLongTaskCount(0)
-                    hasFrozenFrameCount(0)
-                    hasCpuMetric(null)
-                    hasMemoryMetric(null, null)
-                    hasRefreshRateMetric(expectedAverage, expectedMinimum)
-                    isActive(true)
-                    isSlowRendered(true)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasViewId(testedScope.viewId)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasLiteSessionPlan()
-                    hasReplay(fakeHasReplay)
-                    containsExactlyContextAttributes(fakeAttributes)
-                    hasSource(fakeSourceViewEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                }
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isSameAs(testedScope)
-    }
-
-    @Suppress("DEPRECATION")
-    @Test
-    fun `𝕄 detect high refresh rate 𝕎 init()+onVitalUpdate()+handleEvent(KeepAlive) {Fragment}`(
-        @FloatForgery(120.0f, 240.0f) deviceRefreshRate: Float,
-        @DoubleForgery(55.0, 60.0) meanRefreshRate: Double,
-        @DoubleForgery(50.0, 55.0) minRefreshRate: Double
-    ) {
-        // Given
-        val mockFragment = mock<android.app.Fragment>()
-        val mockActivity = mock<Activity>()
-        val mockDisplay = mock<Display>()
-        whenever(mockFragment.activity) doReturn mockActivity
-        whenever(mockActivity.display) doReturn mockDisplay
-        whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
-        reset(mockFrameRateVitalMonitor)
-
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
-        val testedScope = RumViewScope(
-            mockParentScope,
-            mockSdkCore,
-            mockFragment,
-            fakeName,
-            fakeEventTime,
-            fakeAttributes,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockContextProvider,
-            mockBuildSdkVersionProvider,
-            mockViewUpdatePredicate,
-            mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations
-        )
-        val listenerCaptor = argumentCaptor<VitalListener> {
-            verify(mockFrameRateVitalMonitor).register(capture())
-        }
-        val listener = listenerCaptor.firstValue
-
-        // When
-        listener.onVitalUpdate(VitalInfo(1, minRefreshRate, meanRefreshRate * 2, meanRefreshRate))
-        val result = testedScope.handleEvent(RumRawEvent.KeepAlive(), mockWriter)
-
-        // Then
-        val expectedAverage = (meanRefreshRate * 60.0) / deviceRefreshRate
-        val expectedMinimum = (minRefreshRate * 60.0) / deviceRefreshRate
-        argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertThat(lastValue)
-                .apply {
-                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
-                    hasDurationGreaterThan(1)
-                    hasVersion(2)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasFrustrationCount(0)
-                    hasLongTaskCount(0)
-                    hasFrozenFrameCount(0)
-                    hasCpuMetric(null)
-                    hasMemoryMetric(null, null)
-                    hasRefreshRateMetric(expectedAverage, expectedMinimum)
+                    hasRefreshRateMetric(meanRefreshRate, minRefreshRate)
                     isActive(true)
                     isSlowRendered(false)
                     hasNoCustomTimings()
@@ -6796,12 +6442,11 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockContextProvider,
-            mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
@@ -6818,8 +6463,9 @@ internal class RumViewScopeTest {
                     hasDuration(1)
                 }
         }
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             RumViewScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, testedScope.name)
         )
     }
@@ -6854,7 +6500,7 @@ internal class RumViewScopeTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

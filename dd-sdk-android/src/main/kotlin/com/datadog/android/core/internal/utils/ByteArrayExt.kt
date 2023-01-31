@@ -6,6 +6,8 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.datadog.android.v2.api.InternalLogger
+
 /**
  * Splits this [ByteArray] to a list of [ByteArray] around occurrences of the specified [delimiter].
  *
@@ -91,10 +93,18 @@ internal fun ByteArray.indexOf(b: Byte, startIndex: Int = 0): Int {
  */
 internal fun ByteArray.copyTo(srcPos: Int, dest: ByteArray, destPos: Int, length: Int): Boolean {
     return if (destPos + length > dest.size) {
-        sdkLogger.w("Cannot copy ByteArray, dest doesn't have enough space")
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            "Cannot copy ByteArray, dest doesn't have enough space"
+        )
         false
     } else if (srcPos + length > size) {
-        sdkLogger.w("Cannot copy ByteArray, src doesn't have enough data")
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            "Cannot copy ByteArray, src doesn't have enough data"
+        )
         false
     } else {
         // this and dest can't be null, NPE cannot happen here

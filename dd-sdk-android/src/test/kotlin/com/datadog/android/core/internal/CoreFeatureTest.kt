@@ -27,8 +27,8 @@ import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvi
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
-import com.datadog.android.log.internal.user.DatadogUserInfoProvider
-import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
+import com.datadog.android.core.internal.user.DatadogUserInfoProvider
+import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.ndk.NoOpNdkCrashHandler
@@ -112,9 +112,6 @@ internal class CoreFeatureTest {
 
     @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
     lateinit var fakeSdkInstanceId: String
-
-    @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
-    lateinit var fakeEnvName: String
 
     @BeforeEach
     fun `set up`() {
@@ -276,7 +273,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes first party hosts detector 𝕎 initialize`() {
+    fun `𝕄 initializes first party hosts resolver 𝕎 initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -287,8 +284,8 @@ internal class CoreFeatureTest {
         )
 
         // Then
-        assertThat(testedFeature.firstPartyHostDetector.knownHosts)
-            .containsAll(fakeConfig.firstPartyHosts.map { it.lowercase(Locale.US) })
+        assertThat(testedFeature.firstPartyHostHeaderTypeResolver.knownHosts.keys)
+            .containsAll(fakeConfig.firstPartyHostsWithHeaderTypes.keys.map { it.lowercase(Locale.US) })
     }
 
     @Test
@@ -816,8 +813,6 @@ internal class CoreFeatureTest {
                         CoreFeature.DATADOG_STORAGE_DIR_NAME.format(Locale.US, fakeSdkInstanceId)
                     )
                 )
-                assertThat(it.timeProvider)
-                    .isInstanceOf(KronosTimeProvider::class.java)
             }
     }
 
@@ -950,7 +945,7 @@ internal class CoreFeatureTest {
         testedFeature.stop()
 
         // Then
-        assertThat(testedFeature.firstPartyHostDetector.knownHosts)
+        assertThat(testedFeature.firstPartyHostHeaderTypeResolver.knownHosts)
             .isEmpty()
         assertThat(testedFeature.networkInfoProvider)
             .isInstanceOf(NoOpNetworkInfoProvider::class.java)

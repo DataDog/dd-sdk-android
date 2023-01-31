@@ -9,17 +9,15 @@ package com.datadog.android.core.internal.persistence.file.advanced
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.warningWithTelemetry
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.v2.api.InternalLogger
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 
 internal class ConsentAwareFileMigrator(
     private val fileMover: FileMover,
     private val executorService: ExecutorService,
-    private val internalLogger: Logger
+    private val internalLogger: InternalLogger
 ) : DataMigrator<TrackingConsent> {
 
     @WorkerThread
@@ -68,7 +66,12 @@ internal class ConsentAwareFileMigrator(
             }
 
             else -> {
-                sdkLogger.warningWithTelemetry(
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    targets = listOf(
+                        InternalLogger.Target.MAINTAINER,
+                        InternalLogger.Target.TELEMETRY
+                    ),
                     "Unexpected consent migration from $previousState to $newState"
                 )
                 NoOpDataMigrationOperation()
@@ -78,7 +81,12 @@ internal class ConsentAwareFileMigrator(
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             executorService.submit(operation)
         } catch (e: RejectedExecutionException) {
-            internalLogger.e(DataMigrator.ERROR_REJECTED, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                DataMigrator.ERROR_REJECTED,
+                e
+            )
         }
     }
 }

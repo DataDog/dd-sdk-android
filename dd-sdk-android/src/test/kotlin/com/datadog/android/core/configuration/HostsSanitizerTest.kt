@@ -6,13 +6,12 @@
 
 package com.datadog.android.core.configuration
 
-import android.util.Log
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
@@ -122,8 +121,9 @@ internal class HostsSanitizerTest {
 
         // Then
         hosts.forEach {
-            verify(logger.mockDevLogHandler).handleLog(
-                Log.ERROR,
+            verify(logger.mockInternalLogger).log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
                 HostsSanitizer.ERROR_MALFORMED_HOST_IP_ADDRESS.format(
                     Locale.US,
                     it,
@@ -149,8 +149,9 @@ internal class HostsSanitizerTest {
 
         // THEN
         hosts.forEach {
-            verify(logger.mockDevLogHandler).handleLog(
-                Log.ERROR,
+            verify(logger.mockInternalLogger).log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
                 HostsSanitizer.ERROR_MALFORMED_HOST_IP_ADDRESS.format(
                     Locale.US,
                     it,
@@ -225,8 +226,9 @@ internal class HostsSanitizerTest {
 
         // THEN
         hosts.forEach {
-            verify(logger.mockDevLogHandler).handleLog(
-                Log.WARN,
+            verify(logger.mockInternalLogger).log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 HostsSanitizer.WARNING_USING_URL.format(
                     Locale.US,
                     it,
@@ -251,8 +253,9 @@ internal class HostsSanitizerTest {
 
         // Then
         hosts.forEach {
-            verify(logger.mockDevLogHandler).handleLog(
-                eq(Log.ERROR),
+            verify(logger.mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
                 eq(
                     HostsSanitizer.ERROR_MALFORMED_URL.format(
                         Locale.US,
@@ -260,10 +263,7 @@ internal class HostsSanitizerTest {
                         fakeFeature
                     )
                 ),
-                any<MalformedURLException>(),
-                anyOrNull(),
-                anyOrNull(),
-                anyOrNull()
+                any<MalformedURLException>()
             )
         }
     }
@@ -285,7 +285,7 @@ internal class HostsSanitizerTest {
     }
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

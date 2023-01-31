@@ -18,6 +18,7 @@ interface InternalLogger {
      * The severity level of a logged message.
      */
     enum class Level {
+        VERBOSE,
         DEBUG,
         INFO,
         WARN,
@@ -38,15 +39,13 @@ interface InternalLogger {
      * @param level the severity level of the log
      * @param target the target handler for the log
      * @param message the log message
-     * @param error an optional throwable error
-     * @param attributes an optional map of custom attributes
+     * @param throwable an optional throwable error
      */
     fun log(
         level: Level,
         target: Target,
         message: String,
-        error: Throwable?,
-        attributes: Map<String, Any?>
+        throwable: Throwable? = null
     )
 
     /**
@@ -54,14 +53,12 @@ interface InternalLogger {
      * @param level the severity level of the log
      * @param targets list of the target handlers for the log
      * @param message the log message
-     * @param error an optional throwable error
-     * @param attributes an optional map of custom attributes
+     * @param throwable an optional throwable error
      */
     fun log(
         level: Level,
         targets: List<Target>,
         message: String,
-        error: Throwable?,
-        attributes: Map<String, Any?>
+        throwable: Throwable? = null
     )
 }

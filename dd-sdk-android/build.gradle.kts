@@ -127,7 +127,7 @@ android {
 }
 
 dependencies {
-    // TODO Invert the Dependency Once SDKCore is ready. RUMM-2338
+    // TODO RUMM-2338 Invert the Dependency Once SDKCore is ready.
     api(project(":library:dd-sdk-android-session-replay"))
 
     implementation(libs.kotlin)
@@ -181,7 +181,6 @@ apply(from = "clone_rum_schema.gradle.kts")
 apply(from = "clone_telemetry_schema.gradle.kts")
 apply(from = "generate_rum_models.gradle.kts")
 apply(from = "generate_telemetry_models.gradle.kts")
-apply(from = "generate_core_models.gradle.kts")
 apply(from = "generate_trace_models.gradle.kts")
 apply(from = "generate_log_models.gradle.kts")
 

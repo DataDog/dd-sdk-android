@@ -46,9 +46,10 @@ internal class TracesFragment : Fragment(), View.OnClickListener {
         return rootView
     }
 
+    @Suppress("UnsafeCallOnNullableType") // not an issue in the sample
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        val factory = SampleApplication.getViewModelFactory(context!!)
+        val factory = SampleApplication.getViewModelFactory(requireContext())
         viewModel = ViewModelProviders.of(this, factory).get(TracesViewModel::class.java)
     }
 

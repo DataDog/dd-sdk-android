@@ -12,7 +12,7 @@ import android.os.Looper
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -195,7 +195,7 @@ internal class ANRDetectorRunnableTest {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
         val mainLooper = MainLooperTestConfiguration()
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

@@ -61,9 +61,7 @@ internal class FileEventBatchWriter(
                     Locale.US,
                     eventSize,
                     filePersistenceConfig.maxItemSize
-                ),
-                null,
-                emptyMap()
+                )
             )
             return false
         }
@@ -81,9 +79,7 @@ internal class FileEventBatchWriter(
                 WARNING_METADATA_WRITE_FAILED.format(
                     Locale.US,
                     metadataFile.path
-                ),
-                null,
-                emptyMap()
+                )
             )
         }
     }

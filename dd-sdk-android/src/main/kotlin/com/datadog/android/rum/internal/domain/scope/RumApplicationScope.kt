@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -22,7 +22,7 @@ internal class RumApplicationScope(
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
-    firstPartyHostDetector: FirstPartyHostDetector,
+    firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
@@ -37,7 +37,7 @@ internal class RumApplicationScope(
         samplingRate,
         backgroundTrackingEnabled,
         trackFrustrations,
-        firstPartyHostDetector,
+        firstPartyHostHeaderTypeResolver,
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,

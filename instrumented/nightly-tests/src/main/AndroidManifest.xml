@@ -29,6 +29,7 @@
         <activity android:name=".activities.ResourceTrackingCustomSpanAttributesActivity"/>
         <activity android:name=".activities.ResourceTrackingNetworkInterceptorActivity"/>
         <activity android:name=".activities.ResourceTrackingFirstPartyHostsActivity"/>
+        <activity android:name=".activities.ResourceTrackingFirstPartyHostsWithTracingHeaderTypeActivity"/>
         <activity android:name=".activities.ResourceTrackingTraceSamplingActivity"/>
         <activity android:name=".activities.WebViewTrackingActivity"/>
         <activity android:name=".activities.WebViewTrackingBridgeHostsActivity"/>

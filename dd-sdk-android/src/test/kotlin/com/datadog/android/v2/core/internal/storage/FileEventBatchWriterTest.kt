@@ -161,9 +161,7 @@ internal class FileEventBatchWriterTest {
                 Locale.US,
                 serializedData.size,
                 maxItemSize
-            ),
-            null,
-            emptyMap()
+            )
         )
     }
 
@@ -306,9 +304,7 @@ internal class FileEventBatchWriterTest {
             WARNING_METADATA_WRITE_FAILED.format(
                 Locale.US,
                 fakeBatchMetadataFile
-            ),
-            null,
-            emptyMap()
+            )
         )
     }
 

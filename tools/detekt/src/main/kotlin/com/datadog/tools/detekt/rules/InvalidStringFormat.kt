@@ -24,10 +24,10 @@ import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.psiUtil.children
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.bindingContextUtil.getReferenceTargets
-import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
-import org.jetbrains.kotlin.resolve.calls.callUtil.getType
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.VarargValueArgument
+import org.jetbrains.kotlin.resolve.calls.util.getResolvedCall
+import org.jetbrains.kotlin.resolve.calls.util.getType
 import org.jetbrains.kotlin.resolve.scopes.receivers.ClassQualifier
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
 import org.jetbrains.kotlin.types.lowerIfFlexible
@@ -291,13 +291,7 @@ class InvalidStringFormat : Rule() {
         private val SPECIFIER_REGEX = Regex(
             "%(\\d+\\$)?([flags]+)?(\\d+)?(\\.\\d+)?([sbhcdoxegfa])"
         )
-
         private const val INDEX_REF = 1
-
-        // TODO check flags, width and precision for invalid use?
-//        private const val INDEX_FLAGS = 2
-//        private const val INDEX_WIDTH = 3
-//        private const val INDEX_PRECISION = 4
         private const val INDEX_TYPE = 5
 
         private const val ERROR_UNKNOWN_FORMAT_STRING = "Unable to detect the format string value."

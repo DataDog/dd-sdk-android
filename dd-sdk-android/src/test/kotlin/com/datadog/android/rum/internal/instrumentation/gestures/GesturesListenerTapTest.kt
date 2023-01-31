@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.content.Context
 import android.content.res.Resources
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -20,6 +19,7 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
@@ -262,11 +262,11 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.INFO,
-                GesturesListener.MSG_NO_TARGET_TAP
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            GesturesListener.MSG_NO_TARGET_TAP
+        )
         verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
@@ -300,7 +300,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verifyZeroInteractions(logger.mockDevLogHandler)
+        verifyZeroInteractions(logger.mockInternalLogger)
         verifyZeroInteractions(rumMonitor.mockInstance)
     }
 

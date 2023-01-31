@@ -14,13 +14,14 @@ import android.view.ViewGroup
 import android.view.Window
 import android.widget.AbsListView
 import androidx.core.view.ScrollingView
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
+import com.datadog.android.v2.api.InternalLogger
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 import java.util.LinkedList
@@ -210,7 +211,11 @@ internal class GesturesListener(
         }
 
         if (target == null && notifyMissingTarget) {
-            devLogger.i(MSG_NO_TARGET_TAP)
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                MSG_NO_TARGET_TAP
+            )
         }
         return target
     }
@@ -238,7 +243,11 @@ internal class GesturesListener(
         }
 
         if (notifyMissingTarget) {
-            devLogger.i(MSG_NO_TARGET_SCROLL_SWIPE)
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                MSG_NO_TARGET_SCROLL_SWIPE
+            )
         }
 
         return null

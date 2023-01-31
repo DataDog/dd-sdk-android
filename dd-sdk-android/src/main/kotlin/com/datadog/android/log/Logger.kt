@@ -11,7 +11,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler
@@ -19,6 +19,7 @@ import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
 import com.google.gson.JsonArray
@@ -342,7 +343,9 @@ internal constructor(internal var handler: LogHandler) {
             logsFeature: LogsFeature?
         ): LogHandler {
             if (sdkCore == null || coreFeature == null || logsFeature == null) {
-                devLogger.e(
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
                     SDK_NOT_INITIALIZED_WARNING_MESSAGE + "\n" +
                         Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
                 )

@@ -10,14 +10,16 @@ import static com.datadog.opentracing.propagation.HttpCodec.validateUInt64BitsID
 
 import com.datadog.opentracing.DDSpanContext;
 import com.datadog.trace.api.sampling.PrioritySampling;
-import io.opentracing.SpanContext;
-import io.opentracing.propagation.TextMapExtract;
-import io.opentracing.propagation.TextMapInject;
+
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+
+import io.opentracing.SpanContext;
+import io.opentracing.propagation.TextMapExtract;
+import io.opentracing.propagation.TextMapInject;
 
 /**
  * A codec designed for HTTP transport via headers using B3 headers
@@ -28,9 +30,9 @@ import java.util.Map;
  */
 class B3HttpCodec {
 
-  private static final String TRACE_ID_KEY = "X-B3-TraceId";
-  private static final String SPAN_ID_KEY = "X-B3-SpanId";
-  private static final String SAMPLING_PRIORITY_KEY = "X-B3-Sampled";
+  private static final String HEADER_KEY = "b3";
+  private static final String HEADER_VALUE = "%s-%s";
+  private static final String HEADER_VALUE_WITH_SAMPLING = "%s-%s-%s";
   private static final String SAMPLING_PRIORITY_ACCEPT = String.valueOf(1);
   private static final String SAMPLING_PRIORITY_DROP = String.valueOf(0);
   private static final int HEX_RADIX = 16;
@@ -44,13 +46,19 @@ class B3HttpCodec {
     @Override
     public void inject(final DDSpanContext context, final TextMapInject carrier) {
       try {
-        carrier.put(TRACE_ID_KEY, context.getTraceId().toString(HEX_RADIX).toLowerCase(Locale.US));
-        carrier.put(SPAN_ID_KEY, context.getSpanId().toString(HEX_RADIX).toLowerCase(Locale.US));
+        String traceId = context.getTraceId().toString(HEX_RADIX).toLowerCase(Locale.US);
+        String spanId = context.getSpanId().toString(HEX_RADIX).toLowerCase(Locale.US);
 
         if (context.lockSamplingPriority()) {
-          carrier.put(
-              SAMPLING_PRIORITY_KEY, convertSamplingPriority(context.getSamplingPriority()));
+          carrier.put(HEADER_KEY, String.format(HEADER_VALUE_WITH_SAMPLING,
+                  traceId,
+                  spanId,
+                  convertSamplingPriority(context.getSamplingPriority())));
         }
+        else{
+          carrier.put(HEADER_KEY, String.format(HEADER_VALUE, traceId, spanId));
+        }
+
       } catch (final NumberFormatException e) {
       }
     }
@@ -87,22 +95,30 @@ class B3HttpCodec {
             continue;
           }
 
-          if (TRACE_ID_KEY.equalsIgnoreCase(key)) {
-            final String trimmedValue;
-            final int length = value.length();
-            if (length > 32) {
+          if (HEADER_KEY.equalsIgnoreCase(key)) {
+            String[] valueParts = value.split("-");
+
+            if (valueParts.length < 2 || valueParts.length > 4){
+              continue;
+            }
+
+            final int traceIdLength = valueParts[0].length();
+            String trimmedValue;
+            if (traceIdLength > 32) {
               traceId = BigInteger.ZERO;
               continue;
-            } else if (length > 16) {
-              trimmedValue = value.substring(length - 16);
+            } else if (traceIdLength > 16) {
+              trimmedValue = valueParts[0].substring(traceIdLength - 16);
             } else {
-              trimmedValue = value;
+              trimmedValue = valueParts[0];
             }
             traceId = validateUInt64BitsID(trimmedValue, HEX_RADIX);
-          } else if (SPAN_ID_KEY.equalsIgnoreCase(key)) {
-            spanId = validateUInt64BitsID(value, HEX_RADIX);
-          } else if (SAMPLING_PRIORITY_KEY.equalsIgnoreCase(key)) {
-            samplingPriority = convertSamplingPriority(value);
+
+            spanId = validateUInt64BitsID(valueParts[1], HEX_RADIX);
+
+            if(valueParts.length >= 3) {
+              samplingPriority = convertSamplingPriority(valueParts[2]);
+            }
           }
 
           if (taggedHeaders.containsKey(key)) {

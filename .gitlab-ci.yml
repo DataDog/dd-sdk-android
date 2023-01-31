@@ -55,6 +55,17 @@ create_key:
 
 # STATIC ANALYSIS
 
+static-analysis:
+  stage: analysis
+  variables:
+    DETEKT_PUBLIC_API: "true"
+    DETEKT_CUSTOM_RULES_BUILD_TASK: ":tools:detekt:jar"
+    DETEKT_CUSTOM_RULES_JAR_PATH: "tools/detekt/build/libs/detekt.jar"
+    DETEKT_CUSTOM_RULES_YML_PATH: "detekt_custom.yml"
+  trigger:
+    include: "https://gitlab-templates.ddbuild.io/mobile/v12509514-f43ceb02/static-analysis.yml"
+    strategy: depend
+
 analysis:android-lint:
   tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
@@ -70,14 +81,6 @@ analysis:licenses:
   timeout: 30m
   script:
     - GRADLE_OPTS="-Xmx2560m" ./gradlew checkThirdPartyLicensesAll --stacktrace --no-daemon
-
-static-analysis:
-  stage: analysis
-  variables: 
-    GRADLE_OPTS: "-Xmx2560m -Dorg.gradle.daemon=false -Dorg.gradle.logging.stacktrace=all"
-  trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v11527537-9cf2bf2b/static-analysis.yml"
-    strategy: depend
 
 analysis:nightly-tests-coverage:
   tags: [ "runner:main" ]

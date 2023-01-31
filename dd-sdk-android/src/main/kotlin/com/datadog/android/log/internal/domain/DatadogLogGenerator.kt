@@ -6,14 +6,14 @@
 
 package com.datadog.android.log.internal.domain
 
-import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.utils.buildLogDateFormat
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.api.context.NetworkInfo
+import com.datadog.android.v2.api.context.UserInfo
 import java.util.Date
 
 @Suppress("TooManyFunctions")
@@ -199,48 +199,27 @@ internal class DatadogLogGenerator(
         datadogContext: DatadogContext,
         networkInfo: NetworkInfo?
     ): LogEvent.Network {
-        // TODO RUMM-0000 use V2 (RUM should write V2 version)
-        return if (networkInfo != null) {
+        return with(networkInfo ?: datadogContext.networkInfo) {
             LogEvent.Network(
                 LogEvent.Client(
-                    simCarrier = resolveSimCarrier(networkInfo),
-                    signalStrength = networkInfo.strength?.toString(),
-                    downlinkKbps = networkInfo.downKbps?.toString(),
-                    uplinkKbps = networkInfo.upKbps?.toString(),
-                    connectivity = networkInfo.connectivity.toString()
-                )
-            )
-        } else {
-            LogEvent.Network(
-                LogEvent.Client(
-                    simCarrier = resolveSimCarrier(datadogContext.networkInfo),
-                    signalStrength = datadogContext.networkInfo.strength?.toString(),
-                    downlinkKbps = datadogContext.networkInfo.downKbps?.toString(),
-                    uplinkKbps = datadogContext.networkInfo.upKbps?.toString(),
-                    connectivity = datadogContext.networkInfo.connectivity.toString()
+                    simCarrier = resolveSimCarrier(this),
+                    signalStrength = strength?.toString(),
+                    downlinkKbps = downKbps?.toString(),
+                    uplinkKbps = upKbps?.toString(),
+                    connectivity = connectivity.toString()
                 )
             )
         }
     }
 
     private fun resolveUserInfo(datadogContext: DatadogContext, userInfo: UserInfo?): LogEvent.Usr {
-        // TODO RUMM-0000 use V2 (RUM should write V2 version)
-        return if (userInfo != null) {
+        return with(userInfo ?: datadogContext.userInfo) {
             LogEvent.Usr(
-                name = userInfo.name,
-                email = userInfo.email,
-                id = userInfo.id,
-                additionalProperties = userInfo.additionalProperties
+                name = name,
+                email = email,
+                id = id,
+                additionalProperties = additionalProperties.toMutableMap()
             )
-        } else {
-            with(datadogContext.userInfo) {
-                LogEvent.Usr(
-                    name = name,
-                    email = email,
-                    id = id,
-                    additionalProperties = additionalProperties.toMutableMap()
-                )
-            }
         }
     }
 
@@ -305,18 +284,6 @@ internal class DatadogLogGenerator(
     }
 
     private fun resolveSimCarrier(networkInfo: NetworkInfo): LogEvent.SimCarrier? {
-        return if (networkInfo.carrierId != null || networkInfo.carrierName != null) {
-            LogEvent.SimCarrier(
-                id = networkInfo.carrierId?.toString(),
-                name = networkInfo.carrierName
-            )
-        } else {
-            null
-        }
-    }
-
-    private fun resolveSimCarrier(networkInfo: com.datadog.android.v2.api.context.NetworkInfo):
-        LogEvent.SimCarrier? {
         return if (networkInfo.carrierId != null || networkInfo.carrierName != null) {
             LogEvent.SimCarrier(
                 id = networkInfo.carrierId?.toString(),

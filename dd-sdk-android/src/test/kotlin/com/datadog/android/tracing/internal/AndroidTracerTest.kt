@@ -7,16 +7,17 @@
 package com.datadog.android.tracing.internal
 
 import android.content.Context
-import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.opentracing.DDSpan
@@ -145,8 +146,9 @@ internal class AndroidTracerTest {
         testedTracerBuilder.build()
 
         // THEN
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             AndroidTracer.TRACING_NOT_ENABLED_ERROR_MESSAGE + "\n" +
                 Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
         )
@@ -161,8 +163,9 @@ internal class AndroidTracerTest {
         testedTracerBuilder.build()
 
         // THEN
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             AndroidTracer.RUM_NOT_ENABLED_ERROR_MESSAGE
         )
     }
@@ -568,6 +571,29 @@ internal class AndroidTracerTest {
         assertThat(traceIdSpan1).isNotEqualTo(traceIdSpan2)
     }
 
+    @Test
+    fun `M set correct propagating style W setting tracing header types`(forge: Forge) {
+        // Given
+        val tracingHeaderStyles = forge.aList { aValueFrom(TracingHeaderType::class.java) }.toSet()
+        // When
+        val tracer = testedTracerBuilder
+            .setServiceName(fakeServiceName)
+            .setTracingHeaderTypes(tracingHeaderStyles)
+            .build()
+        val properties = testedTracerBuilder.properties()
+
+        // Then
+        assertThat(tracer).isNotNull()
+
+        val injectionStyles =
+            properties.getProperty(Config.PROPAGATION_STYLE_INJECT).toString().split(",").toSet()
+        val extractionStyles =
+            properties.getProperty(Config.PROPAGATION_STYLE_EXTRACT).toString().split(",").toSet()
+
+        assertThat(injectionStyles).isEqualTo(tracingHeaderStyles.map { it.headerType }.toSet())
+        assertThat(extractionStyles).isEqualTo(tracingHeaderStyles.map { it.headerType }.toSet())
+    }
+
     // endregion
 
     @Test
@@ -665,7 +691,7 @@ internal class AndroidTracerTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

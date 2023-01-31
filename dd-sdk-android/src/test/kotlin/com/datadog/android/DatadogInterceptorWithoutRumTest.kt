@@ -6,12 +6,13 @@
 
 package com.datadog.android
 
-import android.util.Log
 import com.datadog.android.rum.RumResourceAttributesProvider
+import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorTest
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -49,13 +50,13 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
     lateinit var mockRumAttributesProvider: RumResourceAttributesProvider
 
     override fun instantiateTestedInterceptor(
-        tracedHosts: List<String>,
-        factory: () -> Tracer
+        tracedHosts: Map<String, Set<TracingHeaderType>>,
+        factory: (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return DatadogInterceptor(
             tracedHosts = tracedHosts,
             tracedRequestListener = mockRequestListener,
-            firstPartyHostDetector = mockDetector,
+            firstPartyHostResolver = mockResolver,
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler,
             localTracerFactory = factory
@@ -76,8 +77,9 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         testedInterceptor.intercept(mockChain)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             DatadogInterceptor.WARN_RUM_DISABLED
         )
     }

@@ -6,13 +6,13 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.VitalMonitor
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.SdkCore
@@ -73,7 +73,7 @@ internal class RumSessionScopeTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockDetector: FirstPartyHostDetector
+    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockCpuVitalMonitor: VitalMonitor
@@ -993,7 +993,7 @@ internal class RumSessionScopeTest {
             samplingRate,
             backgroundTrackingEnabled ?: fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -1020,7 +1020,7 @@ internal class RumSessionScopeTest {
         private val TEST_INACTIVITY_NS = TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS)
         private val TEST_MAX_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_DURATION_MS)
 
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

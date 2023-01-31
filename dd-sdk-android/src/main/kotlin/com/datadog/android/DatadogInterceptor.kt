@@ -8,13 +8,12 @@ package com.datadog.android
 
 import androidx.annotation.FloatRange
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
-import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumAttributes
@@ -27,7 +26,9 @@ import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.tracing.NoOpTracedRequestListener
 import com.datadog.android.tracing.TracedRequestListener
+import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.tracing.TracingInterceptor
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import io.opentracing.Span
 import io.opentracing.Tracer
@@ -69,16 +70,16 @@ import java.util.Locale
  */
 open class DatadogInterceptor
 internal constructor(
-    tracedHosts: List<String>,
+    tracedHosts: Map<String, Set<TracingHeaderType>>,
     tracedRequestListener: TracedRequestListener,
-    firstPartyHostDetector: FirstPartyHostDetector,
+    firstPartyHostResolver: FirstPartyHostHeaderTypeResolver,
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
     traceSampler: Sampler,
-    localTracerFactory: () -> Tracer
+    localTracerFactory: (Set<TracingHeaderType>) -> Tracer
 ) : TracingInterceptor(
     tracedHosts,
     tracedRequestListener,
-    firstPartyHostDetector,
+    firstPartyHostResolver,
     ORIGIN_RUM,
     traceSampler,
     localTracerFactory
@@ -88,11 +89,49 @@ internal constructor(
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s, and
      * track RUM Resources.
      *
+     * @param firstPartyHostsWithHeaderType the list of all the hosts and header types that you want to
+     * be automatically tracked by this interceptor.
+     * Requests made to a URL with any one of these hosts (or any subdomain) will:
+     * - be considered a first party RUM Resource and categorised as such in your RUM dashboard;
+     * - be wrapped in a Span and have trace id injected to get a full flame-graph in APM.
+     * If no host provided (via this argument, global configuration [Configuration.Builder.setFirstPartyHosts]
+     * or [Configuration.Builder.setFirstPartyHostsWithHeaderType])
+     * the interceptor won't trace any OkHttp [Request], nor propagate tracing
+     * information to the backend, but RUM Resource events will still be sent for each request.
+     * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
+     * the possibility to modify the created [io.opentracing.Span].
+     * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
+     * and offers the possibility to add custom attributes to the RUM resource events.
+     * @param traceSamplingRate the sampling rate for APM traces created for auto-instrumented
+     * requests. It must be a value between `0.0` and `100.0`. A value of `0.0` means no trace will
+     * be kept, `100.0` means all traces will be kept (default value is `20.0`).
+     */
+    @JvmOverloads
+    constructor(
+        firstPartyHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
+        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
+        rumResourceAttributesProvider: RumResourceAttributesProvider =
+            NoOpRumResourceAttributesProvider(),
+        @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
+    ) : this(
+        tracedHosts = firstPartyHostsWithHeaderType,
+        tracedRequestListener = tracedRequestListener,
+        firstPartyHostResolver = getGlobalFirstPartyHostResolver(),
+        rumResourceAttributesProvider = rumResourceAttributesProvider,
+        traceSampler = RateBasedSampler(traceSamplingRate.percent()),
+        localTracerFactory = { AndroidTracer.Builder().setTracingHeaderTypes(it).build() }
+    )
+
+    /**
+     * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s, and
+     * track RUM Resources.
+     *
      * @param firstPartyHosts the list of first party hosts.
      * Requests made to a URL with any one of these hosts (or any subdomain) will:
      * - be considered a first party RUM Resource and categorised as such in your RUM dashboard;
      * - be wrapped in a Span and have trace id injected to get a full flame-graph in APM.
-     * If no host provided (via this argument or global configuration [Configuration.Builder.setFirstPartyHosts])
+     * If no host provided (via this argument, global configuration [Configuration.Builder.setFirstPartyHosts]
+     * or [Configuration.Builder.setFirstPartyHostsWithHeaderType])
      * the interceptor won't trace any OkHttp [Request], nor propagate tracing
      * information to the backend, but RUM Resource events will still be sent for each request.
      * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
@@ -111,12 +150,12 @@ internal constructor(
             NoOpRumResourceAttributesProvider(),
         @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
-        tracedHosts = firstPartyHosts,
+        tracedHosts = firstPartyHosts.associateWith { setOf(TracingHeaderType.DATADOG) },
         tracedRequestListener = tracedRequestListener,
-        firstPartyHostDetector = getGlobalFirstPartyHostDetector(),
+        firstPartyHostResolver = getGlobalFirstPartyHostResolver(),
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = RateBasedSampler(traceSamplingRate.percent()),
-        localTracerFactory = { AndroidTracer.Builder().build() }
+        localTracerFactory = { AndroidTracer.Builder().setTracingHeaderTypes(it).build() }
     )
 
     /**
@@ -138,12 +177,12 @@ internal constructor(
             NoOpRumResourceAttributesProvider(),
         @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
-        tracedHosts = emptyList(),
+        tracedHosts = emptyMap(),
         tracedRequestListener = tracedRequestListener,
-        firstPartyHostDetector = getGlobalFirstPartyHostDetector(),
+        firstPartyHostResolver = getGlobalFirstPartyHostResolver(),
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = RateBasedSampler(traceSamplingRate.percent()),
-        localTracerFactory = { AndroidTracer.Builder().build() }
+        localTracerFactory = { AndroidTracer.Builder().setTracingHeaderTypes(it).build() }
     )
 
     init {
@@ -163,7 +202,11 @@ internal constructor(
 
             GlobalRum.get().startResource(requestId, method, url)
         } else {
-            devLogger.w(WARN_RUM_DISABLED)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                WARN_RUM_DISABLED
+            )
         }
         return super.intercept(chain)
     }
@@ -183,7 +226,7 @@ internal constructor(
         val rumFeature = (Datadog.globalSdkCore as? DatadogCore)?.rumFeature
         if (rumFeature != null) {
             if (response != null) {
-                handleResponse(request, response, span)
+                handleResponse(request, response, span, span != null)
             } else {
                 handleThrowable(request, throwable ?: IllegalStateException(ERROR_NO_RESPONSE))
             }
@@ -203,7 +246,8 @@ internal constructor(
     private fun handleResponse(
         request: Request,
         response: Response,
-        span: Span?
+        span: Span?,
+        isSampled: Boolean
     ) {
         val requestId = identifyRequest(request)
         val statusCode = response.code()
@@ -212,7 +256,7 @@ internal constructor(
             mimeType == null -> RumResourceKind.NATIVE
             else -> RumResourceKind.fromMimeType(mimeType)
         }
-        val attributes = if (span == null) {
+        val attributes = if (!isSampled || span == null) {
             emptyMap<String, Any?>()
         } else {
             mapOf(
@@ -253,20 +297,35 @@ internal constructor(
             val contentLength = body.contentLength()
             if (contentLength == 0L) null else contentLength
         } catch (e: IOException) {
-            sdkLogger.e(ERROR_PEEK_BODY, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                ERROR_PEEK_BODY,
+                e
+            )
             null
         } catch (e: IllegalStateException) {
-            sdkLogger.e(ERROR_PEEK_BODY, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                ERROR_PEEK_BODY,
+                e
+            )
             null
         } catch (e: IllegalArgumentException) {
-            sdkLogger.e(ERROR_PEEK_BODY, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                ERROR_PEEK_BODY,
+                e
+            )
             null
         }
     }
 
     // endregion
 
-    companion object {
+    internal companion object {
 
         internal const val WARN_RUM_DISABLED =
             "You set up a DatadogInterceptor, but RUM features are disabled." +

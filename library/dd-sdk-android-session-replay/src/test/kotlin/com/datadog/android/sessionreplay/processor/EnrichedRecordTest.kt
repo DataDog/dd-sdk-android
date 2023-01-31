@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.processor
 
-import com.datadog.android.sessionreplay.utils.ForgeConfigurator
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

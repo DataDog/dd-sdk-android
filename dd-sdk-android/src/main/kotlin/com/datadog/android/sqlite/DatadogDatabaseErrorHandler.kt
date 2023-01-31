@@ -40,7 +40,7 @@ class DatadogDatabaseErrorHandler(
             )
     }
 
-    companion object {
+    internal companion object {
         internal const val DATABASE_CORRUPTION_ERROR_MESSAGE =
             "Corruption reported by sqlite database: %s"
     }

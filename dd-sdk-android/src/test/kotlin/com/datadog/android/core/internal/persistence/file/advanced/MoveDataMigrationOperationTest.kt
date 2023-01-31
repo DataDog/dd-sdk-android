@@ -6,11 +6,9 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
-import android.util.Log
 import com.datadog.android.core.internal.persistence.file.FileMover
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
@@ -50,7 +48,7 @@ internal class MoveDataMigrationOperationTest {
     lateinit var mockFileMover: FileMover
 
     @Mock
-    lateinit var mockLogHander: LogHandler
+    lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`() {
@@ -58,7 +56,7 @@ internal class MoveDataMigrationOperationTest {
             fakeFromDirectory,
             fakeToDirectory,
             mockFileMover,
-            Logger(mockLogHander)
+            mockInternalLogger
         )
     }
 
@@ -69,7 +67,7 @@ internal class MoveDataMigrationOperationTest {
             null,
             fakeToDirectory,
             mockFileMover,
-            Logger(mockLogHander)
+            mockInternalLogger
         )
 
         // When
@@ -77,8 +75,9 @@ internal class MoveDataMigrationOperationTest {
 
         // Then
         verifyZeroInteractions(mockFileMover)
-        verify(mockLogHander).handleLog(
-            Log.WARN,
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
             MoveDataMigrationOperation.WARN_NULL_SOURCE_DIR
         )
     }
@@ -90,7 +89,7 @@ internal class MoveDataMigrationOperationTest {
             fakeFromDirectory,
             null,
             mockFileMover,
-            Logger(mockLogHander)
+            mockInternalLogger
         )
         whenever(mockFileMover.delete(fakeFromDirectory)) doReturn true
 
@@ -99,8 +98,9 @@ internal class MoveDataMigrationOperationTest {
 
         // Then
         verifyZeroInteractions(mockFileMover)
-        verify(mockLogHander).handleLog(
-            Log.WARN,
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
             MoveDataMigrationOperation.WARN_NULL_DEST_DIR
         )
     }

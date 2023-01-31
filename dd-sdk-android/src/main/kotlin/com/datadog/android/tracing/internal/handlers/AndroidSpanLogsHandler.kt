@@ -6,10 +6,12 @@
 
 package com.datadog.android.tracing.internal.handlers
 
-import android.util.Log
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
 import com.datadog.trace.api.DDTags
@@ -17,7 +19,7 @@ import io.opentracing.log.Fields
 import java.util.concurrent.TimeUnit
 
 internal class AndroidSpanLogsHandler(
-    val logger: Logger
+    val sdkCore: SdkCore
 ) : LogHandler {
 
     // region Span
@@ -63,16 +65,28 @@ internal class AndroidSpanLogsHandler(
         fields: MutableMap<String, Any?>,
         timestampMicroseconds: Long? = null
     ) {
-        val message = fields.remove(Fields.MESSAGE)?.toString() ?: DEFAULT_EVENT_MESSAGE
-        fields[LogAttributes.DD_TRACE_ID] = span.traceId.toString()
-        fields[LogAttributes.DD_SPAN_ID] = span.spanId.toString()
-        logger.internalLog(
-            Log.VERBOSE,
-            message,
-            null,
-            fields,
-            toMilliseconds(timestampMicroseconds)
-        )
+        val logsFeature = sdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)
+        if (logsFeature != null) {
+            val message = fields.remove(Fields.MESSAGE)?.toString() ?: DEFAULT_EVENT_MESSAGE
+            fields[LogAttributes.DD_TRACE_ID] = span.traceId.toString()
+            fields[LogAttributes.DD_SPAN_ID] = span.spanId.toString()
+            val timestamp = toMilliseconds(timestampMicroseconds) ?: System.currentTimeMillis()
+            logsFeature.sendEvent(
+                mapOf(
+                    "type" to "span_log",
+                    "loggerName" to TRACE_LOGGER_NAME,
+                    "message" to message,
+                    "attributes" to fields,
+                    "timestamp" to timestamp
+                )
+            )
+        } else {
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                MISSING_LOG_FEATURE_INFO
+            )
+        }
     }
 
     private fun extractError(
@@ -89,7 +103,7 @@ internal class AndroidSpanLogsHandler(
             val stack = stackField?.toString() ?: throwable?.loggableStackTrace()
             val message = msgField?.toString() ?: throwable?.message
 
-            span.setError(true)
+            span.isError = true
             span.setTag(DDTags.ERROR_TYPE, errorType)
             span.setTag(DDTags.ERROR_MSG, message)
             span.setTag(DDTags.ERROR_STACK, stack)
@@ -100,5 +114,9 @@ internal class AndroidSpanLogsHandler(
 
     companion object {
         internal const val DEFAULT_EVENT_MESSAGE = "Span event"
+
+        internal const val MISSING_LOG_FEATURE_INFO =
+            "Requested to write span log, but Logs feature is not registered."
+        internal const val TRACE_LOGGER_NAME = "trace"
     }
 }

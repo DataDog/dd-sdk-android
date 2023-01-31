@@ -9,8 +9,8 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -36,6 +36,7 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.telemetry.internal.TelemetryType
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.DataWriter
@@ -56,7 +57,7 @@ internal class DatadogRumMonitor(
     private val writer: DataWriter<Any>,
     internal val handler: Handler,
     internal val telemetryEventHandler: TelemetryEventHandler,
-    firstPartyHostDetector: FirstPartyHostDetector,
+    firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
@@ -71,7 +72,7 @@ internal class DatadogRumMonitor(
         samplingRate,
         backgroundTrackingEnabled,
         trackFrustrations,
-        firstPartyHostDetector,
+        firstPartyHostHeaderTypeResolver,
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
@@ -415,7 +416,12 @@ internal class DatadogRumMonitor(
                         handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
                     }
                 } catch (e: RejectedExecutionException) {
-                    devLogger.e("Unable to handle a RUM event, the ", e)
+                    internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.USER,
+                        "Unable to handle a RUM event, the ",
+                        e
+                    )
                 }
             }
         }
