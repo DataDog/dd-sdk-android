@@ -39,6 +39,7 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.log.internal.net.LogsRequestFactory
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import java.util.Locale
@@ -135,6 +136,17 @@ internal class DatadogCore(
                 emptyList()
             }
         )
+
+        if (feature is LogsFeature) {
+            this.logsFeature = feature
+
+            // TODO RUMM-2996 WebView Logs has its own configuration
+            val webViewLogsFeature = WebViewLogsFeature(
+                (feature.requestFactory as LogsRequestFactory).endpointUrl
+            )
+            this.webViewLogsFeature = webViewLogsFeature
+            registerFeature(webViewLogsFeature)
+        }
     }
 
     /** @inheritDoc */
@@ -294,29 +306,17 @@ internal class DatadogCore(
 
         applyAdditionalConfiguration(mutableConfig.additionalConfig)
 
-        initializeLogsFeature(mutableConfig.logsConfig)
         initializeTracingFeature(mutableConfig.tracesConfig)
         initializeRumFeature(mutableConfig.rumConfig)
         initializeCrashReportFeature(mutableConfig.crashReportConfig)
 
+        // TODO RUMM-2995 Handle NDK crashes for SDK v2 arch
         coreFeature.ndkCrashHandler.handleNdkCrash(this)
 
         setupLifecycleMonitorCallback(appContext)
 
         setupShutdownHook()
         sendConfigurationTelemetryEvent(configuration)
-    }
-
-    private fun initializeLogsFeature(configuration: Configuration.Feature.Logs?) {
-        if (configuration != null) {
-            val logsFeature = LogsFeature(configuration)
-            this.logsFeature = logsFeature
-            registerFeature(logsFeature)
-
-            val webViewLogsFeature = WebViewLogsFeature(configuration.endpointUrl)
-            this.webViewLogsFeature = webViewLogsFeature
-            registerFeature(webViewLogsFeature)
-        }
     }
 
     private fun initializeCrashReportFeature(configuration: Configuration.Feature.CrashReport?) {

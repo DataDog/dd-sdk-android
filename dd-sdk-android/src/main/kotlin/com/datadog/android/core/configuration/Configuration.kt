@@ -22,7 +22,6 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.event.ViewEventMapper
-import com.datadog.android.log.model.LogEvent
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
@@ -61,7 +60,6 @@ import com.datadog.android.plugin.Feature as PluginFeature
 data class Configuration
 internal constructor(
     internal val coreConfig: Core,
-    internal val logsConfig: Feature.Logs?,
     internal val tracesConfig: Feature.Tracing?,
     internal val crashReportConfig: Feature.CrashReport?,
     internal val rumConfig: Feature.RUM?,
@@ -84,12 +82,6 @@ internal constructor(
     internal sealed class Feature {
         abstract val endpointUrl: String
         abstract val plugins: List<DatadogPlugin>
-
-        internal data class Logs(
-            override val endpointUrl: String,
-            override val plugins: List<DatadogPlugin>,
-            val logsEventMapper: EventMapper<LogEvent>
-        ) : Feature()
 
         internal data class CrashReport(
             override val endpointUrl: String,
@@ -121,19 +113,16 @@ internal constructor(
 
     /**
      * A Builder class for a [Configuration].
-     * @param logsEnabled whether Logs are tracked and sent to Datadog
      * @param tracesEnabled whether Spans are tracked and sent to Datadog
      * @param crashReportsEnabled whether crashes are tracked and sent to Datadog
      * @param rumEnabled whether RUM events are tracked and sent to Datadog
      */
     @Suppress("TooManyFunctions")
     class Builder(
-        val logsEnabled: Boolean,
         val tracesEnabled: Boolean,
         val crashReportsEnabled: Boolean,
         val rumEnabled: Boolean
     ) {
-        private var logsConfig: Feature.Logs = DEFAULT_LOGS_CONFIG
         private var tracesConfig: Feature.Tracing = DEFAULT_TRACING_CONFIG
         private var crashReportConfig: Feature.CrashReport = DEFAULT_CRASH_CONFIG
         private var rumConfig: Feature.RUM = DEFAULT_RUM_CONFIG
@@ -149,7 +138,6 @@ internal constructor(
         fun build(): Configuration {
             return Configuration(
                 coreConfig = coreConfig,
-                logsConfig = if (logsEnabled) logsConfig else null,
                 tracesConfig = if (tracesEnabled) tracesConfig else null,
                 crashReportConfig = if (crashReportsEnabled) crashReportConfig else null,
                 rumConfig = if (rumEnabled) rumConfig else null,
@@ -236,22 +224,10 @@ internal constructor(
          * Let the SDK target your preferred Datadog's site.
          */
         fun useSite(site: DatadogSite): Builder {
-            logsConfig = logsConfig.copy(endpointUrl = site.logsEndpoint())
             tracesConfig = tracesConfig.copy(endpointUrl = site.tracesEndpoint())
             crashReportConfig = crashReportConfig.copy(endpointUrl = site.logsEndpoint())
             rumConfig = rumConfig.copy(endpointUrl = site.rumEndpoint())
             coreConfig = coreConfig.copy(needsClearTextHttp = false, site = site)
-            return this
-        }
-
-        /**
-         * Let the SDK target a custom server for the logs feature.
-         */
-        fun useCustomLogsEndpoint(endpoint: String): Builder {
-            applyIfFeatureEnabled(PluginFeature.LOG, "useCustomLogsEndpoint") {
-                logsConfig = logsConfig.copy(endpointUrl = endpoint)
-                checkCustomEndpoint(endpoint)
-            }
             return this
         }
 
@@ -371,7 +347,6 @@ internal constructor(
          * was enabled.
          * @param plugin a [DatadogPlugin]
          * @param feature the feature for which this plugin should be registered
-         * @see [Feature.Logs]
          * @see [Feature.CrashReport]
          * @see [Feature.Tracing]
          * @see [Feature.RUM]
@@ -390,9 +365,6 @@ internal constructor(
                     )
                     PluginFeature.TRACE -> tracesConfig = tracesConfig.copy(
                         plugins = tracesConfig.plugins + plugin
-                    )
-                    PluginFeature.LOG -> logsConfig = logsConfig.copy(
-                        plugins = logsConfig.plugins + plugin
                     )
                     PluginFeature.CRASH -> crashReportConfig = crashReportConfig.copy(
                         plugins = crashReportConfig.plugins + plugin
@@ -567,20 +539,6 @@ internal constructor(
         }
 
         /**
-         * Sets the [EventMapper] for the [LogEvent].
-         * You can use this interface implementation to modify the
-         * [LogEvent] attributes before serialisation.
-         *
-         * @param eventMapper the [EventMapper] implementation.
-         */
-        fun setLogEventMapper(eventMapper: EventMapper<LogEvent>): Builder {
-            applyIfFeatureEnabled(PluginFeature.LOG, "setLogEventMapper") {
-                logsConfig = logsConfig.copy(logsEventMapper = eventMapper)
-            }
-            return this
-        }
-
-        /**
          * Allows to provide additional configuration values which can be used by the SDK.
          * @param additionalConfig Additional configuration values.
          */
@@ -653,7 +611,6 @@ internal constructor(
             block: () -> Unit
         ) {
             val featureEnabled = when (feature) {
-                PluginFeature.LOG -> logsEnabled
                 PluginFeature.TRACE -> tracesEnabled
                 PluginFeature.CRASH -> crashReportsEnabled
                 PluginFeature.RUM -> rumEnabled
@@ -703,11 +660,6 @@ internal constructor(
             encryption = null,
             webViewTrackingHosts = emptyList(),
             site = DatadogSite.US1
-        )
-        internal val DEFAULT_LOGS_CONFIG = Feature.Logs(
-            endpointUrl = DatadogEndpoint.LOGS_US1,
-            plugins = emptyList(),
-            logsEventMapper = NoOpEventMapper()
         )
         internal val DEFAULT_CRASH_CONFIG = Feature.CrashReport(
             endpointUrl = DatadogEndpoint.LOGS_US1,

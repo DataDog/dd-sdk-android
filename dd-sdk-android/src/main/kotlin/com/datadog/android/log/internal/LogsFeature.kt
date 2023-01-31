@@ -11,7 +11,6 @@ import android.util.Log
 import androidx.annotation.AnyThread
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.event.EventMapper
@@ -42,9 +41,6 @@ internal class LogsFeature constructor(
     endpointUrl: String,
     internal val eventMapper: EventMapper<LogEvent>
 ) : StorageBackedFeature, FeatureEventReceiver {
-
-    constructor(configuration: Configuration.Feature.Logs) :
-        this(configuration.endpointUrl, configuration.logsEventMapper)
 
     internal var dataWriter: DataWriter<LogEvent> = NoOpDataWriter()
     internal lateinit var sdkCore: SdkCore

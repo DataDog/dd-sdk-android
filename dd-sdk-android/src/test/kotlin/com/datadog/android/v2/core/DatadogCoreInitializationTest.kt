@@ -24,7 +24,6 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.CustomAttributes
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -92,14 +91,12 @@ internal class DatadogCoreInitializationTest {
 
     @RepeatedTest(16)
     fun `𝕄 initialize requested features 𝕎 initialize()`(
-        @BoolForgery logsEnabled: Boolean,
         @BoolForgery tracingEnabled: Boolean,
         @BoolForgery crashReportEnabled: Boolean,
         @BoolForgery rumEnabled: Boolean
     ) {
         // Given
         val configuration = Configuration.Builder(
-            logsEnabled = logsEnabled,
             tracesEnabled = tracingEnabled,
             crashReportsEnabled = crashReportEnabled,
             rumEnabled = rumEnabled
@@ -113,17 +110,6 @@ internal class DatadogCoreInitializationTest {
         assertThat(testedCore.coreFeature.initialized.get()).isTrue()
         assertThat(testedCore.contextProvider).isNotNull
 
-        if (logsEnabled) {
-            assertThat(testedCore.logsFeature!!.initialized.get()).isTrue()
-            assertThat(testedCore.webViewLogsFeature!!.initialized.get()).isTrue()
-            assertThat(testedCore.getFeature(Feature.LOGS_FEATURE_NAME)).isNotNull
-            assertThat(testedCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)).isNotNull
-        } else {
-            assertThat(testedCore.logsFeature).isNull()
-            assertThat(testedCore.webViewLogsFeature).isNull()
-            assertThat(testedCore.getFeature(Feature.LOGS_FEATURE_NAME)).isNull()
-            assertThat(testedCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)).isNull()
-        }
         if (tracingEnabled) {
             assertThat(testedCore.tracingFeature!!.initialized.get()).isTrue()
             assertThat(testedCore.getFeature(Feature.TRACING_FEATURE_NAME)).isNotNull
@@ -156,7 +142,6 @@ internal class DatadogCoreInitializationTest {
         // Given
         fakeCredentials = fakeCredentials.copy(rumApplicationId = null)
         val configuration = Configuration.Builder(
-            logsEnabled = false,
             tracesEnabled = false,
             crashReportsEnabled = false,
             rumEnabled = true
@@ -182,7 +167,6 @@ internal class DatadogCoreInitializationTest {
         // Given
         fakeCredentials = fakeCredentials.copy(rumApplicationId = null)
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = false,
             crashReportsEnabled = false,
             rumEnabled = false
@@ -214,7 +198,6 @@ internal class DatadogCoreInitializationTest {
         appContext.fakeAppInfo.flags = fakeFlags and ApplicationInfo.FLAG_DEBUGGABLE.inv()
         fakeCredentials = fakeCredentials.copy(envName = invalidEnvName)
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -242,7 +225,6 @@ internal class DatadogCoreInitializationTest {
         appContext.fakeAppInfo.flags = fakeFlags or ApplicationInfo.FLAG_DEBUGGABLE
         fakeCredentials = fakeCredentials.copy(envName = invalidEnvName)
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -272,7 +254,6 @@ internal class DatadogCoreInitializationTest {
     fun `𝕄 initialize the ConsentProvider with PENDING 𝕎 initializing()`() {
         // Given
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -294,7 +275,6 @@ internal class DatadogCoreInitializationTest {
         // Given
         appContext.fakeAppInfo.flags = fakeFlags and ApplicationInfo.FLAG_DEBUGGABLE.inv()
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -318,7 +298,6 @@ internal class DatadogCoreInitializationTest {
         // Given
         appContext.fakeAppInfo.flags = fakeFlags or ApplicationInfo.FLAG_DEBUGGABLE
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -343,7 +322,6 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -365,7 +343,6 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -387,7 +364,6 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -409,7 +385,6 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -431,7 +406,6 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -453,7 +427,6 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -477,7 +450,6 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -499,7 +471,6 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -521,7 +492,6 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -543,7 +513,6 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -569,7 +538,6 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true

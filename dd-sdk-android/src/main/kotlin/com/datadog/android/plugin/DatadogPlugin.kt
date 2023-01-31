@@ -11,7 +11,6 @@ import com.datadog.android.privacy.TrackingConsentProviderCallback
 /**
  * DatadogPlugin interface. You can attach as many as you want for any existing feature in the
  * SDK.
- * @see [Feature.LOG]
  * @see [Feature.CRASH]
  * @see [Feature.TRACE]
  * @see [Feature.RUM]

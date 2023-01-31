@@ -8,8 +8,8 @@ package com.datadog.android.log
 
 import android.content.Context
 import com.datadog.android.Datadog
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.sampling.RateBasedSampler
+import com.datadog.android.event.EventMapper
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler
@@ -17,6 +17,7 @@ import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
@@ -34,6 +35,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -42,6 +44,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -55,14 +58,17 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class LoggerBuilderTest {
 
-    @Forgery
-    lateinit var fakeConfig: Configuration.Feature.Logs
+    @StringForgery(regex = "https://[a-z]+\\.com")
+    lateinit var fakeLogsEndpointUrl: String
+
+    @Mock
+    lateinit var mockEventMapper: EventMapper<LogEvent>
 
     @BeforeEach
     fun `set up`() {
         val mockCore = mock<DatadogCore>()
         whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
-        val logsFeature = LogsFeature(fakeConfig)
+        val logsFeature = LogsFeature(fakeLogsEndpointUrl, mockEventMapper)
         logsFeature.onInitialize(mockCore, mock())
         whenever(mockCore.logsFeature) doReturn logsFeature
 

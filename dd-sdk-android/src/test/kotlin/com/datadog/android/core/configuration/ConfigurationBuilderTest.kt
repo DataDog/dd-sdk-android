@@ -17,7 +17,6 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.event.ViewEventMapper
-import com.datadog.android.log.model.LogEvent
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.assertj.ConfigurationRumAssert.Companion.assertThat
@@ -84,7 +83,6 @@ internal class ConfigurationBuilderTest {
     @BeforeEach
     fun `set up`() {
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -109,13 +107,6 @@ internal class ConfigurationBuilderTest {
                 encryption = null,
                 webViewTrackingHosts = emptyList(),
                 site = DatadogSite.US1
-            )
-        )
-        assertThat(config.logsConfig).isEqualTo(
-            Configuration.Feature.Logs(
-                endpointUrl = DatadogEndpoint.LOGS_US1,
-                plugins = emptyList(),
-                logsEventMapper = NoOpEventMapper()
             )
         )
         assertThat(config.tracesConfig)
@@ -160,31 +151,9 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config without logsConfig 𝕎 build() { logs disabled }`() {
-        // Given
-        testedBuilder = Configuration.Builder(
-            logsEnabled = false,
-            tracesEnabled = true,
-            crashReportsEnabled = true,
-            rumEnabled = true
-        )
-
-        // When
-        val config = testedBuilder.build()
-
-        // Then
-        assertThat(config.logsConfig).isNull()
-        assertThat(config.tracesConfig).isNotNull
-        assertThat(config.crashReportConfig).isNotNull
-        assertThat(config.rumConfig).isNotNull
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
     fun `𝕄 build config without tracesConfig 𝕎 build() { traces disabled }`() {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = false,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -194,7 +163,6 @@ internal class ConfigurationBuilderTest {
         val config = testedBuilder.build()
 
         // Then
-        assertThat(config.logsConfig).isNotNull
         assertThat(config.tracesConfig).isNull()
         assertThat(config.crashReportConfig).isNotNull
         assertThat(config.rumConfig).isNotNull
@@ -205,7 +173,6 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 build config without crashReportConfig 𝕎 build() { crashReports disabled }`() {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = false,
             rumEnabled = true
@@ -215,7 +182,6 @@ internal class ConfigurationBuilderTest {
         val config = testedBuilder.build()
 
         // Then
-        assertThat(config.logsConfig).isNotNull
         assertThat(config.tracesConfig).isNotNull
         assertThat(config.crashReportConfig).isNull()
         assertThat(config.rumConfig).isNotNull
@@ -226,7 +192,6 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 build config without rumConfig 𝕎 build() { RUM disabled }`() {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = false
@@ -236,7 +201,6 @@ internal class ConfigurationBuilderTest {
         val config = testedBuilder.build()
 
         // Then
-        assertThat(config.logsConfig).isNotNull
         assertThat(config.tracesConfig).isNotNull
         assertThat(config.crashReportConfig).isNotNull
         assertThat(config.rumConfig).isNull()
@@ -254,9 +218,6 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(site = site)
         )
-        assertThat(config.logsConfig).isEqualTo(
-            Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = site.logsEndpoint())
-        )
         assertThat(config.tracesConfig).isEqualTo(
             Configuration.DEFAULT_TRACING_CONFIG.copy(endpointUrl = site.tracesEndpoint())
         )
@@ -271,14 +232,12 @@ internal class ConfigurationBuilderTest {
 
     @Test
     fun `𝕄 build config with custom endpoints 𝕎 useCustomXXXEndpoint() and build()`(
-        @StringForgery(regex = "https://[a-z]+\\.com") logsUrl: String,
         @StringForgery(regex = "https://[a-z]+\\.com") tracesUrl: String,
         @StringForgery(regex = "https://[a-z]+\\.com") crashReportsUrl: String,
         @StringForgery(regex = "https://[a-z]+\\.com") rumUrl: String
     ) {
         // When
         val config = testedBuilder
-            .useCustomLogsEndpoint(logsUrl)
             .useCustomTracesEndpoint(tracesUrl)
             .useCustomCrashReportsEndpoint(crashReportsUrl)
             .useCustomRumEndpoint(rumUrl)
@@ -289,9 +248,6 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_CORE_CONFIG.copy(
                 needsClearTextHttp = false
             )
-        )
-        assertThat(config.logsConfig).isEqualTo(
-            Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = logsUrl)
         )
         assertThat(config.tracesConfig).isEqualTo(
             Configuration.DEFAULT_TRACING_CONFIG.copy(endpointUrl = tracesUrl)
@@ -307,14 +263,12 @@ internal class ConfigurationBuilderTest {
 
     @Test
     fun `𝕄 build config with custom cleartext endpoints 𝕎 useCustomXXXEndpoint() and build()`(
-        @StringForgery(regex = "http://[a-z]+\\.com") logsUrl: String,
         @StringForgery(regex = "http://[a-z]+\\.com") tracesUrl: String,
         @StringForgery(regex = "http://[a-z]+\\.com") crashReportsUrl: String,
         @StringForgery(regex = "http://[a-z]+\\.com") rumUrl: String
     ) {
         // When
         val config = testedBuilder
-            .useCustomLogsEndpoint(logsUrl)
             .useCustomTracesEndpoint(tracesUrl)
             .useCustomCrashReportsEndpoint(crashReportsUrl)
             .useCustomRumEndpoint(rumUrl)
@@ -325,9 +279,6 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_CORE_CONFIG.copy(
                 needsClearTextHttp = true
             )
-        )
-        assertThat(config.logsConfig).isEqualTo(
-            Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = logsUrl)
         )
         assertThat(config.tracesConfig).isEqualTo(
             Configuration.DEFAULT_TRACING_CONFIG.copy(endpointUrl = tracesUrl)
@@ -352,7 +303,6 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig!!)
@@ -379,7 +329,6 @@ internal class ConfigurationBuilderTest {
         // Then
 
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig!!)
@@ -400,7 +349,6 @@ internal class ConfigurationBuilderTest {
         // Then
 
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig!!)
@@ -424,7 +372,6 @@ internal class ConfigurationBuilderTest {
         // Then
 
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig!!)
@@ -445,7 +392,6 @@ internal class ConfigurationBuilderTest {
         // Then
 
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig!!)
@@ -474,7 +420,6 @@ internal class ConfigurationBuilderTest {
         // Then
 
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig!!)
@@ -498,7 +443,6 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(
@@ -522,7 +466,6 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(
@@ -545,7 +488,6 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(
@@ -571,7 +513,6 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(
@@ -593,7 +534,6 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(
@@ -615,7 +555,6 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(
@@ -638,7 +577,6 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(
@@ -661,7 +599,6 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         val expectedRumEventMapper = RumEventMapper(viewEventMapper = eventMapper)
@@ -685,7 +622,6 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         val expectedRumEventMapper = RumEventMapper(resourceEventMapper = eventMapper)
@@ -709,7 +645,6 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         val expectedRumEventMapper = RumEventMapper(actionEventMapper = eventMapper)
@@ -733,7 +668,6 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         val expectedRumEventMapper = RumEventMapper(errorEventMapper = eventMapper)
@@ -757,7 +691,6 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         val expectedRumEventMapper = RumEventMapper(longTaskEventMapper = eventMapper)
@@ -781,7 +714,6 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         val expectedRumEventMapper = RumEventMapper(telemetryConfigurationMapper = eventMapper)
@@ -796,14 +728,12 @@ internal class ConfigurationBuilderTest {
     @Test
     fun `𝕄 build config with plugin 𝕎 addPlugin() and build()`() {
         // Given
-        val logsPlugin: DatadogPlugin = mock()
         val tracesPlugin: DatadogPlugin = mock()
         val rumPlugin: DatadogPlugin = mock()
         val crashPlugin: DatadogPlugin = mock()
 
         // When
         val config = testedBuilder
-            .addPlugin(logsPlugin, Feature.LOG)
             .addPlugin(tracesPlugin, Feature.TRACE)
             .addPlugin(rumPlugin, Feature.RUM)
             .addPlugin(crashPlugin, Feature.CRASH)
@@ -811,11 +741,6 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(
-            Configuration.DEFAULT_LOGS_CONFIG.copy(
-                plugins = listOf(logsPlugin)
-            )
-        )
         assertThat(config.tracesConfig).isEqualTo(
             Configuration.DEFAULT_TRACING_CONFIG.copy(
                 plugins = listOf(tracesPlugin)
@@ -838,7 +763,6 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 warn user 𝕎 trackInteractions() {RUM disabled}`() {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = false
@@ -865,7 +789,6 @@ internal class ConfigurationBuilderTest {
     ) {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = false
@@ -890,7 +813,6 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 warn user 𝕎 useViewTrackingStrategy() {RUM disabled}`() {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = false
@@ -918,7 +840,6 @@ internal class ConfigurationBuilderTest {
     ) {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = false
@@ -943,7 +864,6 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 warn user 𝕎 setRumViewEventMapper() {RUM disabled}`() {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = false
@@ -969,7 +889,6 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 warn user 𝕎 setRumResourceEventMapper() {RUM disabled}`() {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = false
@@ -995,7 +914,6 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 warn user 𝕎 setRumActionEventMapper() {RUM disabled}`() {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = false
@@ -1021,7 +939,6 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 warn user 𝕎 setRumErrorEventMapper() {RUM disabled}`() {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = false
@@ -1047,7 +964,6 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 warn user 𝕎 setRumLongTaskEventMapper() {RUM disabled}`() {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = false
@@ -1070,36 +986,9 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 warn user 𝕎 addPlugin() {log feature disabled}`() {
-        // Given
-        testedBuilder = Configuration.Builder(
-            logsEnabled = false,
-            tracesEnabled = true,
-            crashReportsEnabled = true,
-            rumEnabled = true
-        )
-        val logsPlugin: DatadogPlugin = mock()
-
-        // When
-        testedBuilder.addPlugin(logsPlugin, Feature.LOG)
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Configuration.ERROR_FEATURE_DISABLED.format(
-                Locale.US,
-                Feature.LOG.featureName,
-                "addPlugin"
-            )
-        )
-    }
-
-    @Test
     fun `𝕄 warn user 𝕎 addPlugin() {trace feature disabled}`() {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = false,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -1125,7 +1014,6 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 warn user 𝕎 addPlugin() {crash feature disabled}`() {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = false,
             rumEnabled = true
@@ -1151,7 +1039,6 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 warn user 𝕎 addPlugin() {RUM feature disabled}`() {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = false
@@ -1179,7 +1066,6 @@ internal class ConfigurationBuilderTest {
     ) {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = forge.aBool(),
             tracesEnabled = forge.aBool(),
             crashReportsEnabled = forge.aBool(),
             rumEnabled = forge.aBool()
@@ -1189,7 +1075,7 @@ internal class ConfigurationBuilderTest {
         // When
         testedBuilder.addPlugin(
             mockPlugin,
-            forge.anElementFrom(Feature.CRASH, Feature.RUM, Feature.LOG, Feature.TRACE)
+            forge.anElementFrom(Feature.CRASH, Feature.RUM, Feature.TRACE)
         )
 
         // Then
@@ -1202,39 +1088,11 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 warn user 𝕎 useCustomLogsEndpoint() {Logs feature disabled}`(
-        @StringForgery(regex = "https://[a-z]+\\.com") url: String
-    ) {
-        // Given
-        testedBuilder = Configuration.Builder(
-            logsEnabled = false,
-            tracesEnabled = true,
-            crashReportsEnabled = true,
-            rumEnabled = true
-        )
-
-        // When
-        testedBuilder.useCustomLogsEndpoint(url)
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Configuration.ERROR_FEATURE_DISABLED.format(
-                Locale.US,
-                Feature.LOG.featureName,
-                "useCustomLogsEndpoint"
-            )
-        )
-    }
-
-    @Test
     fun `𝕄 warn user 𝕎 useCustomTracesEndpoint() {Trace feature disabled}`(
         @StringForgery(regex = "https://[a-z]+\\.com") url: String
     ) {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = false,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -1261,7 +1119,6 @@ internal class ConfigurationBuilderTest {
     ) {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = false,
             rumEnabled = true
@@ -1288,7 +1145,6 @@ internal class ConfigurationBuilderTest {
     ) {
         // Given
         testedBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = false
@@ -1328,7 +1184,6 @@ internal class ConfigurationBuilderTest {
                 hosts.associateWith { setOf(TracingHeaderType.DATADOG) }
             )
         )
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(
@@ -1366,7 +1221,6 @@ internal class ConfigurationBuilderTest {
                 }
             )
         )
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
@@ -1391,7 +1245,6 @@ internal class ConfigurationBuilderTest {
                 hosts.associate { URL(it).host to setOf(TracingHeaderType.DATADOG) }
             )
         )
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
@@ -1441,7 +1294,6 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHostsWithHeaderTypes = hostWithHeaderTypes)
         )
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
@@ -1464,7 +1316,6 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(webViewTrackingHosts = hosts)
         )
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(
@@ -1496,7 +1347,6 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(webViewTrackingHosts = hosts)
         )
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
@@ -1519,7 +1369,6 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_CORE_CONFIG
                 .copy(webViewTrackingHosts = hosts.map { URL(it).host })
         )
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
@@ -1561,7 +1410,6 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(batchSize = batchSize)
         )
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
@@ -1598,7 +1446,6 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(uploadFrequency = uploadFrequency)
         )
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
@@ -1621,7 +1468,6 @@ internal class ConfigurationBuilderTest {
         assertThat(config.additionalConfig).isEqualTo(additionalConfig)
 
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
@@ -1639,32 +1485,10 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(
             Configuration.DEFAULT_TRACING_CONFIG.copy(
                 spanEventMapper = mockEventMapper
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 build config with Log eventMapper 𝕎 setLogEventMapper() and build()`() {
-        // Given
-        val mockEventMapper: EventMapper<LogEvent> = mock()
-
-        // When
-        val config = testedBuilder
-            .setLogEventMapper(mockEventMapper)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
-        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(
-            Configuration.DEFAULT_LOGS_CONFIG.copy(
-                logsEventMapper = mockEventMapper
             )
         )
     }
@@ -1689,7 +1513,6 @@ internal class ConfigurationBuilderTest {
         )
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
     }
 
     @Test
@@ -1711,7 +1534,6 @@ internal class ConfigurationBuilderTest {
         )
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
     }
 
     @Test
@@ -1732,7 +1554,6 @@ internal class ConfigurationBuilderTest {
         )
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
     }
 
     @Test

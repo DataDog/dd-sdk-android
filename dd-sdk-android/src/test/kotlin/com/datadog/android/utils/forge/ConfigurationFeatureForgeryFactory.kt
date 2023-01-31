@@ -14,7 +14,6 @@ internal class ConfigurationFeatureForgeryFactory :
     ForgeryFactory<Configuration.Feature> {
     override fun getForgery(forge: Forge): Configuration.Feature {
         return forge.anElementFrom(
-            forge.getForgery<Configuration.Feature.Logs>(),
             forge.getForgery<Configuration.Feature.CrashReport>(),
             forge.getForgery<Configuration.Feature.Tracing>(),
             forge.getForgery<Configuration.Feature.RUM>()
