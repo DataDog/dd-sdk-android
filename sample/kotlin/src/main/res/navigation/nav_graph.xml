@@ -65,6 +65,11 @@
     <fragment android:id="@+id/fragment_about"
               android:name="com.datadog.android.sample.about.AboutFragment"
               android:label="@string/title_about"/>
+
+    <fragment android:id="@+id/fragment_text_view_components"
+        android:name="com.datadog.android.sample.input.TextViewComponentsFragment"
+        android:label="@string/text_view_components"/>
+
     <dialog android:id="@+id/fragment_gdpr"
               android:name="com.datadog.android.sample.gdpr.GdprDialogFragment"
               android:label="@string/title_gdpr"/>

@@ -38,6 +38,7 @@ import com.datadog.android.sample.picture.PicassoImageLoader
 import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayFeature
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.tracing.TracingInterceptor
@@ -116,11 +117,14 @@ class SampleApplication : Application() {
         )
         Datadog.setVerbosity(Log.VERBOSE)
 
-        val sessionReplayConfig = SessionReplayConfiguration.Builder().apply {
-            if (BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL.isNotBlank()) {
-                useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
+        val sessionReplayConfig = SessionReplayConfiguration.Builder()
+            .apply {
+                if (BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL.isNotBlank()) {
+                    useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
+                }
             }
-        }.build()
+            .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
+            .build()
         val sessionReplayFeature = SessionReplayFeature(sessionReplayConfig)
         Datadog.registerFeature(sessionReplayFeature)
 
