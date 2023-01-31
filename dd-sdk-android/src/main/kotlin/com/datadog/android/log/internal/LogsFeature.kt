@@ -9,8 +9,12 @@ package com.datadog.android.log.internal
 import android.content.Context
 import android.util.Log
 import androidx.annotation.AnyThread
+import com.datadog.android.DatadogEndpoint
+import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
@@ -34,9 +38,13 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-internal class LogsFeature(
-    private val configuration: Configuration.Feature.Logs
+internal class LogsFeature constructor(
+    endpointUrl: String,
+    internal val eventMapper: EventMapper<LogEvent>
 ) : StorageBackedFeature, FeatureEventReceiver {
+
+    constructor(configuration: Configuration.Feature.Logs) :
+        this(configuration.endpointUrl, configuration.logsEventMapper)
 
     internal var dataWriter: DataWriter<LogEvent> = NoOpDataWriter()
     internal lateinit var sdkCore: SdkCore
@@ -51,11 +59,11 @@ internal class LogsFeature(
         this.sdkCore = sdkCore
         sdkCore.setEventReceiver(name, this)
 
-        dataWriter = createDataWriter(configuration)
+        dataWriter = createDataWriter(eventMapper)
         initialized.set(true)
     }
 
-    override val requestFactory: RequestFactory = LogsRequestFactory(configuration.endpointUrl)
+    override val requestFactory: RequestFactory = LogsRequestFactory(endpointUrl)
     override val storageConfiguration: FeatureStorageConfiguration =
         FeatureStorageConfiguration.DEFAULT
 
@@ -100,11 +108,11 @@ internal class LogsFeature(
     // region Internal
 
     private fun createDataWriter(
-        configuration: Configuration.Feature.Logs
+        eventMapper: EventMapper<LogEvent>
     ): DataWriter<LogEvent> {
         return LogsDataWriter(
             serializer = MapperSerializer(
-                LogEventMapperWrapper(configuration.logsEventMapper),
+                LogEventMapperWrapper(eventMapper),
                 LogEventSerializer()
             ),
             internalLogger = internalLogger
@@ -254,6 +262,52 @@ internal class LogsFeature(
                 @Suppress("ThreadSafety") // called in a worker thread context
                 dataWriter.write(eventBatchWriter, log)
             }
+    }
+
+    /**
+     * A Builder class for a [LogsFeature].
+     */
+    class Builder {
+        private var endpointUrl = DatadogEndpoint.LOGS_US1
+        private var logsEventMapper: EventMapper<LogEvent> = NoOpEventMapper()
+
+        /**
+         * Let the Logs feature target your preferred Datadog's site.
+         */
+        fun useSite(site: DatadogSite): Builder {
+            endpointUrl = site.logsEndpoint()
+            return this
+        }
+
+        /**
+         * Let the Logs feature target a custom server.
+         */
+        fun useCustomEndpoint(endpoint: String): Builder {
+            endpointUrl = endpoint
+            return this
+        }
+
+        /**
+         * Sets the [EventMapper] for the [LogEvent].
+         * You can use this interface implementation to modify the
+         * [LogEvent] attributes before serialisation.
+         *
+         * @param eventMapper the [EventMapper] implementation.
+         */
+        fun setLogEventMapper(eventMapper: EventMapper<LogEvent>): Builder {
+            logsEventMapper = eventMapper
+            return this
+        }
+
+        /**
+         * Builds a [LogsFeature] based on the current state of this Builder.
+         */
+        fun build(): LogsFeature {
+            return LogsFeature(
+                endpointUrl = endpointUrl,
+                eventMapper = logsEventMapper
+            )
+        }
     }
 
     // endregion
