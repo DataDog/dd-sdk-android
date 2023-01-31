@@ -16,6 +16,3 @@ out/
 
 # Gradle files
 build/
-
-# Generated Poko
-src/main/kotlin/com/datadog/android/sessionreplay/model/
