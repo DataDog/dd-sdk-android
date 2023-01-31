@@ -22,6 +22,7 @@ include(":instrumented:integration")
 include(":instrumented:nightly-tests")
 
 include(":library:dd-sdk-android-session-replay")
+include(":library:dd-sdk-android-logs")
 
 include(":sample:kotlin")
 
