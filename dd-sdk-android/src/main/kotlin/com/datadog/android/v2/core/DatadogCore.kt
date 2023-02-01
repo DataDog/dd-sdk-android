@@ -118,6 +118,10 @@ internal class DatadogCore(
         }
 
     /** @inheritDoc */
+    override val service: String
+        get() = coreFeature.serviceName
+
+    /** @inheritDoc */
     override fun registerFeature(feature: Feature) {
         val sdkFeature = SdkFeature(
             coreFeature,

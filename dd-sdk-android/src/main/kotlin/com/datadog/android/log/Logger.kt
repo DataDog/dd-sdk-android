@@ -8,7 +8,6 @@ package com.datadog.android.log
 
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.internalLogger
@@ -222,19 +221,18 @@ internal constructor(internal var handler: LogHandler) {
          */
         fun build(): Logger {
             val datadogCore = Datadog.globalSdkCore as? DatadogCore
-            val coreFeature = datadogCore?.coreFeature
             val logsFeature = datadogCore
                 ?.getFeature(Feature.LOGS_FEATURE_NAME)
                 ?.unwrap<LogsFeature>()
             val handler = when {
                 datadogLogsEnabled && logcatLogsEnabled -> {
                     CombinedLogHandler(
-                        buildDatadogHandler(datadogCore, coreFeature, logsFeature),
-                        buildLogcatHandler(coreFeature)
+                        buildDatadogHandler(datadogCore, logsFeature),
+                        buildLogcatHandler(datadogCore)
                     )
                 }
-                datadogLogsEnabled -> buildDatadogHandler(datadogCore, coreFeature, logsFeature)
-                logcatLogsEnabled -> buildLogcatHandler(coreFeature)
+                datadogLogsEnabled -> buildDatadogHandler(datadogCore, logsFeature)
+                logcatLogsEnabled -> buildLogcatHandler(datadogCore)
                 else -> NoOpLogHandler()
             }
 
@@ -333,19 +331,18 @@ internal constructor(internal var handler: LogHandler) {
 
         // region Internal
 
-        private fun buildLogcatHandler(coreFeature: CoreFeature?): LogHandler {
+        private fun buildLogcatHandler(sdkCore: SdkCore?): LogHandler {
             return LogcatLogHandler(
-                serviceName = serviceName ?: coreFeature?.serviceName ?: "unknown",
+                serviceName = serviceName ?: sdkCore?.service ?: "unknown",
                 useClassnameAsTag = true
             )
         }
 
         private fun buildDatadogHandler(
             sdkCore: SdkCore?,
-            coreFeature: CoreFeature?,
             logsFeature: LogsFeature?
         ): LogHandler {
-            if (sdkCore == null || coreFeature == null || logsFeature == null) {
+            if (sdkCore == null || logsFeature == null) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
@@ -357,9 +354,9 @@ internal constructor(internal var handler: LogHandler) {
 
             return DatadogLogHandler(
                 sdkCore = sdkCore,
-                loggerName = loggerName ?: coreFeature.packageName,
+                loggerName = loggerName ?: logsFeature.packageName,
                 logGenerator = DatadogLogGenerator(
-                    serviceName ?: coreFeature.serviceName
+                    serviceName ?: sdkCore.service
                 ),
                 writer = logsFeature.dataWriter,
                 minLogPriority = minDatadogLogsPriority,

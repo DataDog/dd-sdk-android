@@ -6,10 +6,8 @@
 
 package com.datadog.android.log
 
-import android.content.Context
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.sampling.RateBasedSampler
-import com.datadog.android.event.EventMapper
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler
@@ -18,8 +16,6 @@ import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
@@ -27,6 +23,7 @@ import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -60,23 +57,30 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class LoggerBuilderTest {
 
-    @StringForgery(regex = "https://[a-z]+\\.com")
-    lateinit var fakeLogsEndpointUrl: String
-
-    @Mock
-    lateinit var mockEventMapper: EventMapper<LogEvent>
-
     @Mock
     lateinit var mockLogsFeatureScope: FeatureScope
+
+    @Mock
+    lateinit var mockLogsFeature: LogsFeature
+
+    @Mock
+    lateinit var mockDataWriter: DataWriter<LogEvent>
+
+    @StringForgery
+    lateinit var fakeServiceName: String
+
+    @StringForgery(regex = "[a-z]{2,4}(\\.[a-z]{3,8}){2,4}")
+    lateinit var fakePackageName: String
 
     @BeforeEach
     fun `set up`() {
         val mockCore = mock<DatadogCore>()
-        whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
+        whenever(mockLogsFeature.packageName) doReturn fakePackageName
+        whenever(mockLogsFeature.dataWriter) doReturn mockDataWriter
+        whenever(mockCore.service) doReturn fakeServiceName
+
         whenever(mockCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn mockLogsFeatureScope
-        val logsFeature = LogsFeature(fakeLogsEndpointUrl, mockEventMapper)
-        logsFeature.onInitialize(mockCore, mock())
-        whenever(mockLogsFeatureScope.unwrap<LogsFeature>()) doReturn logsFeature
+        whenever(mockLogsFeatureScope.unwrap<LogsFeature>()) doReturn mockLogsFeature
 
         Datadog.globalSdkCore = mockCore
     }
@@ -132,22 +136,16 @@ internal class LoggerBuilderTest {
             .build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
-        assertThat(handler.writer).isSameAs(
-            (
-                Datadog.globalSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)!!
-                    .unwrap<LogsFeature>()
-                )
-                .dataWriter
-        )
+        assertThat(handler.writer).isSameAs(mockDataWriter)
         assertThat(handler.bundleWithTraces).isTrue
         assertThat(handler.sampler).isInstanceOf(RateBasedSampler::class.java)
         assertThat((handler.sampler as RateBasedSampler).sampleRate).isEqualTo(1.0f)
         assertThat(handler.minLogPriority).isEqualTo(-1)
-        assertThat(handler.loggerName).isEqualTo(appContext.fakePackageName)
+        assertThat(handler.loggerName).isEqualTo(fakePackageName)
         assertThat(handler.attachNetworkInfo).isFalse
 
         val logGenerator: DatadogLogGenerator = handler.logGenerator as DatadogLogGenerator
-        assertThat(logGenerator.serviceName).isEqualTo(coreFeature.fakeServiceName)
+        assertThat(logGenerator.serviceName).isEqualTo(fakeServiceName)
     }
 
     @Test
@@ -272,14 +270,12 @@ internal class LoggerBuilderTest {
     }
 
     companion object {
-        val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
         val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, coreFeature)
+            return listOf(logger)
         }
     }
 }

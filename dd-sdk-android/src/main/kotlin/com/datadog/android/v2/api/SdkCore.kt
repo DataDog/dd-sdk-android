@@ -23,6 +23,11 @@ interface SdkCore {
     val time: TimeInfo
 
     /**
+     * Name of the service (given during the SDK initialization, otherwise package name is used).
+     */
+    val service: String
+
+    /**
      * Registers a feature to this instance of the Datadog SDK.
      *
      * @param feature the feature to be registered.

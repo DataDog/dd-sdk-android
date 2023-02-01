@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal
 
+import android.content.Context
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.LogAttributes
@@ -37,7 +38,6 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -89,6 +89,9 @@ internal class LogsFeatureTest {
     @Mock
     lateinit var mockEventMapper: EventMapper<LogEvent>
 
+    @Mock
+    lateinit var mockApplicationContext: Context
+
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
@@ -107,6 +110,9 @@ internal class LogsFeatureTest {
     @StringForgery(StringForgeryType.ALPHABETICAL)
     lateinit var fakeThreadName: String
 
+    @StringForgery(regex = "[a-z]{2,4}(\\.[a-z]{3,8}){2,4}")
+    lateinit var fakePackageName: String
+
     private var fakeServerTimeOffset: Long = 0L
 
     @BeforeEach
@@ -116,6 +122,7 @@ internal class LogsFeatureTest {
         val now = System.currentTimeMillis()
         fakeServerTimeOffset = forge.aLong(min = -now, max = Long.MAX_VALUE - now)
 
+        whenever(mockApplicationContext.packageName) doReturn fakePackageName
         whenever(
             mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         ) doReturn mockLogsFeatureScope
@@ -149,7 +156,7 @@ internal class LogsFeatureTest {
     @Test
     fun `𝕄 initialize data writer 𝕎 initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, mock())
+        testedFeature.onInitialize(mockSdkCore, mockApplicationContext)
 
         // Then
         assertThat(testedFeature.dataWriter)
@@ -159,7 +166,7 @@ internal class LogsFeatureTest {
     @Test
     fun `𝕄 use the eventMapper 𝕎 initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, mock())
+        testedFeature.onInitialize(mockSdkCore, mockApplicationContext)
 
         // Then
         val dataWriter = testedFeature.dataWriter as? LogsDataWriter
@@ -167,6 +174,15 @@ internal class LogsFeatureTest {
         val logEventMapperWrapper = logMapperSerializer?.eventMapper as? LogEventMapperWrapper
         val logEventMapper = logEventMapperWrapper?.wrappedEventMapper
         assertThat(logEventMapper).isSameAs(mockEventMapper)
+    }
+
+    @Test
+    fun `𝕄 initialize packageName 𝕎 initialize()`() {
+        // When
+        testedFeature.onInitialize(mockSdkCore, mockApplicationContext)
+
+        // Then
+        assertThat(testedFeature.packageName).isEqualTo(fakePackageName)
     }
 
     @Test

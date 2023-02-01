@@ -48,6 +48,7 @@ class LogsFeature internal constructor(
     internal var dataWriter: DataWriter<LogEvent> = NoOpDataWriter()
     internal lateinit var sdkCore: SdkCore
     internal val initialized = AtomicBoolean(false)
+    internal var packageName = ""
     private val logGenerator = DatadogLogGenerator()
 
     // region Feature
@@ -57,6 +58,8 @@ class LogsFeature internal constructor(
     override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
         this.sdkCore = sdkCore
         sdkCore.setEventReceiver(name, this)
+
+        packageName = appContext.packageName
 
         dataWriter = createDataWriter(eventMapper)
         initialized.set(true)
@@ -69,6 +72,7 @@ class LogsFeature internal constructor(
     override fun onStop() {
         sdkCore.removeEventReceiver(name)
         dataWriter = NoOpDataWriter()
+        packageName = ""
         initialized.set(false)
     }
 
