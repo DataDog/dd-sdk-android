@@ -10,7 +10,6 @@ package com.datadog.android.plugin
  * Provides the available feature for which a [DatadogPlugin] can be assigned.
  */
 enum class Feature(internal val featureName: String) {
-    LOG("Logging"),
     CRASH("Crash Reporting"),
     TRACE("Tracing"),
     RUM("RUM")

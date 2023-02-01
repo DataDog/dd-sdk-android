@@ -84,14 +84,13 @@ enum com.datadog.android.core.configuration.BatchSize
   - LARGE
 data class com.datadog.android.core.configuration.Configuration
   class Builder
-    constructor(Boolean, Boolean, Boolean, Boolean)
+    constructor(Boolean, Boolean, Boolean)
     fun build(): Configuration
     fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
     fun setFirstPartyHosts(List<String>): Builder
     fun setFirstPartyHostsWithHeaderType(Map<String, Set<com.datadog.android.tracing.TracingHeaderType>>): Builder
     fun setWebViewTrackingHosts(List<String>): Builder
     fun useSite(com.datadog.android.DatadogSite): Builder
-    fun useCustomLogsEndpoint(String): Builder
     fun useCustomTracesEndpoint(String): Builder
     fun useCustomCrashReportsEndpoint(String): Builder
     fun useCustomRumEndpoint(String): Builder
@@ -112,7 +111,6 @@ data class com.datadog.android.core.configuration.Configuration
     fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
     fun setRumLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
     fun setSpanEventMapper(com.datadog.android.event.SpanEventMapper): Builder
-    fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
     fun setAdditionalConfiguration(Map<String, Any>): Builder
     fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
     fun setEncryption(com.datadog.android.security.Encryption): Builder
@@ -222,6 +220,18 @@ class com.datadog.android.log.Logger
   fun addTag(String)
   fun removeTag(String)
   fun removeTagsWithKey(String)
+class com.datadog.android.log.internal.LogsFeature : com.datadog.android.v2.api.StorageBackedFeature, com.datadog.android.v2.api.FeatureEventReceiver
+  override val name: String
+  override fun onInitialize(com.datadog.android.v2.api.SdkCore, android.content.Context)
+  override val requestFactory: com.datadog.android.v2.api.RequestFactory
+  override val storageConfiguration: com.datadog.android.v2.api.FeatureStorageConfiguration
+  override fun onStop()
+  override fun onReceive(Any)
+  class Builder
+    fun useSite(com.datadog.android.DatadogSite): Builder
+    fun useCustomEndpoint(String): Builder
+    fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
+    fun build(): LogsFeature
 data class com.datadog.android.plugin.DatadogContext
   constructor(DatadogRumContext? = null)
 DEPRECATED interface com.datadog.android.plugin.DatadogPlugin : com.datadog.android.privacy.TrackingConsentProviderCallback
@@ -234,7 +244,6 @@ data class com.datadog.android.plugin.DatadogRumContext
   constructor(String? = null, String? = null, String? = null)
 enum com.datadog.android.plugin.Feature
   constructor(String)
-  - LOG
   - CRASH
   - TRACE
   - RUM

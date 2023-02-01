@@ -12,6 +12,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
@@ -55,6 +56,7 @@ internal class EncryptionTest {
         val credentials = createCredentials()
 
         Datadog.initialize(targetContext, credentials, configuration, TrackingConsent.PENDING)
+        Datadog.registerFeature(LogsFeature.Builder().build())
 
         val sessionReplayConfig = SessionReplayConfiguration.Builder().build()
         Datadog.registerFeature(SessionReplayFeature(sessionReplayConfig))
@@ -143,7 +145,6 @@ internal class EncryptionTest {
 
         return Configuration
             .Builder(
-                logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true

@@ -71,7 +71,6 @@ internal class WorkManagerUtilsTest {
                 null
             ),
             Configuration.Builder(
-                logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true

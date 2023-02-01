@@ -56,7 +56,6 @@ class RumMonitorBackgroundE2ETests {
         initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
             config = defaultConfigurationBuilder(
-                logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true

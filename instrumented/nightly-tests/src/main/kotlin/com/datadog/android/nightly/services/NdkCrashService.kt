@@ -13,6 +13,7 @@ import android.os.Looper
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.ndk.NdkCrashReportsPlugin
 import com.datadog.android.nightly.activities.CRASH_DELAY_MS
 import com.datadog.android.nightly.activities.HUNDRED_PERCENT
@@ -70,7 +71,6 @@ internal open class NdkCrashService : CrashService() {
     ) {
         Datadog.setVerbosity(Log.VERBOSE)
         val configBuilder = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = rumEnabled
@@ -88,6 +88,7 @@ internal open class NdkCrashService : CrashService() {
             configBuilder.build(),
             TrackingConsent.GRANTED
         )
+        Datadog.registerFeature(LogsFeature.Builder().build())
     }
 
     // endregion

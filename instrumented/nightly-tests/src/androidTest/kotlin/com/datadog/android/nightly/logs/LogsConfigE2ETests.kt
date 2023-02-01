@@ -13,6 +13,7 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.TestEncryption
@@ -50,7 +51,6 @@ class LogsConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
@@ -74,7 +74,6 @@ class LogsConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
@@ -98,11 +97,11 @@ class LogsConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    logsEnabled = false,
                     tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
-                ).build()
+                ).build(),
+                logsFeatureProvider = { null }
             )
         }
         measureLoggerInitialize {
@@ -122,18 +121,22 @@ class LogsConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
-                ).setLogEventMapper(
-                    object : EventMapper<LogEvent> {
-                        override fun map(event: LogEvent): LogEvent {
-                            event.status = LogEvent.Status.ERROR
-                            return event
-                        }
-                    }
-                ).build()
+                ).build(),
+                logsFeatureProvider = {
+                    LogsFeature.Builder()
+                        .setLogEventMapper(
+                            object : EventMapper<LogEvent> {
+                                override fun map(event: LogEvent): LogEvent {
+                                    event.status = LogEvent.Status.ERROR
+                                    return event
+                                }
+                            }
+                        )
+                        .build()
+                }
             )
         }
         measureLoggerInitialize {
@@ -155,18 +158,21 @@ class LogsConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
-                ).setLogEventMapper(
-                    object : EventMapper<LogEvent> {
-                        override fun map(event: LogEvent): LogEvent? {
-                            return null
-                        }
-                    }
-                )
-                    .build()
+                ).build(),
+                logsFeatureProvider = {
+                    LogsFeature.Builder()
+                        .setLogEventMapper(
+                            object : EventMapper<LogEvent> {
+                                override fun map(event: LogEvent): LogEvent? {
+                                    return null
+                                }
+                            }
+                        )
+                        .build()
+                }
             )
         }
         measureLoggerInitialize {
@@ -191,7 +197,6 @@ class LogsConfigE2ETests {
                 TrackingConsent.GRANTED,
                 Configuration
                     .Builder(
-                        logsEnabled = true,
                         tracesEnabled = true,
                         rumEnabled = true,
                         crashReportsEnabled = true

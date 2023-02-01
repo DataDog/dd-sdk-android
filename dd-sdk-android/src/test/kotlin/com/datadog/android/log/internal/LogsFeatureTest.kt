@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.internal
 
-import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
@@ -74,9 +74,6 @@ internal class LogsFeatureTest {
 
     private lateinit var testedFeature: LogsFeature
 
-    @Forgery
-    lateinit var fakeConfigurationFeature: Configuration.Feature.Logs
-
     @Mock
     lateinit var mockSdkCore: SdkCore
 
@@ -89,11 +86,17 @@ internal class LogsFeatureTest {
     @Mock
     lateinit var mockDataWriter: DataWriter<LogEvent>
 
+    @Mock
+    lateinit var mockEventMapper: EventMapper<LogEvent>
+
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
     @Forgery
     lateinit var fakeRumContext: RumContext
+
+    @StringForgery(regex = "https://[a-z]+\\.com")
+    lateinit var fakeEndpointUrl: String
 
     @StringForgery(StringForgeryType.HEXADECIMAL)
     lateinit var fakeSpanId: String
@@ -140,7 +143,7 @@ internal class LogsFeatureTest {
             }
         )
 
-        testedFeature = LogsFeature(fakeConfigurationFeature)
+        testedFeature = LogsFeature(fakeEndpointUrl, mockEventMapper)
     }
 
     @Test
@@ -163,11 +166,7 @@ internal class LogsFeatureTest {
         val logMapperSerializer = dataWriter?.serializer as? MapperSerializer<LogEvent>
         val logEventMapperWrapper = logMapperSerializer?.eventMapper as? LogEventMapperWrapper
         val logEventMapper = logEventMapperWrapper?.wrappedEventMapper
-        assertThat(
-            logEventMapper
-        ).isSameAs(
-            fakeConfigurationFeature.logsEventMapper
-        )
+        assertThat(logEventMapper).isSameAs(mockEventMapper)
     }
 
     @Test

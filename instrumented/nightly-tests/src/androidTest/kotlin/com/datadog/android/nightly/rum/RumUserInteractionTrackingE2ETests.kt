@@ -39,7 +39,6 @@ internal class RumUserInteractionTrackingE2ETests {
     fun rum_user_interaction_tracking_strategy() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
@@ -62,7 +61,6 @@ internal class RumUserInteractionTrackingE2ETests {
     fun rum_user_interaction_tracking_strategy_custom_target_name() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true

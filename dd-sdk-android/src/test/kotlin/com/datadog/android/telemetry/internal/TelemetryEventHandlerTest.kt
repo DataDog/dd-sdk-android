@@ -299,7 +299,6 @@ internal class TelemetryEventHandlerTest {
         val sessionSampleRate = forge.aLong(0L, 100L)
         val telemetrySamplingRate = forge.aLong(0L, 100L)
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -329,7 +328,6 @@ internal class TelemetryEventHandlerTest {
         // Given
         val useProxy = forge.aBool()
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -359,7 +357,6 @@ internal class TelemetryEventHandlerTest {
         // Given
         val useLocalEncryption = forge.aBool()
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -393,7 +390,6 @@ internal class TelemetryEventHandlerTest {
         val trackBackgroundEvents = forge.aBool()
         val trackLongTasks = forge.aBool()
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = trackErrors,
             rumEnabled = true
@@ -430,7 +426,6 @@ internal class TelemetryEventHandlerTest {
         val batchSize = forge.aValueFrom(BatchSize::class.java)
         val uploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
@@ -462,7 +457,6 @@ internal class TelemetryEventHandlerTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = useTracing || forge.aBool(),
             crashReportsEnabled = true,
             rumEnabled = true
@@ -491,7 +485,6 @@ internal class TelemetryEventHandlerTest {
         // Given
         val trackNetworkRequests = forge.aBool()
         val configuration = Configuration.Builder(
-            logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true

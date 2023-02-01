@@ -21,7 +21,6 @@ internal class Configurator :
         forge.addFactory(ConfigurationCoreForgeryFactory())
         forge.addFactory(ConfigurationForgeryFactory())
         forge.addFactory(ConfigurationFeatureForgeryFactory())
-        forge.addFactory(ConfigurationLogForgeryFactory())
         forge.addFactory(ConfigurationCrashReportForgeryFactory())
         forge.addFactory(ConfigurationTracingForgeryFactory())
         forge.addFactory(ConfigurationRumForgeryFactory())

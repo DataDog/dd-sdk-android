@@ -11,7 +11,6 @@ import android.util.Log
 import androidx.annotation.AnyThread
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.event.EventMapper
@@ -38,13 +37,13 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-internal class LogsFeature constructor(
+/**
+ * Logs feature class, which needs to be registered with Datadog SDK instance.
+ */
+class LogsFeature internal constructor(
     endpointUrl: String,
     internal val eventMapper: EventMapper<LogEvent>
 ) : StorageBackedFeature, FeatureEventReceiver {
-
-    constructor(configuration: Configuration.Feature.Logs) :
-        this(configuration.endpointUrl, configuration.logsEventMapper)
 
     internal var dataWriter: DataWriter<LogEvent> = NoOpDataWriter()
     internal lateinit var sdkCore: SdkCore
@@ -312,7 +311,7 @@ internal class LogsFeature constructor(
 
     // endregion
 
-    companion object {
+    internal companion object {
 
         private const val TYPE_EVENT_KEY = "type"
         private const val TIMESTAMP_EVENT_KEY = "timestamp"

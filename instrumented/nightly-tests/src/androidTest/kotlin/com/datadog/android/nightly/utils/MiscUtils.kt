@@ -12,6 +12,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.nightly.BuildConfig
 import com.datadog.android.nightly.ENV_NAME
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
@@ -92,6 +93,7 @@ fun initializeSdk(
     targetContext: Context,
     consent: TrackingConsent = TrackingConsent.GRANTED,
     config: Configuration = createDatadogDefaultConfiguration(),
+    logsFeatureProvider: () -> LogsFeature? = { LogsFeature.Builder().build() },
     tracerProvider: () -> Tracer = { createDefaultAndroidTracer() },
     rumMonitorProvider: () -> RumMonitor = { createDefaultRumMonitor() }
 ) {
@@ -101,6 +103,9 @@ fun initializeSdk(
         config,
         consent
     )
+    logsFeatureProvider.invoke()?.let {
+        Datadog.registerFeature(it)
+    }
     Datadog.setVerbosity(Log.VERBOSE)
     GlobalTracer.registerIfAbsent(tracerProvider.invoke())
     GlobalRum.registerIfAbsent(rumMonitorProvider.invoke())
@@ -110,16 +115,14 @@ fun initializeSdk(
  * Default builder for nightly runs with telemetry set to 100%.
  */
 fun defaultConfigurationBuilder(
-    logsEnabled: Boolean = true,
     tracesEnabled: Boolean = true,
     crashReportsEnabled: Boolean = true,
     rumEnabled: Boolean = true
 ): Configuration.Builder {
     val configBuilder = Configuration.Builder(
-        logsEnabled,
-        tracesEnabled,
-        crashReportsEnabled,
-        rumEnabled
+        tracesEnabled = tracesEnabled,
+        crashReportsEnabled = crashReportsEnabled,
+        rumEnabled = rumEnabled
     )
     return configBuilder
         .sampleTelemetry(100f)
