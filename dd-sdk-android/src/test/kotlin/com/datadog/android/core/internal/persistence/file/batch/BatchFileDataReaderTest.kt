@@ -12,9 +12,8 @@ import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
@@ -62,7 +61,7 @@ internal class BatchFileDataReaderTest {
     lateinit var mockFileMover: FileMover
 
     @Mock
-    lateinit var mockLogHandler: LogHandler
+    lateinit var mockInternalLogger: InternalLogger
 
     @Forgery
     lateinit var fakeDecoration: PayloadDecoration
@@ -74,7 +73,7 @@ internal class BatchFileDataReaderTest {
             fakeDecoration,
             mockFileReader,
             mockFileMover,
-            Logger(mockLogHandler)
+            mockInternalLogger
         )
     }
 
@@ -279,8 +278,9 @@ internal class BatchFileDataReaderTest {
         testedReader.release(data)
 
         // Then
-        verify(mockLogHandler).handleLog(
-            Log.WARN,
+        verify(mockInternalLogger).log(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.MAINTAINER,
             BatchFileDataReader.WARNING_UNKNOWN_BATCH_ID.format(Locale.US, fileName)
         )
     }
@@ -337,8 +337,9 @@ internal class BatchFileDataReaderTest {
 
         // Then
         verify(mockFileMover).delete(file)
-        verify(mockLogHandler).handleLog(
-            Log.WARN,
+        verify(mockInternalLogger).log(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.MAINTAINER,
             BatchFileDataReader.WARNING_DELETE_FAILED.format(Locale.US, file.path)
         )
     }
@@ -354,8 +355,9 @@ internal class BatchFileDataReaderTest {
         testedReader.drop(data)
 
         // Then
-        verify(mockLogHandler).handleLog(
-            Log.WARN,
+        verify(mockInternalLogger).log(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.MAINTAINER,
             BatchFileDataReader.WARNING_UNKNOWN_BATCH_ID.format(Locale.US, fileName)
         )
     }

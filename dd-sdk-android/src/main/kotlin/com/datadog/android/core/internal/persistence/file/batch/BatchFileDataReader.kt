@@ -14,7 +14,7 @@ import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.utils.join
-import com.datadog.android.log.Logger
+import com.datadog.android.v2.api.InternalLogger
 import java.io.File
 import java.util.Locale
 
@@ -26,7 +26,7 @@ internal class BatchFileDataReader(
     internal val decoration: PayloadDecoration,
     internal val fileReader: BatchFileReader,
     internal val fileMover: FileMover,
-    internal val internalLogger: Logger
+    internal val internalLogger: InternalLogger
 ) : DataReader {
 
     private val lockedFiles: MutableList<File> = mutableListOf()
@@ -99,7 +99,9 @@ internal class BatchFileDataReader(
         if (file != null) {
             releaseFile(file, delete)
         } else {
-            internalLogger.w(
+            internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                target = InternalLogger.Target.MAINTAINER,
                 WARNING_UNKNOWN_BATCH_ID.format(Locale.US, fileName)
             )
         }
@@ -125,7 +127,9 @@ internal class BatchFileDataReader(
     @WorkerThread
     private fun deleteFile(file: File) {
         if (!fileMover.delete(file)) {
-            internalLogger.w(
+            internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                target = InternalLogger.Target.MAINTAINER,
                 WARNING_DELETE_FAILED.format(Locale.US, file.path)
             )
         }

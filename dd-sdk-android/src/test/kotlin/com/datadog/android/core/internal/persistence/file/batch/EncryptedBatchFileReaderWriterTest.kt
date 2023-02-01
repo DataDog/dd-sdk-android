@@ -56,9 +56,6 @@ internal class EncryptedBatchFileReaderWriterTest {
     @Mock
     lateinit var mockFile: File
 
-    @Mock
-    lateinit var mockInternalLogger: Logger
-
     private lateinit var testedReaderWriter: EncryptedBatchReaderWriter
 
     @BeforeEach
@@ -102,7 +99,7 @@ internal class EncryptedBatchFileReaderWriterTest {
                 append
             )
 
-        verifyZeroInteractions(mockInternalLogger)
+        verifyZeroInteractions(logger.mockInternalLogger)
     }
 
     @Test
@@ -128,7 +125,7 @@ internal class EncryptedBatchFileReaderWriterTest {
             InternalLogger.Target.USER,
             EncryptedBatchReaderWriter.BAD_ENCRYPTION_RESULT_MESSAGE
         )
-        verifyZeroInteractions(mockInternalLogger)
+        verifyZeroInteractions(logger.mockInternalLogger)
         verifyZeroInteractions(mockBatchFileReaderWriter)
     }
 
@@ -195,7 +192,7 @@ internal class EncryptedBatchFileReaderWriterTest {
         assertThat(writeResult).isTrue()
         assertThat(readResult).containsExactlyElementsOf(events)
 
-        verifyZeroInteractions(mockInternalLogger)
+        verifyZeroInteractions(logger.mockInternalLogger)
     }
 
     // endregion
