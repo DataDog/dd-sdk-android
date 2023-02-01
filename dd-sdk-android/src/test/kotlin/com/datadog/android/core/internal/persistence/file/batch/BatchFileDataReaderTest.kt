@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
-import android.util.Log
 import com.datadog.android.core.internal.persistence.Batch
 import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.persistence.PayloadDecoration

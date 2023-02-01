@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.persistence.file
 
-import com.datadog.android.log.Logger
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -54,9 +53,6 @@ internal class EncryptedFileReaderWriterTest {
     @Mock
     lateinit var mockFile: File
 
-    @Mock
-    lateinit var mockInternalLogger: Logger
-
     private lateinit var testedReaderWriter: EncryptedFileReaderWriter
 
     @BeforeEach
@@ -99,7 +95,7 @@ internal class EncryptedFileReaderWriterTest {
                 false
             )
 
-        verifyZeroInteractions(mockInternalLogger)
+        verifyZeroInteractions(logger.mockInternalLogger)
     }
 
     @Test
@@ -124,7 +120,7 @@ internal class EncryptedFileReaderWriterTest {
             InternalLogger.Target.USER,
             EncryptedFileReaderWriter.BAD_ENCRYPTION_RESULT_MESSAGE
         )
-        verifyZeroInteractions(mockInternalLogger)
+        verifyZeroInteractions(logger.mockInternalLogger)
         verifyZeroInteractions(mockFileReaderWriterDelegate)
     }
 
@@ -147,7 +143,7 @@ internal class EncryptedFileReaderWriterTest {
             InternalLogger.Target.MAINTAINER,
             EncryptedFileReaderWriter.APPEND_MODE_NOT_SUPPORTED_MESSAGE
         )
-        verifyZeroInteractions(mockInternalLogger)
+        verifyZeroInteractions(logger.mockInternalLogger)
         verifyZeroInteractions(mockFileReaderWriterDelegate)
     }
 
@@ -205,7 +201,7 @@ internal class EncryptedFileReaderWriterTest {
         assertThat(writeResult).isTrue()
         assertThat(readResult).isEqualTo(data.toByteArray())
 
-        verifyZeroInteractions(mockInternalLogger)
+        verifyZeroInteractions(logger.mockInternalLogger)
     }
 
     // endregion

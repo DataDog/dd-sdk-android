@@ -89,6 +89,7 @@ repositories {
 dependencies {
     implementation(project(":dd-sdk-android"))
     implementation(project(":library:dd-sdk-android-session-replay"))
+    implementation(project(":library:dd-sdk-android-logs"))
 
     implementation(libs.gson)
     implementation(libs.kotlin)

@@ -19,7 +19,7 @@ import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.log.LogsFeature
 import com.datadog.android.ndk.NdkCrashReportsPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.GlobalRum

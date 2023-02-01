@@ -12,7 +12,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
-import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.log.LogsFeature
 import com.datadog.android.nightly.BuildConfig
 import com.datadog.android.nightly.ENV_NAME
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY

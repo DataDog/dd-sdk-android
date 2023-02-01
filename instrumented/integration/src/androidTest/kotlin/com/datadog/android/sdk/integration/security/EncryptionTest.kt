@@ -12,7 +12,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.log.LogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType

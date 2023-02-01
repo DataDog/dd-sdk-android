@@ -73,6 +73,7 @@ android {
 
 dependencies {
     api(project(":dd-sdk-android"))
+    api(project(":library:dd-sdk-android-logs"))
     implementation(libs.kotlin)
     implementation(libs.timber)
 

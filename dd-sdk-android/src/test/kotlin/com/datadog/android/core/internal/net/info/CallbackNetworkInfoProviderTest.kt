@@ -13,7 +13,7 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.log.assertj.NetworkInfoAssert.Companion.assertThat
+import com.datadog.android.utils.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger

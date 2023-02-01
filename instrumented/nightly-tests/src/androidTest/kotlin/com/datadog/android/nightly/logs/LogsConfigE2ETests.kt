@@ -13,7 +13,7 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.log.LogsFeature
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.TestEncryption

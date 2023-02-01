@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
-import com.datadog.android.log.Logger
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator

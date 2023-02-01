@@ -7,7 +7,6 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.core.internal.utils.toMutableMap
-import com.datadog.android.log.internal.utils.ISO_8601
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -16,12 +15,10 @@ import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.jvm.ext.aTimestamp
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import java.io.File
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -81,13 +78,6 @@ internal fun <K, V> Forge.aFilteredMap(
     }
 
     return filtered
-}
-
-internal fun Forge.aFormattedTimestamp(format: String = ISO_8601): String {
-    val simpleDateFormat = SimpleDateFormat(format, Locale.US).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
-    }
-    return simpleDateFormat.format(this.aTimestamp())
 }
 
 internal fun Forge.aRumEvent(): Any {

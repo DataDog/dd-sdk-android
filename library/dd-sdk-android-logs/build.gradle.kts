@@ -16,6 +16,7 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
+    id("com.google.devtools.ksp")
 
     // Publish
     `maven-publish`
@@ -75,6 +76,10 @@ dependencies {
     implementation(project(":dd-sdk-android"))
     implementation(libs.kotlin)
     implementation(libs.gson)
+    implementation(libs.androidXAnnotation)
+
+    // Generate NoOp implementations
+    ksp(project(":tools:noopfactory"))
 
     testImplementation(project(":tools:unit"))
     testImplementation(libs.bundles.jUnit5)
@@ -83,6 +88,8 @@ dependencies {
     // TODO MTG-12 detekt(project(":tools:detekt"))
     // TODO MTG-12 detekt(libs.detektCli)
 }
+
+apply(from = "generate_log_models.gradle.kts")
 
 kotlinConfig()
 junitConfig()

@@ -184,54 +184,6 @@ object com.datadog.android.log.LogAttributes
   const val USR_ID: String
   const val USR_NAME: String
   const val VARIANT: String
-class com.datadog.android.log.Logger
-  fun v(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun d(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun i(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun w(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun e(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun wtf(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun log(Int, String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun log(Int, String, String?, String?, String?, Map<String, Any?> = emptyMap())
-  class Builder
-    fun build(): Logger
-    fun setServiceName(String): Builder
-    fun setDatadogLogsEnabled(Boolean): Builder
-    fun setDatadogLogsMinPriority(Int): Builder
-    fun setLogcatLogsEnabled(Boolean): Builder
-    fun setNetworkInfoEnabled(Boolean): Builder
-    fun setLoggerName(String): Builder
-    fun setBundleWithTraceEnabled(Boolean): Builder
-    fun setBundleWithRumEnabled(Boolean): Builder
-    fun setSampleRate(Float): Builder
-  fun addAttribute(String, Boolean)
-  fun addAttribute(String, Int)
-  fun addAttribute(String, Long)
-  fun addAttribute(String, Float)
-  fun addAttribute(String, Double)
-  fun addAttribute(String, String?)
-  fun addAttribute(String, java.util.Date?)
-  fun addAttribute(String, com.google.gson.JsonObject?)
-  fun addAttribute(String, com.google.gson.JsonArray?)
-  fun addAttribute(String, org.json.JSONObject?)
-  fun addAttribute(String, org.json.JSONArray?)
-  fun removeAttribute(String)
-  fun addTag(String, String)
-  fun addTag(String)
-  fun removeTag(String)
-  fun removeTagsWithKey(String)
-class com.datadog.android.log.internal.LogsFeature : com.datadog.android.v2.api.StorageBackedFeature, com.datadog.android.v2.api.FeatureEventReceiver
-  override val name: String
-  override fun onInitialize(com.datadog.android.v2.api.SdkCore, android.content.Context)
-  override val requestFactory: com.datadog.android.v2.api.RequestFactory
-  override val storageConfiguration: com.datadog.android.v2.api.FeatureStorageConfiguration
-  override fun onStop()
-  override fun onReceive(Any)
-  class Builder
-    fun useSite(com.datadog.android.DatadogSite): Builder
-    fun useCustomEndpoint(String): Builder
-    fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
-    fun build(): LogsFeature
 data class com.datadog.android.plugin.DatadogContext
   constructor(DatadogRumContext? = null)
 DEPRECATED interface com.datadog.android.plugin.DatadogPlugin : com.datadog.android.privacy.TrackingConsentProviderCallback
@@ -444,19 +396,6 @@ interface com.datadog.android.rum.tracking.TrackingStrategy
 interface com.datadog.android.rum.tracking.ViewAttributesProvider
   fun extractAttributes(android.view.View, MutableMap<String, Any?>)
 interface com.datadog.android.rum.tracking.ViewTrackingStrategy : TrackingStrategy
-DEPRECATED open class com.datadog.android.rum.webview.RumWebChromeClient : android.webkit.WebChromeClient
-  constructor()
-  override fun onConsoleMessage(android.webkit.ConsoleMessage?): Boolean
-  companion object 
-DEPRECATED open class com.datadog.android.rum.webview.RumWebViewClient : android.webkit.WebViewClient
-  override fun onPageStarted(android.webkit.WebView?, String?, android.graphics.Bitmap?)
-  override fun onPageFinished(android.webkit.WebView?, String?)
-  override fun onReceivedError(android.webkit.WebView?, Int, String?, String?)
-  override fun onReceivedError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceError?)
-  override fun onReceivedHttpError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceResponse?)
-  override fun onReceivedSslError(android.webkit.WebView?, android.webkit.SslErrorHandler?, android.net.http.SslError?)
-  open fun onProvideRumResourceAttributes(android.webkit.WebView?, String?): Map<String, Any?>
-  companion object 
 interface com.datadog.android.security.Encryption
   fun encrypt(ByteArray): ByteArray
   fun decrypt(ByteArray): ByteArray

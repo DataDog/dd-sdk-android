@@ -10,7 +10,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
-import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.log.LogsFeature
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getTrackingConsent
