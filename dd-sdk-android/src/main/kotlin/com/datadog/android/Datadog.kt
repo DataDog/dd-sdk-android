@@ -30,7 +30,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 @SuppressWarnings("TooManyFunctions")
 object Datadog {
 
-    internal var globalSdkCore: SdkCore = NoOpSdkCore()
+    // TODO RUMM-2984 Implement global registry
+    /**
+     * Temporary thing, until global registry is implemented.
+     */
+    var globalSdkCore: SdkCore = NoOpSdkCore()
+        internal set
 
     internal var hashGenerator: HashGenerator = Sha256HashGenerator()
 

@@ -1,4 +1,5 @@
 object com.datadog.android.Datadog
+  var globalSdkCore: com.datadog.android.v2.api.SdkCore
   fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
   fun isInitialized(): Boolean
   fun clearAllData()

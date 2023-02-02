@@ -21,14 +21,12 @@ import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -38,7 +36,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -58,6 +55,9 @@ import org.mockito.quality.Strictness
 internal class LoggerBuilderTest {
 
     @Mock
+    lateinit var mockSdkCore: SdkCore
+
+    @Mock
     lateinit var mockLogsFeatureScope: FeatureScope
 
     @Mock
@@ -74,27 +74,19 @@ internal class LoggerBuilderTest {
 
     @BeforeEach
     fun `set up`() {
-        val mockCore = mock<SdkCore>()
         whenever(mockLogsFeature.packageName) doReturn fakePackageName
         whenever(mockLogsFeature.dataWriter) doReturn mockDataWriter
-        whenever(mockCore.service) doReturn fakeServiceName
+        whenever(mockSdkCore.service) doReturn fakeServiceName
 
-        whenever(mockCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn mockLogsFeatureScope
+        whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn mockLogsFeatureScope
         whenever(mockLogsFeatureScope.unwrap<LogsFeature>()) doReturn mockLogsFeature
-
-        Datadog.globalSdkCore = mockCore
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        Datadog.globalSdkCore = NoOpSdkCore()
     }
 
     @Test
     fun `builder returns no-op if SDK is not initialized`() {
-        Datadog.globalSdkCore = NoOpSdkCore()
+        mockSdkCore = NoOpSdkCore()
 
-        val testedLogger = Logger.Builder().build()
+        val testedLogger = Logger.Builder(mockSdkCore).build()
 
         val handler = testedLogger.handler
 
@@ -102,21 +94,17 @@ internal class LoggerBuilderTest {
         verify(logger.mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            Logger.SDK_NOT_INITIALIZED_WARNING_MESSAGE + "\n" +
-                Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
+            Logger.SDK_NOT_INITIALIZED_WARNING_MESSAGE
         )
     }
 
     @Test
     fun `builder returns no-op if logs feature is missing`() {
         // Given
-        val mockCore = mock<DatadogCore>()
-        Datadog.globalSdkCore = mockCore
-        whenever(mockCore.coreFeature) doReturn mock()
-        whenever(mockCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
+        whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
 
         // When
-        val testedLogger = Logger.Builder().build()
+        val testedLogger = Logger.Builder(mockSdkCore).build()
 
         // Then
         val handler = testedLogger.handler
@@ -132,7 +120,7 @@ internal class LoggerBuilderTest {
 
     @Test
     fun `builder without custom settings uses defaults`() {
-        val logger = Logger.Builder()
+        val logger = Logger.Builder(mockSdkCore)
             .build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
@@ -152,7 +140,7 @@ internal class LoggerBuilderTest {
     fun `builder can set a ServiceName`(@Forgery forge: Forge) {
         val serviceName = forge.anAlphabeticalString()
 
-        val logger = Logger.Builder()
+        val logger = Logger.Builder(mockSdkCore)
             .setServiceName(serviceName)
             .build()
 
@@ -165,7 +153,7 @@ internal class LoggerBuilderTest {
     fun `builder can disable datadog logs`() {
         val datadogLogsEnabled = false
 
-        val logger: Logger = Logger.Builder()
+        val logger: Logger = Logger.Builder(mockSdkCore)
             .setDatadogLogsEnabled(datadogLogsEnabled)
             .build()
 
@@ -177,7 +165,7 @@ internal class LoggerBuilderTest {
     fun `builder can set min datadog logs priority`(
         @IntForgery minLogPriority: Int
     ) {
-        val logger: Logger = Logger.Builder()
+        val logger: Logger = Logger.Builder(mockSdkCore)
             .setDatadogLogsMinPriority(minLogPriority)
             .build()
 
@@ -189,7 +177,7 @@ internal class LoggerBuilderTest {
     fun `builder can enable logcat logs`() {
         val logcatLogsEnabled = true
 
-        val logger = Logger.Builder()
+        val logger = Logger.Builder(mockSdkCore)
             .setLogcatLogsEnabled(logcatLogsEnabled)
             .build()
 
@@ -208,7 +196,7 @@ internal class LoggerBuilderTest {
         val logcatLogsEnabled = true
         val fakeServiceName = forge.anAlphaNumericalString()
 
-        val logger = Logger.Builder()
+        val logger = Logger.Builder(mockSdkCore)
             .setDatadogLogsEnabled(false)
             .setLogcatLogsEnabled(logcatLogsEnabled)
             .setServiceName(fakeServiceName)
@@ -227,7 +215,7 @@ internal class LoggerBuilderTest {
     fun `builder can enable network info`() {
         val networkInfoEnabled = true
 
-        val logger = Logger.Builder()
+        val logger = Logger.Builder(mockSdkCore)
             .setNetworkInfoEnabled(networkInfoEnabled)
             .build()
 
@@ -239,7 +227,7 @@ internal class LoggerBuilderTest {
     fun `builder can set the logger name`(@Forgery forge: Forge) {
         val loggerName = forge.anAlphabeticalString()
 
-        val logger = Logger.Builder()
+        val logger = Logger.Builder(mockSdkCore)
             .setLoggerName(loggerName)
             .build()
 
@@ -249,7 +237,7 @@ internal class LoggerBuilderTest {
 
     @Test
     fun `builder can disable the bundle with trace feature`() {
-        val logger = Logger.Builder()
+        val logger = Logger.Builder(mockSdkCore)
             .setBundleWithTraceEnabled(false)
             .build()
 
@@ -261,7 +249,7 @@ internal class LoggerBuilderTest {
     fun `builder can set a sampling rate`(@Forgery forge: Forge) {
         val expectedSampleRate = forge.aFloat(min = 0.0f, max = 1.0f)
 
-        val logger = Logger.Builder().setSampleRate(expectedSampleRate).build()
+        val logger = Logger.Builder(mockSdkCore).setSampleRate(expectedSampleRate).build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
         val sampler = handler.sampler

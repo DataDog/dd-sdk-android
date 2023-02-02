@@ -9,6 +9,7 @@ package com.datadog.android.sample.traces
 import android.os.AsyncTask
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.datadog.android.Datadog
 import com.datadog.android.ktx.coroutine.CoroutineScopeSpan
 import com.datadog.android.ktx.coroutine.asyncTraced
 import com.datadog.android.ktx.coroutine.awaitTraced
@@ -266,7 +267,7 @@ internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewMod
         var activeSpanInMainThread: Span? = null
 
         private val logger: Logger by lazy {
-            Logger.Builder()
+            Logger.Builder(Datadog.globalSdkCore)
                 .setLoggerName("async_task")
                 .setLogcatLogsEnabled(true)
                 .build()

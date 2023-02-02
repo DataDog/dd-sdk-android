@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.android.nightly.SPECIAL_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_BOOL_ATTRIBUTE_NAME
@@ -62,7 +63,7 @@ class LoggerE2ETests {
     @Before
     fun setUp() {
         initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
-        logger = Logger.Builder()
+        logger = Logger.Builder(Datadog.globalSdkCore)
             .setLoggerName(LOGGER_NAME)
             .build()
     }

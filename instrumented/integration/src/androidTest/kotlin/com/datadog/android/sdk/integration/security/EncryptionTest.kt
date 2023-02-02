@@ -67,7 +67,7 @@ internal class EncryptionTest {
         val tracer = AndroidTracer.Builder().setBundleWithRumEnabled(true).build()
         GlobalTracer.registerIfAbsent(tracer)
 
-        val logger = Logger.Builder()
+        val logger = Logger.Builder(Datadog.globalSdkCore)
             .setBundleWithRumEnabled(true)
             .setBundleWithTraceEnabled(true)
             .build()

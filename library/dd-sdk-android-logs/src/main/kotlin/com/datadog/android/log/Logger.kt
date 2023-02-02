@@ -7,7 +7,6 @@
 package com.datadog.android.log
 
 import androidx.annotation.FloatRange
-import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.sampling.RateBasedSampler
@@ -201,8 +200,10 @@ internal constructor(internal var handler: LogHandler) {
 
     /**
      * A Builder class for a [Logger].
+     *
+     * @param sdkCore SDK instance to bind to.
      */
-    class Builder {
+    class Builder(private val sdkCore: SdkCore) {
 
         private var serviceName: String? = null
         private var loggerName: String? = null
@@ -218,19 +219,18 @@ internal constructor(internal var handler: LogHandler) {
          * Builds a [Logger] based on the current state of this Builder.
          */
         fun build(): Logger {
-            val datadogCore = Datadog.globalSdkCore
-            val logsFeature = datadogCore
+            val logsFeature = sdkCore
                 .getFeature(Feature.LOGS_FEATURE_NAME)
                 ?.unwrap<LogsFeature>()
             val handler = when {
                 datadogLogsEnabled && logcatLogsEnabled -> {
                     CombinedLogHandler(
-                        buildDatadogHandler(datadogCore, logsFeature),
-                        buildLogcatHandler(datadogCore)
+                        buildDatadogHandler(sdkCore, logsFeature),
+                        buildLogcatHandler(sdkCore)
                     )
                 }
-                datadogLogsEnabled -> buildDatadogHandler(datadogCore, logsFeature)
-                logcatLogsEnabled -> buildLogcatHandler(datadogCore)
+                datadogLogsEnabled -> buildDatadogHandler(sdkCore, logsFeature)
+                logcatLogsEnabled -> buildLogcatHandler(sdkCore)
                 else -> NoOpLogHandler()
             }
 
@@ -340,7 +340,7 @@ internal constructor(internal var handler: LogHandler) {
             sdkCore: SdkCore,
             logsFeature: LogsFeature?
         ): LogHandler {
-            if (sdkCore == null || logsFeature == null) {
+            if (logsFeature == null) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,

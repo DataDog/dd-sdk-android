@@ -7,12 +7,13 @@
 package com.datadog.android.nightly.logs
 
 import android.util.Log
+import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.android.nightly.utils.defaultTestAttributes
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 
-fun initializeLogger() = Logger.Builder()
+fun initializeLogger() = Logger.Builder(Datadog.globalSdkCore)
     .setLoggerName(LOGGER_NAME)
     .build()
 
