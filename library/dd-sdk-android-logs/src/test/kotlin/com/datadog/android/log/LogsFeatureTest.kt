@@ -9,9 +9,9 @@ package com.datadog.android.log
 import android.content.Context
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
-import com.datadog.android.log.internal.net.LogsRequestFactory
+import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
+import com.datadog.android.log.internal.storage.LogsDataWriter
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
@@ -26,10 +26,12 @@ import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.storage.DataWriter
+import com.datadog.android.v2.log.net.LogsRequestFactory
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
+import com.datadog.tools.unit.getFieldValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
@@ -57,6 +59,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.Executors
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat as assertThatLog
 
@@ -93,7 +96,16 @@ internal class LogsFeatureTest {
     lateinit var fakeDatadogContext: DatadogContext
 
     @Forgery
-    lateinit var fakeRumContext: RumContext
+    lateinit var fakeRumApplicationId: UUID
+
+    @Forgery
+    lateinit var fakeRumSessionId: UUID
+
+    @Forgery
+    lateinit var fakeRumViewId: UUID
+
+    @Forgery
+    lateinit var fakeRumActionId: UUID
 
     @StringForgery(regex = "https://[a-z]+\\.com")
     lateinit var fakeEndpointUrl: String
@@ -134,7 +146,15 @@ internal class LogsFeatureTest {
                 serverTimeOffsetMs = fakeServerTimeOffset
             ),
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.RUM_FEATURE_NAME, fakeRumContext.toMap())
+                put(
+                    Feature.RUM_FEATURE_NAME,
+                    mapOf(
+                        "application_id" to fakeRumApplicationId,
+                        "session_id" to fakeRumSessionId,
+                        "view_id" to fakeRumViewId,
+                        "action_id" to fakeRumActionId
+                    )
+                )
                 put(
                     Feature.TRACING_FEATURE_NAME,
                     mapOf(
@@ -168,7 +188,8 @@ internal class LogsFeatureTest {
         // Then
         val dataWriter = testedFeature.dataWriter as? LogsDataWriter
         val logMapperSerializer = dataWriter?.serializer as? MapperSerializer<LogEvent>
-        val logEventMapperWrapper = logMapperSerializer?.eventMapper as? LogEventMapperWrapper
+        val logEventMapperWrapper = logMapperSerializer
+            ?.getFieldValue<LogEventMapperWrapper, MapperSerializer<LogEvent>>("eventMapper")
         val logEventMapper = logEventMapperWrapper?.wrappedEventMapper
         assertThat(logEventMapper).isSameAs(mockEventMapper)
     }
@@ -359,10 +380,10 @@ internal class LogsFeatureTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasExactlyAttributes(
                     mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
-                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
-                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId,
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumViewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumActionId,
                         LogAttributes.DD_TRACE_ID to fakeTraceId,
                         LogAttributes.DD_SPAN_ID to fakeSpanId
                     )
@@ -425,10 +446,10 @@ internal class LogsFeatureTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasExactlyAttributes(
                     mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
-                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
-                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId,
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumViewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumActionId,
                         LogAttributes.DD_TRACE_ID to fakeTraceId,
                         LogAttributes.DD_SPAN_ID to fakeSpanId
                     )
@@ -772,10 +793,10 @@ internal class LogsFeatureTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
-                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
-                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumViewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumActionId
                     )
                 )
                 .hasExactlyTags(
@@ -794,6 +815,16 @@ internal class LogsFeatureTest {
         MISSING,
         NULL,
         WRONG_TYPE
+    }
+
+    inline fun <reified T, R : Any> R?.getFieldValue(
+        fieldName: String,
+        enclosingClass: Class<R>? = this?.javaClass
+    ): T? {
+        if (this == null || enclosingClass == null) return null
+        val field = enclosingClass.getDeclaredField(fieldName)
+        field.isAccessible = true
+        return field.get(this) as T
     }
 
     companion object {

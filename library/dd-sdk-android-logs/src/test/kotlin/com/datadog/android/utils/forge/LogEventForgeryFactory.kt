@@ -46,7 +46,8 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
                     id = userInfo?.id,
                     name = userInfo?.name,
                     email = userInfo?.email,
-                    additionalProperties = userInfo?.additionalProperties?.toMutableMap().orEmpty()
+                    additionalProperties = userInfo?.additionalProperties
+                        ?.toMutableMap() ?: mutableMapOf()
 
                 )
             },

@@ -9,7 +9,6 @@ package com.datadog.android.log.internal.domain
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.utils.extension.asLogStatus
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
@@ -32,6 +31,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -60,7 +60,16 @@ internal class DatadogLogGeneratorTest {
     lateinit var fakeDatadogContext: DatadogContext
 
     @Forgery
-    lateinit var fakeRumContext: RumContext
+    lateinit var fakeRumApplicationId: UUID
+
+    @Forgery
+    lateinit var fakeRumSessionId: UUID
+
+    @Forgery
+    lateinit var fakeRumViewId: UUID
+
+    @Forgery
+    lateinit var fakeRumActionId: UUID
 
     var fakeTimestamp = 0L
     var fakeLevel: Int = 0
@@ -91,10 +100,10 @@ internal class DatadogLogGeneratorTest {
                 put(
                     Feature.RUM_FEATURE_NAME,
                     mapOf(
-                        "application_id" to fakeRumContext.applicationId,
-                        "session_id" to fakeRumContext.sessionId,
-                        "view_id" to fakeRumContext.viewId,
-                        "action_id" to fakeRumContext.actionId
+                        "application_id" to fakeRumApplicationId,
+                        "session_id" to fakeRumSessionId,
+                        "view_id" to fakeRumViewId,
+                        "action_id" to fakeRumActionId
                     )
                 )
                 put(
@@ -676,10 +685,10 @@ internal class DatadogLogGeneratorTest {
 
         // THEN
         val expectedAttributes = fakeAttributes + mapOf(
-            LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-            LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
-            LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
-            LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
+            LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
+            LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
+            LogAttributes.RUM_VIEW_ID to fakeRumViewId,
+            LogAttributes.RUM_ACTION_ID to fakeRumActionId
         )
         assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
@@ -709,10 +718,10 @@ internal class DatadogLogGeneratorTest {
 
         // THEN
         val expectedAttributes = fakeAttributes + mapOf(
-            LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-            LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
-            LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
-            LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
+            LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
+            LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
+            LogAttributes.RUM_VIEW_ID to fakeRumViewId,
+            LogAttributes.RUM_ACTION_ID to fakeRumActionId
         )
         assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
@@ -736,10 +745,10 @@ internal class DatadogLogGeneratorTest {
 
         // THEN
         val expectedAttributes = fakeAttributes + mapOf(
-            LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-            LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
-            LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
-            LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
+            LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
+            LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
+            LogAttributes.RUM_VIEW_ID to fakeRumViewId,
+            LogAttributes.RUM_ACTION_ID to fakeRumActionId
         )
         assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
@@ -763,10 +772,10 @@ internal class DatadogLogGeneratorTest {
         // THEN
         Assertions.assertThat(log.additionalProperties).containsAllEntriesOf(
             mapOf(
-                LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-                LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
-                LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
-                LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
+                LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
+                LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
+                LogAttributes.RUM_VIEW_ID to fakeRumViewId,
+                LogAttributes.RUM_ACTION_ID to fakeRumActionId
             )
         )
     }

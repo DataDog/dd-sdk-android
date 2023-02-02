@@ -6,19 +6,17 @@
 
 package com.datadog.android.log.internal.logger;
 
-import com.datadog.android.BuildConfig;
-import com.datadog.android.Datadog;
 import fr.xgouchet.elmyr.annotation.StringForgery;
-import fr.xgouchet.elmyr.annotation.StringForgeryType;
 import fr.xgouchet.elmyr.junit5.ForgeExtension;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+@SuppressWarnings("KotlinInternalInJava")
 @ExtendWith(ForgeExtension.class)
 public class LogcatLogHandlerJavaTest {
 
@@ -31,7 +29,7 @@ public class LogcatLogHandlerJavaTest {
     void resolves_stack_trace_element_null_if_in_release_mode() {
         testedHandler = new LogcatLogHandler(fakeServiceName, true, false);
 
-        StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_debug();
+        StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_logs_debug();
 
         assertThat(element)
                 .isNull();
@@ -41,7 +39,7 @@ public class LogcatLogHandlerJavaTest {
     void resolves_stack_trace_element_null_if_useClassnameAsTag_is_false() {
         testedHandler = new LogcatLogHandler(fakeServiceName, false, true);
 
-        StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_debug();
+        StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_logs_debug();
 
         assertThat(element)
                 .isNull();
@@ -51,7 +49,7 @@ public class LogcatLogHandlerJavaTest {
     void resolves_stack_trace_element_from_caller() {
         testedHandler = new LogcatLogHandler(fakeServiceName, true, true);
 
-        StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_debug();
+        StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_logs_debug();
 
         assertThat(element).isNotNull();
         assertThat(element.getClassName())
@@ -67,7 +65,7 @@ public class LogcatLogHandlerJavaTest {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                elementRef.set(testedHandler.getCallerStackElement$dd_sdk_android_debug());
+                elementRef.set(testedHandler.getCallerStackElement$dd_sdk_android_logs_debug());
             }
         };
         runnable.run();

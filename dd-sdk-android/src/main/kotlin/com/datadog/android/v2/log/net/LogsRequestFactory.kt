@@ -20,7 +20,7 @@ import java.util.UUID
  * @param endpointUrl URL of the Logs intake.
  */
 class LogsRequestFactory(
-    internal val endpointUrl: String
+    val endpointUrl: String
 ) : RequestFactory {
 
     /** @inheritdoc */

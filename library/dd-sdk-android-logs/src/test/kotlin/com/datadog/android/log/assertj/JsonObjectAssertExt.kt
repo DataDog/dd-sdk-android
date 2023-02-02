@@ -7,10 +7,10 @@
 package com.datadog.android.log.assertj
 
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
-import com.datadog.android.core.internal.utils.toJsonArray
-import com.datadog.android.core.internal.utils.toJsonObject
+import com.datadog.android.core.internal.utils.toJsonElement
 import com.datadog.tools.unit.assertj.JsonObjectAssert
 import com.google.gson.JsonArray
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import org.json.JSONArray
 import org.json.JSONObject
@@ -43,4 +43,39 @@ fun JsonObjectAssert.containsExtraAttributes(
                 else -> hasField(key, value.toString())
             }
         }
+}
+
+// TODO RUMM-2949 Share forgeries/test configurations between modules
+internal fun Iterable<*>.toJsonArray(): JsonElement {
+    val array = JsonArray()
+    forEach {
+        array.add(it.toJsonElement())
+    }
+    return array
+}
+
+internal fun Map<*, *>.toJsonObject(): JsonElement {
+    val obj = JsonObject()
+    forEach {
+        obj.add(it.key.toString(), it.value.toJsonElement())
+    }
+    return obj
+}
+
+internal fun JSONArray.toJsonArray(): JsonElement {
+    val obj = JsonArray()
+    for (index in 0 until length()) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // iteration over indexes which exist
+        obj.add(get(index).toJsonElement())
+    }
+    return obj
+}
+
+internal fun JSONObject.toJsonObject(): JsonElement {
+    val obj = JsonObject()
+    for (key in keys()) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // iteration over keys which exist
+        obj.add(key, get(key).toJsonElement())
+    }
+    return obj
 }

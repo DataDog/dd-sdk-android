@@ -26,6 +26,9 @@ plugins {
     // Analysis tools
     id("com.github.ben-manes.versions")
 
+    // Tests
+    id("de.mobilej.unmock")
+
     // Internal Generation
     id("thirdPartyLicences")
     id("apiSurface")
@@ -84,9 +87,14 @@ dependencies {
     testImplementation(project(":tools:unit"))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
+    unmock(libs.robolectric)
 
     // TODO MTG-12 detekt(project(":tools:detekt"))
     // TODO MTG-12 detekt(libs.detektCli)
+}
+
+unMock {
+    keepStartingWith("org.json")
 }
 
 apply(from = "generate_log_models.gradle.kts")

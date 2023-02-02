@@ -6,7 +6,6 @@
 
 package com.datadog.android.log
 
-import com.datadog.android.Datadog
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler
@@ -21,7 +20,6 @@ import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -83,22 +81,6 @@ internal class LoggerBuilderTest {
     }
 
     @Test
-    fun `builder returns no-op if SDK is not initialized`() {
-        mockSdkCore = NoOpSdkCore()
-
-        val testedLogger = Logger.Builder(mockSdkCore).build()
-
-        val handler = testedLogger.handler
-
-        assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Logger.SDK_NOT_INITIALIZED_WARNING_MESSAGE
-        )
-    }
-
-    @Test
     fun `builder returns no-op if logs feature is missing`() {
         // Given
         whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
@@ -113,8 +95,7 @@ internal class LoggerBuilderTest {
         verify(logger.mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            Logger.SDK_NOT_INITIALIZED_WARNING_MESSAGE + "\n" +
-                Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
+            Logger.SDK_NOT_INITIALIZED_WARNING_MESSAGE
         )
     }
 
@@ -127,7 +108,7 @@ internal class LoggerBuilderTest {
         assertThat(handler.writer).isSameAs(mockDataWriter)
         assertThat(handler.bundleWithTraces).isTrue
         assertThat(handler.sampler).isInstanceOf(RateBasedSampler::class.java)
-        assertThat((handler.sampler as RateBasedSampler).sampleRate).isEqualTo(1.0f)
+        assertThat((handler.sampler as RateBasedSampler).getSamplingRate()).isEqualTo(1.0f)
         assertThat(handler.minLogPriority).isEqualTo(-1)
         assertThat(handler.loggerName).isEqualTo(fakePackageName)
         assertThat(handler.attachNetworkInfo).isFalse
@@ -254,7 +235,7 @@ internal class LoggerBuilderTest {
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
         val sampler = handler.sampler
         assertThat(sampler).isInstanceOf(RateBasedSampler::class.java)
-        assertThat((sampler as RateBasedSampler).sampleRate).isEqualTo(expectedSampleRate)
+        assertThat((sampler as RateBasedSampler).getSamplingRate()).isEqualTo(expectedSampleRate)
     }
 
     companion object {
