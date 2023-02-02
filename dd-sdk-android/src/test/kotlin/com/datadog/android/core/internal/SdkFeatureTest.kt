@@ -20,6 +20,7 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.EnvironmentProvider
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
@@ -445,7 +446,11 @@ internal class SdkFeatureTest {
 
     class FakeFeature(override val name: String) : Feature {
 
-        override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
+        override fun onInitialize(
+            sdkCore: SdkCore,
+            appContext: Context,
+            environmentProvider: EnvironmentProvider
+        ) {
             // no-op
         }
 
@@ -456,7 +461,11 @@ internal class SdkFeatureTest {
 
     class AnotherFakeFeature(override val name: String) : Feature {
 
-        override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
+        override fun onInitialize(
+            sdkCore: SdkCore,
+            appContext: Context,
+            environmentProvider: EnvironmentProvider
+        ) {
             // no-op
         }
 

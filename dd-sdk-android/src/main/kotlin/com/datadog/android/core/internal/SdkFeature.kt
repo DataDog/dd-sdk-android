@@ -31,6 +31,7 @@ import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.DatadogEnvironmentProvider
 import com.datadog.android.v2.core.internal.NoOpContextProvider
 import com.datadog.android.v2.core.internal.data.upload.DataFlusher
 import com.datadog.android.v2.core.internal.data.upload.DataUploadScheduler
@@ -83,7 +84,7 @@ internal class SdkFeature(
             coreFeature.trackingConsentProvider
         )
 
-        wrappedFeature.onInitialize(sdkCore, context)
+        wrappedFeature.onInitialize(sdkCore, context, DatadogEnvironmentProvider(coreFeature))
 
         initialized.set(true)
     }

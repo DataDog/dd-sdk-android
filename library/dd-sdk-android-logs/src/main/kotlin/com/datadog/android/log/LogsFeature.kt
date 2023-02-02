@@ -21,6 +21,7 @@ import com.datadog.android.log.internal.domain.event.LogEventSerializer
 import com.datadog.android.log.internal.storage.LogsDataWriter
 import com.datadog.android.log.internal.storage.NoOpDataWriter
 import com.datadog.android.log.model.LogEvent
+import com.datadog.android.v2.api.EnvironmentProvider
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureStorageConfiguration
@@ -55,7 +56,11 @@ class LogsFeature internal constructor(
 
     override val name: String = Feature.LOGS_FEATURE_NAME
 
-    override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
+    override fun onInitialize(
+        sdkCore: SdkCore,
+        appContext: Context,
+        environmentProvider: EnvironmentProvider
+    ) {
         this.sdkCore = sdkCore
         sdkCore.setEventReceiver(name, this)
 

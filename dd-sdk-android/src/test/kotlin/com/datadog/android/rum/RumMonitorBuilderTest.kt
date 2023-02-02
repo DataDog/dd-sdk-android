@@ -70,7 +70,7 @@ internal class RumMonitorBuilderTest {
         whenever(mockSdkCore.contextProvider) doReturn mock()
 
         rumFeature = RumFeature(fakeConfig, coreFeature.mockInstance)
-        rumFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        rumFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
         whenever(mockSdkCore.rumFeature) doReturn rumFeature
 
         Datadog.globalSdkCore = mockSdkCore

@@ -10,6 +10,7 @@ package com.datadog.android.error.internal
 
 import android.content.Context
 import com.datadog.android.plugin.DatadogPlugin
+import com.datadog.android.v2.api.EnvironmentProvider
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.SdkCore
 import java.util.concurrent.atomic.AtomicBoolean
@@ -25,7 +26,12 @@ internal class CrashReportsFeature(
     // region Feature
 
     override val name: String = CRASH_FEATURE_NAME
-    override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
+
+    override fun onInitialize(
+        sdkCore: SdkCore,
+        appContext: Context,
+        environmentProvider: EnvironmentProvider
+    ) {
         this.sdkCore = sdkCore
 
         setupExceptionHandler(appContext)

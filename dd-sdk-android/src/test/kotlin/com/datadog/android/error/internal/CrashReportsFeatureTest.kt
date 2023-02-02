@@ -58,7 +58,7 @@ internal class CrashReportsFeatureTest {
     @Test
     fun `𝕄 register crash handler 𝕎 initialize`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
 
         // Then
         val handler = Thread.getDefaultUncaughtExceptionHandler()
@@ -73,7 +73,7 @@ internal class CrashReportsFeatureTest {
         Thread.setDefaultUncaughtExceptionHandler(mockOriginalHandler)
 
         // When
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
         testedFeature.onStop()
 
         // Then
