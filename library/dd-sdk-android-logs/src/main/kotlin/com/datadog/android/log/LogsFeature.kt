@@ -19,6 +19,7 @@ import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.internal.domain.event.LogEventSerializer
 import com.datadog.android.log.internal.storage.LogsDataWriter
+import com.datadog.android.log.internal.storage.NoOpDataWriter
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
@@ -29,7 +30,6 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
-import com.datadog.android.v2.core.storage.NoOpDataWriter
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.android.v2.log.net.LogsRequestFactory
 import java.util.Locale
