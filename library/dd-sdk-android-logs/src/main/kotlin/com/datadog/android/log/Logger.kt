@@ -344,8 +344,7 @@ internal constructor(internal var handler: LogHandler) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    SDK_NOT_INITIALIZED_WARNING_MESSAGE + "\n" +
-                        Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
+                    SDK_NOT_INITIALIZED_WARNING_MESSAGE
                 )
                 return NoOpLogHandler()
             }

@@ -6,7 +6,13 @@
 
 package com.datadog.android.core.internal.utils
 
-internal val NULL_MAP_VALUE = Object()
+// TODO RUMM-3004 public as hack, no other solution for now. Any?.toJsonElement relies on this
+//  particular value. Maybe create something like (class NullMap) and check identity instead?
+/**
+ * Special value for missing attribute.
+ */
+@Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+val NULL_MAP_VALUE: Object = Object()
 
 /**
  * @return a new mutable map containing all key-value pairs from the given array of pairs.

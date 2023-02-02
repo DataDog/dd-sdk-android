@@ -139,6 +139,7 @@ class com.datadog.android.core.constraints.DatadogDataConstraints : DataConstrai
   override fun <T: Any?> validateAttributes(Map<String, T>, String?, String?, Set<String>): MutableMap<String, T>
   override fun validateTimings(Map<String, Long>): MutableMap<String, Long>
   companion object 
+val NULL_MAP_VALUE: Object
 fun toJsonElement(): com.google.gson.JsonElement
 var internalLogger: com.datadog.android.v2.api.InternalLogger
 interface com.datadog.android.core.persistence.Serializer<T: Any>
