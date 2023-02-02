@@ -130,9 +130,33 @@ enum com.datadog.android.core.configuration.VitalsUpdateFrequency
   - AVERAGE
   - RARE
   - NEVER
+interface com.datadog.android.core.constraints.DataConstraints
+  fun <T: Any?> validateAttributes(Map<String, T>, String? = null, String? = null, Set<String> = emptySet()): MutableMap<String, T>
+  fun validateTags(List<String>): List<String>
+  fun validateTimings(Map<String, Long>): MutableMap<String, Long>
+class com.datadog.android.core.constraints.DatadogDataConstraints : DataConstraints
+  override fun validateTags(List<String>): List<String>
+  override fun <T: Any?> validateAttributes(Map<String, T>, String?, String?, Set<String>): MutableMap<String, T>
+  override fun validateTimings(Map<String, Long>): MutableMap<String, Long>
+  companion object 
 var internalLogger: com.datadog.android.v2.api.InternalLogger
+interface com.datadog.android.core.persistence.Serializer<T: Any>
+  fun serialize(T): String?
+  companion object 
+fun <T: Any> serializeToByteArray(T, com.datadog.android.v2.api.InternalLogger): ByteArray?
+class com.datadog.android.core.sampling.RateBasedSampler : Sampler
+  constructor(Float)
+  constructor(Double)
+  override fun sample(): Boolean
+  override fun getSamplingRate(): Float?
+interface com.datadog.android.core.sampling.Sampler
+  fun sample(): Boolean
+  fun getSamplingRate(): Float?
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
+class com.datadog.android.event.MapperSerializer<T: Any> : com.datadog.android.core.persistence.Serializer<T>
+  constructor(EventMapper<T>, com.datadog.android.core.persistence.Serializer<T>)
+  override fun serialize(T): String?
 interface com.datadog.android.event.SpanEventMapper : EventMapper<com.datadog.android.tracing.model.SpanEvent>
   override fun map(com.datadog.android.tracing.model.SpanEvent): com.datadog.android.tracing.model.SpanEvent
 interface com.datadog.android.event.ViewEventMapper : EventMapper<com.datadog.android.rum.model.ViewEvent>
@@ -180,6 +204,7 @@ object com.datadog.android.log.LogAttributes
   const val SERVICE_NAME: String
   const val SOURCE: String
   const val STATUS: String
+  const val USR_ATTRIBUTES_GROUP: String
   const val USR_EMAIL: String
   const val USR_ID: String
   const val USR_NAME: String
@@ -535,6 +560,12 @@ data class com.datadog.android.v2.api.context.TimeInfo
   constructor(Long, Long, Long, Long)
 data class com.datadog.android.v2.api.context.UserInfo
   constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, Map<kotlin.String, kotlin.Any?> = emptyMap())
+interface com.datadog.android.v2.core.storage.DataWriter<T>
+  fun write(com.datadog.android.v2.api.EventBatchWriter, T): Boolean
+class com.datadog.android.v2.log.net.LogsRequestFactory : com.datadog.android.v2.api.RequestFactory
+  constructor(String)
+  override fun create(com.datadog.android.v2.api.context.DatadogContext, List<ByteArray>, ByteArray?): com.datadog.android.v2.api.Request
+  companion object 
 class com.datadog.android.webview.DatadogEventBridge
   constructor()
   constructor(List<String>)

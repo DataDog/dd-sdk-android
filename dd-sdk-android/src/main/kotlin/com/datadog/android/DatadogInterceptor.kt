@@ -10,10 +10,10 @@ import androidx.annotation.FloatRange
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.identifyRequest
-import com.datadog.android.core.internal.sampling.RateBasedSampler
-import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
+import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumAttributes

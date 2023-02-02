@@ -7,7 +7,7 @@
 package com.datadog.android
 
 import com.datadog.android.core.internal.net.identifyRequest
-import com.datadog.android.core.internal.sampling.RateBasedSampler
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource

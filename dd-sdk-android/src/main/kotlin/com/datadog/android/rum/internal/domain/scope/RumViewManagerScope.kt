@@ -26,7 +26,7 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
-import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.datadog.android.v2.core.storage.DataWriter
 import java.util.concurrent.TimeUnit
 
 internal class RumViewManagerScope(

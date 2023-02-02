@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.sampling
+package com.datadog.android.core.sampling
 
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

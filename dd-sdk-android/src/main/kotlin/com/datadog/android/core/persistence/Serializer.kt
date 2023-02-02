@@ -4,15 +4,15 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.persistence
+package com.datadog.android.core.persistence
 
 import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 
 /**
- * A class which can transform an object of type [T] into a formatted String.
+ * An interface which can transform an object of type [T] into a formatted String.
  */
-internal interface Serializer<T : Any> {
+interface Serializer<T : Any> {
     /**
      * Serializes the data into a String.
      * @return the String representing the data or null if any exception occurs
@@ -20,7 +20,7 @@ internal interface Serializer<T : Any> {
     fun serialize(model: T): String?
 
     companion object {
-        const val ERROR_SERIALIZING = "Error serializing %s model"
+        internal const val ERROR_SERIALIZING = "Error serializing %s model"
     }
 }
 
@@ -28,9 +28,13 @@ internal interface Serializer<T : Any> {
  * A utility class to serialize a model to a ByteArray safely.
  * If an exception is thrown while serializing the data, null is returned, and a
  * message will be sent to the internalLogger.
+ *
+ * @param T Data type to serialize.
+ * @param model Data object to serialize.
+ * @param internalLogger Internal logger.
  */
 @Suppress("TooGenericExceptionCaught")
-internal fun <T : Any> Serializer<T>.serializeToByteArray(
+fun <T : Any> Serializer<T>.serializeToByteArray(
     model: T,
     internalLogger: InternalLogger
 ): ByteArray? {

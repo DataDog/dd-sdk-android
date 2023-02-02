@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.constraints
+package com.datadog.android.core.constraints
 
 import android.util.Log
 import com.datadog.android.Datadog

@@ -8,9 +8,9 @@ package com.datadog.android.log
 
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler

@@ -283,7 +283,14 @@ object LogAttributes {
      */
     const val STATUS: String = "status"
 
-    internal const val USR_ATTRIBUTES_GROUP: String = "usr"
+    /**
+     * Group containing user properties.
+     *
+     * @see USR_EMAIL
+     * @see USR_ID
+     * @see USR_NAME
+     */
+    const val USR_ATTRIBUTES_GROUP: String = "usr"
 
     /**
      * The user email. (String)

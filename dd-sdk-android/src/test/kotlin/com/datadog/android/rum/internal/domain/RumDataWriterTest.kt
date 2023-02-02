@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.internal.domain
 
-import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileWriter
+import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent

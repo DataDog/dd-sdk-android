@@ -6,7 +6,7 @@
 
 package com.datadog.android.log.internal.storage
 
-import com.datadog.android.core.internal.persistence.Serializer
+import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter

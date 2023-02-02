@@ -6,9 +6,9 @@
 
 package com.datadog.android.log.internal.domain.event
 
-import com.datadog.android.core.internal.constraints.DataConstraints
-import com.datadog.android.core.internal.constraints.DatadogDataConstraints
-import com.datadog.android.core.internal.persistence.Serializer
+import com.datadog.android.core.constraints.DataConstraints
+import com.datadog.android.core.constraints.DatadogDataConstraints
+import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.model.LogEvent
 

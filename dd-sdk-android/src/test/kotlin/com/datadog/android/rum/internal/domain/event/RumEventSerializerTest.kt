@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.event
 
-import com.datadog.android.core.internal.constraints.DataConstraints
+import com.datadog.android.core.constraints.DataConstraints
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent

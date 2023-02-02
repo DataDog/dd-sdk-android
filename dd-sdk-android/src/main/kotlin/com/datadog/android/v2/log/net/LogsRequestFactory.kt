@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.v2.log.internal.net
+package com.datadog.android.v2.log.net
 
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.v2.api.Request
@@ -13,10 +13,17 @@ import com.datadog.android.v2.api.context.DatadogContext
 import java.util.Locale
 import java.util.UUID
 
-internal class LogsRequestFactory(
+// TODO RUMM-3002. Probably public temporary? Public for now, because need to share
+//  between Logs and WebView Logs.
+/**
+ * Request factory for the Logs feature.
+ * @param endpointUrl URL of the Logs intake.
+ */
+class LogsRequestFactory(
     internal val endpointUrl: String
 ) : RequestFactory {
 
+    /** @inheritdoc */
     override fun create(
         context: DatadogContext,
         batchData: List<ByteArray>,

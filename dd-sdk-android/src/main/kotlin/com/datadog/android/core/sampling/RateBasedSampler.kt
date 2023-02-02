@@ -4,16 +4,25 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.sampling
+package com.datadog.android.core.sampling
 
 import java.security.SecureRandom
 
-internal class RateBasedSampler(internal val sampleRate: Float) : Sampler {
+/**
+ * [Sampler] with the given constant sample rate.
+ */
+class RateBasedSampler(internal val sampleRate: Float) : Sampler {
 
+    /**
+     * Creates a new instance of [RateBasedSampler] with the given sample rate.
+     *
+     * @param sampleRate Sample rate to use.
+     */
     constructor(sampleRate: Double) : this(sampleRate.toFloat())
 
     private val random by lazy { SecureRandom() }
 
+    /** @inheritDoc */
     override fun sample(): Boolean {
         return when (sampleRate) {
             0f -> false
@@ -22,6 +31,7 @@ internal class RateBasedSampler(internal val sampleRate: Float) : Sampler {
         }
     }
 
+    /** @inheritDoc */
     override fun getSamplingRate(): Float? {
         return sampleRate
     }

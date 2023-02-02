@@ -12,9 +12,9 @@ import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
-import com.datadog.android.v2.core.internal.storage.DataWriter
-import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
-import com.datadog.android.v2.log.internal.net.LogsRequestFactory
+import com.datadog.android.v2.core.storage.DataWriter
+import com.datadog.android.v2.core.storage.NoOpDataWriter
+import com.datadog.android.v2.log.net.LogsRequestFactory
 import com.datadog.android.v2.webview.internal.storage.WebViewLogsDataWriter
 import com.datadog.android.webview.internal.log.domain.event.WebViewLogEventSerializer
 import com.google.gson.JsonObject

@@ -23,6 +23,9 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useCustomTracesEndpoint(String): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useSite(com.datadog.android.DatadogSite): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
+ * apiMethodSignature: com.datadog.android.core.sampling.RateBasedSampler#constructor(Double)
+ * apiMethodSignature: com.datadog.android.core.sampling.RateBasedSampler#constructor(Float)
+ * apiMethodSignature: com.datadog.android.event.MapperSerializer<T#constructor(EventMapper<T>, com.datadog.android.core.persistence.Serializer<T>)
  * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun setPrivacy(com.datadog.android.sessionreplay.SessionReplayPrivacy): Builder
  * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun useCustomEndpoint(String): Builder
  * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun useSite(com.datadog.android.DatadogSite): Builder
@@ -39,4 +42,5 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.rum.resource.RumResourceInputStream#constructor(java.io.InputStream, String)
  * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#fun startTracking()
  * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#fun stopTracking()
+ * apiMethodSignature: com.datadog.android.v2.log.net.LogsRequestFactory#constructor(String)
  */

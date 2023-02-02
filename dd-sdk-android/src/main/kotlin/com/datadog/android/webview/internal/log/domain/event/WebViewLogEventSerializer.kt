@@ -6,7 +6,7 @@
 
 package com.datadog.android.webview.internal.log.domain.event
 
-import com.datadog.android.core.internal.persistence.Serializer
+import com.datadog.android.core.persistence.Serializer
 import com.google.gson.JsonObject
 
 internal class WebViewLogEventSerializer :

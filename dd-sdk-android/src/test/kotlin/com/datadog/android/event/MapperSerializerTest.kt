@@ -6,7 +6,7 @@
 
 package com.datadog.android.event
 
-import com.datadog.android.core.internal.persistence.Serializer
+import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever

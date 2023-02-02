@@ -10,7 +10,7 @@ import android.content.Context
 import android.os.Looper
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.sampling.RateBasedSampler
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope

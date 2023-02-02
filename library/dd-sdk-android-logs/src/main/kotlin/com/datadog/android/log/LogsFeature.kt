@@ -29,9 +29,9 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
-import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
-import com.datadog.android.v2.log.internal.net.LogsRequestFactory
+import com.datadog.android.v2.core.storage.DataWriter
+import com.datadog.android.v2.log.net.LogsRequestFactory
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit

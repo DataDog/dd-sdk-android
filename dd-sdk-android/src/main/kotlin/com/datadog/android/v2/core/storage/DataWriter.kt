@@ -4,14 +4,18 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.v2.core.internal.storage
+package com.datadog.android.v2.core.storage
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.tools.annotation.NoOpImplementation
 
+/**
+ * Interface to be implemented by the class which wants to write arbitrary data with the
+ * given [EventBatchWriter].
+ */
 @NoOpImplementation
-internal interface DataWriter<T> {
+interface DataWriter<T> {
     /**
      * Writes the element with a given [EventBatchWriter].
      *

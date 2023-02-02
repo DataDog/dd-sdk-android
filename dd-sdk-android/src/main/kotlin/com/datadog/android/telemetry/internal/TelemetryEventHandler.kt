@@ -8,10 +8,10 @@ package com.datadog.android.telemetry.internal
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.sampling.RateBasedSampler
-import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
+import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
@@ -26,7 +26,7 @@ import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.datadog.android.v2.core.storage.DataWriter
 import io.opentracing.util.GlobalTracer
 import java.util.Locale
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrackingStrategy as VTS

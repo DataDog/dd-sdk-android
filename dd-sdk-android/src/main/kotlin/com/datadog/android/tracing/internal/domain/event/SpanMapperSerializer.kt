@@ -7,7 +7,7 @@
 package com.datadog.android.tracing.internal.domain.event
 
 import com.datadog.android.core.internal.Mapper
-import com.datadog.android.core.internal.persistence.Serializer
+import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.event.EventMapper
 import com.datadog.android.tracing.model.SpanEvent
 import com.datadog.opentracing.DDSpan

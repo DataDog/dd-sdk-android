@@ -6,13 +6,21 @@
 
 package com.datadog.android.event
 
-import com.datadog.android.core.internal.persistence.Serializer
+import com.datadog.android.core.persistence.Serializer
 
-internal class MapperSerializer<T : Any>(
+/**
+ * Combines [EventMapper] and [Serializer]. First mapping is dne, then serialization.
+ *
+ * @param T type of the data to map and serialize.
+ * @param eventMapper Event mapper to use.
+ * @param serializer Serializer to use.
+ */
+class MapperSerializer<T : Any>(
     internal val eventMapper: EventMapper<T>,
     private val serializer: Serializer<T>
 ) : Serializer<T> {
 
+    /** @inheritdoc */
     override fun serialize(model: T): String? {
         val mappedEvent = eventMapper.map(model) ?: return null
         return serializer.serialize(mappedEvent)

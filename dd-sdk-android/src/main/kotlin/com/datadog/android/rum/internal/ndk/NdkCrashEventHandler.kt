@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.ndk
 
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.datadog.android.v2.core.storage.DataWriter
 
 internal interface NdkCrashEventHandler {
     fun handleEvent(event: Map<*, *>, sdkCore: SdkCore, rumWriter: DataWriter<Any>)

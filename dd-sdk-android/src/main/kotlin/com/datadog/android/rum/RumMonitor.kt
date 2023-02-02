@@ -12,9 +12,9 @@ import android.os.Looper
 import androidx.annotation.FloatRange
 import androidx.fragment.app.Fragment
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.v2.api.InternalLogger

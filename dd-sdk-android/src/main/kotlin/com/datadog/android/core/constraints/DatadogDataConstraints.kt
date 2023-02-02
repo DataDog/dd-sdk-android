@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.constraints
+package com.datadog.android.core.constraints
 
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.toMutableMap
@@ -13,10 +13,14 @@ import java.util.Locale
 
 internal typealias StringTransform = (String) -> String?
 
-internal class DatadogDataConstraints : DataConstraints {
+/**
+ * Data constraints validator per Datadog requirements.
+ */
+class DatadogDataConstraints : DataConstraints {
 
     // region DataConstraints
 
+    /** @inheritdoc */
     override fun validateTags(tags: List<String>): List<String> {
         val convertedTags = tags.mapNotNull {
             val tag = convertTag(it)
@@ -46,6 +50,7 @@ internal class DatadogDataConstraints : DataConstraints {
         return convertedTags.take(MAX_TAG_COUNT)
     }
 
+    /** @inheritdoc */
     override fun <T : Any?> validateAttributes(
         attributes: Map<String, T>,
         keyPrefix: String?,
@@ -100,6 +105,7 @@ internal class DatadogDataConstraints : DataConstraints {
         return convertedAttributes.take(MAX_ATTR_COUNT).toMutableMap()
     }
 
+    /** @inheritdoc */
     override fun validateTimings(timings: Map<String, Long>): MutableMap<String, Long> {
         return timings.mapKeys { entry ->
             val sanitizedKey =
