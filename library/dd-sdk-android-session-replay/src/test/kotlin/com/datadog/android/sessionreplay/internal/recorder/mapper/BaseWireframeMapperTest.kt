@@ -24,44 +24,48 @@ internal abstract class BaseWireframeMapperTest {
     @FloatForgery(min = 1f, max = 10f)
     var fakePixelDensity: Float = 1f
 
-    protected fun View.toShapeWireframe(): MobileSegment.Wireframe.ShapeWireframe {
+    protected fun View.toShapeWireframes(): List<MobileSegment.Wireframe.ShapeWireframe> {
         val coordinates = IntArray(2)
         this.getLocationOnScreen(coordinates)
         val x = coordinates[0].densityNormalized(fakePixelDensity).toLong()
         val y = coordinates[1].densityNormalized(fakePixelDensity).toLong()
-        return MobileSegment.Wireframe.ShapeWireframe(
-            System.identityHashCode(this).toLong(),
-            x = x,
-            y = y,
-            width = width.toLong().densityNormalized(fakePixelDensity),
-            height = height.toLong().densityNormalized(fakePixelDensity)
+        return listOf(
+            MobileSegment.Wireframe.ShapeWireframe(
+                System.identityHashCode(this).toLong(),
+                x = x,
+                y = y,
+                width = width.toLong().densityNormalized(fakePixelDensity),
+                height = height.toLong().densityNormalized(fakePixelDensity)
+            )
         )
     }
 
-    protected fun TextView.toTextWireframe(): MobileSegment.Wireframe.TextWireframe {
+    protected fun TextView.toTextWireframes(): List<MobileSegment.Wireframe.TextWireframe> {
         val coordinates = IntArray(2)
         this.getLocationOnScreen(coordinates)
         val x = coordinates[0].densityNormalized(fakePixelDensity).toLong()
         val y = coordinates[1].densityNormalized(fakePixelDensity).toLong()
-        return MobileSegment.Wireframe.TextWireframe(
-            System.identityHashCode(this).toLong(),
-            x = x,
-            y = y,
-            text = resolveTextValue(this),
-            width = width.toLong().densityNormalized(fakePixelDensity),
-            height = height.toLong().densityNormalized(fakePixelDensity),
-            textStyle = MobileSegment.TextStyle(
-                "sans-serif",
-                0,
-                "#000000ff"
-            ),
-            textPosition = MobileSegment.TextPosition(
-                MobileSegment.Padding(0, 0, 0, 0),
-                alignment =
-                MobileSegment.Alignment(
-                    MobileSegment.Horizontal.LEFT,
-                    MobileSegment.Vertical
-                        .CENTER
+        return listOf(
+            MobileSegment.Wireframe.TextWireframe(
+                System.identityHashCode(this).toLong(),
+                x = x,
+                y = y,
+                text = resolveTextValue(this),
+                width = width.toLong().densityNormalized(fakePixelDensity),
+                height = height.toLong().densityNormalized(fakePixelDensity),
+                textStyle = MobileSegment.TextStyle(
+                    "sans-serif",
+                    0,
+                    "#000000ff"
+                ),
+                textPosition = MobileSegment.TextPosition(
+                    MobileSegment.Padding(0, 0, 0, 0),
+                    alignment =
+                    MobileSegment.Alignment(
+                        MobileSegment.Horizontal.LEFT,
+                        MobileSegment.Vertical
+                            .CENTER
+                    )
                 )
             )
         )

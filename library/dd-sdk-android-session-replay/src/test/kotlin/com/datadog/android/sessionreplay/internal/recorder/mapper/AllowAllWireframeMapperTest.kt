@@ -73,13 +73,13 @@ internal class AllowAllWireframeMapperTest {
         // Given
         val mockView: View = mock()
         whenever(mockViewWireframeMapper.map(mockView, fakePixelDensity))
-            .thenReturn(mockShapeWireframe)
+            .thenReturn(listOf(mockShapeWireframe))
 
         // When
-        val wireframe = testedAllowAllWireframeMapper.map(mockView, fakePixelDensity)
+        val wireframes = testedAllowAllWireframeMapper.map(mockView, fakePixelDensity)
 
         // Then
-        assertThat(wireframe).isEqualTo(mockShapeWireframe)
+        assertThat(wireframes).isEqualTo(listOf(mockShapeWireframe))
     }
 
     @Test
@@ -87,13 +87,13 @@ internal class AllowAllWireframeMapperTest {
         // Given
         val mockView: ImageView = mock()
         whenever(mockImageWireframeMapper.map(mockView, fakePixelDensity))
-            .thenReturn(mockImageWireframe)
+            .thenReturn(listOf(mockImageWireframe))
 
         // When
-        val wireframe = testedAllowAllWireframeMapper.map(mockView, fakePixelDensity)
+        val wireframes = testedAllowAllWireframeMapper.map(mockView, fakePixelDensity)
 
         // Then
-        assertThat(wireframe).isEqualTo(mockImageWireframe)
+        assertThat(wireframes).isEqualTo(listOf(mockImageWireframe))
     }
 
     @Test
@@ -101,13 +101,13 @@ internal class AllowAllWireframeMapperTest {
         // Given
         val mockView: TextView = mock()
         whenever(mockTextWireframeMapper.map(mockView, fakePixelDensity))
-            .thenReturn(mockTextWireframe)
+            .thenReturn(listOf(mockTextWireframe))
 
         // When
-        val wireframe = testedAllowAllWireframeMapper.map(mockView, fakePixelDensity)
+        val wireframes = testedAllowAllWireframeMapper.map(mockView, fakePixelDensity)
 
         // Then
-        assertThat(wireframe).isEqualTo(mockTextWireframe)
+        assertThat(wireframes).isEqualTo(listOf(mockTextWireframe))
     }
 
     @Test
@@ -115,13 +115,13 @@ internal class AllowAllWireframeMapperTest {
         // Given
         val mockView: Button = mock()
         whenever(mockButtonWireframeMapper.map(mockView, fakePixelDensity))
-            .thenReturn(mockButtonWireframe)
+            .thenReturn(listOf(mockButtonWireframe))
 
         // When
-        val wireframe = testedAllowAllWireframeMapper.map(mockView, fakePixelDensity)
+        val wireframes = testedAllowAllWireframeMapper.map(mockView, fakePixelDensity)
 
         // Then
-        assertThat(wireframe).isEqualTo(mockButtonWireframe)
+        assertThat(wireframes).isEqualTo(listOf(mockButtonWireframe))
     }
 
     @Test

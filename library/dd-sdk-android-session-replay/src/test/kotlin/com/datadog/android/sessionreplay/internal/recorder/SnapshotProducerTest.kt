@@ -35,6 +35,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.LinkedList
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -56,10 +57,10 @@ internal class SnapshotProducerTest {
     lateinit var mockGenericWireframeMapper: AllowAllWireframeMapper
 
     @Forgery
-    lateinit var fakeViewWireframe: MobileSegment.Wireframe
+    lateinit var fakeViewWireframes: List<MobileSegment.Wireframe>
 
     @Forgery
-    lateinit var fakeShapeScreenShotWireframe: MobileSegment.Wireframe.ShapeWireframe
+    lateinit var fakeShapeScreenShotWireframes: List<MobileSegment.Wireframe.ShapeWireframe>
 
     @Mock
     lateinit var mockViewUtils: ViewUtils
@@ -76,12 +77,17 @@ internal class SnapshotProducerTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         // making sure the root has shapeStyle
-        fakeViewWireframe = fakeViewWireframe.copy(shapeStyle = forge.getForgery())
-        fakeShapeScreenShotWireframe = fakeShapeScreenShotWireframe.copy(shapeStyle = forge.getForgery())
+        fakeViewWireframes = forge.aList {
+            getForgery<MobileSegment.Wireframe>().copy(shapeStyle = getForgery())
+        }
+        fakeShapeScreenShotWireframes = forge.aList {
+            getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+                .copy(shapeStyle = getForgery())
+        }
         whenever(mockViewScreenshotWireframeMapper.map(any(), eq(fakePixelDensity)))
-            .thenReturn(fakeShapeScreenShotWireframe)
+            .thenReturn(fakeShapeScreenShotWireframes)
         whenever(mockGenericWireframeMapper.map(any(), eq(fakePixelDensity)))
-            .thenReturn(fakeViewWireframe)
+            .thenReturn(fakeViewWireframes)
         whenever(mockGenericWireframeMapper.imageMapper)
             .thenReturn(mockViewScreenshotWireframeMapper)
         whenever(mockViewUtils.checkIfNotVisible(any())).thenReturn(false)
@@ -105,7 +111,7 @@ internal class SnapshotProducerTest {
         val snapshot = testedSnapshotProducer.produce(mockTheme, fakeRoot, fakePixelDensity)
 
         // Then
-        val expectedSnapshot = fakeRoot.toNode(viewMappedWireframe = fakeViewWireframe)
+        val expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
         assertThat(snapshot).isEqualTo(expectedSnapshot).usingRecursiveComparison()
     }
 
@@ -118,7 +124,7 @@ internal class SnapshotProducerTest {
         val snapshot = testedSnapshotProducer.produce(mockTheme, fakeRoot, fakePixelDensity)
 
         // Then
-        val expectedSnapshot = fakeRoot.toNode(viewMappedWireframe = fakeViewWireframe)
+        val expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
         assertThat(snapshot).isEqualTo(expectedSnapshot).usingRecursiveComparison()
     }
 
@@ -169,8 +175,8 @@ internal class SnapshotProducerTest {
         val snapshot = testedSnapshotProducer.produce(mockTheme, mockToolBar, fakePixelDensity)
 
         // Then
-        val shapeWireframe = snapshot?.wireframe as MobileSegment.Wireframe.ShapeWireframe
-        assertThat(shapeWireframe).isEqualTo(fakeShapeScreenShotWireframe)
+        val shapeWireframes = snapshot?.wireframes
+        assertThat(shapeWireframes).isEqualTo(fakeShapeScreenShotWireframes)
     }
 
     // endregion
@@ -181,9 +187,9 @@ internal class SnapshotProducerTest {
     fun `M use the Theme W produce() { view root does not have a ShapeStyle }`(forge: Forge) {
         // Given
         val fakeRoot = forge.aMockView<View>()
-        val fakeWireframe = forge.getForgery<MobileSegment.Wireframe>().copy(shapeStyle = null)
+        val fakeWireframes = forge.aList { getForgery<MobileSegment.Wireframe>().copy(shapeStyle = null) }
         whenever(mockGenericWireframeMapper.map(any(), eq(fakePixelDensity)))
-            .thenReturn(fakeWireframe)
+            .thenReturn(fakeWireframes)
         val fakeThemeColor = forge.aPositiveInt()
         val fakeThemeHexColor = forge.aStringMatching("#[0-9a-f]{6}ff")
         whenever(
@@ -193,13 +199,13 @@ internal class SnapshotProducerTest {
             )
         ).thenReturn(fakeThemeHexColor)
         whenever(mockThemeUtils.resolveThemeColor(mockTheme)).thenReturn(fakeThemeColor)
-        var expectedNode = fakeRoot.toNode(viewMappedWireframe = fakeWireframe)
+        var expectedNode = fakeRoot.toNode(viewMappedWireframes = fakeWireframes)
         val themeResolvedShapeStyle = MobileSegment.ShapeStyle(
             backgroundColor = fakeThemeHexColor,
             opacity = 1f
         )
         expectedNode = expectedNode.copy(
-            wireframe = expectedNode.wireframe.copy(shapeStyle = themeResolvedShapeStyle)
+            wireframes = expectedNode.wireframes.map { it.copy(shapeStyle = themeResolvedShapeStyle) }
         )
 
         // When
@@ -215,11 +221,11 @@ internal class SnapshotProducerTest {
     ) {
         // Given
         val fakeRoot = forge.aMockView<View>()
-        val fakeWireframe = forge.getForgery<MobileSegment.Wireframe>().copy(shapeStyle = null)
+        val fakeWireframes = forge.aList { getForgery<MobileSegment.Wireframe>().copy(shapeStyle = null) }
         whenever(mockGenericWireframeMapper.map(any(), eq(fakePixelDensity)))
-            .thenReturn(fakeWireframe)
+            .thenReturn(fakeWireframes)
         whenever(mockThemeUtils.resolveThemeColor(mockTheme)).thenReturn(null)
-        val expectedNode = fakeRoot.toNode(viewMappedWireframe = fakeWireframe)
+        val expectedNode = fakeRoot.toNode(viewMappedWireframes = fakeWireframes)
 
         // When
         val node = testedSnapshotProducer.produce(mockTheme, fakeRoot, fakePixelDensity)
@@ -234,21 +240,25 @@ internal class SnapshotProducerTest {
 
     private fun View.toNode(
         level: Int = 0,
-        viewMappedWireframe: MobileSegment.Wireframe
+        viewMappedWireframes: List<MobileSegment.Wireframe>
     ): Node {
         val children = if (this is ViewGroup) {
             val nodes = mutableListOf<Node>()
             for (i in 0 until childCount) {
-                nodes.add(this.getChildAt(i).toNode(level + 1, viewMappedWireframe))
+                nodes.add(this.getChildAt(i).toNode(level + 1, viewMappedWireframes))
             }
             nodes
         } else {
             emptyList()
         }
+        val parents = LinkedList<MobileSegment.Wireframe>()
+        repeat(level) {
+            parents += viewMappedWireframes
+        }
         return Node(
-            wireframe = viewMappedWireframe,
+            wireframes = viewMappedWireframes,
             children = children,
-            parents = List(level) { viewMappedWireframe }
+            parents = parents
         )
     }
 

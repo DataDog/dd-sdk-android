@@ -59,15 +59,13 @@ internal class NodeFlattenerTest {
         val wireframes = testedNodeFlattener.flattenNode(fakeSnapshot)
 
         // Then
-        val expectedList = listOf(
-            fakeSnapshot.wireframe,
-            fakeSnapshot.children[0].wireframe,
-            fakeSnapshot.children[0].children[0].wireframe,
-            fakeSnapshot.children[0].children[1].wireframe,
-            fakeSnapshot.children[1].wireframe,
-            fakeSnapshot.children[1].children[0].wireframe,
-            fakeSnapshot.children[1].children[1].wireframe
-        )
+        val expectedList = fakeSnapshot.wireframes +
+            fakeSnapshot.children[0].wireframes +
+            fakeSnapshot.children[0].children[0].wireframes +
+            fakeSnapshot.children[0].children[1].wireframes +
+            fakeSnapshot.children[1].wireframes +
+            fakeSnapshot.children[1].children[0].wireframes +
+            fakeSnapshot.children[1].children[1].wireframes
         assertThat(wireframes).isEqualTo(expectedList)
     }
 
@@ -175,25 +173,27 @@ internal class NodeFlattenerTest {
         whenever(mockWireframeUtils.resolveWireframeClip(this, parents))
             .thenReturn(this.clip())
         return Node(
-            wireframe = this,
+            wireframes = listOf(this),
             children = LinkedList(),
             parents = parents
         )
     }
 
     private fun Forge.aSnapshot(treeLevel: Int, childrenSize: Int = 2): Node {
-        val baseWidth = aLong(min = 200, max = 300)
-        val baseHeight = aLong(min = 300, max = 400)
         val dimensionsMultiplierFactor = childrenSize.toFloat().pow(treeLevel).toLong()
         val root = Node(
-            wireframe =
-            MobileSegment.Wireframe.ShapeWireframe(
-                0,
-                0,
-                0,
-                baseWidth * dimensionsMultiplierFactor,
-                baseHeight * dimensionsMultiplierFactor
-            )
+            wireframes = aList {
+                val baseWidth = aLong(min = 200, max = 300)
+                val baseHeight = aLong(min = 300, max = 400)
+                MobileSegment.Wireframe.ShapeWireframe(
+                    0,
+                    0,
+                    0,
+                    baseWidth * dimensionsMultiplierFactor,
+                    baseHeight * dimensionsMultiplierFactor
+                )
+            }
+
         )
         return root.copy(children = snapshots(root, 1, treeLevel, childrenSize))
     }
@@ -209,14 +209,13 @@ internal class NodeFlattenerTest {
 
     private fun Forge.snapshots(parent: Node, treeLevel: Int, maxTreeLevel: Int, childrenSize: Int):
         List<Node> {
-        val startIdIndex = childrenSize * parent.wireframe.id()
-        val parentWireframeBounds = parent.wireframe.bounds()
-        val parentWidth = parentWireframeBounds.width
-        val parentHeight = parentWireframeBounds.height
-        val parentY = parentWireframeBounds.y
-        val parentX = parentWireframeBounds.x
-        val maxWidth = parentWidth / childrenSize
-        val maxHeight = parentHeight / childrenSize
+        val startIdIndex = childrenSize * parent.wireframes.last().id()
+        val parentMinWidth = parent.wireframes.map { it.bounds() }.minOf { it.width }
+        val parentMinHeight = parent.wireframes.map { it.bounds() }.minOf { it.height }
+        val parentMaxY = parent.wireframes.map { it.bounds() }.maxOf { it.y }
+        val parentMaxX = parent.wireframes.map { it.bounds() }.maxOf { it.x }
+        val maxWidth = parentMinWidth / childrenSize
+        val maxHeight = parentMinHeight / childrenSize
         if (maxWidth == 0L || maxHeight == 0L) {
             return emptyList()
         }
@@ -224,10 +223,10 @@ internal class NodeFlattenerTest {
         return if (treeLevel <= maxTreeLevel) {
             Array(childrenSize) {
                 val nodeId = startIdIndex + (treeLevel * 10 + it).toLong()
-                val minY = parentY + maxHeight * it
-                val minX = parentX + maxWidth * it
-                val wireframe = forgeWireframe(nodeId, minX, minY, maxWidth, maxHeight)
-                var node = Node(wireframe = wireframe)
+                val minY = parentMaxY + maxHeight * it
+                val minX = parentMaxX + maxWidth * it
+                val wireframes = aList { forgeWireframe(nodeId, minX, minY, maxWidth, maxHeight) }
+                var node = Node(wireframes = wireframes)
                 node = node.copy(
                     children = snapshots(
                         node,
@@ -251,14 +250,16 @@ internal class NodeFlattenerTest {
                 x = x,
                 y = y,
                 width = width,
-                height = height
+                height = height,
+                clip = null
             )
             is MobileSegment.Wireframe.TextWireframe -> fakeWireframe.copy(
                 id = id,
                 x = x,
                 y = y,
                 width = width,
-                height = height
+                height = height,
+                clip = null
             )
         }
     }

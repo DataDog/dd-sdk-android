@@ -51,14 +51,14 @@ internal class SnapshotProducer(
             // It is too complex to de - structure this in multiple wireframes
             // and we cannot actually get all the details here.
             return Node(
-                wireframe = wireframeMapper.imageMapper.map(view, pixelsDensity)
+                wireframes = wireframeMapper.imageMapper.map(view, pixelsDensity)
             )
         }
 
         val childNodes = LinkedList<Node>()
-        val wireframe = wireframeMapper.map(view, pixelsDensity)
+        val wireframes = wireframeMapper.map(view, pixelsDensity)
         if (view is ViewGroup && view.childCount > 0) {
-            val parentsCopy = LinkedList(parents).apply { add(wireframe) }
+            val parentsCopy = LinkedList(parents).apply { addAll(wireframes) }
             for (i in 0 until view.childCount) {
                 val viewChild = view.getChildAt(i) ?: continue
                 convertViewToNode(viewChild, pixelsDensity, parentsCopy)?.let {
@@ -69,13 +69,13 @@ internal class SnapshotProducer(
 
         return Node(
             children = childNodes,
-            wireframe = wireframe,
+            wireframes = wireframes,
             parents = parents
         )
     }
 
     private fun resolveRootBackgroundFromTheme(theme: Theme, rootView: View, snapshot: Node): Node {
-        val rootShapeStyle = snapshot.wireframe.shapeStyle()
+        val rootShapeStyle = snapshot.wireframes.map { it.shapeStyle() }.firstOrNull { it != null }
         // we add a shapeStyle based on the Theme color in case the
         // root wireframe does not have a ShapeStyle
         if (rootShapeStyle == null) {
@@ -88,7 +88,10 @@ internal class SnapshotProducer(
                     backgroundColor = colorAndAlphaAsHexa,
                     opacity = rootView.alpha
                 )
-                return snapshot.copy(wireframe = snapshot.wireframe.copy(shapeStyle = shapeStyle))
+                return snapshot.copy(
+                    wireframes = snapshot.wireframes
+                        .map { wireframe -> wireframe.copy(shapeStyle = shapeStyle) }
+                )
             }
         }
         return snapshot

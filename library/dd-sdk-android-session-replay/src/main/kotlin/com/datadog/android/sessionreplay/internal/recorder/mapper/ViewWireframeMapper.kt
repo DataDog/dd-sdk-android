@@ -18,7 +18,7 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 internal class ViewWireframeMapper :
     BaseWireframeMapper<View, MobileSegment.Wireframe.ShapeWireframe>() {
 
-    override fun map(view: View, pixelsDensity: Float): MobileSegment.Wireframe.ShapeWireframe {
+    override fun map(view: View, pixelsDensity: Float): List<MobileSegment.Wireframe.ShapeWireframe> {
         val scaledHeight = view.height.densityNormalized(pixelsDensity).toLong()
         val scaledWidth = view.width.densityNormalized(pixelsDensity).toLong()
         val coordinates = IntArray(2)
@@ -28,14 +28,16 @@ internal class ViewWireframeMapper :
         val x = coordinates[0].densityNormalized(pixelsDensity).toLong()
         val y = coordinates[1].densityNormalized(pixelsDensity).toLong()
         val styleBorderPair = view.background?.resolveShapeStyleAndBorder(view.alpha)
-        return MobileSegment.Wireframe.ShapeWireframe(
-            resolveViewId(view),
-            x,
-            y,
-            scaledWidth,
-            scaledHeight,
-            shapeStyle = styleBorderPair?.first,
-            border = styleBorderPair?.second
+        return listOf(
+            MobileSegment.Wireframe.ShapeWireframe(
+                resolveViewId(view),
+                x,
+                y,
+                scaledWidth,
+                scaledHeight,
+                shapeStyle = styleBorderPair?.first,
+                border = styleBorderPair?.second
+            )
         )
     }
 
