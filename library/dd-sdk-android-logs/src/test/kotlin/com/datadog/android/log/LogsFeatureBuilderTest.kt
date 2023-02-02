@@ -8,8 +8,8 @@ package com.datadog.android.log
 
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
-import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.event.EventMapper
+import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.log.internal.net.LogsRequestFactory
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator

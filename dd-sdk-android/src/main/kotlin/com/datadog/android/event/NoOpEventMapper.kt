@@ -4,20 +4,26 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.event
+package com.datadog.android.event
 
-import com.datadog.android.event.EventMapper
+/**
+ * No-op implementation of [EventMapper]. Will return the same instance.
+ *
+ * @param T type boundary of the mapped object.
+ */
+class NoOpEventMapper<T : Any> : EventMapper<T> {
 
-internal class NoOpEventMapper<T : Any> : EventMapper<T> {
-
+    /** @inheritdoc */
     override fun map(event: T): T {
         return event
     }
 
+    /** @inheritdoc */
     override fun equals(other: Any?): Boolean {
         return other is NoOpEventMapper<*>
     }
 
+    /** @inheritdoc */
     override fun hashCode(): Int {
         return 0
     }

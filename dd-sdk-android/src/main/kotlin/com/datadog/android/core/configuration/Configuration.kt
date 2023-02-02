@@ -15,10 +15,10 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogInterceptor
 import com.datadog.android.DatadogSite
-import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.event.EventMapper
+import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.event.ViewEventMapper

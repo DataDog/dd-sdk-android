@@ -10,8 +10,8 @@ import android.app.Application
 import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
-import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
+import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.ndk.NdkCrashEventHandler

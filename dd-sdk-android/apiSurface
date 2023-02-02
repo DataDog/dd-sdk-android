@@ -157,6 +157,10 @@ interface com.datadog.android.event.EventMapper<T: Any>
 class com.datadog.android.event.MapperSerializer<T: Any> : com.datadog.android.core.persistence.Serializer<T>
   constructor(EventMapper<T>, com.datadog.android.core.persistence.Serializer<T>)
   override fun serialize(T): String?
+class com.datadog.android.event.NoOpEventMapper<T: Any> : EventMapper<T>
+  override fun map(T): T
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
 interface com.datadog.android.event.SpanEventMapper : EventMapper<com.datadog.android.tracing.model.SpanEvent>
   override fun map(com.datadog.android.tracing.model.SpanEvent): com.datadog.android.tracing.model.SpanEvent
 interface com.datadog.android.event.ViewEventMapper : EventMapper<com.datadog.android.rum.model.ViewEvent>
