@@ -4,8 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-@file:Suppress("DEPRECATION")
-
 package com.datadog.android.core.internal
 
 import android.content.Context
@@ -18,7 +16,6 @@ import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.utils.internalLogger
-import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
@@ -57,7 +54,6 @@ internal class SdkFeature(
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var uploadScheduler: UploadScheduler = NoOpUploadScheduler()
     internal var fileOrchestrator: FileOrchestrator = NoOpFileOrchestrator()
-    private val featurePlugins: MutableList<DatadogPlugin> = mutableListOf()
 
     // region SDK Feature
 
@@ -104,14 +100,6 @@ internal class SdkFeature(
 
             initialized.set(false)
         }
-    }
-
-    @Deprecated(
-        "Datadog Plugins will be removed in SDK v2.0.0. You will then need to" +
-            " write your own Feature (check our own code for guidance)."
-    )
-    fun getPlugins(): List<DatadogPlugin> {
-        return featurePlugins
     }
 
     // endregion
