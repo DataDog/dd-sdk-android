@@ -131,12 +131,7 @@ internal class DatadogCore(
         // TODO RUMM-2943 get rid of plugins -> only NDK crash reporting
         sdkFeature.initialize(
             this,
-            context.applicationContext,
-            if (feature is CrashReportsFeature) {
-                feature.plugins
-            } else {
-                emptyList()
-            }
+            context.applicationContext
         )
 
         if (feature.name == Feature.LOGS_FEATURE_NAME) {

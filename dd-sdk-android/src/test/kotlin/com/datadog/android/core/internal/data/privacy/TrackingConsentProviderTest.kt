@@ -97,6 +97,20 @@ internal class TrackingConsentProviderTest {
 
     @ParameterizedTest
     @EnumSource(TrackingConsent::class, names = ["PENDING"], mode = EnumSource.Mode.EXCLUDE)
+    fun `M unregister callback W requested`(fakeConsent: TrackingConsent) {
+        // GIVEN
+        testedConsentProvider.registerCallback(mockedCallback)
+
+        // WHEN
+        testedConsentProvider.unregisterCallback(mockedCallback)
+        testedConsentProvider.setConsent(fakeConsent)
+
+        // THEN
+        verifyZeroInteractions(mockedCallback)
+    }
+
+    @ParameterizedTest
+    @EnumSource(TrackingConsent::class, names = ["PENDING"], mode = EnumSource.Mode.EXCLUDE)
     fun `M unregister all callbacks W requested`(fakeConsent: TrackingConsent) {
         // GIVEN
         val anotherMockedCallback: TrackingConsentProviderCallback = mock()

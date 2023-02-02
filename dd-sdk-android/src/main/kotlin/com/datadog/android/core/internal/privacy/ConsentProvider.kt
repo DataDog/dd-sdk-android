@@ -19,5 +19,7 @@ internal interface ConsentProvider {
 
     fun registerCallback(callback: TrackingConsentProviderCallback)
 
+    fun unregisterCallback(callback: TrackingConsentProviderCallback)
+
     fun unregisterAllCallbacks()
 }

@@ -46,6 +46,11 @@ internal class TrackingConsentProvider(consent: TrackingConsent) :
     }
 
     @Synchronized
+    override fun unregisterCallback(callback: TrackingConsentProviderCallback) {
+        callbacks.remove(callback)
+    }
+
+    @Synchronized
     override fun unregisterAllCallbacks() {
         callbacks.clear()
     }

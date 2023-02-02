@@ -20,8 +20,7 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.log.Logger
 import com.datadog.android.log.LogsFeature
-import com.datadog.android.ndk.NdkCrashReportsPlugin
-import com.datadog.android.plugin.Feature
+import com.datadog.android.ndk.NdkCrashReportsFeature
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumInterceptor
 import com.datadog.android.rum.RumMonitor
@@ -134,6 +133,9 @@ class SampleApplication : Application() {
         }.build()
         Datadog.registerFeature(logsFeature)
 
+        val ndkCrashReportsFeature = NdkCrashReportsFeature()
+        Datadog.registerFeature(ndkCrashReportsFeature)
+
         Datadog.enableRumDebugging(true)
         setUserInfo(
             preferences.getUserId(),
@@ -172,7 +174,6 @@ class SampleApplication : Application() {
         )
             .sampleTelemetry(100f)
             .setFirstPartyHosts(tracedHosts)
-            .addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
             .setWebViewTrackingHosts(webViewTrackingHosts)
             .useViewTrackingStrategy(
                 NavigationViewTrackingStrategy(

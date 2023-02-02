@@ -17,10 +17,9 @@ import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
-import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.plugin.DatadogPlugin
-import com.datadog.android.plugin.DatadogPluginConfig
+import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
@@ -62,7 +61,7 @@ internal class SdkFeature(
 
     // region SDK Feature
 
-    fun initialize(sdkCore: SdkCore, context: Context, plugins: List<DatadogPlugin>) {
+    fun initialize(sdkCore: SdkCore, context: Context) {
         if (initialized.get()) {
             return
         }
@@ -72,17 +71,9 @@ internal class SdkFeature(
             setupUploader(wrappedFeature.requestFactory)
         }
 
-        registerPlugins(
-            plugins,
-            DatadogPluginConfig(
-                context = context,
-                storageDir = coreFeature.storageDir,
-                envName = coreFeature.envName,
-                serviceName = coreFeature.serviceName,
-                trackingConsent = coreFeature.trackingConsentProvider.getConsent()
-            ),
-            coreFeature.trackingConsentProvider
-        )
+        if (wrappedFeature is TrackingConsentProviderCallback) {
+            coreFeature.trackingConsentProvider.registerCallback(wrappedFeature)
+        }
 
         wrappedFeature.onInitialize(sdkCore, context, DatadogEnvironmentProvider(coreFeature))
 
@@ -102,7 +93,9 @@ internal class SdkFeature(
         if (initialized.get()) {
             wrappedFeature.onStop()
 
-            unregisterPlugins()
+            if (wrappedFeature is TrackingConsentProviderCallback) {
+                coreFeature.trackingConsentProvider.unregisterCallback(wrappedFeature)
+            }
             uploadScheduler.stopScheduling()
             uploadScheduler = NoOpUploadScheduler()
             storage = NoOpStorage()
@@ -160,25 +153,6 @@ internal class SdkFeature(
     // endregion
 
     // region Internal
-
-    private fun registerPlugins(
-        plugins: List<DatadogPlugin>,
-        config: DatadogPluginConfig,
-        trackingConsentProvider: ConsentProvider
-    ) {
-        plugins.forEach {
-            featurePlugins.add(it)
-            it.register(config)
-            trackingConsentProvider.registerCallback(it)
-        }
-    }
-
-    private fun unregisterPlugins() {
-        featurePlugins.forEach {
-            it.unregister()
-        }
-        featurePlugins.clear()
-    }
 
     private fun setupUploader(requestFactory: RequestFactory) {
         uploadScheduler = if (coreFeature.isMainProcess) {
