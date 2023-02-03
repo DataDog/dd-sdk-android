@@ -4,8 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-@file:Suppress("DEPRECATION")
-
 package com.datadog.android.core.configuration
 
 import android.os.Build
@@ -17,7 +15,6 @@ import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.event.ViewEventMapper
-import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.assertj.ConfigurationRumAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
@@ -115,7 +112,6 @@ internal class ConfigurationBuilderTest {
             .isEqualTo(
                 Configuration.Feature.Tracing(
                     endpointUrl = DatadogEndpoint.TRACES_US1,
-                    plugins = emptyList(),
                     spanEventMapper = NoOpSpanEventMapper()
                 )
             )
@@ -123,14 +119,12 @@ internal class ConfigurationBuilderTest {
             .isInstanceOf(NoOpSpanEventMapper::class.java)
         assertThat(config.crashReportConfig).isEqualTo(
             Configuration.Feature.CrashReport(
-                endpointUrl = DatadogEndpoint.LOGS_US1,
-                plugins = emptyList()
+                endpointUrl = DatadogEndpoint.LOGS_US1
             )
         )
         assertThat(config.rumConfig).isEqualTo(
             Configuration.Feature.RUM(
                 endpointUrl = DatadogEndpoint.RUM_US1,
-                plugins = emptyList(),
                 samplingRate = Configuration.DEFAULT_SAMPLING_RATE,
                 telemetrySamplingRate = Configuration.DEFAULT_TELEMETRY_SAMPLING_RATE,
                 userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
@@ -726,40 +720,6 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with plugin 𝕎 addPlugin() and build()`() {
-        // Given
-        val tracesPlugin: DatadogPlugin = mock()
-        val rumPlugin: DatadogPlugin = mock()
-        val crashPlugin: DatadogPlugin = mock()
-
-        // When
-        val config = testedBuilder
-            .addPlugin(tracesPlugin, Feature.TRACE)
-            .addPlugin(rumPlugin, Feature.RUM)
-            .addPlugin(crashPlugin, Feature.CRASH)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.tracesConfig).isEqualTo(
-            Configuration.DEFAULT_TRACING_CONFIG.copy(
-                plugins = listOf(tracesPlugin)
-            )
-        )
-        assertThat(config.crashReportConfig).isEqualTo(
-            Configuration.DEFAULT_CRASH_CONFIG.copy(
-                plugins = listOf(crashPlugin)
-            )
-        )
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                plugins = listOf(rumPlugin)
-            )
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
     fun `𝕄 warn user 𝕎 trackInteractions() {RUM disabled}`() {
         // Given
         testedBuilder = Configuration.Builder(
@@ -982,108 +942,6 @@ internal class ConfigurationBuilderTest {
                 Feature.RUM.featureName,
                 "setRumLongTaskEventMapper"
             )
-        )
-    }
-
-    @Test
-    fun `𝕄 warn user 𝕎 addPlugin() {trace feature disabled}`() {
-        // Given
-        testedBuilder = Configuration.Builder(
-            tracesEnabled = false,
-            crashReportsEnabled = true,
-            rumEnabled = true
-        )
-        val tracesPlugin: DatadogPlugin = mock()
-
-        // When
-        testedBuilder.addPlugin(tracesPlugin, Feature.TRACE)
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Configuration.ERROR_FEATURE_DISABLED.format(
-                Locale.US,
-                Feature.TRACE.featureName,
-                "addPlugin"
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 warn user 𝕎 addPlugin() {crash feature disabled}`() {
-        // Given
-        testedBuilder = Configuration.Builder(
-            tracesEnabled = true,
-            crashReportsEnabled = false,
-            rumEnabled = true
-        )
-        val crashPlugin: DatadogPlugin = mock()
-
-        // When
-        testedBuilder.addPlugin(crashPlugin, Feature.CRASH)
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Configuration.ERROR_FEATURE_DISABLED.format(
-                Locale.US,
-                Feature.CRASH.featureName,
-                "addPlugin"
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 warn user 𝕎 addPlugin() {RUM feature disabled}`() {
-        // Given
-        testedBuilder = Configuration.Builder(
-            tracesEnabled = true,
-            crashReportsEnabled = true,
-            rumEnabled = false
-        )
-        val rumPlugin: DatadogPlugin = mock()
-
-        // When
-        testedBuilder.addPlugin(rumPlugin, Feature.RUM)
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Configuration.ERROR_FEATURE_DISABLED.format(
-                Locale.US,
-                Feature.RUM.featureName,
-                "addPlugin"
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 warn user about deprecation 𝕎 addPlugin()`(
-        forge: Forge
-    ) {
-        // Given
-        testedBuilder = Configuration.Builder(
-            tracesEnabled = forge.aBool(),
-            crashReportsEnabled = forge.aBool(),
-            rumEnabled = forge.aBool()
-        )
-        val mockPlugin: DatadogPlugin = mock()
-
-        // When
-        testedBuilder.addPlugin(
-            mockPlugin,
-            forge.anElementFrom(Feature.CRASH, Feature.RUM, Feature.TRACE)
-        )
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            "Configuration.Builder#addPlugin has been deprecated since version 1.15.0, " +
-                "and will be removed in version 2.0.0."
         )
     }
 

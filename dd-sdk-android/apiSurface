@@ -99,7 +99,6 @@ data class com.datadog.android.core.configuration.Configuration
     fun disableInteractionTracking(): Builder
     fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
     fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
-    DEPRECATED fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
     fun setBatchSize(BatchSize): Builder
     fun setUploadFrequency(UploadFrequency): Builder
     fun sampleRumSessions(Float): Builder
@@ -216,16 +215,6 @@ object com.datadog.android.log.LogAttributes
   const val USR_ID: String
   const val USR_NAME: String
   const val VARIANT: String
-data class com.datadog.android.plugin.DatadogContext
-  constructor(DatadogRumContext? = null)
-DEPRECATED interface com.datadog.android.plugin.DatadogPlugin : com.datadog.android.privacy.TrackingConsentProviderCallback
-  fun register(DatadogPluginConfig)
-  fun unregister()
-  fun onContextChanged(DatadogContext)
-class com.datadog.android.plugin.DatadogPluginConfig
-  constructor(android.content.Context, java.io.File, String, String, com.datadog.android.privacy.TrackingConsent)
-data class com.datadog.android.plugin.DatadogRumContext
-  constructor(String? = null, String? = null, String? = null)
 enum com.datadog.android.plugin.Feature
   constructor(String)
   - CRASH
@@ -461,12 +450,15 @@ open class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
   constructor(TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   protected open fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
+interface com.datadog.android.v2.api.EnvironmentProvider
+  val trackingConsent: com.datadog.android.privacy.TrackingConsent
+  val rootStorageDir: java.io.File
 interface com.datadog.android.v2.api.EventBatchWriter
   fun currentMetadata(): ByteArray?
   fun write(ByteArray, ByteArray?): Boolean
 interface com.datadog.android.v2.api.Feature
   val name: String
-  fun onInitialize(SdkCore, android.content.Context)
+  fun onInitialize(SdkCore, android.content.Context, EnvironmentProvider)
   fun onStop()
   companion object 
     const val LOGS_FEATURE_NAME: String

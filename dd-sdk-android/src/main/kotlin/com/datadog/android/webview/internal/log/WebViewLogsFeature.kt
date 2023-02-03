@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.log
 
 import android.content.Context
 import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.v2.api.EnvironmentProvider
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
@@ -30,7 +31,11 @@ internal class WebViewLogsFeature(
     // region Feature
 
     override val name: String = WEB_LOGS_FEATURE_NAME
-    override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
+    override fun onInitialize(
+        sdkCore: SdkCore,
+        appContext: Context,
+        environmentProvider: EnvironmentProvider
+    ) {
         dataWriter = createDataWriter()
         initialized.set(true)
     }

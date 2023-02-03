@@ -7,7 +7,6 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.core.configuration.Configuration
-import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
@@ -15,8 +14,7 @@ internal class ConfigurationCrashReportForgeryFactory :
     ForgeryFactory<Configuration.Feature.CrashReport> {
     override fun getForgery(forge: Forge): Configuration.Feature.CrashReport {
         return Configuration.Feature.CrashReport(
-            endpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
-            plugins = forge.aList { mock() }
+            endpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+")
         )
     }
 }

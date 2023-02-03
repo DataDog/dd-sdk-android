@@ -4,8 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-@file:Suppress("DEPRECATION")
-
 package com.datadog.android.core.configuration
 
 import android.os.Build
@@ -16,13 +14,11 @@ import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogInterceptor
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.utils.internalLogger
-import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.event.ViewEventMapper
-import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
@@ -81,22 +77,18 @@ internal constructor(
 
     internal sealed class Feature {
         abstract val endpointUrl: String
-        abstract val plugins: List<DatadogPlugin>
 
         internal data class CrashReport(
-            override val endpointUrl: String,
-            override val plugins: List<DatadogPlugin>
+            override val endpointUrl: String
         ) : Feature()
 
         internal data class Tracing(
             override val endpointUrl: String,
-            override val plugins: List<DatadogPlugin>,
             val spanEventMapper: SpanEventMapper
         ) : Feature()
 
         internal data class RUM(
             override val endpointUrl: String,
-            override val plugins: List<DatadogPlugin>,
             val samplingRate: Float,
             val telemetrySamplingRate: Float,
             val userActionTrackingStrategy: UserActionTrackingStrategy?,
@@ -338,38 +330,6 @@ internal constructor(
         fun useViewTrackingStrategy(strategy: ViewTrackingStrategy?): Builder {
             applyIfFeatureEnabled(PluginFeature.RUM, "useViewTrackingStrategy") {
                 rumConfig = rumConfig.copy(viewTrackingStrategy = strategy)
-            }
-            return this
-        }
-
-        /**
-         * Adds a plugin to a specific feature. This plugin will only be registered if the feature
-         * was enabled.
-         * @param plugin a [DatadogPlugin]
-         * @param feature the feature for which this plugin should be registered
-         * @see [Feature.CrashReport]
-         * @see [Feature.Tracing]
-         * @see [Feature.RUM]
-         */
-        @Deprecated(message = PLUGINS_DEPRECATED_WARN_MESSAGE)
-        fun addPlugin(plugin: DatadogPlugin, feature: PluginFeature): Builder {
-            warnDeprecated(
-                target = "Configuration.Builder#addPlugin",
-                deprecatedSince = "1.15.0",
-                removedInVersion = "2.0.0"
-            )
-            applyIfFeatureEnabled(feature, "addPlugin") {
-                when (feature) {
-                    PluginFeature.RUM -> rumConfig = rumConfig.copy(
-                        plugins = rumConfig.plugins + plugin
-                    )
-                    PluginFeature.TRACE -> tracesConfig = tracesConfig.copy(
-                        plugins = tracesConfig.plugins + plugin
-                    )
-                    PluginFeature.CRASH -> crashReportConfig = crashReportConfig.copy(
-                        plugins = crashReportConfig.plugins + plugin
-                    )
-                }
             }
             return this
         }
@@ -662,17 +622,14 @@ internal constructor(
             site = DatadogSite.US1
         )
         internal val DEFAULT_CRASH_CONFIG = Feature.CrashReport(
-            endpointUrl = DatadogEndpoint.LOGS_US1,
-            plugins = emptyList()
+            endpointUrl = DatadogEndpoint.LOGS_US1
         )
         internal val DEFAULT_TRACING_CONFIG = Feature.Tracing(
             endpointUrl = DatadogEndpoint.TRACES_US1,
-            plugins = emptyList(),
             spanEventMapper = NoOpSpanEventMapper()
         )
         internal val DEFAULT_RUM_CONFIG = Feature.RUM(
             endpointUrl = DatadogEndpoint.RUM_US1,
-            plugins = emptyList(),
             samplingRate = DEFAULT_SAMPLING_RATE,
             telemetrySamplingRate = DEFAULT_TELEMETRY_SAMPLING_RATE,
             userActionTrackingStrategy = provideUserTrackingStrategy(

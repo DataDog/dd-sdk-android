@@ -21,7 +21,6 @@ internal class ConfigurationRumForgeryFactory :
     override fun getForgery(forge: Forge): Configuration.Feature.RUM {
         return Configuration.Feature.RUM(
             endpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
-            plugins = forge.aList { mock() },
             samplingRate = forge.aFloat(0f, 100f),
             telemetrySamplingRate = forge.aFloat(0f, 100f),
             userActionTrackingStrategy = mock(),

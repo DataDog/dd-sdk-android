@@ -7,7 +7,7 @@ data class com.datadog.android.sessionreplay.SessionReplayConfiguration
 class com.datadog.android.sessionreplay.SessionReplayFeature : com.datadog.android.v2.api.StorageBackedFeature, com.datadog.android.v2.api.FeatureEventReceiver
   constructor(SessionReplayConfiguration)
   override val name: String
-  override fun onInitialize(com.datadog.android.v2.api.SdkCore, android.content.Context)
+  override fun onInitialize(com.datadog.android.v2.api.SdkCore, android.content.Context, com.datadog.android.v2.api.EnvironmentProvider)
   override val requestFactory: com.datadog.android.v2.api.RequestFactory
   override val storageConfiguration: com.datadog.android.v2.api.FeatureStorageConfiguration
   override fun onStop()

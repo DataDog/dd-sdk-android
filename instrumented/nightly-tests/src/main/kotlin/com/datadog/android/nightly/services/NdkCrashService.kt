@@ -14,11 +14,10 @@ import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.log.LogsFeature
-import com.datadog.android.ndk.NdkCrashReportsPlugin
+import com.datadog.android.ndk.NdkCrashReportsFeature
 import com.datadog.android.nightly.activities.CRASH_DELAY_MS
 import com.datadog.android.nightly.activities.HUNDRED_PERCENT
 import com.datadog.android.nightly.utils.NeverUseThatEncryption
-import com.datadog.android.plugin.Feature
 import com.datadog.android.privacy.TrackingConsent
 
 internal open class NdkCrashService : CrashService() {
@@ -75,10 +74,6 @@ internal open class NdkCrashService : CrashService() {
             crashReportsEnabled = true,
             rumEnabled = rumEnabled
         ).sampleTelemetry(HUNDRED_PERCENT)
-        if (ndkCrashReportsEnabled) {
-            @Suppress("DEPRECATION")
-            configBuilder.addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
-        }
         if (encryptionEnabled) {
             configBuilder.setEncryption(NeverUseThatEncryption())
         }
@@ -89,6 +84,10 @@ internal open class NdkCrashService : CrashService() {
             TrackingConsent.GRANTED
         )
         Datadog.registerFeature(LogsFeature.Builder().build())
+        if (ndkCrashReportsEnabled) {
+            val ndkCrashReportsFeature = NdkCrashReportsFeature()
+            Datadog.registerFeature(ndkCrashReportsFeature)
+        }
     }
 
     // endregion

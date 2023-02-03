@@ -74,13 +74,13 @@ tasks.register("assembleAll") {
         ":dd-sdk-android-fresco:assemble",
         ":dd-sdk-android-glide:assemble",
         ":dd-sdk-android-ktx:assemble",
-        ":dd-sdk-android-ndk:assemble",
         ":dd-sdk-android-rx:assemble",
         ":dd-sdk-android-sqldelight:assemble",
         ":dd-sdk-android-timber:assemble",
         ":dd-sdk-android-tv:assemble",
         ":library:dd-sdk-android-session-replay:assemble",
-        ":library:dd-sdk-android-logs:assemble"
+        ":library:dd-sdk-android-logs:assemble",
+        ":library:dd-sdk-android-ndk:assemble"
     )
 }
 
@@ -92,13 +92,13 @@ tasks.register("unitTestRelease") {
         ":dd-sdk-android-fresco:testReleaseUnitTest",
         ":dd-sdk-android-glide:testReleaseUnitTest",
         ":dd-sdk-android-ktx:testReleaseUnitTest",
-        ":dd-sdk-android-ndk:testReleaseUnitTest",
         ":dd-sdk-android-rx:testReleaseUnitTest",
         ":dd-sdk-android-sqldelight:testReleaseUnitTest",
         ":dd-sdk-android-timber:testReleaseUnitTest",
         ":dd-sdk-android-tv:testReleaseUnitTest",
         ":library:dd-sdk-android-session-replay:testReleaseUnitTest",
-        ":library:dd-sdk-android-logs:testReleaseUnitTest"
+        ":library:dd-sdk-android-logs:testReleaseUnitTest",
+        ":library:dd-sdk-android-ndk:testReleaseUnitTest"
     )
 }
 
@@ -110,13 +110,13 @@ tasks.register("unitTestDebug") {
         ":dd-sdk-android-fresco:testDebugUnitTest",
         ":dd-sdk-android-glide:testDebugUnitTest",
         ":dd-sdk-android-ktx:testDebugUnitTest",
-        ":dd-sdk-android-ndk:testDebugUnitTest",
         ":dd-sdk-android-rx:testDebugUnitTest",
         ":dd-sdk-android-sqldelight:testDebugUnitTest",
         ":dd-sdk-android-timber:testDebugUnitTest",
         ":dd-sdk-android-tv:testDebugUnitTest",
         ":library:dd-sdk-android-session-replay:testDebugUnitTest",
-        ":library:dd-sdk-android-logs:testDebugUnitTest"
+        ":library:dd-sdk-android-logs:testDebugUnitTest",
+        ":library:dd-sdk-android-ndk:testDebugUnitTest"
     )
 }
 
@@ -143,13 +143,13 @@ tasks.register("lintCheckAll") {
         ":dd-sdk-android-fresco:lintRelease",
         ":dd-sdk-android-glide:lintRelease",
         ":dd-sdk-android-ktx:lintRelease",
-        ":dd-sdk-android-ndk:lintRelease",
         ":dd-sdk-android-rx:lintRelease",
         ":dd-sdk-android-sqldelight:lintRelease",
         ":dd-sdk-android-timber:lintRelease",
         ":dd-sdk-android-tv:lintRelease",
         ":library:dd-sdk-android-session-replay:lintRelease",
-        ":library:dd-sdk-android-logs:lintRelease"
+        ":library:dd-sdk-android-logs:lintRelease",
+        ":library:dd-sdk-android-ndk:lintRelease"
     )
 }
 
@@ -161,13 +161,13 @@ tasks.register("checkThirdPartyLicensesAll") {
         ":dd-sdk-android-fresco:checkThirdPartyLicences",
         ":dd-sdk-android-glide:checkThirdPartyLicences",
         ":dd-sdk-android-ktx:checkThirdPartyLicences",
-        ":dd-sdk-android-ndk:checkThirdPartyLicences",
         ":dd-sdk-android-rx:checkThirdPartyLicences",
         ":dd-sdk-android-sqldelight:checkThirdPartyLicences",
         ":dd-sdk-android-timber:checkThirdPartyLicences",
         ":dd-sdk-android-tv:checkThirdPartyLicences",
         ":library:dd-sdk-android-session-replay:checkThirdPartyLicences",
-        ":library:dd-sdk-android-logs:checkThirdPartyLicences"
+        ":library:dd-sdk-android-logs:checkThirdPartyLicences",
+        ":library:dd-sdk-android-ndk:checkThirdPartyLicences"
     )
 }
 
@@ -179,13 +179,13 @@ tasks.register("checkApiSurfaceChangesAll") {
         ":dd-sdk-android-fresco:checkApiSurfaceChanges",
         ":dd-sdk-android-glide:checkApiSurfaceChanges",
         ":dd-sdk-android-ktx:checkApiSurfaceChanges",
-        ":dd-sdk-android-ndk:checkApiSurfaceChanges",
         ":dd-sdk-android-rx:checkApiSurfaceChanges",
         ":dd-sdk-android-sqldelight:checkApiSurfaceChanges",
         ":dd-sdk-android-timber:checkApiSurfaceChanges",
         ":dd-sdk-android-tv:checkApiSurfaceChanges",
         ":library:dd-sdk-android-session-replay:checkApiSurfaceChanges",
-        ":library:dd-sdk-android-logs:checkApiSurfaceChanges"
+        ":library:dd-sdk-android-logs:checkApiSurfaceChanges",
+        ":library:dd-sdk-android-ndk:checkApiSurfaceChanges"
     )
 }
 
@@ -201,13 +201,13 @@ tasks.register("koverReportAll") {
         ":dd-sdk-android-fresco:koverXmlReport",
         ":dd-sdk-android-glide:koverXmlReport",
         ":dd-sdk-android-ktx:koverXmlReport",
-        ":dd-sdk-android-ndk:koverXmlReport",
         ":dd-sdk-android-rx:koverXmlReport",
         ":dd-sdk-android-sqldelight:koverXmlReport",
         ":dd-sdk-android-timber:koverXmlReport",
         ":dd-sdk-android-tv:koverXmlReport",
         ":library:dd-sdk-android-session-replay:koverXmlReport",
-        ":library:dd-sdk-android-logs:koverXmlReport"
+        ":library:dd-sdk-android-logs:koverXmlReport",
+        ":library:dd-sdk-android-ndk:koverXmlReport"
     )
 }
 
@@ -226,7 +226,7 @@ tasks.register("buildNightlyTestsArtifacts") {
 }
 
 tasks.register("buildNdkIntegrationTestsArtifacts") {
-    dependsOn(":dd-sdk-android-ndk:assembleDebugAndroidTest")
+    dependsOn(":library:dd-sdk-android-ndk:assembleDebugAndroidTest")
     // we need this artifact to trick Bitrise
     dependsOn(":instrumented:integration:assembleDebug")
 }

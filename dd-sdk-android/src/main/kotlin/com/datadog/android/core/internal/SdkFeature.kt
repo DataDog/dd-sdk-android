@@ -4,8 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-@file:Suppress("DEPRECATION")
-
 package com.datadog.android.core.internal
 
 import android.content.Context
@@ -17,10 +15,8 @@ import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
-import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.utils.internalLogger
-import com.datadog.android.plugin.DatadogPlugin
-import com.datadog.android.plugin.DatadogPluginConfig
+import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
@@ -31,6 +27,7 @@ import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.DatadogEnvironmentProvider
 import com.datadog.android.v2.core.internal.NoOpContextProvider
 import com.datadog.android.v2.core.internal.data.upload.DataFlusher
 import com.datadog.android.v2.core.internal.data.upload.DataUploadScheduler
@@ -57,11 +54,10 @@ internal class SdkFeature(
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var uploadScheduler: UploadScheduler = NoOpUploadScheduler()
     internal var fileOrchestrator: FileOrchestrator = NoOpFileOrchestrator()
-    private val featurePlugins: MutableList<DatadogPlugin> = mutableListOf()
 
     // region SDK Feature
 
-    fun initialize(sdkCore: SdkCore, context: Context, plugins: List<DatadogPlugin>) {
+    fun initialize(sdkCore: SdkCore, context: Context) {
         if (initialized.get()) {
             return
         }
@@ -71,19 +67,11 @@ internal class SdkFeature(
             setupUploader(wrappedFeature.requestFactory)
         }
 
-        registerPlugins(
-            plugins,
-            DatadogPluginConfig(
-                context = context,
-                storageDir = coreFeature.storageDir,
-                envName = coreFeature.envName,
-                serviceName = coreFeature.serviceName,
-                trackingConsent = coreFeature.trackingConsentProvider.getConsent()
-            ),
-            coreFeature.trackingConsentProvider
-        )
+        if (wrappedFeature is TrackingConsentProviderCallback) {
+            coreFeature.trackingConsentProvider.registerCallback(wrappedFeature)
+        }
 
-        wrappedFeature.onInitialize(sdkCore, context)
+        wrappedFeature.onInitialize(sdkCore, context, DatadogEnvironmentProvider(coreFeature))
 
         initialized.set(true)
     }
@@ -101,7 +89,9 @@ internal class SdkFeature(
         if (initialized.get()) {
             wrappedFeature.onStop()
 
-            unregisterPlugins()
+            if (wrappedFeature is TrackingConsentProviderCallback) {
+                coreFeature.trackingConsentProvider.unregisterCallback(wrappedFeature)
+            }
             uploadScheduler.stopScheduling()
             uploadScheduler = NoOpUploadScheduler()
             storage = NoOpStorage()
@@ -110,14 +100,6 @@ internal class SdkFeature(
 
             initialized.set(false)
         }
-    }
-
-    @Deprecated(
-        "Datadog Plugins will be removed in SDK v2.0.0. You will then need to" +
-            " write your own Feature (check our own code for guidance)."
-    )
-    fun getPlugins(): List<DatadogPlugin> {
-        return featurePlugins
     }
 
     // endregion
@@ -159,25 +141,6 @@ internal class SdkFeature(
     // endregion
 
     // region Internal
-
-    private fun registerPlugins(
-        plugins: List<DatadogPlugin>,
-        config: DatadogPluginConfig,
-        trackingConsentProvider: ConsentProvider
-    ) {
-        plugins.forEach {
-            featurePlugins.add(it)
-            it.register(config)
-            trackingConsentProvider.registerCallback(it)
-        }
-    }
-
-    private fun unregisterPlugins() {
-        featurePlugins.forEach {
-            it.unregister()
-        }
-        featurePlugins.clear()
-    }
 
     private fun setupUploader(requestFactory: RequestFactory) {
         uploadScheduler = if (coreFeature.isMainProcess) {

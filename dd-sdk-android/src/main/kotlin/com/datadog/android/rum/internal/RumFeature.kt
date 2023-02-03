@@ -48,6 +48,7 @@ import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.v2.api.EnvironmentProvider
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureStorageConfiguration
@@ -102,7 +103,11 @@ internal class RumFeature(
 
     override val name: String = Feature.RUM_FEATURE_NAME
 
-    override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
+    override fun onInitialize(
+        sdkCore: SdkCore,
+        appContext: Context,
+        environmentProvider: EnvironmentProvider
+    ) {
         this.sdkCore = sdkCore
         this.appContext = appContext
 

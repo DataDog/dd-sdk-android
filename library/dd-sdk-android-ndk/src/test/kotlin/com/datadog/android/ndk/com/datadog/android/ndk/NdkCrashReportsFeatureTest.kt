@@ -7,12 +7,14 @@
 package com.datadog.android.ndk.com.datadog.android.ndk
 
 import android.content.Context
-import com.datadog.android.ndk.NdkCrashReportsPlugin
-import com.datadog.android.plugin.DatadogPluginConfig
+import com.datadog.android.ndk.NdkCrashReportsFeature
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.v2.api.EnvironmentProvider
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.setFieldValue
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
-import fr.xgouchet.elmyr.Forge
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -32,93 +34,85 @@ import java.io.File
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-class NdkCrashReportsPluginTest {
+class NdkCrashReportsFeatureTest {
 
-    lateinit var testedPlugin: NdkCrashReportsPlugin
+    lateinit var testedFeature: NdkCrashReportsFeature
 
     @TempDir
     lateinit var tempDir: File
 
     @BeforeEach
     fun `set up`() {
-        testedPlugin = NdkCrashReportsPlugin()
+        testedFeature = NdkCrashReportsFeature()
     }
 
     @Test
     fun `M resolve to PENDING int state W consentToInt { PENDING }`() {
-        assertThat(testedPlugin.consentToInt(TrackingConsent.PENDING)).isEqualTo(
-            NdkCrashReportsPlugin.TRACKING_CONSENT_PENDING
+        assertThat(testedFeature.consentToInt(TrackingConsent.PENDING)).isEqualTo(
+            NdkCrashReportsFeature.TRACKING_CONSENT_PENDING
         )
     }
 
     @Test
     fun `M resolve to GRANTED int state W consentToInt { GRANTED }`() {
-        assertThat(testedPlugin.consentToInt(TrackingConsent.GRANTED)).isEqualTo(
-            NdkCrashReportsPlugin.TRACKING_CONSENT_GRANTED
+        assertThat(testedFeature.consentToInt(TrackingConsent.GRANTED)).isEqualTo(
+            NdkCrashReportsFeature.TRACKING_CONSENT_GRANTED
         )
     }
 
     @Test
     fun `M resolve to NOT_GRANTED int state W consentToInt { NOT_GRANTED }`() {
-        assertThat(testedPlugin.consentToInt(TrackingConsent.NOT_GRANTED)).isEqualTo(
-            NdkCrashReportsPlugin.TRACKING_CONSENT_NOT_GRANTED
+        assertThat(testedFeature.consentToInt(TrackingConsent.NOT_GRANTED)).isEqualTo(
+            NdkCrashReportsFeature.TRACKING_CONSENT_NOT_GRANTED
         )
     }
 
     @ParameterizedTest
     @EnumSource(TrackingConsent::class)
-    fun `M create the NDK crash reports directory W register { nativeLibrary loaded }`(
-        trackingConsent: TrackingConsent,
-        forge: Forge
+    fun `M create the NDK crash reports directory W onInitialize { nativeLibrary loaded }`(
+        trackingConsent: TrackingConsent
     ) {
         // GIVEN
-        val mockedContext: Context = mock()
-        val config = DatadogPluginConfig(
-            mockedContext,
-            tempDir,
-            forge.anAlphabeticalString(),
-            forge.anAlphabeticalString(),
-            trackingConsent
-        )
-        testedPlugin.setFieldValue("nativeLibraryLoaded", true)
+        val mockSdkCore = mock<SdkCore>()
+        val mockEnvProvider = mock<EnvironmentProvider>()
+        val mockContext: Context = mock()
+        whenever(mockEnvProvider.rootStorageDir) doReturn tempDir
+        whenever(mockEnvProvider.trackingConsent) doReturn trackingConsent
+        testedFeature.setFieldValue("nativeLibraryLoaded", true)
 
         // WHEN
         try {
-            testedPlugin.register(config)
+            testedFeature.onInitialize(mockSdkCore, mockContext, mockEnvProvider)
         } catch (e: UnsatisfiedLinkError) {
             // Do nothing. Just to avoid the NDK linkage error.
         }
 
         // THEN
-        val ndkCrashDirectory = File(tempDir, NdkCrashReportsPlugin.NDK_CRASH_REPORTS_FOLDER)
+        val ndkCrashDirectory = File(tempDir, NdkCrashReportsFeature.NDK_CRASH_REPORTS_FOLDER)
         assertThat(ndkCrashDirectory.exists()).isTrue()
     }
 
     @ParameterizedTest
     @EnumSource(TrackingConsent::class)
     fun `M do nothing  W register { nativeLibrary not loaded }`(
-        trackingConsent: TrackingConsent,
-        forge: Forge
+        trackingConsent: TrackingConsent
     ) {
         // GIVEN
-        val mockedContext: Context = mock()
-        val config = DatadogPluginConfig(
-            mockedContext,
-            tempDir,
-            forge.anAlphabeticalString(),
-            forge.anAlphabeticalString(),
-            trackingConsent
-        )
+        val mockSdkCore = mock<SdkCore>()
+        val mockEnvProvider = mock<EnvironmentProvider>()
+        val mockContext: Context = mock()
+        whenever(mockEnvProvider.rootStorageDir) doReturn tempDir
+        whenever(mockEnvProvider.trackingConsent) doReturn trackingConsent
 
         // WHEN
         try {
-            testedPlugin.register(config)
+            testedFeature.onInitialize(mockSdkCore, mockContext, mockEnvProvider)
         } catch (e: UnsatisfiedLinkError) {
             // Do nothing. Just to avoid the NDK linkage error.
         }
 
         // THEN
-        val ndkCrashDirectory = File(tempDir, NdkCrashReportsPlugin.NDK_CRASH_REPORTS_FOLDER)
+        val ndkCrashDirectory = File(tempDir, NdkCrashReportsFeature.NDK_CRASH_REPORTS_FOLDER)
         assertThat(ndkCrashDirectory.exists()).isFalse()
     }
 }

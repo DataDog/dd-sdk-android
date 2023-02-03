@@ -37,6 +37,7 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -173,7 +174,7 @@ internal class LogsFeatureTest {
     @Test
     fun `𝕄 initialize data writer 𝕎 initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, mockApplicationContext)
+        testedFeature.onInitialize(mockSdkCore, mockApplicationContext, mock())
 
         // Then
         assertThat(testedFeature.dataWriter)
@@ -183,7 +184,7 @@ internal class LogsFeatureTest {
     @Test
     fun `𝕄 use the eventMapper 𝕎 initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, mockApplicationContext)
+        testedFeature.onInitialize(mockSdkCore, mockApplicationContext, mock())
 
         // Then
         val dataWriter = testedFeature.dataWriter as? LogsDataWriter
@@ -197,7 +198,7 @@ internal class LogsFeatureTest {
     @Test
     fun `𝕄 initialize packageName 𝕎 initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, mockApplicationContext)
+        testedFeature.onInitialize(mockSdkCore, mockApplicationContext, mock())
 
         // Then
         assertThat(testedFeature.packageName).isEqualTo(fakePackageName)

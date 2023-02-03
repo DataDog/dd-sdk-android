@@ -98,7 +98,7 @@ repositories {
 
 dependencies {
     implementation(project(":dd-sdk-android"))
-    implementation(project(":dd-sdk-android-ndk"))
+    implementation(project(":library:dd-sdk-android-ndk"))
     implementation(project(":library:dd-sdk-android-logs"))
 
     implementation(libs.bundles.androidXNavigation)

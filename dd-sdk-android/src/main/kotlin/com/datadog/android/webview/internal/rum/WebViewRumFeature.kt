@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
+import com.datadog.android.v2.api.EnvironmentProvider
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
@@ -34,7 +35,11 @@ internal class WebViewRumFeature(
 
     override val name: String = WEB_RUM_FEATURE_NAME
 
-    override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
+    override fun onInitialize(
+        sdkCore: SdkCore,
+        appContext: Context,
+        environmentProvider: EnvironmentProvider
+    ) {
         dataWriter = createDataWriter()
         initialized.set(true)
     }

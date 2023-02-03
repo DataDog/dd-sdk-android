@@ -19,6 +19,7 @@ import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFac
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
+import com.datadog.android.v2.api.EnvironmentProvider
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureStorageConfiguration
@@ -70,7 +71,8 @@ class SessionReplayFeature internal constructor(
 
     override fun onInitialize(
         sdkCore: SdkCore,
-        appContext: Context
+        appContext: Context,
+        environmentProvider: EnvironmentProvider
     ) {
         this.sdkCore = sdkCore
         this.appContext = appContext

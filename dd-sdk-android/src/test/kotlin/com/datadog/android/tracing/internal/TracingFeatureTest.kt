@@ -52,7 +52,7 @@ internal class TracingFeatureTest {
     @Test
     fun `𝕄 initialize writer 𝕎 initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, mock())
+        testedFeature.onInitialize(mockSdkCore, mock(), mock())
 
         // Then
         assertThat(testedFeature.dataWriter)
@@ -62,7 +62,7 @@ internal class TracingFeatureTest {
     @Test
     fun `𝕄 use the eventMapper 𝕎 initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, mock())
+        testedFeature.onInitialize(mockSdkCore, mock(), mock())
 
         // Then
         val dataWriter = testedFeature.dataWriter as? TraceWriter

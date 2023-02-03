@@ -4,8 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-@file:Suppress("DEPRECATION")
-
 package com.datadog.android.core.internal
 
 import android.app.Application
@@ -13,13 +11,13 @@ import android.content.Context
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
-import com.datadog.android.plugin.DatadogPlugin
-import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.EnvironmentProvider
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
@@ -44,10 +42,8 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -95,16 +91,12 @@ internal class SdkFeatureTest {
     @StringForgery
     lateinit var fakeFeatureName: String
 
-    private lateinit var mockPlugins: List<DatadogPlugin>
-
     @BeforeEach
-    fun `set up`(forge: Forge) {
+    fun `set up`() {
         whenever(coreFeature.mockTrackingConsentProvider.getConsent()) doReturn fakeConsent
         whenever(mockWrappedFeature.name) doReturn fakeFeatureName
         whenever(mockWrappedFeature.requestFactory) doReturn mock()
         whenever(mockWrappedFeature.storageConfiguration) doReturn fakeStorageConfiguration
-
-        mockPlugins = forge.aList { mock() }
 
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
@@ -115,7 +107,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 mark itself as initialized 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance)
 
         // Then
         assertThat(testedFeature.isInitialized()).isTrue()
@@ -124,7 +116,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 initialize uploader 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance)
 
         // Then
         assertThat(testedFeature.uploadScheduler)
@@ -141,6 +133,23 @@ internal class SdkFeatureTest {
     }
 
     @Test
+    fun `𝕄 register tracking consent callback 𝕎 initialize(){feature+TrackingConsentProviderCallback}`() {
+        // Given
+        val mockFeature = mock<TrackingConsentFeature>()
+        testedFeature = SdkFeature(
+            coreFeature.mockInstance,
+            mockFeature
+        )
+
+        // When
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance)
+
+        // Then
+        verify(coreFeature.mockInstance.trackingConsentProvider)
+            .registerCallback(mockFeature)
+    }
+
+    @Test
     fun `𝕄 not initialize storage and uploader 𝕎 initialize() { simple feature }`() {
         // Given
         val mockSimpleFeature = mock<Feature>().apply {
@@ -152,7 +161,7 @@ internal class SdkFeatureTest {
         )
 
         // When
-        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance)
 
         // Then
         assertThat(testedFeature.isInitialized()).isTrue
@@ -168,59 +177,9 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 register plugins 𝕎 initialize()`() {
-        // When
-        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
-
-        // Then
-        argumentCaptor<DatadogPluginConfig> {
-            mockPlugins.forEach {
-                verify(it).register(capture())
-            }
-            allValues.forEach {
-                assertThat(it.context).isEqualTo(appContext.mockInstance)
-                assertThat(it.storageDir).isSameAs(coreFeature.fakeStorageDir)
-                assertThat(it.serviceName).isEqualTo(coreFeature.fakeServiceName)
-                assertThat(it.envName).isEqualTo(coreFeature.fakeEnvName)
-                assertThat(it.context).isEqualTo(appContext.mockInstance)
-                assertThat(it.trackingConsent).isEqualTo(fakeConsent)
-            }
-        }
-    }
-
-    @Test
-    fun `𝕄 register plugins as TrackingConsentCallback 𝕎 initialize()`() {
-        // When
-        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
-
-        // Then
-        mockPlugins.forEach {
-            verify(coreFeature.mockTrackingConsentProvider).registerCallback(it)
-        }
-    }
-
-    @Test
-    fun `𝕄 unregister plugins 𝕎 stop()`() {
-        // Given
-        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
-        mockPlugins.forEach {
-            verify(it).register(any())
-        }
-
-        // When
-        testedFeature.stop()
-
-        // Then
-        mockPlugins.forEach {
-            verify(it).unregister()
-            verifyNoMoreInteractions(it)
-        }
-    }
-
-    @Test
     fun `𝕄 stop scheduler 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance)
         val mockUploadScheduler: UploadScheduler = mock()
         testedFeature.uploadScheduler = mockUploadScheduler
 
@@ -234,7 +193,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 cleanup data 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance)
 
         // When
         testedFeature.stop()
@@ -253,7 +212,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 mark itself as not initialized 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance)
 
         // When
         testedFeature.stop()
@@ -265,7 +224,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 call wrapped feature onStop 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance)
 
         // When
         testedFeature.stop()
@@ -275,16 +234,35 @@ internal class SdkFeatureTest {
     }
 
     @Test
+    fun `𝕄 unregister tracking consent callback 𝕎 stop(){feature+TrackingConsentProviderCallback}`() {
+        // Given
+        val mockFeature = mock<TrackingConsentFeature>().apply {
+            whenever(name) doReturn fakeFeatureName
+        }
+        testedFeature = SdkFeature(
+            coreFeature = coreFeature.mockInstance,
+            wrappedFeature = mockFeature
+        )
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance)
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        verify(coreFeature.mockInstance.trackingConsentProvider).unregisterCallback(mockFeature)
+    }
+
+    @Test
     fun `𝕄 initialize only once 𝕎 initialize() twice`() {
         // Given
-        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance)
         val uploadScheduler = testedFeature.uploadScheduler
         val uploader = testedFeature.uploader
         val storage = testedFeature.storage
         val fileOrchestrator = testedFeature.fileOrchestrator
 
         // When
-        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance)
 
         // Then
         assertThat(testedFeature.uploadScheduler).isSameAs(uploadScheduler)
@@ -299,7 +277,7 @@ internal class SdkFeatureTest {
         whenever(testedFeature.coreFeature.isMainProcess) doReturn false
 
         // When
-        testedFeature.initialize(mockSdkCore, appContext.mockInstance, mockPlugins)
+        testedFeature.initialize(mockSdkCore, appContext.mockInstance)
 
         // Then
         assertThat(testedFeature.uploadScheduler).isInstanceOf(NoOpUploadScheduler::class.java)
@@ -445,7 +423,11 @@ internal class SdkFeatureTest {
 
     class FakeFeature(override val name: String) : Feature {
 
-        override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
+        override fun onInitialize(
+            sdkCore: SdkCore,
+            appContext: Context,
+            environmentProvider: EnvironmentProvider
+        ) {
             // no-op
         }
 
@@ -456,11 +438,39 @@ internal class SdkFeatureTest {
 
     class AnotherFakeFeature(override val name: String) : Feature {
 
-        override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
+        override fun onInitialize(
+            sdkCore: SdkCore,
+            appContext: Context,
+            environmentProvider: EnvironmentProvider
+        ) {
             // no-op
         }
 
         override fun onStop() {
+            // no-op
+        }
+    }
+
+    class TrackingConsentFeature(override val name: String) :
+        Feature,
+        TrackingConsentProviderCallback {
+
+        override fun onInitialize(
+            sdkCore: SdkCore,
+            appContext: Context,
+            environmentProvider: EnvironmentProvider
+        ) {
+            // no-op
+        }
+
+        override fun onStop() {
+            // no-op
+        }
+
+        override fun onConsentUpdated(
+            previousConsent: TrackingConsent,
+            newConsent: TrackingConsent
+        ) {
             // no-op
         }
     }

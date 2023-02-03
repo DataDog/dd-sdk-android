@@ -24,8 +24,6 @@ import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.error.internal.CrashReportsFeature
-import com.datadog.android.plugin.DatadogContext
-import com.datadog.android.plugin.DatadogRumContext
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
@@ -131,12 +129,7 @@ internal class DatadogCore(
         // TODO RUMM-2943 get rid of plugins -> only NDK crash reporting
         sdkFeature.initialize(
             this,
-            context.applicationContext,
-            if (feature is CrashReportsFeature) {
-                feature.plugins
-            } else {
-                emptyList()
-            }
+            context.applicationContext
         )
 
         if (feature.name == Feature.LOGS_FEATURE_NAME) {
@@ -223,17 +216,11 @@ internal class DatadogCore(
     ) {
         val feature = features[featureName] ?: return
         contextProvider?.let {
-            // workaround for the backward compatibility with DatadogPlugin, we don't want to have
-            // context update in plugins in the synchronized block
-            val updatedContext = synchronized(feature) {
+            synchronized(feature) {
                 val featureContext = it.getFeatureContext(featureName)
                 val mutableContext = featureContext.toMutableMap()
                 updateCallback(mutableContext)
                 it.setFeatureContext(featureName, mutableContext)
-                mutableContext
-            }
-            if (featureName == Feature.RUM_FEATURE_NAME) {
-                updateContextInPlugins(updatedContext)
             }
         }
     }
@@ -321,7 +308,7 @@ internal class DatadogCore(
 
     private fun initializeCrashReportFeature(configuration: Configuration.Feature.CrashReport?) {
         if (configuration != null) {
-            val crashReportsFeature = CrashReportsFeature(configuration.plugins)
+            val crashReportsFeature = CrashReportsFeature()
             this.crashReportsFeature = crashReportsFeature
             registerFeature(crashReportsFeature)
         }
@@ -457,26 +444,6 @@ internal class DatadogCore(
             TimeUnit.MILLISECONDS,
             runnable
         )
-    }
-
-    private fun updateContextInPlugins(rumContext: Map<String, Any?>) {
-        val applicationId = rumContext["application_id"] as? String
-        val sessionId = rumContext["session_id"] as? String
-        val viewId = rumContext["view_id"] as? String
-        val pluginContext = DatadogContext(
-            DatadogRumContext(
-                applicationId,
-                sessionId,
-                viewId
-            )
-        )
-        // toSet is needed because some features share the same plugins
-        features.values.flatMap {
-            @Suppress("DEPRECATION")
-            it.getPlugins()
-        }.toSet().forEach {
-            it.onContextChanged(pluginContext)
-        }
     }
 
     // endregion
