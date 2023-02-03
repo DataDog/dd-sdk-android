@@ -204,9 +204,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         val shapeWireframes = testedWireframeMapper.map(mockView, fakePixelDensity)
 
         // Then
-        val expectedWireframes = mockView.toShapeWireframes().map {
-            it.copy(border = MobileSegment.ShapeBorder("#000000ff", 1))
-        }
+        val expectedWireframes = mockView.toShapeWireframes()
         assertThat(shapeWireframes).isEqualTo(expectedWireframes)
     }
 
@@ -290,9 +288,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         val shapeWireframes = testedWireframeMapper.map(mockView, fakePixelDensity)
 
         // Then
-        val expectedWireframes = mockView.toShapeWireframes().map {
-            it.copy(border = MobileSegment.ShapeBorder("#000000ff", 1))
-        }
+        val expectedWireframes = mockView.toShapeWireframes()
         assertThat(shapeWireframes).isEqualTo(expectedWireframes)
     }
 
@@ -316,9 +312,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         val shapeWireframes = testedWireframeMapper.map(mockView, fakePixelDensity)
 
         // Then
-        val expectedWireframes = mockView.toShapeWireframes().map {
-            it.copy(border = MobileSegment.ShapeBorder("#000000ff", 1))
-        }
+        val expectedWireframes = mockView.toShapeWireframes()
         assertThat(shapeWireframes).isEqualTo(expectedWireframes)
     }
 }

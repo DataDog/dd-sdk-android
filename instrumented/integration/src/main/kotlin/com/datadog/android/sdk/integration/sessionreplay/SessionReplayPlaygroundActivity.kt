@@ -166,22 +166,6 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
         // one shape wireframe for action bar container and one for toolbar
         // probably these will be changed later as we decide how to handle the action bars
         decorView.findViewByType(ActionBarContainer::class.java)?.let {
-            val actionBarContainerScreenCoordinates = it.getViewAbsoluteCoordinates()
-            val actionBarContainerWireframe = MobileSegment.Wireframe.ShapeWireframe(
-                id = it.resolveId(),
-                width = it.width.toLong().densityNormalized(density),
-                height = it.height.toLong().densityNormalized(density),
-                x = actionBarContainerScreenCoordinates[0].toLong().densityNormalized(density),
-                y = actionBarContainerScreenCoordinates[1].toLong().densityNormalized(density),
-                border = MobileSegment.ShapeBorder(
-                    color = StringUtils.formatColorAndAlphaAsHexa(
-                        BLACK_COLOR_AS_HEXA,
-                        FULL_OPACITY_AS_HEXA
-                    ),
-                    width = 1
-                )
-            )
-            fullSnapshotRecordWireframes.add(actionBarContainerWireframe)
             (it.getChildAt(0) as? Toolbar)?.let { toolbar ->
                 val toolbarScreenCoordinates = toolbar.getViewAbsoluteCoordinates()
                 val actionBarToolbarWireframe = MobileSegment.Wireframe.ShapeWireframe(

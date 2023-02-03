@@ -13,7 +13,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.datadog.android.sample.R
 
-class TextViewComponentsFragment : Fragment() {
+internal class TextViewComponentsFragment : Fragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater,
