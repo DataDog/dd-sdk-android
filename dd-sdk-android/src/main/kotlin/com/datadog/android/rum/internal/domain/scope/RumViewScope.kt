@@ -95,6 +95,7 @@ internal open class RumViewScope(
     private var loadingTime: Long? = null
     private var loadingType: ViewEvent.LoadingType? = null
     private val customTimings: MutableMap<String, Long> = mutableMapOf()
+    private val featureFlags: MutableMap<String, Any?> = mutableMapOf()
 
     internal var stopped: Boolean = false
 
@@ -166,6 +167,7 @@ internal open class RumViewScope(
             is RumRawEvent.StartResource -> onStartResource(event, writer)
             is RumRawEvent.AddError -> onAddError(event, writer)
             is RumRawEvent.AddLongTask -> onAddLongTask(event, writer)
+            is RumRawEvent.AddFeatureFlagEvaluation -> onAddFeatureFlagEvaluation(event, writer)
 
             is RumRawEvent.ApplicationStarted -> onApplicationStarted(event, writer)
             is RumRawEvent.UpdateViewLoadingTime -> onUpdateViewLoadingTime(event, writer)
@@ -375,6 +377,7 @@ internal open class RumViewScope(
 
                 val errorEvent = ErrorEvent(
                     date = event.eventTime.timestamp + serverTimeOffsetInMs,
+                    featureFlags = ErrorEvent.Context(featureFlags),
                     error = ErrorEvent.Error(
                         message = message,
                         source = event.source.toSchemaSource(),
@@ -678,6 +681,7 @@ internal open class RumViewScope(
 
                 val viewEvent = ViewEvent(
                     date = eventTimestamp,
+                    featureFlags = ViewEvent.Context(additionalProperties = featureFlags),
                     view = ViewEvent.View(
                         id = rumContext.viewId.orEmpty(),
                         name = rumContext.viewName,
@@ -952,6 +956,11 @@ internal open class RumViewScope(
 
         pendingLongTaskCount++
         if (isFrozenFrame) pendingFrozenFrameCount++
+    }
+
+    private fun onAddFeatureFlagEvaluation(event: RumRawEvent.AddFeatureFlagEvaluation, writer: DataWriter<Any>) {
+        featureFlags[event.name] = event.value
+        sendViewUpdate(event, writer)
     }
 
     private fun isViewComplete(): Boolean {

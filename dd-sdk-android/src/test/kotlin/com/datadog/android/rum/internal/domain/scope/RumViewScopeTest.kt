@@ -6246,6 +6246,108 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region Feature Flags
+
+    @Test
+    fun `M send event W handleEvent(AddFeatureFlagEvaluation) on active view`(
+        @StringForgery flagName: String,
+        @StringForgery flagValue: String
+    ) {
+        // GIVEN
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name = flagName,
+                value = flagValue
+            ),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasFeatureFlag(flagName, flagValue)
+                }
+        }
+    }
+
+    @Test
+    fun `M modify flag W handleEvent(AddFeatureFlagEvaluation) on active view { existing feature flag }`(
+        @StringForgery flagName: String,
+        @BoolForgery oldFlagValue: Boolean,
+        @StringForgery flagValue: String
+    ) {
+        // GIVEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name = flagName,
+                value = oldFlagValue
+            ),
+            mockWriter
+        )
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name = flagName,
+                value = flagValue
+            ),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasFeatureFlag(flagName, flagValue)
+                }
+        }
+    }
+
+    @Test
+    fun `M send flags on ErrorEvent W handleEvent(AddError) on active view { existing feature flags }`(
+        forge: Forge,
+        @StringForgery flagName: String,
+        @StringForgery flagValue: String
+    ) {
+        // GIVEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name = flagName,
+                value = flagValue
+            ),
+            mockWriter
+        )
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddError(
+                forge.anAlphabeticalString(),
+                forge.aValueFrom(RumErrorSource::class.java),
+                null,
+                null,
+                false,
+                mapOf()
+            ),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasFeatureFlag(flagName, flagValue)
+                }
+        }
+    }
+
+    // endregion
+
     // region ViewUpdatePredicate
 
     @Test

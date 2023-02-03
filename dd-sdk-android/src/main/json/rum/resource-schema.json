@@ -245,7 +245,7 @@
             },
             "rule_psr": {
               "type": "number",
-              "description": "tracing sample rate in decimal format",
+              "description": "trace sample rate in decimal format",
               "minimum": 0,
               "maximum": 1,
               "readOnly": true
