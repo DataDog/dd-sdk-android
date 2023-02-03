@@ -4,15 +4,18 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.utils.forge
+package com.datadog.tools.unit.forge
 
 import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-// TODO RUMM-2949 Share forgeries/test configurations between modules
+/**
+ *  A [ForgeryFactory] generating a random [JsonPrimitive] instance.
+ */
 class GsonJsonPrimitiveForgeryFactory : ForgeryFactory<JsonPrimitive> {
 
+    /** @inheritDoc */
     override fun getForgery(forge: Forge): JsonPrimitive {
         return forge.anElementFrom(
             JsonPrimitive(forge.aBool()),

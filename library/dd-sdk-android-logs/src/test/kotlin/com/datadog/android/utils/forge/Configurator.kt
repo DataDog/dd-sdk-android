@@ -20,13 +20,6 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(UserInfoForgeryFactory())
         forge.addFactory(NetworkInfoForgeryFactory())
 
-        forge.addFactory(GsonJsonArrayForgeryFactory())
-        forge.addFactory(GsonJsonObjectForgeryFactory())
-        forge.addFactory(GsonJsonPrimitiveForgeryFactory())
-
-        forge.addFactory(OrgJSONArrayForgeryFactory())
-        forge.addFactory(OrgJSONObjectForgeryFactory())
-
         forge.useJvmFactories()
     }
 }

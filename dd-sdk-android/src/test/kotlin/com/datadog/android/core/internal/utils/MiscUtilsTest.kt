@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.utils
 
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull

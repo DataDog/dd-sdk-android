@@ -8,6 +8,7 @@ package com.datadog.android.utils.forge
 
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.Locale
