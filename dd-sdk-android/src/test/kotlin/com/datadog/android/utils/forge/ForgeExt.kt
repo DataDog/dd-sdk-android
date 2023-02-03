@@ -6,22 +6,13 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.core.internal.utils.toMutableMap
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
-import org.json.JSONArray
-import org.json.JSONObject
-import org.junit.jupiter.api.Assumptions.assumeTrue
-import java.io.File
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 
 /**
  * Will generate an alphaNumericalString which is not matching any values provided in the set.
@@ -32,52 +23,6 @@ internal fun Forge.aStringNotMatchingSet(set: Set<String>): String {
         aString = anAlphaNumericalString()
     }
     return aString
-}
-
-/**
- * Will generate a map with different value types with a possibility to filter out given keys,
- * see [aFilteredMap] for details on filtering.
- */
-internal fun Forge.exhaustiveAttributes(
-    excludedKeys: Set<String> = emptySet(),
-    filterThreshold: Float = 0.5f
-): MutableMap<String, Any?> {
-    val map = generateMapWithExhaustiveValues(this).toMutableMap()
-
-    map[""] = anHexadecimalString()
-    map[aWhitespaceString()] = anHexadecimalString()
-    map[anAlphabeticalString()] = generateMapWithExhaustiveValues(this).toMutableMap().apply {
-        this[anAlphabeticalString()] = generateMapWithExhaustiveValues(this@exhaustiveAttributes)
-    }
-
-    val filtered = map.filterKeys { it !in excludedKeys }
-
-    assumeDifferenceIsNoMore(filtered.size, map.size, filterThreshold)
-
-    return filtered.toMutableMap()
-}
-
-/**
- * Creates a map just like [Forge#aMap], but it won't include given keys.
- * @param excludedKeys Keys to exclude from generated map.
- * @param filterThreshold Max ratio of keys removed from originally generated map. If ratio
- * is more than that, [Assume] mechanism will be used.
- */
-internal fun <K, V> Forge.aFilteredMap(
-    size: Int = -1,
-    excludedKeys: Set<K>,
-    filterThreshold: Float = 0.5f,
-    forging: Forge.() -> Pair<K, V>
-): Map<K, V> {
-    val base = aMap(size, forging)
-
-    val filtered = base.filterKeys { it !in excludedKeys }
-
-    if (base.isNotEmpty()) {
-        assumeDifferenceIsNoMore(filtered.size, base.size, filterThreshold)
-    }
-
-    return filtered
 }
 
 internal fun Forge.aRumEvent(): Any {
@@ -98,42 +43,4 @@ internal fun Forge.aRumEventAsJson(): JsonObject {
         this.getForgery<ResourceEvent>().toJson().asJsonObject,
         this.getForgery<ErrorEvent>().toJson().asJsonObject
     )
-}
-
-private fun assumeDifferenceIsNoMore(result: Int, base: Int, maxDifference: Float) {
-    check(result <= base) {
-        "Number of elements after filtering cannot exceed the number of original elements."
-    }
-
-    val diff = (base - result).toFloat() / base
-    assumeTrue(
-        diff <= maxDifference,
-        "Too many elements removed, condition cannot be satisfied."
-    )
-}
-
-private fun generateMapWithExhaustiveValues(forge: Forge): MutableMap<String, Any?> {
-    return forge.run {
-        listOf(
-            aBool(),
-            anInt(),
-            aLong(),
-            aFloat(),
-            aDouble(),
-            anAsciiString(),
-            getForgery<Date>(),
-            getForgery<Locale>(),
-            getForgery<TimeZone>(),
-            getForgery<File>(),
-            getForgery<JsonObject>(),
-            getForgery<JsonArray>(),
-            getForgery<JSONObject>(),
-            getForgery<JSONArray>(),
-            aList { anAlphabeticalString() },
-            aList { aDouble() },
-            null
-        )
-            .map { anAlphaNumericalString() to it }
-            .toMutableMap()
-    }
 }

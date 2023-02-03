@@ -22,9 +22,9 @@ import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.lyft.kronos.KronosClock
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock

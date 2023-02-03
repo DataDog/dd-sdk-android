@@ -4,15 +4,18 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.utils.forge
+package com.datadog.tools.unit.forge
 
 import com.google.gson.JsonArray
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-// TODO RUMM-2949 Share forgeries/test configurations between modules
+/**
+ *  A [ForgeryFactory] generating a random [JsonArray] instance.
+ */
 class GsonJsonArrayForgeryFactory : ForgeryFactory<JsonArray> {
 
+    /** @inheritDoc */
     override fun getForgery(forge: Forge): JsonArray {
         return forge.anElementFrom(
             JsonArray(),

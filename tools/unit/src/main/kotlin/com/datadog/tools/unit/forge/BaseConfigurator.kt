@@ -18,9 +18,20 @@ open class BaseConfigurator :
     ForgeConfigurator {
     /** @inheritDoc */
     override fun configure(forge: Forge) {
+        // Throwables
         forge.addFactory(ExceptionForgeryFactory())
         forge.addFactory(ErrorForgeryFactory())
         forge.addFactory(ThrowableForgeryFactory())
+
+        // GSON
+        forge.addFactory(GsonJsonArrayForgeryFactory())
+        forge.addFactory(GsonJsonObjectForgeryFactory())
+        forge.addFactory(GsonJsonPrimitiveForgeryFactory())
+
+        // org.json
+        forge.addFactory(OrgJSONArrayForgeryFactory())
+        forge.addFactory(OrgJSONObjectForgeryFactory())
+
         forge.useJvmFactories()
     }
 }

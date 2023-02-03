@@ -18,11 +18,6 @@ internal class ForgeConfigurator : BaseConfigurator() {
         // Core
         forge.addFactory(DatadogContextForgeryFactory())
 
-        // Gson
-        forge.addFactory(GsonJsonArrayForgeryFactory())
-        forge.addFactory(GsonJsonObjectForgeryFactory())
-        forge.addFactory(GsonJsonPrimitiveForgeryFactory())
-
         // Session Replay
         forge.addFactory(NodeForgeryFactory())
         forge.addFactory(SessionReplayRumContextForgeryFactory())

@@ -14,6 +14,7 @@ plugins {
     kotlin("android")
     id("com.github.ben-manes.versions")
     id("thirdPartyLicences")
+    id("de.mobilej.unmock")
 }
 
 android {
@@ -52,6 +53,11 @@ dependencies {
 
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
+    unmock(libs.robolectric)
+}
+
+unMock {
+    keepStartingWith("org.json")
 }
 
 kotlinConfig()

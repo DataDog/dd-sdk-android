@@ -15,6 +15,7 @@ import com.datadog.android.rum.internal.domain.scope.firstByte
 import com.datadog.android.rum.internal.domain.scope.ssl
 import com.datadog.android.rum.internal.domain.scope.toResourceSchemaType
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import fr.xgouchet.elmyr.jvm.ext.aTimestamp

@@ -11,9 +11,9 @@ import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.tracing.model.SpanEvent
 import com.datadog.android.utils.extension.getString
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.tools.unit.assertj.JsonObjectAssert
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.nhaarman.mockitokotlin2.any

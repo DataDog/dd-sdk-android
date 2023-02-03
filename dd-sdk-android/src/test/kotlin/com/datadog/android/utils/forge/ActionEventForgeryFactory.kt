@@ -9,6 +9,7 @@ package com.datadog.android.utils.forge
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.rum.internal.domain.scope.toActionSchemaType
 import com.datadog.android.rum.model.ActionEvent
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import fr.xgouchet.elmyr.jvm.ext.aTimestamp
