@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.user
 
-import com.datadog.android.core.internal.persistence.Serializer
+import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.v2.api.context.UserInfo
 
 internal class UserInfoSerializer : Serializer<UserInfo> {

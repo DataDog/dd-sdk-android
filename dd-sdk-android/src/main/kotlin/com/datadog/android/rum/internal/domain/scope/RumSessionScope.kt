@@ -17,8 +17,8 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
-import com.datadog.android.v2.core.internal.storage.DataWriter
-import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
+import com.datadog.android.v2.core.storage.DataWriter
+import com.datadog.android.v2.core.storage.NoOpDataWriter
 import java.security.SecureRandom
 import java.util.UUID
 import java.util.concurrent.TimeUnit

@@ -56,7 +56,14 @@ internal inline fun retryWithDelay(
     return wasSuccessful
 }
 
-internal fun Any?.toJsonElement(): JsonElement {
+// TODO RUMM-3003 Better to avoid having this as extension function to prevent polluting
+//  auto-complete dropdown on the user side. Converting it to explicit call with argument
+//  should help.
+/**
+ * Converts arbitrary object to the [JsonElement] with the best effort. [Any.toString] is
+ * used as a fallback.
+ */
+fun Any?.toJsonElement(): JsonElement {
     return when (this) {
         NULL_MAP_VALUE -> JsonNull.INSTANCE
         null -> JsonNull.INSTANCE

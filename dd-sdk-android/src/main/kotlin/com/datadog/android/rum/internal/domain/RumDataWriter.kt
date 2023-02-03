@@ -7,10 +7,10 @@
 package com.datadog.android.rum.internal.domain
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.internal.persistence.file.existsSafe
-import com.datadog.android.core.internal.persistence.serializeToByteArray
+import com.datadog.android.core.persistence.Serializer
+import com.datadog.android.core.persistence.serializeToByteArray
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
@@ -21,7 +21,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.datadog.android.v2.core.storage.DataWriter
 import java.io.File
 import java.util.Locale
 

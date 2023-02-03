@@ -151,6 +151,11 @@ internal class SdkFeature(
         }
     }
 
+    // Allow unchecked cast here. Anyway if there is a mismatch and crash happens, it will be
+    // caught during our tests
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : Feature> unwrap(): T = wrappedFeature as T
+
     // endregion
 
     // region Internal

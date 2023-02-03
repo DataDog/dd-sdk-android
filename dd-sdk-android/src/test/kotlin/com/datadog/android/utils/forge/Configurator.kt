@@ -36,9 +36,6 @@ internal class Configurator :
         forge.addFactory(PayloadDecorationForgeryFactory())
         forge.addFactory(WorkerParametersForgeryFactory())
 
-        // LOG
-        forge.addFactory(LogEventForgeryFactory())
-
         // APM
         forge.addFactory(SpanForgeryFactory())
         forge.addFactory(SpanEventForgeryFactory())

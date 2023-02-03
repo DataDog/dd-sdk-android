@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
@@ -23,7 +24,6 @@ import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.error.internal.CrashReportsFeature
-import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.plugin.DatadogContext
 import com.datadog.android.plugin.DatadogRumContext
 import com.datadog.android.privacy.TrackingConsent
@@ -39,7 +39,6 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.ContextProvider
-import com.datadog.android.v2.log.internal.net.LogsRequestFactory
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import java.util.Locale
@@ -66,7 +65,6 @@ internal class DatadogCore(
 
     internal val features: MutableMap<String, SdkFeature> = mutableMapOf()
 
-    internal var logsFeature: LogsFeature? = null
     internal var tracingFeature: TracingFeature? = null
     internal var rumFeature: RumFeature? = null
     internal var crashReportsFeature: CrashReportsFeature? = null
@@ -120,6 +118,10 @@ internal class DatadogCore(
         }
 
     /** @inheritDoc */
+    override val service: String
+        get() = coreFeature.serviceName
+
+    /** @inheritDoc */
     override fun registerFeature(feature: Feature) {
         val sdkFeature = SdkFeature(
             coreFeature,
@@ -137,12 +139,11 @@ internal class DatadogCore(
             }
         )
 
-        if (feature is LogsFeature) {
-            this.logsFeature = feature
-
+        if (feature.name == Feature.LOGS_FEATURE_NAME) {
             // TODO RUMM-2996 WebView Logs has its own configuration
             val webViewLogsFeature = WebViewLogsFeature(
-                (feature.requestFactory as LogsRequestFactory).endpointUrl
+                // TODO RUMM-0000 Related to above, read from configuration, for now use default
+                DatadogEndpoint.LOGS_US1
             )
             this.webViewLogsFeature = webViewLogsFeature
             registerFeature(webViewLogsFeature)
@@ -192,7 +193,6 @@ internal class DatadogCore(
             it.value.stop()
             // TODO RUMM-0000 Temporary thing
             when (it.key) {
-                Feature.LOGS_FEATURE_NAME -> logsFeature = null
                 Feature.TRACING_FEATURE_NAME -> tracingFeature = null
                 Feature.RUM_FEATURE_NAME -> rumFeature = null
                 CrashReportsFeature.CRASH_FEATURE_NAME -> crashReportsFeature = null

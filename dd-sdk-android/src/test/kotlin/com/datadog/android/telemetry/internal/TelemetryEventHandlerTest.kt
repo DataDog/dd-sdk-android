@@ -10,8 +10,8 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
-import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -33,7 +33,7 @@ import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration

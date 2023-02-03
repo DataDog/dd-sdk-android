@@ -7,11 +7,11 @@
 package com.datadog.android.v2.webview.internal.storage
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.serializeToByteArray
+import com.datadog.android.core.persistence.Serializer
+import com.datadog.android.core.persistence.serializeToByteArray
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.datadog.android.v2.core.storage.DataWriter
 import com.google.gson.JsonObject
 
 internal class WebViewLogsDataWriter(

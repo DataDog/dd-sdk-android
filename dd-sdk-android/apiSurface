@@ -1,4 +1,5 @@
 object com.datadog.android.Datadog
+  var globalSdkCore: com.datadog.android.v2.api.SdkCore
   fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
   fun isInitialized(): Boolean
   fun clearAllData()
@@ -130,9 +131,39 @@ enum com.datadog.android.core.configuration.VitalsUpdateFrequency
   - AVERAGE
   - RARE
   - NEVER
+interface com.datadog.android.core.constraints.DataConstraints
+  fun <T: Any?> validateAttributes(Map<String, T>, String? = null, String? = null, Set<String> = emptySet()): MutableMap<String, T>
+  fun validateTags(List<String>): List<String>
+  fun validateTimings(Map<String, Long>): MutableMap<String, Long>
+class com.datadog.android.core.constraints.DatadogDataConstraints : DataConstraints
+  override fun validateTags(List<String>): List<String>
+  override fun <T: Any?> validateAttributes(Map<String, T>, String?, String?, Set<String>): MutableMap<String, T>
+  override fun validateTimings(Map<String, Long>): MutableMap<String, Long>
+  companion object 
+val NULL_MAP_VALUE: Object
+fun toJsonElement(): com.google.gson.JsonElement
 var internalLogger: com.datadog.android.v2.api.InternalLogger
+interface com.datadog.android.core.persistence.Serializer<T: Any>
+  fun serialize(T): String?
+  companion object 
+fun <T: Any> serializeToByteArray(T, com.datadog.android.v2.api.InternalLogger): ByteArray?
+class com.datadog.android.core.sampling.RateBasedSampler : Sampler
+  constructor(Float)
+  constructor(Double)
+  override fun sample(): Boolean
+  override fun getSamplingRate(): Float?
+interface com.datadog.android.core.sampling.Sampler
+  fun sample(): Boolean
+  fun getSamplingRate(): Float?
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
+class com.datadog.android.event.MapperSerializer<T: Any> : com.datadog.android.core.persistence.Serializer<T>
+  constructor(EventMapper<T>, com.datadog.android.core.persistence.Serializer<T>)
+  override fun serialize(T): String?
+class com.datadog.android.event.NoOpEventMapper<T: Any> : EventMapper<T>
+  override fun map(T): T
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
 interface com.datadog.android.event.SpanEventMapper : EventMapper<com.datadog.android.tracing.model.SpanEvent>
   override fun map(com.datadog.android.tracing.model.SpanEvent): com.datadog.android.tracing.model.SpanEvent
 interface com.datadog.android.event.ViewEventMapper : EventMapper<com.datadog.android.rum.model.ViewEvent>
@@ -180,58 +211,11 @@ object com.datadog.android.log.LogAttributes
   const val SERVICE_NAME: String
   const val SOURCE: String
   const val STATUS: String
+  const val USR_ATTRIBUTES_GROUP: String
   const val USR_EMAIL: String
   const val USR_ID: String
   const val USR_NAME: String
   const val VARIANT: String
-class com.datadog.android.log.Logger
-  fun v(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun d(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun i(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun w(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun e(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun wtf(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun log(Int, String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun log(Int, String, String?, String?, String?, Map<String, Any?> = emptyMap())
-  class Builder
-    fun build(): Logger
-    fun setServiceName(String): Builder
-    fun setDatadogLogsEnabled(Boolean): Builder
-    fun setDatadogLogsMinPriority(Int): Builder
-    fun setLogcatLogsEnabled(Boolean): Builder
-    fun setNetworkInfoEnabled(Boolean): Builder
-    fun setLoggerName(String): Builder
-    fun setBundleWithTraceEnabled(Boolean): Builder
-    fun setBundleWithRumEnabled(Boolean): Builder
-    fun setSampleRate(Float): Builder
-  fun addAttribute(String, Boolean)
-  fun addAttribute(String, Int)
-  fun addAttribute(String, Long)
-  fun addAttribute(String, Float)
-  fun addAttribute(String, Double)
-  fun addAttribute(String, String?)
-  fun addAttribute(String, java.util.Date?)
-  fun addAttribute(String, com.google.gson.JsonObject?)
-  fun addAttribute(String, com.google.gson.JsonArray?)
-  fun addAttribute(String, org.json.JSONObject?)
-  fun addAttribute(String, org.json.JSONArray?)
-  fun removeAttribute(String)
-  fun addTag(String, String)
-  fun addTag(String)
-  fun removeTag(String)
-  fun removeTagsWithKey(String)
-class com.datadog.android.log.internal.LogsFeature : com.datadog.android.v2.api.StorageBackedFeature, com.datadog.android.v2.api.FeatureEventReceiver
-  override val name: String
-  override fun onInitialize(com.datadog.android.v2.api.SdkCore, android.content.Context)
-  override val requestFactory: com.datadog.android.v2.api.RequestFactory
-  override val storageConfiguration: com.datadog.android.v2.api.FeatureStorageConfiguration
-  override fun onStop()
-  override fun onReceive(Any)
-  class Builder
-    fun useSite(com.datadog.android.DatadogSite): Builder
-    fun useCustomEndpoint(String): Builder
-    fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
-    fun build(): LogsFeature
 data class com.datadog.android.plugin.DatadogContext
   constructor(DatadogRumContext? = null)
 DEPRECATED interface com.datadog.android.plugin.DatadogPlugin : com.datadog.android.privacy.TrackingConsentProviderCallback
@@ -444,19 +428,6 @@ interface com.datadog.android.rum.tracking.TrackingStrategy
 interface com.datadog.android.rum.tracking.ViewAttributesProvider
   fun extractAttributes(android.view.View, MutableMap<String, Any?>)
 interface com.datadog.android.rum.tracking.ViewTrackingStrategy : TrackingStrategy
-DEPRECATED open class com.datadog.android.rum.webview.RumWebChromeClient : android.webkit.WebChromeClient
-  constructor()
-  override fun onConsoleMessage(android.webkit.ConsoleMessage?): Boolean
-  companion object 
-DEPRECATED open class com.datadog.android.rum.webview.RumWebViewClient : android.webkit.WebViewClient
-  override fun onPageStarted(android.webkit.WebView?, String?, android.graphics.Bitmap?)
-  override fun onPageFinished(android.webkit.WebView?, String?)
-  override fun onReceivedError(android.webkit.WebView?, Int, String?, String?)
-  override fun onReceivedError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceError?)
-  override fun onReceivedHttpError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceResponse?)
-  override fun onReceivedSslError(android.webkit.WebView?, android.webkit.SslErrorHandler?, android.net.http.SslError?)
-  open fun onProvideRumResourceAttributes(android.webkit.WebView?, String?): Map<String, Any?>
-  companion object 
 interface com.datadog.android.security.Encryption
   fun encrypt(ByteArray): ByteArray
   fun decrypt(ByteArray): ByteArray
@@ -509,6 +480,7 @@ interface com.datadog.android.v2.api.FeatureEventReceiver
 interface com.datadog.android.v2.api.FeatureScope
   fun withWriteContext(Boolean = false, (com.datadog.android.v2.api.context.DatadogContext, EventBatchWriter) -> Unit)
   fun sendEvent(Any)
+  fun <T: Feature> unwrap(): T
 data class com.datadog.android.v2.api.FeatureStorageConfiguration
   constructor(Long, Int, Long, Long)
   companion object 
@@ -543,6 +515,7 @@ interface com.datadog.android.v2.api.RequestFactory
     const val QUERY_PARAM_TAGS: String
 interface com.datadog.android.v2.api.SdkCore
   val time: com.datadog.android.v2.api.context.TimeInfo
+  val service: String
   fun registerFeature(Feature)
   fun getFeature(String): FeatureScope?
   fun setVerbosity(Int)
@@ -594,6 +567,12 @@ data class com.datadog.android.v2.api.context.TimeInfo
   constructor(Long, Long, Long, Long)
 data class com.datadog.android.v2.api.context.UserInfo
   constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, Map<kotlin.String, kotlin.Any?> = emptyMap())
+interface com.datadog.android.v2.core.storage.DataWriter<T>
+  fun write(com.datadog.android.v2.api.EventBatchWriter, T): Boolean
+class com.datadog.android.v2.log.net.LogsRequestFactory : com.datadog.android.v2.api.RequestFactory
+  constructor(String)
+  override fun create(com.datadog.android.v2.api.context.DatadogContext, List<ByteArray>, ByteArray?): com.datadog.android.v2.api.Request
+  companion object 
 class com.datadog.android.webview.DatadogEventBridge
   constructor()
   constructor(List<String>)
@@ -602,72 +581,6 @@ class com.datadog.android.webview.DatadogEventBridge
   companion object 
     fun setup(android.webkit.WebView)
 class com.datadog.tools.annotation.NoOpImplementation
-data class com.datadog.android.log.model.LogEvent
-  constructor(Status, kotlin.String, kotlin.String, kotlin.String, Logger, Dd, Usr? = null, Network? = null, Error? = null, kotlin.String, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
-  fun toJson(): com.google.gson.JsonElement
-  companion object 
-    fun fromJson(kotlin.String): LogEvent
-    fun fromJsonObject(com.google.gson.JsonObject): LogEvent
-  data class Logger
-    constructor(kotlin.String, kotlin.String? = null, kotlin.String)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Logger
-      fun fromJsonObject(com.google.gson.JsonObject): Logger
-  data class Dd
-    constructor(Device)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Dd
-      fun fromJsonObject(com.google.gson.JsonObject): Dd
-  data class Usr
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Usr
-      fun fromJsonObject(com.google.gson.JsonObject): Usr
-  data class Network
-    constructor(Client)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Network
-      fun fromJsonObject(com.google.gson.JsonObject): Network
-  data class Error
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Error
-      fun fromJsonObject(com.google.gson.JsonObject): Error
-  data class Device
-    constructor(kotlin.String)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Device
-      fun fromJsonObject(com.google.gson.JsonObject): Device
-  data class Client
-    constructor(SimCarrier? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Client
-      fun fromJsonObject(com.google.gson.JsonObject): Client
-  data class SimCarrier
-    constructor(kotlin.String? = null, kotlin.String? = null)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): SimCarrier
-      fun fromJsonObject(com.google.gson.JsonObject): SimCarrier
-  enum Status
-    constructor(kotlin.String)
-    - CRITICAL
-    - ERROR
-    - WARN
-    - INFO
-    - DEBUG
-    - TRACE
-    - EMERGENCY
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Status
 data class com.datadog.android.rum.model.ActionChildProperties
   constructor(Action? = null)
   fun toJson(): com.google.gson.JsonElement

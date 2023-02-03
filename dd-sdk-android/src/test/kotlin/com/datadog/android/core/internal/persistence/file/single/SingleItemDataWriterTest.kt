@@ -7,10 +7,10 @@
 package com.datadog.android.core.internal.persistence.file.single
 
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileWriter
+import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
 import com.nhaarman.mockitokotlin2.any

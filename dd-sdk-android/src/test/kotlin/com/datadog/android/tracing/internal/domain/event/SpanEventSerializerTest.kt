@@ -6,7 +6,7 @@
 
 package com.datadog.android.tracing.internal.domain.event
 
-import com.datadog.android.core.internal.constraints.DatadogDataConstraints
+import com.datadog.android.core.constraints.DatadogDataConstraints
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.tracing.model.SpanEvent
 import com.datadog.android.utils.extension.getString

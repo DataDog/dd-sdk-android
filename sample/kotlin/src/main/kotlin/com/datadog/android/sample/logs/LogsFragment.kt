@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.R
@@ -23,7 +24,7 @@ internal class LogsFragment :
     private lateinit var viewModel: LogsViewModel
 
     private val logger: Logger by lazy {
-        Logger.Builder()
+        Logger.Builder(Datadog.globalSdkCore)
             .setLoggerName("logs_fragment")
             .setLogcatLogsEnabled(true)
             .build()

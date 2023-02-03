@@ -14,7 +14,6 @@ import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
@@ -23,6 +22,7 @@ import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
+import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
@@ -55,8 +55,8 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
-import com.datadog.android.v2.core.internal.storage.DataWriter
-import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
+import com.datadog.android.v2.core.storage.DataWriter
+import com.datadog.android.v2.core.storage.NoOpDataWriter
 import com.datadog.android.v2.rum.internal.net.RumRequestFactory
 import java.util.Locale
 import java.util.concurrent.ExecutorService

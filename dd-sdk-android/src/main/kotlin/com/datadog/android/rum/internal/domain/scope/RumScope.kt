@@ -8,7 +8,7 @@ package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation

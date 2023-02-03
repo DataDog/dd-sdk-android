@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum
 
-import com.datadog.android.core.internal.sampling.RateBasedSampler
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.tracing.NoOpTracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorNotSendingSpanTest

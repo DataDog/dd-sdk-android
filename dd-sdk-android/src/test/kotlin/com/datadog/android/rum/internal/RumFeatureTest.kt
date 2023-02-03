@@ -10,8 +10,8 @@ import android.app.Application
 import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
-import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
+import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.ndk.NdkCrashEventHandler
@@ -32,7 +32,7 @@ import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
+import com.datadog.android.v2.core.storage.NoOpDataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration

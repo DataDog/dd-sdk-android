@@ -7,11 +7,12 @@
 package com.datadog.android.sdk.integration
 
 import android.os.Build
+import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.log.LogsFeature
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.tracing.AndroidTracer
 import java.util.UUID
@@ -35,7 +36,7 @@ internal object RuntimeConfig {
 
     fun logger(): Logger {
         // Initialise Logger
-        val logger = Logger.Builder()
+        val logger = Logger.Builder(Datadog.globalSdkCore)
             .setNetworkInfoEnabled(true)
             .build()
 

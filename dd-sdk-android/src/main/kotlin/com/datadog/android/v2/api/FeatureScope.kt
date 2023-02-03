@@ -32,4 +32,9 @@ interface FeatureScope {
      * @param event Event to send.
      */
     fun sendEvent(event: Any)
+
+    /**
+     * Returns the original feature.
+     */
+    fun <T : Feature> unwrap(): T
 }

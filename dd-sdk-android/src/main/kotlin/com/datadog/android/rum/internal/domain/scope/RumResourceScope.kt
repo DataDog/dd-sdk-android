@@ -24,7 +24,7 @@ import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
-import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.datadog.android.v2.core.storage.DataWriter
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.Locale

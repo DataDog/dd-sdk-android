@@ -10,7 +10,7 @@ import android.content.Context
 import android.util.Log
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.identifyRequest
-import com.datadog.android.core.internal.sampling.Sampler
+import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind

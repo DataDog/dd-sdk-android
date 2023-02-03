@@ -25,6 +25,9 @@ internal class NoOpSdkCore : SdkCore {
         )
     }
 
+    override val service: String
+        get() = ""
+
     override fun registerFeature(feature: Feature) = Unit
 
     override fun getFeature(featureName: String): FeatureScope? = null

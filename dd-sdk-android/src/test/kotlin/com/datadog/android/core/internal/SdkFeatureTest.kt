@@ -9,6 +9,7 @@
 package com.datadog.android.core.internal
 
 import android.app.Application
+import android.content.Context
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
@@ -55,6 +56,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -397,7 +399,73 @@ internal class SdkFeatureTest {
         )
     }
 
-    // endRegion
+    @Test
+    fun `𝕄 give wrapped feature 𝕎 unwrap()`(
+        @StringForgery fakeFeatureName: String
+    ) {
+        // Given
+        val fakeFeature = FakeFeature(fakeFeatureName)
+
+        testedFeature = SdkFeature(
+            coreFeature = coreFeature.mockInstance,
+            wrappedFeature = fakeFeature
+        )
+
+        // When
+        val unwrappedFeature = testedFeature.unwrap<FakeFeature>()
+
+        // Then
+        assertThat(unwrappedFeature).isSameAs(fakeFeature)
+    }
+
+    @Test
+    fun `𝕄 throw exception 𝕎 unwrap() { wrong class }`(
+        @StringForgery fakeFeatureName: String
+    ) {
+        // Given
+        val fakeFeature = FakeFeature(fakeFeatureName)
+
+        testedFeature = SdkFeature(
+            coreFeature = coreFeature.mockInstance,
+            wrappedFeature = fakeFeature
+        )
+
+        // When + Then
+        assertThrows<ClassCastException> {
+            // strange enough nothing is thrown if we don't save the result.
+            // Kotlin compiler removing/optimizing code unused?
+            @Suppress("UNUSED_VARIABLE")
+            val result = testedFeature.unwrap<AnotherFakeFeature>()
+        }
+    }
+
+    // endregion
+
+    // region Feature fakes
+
+    class FakeFeature(override val name: String) : Feature {
+
+        override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
+            // no-op
+        }
+
+        override fun onStop() {
+            // no-op
+        }
+    }
+
+    class AnotherFakeFeature(override val name: String) : Feature {
+
+        override fun onInitialize(sdkCore: SdkCore, appContext: Context) {
+            // no-op
+        }
+
+        override fun onStop() {
+            // no-op
+        }
+    }
+
+    // endregion
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
