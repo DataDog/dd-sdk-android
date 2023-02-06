@@ -36,7 +36,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -59,14 +58,14 @@ import android.util.Log as AndroidLog
 @ForgeConfiguration(Configurator::class)
 internal class DatadogLogHandlerTest {
 
-    lateinit var testedHandler: LogHandler
+    private lateinit var testedHandler: LogHandler
 
-    lateinit var fakeServiceName: String
-    lateinit var fakeLoggerName: String
-    lateinit var fakeMessage: String
-    lateinit var fakeTags: Set<String>
-    lateinit var fakeAttributes: Map<String, Any?>
-    var fakeLevel: Int = 0
+    private lateinit var fakeServiceName: String
+    private lateinit var fakeLoggerName: String
+    private lateinit var fakeMessage: String
+    private lateinit var fakeTags: Set<String>
+    private lateinit var fakeAttributes: Map<String, Any?>
+    private var fakeLevel: Int = 0
 
     @Forgery
     lateinit var fakeThrowable: Throwable
@@ -91,6 +90,9 @@ internal class DatadogLogHandlerTest {
 
     @Mock
     lateinit var mockLogsFeatureScope: FeatureScope
+
+    @Mock
+    lateinit var mockRumFeature: FeatureScope
 
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
@@ -133,6 +135,10 @@ internal class DatadogLogHandlerTest {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
+
+        whenever(
+            mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+        ) doReturn mockRumFeature
 
         testedHandler = DatadogLogHandler(
             loggerName = fakeLoggerName,
@@ -321,7 +327,6 @@ internal class DatadogLogHandlerTest {
         }
     }
 
-    @Disabled
     @Test
     fun `doesn't forward low level log to RumMonitor`(forge: Forge) {
         fakeLevel = forge.anInt(AndroidLog.VERBOSE, AndroidLog.ERROR)
@@ -333,11 +338,9 @@ internal class DatadogLogHandlerTest {
             fakeAttributes,
             fakeTags
         )
-// TODO RUMM-3005
-//        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyZeroInteractions(mockRumFeature)
     }
 
-    @Disabled
     @ParameterizedTest
     @ValueSource(ints = [AndroidLog.ERROR, AndroidLog.ASSERT])
     fun `forward error log to RumMonitor`(logLevel: Int) {
@@ -348,16 +351,17 @@ internal class DatadogLogHandlerTest {
             fakeAttributes,
             fakeTags
         )
-        // TODO RUMM-3005
-//        verify(rumMonitor.mockInstance).addError(
-//            fakeMessage,
-//            RumErrorSource.LOGGER,
-//            null,
-//            fakeAttributes
-//        )
+
+        verify(mockRumFeature).sendEvent(
+            mapOf(
+                "type" to "logger_error",
+                "message" to fakeMessage,
+                "throwable" to null,
+                "attributes" to fakeAttributes
+            )
+        )
     }
 
-    @Disabled
     @ParameterizedTest
     @ValueSource(ints = [AndroidLog.ERROR, AndroidLog.ASSERT])
     fun `forward error log to RumMonitor with throwable`(logLevel: Int) {
@@ -369,16 +373,16 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        // TODO RUMM-3005
-//        verify(rumMonitor.mockInstance).addError(
-//            fakeMessage,
-//            RumErrorSource.LOGGER,
-//            fakeThrowable,
-//            fakeAttributes
-//        )
+        verify(mockRumFeature).sendEvent(
+            mapOf(
+                "type" to "logger_error",
+                "message" to fakeMessage,
+                "throwable" to fakeThrowable,
+                "attributes" to fakeAttributes
+            )
+        )
     }
 
-    @Disabled
     @Test
     fun `doesn't forward low level log with string errors to RumMonitor`(
         forge: Forge,
@@ -398,11 +402,9 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-// TODO RUMM-3005
-//        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyZeroInteractions(mockRumFeature)
     }
 
-    @Disabled
     @ParameterizedTest
     @ValueSource(ints = [AndroidLog.ERROR, AndroidLog.ASSERT])
     fun `forward error log with error strings to RumMonitor`(
@@ -421,13 +423,14 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        // TODO RUMM-3005
-//        verify(rumMonitor.mockInstance).addErrorWithStacktrace(
-//            fakeMessage,
-//            RumErrorSource.LOGGER,
-//            errorStack,
-//            fakeAttributes
-//        )
+        verify(mockRumFeature).sendEvent(
+            mapOf(
+                "type" to "logger_error_with_stacktrace",
+                "message" to fakeMessage,
+                "stacktrace" to errorStack,
+                "attributes" to fakeAttributes
+            )
+        )
     }
 
     @Test
@@ -836,17 +839,4 @@ internal class DatadogLogHandlerTest {
                 )
         }
     }
-
-    // TODO RUMM-3005
-    /*
-    companion object {
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
-        }
-    }
-    */
 }
