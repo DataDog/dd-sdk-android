@@ -6253,8 +6253,6 @@ internal class RumViewScopeTest {
         @StringForgery flagName: String,
         @StringForgery flagValue: String
     ) {
-        // GIVEN
-
         // WHEN
         testedScope.handleEvent(
             RumRawEvent.AddFeatureFlagEvaluation(
@@ -6267,10 +6265,7 @@ internal class RumViewScopeTest {
         // THEN
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertThat(lastValue)
-                .apply {
-                    hasFeatureFlag(flagName, flagValue)
-                }
+            assertThat(lastValue).hasFeatureFlag(flagName, flagValue)
         }
     }
 
@@ -6301,10 +6296,7 @@ internal class RumViewScopeTest {
         // THEN
         argumentCaptor<ViewEvent> {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
-            assertThat(lastValue)
-                .apply {
-                    hasFeatureFlag(flagName, flagValue)
-                }
+            assertThat(lastValue).hasFeatureFlag(flagName, flagValue)
         }
     }
 
@@ -6339,10 +6331,7 @@ internal class RumViewScopeTest {
         // THEN
         argumentCaptor<ErrorEvent> {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
-            assertThat(lastValue)
-                .apply {
-                    hasFeatureFlag(flagName, flagValue)
-                }
+            assertThat(lastValue).hasFeatureFlag(flagName, flagValue)
         }
     }
 

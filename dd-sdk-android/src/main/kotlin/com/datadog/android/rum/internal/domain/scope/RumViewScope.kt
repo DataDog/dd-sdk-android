@@ -95,7 +95,7 @@ internal open class RumViewScope(
     private var loadingTime: Long? = null
     private var loadingType: ViewEvent.LoadingType? = null
     private val customTimings: MutableMap<String, Long> = mutableMapOf()
-    private val featureFlags: MutableMap<String, Any?> = mutableMapOf()
+    internal val featureFlags: MutableMap<String, Any?> = mutableMapOf()
 
     internal var stopped: Boolean = false
 
