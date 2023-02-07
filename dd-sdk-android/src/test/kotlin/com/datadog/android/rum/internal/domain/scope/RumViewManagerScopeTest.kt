@@ -245,6 +245,34 @@ internal class RumViewManagerScopeTest {
         assertThat(testedScope.applicationDisplayed).isTrue()
     }
 
+    @Test
+    fun `𝕄 reset feature flags 𝕎 handleEvent(StartView) { view already active }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeEvent = forge.startViewEvent()
+        testedScope.applicationDisplayed = true
+        testedScope.handleEvent(fakeEvent, mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                forge.anAlphabeticalString(),
+                forge.anAlphaNumericalString()
+            ),
+            mockWriter
+        )
+        val secondViewEvent = forge.startViewEvent()
+
+        // When
+        testedScope.handleEvent(secondViewEvent, mockWriter)
+
+        // Then
+        assertThat(testedScope.childrenScopes).hasSize(1)
+        assertThat(testedScope.childrenScopes[0])
+            .isInstanceOfSatisfying(RumViewScope::class.java) {
+                assertThat(it.featureFlags).isEmpty()
+            }
+    }
+
     // endregion
 
     // region Background View

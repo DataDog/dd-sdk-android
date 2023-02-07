@@ -310,6 +310,7 @@ interface com.datadog.android.rum.RumMonitor
   fun addError(String, RumErrorSource, Throwable?, Map<String, Any?>)
   fun addErrorWithStacktrace(String, RumErrorSource, String?, Map<String, Any?>)
   fun addTiming(String)
+  fun addFeatureFlagEvaluation(String, Any)
   fun _getInternal(): _RumInternalProxy?
   class Builder
     fun sampleRumSessions(Float): Builder
@@ -891,7 +892,7 @@ data class com.datadog.android.rum.model.ActionEvent
     companion object 
       fun fromJson(kotlin.String): Type
 data class com.datadog.android.rum.model.ErrorEvent
-  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, ErrorEventSession, ErrorEventSource? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Action? = null, Error)
+  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, ErrorEventSession, ErrorEventSource? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Action? = null, Error, Context? = null)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
@@ -1574,7 +1575,7 @@ data class com.datadog.android.rum.model.RumPerfMetric
     fun fromJson(kotlin.String): RumPerfMetric
     fun fromJsonObject(com.google.gson.JsonObject): RumPerfMetric
 data class com.datadog.android.rum.model.ViewEvent
-  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, ViewEventSession, Source? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null)
+  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, ViewEventSession, Source? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Context? = null)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 

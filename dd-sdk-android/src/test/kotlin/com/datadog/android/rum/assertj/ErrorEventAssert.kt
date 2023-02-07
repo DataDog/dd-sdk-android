@@ -15,6 +15,7 @@ import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.entry
 import org.assertj.core.data.Offset
 
 internal class ErrorEventAssert(actual: ErrorEvent) :
@@ -466,6 +467,14 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
                     " but instead was: ${actual.version}"
             )
             .isEqualTo(version)
+        return this
+    }
+
+    fun hasFeatureFlag(flagName: String, flagValue: Any): ErrorEventAssert {
+        assertThat(actual.featureFlags)
+            .isNotNull
+        assertThat(actual.featureFlags?.additionalProperties)
+            .contains(entry(flagName, flagValue))
         return this
     }
 

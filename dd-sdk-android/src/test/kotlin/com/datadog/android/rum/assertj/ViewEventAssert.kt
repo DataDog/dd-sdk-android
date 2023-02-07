@@ -11,6 +11,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
 import org.assertj.core.api.AbstractObjectAssert
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.assertj.core.data.Percentage
@@ -618,6 +619,14 @@ internal class ViewEventAssert(actual: ViewEvent) :
                     " but instead was: ${actual.version}"
             )
             .isEqualTo(version)
+        return this
+    }
+
+    fun hasFeatureFlag(flagName: String, flagValue: Any): ViewEventAssert {
+        assertThat(actual.featureFlags)
+            .isNotNull
+        assertThat(actual.featureFlags?.additionalProperties)
+            .contains(Assertions.entry(flagName, flagValue))
         return this
     }
 
