@@ -12,7 +12,6 @@ import android.os.Build
 import android.os.Looper
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogInterceptor
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.event.NoOpEventMapper
@@ -243,10 +242,10 @@ internal constructor(
          * Let the SDK target your preferred Datadog's site.
          */
         fun useSite(site: DatadogSite): Builder {
-            logsConfig = logsConfig.copy(endpointUrl = site.logsEndpoint())
-            tracesConfig = tracesConfig.copy(endpointUrl = site.tracesEndpoint())
-            crashReportConfig = crashReportConfig.copy(endpointUrl = site.logsEndpoint())
-            rumConfig = rumConfig.copy(endpointUrl = site.rumEndpoint())
+            logsConfig = logsConfig.copy(endpointUrl = site.intakeEndpoint)
+            tracesConfig = tracesConfig.copy(endpointUrl = site.intakeEndpoint)
+            crashReportConfig = crashReportConfig.copy(endpointUrl = site.intakeEndpoint)
+            rumConfig = rumConfig.copy(endpointUrl = site.intakeEndpoint)
             coreConfig = coreConfig.copy(needsClearTextHttp = false, site = site)
             return this
         }
@@ -712,21 +711,21 @@ internal constructor(
             site = DatadogSite.US1
         )
         internal val DEFAULT_LOGS_CONFIG = Feature.Logs(
-            endpointUrl = DatadogEndpoint.LOGS_US1,
+            endpointUrl = DatadogSite.US1.intakeEndpoint,
             plugins = emptyList(),
             logsEventMapper = NoOpEventMapper()
         )
         internal val DEFAULT_CRASH_CONFIG = Feature.CrashReport(
-            endpointUrl = DatadogEndpoint.LOGS_US1,
+            endpointUrl = DatadogSite.US1.intakeEndpoint,
             plugins = emptyList()
         )
         internal val DEFAULT_TRACING_CONFIG = Feature.Tracing(
-            endpointUrl = DatadogEndpoint.TRACES_US1,
+            endpointUrl = DatadogSite.US1.intakeEndpoint,
             plugins = emptyList(),
             spanEventMapper = NoOpSpanEventMapper()
         )
         internal val DEFAULT_RUM_CONFIG = Feature.RUM(
-            endpointUrl = DatadogEndpoint.RUM_US1,
+            endpointUrl = DatadogSite.US1.intakeEndpoint,
             plugins = emptyList(),
             samplingRate = DEFAULT_SAMPLING_RATE,
             telemetrySamplingRate = DEFAULT_TELEMETRY_SAMPLING_RATE,

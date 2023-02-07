@@ -9,21 +9,21 @@ object com.datadog.android.Datadog
   fun enableRumDebugging(Boolean)
   val _internal: _InternalProxy
 object com.datadog.android.DatadogEndpoint
-  const val LOGS_US1: String
-  const val LOGS_US3: String
-  const val LOGS_US5: String
-  const val LOGS_US1_FED: String
-  const val LOGS_EU1: String
-  const val TRACES_US1: String
-  const val TRACES_US3: String
-  const val TRACES_US5: String
-  const val TRACES_US1_FED: String
-  const val TRACES_EU1: String
-  const val RUM_US1: String
-  const val RUM_US3: String
-  const val RUM_US5: String
-  const val RUM_US1_FED: String
-  const val RUM_EU1: String
+  DEPRECATED const val LOGS_US1: String
+  DEPRECATED const val LOGS_US3: String
+  DEPRECATED const val LOGS_US5: String
+  DEPRECATED const val LOGS_US1_FED: String
+  DEPRECATED const val LOGS_EU1: String
+  DEPRECATED const val TRACES_US1: String
+  DEPRECATED const val TRACES_US3: String
+  DEPRECATED const val TRACES_US5: String
+  DEPRECATED const val TRACES_US1_FED: String
+  DEPRECATED const val TRACES_EU1: String
+  DEPRECATED const val RUM_US1: String
+  DEPRECATED const val RUM_US3: String
+  DEPRECATED const val RUM_US5: String
+  DEPRECATED const val RUM_US1_FED: String
+  DEPRECATED const val RUM_EU1: String
   const val NTP_0: String
   const val NTP_1: String
   const val NTP_2: String
@@ -52,15 +52,16 @@ open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   override fun canSendSpan(): Boolean
 enum com.datadog.android.DatadogSite
-  constructor(String)
+  constructor(String, String)
   - US1
   - US3
   - US5
-  - US1_FED
   - EU1
-  fun logsEndpoint(): String
-  fun tracesEndpoint(): String
-  fun rumEndpoint(): String
+  - AP1
+  - US1_FED
+  - STAGING
+  constructor(String)
+  val intakeEndpoint: String
 class com.datadog.android._InternalProxy
   class _TelemetryProxy
     fun debug(String)

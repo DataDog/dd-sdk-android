@@ -9,7 +9,6 @@
 package com.datadog.android.core.configuration
 
 import android.os.Build
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android._InternalProxy
 import com.datadog.android.core.internal.event.NoOpEventMapper
@@ -116,7 +115,7 @@ internal class ConfigurationBuilderTest {
         )
         assertThat(config.logsConfig).isEqualTo(
             Configuration.Feature.Logs(
-                endpointUrl = DatadogEndpoint.LOGS_US1,
+                endpointUrl = DatadogSite.US1.intakeEndpoint,
                 plugins = emptyList(),
                 logsEventMapper = NoOpEventMapper()
             )
@@ -126,7 +125,7 @@ internal class ConfigurationBuilderTest {
             .ignoringFields("spanEventMapper")
             .isEqualTo(
                 Configuration.Feature.Tracing(
-                    endpointUrl = DatadogEndpoint.TRACES_US1,
+                    endpointUrl = DatadogSite.US1.intakeEndpoint,
                     plugins = emptyList(),
                     spanEventMapper = NoOpSpanEventMapper()
                 )
@@ -135,13 +134,13 @@ internal class ConfigurationBuilderTest {
             .isInstanceOf(NoOpSpanEventMapper::class.java)
         assertThat(config.crashReportConfig).isEqualTo(
             Configuration.Feature.CrashReport(
-                endpointUrl = DatadogEndpoint.LOGS_US1,
+                endpointUrl = DatadogSite.US1.intakeEndpoint,
                 plugins = emptyList()
             )
         )
         assertThat(config.rumConfig).isEqualTo(
             Configuration.Feature.RUM(
-                endpointUrl = DatadogEndpoint.RUM_US1,
+                endpointUrl = DatadogSite.US1.intakeEndpoint,
                 plugins = emptyList(),
                 samplingRate = Configuration.DEFAULT_SAMPLING_RATE,
                 telemetrySamplingRate = Configuration.DEFAULT_TELEMETRY_SAMPLING_RATE,
@@ -258,16 +257,16 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_CORE_CONFIG.copy(site = site)
         )
         assertThat(config.logsConfig).isEqualTo(
-            Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = site.logsEndpoint())
+            Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = site.intakeEndpoint)
         )
         assertThat(config.tracesConfig).isEqualTo(
-            Configuration.DEFAULT_TRACING_CONFIG.copy(endpointUrl = site.tracesEndpoint())
+            Configuration.DEFAULT_TRACING_CONFIG.copy(endpointUrl = site.intakeEndpoint)
         )
         assertThat(config.crashReportConfig).isEqualTo(
-            Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = site.logsEndpoint())
+            Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = site.intakeEndpoint)
         )
         assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = site.rumEndpoint())
+            Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = site.intakeEndpoint)
         )
         assertThat(config.additionalConfig).isEmpty()
     }
