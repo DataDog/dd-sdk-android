@@ -78,6 +78,7 @@ tasks.register("assembleAll") {
         ":dd-sdk-android-sqldelight:assemble",
         ":dd-sdk-android-timber:assemble",
         ":dd-sdk-android-tv:assemble",
+        ":dd-sdk-android-okhttp:assemble",
         ":library:dd-sdk-android-session-replay:assemble",
         ":library:dd-sdk-android-logs:assemble",
         ":library:dd-sdk-android-ndk:assemble"
@@ -96,6 +97,7 @@ tasks.register("unitTestRelease") {
         ":dd-sdk-android-sqldelight:testReleaseUnitTest",
         ":dd-sdk-android-timber:testReleaseUnitTest",
         ":dd-sdk-android-tv:testReleaseUnitTest",
+        ":dd-sdk-android-okhttp:testReleaseUnitTest",
         ":library:dd-sdk-android-session-replay:testReleaseUnitTest",
         ":library:dd-sdk-android-logs:testReleaseUnitTest",
         ":library:dd-sdk-android-ndk:testReleaseUnitTest"
@@ -114,6 +116,7 @@ tasks.register("unitTestDebug") {
         ":dd-sdk-android-sqldelight:testDebugUnitTest",
         ":dd-sdk-android-timber:testDebugUnitTest",
         ":dd-sdk-android-tv:testDebugUnitTest",
+        ":dd-sdk-android-okhttp:testDebugUnitTest",
         ":library:dd-sdk-android-session-replay:testDebugUnitTest",
         ":library:dd-sdk-android-logs:testDebugUnitTest",
         ":library:dd-sdk-android-ndk:testDebugUnitTest"
@@ -147,6 +150,7 @@ tasks.register("lintCheckAll") {
         ":dd-sdk-android-sqldelight:lintRelease",
         ":dd-sdk-android-timber:lintRelease",
         ":dd-sdk-android-tv:lintRelease",
+        ":dd-sdk-android-okhttp:lintRelease",
         ":library:dd-sdk-android-session-replay:lintRelease",
         ":library:dd-sdk-android-logs:lintRelease",
         ":library:dd-sdk-android-ndk:lintRelease"
@@ -165,6 +169,7 @@ tasks.register("checkThirdPartyLicensesAll") {
         ":dd-sdk-android-sqldelight:checkThirdPartyLicences",
         ":dd-sdk-android-timber:checkThirdPartyLicences",
         ":dd-sdk-android-tv:checkThirdPartyLicences",
+        ":dd-sdk-android-okhttp:checkThirdPartyLicences",
         ":library:dd-sdk-android-session-replay:checkThirdPartyLicences",
         ":library:dd-sdk-android-logs:checkThirdPartyLicences",
         ":library:dd-sdk-android-ndk:checkThirdPartyLicences"
@@ -183,6 +188,7 @@ tasks.register("checkApiSurfaceChangesAll") {
         ":dd-sdk-android-sqldelight:checkApiSurfaceChanges",
         ":dd-sdk-android-timber:checkApiSurfaceChanges",
         ":dd-sdk-android-tv:checkApiSurfaceChanges",
+        ":dd-sdk-android-okhttp:checkApiSurfaceChanges",
         ":library:dd-sdk-android-session-replay:checkApiSurfaceChanges",
         ":library:dd-sdk-android-logs:checkApiSurfaceChanges",
         ":library:dd-sdk-android-ndk:checkApiSurfaceChanges"
@@ -205,6 +211,7 @@ tasks.register("koverReportAll") {
         ":dd-sdk-android-sqldelight:koverXmlReport",
         ":dd-sdk-android-timber:koverXmlReport",
         ":dd-sdk-android-tv:koverXmlReport",
+        ":dd-sdk-android-okhttp:koverXmlReport",
         ":library:dd-sdk-android-session-replay:koverXmlReport",
         ":library:dd-sdk-android-logs:koverXmlReport",
         ":library:dd-sdk-android-ndk:koverXmlReport"

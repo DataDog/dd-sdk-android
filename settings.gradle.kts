@@ -16,6 +16,7 @@ include(":dd-sdk-android-rx")
 include(":dd-sdk-android-sqldelight")
 include(":dd-sdk-android-timber")
 include(":dd-sdk-android-tv")
+include(":dd-sdk-android-okhttp")
 
 include(":instrumented:integration")
 include(":instrumented:nightly-tests")
