@@ -4,30 +4,31 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android
+package com.datadog.android.okhttp
 
 import androidx.annotation.FloatRange
+import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.okhttp.rum.RumInterceptor
+import com.datadog.android.okhttp.tracing.TracedRequestListener
+import com.datadog.android.okhttp.tracing.TracingInterceptor
+import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.RumInterceptor
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.tracing.NoOpTracedRequestListener
-import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.TracingHeaderType
-import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import io.opentracing.Span

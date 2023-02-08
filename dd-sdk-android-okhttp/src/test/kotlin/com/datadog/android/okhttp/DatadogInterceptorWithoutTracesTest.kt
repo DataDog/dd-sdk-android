@@ -4,19 +4,20 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android
+package com.datadog.android.okhttp
 
 import android.content.Context
 import android.util.Log
+import com.datadog.android.Datadog
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.okhttp.tracing.TracedRequestListener
+import com.datadog.android.okhttp.tracing.TracingInterceptor
+import com.datadog.android.okhttp.tracing.TracingInterceptorTest
+import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.tracing.TracedRequestListener
-import com.datadog.android.tracing.TracingInterceptor
-import com.datadog.android.tracing.TracingInterceptorTest
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration

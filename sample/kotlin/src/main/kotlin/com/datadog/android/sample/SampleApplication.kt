@@ -12,7 +12,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.Datadog.setUserInfo
-import com.datadog.android.DatadogEventListener
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
@@ -21,8 +20,10 @@ import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.log.Logger
 import com.datadog.android.log.LogsFeature
 import com.datadog.android.ndk.NdkCrashReportsFeature
+import com.datadog.android.okhttp.DatadogEventListener
+import com.datadog.android.okhttp.rum.RumInterceptor
+import com.datadog.android.okhttp.tracing.TracingInterceptor
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumInterceptor
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -40,7 +41,6 @@ import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.tracing.AndroidTracer
-import com.datadog.android.tracing.TracingInterceptor
 import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray

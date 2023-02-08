@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum
 
-import com.datadog.android.DatadogInterceptor
 import com.datadog.android.core.configuration.Credentials
 
 /**

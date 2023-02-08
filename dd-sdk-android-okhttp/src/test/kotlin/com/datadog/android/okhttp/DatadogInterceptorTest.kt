@@ -4,10 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android
+package com.datadog.android.okhttp
 
-import com.datadog.android.core.internal.net.identifyRequest
+import com.datadog.android.Datadog
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.okhttp.tracing.TracingInterceptor
+import com.datadog.android.okhttp.tracing.TracingInterceptorNotSendingSpanTest
+import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -15,8 +18,6 @@ import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.tracing.NoOpTracedRequestListener
 import com.datadog.android.tracing.TracingHeaderType
-import com.datadog.android.tracing.TracingInterceptor
-import com.datadog.android.tracing.TracingInterceptorNotSendingSpanTest
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.core.DatadogCore

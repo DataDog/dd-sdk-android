@@ -10,7 +10,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.nightly.R
 import com.datadog.android.nightly.server.LocalServer
-import com.datadog.android.rum.RumInterceptor
+import com.datadog.android.okhttp.rum.RumInterceptor
 import fr.xgouchet.elmyr.Forge
 import io.ktor.http.HttpStatusCode
 import io.ktor.response.respond

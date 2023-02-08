@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.tracing
+package com.datadog.android.okhttp.tracing
 
 import com.datadog.tools.annotation.NoOpImplementation
 import io.opentracing.Span

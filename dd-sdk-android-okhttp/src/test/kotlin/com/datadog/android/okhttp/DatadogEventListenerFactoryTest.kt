@@ -4,9 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android
+package com.datadog.android.okhttp
 
-import com.datadog.android.core.internal.net.identifyRequest
+import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever

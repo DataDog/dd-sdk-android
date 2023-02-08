@@ -16,6 +16,7 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
+    id("com.google.devtools.ksp")
 
     // Publish
     `maven-publish`
@@ -75,6 +76,10 @@ dependencies {
     api(project(":dd-sdk-android"))
     implementation(libs.kotlin)
     implementation(libs.okHttp)
+    implementation(libs.androidXAnnotation)
+
+    // Generate NoOp implementations
+    ksp(project(":tools:noopfactory"))
 
     testImplementation(project(":tools:unit"))
     testImplementation(libs.bundles.jUnit5)

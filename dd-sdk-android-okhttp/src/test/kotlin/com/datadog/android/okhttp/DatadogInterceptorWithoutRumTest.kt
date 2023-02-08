@@ -4,12 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android
+package com.datadog.android.okhttp
 
+import com.datadog.android.okhttp.tracing.TracingInterceptor
+import com.datadog.android.okhttp.tracing.TracingInterceptorTest
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.tracing.TracingHeaderType
-import com.datadog.android.tracing.TracingInterceptor
-import com.datadog.android.tracing.TracingInterceptorTest
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger

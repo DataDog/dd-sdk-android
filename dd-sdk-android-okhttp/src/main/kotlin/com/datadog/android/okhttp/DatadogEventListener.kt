@@ -4,10 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android
+package com.datadog.android.okhttp
 
-import com.datadog.android.DatadogEventListener.Factory
-import com.datadog.android.core.internal.net.identifyRequest
+import com.datadog.android.okhttp.DatadogEventListener.Factory
+import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor

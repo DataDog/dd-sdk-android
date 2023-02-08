@@ -4,11 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.tracing
+package com.datadog.android.okhttp.tracing
 
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogInterceptor
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
@@ -17,6 +16,9 @@ import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.tracing.NoOpTracedRequestListener
+import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.opentracing.DDTracer

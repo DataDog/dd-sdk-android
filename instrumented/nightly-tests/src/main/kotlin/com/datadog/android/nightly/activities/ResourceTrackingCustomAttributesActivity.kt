@@ -9,7 +9,7 @@ package com.datadog.android.nightly.activities
 import com.datadog.android.nightly.SPECIAL_INT_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_NULL_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_STRING_ATTRIBUTE_NAME
-import com.datadog.android.rum.RumInterceptor
+import com.datadog.android.okhttp.rum.RumInterceptor
 import com.datadog.android.rum.RumResourceAttributesProvider
 import okhttp3.OkHttpClient
 import okhttp3.Request

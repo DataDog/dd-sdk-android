@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.net
+package com.datadog.android.okhttp.utils
 
 import okhttp3.Request
 import okhttp3.internal.Util
