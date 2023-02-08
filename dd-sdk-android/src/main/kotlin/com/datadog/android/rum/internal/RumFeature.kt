@@ -191,16 +191,18 @@ internal class RumFeature(
             return
         }
 
-        if (event["type"] == "jvm_crash") {
-            addJvmCrash(event)
-        } else if (event["type"] == "ndk_crash") {
-            ndkCrashEventHandler.handleEvent(event, sdkCore, dataWriter)
-        } else {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"])
-            )
+        when (event["type"]) {
+            "jvm_crash" -> addJvmCrash(event)
+            "ndk_crash" -> ndkCrashEventHandler.handleEvent(event, sdkCore, dataWriter)
+            "logger_error" -> addLoggerError(event)
+            "logger_error_with_stacktrace" -> addLoggerErrorWithStacktrace(event)
+            else -> {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"])
+                )
+            }
         }
     }
 
@@ -303,8 +305,8 @@ internal class RumFeature(
     }
 
     private fun addJvmCrash(crashEvent: Map<*, *>) {
-        val throwable = crashEvent["throwable"] as? Throwable
-        val message = crashEvent["message"] as? String
+        val throwable = crashEvent[EVENT_THROWABLE_PROPERTY] as? Throwable
+        val message = crashEvent[EVENT_MESSAGE_PROPERTY] as? String
 
         if (throwable == null || message == null) {
             internalLogger.log(
@@ -322,10 +324,63 @@ internal class RumFeature(
         )
     }
 
+    private fun addLoggerError(loggerErrorEvent: Map<*, *>) {
+        val throwable = loggerErrorEvent[EVENT_THROWABLE_PROPERTY] as? Throwable
+        val message = loggerErrorEvent[EVENT_MESSAGE_PROPERTY] as? String
+
+        @Suppress("UNCHECKED_CAST")
+        val attributes = loggerErrorEvent[EVENT_ATTRIBUTES_PROPERTY] as? Map<String, Any?>
+
+        if (message == null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS
+            )
+            return
+        }
+
+        (GlobalRum.get() as? AdvancedRumMonitor)?.addError(
+            message,
+            RumErrorSource.LOGGER,
+            throwable,
+            attributes ?: emptyMap()
+        )
+    }
+
+    private fun addLoggerErrorWithStacktrace(loggerErrorEvent: Map<*, *>) {
+        val stacktrace = loggerErrorEvent[EVENT_STACKTRACE_PROPERTY] as? String
+        val message = loggerErrorEvent[EVENT_MESSAGE_PROPERTY] as? String
+
+        @Suppress("UNCHECKED_CAST")
+        val attributes = loggerErrorEvent[EVENT_ATTRIBUTES_PROPERTY] as? Map<String, Any?>
+
+        if (message == null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS
+            )
+            return
+        }
+
+        (GlobalRum.get() as? AdvancedRumMonitor)?.addErrorWithStacktrace(
+            message,
+            RumErrorSource.LOGGER,
+            stacktrace,
+            attributes ?: emptyMap()
+        )
+    }
+
     // endregion
 
     companion object {
         internal val startupTimeNs: Long = System.nanoTime()
+
+        internal const val EVENT_MESSAGE_PROPERTY = "message"
+        internal const val EVENT_THROWABLE_PROPERTY = "throwable"
+        internal const val EVENT_ATTRIBUTES_PROPERTY = "attributes"
+        internal const val EVENT_STACKTRACE_PROPERTY = "stacktrace"
 
         internal const val VIEW_TIMESTAMP_OFFSET_IN_MS_KEY = "view_timestamp_offset"
         internal const val UNSUPPORTED_EVENT_TYPE =
@@ -335,6 +390,12 @@ internal class RumFeature(
         internal const val JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS =
             "RUM feature received a JVM crash event" +
                 " where one or more mandatory (throwable, message) fields" +
-                " are either missing or have wrong type."
+                " are either missing or have a wrong type."
+        internal const val LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS =
+            "RUM feature received a log event" +
+                " where mandatory message field is either missing or have a wrong type."
+        internal const val LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS =
+            "RUM feature received a log event with stacktrace" +
+                " where mandatory message field is either missing or have a wrong type."
     }
 }

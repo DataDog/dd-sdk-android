@@ -11,8 +11,6 @@ import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
@@ -77,7 +75,23 @@ internal class DatadogLogHandler(
         }
 
         if (level >= AndroidLog.ERROR) {
-            GlobalRum.get().addError(message, RumErrorSource.LOGGER, throwable, attributes)
+            val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+            if (rumFeature != null) {
+                rumFeature.sendEvent(
+                    mapOf(
+                        "type" to "logger_error",
+                        "message" to message,
+                        "throwable" to throwable,
+                        "attributes" to attributes
+                    )
+                )
+            } else {
+                internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    InternalLogger.Target.USER,
+                    RUM_FEATURE_NOT_REGISTERED_FOR_ERROR_FORWARD_INFO
+                )
+            }
         }
     }
 
@@ -122,14 +136,29 @@ internal class DatadogLogHandler(
                 internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
-                    "Requested to write log, but Logs feature is not registered."
+                    LOGS_FEATURE_NOT_REGISTERED_INFO
                 )
             }
         }
 
         if (level >= AndroidLog.ERROR) {
-            GlobalRum.get()
-                .addErrorWithStacktrace(message, RumErrorSource.LOGGER, errorStacktrace, attributes)
+            val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+            if (rumFeature != null) {
+                rumFeature.sendEvent(
+                    mapOf(
+                        "type" to "logger_error_with_stacktrace",
+                        "message" to message,
+                        "stacktrace" to errorStacktrace,
+                        "attributes" to attributes
+                    )
+                )
+            } else {
+                internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    InternalLogger.Target.USER,
+                    RUM_FEATURE_NOT_REGISTERED_FOR_ERROR_FORWARD_INFO
+                )
+            }
         }
     }
 
@@ -196,4 +225,11 @@ internal class DatadogLogHandler(
     }
 
     // endregion
+
+    private companion object {
+        const val LOGS_FEATURE_NOT_REGISTERED_INFO =
+            "Requested to write log, but Logs feature is not registered."
+        const val RUM_FEATURE_NOT_REGISTERED_FOR_ERROR_FORWARD_INFO =
+            "RUM feature is not registered, won't forward error log to RUM."
+    }
 }

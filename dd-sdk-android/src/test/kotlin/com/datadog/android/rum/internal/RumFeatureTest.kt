@@ -37,6 +37,7 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -641,6 +642,136 @@ internal class RumFeatureTest {
         verifyZeroInteractions(
             rumMonitor.mockInstance,
             logger.mockInternalLogger
+        )
+    }
+
+    @Test
+    fun `𝕄 add error 𝕎 onReceive() { logger error event }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeThrowable = forge.aNullable { forge.aThrowable() }
+        val fakeMessage = forge.anAlphabeticalString()
+        val fakeAttributes = forge.aNullable { forge.exhaustiveAttributes() }
+
+        val event = mutableMapOf(
+            "type" to "logger_error",
+            "message" to fakeMessage,
+            "throwable" to fakeThrowable,
+            "attributes" to fakeAttributes
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(rumMonitor.mockInstance)
+            .addError(
+                fakeMessage,
+                RumErrorSource.LOGGER,
+                fakeThrowable,
+                fakeAttributes?.toMap() ?: emptyMap()
+            )
+
+        verifyZeroInteractions(
+            mockSdkCore,
+            logger.mockInternalLogger
+        )
+    }
+
+    @Test
+    fun `𝕄 log dev warning 𝕎 onReceive() { logger error event + missing message field }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeThrowable = forge.aNullable { forge.aThrowable() }
+        val fakeAttributes = forge.aNullable { forge.exhaustiveAttributes() }
+
+        val event = mutableMapOf(
+            "type" to "logger_error",
+            "throwable" to fakeThrowable,
+            "attributes" to fakeAttributes
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                RumFeature.LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS
+            )
+
+        verifyZeroInteractions(
+            mockSdkCore,
+            rumMonitor.mockInstance
+        )
+    }
+
+    @Test
+    fun `𝕄 add error with stacktrace 𝕎 onReceive() { logger error with stacktrace event }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeStacktrace = forge.aNullable { forge.anAlphabeticalString() }
+        val fakeMessage = forge.anAlphabeticalString()
+        val fakeAttributes = forge.aNullable { forge.exhaustiveAttributes() }
+
+        val event = mutableMapOf(
+            "type" to "logger_error_with_stacktrace",
+            "message" to fakeMessage,
+            "stacktrace" to fakeStacktrace,
+            "attributes" to fakeAttributes
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(rumMonitor.mockInstance)
+            .addErrorWithStacktrace(
+                fakeMessage,
+                RumErrorSource.LOGGER,
+                fakeStacktrace,
+                fakeAttributes?.toMap() ?: emptyMap()
+            )
+
+        verifyZeroInteractions(
+            mockSdkCore,
+            logger.mockInternalLogger
+        )
+    }
+
+    @Test
+    fun `𝕄 log dev warning 𝕎 onReceive() {logger error event with stacktrace + missing message field}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeThrowable = forge.aNullable { forge.aThrowable() }
+        val fakeAttributes = forge.aNullable { forge.exhaustiveAttributes() }
+
+        val event = mutableMapOf(
+            "type" to "logger_error_with_stacktrace",
+            "throwable" to fakeThrowable,
+            "attributes" to fakeAttributes
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                RumFeature.LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS
+            )
+
+        verifyZeroInteractions(
+            mockSdkCore,
+            rumMonitor.mockInstance
         )
     }
 
