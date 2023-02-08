@@ -45,7 +45,7 @@ android {
         setLibraryVersion()
     }
 
-    namespace = "com.datadog.android.logs"
+    namespace = "com.datadog.android.log"
 
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
