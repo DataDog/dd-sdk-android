@@ -6,25 +6,21 @@
 
 package com.datadog.android.okhttp.tracing
 
-import android.content.Context
 import android.util.Log
 import com.datadog.android.Datadog
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
+import com.datadog.android.okhttp.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.tracing.TracingHeaderType
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
-import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.opentracing.DDTracer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.setStaticValue
 import com.datadog.trace.api.interceptor.MutableSpan
 import com.datadog.trace.api.sampling.PrioritySampling
@@ -86,7 +82,7 @@ import java.util.concurrent.TimeUnit
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(BaseConfigurator::class)
 internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
     lateinit var testedInterceptor: TracingInterceptor
@@ -139,9 +135,6 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
     lateinit var fakeUrl: String
 
-    @Forgery
-    lateinit var fakeConfig: Configuration.Feature.Tracing
-
     lateinit var fakeRequest: Request
     lateinit var fakeResponse: Response
 
@@ -184,9 +177,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         }
         fakeUrl = forgeUrl(forge)
         fakeRequest = forgeRequest(forge)
-        val mockCore = mock<DatadogCore>()
-        whenever(mockCore.tracingFeature) doReturn mock()
-        Datadog.globalSdkCore = mockCore
+        whenever(datadogCore.mockInstance.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         doAnswer { false }.whenever(mockResolver).isFirstPartyUrl(any<HttpUrl>())
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(HttpUrl.get(fakeUrl))
 
@@ -197,7 +188,6 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     @AfterEach
     open fun `tear down`() {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        Datadog.globalSdkCore = NoOpSdkCore()
     }
 
     open fun instantiateTestedInterceptor(
@@ -950,7 +940,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        Datadog.globalSdkCore = NoOpSdkCore()
+        whenever(datadogCore.mockInstance.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
         stubChain(mockChain, statusCode)
 
         testedInterceptor.intercept(mockChain)
@@ -1154,25 +1144,6 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `M do not update the hostDetector W host list provided`(forge: Forge) {
-        // GIVEN
-        val localHosts = forge.aList { forge.aStringMatching(HOSTNAME_PATTERN) }
-
-        // WHEN
-        testedInterceptor =
-            instantiateTestedInterceptor(
-                localHosts.associateWith {
-                    setOf(TracingHeaderType.DATADOG)
-                }
-            ) {
-                mockLocalTracer
-            }
-
-        // THEN
-        verify(mockResolver, never()).addKnownHosts(localHosts)
-    }
-
-    @Test
     fun `𝕄 do nothing 𝕎 intercept() for request with unknown host`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
         forge: Forge
@@ -1311,14 +1282,13 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
             "(([0-9]|[1-9][0-9]|1[0-9]){2}\\.|(2[0-4][0-9]|25[0-5])\\.){3}" +
                 "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
 
-        val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
         val logger = InternalLoggerTestConfiguration()
+        val datadogCore = DatadogSingletonTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, coreFeature)
+            return listOf(logger, datadogCore)
         }
     }
 }

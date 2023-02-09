@@ -6,7 +6,7 @@
 
 package com.datadog.android.okhttp.utils
 
-import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -26,7 +26,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(BaseConfigurator::class)
 internal class RequestUniqueIdentifierTest {
 
     @StringForgery(regex = "http(s?)://[a-z]+\\.com/\\w+")

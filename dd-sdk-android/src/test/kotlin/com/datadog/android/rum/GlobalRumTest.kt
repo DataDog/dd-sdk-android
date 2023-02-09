@@ -62,28 +62,4 @@ internal class GlobalRumTest {
         // Then
         verifyZeroInteractions(mockNoOpRumMonitor)
     }
-
-    @Test
-    fun `M delegate to monitor W notifyInterceptorInstantiated(){ AdvancedRumMonitor }`() {
-        // Given
-        GlobalRum.monitor = mockAdvancedRumMonitor
-
-        // When
-        GlobalRum.notifyInterceptorInstantiated()
-
-        // Then
-        verify(mockAdvancedRumMonitor).notifyInterceptorInstantiated()
-    }
-
-    @Test
-    fun `M do nothing W notifyInterceptorInstantiated(){ NoOpMonitor }`() {
-        // Given
-        GlobalRum.monitor = mockNoOpRumMonitor
-
-        // When
-        GlobalRum.notifyInterceptorInstantiated()
-
-        // Then
-        verifyZeroInteractions(mockNoOpRumMonitor)
-    }
 }

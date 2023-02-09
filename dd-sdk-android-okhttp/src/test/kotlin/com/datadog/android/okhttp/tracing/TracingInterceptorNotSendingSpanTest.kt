@@ -6,25 +6,22 @@
 
 package com.datadog.android.okhttp.tracing
 
-import android.content.Context
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
+import com.datadog.android.okhttp.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.tracing.TracingHeaderType
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
-import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.setStaticValue
 import com.datadog.trace.api.interceptor.MutableSpan
 import com.datadog.trace.api.sampling.PrioritySampling
@@ -82,7 +79,7 @@ import java.util.concurrent.TimeUnit
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(BaseConfigurator::class)
 internal open class TracingInterceptorNotSendingSpanTest {
 
     lateinit var testedInterceptor: TracingInterceptor
@@ -177,8 +174,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         }
         fakeUrl = forgeUrl(forge)
         fakeRequest = forgeRequest(forge)
-        Datadog.globalSdkCore = mock<DatadogCore>()
-        whenever((Datadog.globalSdkCore as DatadogCore).tracingFeature) doReturn mock()
+        whenever(datadogCore.mockInstance.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         doAnswer { false }.whenever(mockResolver).isFirstPartyUrl(any<HttpUrl>())
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(HttpUrl.get(fakeUrl))
 
@@ -189,7 +185,6 @@ internal open class TracingInterceptorNotSendingSpanTest {
     @AfterEach
     open fun `tear down`() {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        Datadog.globalSdkCore = NoOpSdkCore()
     }
 
     open fun instantiateTestedInterceptor(
@@ -1001,7 +996,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        Datadog.globalSdkCore = NoOpSdkCore()
+        whenever(datadogCore.mockInstance.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
         stubChain(mockChain, statusCode)
 
         testedInterceptor.intercept(mockChain)
@@ -1217,19 +1212,6 @@ internal open class TracingInterceptorNotSendingSpanTest {
     }
 
     @Test
-    fun `M do not update the hostDetector W host list provided`(forge: Forge) {
-        // GIVEN
-        val localHosts =
-            forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.DATADOG) }
-
-        // WHEN
-        testedInterceptor = instantiateTestedInterceptor(localHosts) { mockLocalTracer }
-
-        // THEN
-        verify(mockResolver, never()).addKnownHostsWithHeaderTypes(localHosts)
-    }
-
-    @Test
     fun `𝕄 do nothing 𝕎 intercept() for request with unknown host`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
         forge: Forge
@@ -1366,14 +1348,13 @@ internal open class TracingInterceptorNotSendingSpanTest {
             "(([0-9]|[1-9][0-9]|1[0-9]){2}\\.|(2[0-4][0-9]|25[0-5])\\.){3}" +
                 "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
 
-        val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
         val logger = InternalLoggerTestConfiguration()
+        val datadogCore = DatadogSingletonTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, coreFeature)
+            return listOf(logger, datadogCore)
         }
     }
 }

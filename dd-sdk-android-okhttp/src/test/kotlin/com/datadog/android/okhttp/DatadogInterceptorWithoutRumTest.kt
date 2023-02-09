@@ -8,14 +8,14 @@ package com.datadog.android.okhttp
 
 import com.datadog.android.okhttp.tracing.TracingInterceptor
 import com.datadog.android.okhttp.tracing.TracingInterceptorTest
+import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.tracing.TracingHeaderType
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.forge.BaseConfigurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
@@ -43,7 +43,7 @@ import org.mockito.quality.Strictness
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(BaseConfigurator::class)
 internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
 
     @Mock

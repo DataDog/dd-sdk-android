@@ -7,7 +7,7 @@
 package com.datadog.android.okhttp
 
 import com.datadog.android.okhttp.utils.identifyRequest
-import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.forge.BaseConfigurator
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -30,7 +30,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(BaseConfigurator::class)
 class DatadogEventListenerFactoryTest {
 
     lateinit var testedFactory: DatadogEventListener.Factory

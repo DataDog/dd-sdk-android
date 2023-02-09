@@ -6,7 +6,6 @@
 
 package com.datadog.android.okhttp
 
-import android.content.Context
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
@@ -14,23 +13,21 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.tracing.TracedRequestListener
 import com.datadog.android.okhttp.tracing.TracingInterceptor
 import com.datadog.android.okhttp.tracing.TracingInterceptorTest
+import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
+import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.okhttp.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
-import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.NoOpSdkCore
+import com.datadog.android.v2.api.Feature
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.datadog.trace.api.interceptor.MutableSpan
 import com.nhaarman.mockitokotlin2.any
@@ -59,7 +56,6 @@ import okhttp3.RequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody
 import org.assertj.core.api.Assertions
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -77,7 +73,7 @@ import java.util.Locale
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(BaseConfigurator::class)
 internal class DatadogInterceptorWithoutTracesTest {
 
     lateinit var testedInterceptor: TracingInterceptor
@@ -161,9 +157,8 @@ internal class DatadogInterceptorWithoutTracesTest {
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler
         ) { mockLocalTracer }
-        Datadog.globalSdkCore = mock<DatadogCore>()
-        whenever((Datadog.globalSdkCore as DatadogCore).tracingFeature) doReturn mock()
-        whenever((Datadog.globalSdkCore as DatadogCore).rumFeature) doReturn mock()
+        whenever(datadogCore.mockInstance.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
+        whenever(datadogCore.mockInstance.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
 
         fakeResourceAttributes = forge.exhaustiveAttributes()
 
@@ -174,11 +169,6 @@ internal class DatadogInterceptorWithoutTracesTest {
                 anyOrNull()
             )
         ) doReturn fakeResourceAttributes
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        Datadog.globalSdkCore = NoOpSdkCore()
     }
 
     @Test
@@ -365,15 +355,14 @@ internal class DatadogInterceptorWithoutTracesTest {
     // endregion
 
     companion object {
-        val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
         val logger = InternalLoggerTestConfiguration()
+        val datadogCore = DatadogSingletonTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, coreFeature, rumMonitor)
+            return listOf(logger, rumMonitor, datadogCore)
         }
     }
 }

@@ -8,23 +8,21 @@ package com.datadog.android.okhttp.tracing
 
 import android.util.Log
 import com.datadog.android.Datadog
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.tracing.NoOpTracedRequestListener
+import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
+import com.datadog.android.okhttp.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.tracing.TracingHeaderType
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
-import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.setStaticValue
 import com.datadog.trace.api.interceptor.MutableSpan
 import com.datadog.trace.api.sampling.PrioritySampling
@@ -82,7 +80,7 @@ import java.util.concurrent.TimeUnit
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(BaseConfigurator::class)
 internal open class TracingInterceptorTest {
 
     lateinit var testedInterceptor: TracingInterceptor
@@ -131,9 +129,6 @@ internal open class TracingInterceptorTest {
 
     lateinit var fakeBaseUrl: String
 
-    @Forgery
-    lateinit var fakeConfig: Configuration.Feature.Tracing
-
     lateinit var fakeRequest: Request
     lateinit var fakeResponse: Response
 
@@ -171,9 +166,7 @@ internal open class TracingInterceptorTest {
         fakeMediaType = MediaType.parse(mediaType)
         fakeUrl = forgeUrlWithQueryParams(forge)
         fakeRequest = forgeRequest(forge)
-        val mockCore = mock<DatadogCore>()
-        whenever(mockCore.tracingFeature) doReturn mock()
-        Datadog.globalSdkCore = mockCore
+        whenever(datadogCore.mockInstance.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) {
             mockLocalTracer
         }
@@ -201,12 +194,14 @@ internal open class TracingInterceptorTest {
 
     @AfterEach
     fun `tear down`() {
-        Datadog.globalSdkCore = NoOpSdkCore()
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
     }
 
     @Test
     fun `M instantiate with default values W init()`() {
+        // Given
+        whenever(datadogCore.mockInstance.firstPartyHostResolver) doReturn mock()
+
         // When
         val interceptor = TracingInterceptor()
 
@@ -217,7 +212,7 @@ internal open class TracingInterceptorTest {
         assertThat(interceptor.traceSampler)
             .isInstanceOf(RateBasedSampler::class.java)
         val traceSampler = interceptor.traceSampler as RateBasedSampler
-        assertThat(traceSampler.sampleRate).isEqualTo(
+        assertThat(traceSampler.getSamplingRate()).isEqualTo(
             TracingInterceptor.DEFAULT_TRACE_SAMPLING_RATE / 100
         )
     }
@@ -226,6 +221,9 @@ internal open class TracingInterceptorTest {
     fun `M instantiate with default values W init()`(
         @StringForgery(regex = "[a-z]+\\.[a-z]{3}") hosts: List<String>
     ) {
+        // Given
+        whenever(datadogCore.mockInstance.firstPartyHostResolver) doReturn mock()
+
         // When
         val interceptor = TracingInterceptor(hosts)
 
@@ -236,7 +234,7 @@ internal open class TracingInterceptorTest {
         assertThat(interceptor.traceSampler)
             .isInstanceOf(RateBasedSampler::class.java)
         val traceSampler = interceptor.traceSampler as RateBasedSampler
-        assertThat(traceSampler.sampleRate).isEqualTo(
+        assertThat(traceSampler.getSamplingRate()).isEqualTo(
             TracingInterceptor.DEFAULT_TRACE_SAMPLING_RATE / 100
         )
     }
@@ -1166,7 +1164,7 @@ internal open class TracingInterceptorTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        Datadog.globalSdkCore = NoOpSdkCore()
+        whenever(datadogCore.mockInstance.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
@@ -1383,19 +1381,6 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M do not update the hostDetector W host list provided`(forge: Forge) {
-        // GIVEN
-        val localHosts =
-            forge.aMap { aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.DATADOG) }
-
-        // WHEN
-        testedInterceptor = instantiateTestedInterceptor(localHosts) { mockLocalTracer }
-
-        // THEN
-        verify(mockResolver, never()).addKnownHostsWithHeaderTypes(localHosts)
-    }
-
-    @Test
     fun `𝕄 do nothing 𝕎 intercept() for request with unknown host`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
@@ -1529,11 +1514,12 @@ internal open class TracingInterceptorTest {
             "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{1,4}[a-zA-Z0-9]{2,3})\\.)+" +
                 "([A-Za-z]|[A-Za-z][A-Za-z0-9-]{1,2}[A-Za-z0-9])"
         val logger = InternalLoggerTestConfiguration()
+        val datadogCore = DatadogSingletonTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
+            return listOf(logger, datadogCore)
         }
     }
 }
