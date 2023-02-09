@@ -9,7 +9,7 @@ package com.datadog.android.okhttp
 import android.content.Context
 import android.util.Log
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.tracing.TracedRequestListener
 import com.datadog.android.okhttp.tracing.TracingInterceptor
@@ -97,7 +97,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     lateinit var mockRumAttributesProvider: RumResourceAttributesProvider
 
     @Mock
-    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
+    lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockSpanBuilder: DDTracer.DDSpanBuilder

@@ -14,7 +14,7 @@ import android.os.SystemClock
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.internalLogger
@@ -34,7 +34,7 @@ internal class RumViewManagerScope(
     private val sdkCore: SdkCore,
     private val backgroundTrackingEnabled: Boolean,
     private val trackFrustrations: Boolean,
-    internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
+    internal val firstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,

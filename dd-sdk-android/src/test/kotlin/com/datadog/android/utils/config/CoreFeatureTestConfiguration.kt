@@ -12,7 +12,7 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.privacy.ConsentProvider
@@ -62,7 +62,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var mockPersistenceExecutor: ExecutorService
     lateinit var mockKronosClock: KronosClock
     lateinit var mockContextRef: WeakReference<Context?>
-    lateinit var mockFirstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver
+    lateinit var mockFirstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver
 
     lateinit var mockTimeProvider: TimeProvider
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider

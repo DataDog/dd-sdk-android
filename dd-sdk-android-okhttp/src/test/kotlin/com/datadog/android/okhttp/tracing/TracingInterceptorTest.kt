@@ -9,7 +9,7 @@ package com.datadog.android.okhttp.tracing
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
@@ -111,7 +111,7 @@ internal open class TracingInterceptorTest {
     lateinit var mockRequestListener: TracedRequestListener
 
     @Mock
-    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
+    lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockTraceSampler: Sampler

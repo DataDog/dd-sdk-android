@@ -28,9 +28,9 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class FirstPartyHostHeaderTypeResolverTest {
+internal class DefaultFirstPartyHostHeaderTypeResolverTest {
 
-    lateinit var testedDetector: FirstPartyHostHeaderTypeResolver
+    lateinit var testedDetector: DefaultFirstPartyHostHeaderTypeResolver
 
     lateinit var fakeHosts: Map<String, Set<TracingHeaderType>>
 
@@ -40,7 +40,7 @@ internal class FirstPartyHostHeaderTypeResolverTest {
             forge.aStringMatching(HOST_REGEX) to
                 forge.aList { aValueFrom(TracingHeaderType::class.java) }.toSet()
         }
-        testedDetector = FirstPartyHostHeaderTypeResolver(fakeHosts)
+        testedDetector = DefaultFirstPartyHostHeaderTypeResolver(fakeHosts)
     }
 
     @Test
@@ -219,7 +219,7 @@ internal class FirstPartyHostHeaderTypeResolverTest {
         val fakeNewAllowedHosts = forge.aList { forge.aStringMatching(HOST_REGEX) }
         val host = forge.anElementFrom(fakeNewAllowedHosts)
         val url = "$scheme://$host$path"
-        testedDetector = FirstPartyHostHeaderTypeResolver(mapOf("*" to emptySet()))
+        testedDetector = DefaultFirstPartyHostHeaderTypeResolver(mapOf("*" to emptySet()))
 
         // WHEN
         val result = testedDetector.isFirstPartyUrl(url)
@@ -238,7 +238,7 @@ internal class FirstPartyHostHeaderTypeResolverTest {
         val fakeNewAllowedHosts = forge.aList { forge.aStringMatching(HOST_REGEX) }
         val host = forge.anElementFrom(fakeNewAllowedHosts)
         val url = HttpUrl.get("$scheme://$host$path")
-        testedDetector = FirstPartyHostHeaderTypeResolver(mapOf("*" to emptySet()))
+        testedDetector = DefaultFirstPartyHostHeaderTypeResolver(mapOf("*" to emptySet()))
 
         // WHEN
         val result = testedDetector.isFirstPartyUrl(url)
@@ -279,7 +279,7 @@ internal class FirstPartyHostHeaderTypeResolverTest {
     @Test
     fun `𝕄 return true 𝕎 isEmpty() {empty host list}`() {
         // Given
-        val resolver = FirstPartyHostHeaderTypeResolver(emptyMap())
+        val resolver = DefaultFirstPartyHostHeaderTypeResolver(emptyMap())
 
         // When
         val result = resolver.isEmpty()

@@ -14,23 +14,24 @@ import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.okhttp.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.rum.RumInterceptor
+import com.datadog.android.okhttp.tracing.NoOpTracedRequestListener
 import com.datadog.android.okhttp.tracing.TracedRequestListener
 import com.datadog.android.okhttp.tracing.TracingInterceptor
 import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.tracing.AndroidTracer
-import com.datadog.android.tracing.NoOpTracedRequestListener
 import com.datadog.android.tracing.TracingHeaderType
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.DatadogCore
 import io.opentracing.Span
 import io.opentracing.Tracer
 import okhttp3.Interceptor
@@ -187,14 +188,14 @@ internal constructor(
     )
 
     init {
-        GlobalRum.notifyInterceptorInstantiated()
+        (GlobalRum.get() as? AdvancedNetworkRumMonitor)?.notifyInterceptorInstantiated()
     }
 
     // region Interceptor
 
     /** @inheritdoc */
     override fun intercept(chain: Interceptor.Chain): Response {
-        val rumFeature = (Datadog.globalSdkCore as? DatadogCore)?.rumFeature
+        val rumFeature = Datadog.globalSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         if (rumFeature != null) {
             val request = chain.request()
             val url = request.url().toString()
@@ -224,7 +225,7 @@ internal constructor(
         throwable: Throwable?
     ) {
         super.onRequestIntercepted(request, span, response, throwable)
-        val rumFeature = (Datadog.globalSdkCore as? DatadogCore)?.rumFeature
+        val rumFeature = Datadog.globalSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         if (rumFeature != null) {
             if (response != null) {
                 handleResponse(request, response, span, span != null)
@@ -236,7 +237,7 @@ internal constructor(
 
     /** @inheritdoc */
     override fun canSendSpan(): Boolean {
-        val rumFeature = (Datadog.globalSdkCore as? DatadogCore)?.rumFeature
+        val rumFeature = Datadog.globalSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         return rumFeature == null
     }
 

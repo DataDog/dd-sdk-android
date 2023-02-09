@@ -11,6 +11,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
+import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
@@ -356,6 +357,35 @@ internal class DatadogCoreTest {
         assertThat(time.deviceTimeNs).isEqualTo(time.serverTimeNs)
         assertThat(time.serverTimeOffsetMs).isEqualTo(0)
         assertThat(time.serverTimeOffsetNs).isEqualTo(0)
+    }
+
+    @Test
+    fun `𝕄 provide service 𝕎 service()`(
+        @StringForgery fakeService: String
+    ) {
+        // Given
+        testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.serviceName) doReturn fakeService
+
+        // When
+        val service = testedCore.service
+
+        // Then
+        assertThat(service).isEqualTo(fakeService)
+    }
+
+    @Test
+    fun `𝕄 provide first party host resolver 𝕎 firstPartyHostResolver()`() {
+        // Given
+        testedCore.coreFeature = mock()
+        val mockResolver = mock<DefaultFirstPartyHostHeaderTypeResolver>()
+        whenever(testedCore.coreFeature.firstPartyHostHeaderTypeResolver) doReturn mockResolver
+
+        // When
+        val resolver = testedCore.firstPartyHostResolver
+
+        // Then
+        assertThat(resolver).isSameAs(mockResolver)
     }
 
     @Test

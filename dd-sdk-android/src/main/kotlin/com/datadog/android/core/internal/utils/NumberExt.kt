@@ -19,4 +19,7 @@ internal fun BigInteger.toHexString(): String {
     return toLong().toHexString()
 }
 
-internal fun Float.percent() = this / HUNDRED
+/**
+ * Converts value (which should be in the range 0 to 100) to the percent format.
+ */
+fun Float.percent() = this / HUNDRED

@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
@@ -40,7 +40,7 @@ internal class RumResourceScope(
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
     serverTimeOffsetInMs: Long,
-    internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
+    internal val firstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
     contextProvider: ContextProvider,
     private val featuresContextResolver: FeaturesContextResolver
 ) : RumScope {
@@ -403,7 +403,7 @@ internal class RumResourceScope(
             parentScope: RumScope,
             sdkCore: SdkCore,
             event: RumRawEvent.StartResource,
-            firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
+            firstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
             timestampOffset: Long,
             contextProvider: ContextProvider,
             featuresContextResolver: FeaturesContextResolver

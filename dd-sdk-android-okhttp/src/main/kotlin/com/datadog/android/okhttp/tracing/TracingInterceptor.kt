@@ -10,6 +10,7 @@ import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.HostsSanitizer
+import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
@@ -17,10 +18,9 @@ import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.tracing.AndroidTracer
-import com.datadog.android.tracing.NoOpTracedRequestListener
 import com.datadog.android.tracing.TracingHeaderType
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.DatadogCore
 import com.datadog.opentracing.DDTracer
 import com.datadog.trace.api.DDTags
 import com.datadog.trace.api.interceptor.MutableSpan
@@ -81,8 +81,9 @@ internal constructor(
         NETWORK_REQUESTS_TRACKING_FEATURE_NAME
     )
 
-    private val localFirstPartyHostHeaderTypeResolver =
-        FirstPartyHostHeaderTypeResolver(tracedHosts.filterKeys { sanitizedHosts.contains(it) })
+    private val localFirstPartyHostHeaderTypeResolver = DefaultFirstPartyHostHeaderTypeResolver(
+        tracedHosts.filterKeys { sanitizedHosts.contains(it) }
+    )
 
     init {
         if (localFirstPartyHostHeaderTypeResolver.isEmpty() && firstPartyHostResolver.isEmpty()) {
@@ -272,7 +273,7 @@ internal constructor(
 
     @Synchronized
     private fun resolveTracer(): Tracer? {
-        val tracingFeature = (Datadog.globalSdkCore as? DatadogCore)?.tracingFeature
+        val tracingFeature = Datadog.globalSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         return if (tracingFeature == null) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -572,12 +573,7 @@ internal constructor(
          */
         @Suppress("FunctionMaxLength")
         internal fun getGlobalFirstPartyHostResolver(): FirstPartyHostHeaderTypeResolver {
-            return (
-                (Datadog.globalSdkCore as? DatadogCore)
-                    ?.coreFeature
-                    ?.firstPartyHostHeaderTypeResolver
-                    ?: FirstPartyHostHeaderTypeResolver(emptyMap())
-                )
+            return Datadog.globalSdkCore.firstPartyHostResolver
         }
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"

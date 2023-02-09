@@ -29,9 +29,14 @@ enum class RumResourceKind(internal val value: String) {
     MEDIA("media"),
     OTHER("other");
 
-    internal companion object {
+    companion object {
 
-        internal fun fromMimeType(mimeType: String): RumResourceKind {
+        /**
+         * Converts string representation of MIME type into [RumResourceKind].
+         *
+         * @param mimeType MIME type to convert. If it is unknown, [NATIVE] will be returned.
+         */
+        fun fromMimeType(mimeType: String): RumResourceKind {
             val baseType = mimeType.substringBefore('/').lowercase(Locale.US)
             val subtype = mimeType.substringAfter('/').substringBefore(';').lowercase(Locale.US)
 

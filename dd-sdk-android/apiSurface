@@ -96,6 +96,8 @@ data class com.datadog.android.core.configuration.Credentials
   constructor(String, String, String, String?, String? = null)
   companion object 
     const val NO_VARIANT: String
+class com.datadog.android.core.configuration.HostsSanitizer
+  fun sanitizeHosts(List<String>, String): List<String>
 enum com.datadog.android.core.configuration.UploadFrequency
   constructor(Long)
   - FREQUENT
@@ -116,9 +118,26 @@ class com.datadog.android.core.constraints.DatadogDataConstraints : DataConstrai
   override fun <T: Any?> validateAttributes(Map<String, T>, String?, String?, Set<String>): MutableMap<String, T>
   override fun validateTimings(Map<String, Long>): MutableMap<String, Long>
   companion object 
+class com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver : FirstPartyHostHeaderTypeResolver
+  constructor(Map<String, Set<com.datadog.android.tracing.TracingHeaderType>>)
+  override fun isFirstPartyUrl(okhttp3.HttpUrl): Boolean
+  override fun isFirstPartyUrl(String): Boolean
+  override fun headerTypesForUrl(String): Set<com.datadog.android.tracing.TracingHeaderType>
+  override fun headerTypesForUrl(okhttp3.HttpUrl): Set<com.datadog.android.tracing.TracingHeaderType>
+  override fun getAllHeaderTypes(): Set<com.datadog.android.tracing.TracingHeaderType>
+  override fun isEmpty(): Boolean
+interface com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+  fun isFirstPartyUrl(okhttp3.HttpUrl): Boolean
+  fun isFirstPartyUrl(String): Boolean
+  fun headerTypesForUrl(String): Set<com.datadog.android.tracing.TracingHeaderType>
+  fun headerTypesForUrl(okhttp3.HttpUrl): Set<com.datadog.android.tracing.TracingHeaderType>
+  fun getAllHeaderTypes(): Set<com.datadog.android.tracing.TracingHeaderType>
+  fun isEmpty(): Boolean
 val NULL_MAP_VALUE: Object
 fun toJsonElement(): com.google.gson.JsonElement
+fun percent()
 var internalLogger: com.datadog.android.v2.api.InternalLogger
+fun loggableStackTrace(): String
 interface com.datadog.android.core.persistence.Serializer<T: Any>
   fun serialize(T): String?
   companion object 
@@ -299,11 +318,19 @@ enum com.datadog.android.rum.RumResourceKind
   - CSS
   - MEDIA
   - OTHER
+  companion object 
+    fun fromMimeType(String): RumResourceKind
 interface com.datadog.android.rum.RumSessionListener
   fun onSessionStarted(String, Boolean)
 class com.datadog.android.rum._RumInternalProxy
   fun addLongTask(Long, String)
   fun updatePerformanceMetric(RumPerformanceMetric, Double)
+data class com.datadog.android.rum.internal.domain.event.ResourceTiming
+  constructor(Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L)
+interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+  fun waitForResourceTiming(String)
+  fun addResourceTiming(String, com.datadog.android.rum.internal.domain.event.ResourceTiming)
+  fun notifyInterceptorInstantiated()
 class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStream
   constructor(java.io.InputStream, String)
   override fun read(): Int
@@ -475,6 +502,7 @@ interface com.datadog.android.v2.api.RequestFactory
 interface com.datadog.android.v2.api.SdkCore
   val time: com.datadog.android.v2.api.context.TimeInfo
   val service: String
+  val firstPartyHostResolver: com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
   fun registerFeature(Feature)
   fun getFeature(String): FeatureScope?
   fun setVerbosity(Int)

@@ -12,9 +12,18 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.util.Locale
 
-internal class HostsSanitizer {
+/**
+ * Utility class with the goal to perform host sanitization. Not intended for the public use.
+ */
+class HostsSanitizer {
 
-    internal fun sanitizeHosts(
+    /**
+     * Performs hosts sanitization by comparing them with patterns from pre-defined set.
+     *
+     * @param hosts Hosts to sanitize.
+     * @param feature SDK feature requesting the sanitization.
+     */
+    fun sanitizeHosts(
         hosts: List<String>,
         feature: String
     ): List<String> {

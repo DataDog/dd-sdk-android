@@ -20,6 +20,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
@@ -118,6 +119,10 @@ internal class DatadogCore(
     /** @inheritDoc */
     override val service: String
         get() = coreFeature.serviceName
+
+    /** @inheritDoc */
+    override val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver
+        get() = coreFeature.firstPartyHostHeaderTypeResolver
 
     /** @inheritDoc */
     override fun registerFeature(feature: Feature) {

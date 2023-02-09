@@ -63,6 +63,13 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
+    libraryVariants.configureEach {
+        addJavaSourceFoldersToModel(
+            layout.buildDirectory
+                .dir("generated/ksp/$name/kotlin").get().asFile
+        )
+    }
+
     lint {
         warningsAsErrors = true
         abortOnError = true
