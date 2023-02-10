@@ -16,7 +16,6 @@ import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
-import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracingFeature
@@ -447,8 +446,6 @@ internal class DatadogCoreTest {
         testedCore.webViewLogsFeature = mockWebViewLogsFeature
         val mockWebViewRumFeature = mock<WebViewRumFeature>()
         testedCore.webViewRumFeature = mockWebViewRumFeature
-        val mockCrashReportsFeature = mock<CrashReportsFeature>()
-        testedCore.crashReportsFeature = mockCrashReportsFeature
 
         val sdkFeatureMocks = listOf(
             Feature.RUM_FEATURE_NAME,
@@ -475,7 +472,6 @@ internal class DatadogCoreTest {
         assertThat(testedCore.tracingFeature).isNull()
         assertThat(testedCore.webViewLogsFeature).isNull()
         assertThat(testedCore.webViewRumFeature).isNull()
-        assertThat(testedCore.crashReportsFeature).isNull()
         assertThat(testedCore.contextProvider).isNull()
 
         assertThat(testedCore.features).isEmpty()

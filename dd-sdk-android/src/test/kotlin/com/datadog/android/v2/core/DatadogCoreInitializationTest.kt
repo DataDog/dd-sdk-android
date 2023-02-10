@@ -117,12 +117,12 @@ internal class DatadogCoreInitializationTest {
             assertThat(testedCore.tracingFeature).isNull()
             assertThat(testedCore.getFeature(Feature.TRACING_FEATURE_NAME)).isNull()
         }
-        if (crashReportEnabled) {
-            assertThat(testedCore.crashReportsFeature!!.initialized.get()).isTrue()
-            assertThat(testedCore.getFeature(CrashReportsFeature.CRASH_FEATURE_NAME)).isNotNull
-        } else {
-            assertThat(testedCore.crashReportsFeature).isNull()
-            assertThat(testedCore.getFeature(CrashReportsFeature.CRASH_FEATURE_NAME)).isNull()
+        assertThat(testedCore.getFeature(CrashReportsFeature.CRASH_FEATURE_NAME)).let {
+            if (crashReportEnabled) {
+                it.isNotNull
+            } else {
+                it.isNull()
+            }
         }
         if (rumEnabled) {
             assertThat(testedCore.rumFeature!!.initialized.get()).isTrue()
