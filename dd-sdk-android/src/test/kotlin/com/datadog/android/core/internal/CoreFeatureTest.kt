@@ -116,6 +116,7 @@ internal class CoreFeatureTest {
     @BeforeEach
     fun `set up`() {
         testedFeature = CoreFeature()
+        testedFeature.disableKronosBackgroundSync = true
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
     }
@@ -217,6 +218,7 @@ internal class CoreFeatureTest {
             assertThat(allValues)
                 .containsInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
             assertThat(allValues.none { it is BroadcastReceiverNetworkInfoProvider })
+                .isTrue
             verify(mockConnectivityMgr)
                 .registerDefaultNetworkCallback(isA<CallbackNetworkInfoProvider>())
         }
