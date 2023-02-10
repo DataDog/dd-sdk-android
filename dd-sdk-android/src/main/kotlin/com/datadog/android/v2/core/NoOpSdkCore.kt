@@ -6,6 +6,8 @@
 
 package com.datadog.android.v2.core
 
+import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
@@ -27,6 +29,9 @@ internal class NoOpSdkCore : SdkCore {
 
     override val service: String
         get() = ""
+
+    override val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver
+        get() = DefaultFirstPartyHostHeaderTypeResolver(emptyMap())
 
     override fun registerFeature(feature: Feature) = Unit
 

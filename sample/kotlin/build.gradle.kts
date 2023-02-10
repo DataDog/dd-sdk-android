@@ -122,6 +122,7 @@ dependencies {
     implementation(project(":dd-sdk-android-fresco"))
     implementation(project(":dd-sdk-android-sqldelight"))
     implementation(project(":dd-sdk-android-compose"))
+    implementation(project(":dd-sdk-android-okhttp"))
 
     implementation(libs.kotlin)
 

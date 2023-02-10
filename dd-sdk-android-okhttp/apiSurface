@@ -1,1 +1,33 @@
-class com.datadog.android.okhttp.Placeholder
+class com.datadog.android.okhttp.DatadogEventListener : okhttp3.EventListener
+  override fun callStart(okhttp3.Call)
+  override fun dnsStart(okhttp3.Call, String)
+  override fun dnsEnd(okhttp3.Call, String, MutableList<java.net.InetAddress>)
+  override fun connectStart(okhttp3.Call, java.net.InetSocketAddress, java.net.Proxy)
+  override fun connectEnd(okhttp3.Call, java.net.InetSocketAddress, java.net.Proxy, okhttp3.Protocol?)
+  override fun secureConnectStart(okhttp3.Call)
+  override fun secureConnectEnd(okhttp3.Call, okhttp3.Handshake?)
+  override fun responseHeadersStart(okhttp3.Call)
+  override fun responseHeadersEnd(okhttp3.Call, okhttp3.Response)
+  override fun responseBodyStart(okhttp3.Call)
+  override fun responseBodyEnd(okhttp3.Call, Long)
+  override fun callEnd(okhttp3.Call)
+  override fun callFailed(okhttp3.Call, java.io.IOException)
+  class Factory : okhttp3.EventListener.Factory
+    override fun create(okhttp3.Call): okhttp3.EventListener
+open class com.datadog.android.okhttp.DatadogInterceptor : com.datadog.android.okhttp.tracing.TracingInterceptor
+  constructor(Map<String, Set<com.datadog.android.tracing.TracingHeaderType>>, com.datadog.android.okhttp.tracing.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+  constructor(List<String>, com.datadog.android.okhttp.tracing.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+  constructor(com.datadog.android.okhttp.tracing.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+  override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
+  override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
+  override fun canSendSpan(): Boolean
+class com.datadog.android.okhttp.rum.RumInterceptor : com.datadog.android.okhttp.DatadogInterceptor
+  constructor(List<String> = emptyList(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+interface com.datadog.android.okhttp.tracing.TracedRequestListener
+  fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
+open class com.datadog.android.okhttp.tracing.TracingInterceptor : okhttp3.Interceptor
+  constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+  constructor(Map<String, Set<com.datadog.android.tracing.TracingHeaderType>>, TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+  constructor(TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+  override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
+  protected open fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)

@@ -9,7 +9,7 @@ package com.datadog.android.nightly.activities
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.nightly.R
-import com.datadog.android.rum.RumInterceptor
+import com.datadog.android.okhttp.rum.RumInterceptor
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient

@@ -35,29 +35,6 @@ object com.datadog.android.DatadogEndpoint
   const val SESSION_REPLAY_US5: String
   const val SESSION_REPLAY_US1_FED: String
   const val SESSION_REPLAY_EU1: String
-class com.datadog.android.DatadogEventListener : okhttp3.EventListener
-  override fun callStart(okhttp3.Call)
-  override fun dnsStart(okhttp3.Call, String)
-  override fun dnsEnd(okhttp3.Call, String, MutableList<java.net.InetAddress>)
-  override fun connectStart(okhttp3.Call, java.net.InetSocketAddress, java.net.Proxy)
-  override fun connectEnd(okhttp3.Call, java.net.InetSocketAddress, java.net.Proxy, okhttp3.Protocol?)
-  override fun secureConnectStart(okhttp3.Call)
-  override fun secureConnectEnd(okhttp3.Call, okhttp3.Handshake?)
-  override fun responseHeadersStart(okhttp3.Call)
-  override fun responseHeadersEnd(okhttp3.Call, okhttp3.Response)
-  override fun responseBodyStart(okhttp3.Call)
-  override fun responseBodyEnd(okhttp3.Call, Long)
-  override fun callEnd(okhttp3.Call)
-  override fun callFailed(okhttp3.Call, java.io.IOException)
-  class Factory : okhttp3.EventListener.Factory
-    override fun create(okhttp3.Call): okhttp3.EventListener
-open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.TracingInterceptor
-  constructor(Map<String, Set<com.datadog.android.tracing.TracingHeaderType>>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-  constructor(List<String>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-  constructor(com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-  override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
-  override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
-  override fun canSendSpan(): Boolean
 enum com.datadog.android.DatadogSite
   constructor(String)
   - US1
@@ -119,6 +96,8 @@ data class com.datadog.android.core.configuration.Credentials
   constructor(String, String, String, String?, String? = null)
   companion object 
     const val NO_VARIANT: String
+class com.datadog.android.core.configuration.HostsSanitizer
+  fun sanitizeHosts(List<String>, String): List<String>
 enum com.datadog.android.core.configuration.UploadFrequency
   constructor(Long)
   - FREQUENT
@@ -139,9 +118,26 @@ class com.datadog.android.core.constraints.DatadogDataConstraints : DataConstrai
   override fun <T: Any?> validateAttributes(Map<String, T>, String?, String?, Set<String>): MutableMap<String, T>
   override fun validateTimings(Map<String, Long>): MutableMap<String, Long>
   companion object 
+class com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver : FirstPartyHostHeaderTypeResolver
+  constructor(Map<String, Set<com.datadog.android.tracing.TracingHeaderType>>)
+  override fun isFirstPartyUrl(okhttp3.HttpUrl): Boolean
+  override fun isFirstPartyUrl(String): Boolean
+  override fun headerTypesForUrl(String): Set<com.datadog.android.tracing.TracingHeaderType>
+  override fun headerTypesForUrl(okhttp3.HttpUrl): Set<com.datadog.android.tracing.TracingHeaderType>
+  override fun getAllHeaderTypes(): Set<com.datadog.android.tracing.TracingHeaderType>
+  override fun isEmpty(): Boolean
+interface com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+  fun isFirstPartyUrl(okhttp3.HttpUrl): Boolean
+  fun isFirstPartyUrl(String): Boolean
+  fun headerTypesForUrl(String): Set<com.datadog.android.tracing.TracingHeaderType>
+  fun headerTypesForUrl(okhttp3.HttpUrl): Set<com.datadog.android.tracing.TracingHeaderType>
+  fun getAllHeaderTypes(): Set<com.datadog.android.tracing.TracingHeaderType>
+  fun isEmpty(): Boolean
 val NULL_MAP_VALUE: Object
 fun toJsonElement(): com.google.gson.JsonElement
+fun percent()
 var internalLogger: com.datadog.android.v2.api.InternalLogger
+fun loggableStackTrace(): String
 interface com.datadog.android.core.persistence.Serializer<T: Any>
   fun serialize(T): String?
   companion object 
@@ -284,8 +280,6 @@ enum com.datadog.android.rum.RumErrorSource
   - LOGGER
   - AGENT
   - WEBVIEW
-class com.datadog.android.rum.RumInterceptor : com.datadog.android.DatadogInterceptor
-  constructor(List<String> = emptyList(), RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
 interface com.datadog.android.rum.RumMonitor
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
@@ -324,11 +318,19 @@ enum com.datadog.android.rum.RumResourceKind
   - CSS
   - MEDIA
   - OTHER
+  companion object 
+    fun fromMimeType(String): RumResourceKind
 interface com.datadog.android.rum.RumSessionListener
   fun onSessionStarted(String, Boolean)
 class com.datadog.android.rum._RumInternalProxy
   fun addLongTask(Long, String)
   fun updatePerformanceMetric(RumPerformanceMetric, Double)
+data class com.datadog.android.rum.internal.domain.event.ResourceTiming
+  constructor(Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L)
+interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+  fun waitForResourceTiming(String)
+  fun addResourceTiming(String, com.datadog.android.rum.internal.domain.event.ResourceTiming)
+  fun notifyInterceptorInstantiated()
 class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStream
   constructor(java.io.InputStream, String)
   override fun read(): Int
@@ -436,20 +438,12 @@ class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTrac
   companion object 
     fun logThrowable(io.opentracing.Span, Throwable)
     fun logErrorMessage(io.opentracing.Span, String)
-interface com.datadog.android.tracing.TracedRequestListener
-  fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
 enum com.datadog.android.tracing.TracingHeaderType
   constructor(String)
   - DATADOG
   - B3
   - B3MULTI
   - TRACECONTEXT
-open class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
-  constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-  constructor(Map<String, Set<TracingHeaderType>>, TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-  constructor(TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-  override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
-  protected open fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
 interface com.datadog.android.v2.api.EnvironmentProvider
   val trackingConsent: com.datadog.android.privacy.TrackingConsent
   val rootStorageDir: java.io.File
@@ -508,6 +502,7 @@ interface com.datadog.android.v2.api.RequestFactory
 interface com.datadog.android.v2.api.SdkCore
   val time: com.datadog.android.v2.api.context.TimeInfo
   val service: String
+  val firstPartyHostResolver: com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
   fun registerFeature(Feature)
   fun getFeature(String): FeatureScope?
   fun setVerbosity(Int)

@@ -11,23 +11,21 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.internal.debug.RumDebugListener
-import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.tools.annotation.NoOpImplementation
 
+/**
+ * FOR INTERNAL USAGE ONLY.
+ */
 @SuppressWarnings("ComplexInterface", "TooManyFunctions")
 @NoOpImplementation
-internal interface AdvancedRumMonitor : RumMonitor {
+internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
 
     fun resetSession()
 
     fun sendWebViewEvent()
 
-    fun waitForResourceTiming(key: String)
-
     fun updateViewLoadingTime(key: Any, loadingTimeInNs: Long, type: ViewEvent.LoadingType)
-
-    fun addResourceTiming(key: String, timing: ResourceTiming)
 
     fun addLongTask(durationNs: Long, target: String)
 
@@ -51,8 +49,6 @@ internal interface AdvancedRumMonitor : RumMonitor {
 
     @Suppress("FunctionMaxLength")
     fun sendConfigurationTelemetryEvent(configuration: Configuration)
-
-    fun notifyInterceptorInstantiated()
 
     fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double)
 }

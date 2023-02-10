@@ -4,16 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android
+package com.datadog.android.okhttp
 
+import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.okhttp.utils.reset
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.forge.BaseConfigurator
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
@@ -52,7 +52,7 @@ import java.util.concurrent.TimeUnit
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(BaseConfigurator::class)
 internal class DatadogEventListenerTest {
 
     lateinit var testedListener: EventListener
@@ -309,8 +309,7 @@ internal class DatadogEventListenerTest {
     @Test
     fun `𝕄 doNothing 𝕎 call without RumMonitor`() {
         // Given
-        GlobalRum.monitor = NoOpRumMonitor()
-        GlobalRum.isRegistered.set(false)
+        GlobalRum.reset()
 
         // When
         testedListener.callStart(mockCall)

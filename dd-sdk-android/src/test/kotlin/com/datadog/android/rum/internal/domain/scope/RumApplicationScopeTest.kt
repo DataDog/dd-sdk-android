@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.forge.Configurator
@@ -51,7 +51,7 @@ internal class RumApplicationScopeTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
+    lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockCpuVitalMonitor: VitalMonitor

@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
@@ -47,7 +47,7 @@ internal open class RumViewScope(
     internal val name: String,
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
-    internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
+    internal val firstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
     internal val cpuVitalMonitor: VitalMonitor,
     internal val memoryVitalMonitor: VitalMonitor,
     internal val frameRateVitalMonitor: VitalMonitor,
@@ -1003,7 +1003,7 @@ internal open class RumViewScope(
             parentScope: RumScope,
             sdkCore: SdkCore,
             event: RumRawEvent.StartView,
-            firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
+            firstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
             cpuVitalMonitor: VitalMonitor,
             memoryVitalMonitor: VitalMonitor,
             frameRateVitalMonitor: VitalMonitor,

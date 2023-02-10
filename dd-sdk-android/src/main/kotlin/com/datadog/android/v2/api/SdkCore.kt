@@ -7,6 +7,7 @@
 package com.datadog.android.v2.api
 
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
@@ -26,6 +27,12 @@ interface SdkCore {
      * Name of the service (given during the SDK initialization, otherwise package name is used).
      */
     val service: String
+
+    /**
+     * Returns an instance of [FirstPartyHostHeaderTypeResolver] associated with the current
+     * SDK instance.
+     */
+    val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver
 
     /**
      * Registers a feature to this instance of the Datadog SDK.

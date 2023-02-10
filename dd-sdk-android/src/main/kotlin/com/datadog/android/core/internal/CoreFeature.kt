@@ -21,7 +21,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.net.CurlInterceptor
-import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
 import com.datadog.android.core.internal.net.RotatingDnsResolver
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
@@ -94,7 +94,8 @@ internal class CoreFeature {
     internal val initialized = AtomicBoolean(false)
     internal var contextRef: WeakReference<Context?> = WeakReference(null)
 
-    internal var firstPartyHostHeaderTypeResolver = FirstPartyHostHeaderTypeResolver(emptyMap())
+    internal var firstPartyHostHeaderTypeResolver =
+        DefaultFirstPartyHostHeaderTypeResolver(emptyMap())
     internal var networkInfoProvider: NetworkInfoProvider = NoOpNetworkInfoProvider()
     internal var systemInfoProvider: SystemInfoProvider = NoOpSystemInfoProvider()
     internal var timeProvider: TimeProvider = NoOpTimeProvider()
@@ -504,7 +505,7 @@ internal class CoreFeature {
     }
 
     private fun cleanupProviders() {
-        firstPartyHostHeaderTypeResolver = FirstPartyHostHeaderTypeResolver(emptyMap())
+        firstPartyHostHeaderTypeResolver = DefaultFirstPartyHostHeaderTypeResolver(emptyMap())
         networkInfoProvider = NoOpNetworkInfoProvider()
         systemInfoProvider = NoOpSystemInfoProvider()
         timeProvider = NoOpTimeProvider()

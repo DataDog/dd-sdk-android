@@ -4,17 +4,20 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum
+package com.datadog.android.okhttp.rum
 
 import com.datadog.android.core.sampling.RateBasedSampler
-import com.datadog.android.tracing.NoOpTracedRequestListener
-import com.datadog.android.tracing.TracingInterceptor
-import com.datadog.android.tracing.TracingInterceptorNotSendingSpanTest
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.okhttp.tracing.NoOpTracedRequestListener
+import com.datadog.android.okhttp.tracing.TracingInterceptor
+import com.datadog.android.okhttp.tracing.TracingInterceptorNotSendingSpanTest
+import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.forge.BaseConfigurator
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -31,11 +34,14 @@ import org.mockito.quality.Strictness
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(BaseConfigurator::class)
 internal class RumInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Test
     fun `M instantiate with default values W init()`() {
+        // Given
+        whenever(datadogCore.mockInstance.firstPartyHostResolver) doReturn mock()
+
         // When
         val interceptor = RumInterceptor()
 
@@ -48,7 +54,7 @@ internal class RumInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         assertThat(interceptor.traceSampler)
             .isInstanceOf(RateBasedSampler::class.java)
         val traceSampler = interceptor.traceSampler as RateBasedSampler
-        assertThat(traceSampler.sampleRate)
+        assertThat(traceSampler.getSamplingRate())
             .isEqualTo(TracingInterceptor.DEFAULT_TRACE_SAMPLING_RATE / 100)
     }
 
@@ -58,7 +64,7 @@ internal class RumInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, coreFeature, rumMonitor)
+            return listOf(logger, rumMonitor)
         }
     }
 }

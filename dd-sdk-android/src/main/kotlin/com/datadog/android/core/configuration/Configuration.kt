@@ -11,7 +11,6 @@ import android.os.Looper
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogEndpoint
-import com.datadog.android.DatadogInterceptor
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.event.EventMapper
@@ -157,9 +156,9 @@ internal constructor(
          * Sets the list of first party hosts.
          * Requests made to a URL with any one of these hosts (or any subdomain) will:
          * - be considered a first party resource and categorised as such in your RUM dashboard;
-         * - be wrapped in a Span and have DataDog trace id injected to get a full flame-graph in APM.
+         * - be wrapped in a Span and have DataDog trace id injected to get a full flame-graph in
+         * APM in case of OkHttp instrumentation usage.
          * @param hosts a list of all the hosts that you own.
-         * See [DatadogInterceptor]
          */
         fun setFirstPartyHosts(hosts: List<String>): Builder {
             val sanitizedHosts = hostsSanitizer.sanitizeHosts(

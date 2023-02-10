@@ -16,6 +16,7 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
+    id("com.google.devtools.ksp")
 
     // Publish
     `maven-publish`
@@ -24,6 +25,9 @@ plugins {
 
     // Analysis tools
     id("com.github.ben-manes.versions")
+
+    // Tests
+    id("de.mobilej.unmock")
 
     // Internal Generation
     id("thirdPartyLicences")
@@ -62,6 +66,13 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
+    libraryVariants.configureEach {
+        addJavaSourceFoldersToModel(
+            layout.buildDirectory
+                .dir("generated/ksp/$name/kotlin").get().asFile
+        )
+    }
+
     lint {
         warningsAsErrors = true
         abortOnError = true
@@ -75,14 +86,23 @@ dependencies {
     api(project(":dd-sdk-android"))
     implementation(libs.kotlin)
     implementation(libs.okHttp)
+    implementation(libs.androidXAnnotation)
+
+    // Generate NoOp implementations
+    ksp(project(":tools:noopfactory"))
 
     testImplementation(project(":tools:unit"))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)
+    unmock(libs.robolectric)
 
     // TODO MTG-12 detekt(project(":tools:detekt"))
     // TODO MTG-12 detekt(libs.detektCli)
+}
+
+unMock {
+    keepStartingWith("org.json")
 }
 
 kotlinConfig()

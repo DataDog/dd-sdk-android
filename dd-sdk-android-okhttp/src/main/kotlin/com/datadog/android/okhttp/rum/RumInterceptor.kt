@@ -4,11 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum
+package com.datadog.android.okhttp.rum
 
 import androidx.annotation.FloatRange
-import com.datadog.android.DatadogInterceptor
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.okhttp.DatadogInterceptor
+import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient

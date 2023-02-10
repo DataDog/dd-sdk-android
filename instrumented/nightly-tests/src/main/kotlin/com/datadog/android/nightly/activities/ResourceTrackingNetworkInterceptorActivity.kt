@@ -7,8 +7,8 @@
 package com.datadog.android.nightly.activities
 
 import com.datadog.android.nightly.server.LocalServer
-import com.datadog.android.rum.RumInterceptor
-import com.datadog.android.tracing.TracingInterceptor
+import com.datadog.android.okhttp.rum.RumInterceptor
+import com.datadog.android.okhttp.tracing.TracingInterceptor
 import okhttp3.OkHttpClient
 
 internal class ResourceTrackingNetworkInterceptorActivity : ResourceTrackingActivity() {

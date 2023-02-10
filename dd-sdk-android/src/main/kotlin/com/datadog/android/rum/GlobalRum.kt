@@ -142,8 +142,10 @@ object GlobalRum {
         (monitor as? AdvancedRumMonitor)?.sendWebViewEvent()
     }
 
-    internal fun notifyInterceptorInstantiated() {
-        (monitor as? AdvancedRumMonitor)?.notifyInterceptorInstantiated()
+    internal fun reset() {
+        globalAttributes.clear()
+        monitor = NoOpRumMonitor()
+        isRegistered.set(false)
     }
 
     // endregion

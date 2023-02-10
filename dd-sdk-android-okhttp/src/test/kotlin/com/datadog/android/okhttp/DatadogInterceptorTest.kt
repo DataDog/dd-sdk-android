@@ -4,26 +4,25 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android
+package com.datadog.android.okhttp
 
-import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.core.sampling.RateBasedSampler
-import com.datadog.android.rum.NoOpRumResourceAttributesProvider
+import com.datadog.android.okhttp.rum.NoOpRumResourceAttributesProvider
+import com.datadog.android.okhttp.tracing.NoOpTracedRequestListener
+import com.datadog.android.okhttp.tracing.TracingInterceptor
+import com.datadog.android.okhttp.tracing.TracingInterceptorNotSendingSpanTest
+import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.tracing.NoOpTracedRequestListener
 import com.datadog.android.tracing.TracingHeaderType
-import com.datadog.android.tracing.TracingInterceptor
-import com.datadog.android.tracing.TracingInterceptorNotSendingSpanTest
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.NoOpSdkCore
+import com.datadog.android.v2.api.Feature
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
@@ -47,7 +46,6 @@ import okhttp3.Response
 import okhttp3.ResponseBody
 import okio.BufferedSource
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -66,7 +64,7 @@ import java.util.Locale
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(BaseConfigurator::class)
 internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Mock
@@ -81,7 +79,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         tracedHosts: Map<String, Set<TracingHeaderType>>,
         factory: (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
-        whenever((Datadog.globalSdkCore as DatadogCore).rumFeature) doReturn mock()
+        whenever(datadogCore.mockInstance.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
+        whenever(datadogCore.mockInstance.firstPartyHostResolver) doReturn mock()
         return DatadogInterceptor(
             tracedHosts = tracedHosts,
             tracedRequestListener = mockRequestListener,
@@ -110,12 +109,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         whenever(mockTraceSampler.getSamplingRate()) doReturn fakeTracingSamplingRate
     }
 
-    @AfterEach
-    override fun `tear down`() {
-        super.`tear down`()
-        Datadog.globalSdkCore = NoOpSdkCore()
-    }
-
     @Test
     fun `M notify monitor W init()`() {
         // Given
@@ -140,7 +133,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         assertThat(interceptor.traceSampler)
             .isInstanceOf(RateBasedSampler::class.java)
         val traceSampler = interceptor.traceSampler as RateBasedSampler
-        assertThat(traceSampler.sampleRate).isEqualTo(
+        assertThat(traceSampler.getSamplingRate()).isEqualTo(
             TracingInterceptor.DEFAULT_TRACE_SAMPLING_RATE / 100
         )
     }
@@ -161,7 +154,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         assertThat(interceptor.traceSampler)
             .isInstanceOf(RateBasedSampler::class.java)
         val traceSampler = interceptor.traceSampler as RateBasedSampler
-        assertThat(traceSampler.sampleRate).isEqualTo(
+        assertThat(traceSampler.getSamplingRate()).isEqualTo(
             TracingInterceptor.DEFAULT_TRACE_SAMPLING_RATE / 100
         )
     }
@@ -572,7 +565,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, coreFeature, rumMonitor)
+            return listOf(rumMonitor)
         }
     }
 }

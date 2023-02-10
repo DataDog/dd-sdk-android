@@ -8,53 +8,48 @@ package com.datadog.android.core.internal.net
 
 import com.datadog.android.tracing.TracingHeaderType
 import okhttp3.HttpUrl
-import java.util.Locale
 
-internal class FirstPartyHostHeaderTypeResolver(
-    hosts: Map<String, Set<TracingHeaderType>>
-) {
+/**
+ * Interface to be implemented by the class which wants to check if the given url is first party
+ * and if there is any tracing header types associated with it.
+ */
+interface FirstPartyHostHeaderTypeResolver {
 
-    internal var knownHosts = hosts.entries.associate { it.key.lowercase(Locale.US) to it.value }
-        private set
+    /**
+     * Check if given URL is first party.
+     *
+     * @param url URL to check.
+     */
+    fun isFirstPartyUrl(url: HttpUrl): Boolean
 
-    fun isFirstPartyUrl(url: HttpUrl): Boolean {
-        val host = url.host()
-        return knownHosts.keys.any {
-            it == "*" || host == it || host.endsWith(".$it")
-        }
-    }
+    /**
+     * Check if given URL is first party.
+     *
+     * @param url URL to check.
+     */
+    fun isFirstPartyUrl(url: String): Boolean
 
-    fun isFirstPartyUrl(url: String): Boolean {
-        val httpUrl = HttpUrl.parse(url) ?: return false
-        return isFirstPartyUrl(httpUrl)
-    }
+    /**
+     * Returns the set of tracing header types associated with given URL.
+     *
+     * @param url URL to check.
+     */
+    fun headerTypesForUrl(url: String): Set<TracingHeaderType>
 
-    fun headerTypesForUrl(url: String): Set<TracingHeaderType> {
-        val httpUrl = HttpUrl.parse(url) ?: return emptySet()
-        return headerTypesForUrl(httpUrl)
-    }
+    /**
+     * Returns the set of tracing header types associated with given URL.
+     *
+     * @param url URL to check.
+     */
+    fun headerTypesForUrl(url: HttpUrl): Set<TracingHeaderType>
 
-    fun headerTypesForUrl(url: HttpUrl): Set<TracingHeaderType> {
-        val host = url.host()
-        val filteredHosts = knownHosts.filter { it.key == "*" || it.key == host || host.endsWith(".${it.key}") }
-        return filteredHosts.values.flatten().toSet()
-    }
+    /**
+     * Returns all tracing header types registered.
+     */
+    fun getAllHeaderTypes(): Set<TracingHeaderType>
 
-    fun getAllHeaderTypes(): Set<TracingHeaderType> {
-        return knownHosts.values.flatten().toSet()
-    }
-
-    fun isEmpty(): Boolean {
-        return knownHosts.isEmpty()
-    }
-
-    fun addKnownHosts(hosts: List<String>) {
-        knownHosts = knownHosts + hosts.associate {
-            it.lowercase(Locale.US) to setOf(TracingHeaderType.DATADOG)
-        }
-    }
-
-    fun addKnownHostsWithHeaderTypes(hostsWithHeaderTypes: Map<String, Set<TracingHeaderType>>) {
-        knownHosts = knownHosts + hostsWithHeaderTypes.entries.associate { it.key.lowercase(Locale.US) to it.value }
-    }
+    /**
+     * Shows if resolver has any first party URLs registered or not.
+     */
+    fun isEmpty(): Boolean
 }

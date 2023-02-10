@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import android.app.ActivityManager.RunningAppProcessInfo
 import android.os.Build
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.RumFeature
@@ -77,7 +77,7 @@ internal class RumViewManagerScopeTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
+    lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockCpuVitalMonitor: VitalMonitor

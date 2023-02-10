@@ -4,13 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android
+package com.datadog.android.okhttp
 
-import com.datadog.android.DatadogEventListener.Factory
-import com.datadog.android.core.internal.net.identifyRequest
+import com.datadog.android.okhttp.DatadogEventListener.Factory
+import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import okhttp3.Call
 import okhttp3.EventListener
 import okhttp3.Handshake
@@ -159,12 +159,12 @@ internal constructor(val key: String) : EventListener() {
     // region Internal
 
     private fun sendWaitForResourceTimingEvent() {
-        (GlobalRum.get() as? AdvancedRumMonitor)?.waitForResourceTiming(key)
+        (GlobalRum.get() as? AdvancedNetworkRumMonitor)?.waitForResourceTiming(key)
     }
 
     private fun sendTiming() {
         val timing = buildTiming()
-        (GlobalRum.get() as? AdvancedRumMonitor)?.addResourceTiming(key, timing)
+        (GlobalRum.get() as? AdvancedNetworkRumMonitor)?.addResourceTiming(key, timing)
     }
 
     private fun buildTiming(): ResourceTiming {

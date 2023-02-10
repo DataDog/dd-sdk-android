@@ -15,8 +15,8 @@ import com.bumptech.glide.load.engine.executor.GlideExecutor.newDiskCacheBuilder
 import com.bumptech.glide.load.engine.executor.GlideExecutor.newSourceBuilder
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.module.AppGlideModule
-import com.datadog.android.DatadogEventListener
-import com.datadog.android.DatadogInterceptor
+import com.datadog.android.okhttp.DatadogEventListener
+import com.datadog.android.okhttp.DatadogInterceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.InputStream
