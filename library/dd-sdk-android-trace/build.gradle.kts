@@ -45,7 +45,7 @@ android {
         setLibraryVersion()
     }
 
-    namespace = "com.datadog.android.log"
+    namespace = "com.datadog.android.trace"
 
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
@@ -87,7 +87,6 @@ dependencies {
     implementation(project(":dd-sdk-android"))
     implementation(libs.kotlin)
     implementation(libs.gson)
-    implementation(libs.androidXAnnotation)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
@@ -105,13 +104,11 @@ unMock {
     keepStartingWith("org.json")
 }
 
-apply(from = "generate_log_models.gradle.kts")
-
 kotlinConfig()
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()
 publishingConfig(
-    "The Logs feature to use with the Datadog monitoring " +
+    "The Tracing feature to use with the Datadog monitoring " +
         "library for Android applications."
 )
