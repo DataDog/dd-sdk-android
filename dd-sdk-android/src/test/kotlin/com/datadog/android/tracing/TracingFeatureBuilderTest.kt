@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.tracing.internal
+package com.datadog.android.tracing
 
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite

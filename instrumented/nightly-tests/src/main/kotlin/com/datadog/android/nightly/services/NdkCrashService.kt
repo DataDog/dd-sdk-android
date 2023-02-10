@@ -19,6 +19,7 @@ import com.datadog.android.nightly.activities.CRASH_DELAY_MS
 import com.datadog.android.nightly.activities.HUNDRED_PERCENT
 import com.datadog.android.nightly.utils.NeverUseThatEncryption
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.tracing.TracingFeature
 
 internal open class NdkCrashService : CrashService() {
 
@@ -70,7 +71,6 @@ internal open class NdkCrashService : CrashService() {
     ) {
         Datadog.setVerbosity(Log.VERBOSE)
         val configBuilder = Configuration.Builder(
-            tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = rumEnabled
         ).sampleTelemetry(HUNDRED_PERCENT)
@@ -84,6 +84,7 @@ internal open class NdkCrashService : CrashService() {
             TrackingConsent.GRANTED
         )
         Datadog.registerFeature(LogsFeature.Builder().build())
+        Datadog.registerFeature(TracingFeature.Builder().build())
         if (ndkCrashReportsEnabled) {
             val ndkCrashReportsFeature = NdkCrashReportsFeature()
             Datadog.registerFeature(ndkCrashReportsFeature)

@@ -15,6 +15,7 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.LogsFeature
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.tracing.TracingFeature
 import java.util.UUID
 
 internal object RuntimeConfig {
@@ -66,12 +67,10 @@ internal object RuntimeConfig {
 
     fun configBuilder(): Configuration.Builder {
         return Configuration.Builder(
-            tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
         )
             .useCustomRumEndpoint(rumEndpointUrl)
-            .useCustomTracesEndpoint(tracesEndpointUrl)
             .setUploadFrequency(UploadFrequency.FREQUENT)
     }
 
@@ -83,6 +82,11 @@ internal object RuntimeConfig {
     fun logsFeatureBuilder(): LogsFeature.Builder {
         return LogsFeature.Builder()
             .useCustomEndpoint(logsEndpointUrl)
+    }
+
+    fun tracingFeatureBuilder(): TracingFeature.Builder {
+        return TracingFeature.Builder()
+            .useCustomEndpoint(tracesEndpointUrl)
     }
 
     val keyValuePairsTags = mapOf(

@@ -29,7 +29,6 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
@@ -64,7 +63,6 @@ internal class DatadogCore(
 
     internal val features: MutableMap<String, SdkFeature> = mutableMapOf()
 
-    internal var tracingFeature: TracingFeature? = null
     internal var rumFeature: RumFeature? = null
     internal var webViewLogsFeature: WebViewLogsFeature? = null
     internal var webViewRumFeature: WebViewRumFeature? = null
@@ -190,7 +188,6 @@ internal class DatadogCore(
             it.value.stop()
             // TODO RUMM-0000 Temporary thing
             when (it.key) {
-                Feature.TRACING_FEATURE_NAME -> tracingFeature = null
                 Feature.RUM_FEATURE_NAME -> rumFeature = null
                 WebViewLogsFeature.WEB_LOGS_FEATURE_NAME -> webViewLogsFeature = null
                 WebViewRumFeature.WEB_RUM_FEATURE_NAME -> webViewRumFeature = null
@@ -296,7 +293,6 @@ internal class DatadogCore(
 
         applyAdditionalConfiguration(mutableConfig.additionalConfig)
 
-        initializeTracingFeature(mutableConfig.tracesConfig)
         initializeRumFeature(mutableConfig.rumConfig)
         initializeCrashReportFeature(mutableConfig.crashReportConfig)
 
@@ -313,17 +309,6 @@ internal class DatadogCore(
         if (configuration != null) {
             val crashReportsFeature = CrashReportsFeature()
             registerFeature(crashReportsFeature)
-        }
-    }
-
-    private fun initializeTracingFeature(configuration: Configuration.Feature.Tracing?) {
-        if (configuration != null) {
-            val tracingFeature = TracingFeature.Builder()
-                .useCustomEndpoint(configuration.endpointUrl)
-                .setSpanEventMapper(configuration.spanEventMapper)
-                .build()
-            this.tracingFeature = tracingFeature
-            registerFeature(tracingFeature)
         }
     }
 

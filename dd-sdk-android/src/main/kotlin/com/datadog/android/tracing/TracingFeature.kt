@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.tracing.internal
+package com.datadog.android.tracing
 
 import android.content.Context
 import com.datadog.android.DatadogEndpoint
@@ -27,7 +27,10 @@ import com.datadog.android.v2.tracing.internal.net.TracesRequestFactory
 import com.datadog.trace.common.writer.Writer
 import java.util.concurrent.atomic.AtomicBoolean
 
-internal class TracingFeature(
+/**
+ * Tracing feature class, which needs to be registered with Datadog SDK instance.
+ */
+class TracingFeature internal constructor(
     endpointUrl: String,
     internal val spanEventMapper: SpanEventMapper
 ) : StorageBackedFeature {

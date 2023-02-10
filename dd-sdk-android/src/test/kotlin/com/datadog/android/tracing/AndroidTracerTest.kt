@@ -4,20 +4,19 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.tracing.internal
+package com.datadog.android.tracing
 
 import android.content.Context
 import com.datadog.android.Datadog
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.tracing.AndroidTracer
-import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
@@ -84,6 +83,9 @@ internal class AndroidTracerTest {
     lateinit var mockLogsHandler: LogHandler
 
     @Mock
+    lateinit var mockTracingFeatureScope: FeatureScope
+
+    @Mock
     lateinit var mockTracingFeature: TracingFeature
 
     @Mock
@@ -110,7 +112,10 @@ internal class AndroidTracerTest {
             "view_id" to fakeRumContext.viewId,
             "action_id" to fakeRumContext.actionId
         )
-        whenever(mockSdkCore.tracingFeature) doReturn mockTracingFeature
+        whenever(
+            mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
+        ) doReturn mockTracingFeatureScope
+        whenever(mockTracingFeatureScope.unwrap<TracingFeature>()) doReturn mockTracingFeature
         whenever(mockSdkCore.rumFeature) doReturn mockRumFeature
         whenever(mockSdkCore.coreFeature) doReturn coreFeature.mockInstance
 
@@ -141,7 +146,7 @@ internal class AndroidTracerTest {
     @Test
     fun `M log a developer error W buildTracer { TracingFeature not enabled }`() {
         // GIVEN
-        whenever((Datadog.globalSdkCore as DatadogCore).tracingFeature) doReturn null
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
 
         // WHEN
         testedTracerBuilder.build()

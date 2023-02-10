@@ -24,6 +24,7 @@ import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.tracing.TracingFeature
 import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.tracing.model.SpanEvent
 import fr.xgouchet.elmyr.junit4.ForgeRule
@@ -53,7 +54,6 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 config = defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).build()
@@ -76,7 +76,6 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 config = defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).setBatchSize(forge.aValueFrom(BatchSize::class.java)).build()
@@ -99,10 +98,10 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 config = defaultConfigurationBuilder(
-                    tracesEnabled = false,
                     rumEnabled = true,
                     crashReportsEnabled = true
-                ).build()
+                ).build(),
+                tracingFeatureProvider = { null }
             )
         }
         GlobalTracer.get()
@@ -123,20 +122,23 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 config = defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
-                ).setSpanEventMapper(
-                    object : SpanEventMapper {
-                        override fun map(event: SpanEvent): SpanEvent {
-                            if (event.resource == fakeResourceName) {
-                                event.name = testMethodName
-                                event.resource = testMethodName
+                ).build(),
+                tracingFeatureProvider = {
+                    TracingFeature.Builder()
+                        .setSpanEventMapper(
+                            object : SpanEventMapper {
+                                override fun map(event: SpanEvent): SpanEvent {
+                                    if (event.resource == fakeResourceName) {
+                                        event.name = testMethodName
+                                        event.resource = testMethodName
+                                    }
+                                    return event
+                                }
                             }
-                            return event
-                        }
-                    }
-                ).build()
+                        ).build()
+                }
             )
         }
         GlobalTracer.get()
@@ -380,7 +382,6 @@ class SpanConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 config = Configuration
                     .Builder(
-                        tracesEnabled = true,
                         rumEnabled = true,
                         crashReportsEnabled = true
                     )

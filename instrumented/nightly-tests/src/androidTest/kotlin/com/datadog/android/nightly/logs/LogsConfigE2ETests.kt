@@ -51,7 +51,6 @@ class LogsConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).build()
@@ -74,7 +73,6 @@ class LogsConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).setBatchSize(forge.aValueFrom(BatchSize::class.java)).build()
@@ -97,7 +95,6 @@ class LogsConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).build(),
@@ -121,7 +118,6 @@ class LogsConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).build(),
@@ -158,7 +154,6 @@ class LogsConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).build(),
@@ -197,7 +192,6 @@ class LogsConfigE2ETests {
                 TrackingConsent.GRANTED,
                 Configuration
                     .Builder(
-                        tracesEnabled = true,
                         rumEnabled = true,
                         crashReportsEnabled = true
                     )

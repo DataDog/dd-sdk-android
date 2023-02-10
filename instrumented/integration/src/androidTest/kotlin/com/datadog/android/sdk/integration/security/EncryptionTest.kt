@@ -22,6 +22,7 @@ import com.datadog.android.security.Encryption
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.tracing.TracingFeature
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.junit4.ForgeRule
@@ -57,6 +58,7 @@ internal class EncryptionTest {
 
         Datadog.initialize(targetContext, credentials, configuration, TrackingConsent.PENDING)
         Datadog.registerFeature(LogsFeature.Builder().build())
+        Datadog.registerFeature(TracingFeature.Builder().build())
 
         val sessionReplayConfig = SessionReplayConfiguration.Builder().build()
         Datadog.registerFeature(SessionReplayFeature(sessionReplayConfig))
@@ -145,7 +147,6 @@ internal class EncryptionTest {
 
         return Configuration
             .Builder(
-                tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
             )

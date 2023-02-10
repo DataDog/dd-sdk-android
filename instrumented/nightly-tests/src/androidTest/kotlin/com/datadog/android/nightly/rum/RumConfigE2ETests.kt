@@ -109,7 +109,6 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = false,
                     crashReportsEnabled = true
                 ).build()
@@ -133,7 +132,6 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).setRumViewEventMapper(
@@ -169,7 +167,6 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).setRumViewEventMapper(
@@ -207,7 +204,6 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).setRumResourceEventMapper(
@@ -234,7 +230,6 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).setRumResourceEventMapper(
@@ -261,7 +256,6 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).setRumResourceEventMapper(
@@ -293,7 +287,6 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).setRumActionEventMapper(
@@ -320,7 +313,6 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).setRumActionEventMapper(
@@ -347,7 +339,6 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).setRumActionEventMapper(
@@ -379,7 +370,6 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).setRumErrorEventMapper(
@@ -406,7 +396,6 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).setRumErrorEventMapper(
@@ -433,7 +422,6 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).setRumErrorEventMapper(
@@ -463,7 +451,6 @@ class RumConfigE2ETests {
         val testMethodName = "rum_config_set_rum_longtask_event_mapper_map_to_null"
         measureSdkInitialize {
             val builder = defaultConfigurationBuilder(
-                tracesEnabled = true,
                 rumEnabled = true,
                 crashReportsEnabled = true
             )
@@ -495,7 +482,6 @@ class RumConfigE2ETests {
         val testMethodName = "rum_config_set_rum_longtask_event_mapper_map_to_copy"
         measureSdkInitialize {
             val builder = defaultConfigurationBuilder(
-                tracesEnabled = true,
                 rumEnabled = true,
                 crashReportsEnabled = true
             )
@@ -527,7 +513,6 @@ class RumConfigE2ETests {
         val testMethodName = "rum_config_set_rum_longtask_event_mapper"
         measureSdkInitialize {
             val builder = defaultConfigurationBuilder(
-                tracesEnabled = true,
                 rumEnabled = true,
                 crashReportsEnabled = true
             )
@@ -566,7 +551,6 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).sampleRumSessions(100f).build()
@@ -587,7 +571,6 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).sampleRumSessions(0f).build()
@@ -609,7 +592,6 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).sampleRumSessions(75f).build()
@@ -640,7 +622,6 @@ class RumConfigE2ETests {
                 TrackingConsent.GRANTED,
                 Configuration
                     .Builder(
-                        tracesEnabled = true,
                         rumEnabled = true,
                         crashReportsEnabled = true
                     )
@@ -676,7 +657,6 @@ class RumConfigE2ETests {
             measureSdkInitialize {
                 val config = Configuration
                     .Builder(
-                        tracesEnabled = true,
                         rumEnabled = true,
                         crashReportsEnabled = true
                     )
@@ -728,7 +708,6 @@ class RumConfigE2ETests {
             measureSdkInitialize {
                 val config = Configuration
                     .Builder(
-                        tracesEnabled = true,
                         rumEnabled = true,
                         crashReportsEnabled = true
                     )

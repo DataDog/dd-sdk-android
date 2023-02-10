@@ -15,7 +15,6 @@ internal class ConfigurationForgeryFactory :
     override fun getForgery(forge: Forge): Configuration {
         return Configuration(
             coreConfig = forge.getForgery(),
-            tracesConfig = forge.getForgery(),
             crashReportConfig = forge.getForgery(),
             rumConfig = forge.getForgery(),
             additionalConfig = forge.aMap { aString() to aString() }
