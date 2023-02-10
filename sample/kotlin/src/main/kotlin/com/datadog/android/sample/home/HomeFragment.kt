@@ -64,6 +64,7 @@ internal class HomeFragment :
             R.id.navigation_picture -> R.id.fragment_picture
             R.id.navigation_compose -> R.id.activity_jetpack_compose
             R.id.navigation_about -> R.id.fragment_about
+            R.id.navigation_text_view_components -> R.id.fragment_text_view_components
             else -> null
         }
         if (destination != null) {

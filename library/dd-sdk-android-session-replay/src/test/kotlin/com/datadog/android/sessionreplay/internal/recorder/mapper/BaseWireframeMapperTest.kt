@@ -11,6 +11,7 @@ import android.view.Gravity
 import android.view.View
 import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.sessionreplay.internal.utils.StringUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.mock
@@ -45,6 +46,7 @@ internal abstract class BaseWireframeMapperTest {
         this.getLocationOnScreen(coordinates)
         val x = coordinates[0].densityNormalized(fakePixelDensity).toLong()
         val y = coordinates[1].densityNormalized(fakePixelDensity).toLong()
+        val textColor = StringUtils.formatColorAndAlphaAsHexa(currentTextColor, OPAQUE_ALPHA_VALUE)
         return listOf(
             MobileSegment.Wireframe.TextWireframe(
                 System.identityHashCode(this).toLong(),
@@ -55,8 +57,8 @@ internal abstract class BaseWireframeMapperTest {
                 height = height.toLong().densityNormalized(fakePixelDensity),
                 textStyle = MobileSegment.TextStyle(
                     "sans-serif",
-                    0,
-                    "#000000ff"
+                    textSize.toLong().densityNormalized(fakePixelDensity),
+                    textColor
                 ),
                 textPosition = MobileSegment.TextPosition(
                     MobileSegment.Padding(0, 0, 0, 0),
@@ -76,6 +78,7 @@ internal abstract class BaseWireframeMapperTest {
     }
 
     companion object {
+        const val OPAQUE_ALPHA_VALUE: Int = 255
         const val ALPHA_MASK: Long = 0x000000FF
 
         @JvmStatic

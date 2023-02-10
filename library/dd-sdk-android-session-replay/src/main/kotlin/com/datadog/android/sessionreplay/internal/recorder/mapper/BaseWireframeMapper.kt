@@ -6,14 +6,21 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
+import android.graphics.drawable.InsetDrawable
+import android.graphics.drawable.RippleDrawable
+import android.os.Build
 import android.view.View
+import com.datadog.android.sessionreplay.internal.recorder.ViewGlobalBounds
+import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.internal.utils.StringUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
-    private val stringUtils: StringUtils = StringUtils
-) :
-    WireframeMapper<T, S> {
+    private val stringUtils: StringUtils = StringUtils,
+    private val viewUtils: ViewUtils = ViewUtils()
+) : WireframeMapper<T, S> {
 
     protected fun resolveViewId(view: View): Long {
         // we will use the System.identityHashcode in here which always returns the default
@@ -23,6 +30,32 @@ internal abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wirefram
 
     protected fun colorAndAlphaAsStringHexa(color: Int, alphaAsHexa: Int): String {
         return stringUtils.formatColorAndAlphaAsHexa(color, alphaAsHexa)
+    }
+
+    protected fun resolveViewGlobalBounds(view: View, pixelsDensity: Float):
+        ViewGlobalBounds {
+        return viewUtils.resolveViewGlobalBounds(view, pixelsDensity)
+    }
+
+    protected fun Drawable.resolveShapeStyleAndBorder(viewAlpha: Float):
+        Pair<MobileSegment.ShapeStyle?, MobileSegment.ShapeBorder?>? {
+        return if (this is ColorDrawable) {
+            val color = colorAndAlphaAsStringHexa(color, alpha)
+            MobileSegment.ShapeStyle(color, viewAlpha) to null
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
+            this is RippleDrawable &&
+            numberOfLayers >= 1
+        ) {
+            getDrawable(0).resolveShapeStyleAndBorder(viewAlpha)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && this is InsetDrawable) {
+            drawable?.resolveShapeStyleAndBorder(viewAlpha)
+        } else {
+            // We cannot handle this drawable so we will use a border to delimit its container
+            // bounds.
+            // TODO: RUMM-0000 In case the background drawable could not be handled we should
+            // instead resolve it as an ImageWireframe.
+            null to null
+        }
     }
 
     companion object {

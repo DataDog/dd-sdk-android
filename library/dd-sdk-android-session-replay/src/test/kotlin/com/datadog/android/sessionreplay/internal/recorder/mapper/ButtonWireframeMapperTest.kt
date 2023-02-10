@@ -6,16 +6,12 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.graphics.Typeface
 import android.widget.Button
-import android.widget.TextView
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.aMockView
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -23,8 +19,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -37,143 +32,71 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
 
-    lateinit var testedButtonWireframeMapper: ButtonWireframeMapper
+    private lateinit var testedButtonWireframeMapper: ButtonWireframeMapper
+
+    @Mock
+    lateinit var mockTextWireframeMapper: TextWireframeMapper
+
+    @Forgery
+    lateinit var fakeTextWireframes: List<MobileSegment.Wireframe.TextWireframe>
+
+    @Mock
+    lateinit var mockButton: Button
 
     @BeforeEach
     fun `set up`() {
-        testedButtonWireframeMapper = ButtonWireframeMapper()
-    }
-
-    @ParameterizedTest
-    @MethodSource("textTypefaces")
-    fun `M resolve a TextWireframe W map() { Button with fontStyle }`(
-        typeface: Typeface?,
-        expectedFontFamily: String,
-        forge: Forge
-    ) {
-        // Given
-        val fakeFontSize = forge.aFloat(min = 0f)
-        val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{6}ff")
-        val fakeText = forge.aString()
-        val fakeFontColor = fakeStyleColor
-            .substring(1)
-            .toLong(16)
-            .shr(8)
-            .toInt()
-        val mockButton: Button = forge.aMockView<Button>().apply {
-            whenever(this.typeface).thenReturn(typeface)
-            whenever(this.textSize).thenReturn(fakeFontSize)
-            whenever(this.currentTextColor).thenReturn(fakeFontColor)
-            whenever(this.text).thenReturn(fakeText)
-        }
-
-        // When
-        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
-
-        // Then
-        val expectedWireframes = mockButton.toTextWireframes().map {
-            it.copy(
-                textStyle = MobileSegment.TextStyle(
-                    expectedFontFamily,
-                    fakeFontSize.toLong().densityNormalized(fakePixelDensity),
-                    fakeStyleColor
-                )
-            )
-        }
-        assertThat(buttonWireframes).isEqualTo(expectedWireframes)
+        whenever(mockTextWireframeMapper.map(mockButton, fakePixelDensity))
+            .thenReturn(fakeTextWireframes)
+        testedButtonWireframeMapper = ButtonWireframeMapper(mockTextWireframeMapper)
     }
 
     @Test
-    fun `M resolve a TextWireframe W map() { Button with text }`(forge: Forge) {
-        // Given
-        val fakeText = forge.aString()
-        val mockButton: Button = forge.aMockView<Button>().apply {
-            whenever(this.text).thenReturn(fakeText)
-            whenever(this.typeface).thenReturn(mock())
-        }
-
-        // When
-        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
-
-        // Then
-        val expectedWireframes = mockButton.toTextWireframes().map { it.copy(text = fakeText) }
-        assertThat(buttonWireframes).isEqualTo(expectedWireframes)
-    }
-
-    @ParameterizedTest
-    @MethodSource("textAlignments")
-    fun `M resolve a TextWireframe W map() { Button with textAlignment }`(
-        textAlignment: Int,
-        expectedTextAlignment: MobileSegment.Alignment,
+    fun `M resolve textWireframes W map(){textMapper returns wireframes with border}`(
         forge: Forge
     ) {
         // Given
-        val mockButton: Button = forge.aMockView<Button>().apply {
-            whenever(this.text).thenReturn(forge.aString())
-            whenever(this.typeface).thenReturn(mock())
-            whenever(this.textAlignment).thenReturn(textAlignment)
-        }
+        fakeTextWireframes = fakeTextWireframes.map { it.copy(border = forge.getForgery()) }
+        whenever(mockTextWireframeMapper.map(mockButton, fakePixelDensity))
+            .thenReturn(fakeTextWireframes)
 
         // When
         val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
 
         // Then
-        val expectedWireframes = mockButton.toTextWireframes().map {
-            it.copy(
-                textPosition = MobileSegment.TextPosition(
-                    padding = MobileSegment.Padding(0, 0, 0, 0),
-                    alignment = expectedTextAlignment
-                )
-            )
-        }
-        assertThat(buttonWireframes).isEqualTo(expectedWireframes)
-    }
-
-    @ParameterizedTest
-    @MethodSource("textAlignmentsFromGravity")
-    fun `M resolve a TextWireframe W map() { Button with textAlignment from gravity }`(
-        gravity: Int,
-        expectedTextAlignment: MobileSegment.Alignment,
-        forge: Forge
-    ) {
-        // Given
-        val fakeText = forge.aString()
-        val mockButton: Button = forge.aMockView<Button>().apply {
-            whenever(this.text).thenReturn(fakeText)
-            whenever(this.typeface).thenReturn(mock())
-            whenever(this.textAlignment).thenReturn(TextView.TEXT_ALIGNMENT_GRAVITY)
-            whenever(this.gravity).thenReturn(gravity)
-        }
-
-        // When
-        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
-
-        // Then
-        val expectedWireframes = mockButton.toTextWireframes().map {
-            it.copy(
-                textPosition = MobileSegment.TextPosition(
-                    padding = MobileSegment.Padding(0, 0, 0, 0),
-                    alignment = expectedTextAlignment
-                )
-            )
-        }
-        assertThat(buttonWireframes).isEqualTo(expectedWireframes)
+        assertThat(buttonWireframes).isEqualTo(fakeTextWireframes)
     }
 
     @Test
-    fun `M resolve a TextWireframe W map() { Button with textPadding }`(forge: Forge) {
+    fun `M resolve textWireframes W map(){textMapper returns wireframes with shapeStyle}`(
+        forge: Forge
+    ) {
         // Given
-        val fakeText = forge.aString()
-        val mockButton: Button = forge.aMockView<Button>().apply {
-            whenever(this.text).thenReturn(fakeText)
-            whenever(this.typeface).thenReturn(mock())
+        fakeTextWireframes = fakeTextWireframes.map { it.copy(shapeStyle = forge.getForgery()) }
+        whenever(mockTextWireframeMapper.map(mockButton, fakePixelDensity))
+            .thenReturn(fakeTextWireframes)
+
+        // When
+        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
+
+        // Then
+        assertThat(buttonWireframes).isEqualTo(fakeTextWireframes)
+    }
+
+    @Test
+    fun `M add a default border W map(){textMapper returns wireframes with no border, shapeStyle}`() {
+        // Given
+        fakeTextWireframes = fakeTextWireframes.map { it.copy(shapeStyle = null, border = null) }
+        whenever(mockTextWireframeMapper.map(mockButton, fakePixelDensity))
+            .thenReturn(fakeTextWireframes)
+
+        val expectedWireframes = fakeTextWireframes.map {
+            it.copy(border = MobileSegment.ShapeBorder(ButtonWireframeMapper.BLACK_COLOR, 1))
         }
 
         // When
         val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
 
         // Then
-        val expectedWireframes = mockButton.toTextWireframes().map { it.copy(text = fakeText) }
         assertThat(buttonWireframes).isEqualTo(expectedWireframes)
     }
 }
