@@ -321,7 +321,10 @@ internal class DatadogCore(
 
     private fun initializeTracingFeature(configuration: Configuration.Feature.Tracing?) {
         if (configuration != null) {
-            val tracingFeature = TracingFeature(configuration)
+            val tracingFeature = TracingFeature.Builder()
+                .useCustomEndpoint(configuration.endpointUrl)
+                .setSpanEventMapper(configuration.spanEventMapper)
+                .build()
             this.tracingFeature = tracingFeature
             registerFeature(tracingFeature)
         }
