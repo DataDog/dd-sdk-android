@@ -66,7 +66,6 @@ internal class DatadogCore(
 
     internal var tracingFeature: TracingFeature? = null
     internal var rumFeature: RumFeature? = null
-    internal var crashReportsFeature: CrashReportsFeature? = null
     internal var webViewLogsFeature: WebViewLogsFeature? = null
     internal var webViewRumFeature: WebViewRumFeature? = null
 
@@ -193,7 +192,6 @@ internal class DatadogCore(
             when (it.key) {
                 Feature.TRACING_FEATURE_NAME -> tracingFeature = null
                 Feature.RUM_FEATURE_NAME -> rumFeature = null
-                CrashReportsFeature.CRASH_FEATURE_NAME -> crashReportsFeature = null
                 WebViewLogsFeature.WEB_LOGS_FEATURE_NAME -> webViewLogsFeature = null
                 WebViewRumFeature.WEB_RUM_FEATURE_NAME -> webViewRumFeature = null
             }
@@ -314,7 +312,6 @@ internal class DatadogCore(
     private fun initializeCrashReportFeature(configuration: Configuration.Feature.CrashReport?) {
         if (configuration != null) {
             val crashReportsFeature = CrashReportsFeature()
-            this.crashReportsFeature = crashReportsFeature
             registerFeature(crashReportsFeature)
         }
     }
