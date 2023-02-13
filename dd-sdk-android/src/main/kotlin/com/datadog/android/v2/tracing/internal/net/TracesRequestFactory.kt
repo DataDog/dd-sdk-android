@@ -14,7 +14,7 @@ import java.util.Locale
 import java.util.UUID
 
 internal class TracesRequestFactory(
-    private val endpointUrl: String
+    internal val endpointUrl: String
 ) : RequestFactory {
 
     override fun create(

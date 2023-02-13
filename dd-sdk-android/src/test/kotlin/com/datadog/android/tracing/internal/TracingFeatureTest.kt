@@ -6,7 +6,7 @@
 
 package com.datadog.android.tracing.internal
 
-import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.tracing.internal.data.TraceWriter
 import com.datadog.android.tracing.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.utils.forge.Configurator
@@ -15,7 +15,7 @@ import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.tracing.internal.net.TracesRequestFactory
 import com.nhaarman.mockitokotlin2.mock
-import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -38,15 +38,18 @@ internal class TracingFeatureTest {
 
     private lateinit var testedFeature: TracingFeature
 
-    @Forgery
-    lateinit var fakeConfiguration: Configuration.Feature.Tracing
-
     @Mock
     lateinit var mockSdkCore: SdkCore
 
+    @Mock
+    lateinit var mockSpanEventMapper: SpanEventMapper
+
+    @StringForgery(regex = "https://[a-z]+\\.com")
+    lateinit var fakeEndpointUrl: String
+
     @BeforeEach
     fun `set up`() {
-        testedFeature = TracingFeature(fakeConfiguration)
+        testedFeature = TracingFeature(fakeEndpointUrl, mockSpanEventMapper)
     }
 
     @Test
@@ -68,7 +71,7 @@ internal class TracingFeatureTest {
         val dataWriter = testedFeature.dataWriter as? TraceWriter
         val spanEventMapperWrapper = dataWriter?.eventMapper as? SpanEventMapperWrapper
         val spanEventMapper = spanEventMapperWrapper?.wrappedEventMapper
-        assertThat(spanEventMapper).isSameAs(fakeConfiguration.spanEventMapper)
+        assertThat(spanEventMapper).isSameAs(mockSpanEventMapper)
     }
 
     @Test
