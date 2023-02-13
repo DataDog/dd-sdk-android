@@ -19,6 +19,7 @@ import com.datadog.android.nightly.activities.HUNDRED_PERCENT
 import com.datadog.android.nightly.exceptions.RumDisabledException
 import com.datadog.android.nightly.exceptions.RumEnabledException
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.tracing.TracingFeature
 
 internal open class JvmCrashService : CrashService() {
 
@@ -64,7 +65,6 @@ internal open class JvmCrashService : CrashService() {
     ) {
         Datadog.setVerbosity(Log.VERBOSE)
         val configBuilder = Configuration.Builder(
-            tracesEnabled = true,
             crashReportsEnabled = crashReportsEnabled,
             rumEnabled = rumEnabled
         ).sampleTelemetry(HUNDRED_PERCENT)
@@ -75,6 +75,7 @@ internal open class JvmCrashService : CrashService() {
             TrackingConsent.GRANTED
         )
         Datadog.registerFeature(LogsFeature.Builder().build())
+        Datadog.registerFeature(TracingFeature.Builder().build())
     }
 
     // endregion

@@ -195,7 +195,7 @@ internal class TelemetryEventHandler(
         configuration: Configuration?
     ): TelemetryConfigurationEvent {
         val coreConfig = configuration?.coreConfig
-        val traceConfig = configuration?.tracesConfig
+        val traceFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         val rumConfig = configuration?.rumConfig
         val crashConfig = configuration?.crashReportConfig
         val viewTrackingStrategy = when (rumConfig?.viewTrackingStrategy) {
@@ -235,7 +235,7 @@ internal class TelemetryEventHandler(
                     batchSize = coreConfig?.batchSize?.windowDurationMs,
                     batchUploadFrequency = coreConfig?.uploadFrequency?.baseStepMs,
                     mobileVitalsUpdatePeriod = rumConfig?.vitalsMonitorUpdateFrequency?.periodInMs,
-                    useTracing = traceConfig != null && GlobalTracer.isRegistered(),
+                    useTracing = traceFeature != null && GlobalTracer.isRegistered(),
                     trackNetworkRequests = trackNetworkRequests
                 )
             )

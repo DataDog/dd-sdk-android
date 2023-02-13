@@ -15,8 +15,6 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
-import com.datadog.android.event.NoOpSpanEventMapper
-import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
@@ -55,7 +53,6 @@ import com.datadog.android.plugin.Feature as PluginFeature
 data class Configuration
 internal constructor(
     internal val coreConfig: Core,
-    internal val tracesConfig: Feature.Tracing?,
     internal val crashReportConfig: Feature.CrashReport?,
     internal val rumConfig: Feature.RUM?,
     internal val additionalConfig: Map<String, Any>
@@ -81,11 +78,6 @@ internal constructor(
             override val endpointUrl: String
         ) : Feature()
 
-        internal data class Tracing(
-            override val endpointUrl: String,
-            val spanEventMapper: SpanEventMapper
-        ) : Feature()
-
         internal data class RUM(
             override val endpointUrl: String,
             val samplingRate: Float,
@@ -104,17 +96,14 @@ internal constructor(
 
     /**
      * A Builder class for a [Configuration].
-     * @param tracesEnabled whether Spans are tracked and sent to Datadog
      * @param crashReportsEnabled whether crashes are tracked and sent to Datadog
      * @param rumEnabled whether RUM events are tracked and sent to Datadog
      */
     @Suppress("TooManyFunctions")
     class Builder(
-        val tracesEnabled: Boolean,
         val crashReportsEnabled: Boolean,
         val rumEnabled: Boolean
     ) {
-        private var tracesConfig: Feature.Tracing = DEFAULT_TRACING_CONFIG
         private var crashReportConfig: Feature.CrashReport = DEFAULT_CRASH_CONFIG
         private var rumConfig: Feature.RUM = DEFAULT_RUM_CONFIG
         private var additionalConfig: Map<String, Any> = emptyMap()
@@ -129,7 +118,6 @@ internal constructor(
         fun build(): Configuration {
             return Configuration(
                 coreConfig = coreConfig,
-                tracesConfig = if (tracesEnabled) tracesConfig else null,
                 crashReportConfig = if (crashReportsEnabled) crashReportConfig else null,
                 rumConfig = if (rumEnabled) rumConfig else null,
                 additionalConfig = additionalConfig
@@ -215,21 +203,9 @@ internal constructor(
          * Let the SDK target your preferred Datadog's site.
          */
         fun useSite(site: DatadogSite): Builder {
-            tracesConfig = tracesConfig.copy(endpointUrl = site.tracesEndpoint())
             crashReportConfig = crashReportConfig.copy(endpointUrl = site.logsEndpoint())
             rumConfig = rumConfig.copy(endpointUrl = site.rumEndpoint())
             coreConfig = coreConfig.copy(needsClearTextHttp = false, site = site)
-            return this
-        }
-
-        /**
-         * Let the SDK target a custom server for the tracing feature.
-         */
-        fun useCustomTracesEndpoint(endpoint: String): Builder {
-            applyIfFeatureEnabled(PluginFeature.TRACE, "useCustomTracesEndpoint") {
-                tracesConfig = tracesConfig.copy(endpointUrl = endpoint)
-                checkCustomEndpoint(endpoint)
-            }
             return this
         }
 
@@ -484,20 +460,6 @@ internal constructor(
         }
 
         /**
-         * Sets the [SpanEventMapper] for the Trace [com.datadog.android.tracing.model.SpanEvent].
-         * You can use this interface implementation to modify the
-         * [com.datadog.android.tracing.model.SpanEvent] attributes before serialisation.
-         *
-         * @param eventMapper the [SpanEventMapper] implementation.
-         */
-        fun setSpanEventMapper(eventMapper: SpanEventMapper): Builder {
-            applyIfFeatureEnabled(PluginFeature.TRACE, "setSpanEventMapper") {
-                tracesConfig = tracesConfig.copy(spanEventMapper = eventMapper)
-            }
-            return this
-        }
-
-        /**
          * Allows to provide additional configuration values which can be used by the SDK.
          * @param additionalConfig Additional configuration values.
          */
@@ -570,7 +532,6 @@ internal constructor(
             block: () -> Unit
         ) {
             val featureEnabled = when (feature) {
-                PluginFeature.TRACE -> tracesEnabled
                 PluginFeature.CRASH -> crashReportsEnabled
                 PluginFeature.RUM -> rumEnabled
             }
@@ -604,9 +565,6 @@ internal constructor(
         internal const val DEFAULT_SAMPLING_RATE: Float = 100f
         internal const val DEFAULT_TELEMETRY_SAMPLING_RATE: Float = 20f
         internal const val DEFAULT_LONG_TASK_THRESHOLD_MS = 100L
-        internal const val PLUGINS_DEPRECATED_WARN_MESSAGE =
-            "Datadog Plugins will be removed in SDK v2.0.0. You will then need to" +
-                " write your own Feature (check our own code for guidance)."
 
         internal val DEFAULT_CORE_CONFIG = Core(
             needsClearTextHttp = false,
@@ -622,10 +580,6 @@ internal constructor(
         )
         internal val DEFAULT_CRASH_CONFIG = Feature.CrashReport(
             endpointUrl = DatadogEndpoint.LOGS_US1
-        )
-        internal val DEFAULT_TRACING_CONFIG = Feature.Tracing(
-            endpointUrl = DatadogEndpoint.TRACES_US1,
-            spanEventMapper = NoOpSpanEventMapper()
         )
         internal val DEFAULT_RUM_CONFIG = Feature.RUM(
             endpointUrl = DatadogEndpoint.RUM_US1,

@@ -121,7 +121,6 @@ internal class DatadogExceptionHandlerTest {
             appContext.mockInstance,
             Credentials(fakeToken, fakeEnvName, fakeVariant, null),
             Configuration.Builder(
-                tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
             ).build(),

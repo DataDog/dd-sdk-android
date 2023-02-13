@@ -112,7 +112,8 @@ class AndroidTracer internal constructor(
          */
         fun build(): AndroidTracer {
             val datadogCore = Datadog.globalSdkCore as? DatadogCore
-            val tracingFeature = datadogCore?.tracingFeature
+            val tracingFeature = datadogCore?.getFeature(Feature.TRACING_FEATURE_NAME)
+                ?.unwrap<TracingFeature>()
             val rumFeature = datadogCore?.rumFeature
 
             if (tracingFeature == null) {

@@ -43,7 +43,6 @@ internal class RumResourceTrackingE2ETests {
     fun rum_resource_tracking() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
             )
@@ -67,7 +66,6 @@ internal class RumResourceTrackingE2ETests {
     fun rum_resource_tracking_with_custom_attributes() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
             )
@@ -97,7 +95,6 @@ internal class RumResourceTrackingE2ETests {
         // in the monitor.
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
             )
@@ -128,7 +125,6 @@ internal class RumResourceTrackingE2ETests {
         // this behaviour in the monitor.
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
             )
@@ -162,7 +158,6 @@ internal class RumResourceTrackingE2ETests {
         // "hits" and "duration" metrics are automatically created.
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
             )
@@ -190,7 +185,6 @@ internal class RumResourceTrackingE2ETests {
         // metrics.
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
             )
@@ -216,7 +210,6 @@ internal class RumResourceTrackingE2ETests {
         // 2. APM monitor - number of traces should be affected by sampling
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
             )

@@ -176,7 +176,6 @@ internal class DatadogTest {
         // Given
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
         val configuration = Configuration.Builder(
-            tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
         ).build()
@@ -194,7 +193,6 @@ internal class DatadogTest {
         // Given
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
         val configuration = Configuration.Builder(
-            tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
         ).build()
@@ -274,7 +272,6 @@ internal class DatadogTest {
     fun `𝕄 enable RUM debugging 𝕎 enableRumDebugging(true)`() {
         // Given
         val config = Configuration.Builder(
-            tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
         )
@@ -295,7 +292,6 @@ internal class DatadogTest {
     fun `𝕄 disable RUM debugging 𝕎 enableRumDebugging(false)`() {
         // Given
         val config = Configuration.Builder(
-            tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
         )

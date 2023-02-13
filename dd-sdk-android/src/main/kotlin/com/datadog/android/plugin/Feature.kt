@@ -11,6 +11,5 @@ package com.datadog.android.plugin
  */
 enum class Feature(internal val featureName: String) {
     CRASH("Crash Reporting"),
-    TRACE("Tracing"),
     RUM("RUM")
 }

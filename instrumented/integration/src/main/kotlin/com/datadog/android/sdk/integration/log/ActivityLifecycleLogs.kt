@@ -36,6 +36,7 @@ internal class ActivityLifecycleLogs : AppCompatActivity() {
 
         Datadog.initialize(this, credentials, config, trackingConsent)
         Datadog.registerFeature(RuntimeConfig.logsFeatureBuilder().build())
+        Datadog.registerFeature(RuntimeConfig.tracingFeatureBuilder().build())
         Datadog.setVerbosity(Log.VERBOSE)
 
         logger = RuntimeConfig.logger()

@@ -41,6 +41,7 @@ import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.tracing.TracingFeature
 import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
@@ -133,6 +134,14 @@ class SampleApplication : Application() {
         }.build()
         Datadog.registerFeature(logsFeature)
 
+        val tracingFeature = TracingFeature.Builder().apply {
+            useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
+            if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
+                useCustomEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
+            }
+        }.build()
+        Datadog.registerFeature(tracingFeature)
+
         val ndkCrashReportsFeature = NdkCrashReportsFeature()
         Datadog.registerFeature(ndkCrashReportsFeature)
 
@@ -168,7 +177,6 @@ class SampleApplication : Application() {
     private fun createDatadogConfiguration(): Configuration {
         @Suppress("DEPRECATION")
         val configBuilder = Configuration.Builder(
-            tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
         )
@@ -225,9 +233,6 @@ class SampleApplication : Application() {
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
             configBuilder.useCustomCrashReportsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
-        }
-        if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
-            configBuilder.useCustomTracesEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
         }
         if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
             configBuilder.useCustomRumEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
