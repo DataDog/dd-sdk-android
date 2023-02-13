@@ -42,8 +42,9 @@ dependencies {
 1. Navigate to [**UX Monitoring** > **RUM Applications** > **New Application**][2].
 2. Select `android` as the application type and enter an application name to generate a unique Datadog application ID and client token.
 3. To instrument your web views, click the **Instrument your webviews** toggle. For more information, see [Web View Tracking][13].
+4. To disable automatic user data collection for either client IP or geolocation data, uncheck the boxes for those settings. For more information, see [RUM Android Data Collected][15].
 
-{{< img src="real_user_monitoring/android/create_rum_application.png" alt="Create a RUM application in Datadog workflow" style="width:90%;">}}
+   {{< img src="real_user_monitoring/android/new-rum-app-android-1.png" alt="Create a RUM application in Datadog workflow" style="width:90%;">}}
 
 To ensure the safety of your data, you must use a client token. If you used only [Datadog API keys][3] to configure the `dd-sdk-android` library, they would be exposed client-side in the Android application's APK byte code. 
 
@@ -373,3 +374,4 @@ Add the following snippet during initialization in your Datadog configuration:
 [12]: https://github.com/DataDog/dd-sdk-android-gradle-plugin
 [13]: https://docs.datadoghq.com/real_user_monitoring/android/web_view_tracking/
 [14]: https://docs.datadoghq.com/getting_started/tagging/using_tags/#rum--session-replay
+[15]: /real_user_monitoring/android/data_collected/
