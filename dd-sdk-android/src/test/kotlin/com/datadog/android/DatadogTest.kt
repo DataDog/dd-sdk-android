@@ -11,6 +11,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -87,6 +88,8 @@ internal class DatadogTest {
 
         // Prevent crash when initializing RumFeature
         mockChoreographerInstance()
+
+        CoreFeature.disableKronosBackgroundSync = true
     }
 
     @AfterEach

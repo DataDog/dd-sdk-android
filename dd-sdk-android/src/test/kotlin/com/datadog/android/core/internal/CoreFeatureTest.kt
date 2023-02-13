@@ -115,8 +115,8 @@ internal class CoreFeatureTest {
 
     @BeforeEach
     fun `set up`() {
+        CoreFeature.disableKronosBackgroundSync = true
         testedFeature = CoreFeature()
-        testedFeature.disableKronosBackgroundSync = true
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
     }

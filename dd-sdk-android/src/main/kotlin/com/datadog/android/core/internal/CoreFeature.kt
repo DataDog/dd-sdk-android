@@ -130,9 +130,6 @@ internal class CoreFeature {
 
     internal val featuresContext: MutableMap<String, Map<String, Any?>> = ConcurrentHashMap()
 
-    // TESTS ONLY, to prevent Kronos spinning sync threads in unit-tests
-    internal var disableKronosBackgroundSync = false
-
     fun initialize(
         appContext: Context,
         sdkInstanceId: String,
@@ -567,6 +564,12 @@ internal class CoreFeature {
         const val DRAIN_WAIT_SECONDS = 10L
         const val NTP_CACHE_EXPIRATION_MINUTES = 30L
         const val NTP_DELAY_BETWEEN_SYNCS_MINUTES = 5L
+
+        // TESTS ONLY, to prevent Kronos spinning sync threads in unit-tests, otherwise
+        // LoggingSyncListener can interact with internalLogger, breaking mockito
+        // verification expectations.
+        // TODO RUMM-0000 isolate Kronos somehow for unit-tests
+        internal var disableKronosBackgroundSync = false
 
         // endregion
     }
