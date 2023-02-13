@@ -148,7 +148,8 @@ internal class CoreFeature {
         resolveProcessInfo(appContext)
         initializeClockSync(appContext)
         setupOkHttpClient(configuration)
-        firstPartyHostHeaderTypeResolver.addKnownHostsWithHeaderTypes(configuration.firstPartyHostsWithHeaderTypes)
+        firstPartyHostHeaderTypeResolver
+            .addKnownHostsWithHeaderTypes(configuration.firstPartyHostsWithHeaderTypes)
         webViewTrackingHosts = configuration.webViewTrackingHosts
         androidInfoProvider = DefaultAndroidInfoProvider(appContext)
         setupExecutors()
