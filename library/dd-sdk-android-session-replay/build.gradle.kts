@@ -71,6 +71,7 @@ android {
         ignoreTestSources = true
     }
 }
+
 dependencies {
     implementation(project(":dd-sdk-android"))
     implementation(libs.okHttp)

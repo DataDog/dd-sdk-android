@@ -8,7 +8,8 @@ API_SURFACE_PATHS = [
     "library/dd-sdk-android-logs/apiSurface",
     "library/dd-sdk-android-session-replay/apiSurface",
     "library/dd-sdk-android-logs/apiSurface",
-    "library/dd-sdk-android-ndk/apiSurface"
+    "library/dd-sdk-android-ndk/apiSurface",
+    "library/dd-sdk-android-trace/apiSurface"
 ]
 NIGHTLY_TESTS_DIRECTORY_PATH = "instrumented/nightly-tests/src/androidTest/kotlin"
 NIGHTLY_TESTS_PACKAGE = "com/datadog/android/nightly"
