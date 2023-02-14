@@ -374,4 +374,4 @@ Add the following snippet during initialization in your Datadog configuration:
 [12]: https://github.com/DataDog/dd-sdk-android-gradle-plugin
 [13]: https://docs.datadoghq.com/real_user_monitoring/android/web_view_tracking/
 [14]: https://docs.datadoghq.com/getting_started/tagging/using_tags/#rum--session-replay
-[15]: /real_user_monitoring/android/data_collected/
+[15]: https://docs.datadoghq.com/real_user_monitoring/android/data_collected/
