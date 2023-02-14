@@ -31,6 +31,13 @@ internal fun Forge.startViewEvent(): RumRawEvent.StartView {
     )
 }
 
+internal fun Forge.stopViewEvent(): RumRawEvent.StopView {
+    return RumRawEvent.StopView(
+        key = anHexadecimalString(),
+        attributes = exhaustiveAttributes()
+    )
+}
+
 internal fun Forge.startActionEvent(continuous: Boolean? = null): RumRawEvent.StartAction {
     return RumRawEvent.StartAction(
         type = aValueFrom(RumActionType::class.java),
@@ -130,13 +137,19 @@ internal fun Forge.invalidBackgroundEvent(): RumRawEvent {
     )
 }
 
-internal fun Forge.validAppLaunchEvent(): RumRawEvent {
+internal fun Forge.anyRumEvent(): RumRawEvent {
     return this.anElementFrom(
         listOf(
+            startViewEvent(),
+            stopViewEvent(),
             startActionEvent(),
-            addLongTaskEvent(),
+            stopActionEvent(),
+            startResourceEvent(),
+            stopResourceEvent(),
+            stopResourceWithErrorEvent(),
+            stopResourceWithStacktraceEvent(),
             addErrorEvent(),
-            startResourceEvent()
+            addLongTaskEvent()
         )
     )
 }

@@ -8,8 +8,8 @@ package com.datadog.android.rum.internal
 
 internal interface AppStartTimeProvider {
     /**
-     * Provide the application start time in nanoseconds from device boot, or our best guess if
-     * the actual start time is not available
+     * Provide the time the application started in nanoseconds from device boot, or our best guess
+     * if the actual start time is not available.
      */
     val appStartTimeNs: Long
 }

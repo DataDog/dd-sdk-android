@@ -30,7 +30,7 @@ class DefaultAppStartTimeProviderTest {
     fun `M return process start time W appStartTime { N+ }`() {
         // GIVEN
         val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.O
         val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
         val startTimeNs = System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(diffMs)
 

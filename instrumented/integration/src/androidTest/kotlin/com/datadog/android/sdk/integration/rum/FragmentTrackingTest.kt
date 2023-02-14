@@ -26,7 +26,13 @@ internal abstract class FragmentTrackingTest :
     ): MutableList<ExpectedEvent> {
         val activity = mockServerRule.activity
         val expectedEvents = mutableListOf<ExpectedEvent>()
+
         expectedEvents.add(ExpectedApplicationStart())
+        expectedEvents.add(
+            ExpectedApplicationLaunchViewEvent(
+                docVersion = 2
+            )
+        )
 
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()
@@ -37,6 +43,13 @@ internal abstract class FragmentTrackingTest :
                 fragmentAViewUrl,
                 2,
                 currentFragmentExtras(activity)
+            )
+        )
+
+        // Application launch is stopped after fragment starts
+        expectedEvents.add(
+            ExpectedApplicationLaunchViewEvent(
+                docVersion = 3
             )
         )
 

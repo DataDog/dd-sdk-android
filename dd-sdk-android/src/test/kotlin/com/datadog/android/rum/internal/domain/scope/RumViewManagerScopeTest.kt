@@ -524,16 +524,17 @@ internal class RumViewManagerScopeTest {
         // Given
         CoreFeature.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         testedScope.applicationDisplayed = false
-        val appStartTimeNs = System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(500)
+        val fakeEvent = forge.anyRumEvent()
+        val appStartTimeNs = fakeEvent.eventTime.nanoTime - TimeUnit.MILLISECONDS.toNanos(500)
         whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn appStartTimeNs
-        val fakeEvent = forge.validAppLaunchEvent()
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        val appStartTimeMs = TimeUnit.MILLISECONDS.toMillis(appStartTimeNs)
-        assertThat(testedScope.childrenScopes).hasSize(1)
+        val appStartTimeMs = TimeUnit.NANOSECONDS.toMillis(appStartTimeNs)
+        val scopes = if (fakeEvent is RumRawEvent.StartView) 2 else 1
+        assertThat(testedScope.childrenScopes).hasSize(scopes)
         assertThat(testedScope.childrenScopes[0])
             .isInstanceOfSatisfying(RumViewScope::class.java) {
                 assertThat(it.eventTimestamp)
@@ -577,7 +578,7 @@ internal class RumViewManagerScopeTest {
             contextProvider = mockContextProvider
         )
         testedScope.applicationDisplayed = false
-        val fakeEvent = forge.validAppLaunchEvent()
+        val fakeEvent = forge.anyRumEvent()
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
@@ -606,7 +607,7 @@ internal class RumViewManagerScopeTest {
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
-        val fakeEvent = forge.validAppLaunchEvent()
+        val fakeEvent = forge.anyRumEvent()
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
@@ -649,11 +650,11 @@ internal class RumViewManagerScopeTest {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
-        val appStartTimeNs = System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(500)
+        val fakeEvent = forge.anyRumEvent()
+
+        val appStartTimeNs = fakeEvent.eventTime.nanoTime - TimeUnit.MILLISECONDS.toNanos(500)
         whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn appStartTimeNs
         CoreFeature.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-
-        val fakeEvent = forge.addErrorEvent()
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
