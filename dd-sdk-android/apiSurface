@@ -66,7 +66,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun build(): Configuration
     fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
     fun setFirstPartyHosts(List<String>): Builder
-    fun setFirstPartyHostsWithHeaderType(Map<String, Set<com.datadog.android.tracing.TracingHeaderType>>): Builder
+    fun setFirstPartyHostsWithHeaderType(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>): Builder
     fun setWebViewTrackingHosts(List<String>): Builder
     fun useSite(com.datadog.android.DatadogSite): Builder
     fun useCustomCrashReportsEndpoint(String): Builder
@@ -117,19 +117,19 @@ class com.datadog.android.core.constraints.DatadogDataConstraints : DataConstrai
   override fun validateTimings(Map<String, Long>): MutableMap<String, Long>
   companion object 
 class com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver : FirstPartyHostHeaderTypeResolver
-  constructor(Map<String, Set<com.datadog.android.tracing.TracingHeaderType>>)
+  constructor(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
   override fun isFirstPartyUrl(okhttp3.HttpUrl): Boolean
   override fun isFirstPartyUrl(String): Boolean
-  override fun headerTypesForUrl(String): Set<com.datadog.android.tracing.TracingHeaderType>
-  override fun headerTypesForUrl(okhttp3.HttpUrl): Set<com.datadog.android.tracing.TracingHeaderType>
-  override fun getAllHeaderTypes(): Set<com.datadog.android.tracing.TracingHeaderType>
+  override fun headerTypesForUrl(String): Set<com.datadog.android.trace.TracingHeaderType>
+  override fun headerTypesForUrl(okhttp3.HttpUrl): Set<com.datadog.android.trace.TracingHeaderType>
+  override fun getAllHeaderTypes(): Set<com.datadog.android.trace.TracingHeaderType>
   override fun isEmpty(): Boolean
 interface com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
   fun isFirstPartyUrl(okhttp3.HttpUrl): Boolean
   fun isFirstPartyUrl(String): Boolean
-  fun headerTypesForUrl(String): Set<com.datadog.android.tracing.TracingHeaderType>
-  fun headerTypesForUrl(okhttp3.HttpUrl): Set<com.datadog.android.tracing.TracingHeaderType>
-  fun getAllHeaderTypes(): Set<com.datadog.android.tracing.TracingHeaderType>
+  fun headerTypesForUrl(String): Set<com.datadog.android.trace.TracingHeaderType>
+  fun headerTypesForUrl(okhttp3.HttpUrl): Set<com.datadog.android.trace.TracingHeaderType>
+  fun getAllHeaderTypes(): Set<com.datadog.android.trace.TracingHeaderType>
   fun isEmpty(): Boolean
 val NULL_MAP_VALUE: Object
 fun toJsonElement(): com.google.gson.JsonElement
@@ -157,8 +157,6 @@ class com.datadog.android.event.NoOpEventMapper<T: Any> : EventMapper<T>
   override fun map(T): T
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
-interface com.datadog.android.event.SpanEventMapper : EventMapper<com.datadog.android.tracing.model.SpanEvent>
-  override fun map(com.datadog.android.tracing.model.SpanEvent): com.datadog.android.tracing.model.SpanEvent
 interface com.datadog.android.event.ViewEventMapper : EventMapper<com.datadog.android.rum.model.ViewEvent>
   override fun map(com.datadog.android.rum.model.ViewEvent): com.datadog.android.rum.model.ViewEvent
 object com.datadog.android.log.LogAttributes
@@ -422,31 +420,7 @@ interface com.datadog.android.security.Encryption
 class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
   constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
   override fun onCorruption(android.database.sqlite.SQLiteDatabase)
-class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTracer
-  override fun buildSpan(String): DDSpanBuilder
-  class Builder
-    constructor()
-    fun build(): AndroidTracer
-    fun setTracingHeaderTypes(Set<TracingHeaderType>): Builder
-    fun setServiceName(String): Builder
-    fun setPartialFlushThreshold(Int): Builder
-    fun addGlobalTag(String, String): Builder
-    fun setBundleWithRumEnabled(Boolean): Builder
-  companion object 
-    fun logThrowable(io.opentracing.Span, Throwable)
-    fun logErrorMessage(io.opentracing.Span, String)
-class com.datadog.android.tracing.TracingFeature : com.datadog.android.v2.api.StorageBackedFeature
-  override val name: String
-  override fun onInitialize(com.datadog.android.v2.api.SdkCore, android.content.Context, com.datadog.android.v2.api.EnvironmentProvider)
-  override val requestFactory: com.datadog.android.v2.api.RequestFactory
-  override val storageConfiguration: com.datadog.android.v2.api.FeatureStorageConfiguration
-  override fun onStop()
-  class Builder
-    fun useSite(com.datadog.android.DatadogSite): Builder
-    fun useCustomEndpoint(String): Builder
-    fun setSpanEventMapper(com.datadog.android.event.SpanEventMapper): Builder
-    fun build(): TracingFeature
-enum com.datadog.android.tracing.TracingHeaderType
+enum com.datadog.android.trace.TracingHeaderType
   constructor(String)
   - DATADOG
   - B3
@@ -1918,61 +1892,3 @@ data class com.datadog.android.telemetry.model.TelemetryErrorEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Source
-data class com.datadog.android.tracing.model.SpanEvent
-  constructor(kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.Long, kotlin.Long, kotlin.Long = 0L, Metrics, Meta)
-  val type: kotlin.String
-  fun toJson(): com.google.gson.JsonElement
-  companion object 
-    fun fromJson(kotlin.String): SpanEvent
-    fun fromJsonObject(com.google.gson.JsonObject): SpanEvent
-  data class Metrics
-    constructor(kotlin.Long? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Number> = mutableMapOf())
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Metrics
-      fun fromJsonObject(com.google.gson.JsonObject): Metrics
-  data class Meta
-    constructor(kotlin.String, Dd, Span, Tracer, Usr, Network, kotlin.collections.MutableMap<kotlin.String, kotlin.String> = mutableMapOf())
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Meta
-      fun fromJsonObject(com.google.gson.JsonObject): Meta
-  data class Dd
-    constructor(kotlin.String? = "android")
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Dd
-      fun fromJsonObject(com.google.gson.JsonObject): Dd
-  class Span
-    val kind: kotlin.String
-    fun toJson(): com.google.gson.JsonElement
-  data class Tracer
-    constructor(kotlin.String)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Tracer
-      fun fromJsonObject(com.google.gson.JsonObject): Tracer
-  data class Usr
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Usr
-      fun fromJsonObject(com.google.gson.JsonObject): Usr
-  data class Network
-    constructor(Client)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Network
-      fun fromJsonObject(com.google.gson.JsonObject): Network
-  data class Client
-    constructor(SimCarrier? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Client
-      fun fromJsonObject(com.google.gson.JsonObject): Client
-  data class SimCarrier
-    constructor(kotlin.String? = null, kotlin.String? = null)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): SimCarrier
-      fun fromJsonObject(com.google.gson.JsonObject): SimCarrier

@@ -13,7 +13,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getTrackingConsent
-import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.trace.AndroidTracer
 import com.datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
 import io.opentracing.Scope

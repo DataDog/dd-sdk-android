@@ -31,7 +31,7 @@ import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.security.Encryption
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
-import com.datadog.android.tracing.TracingHeaderType
+import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger

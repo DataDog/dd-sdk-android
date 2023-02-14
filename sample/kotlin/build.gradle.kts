@@ -114,6 +114,7 @@ dependencies {
     implementation(project(":dd-sdk-android"))
     implementation(project(":library:dd-sdk-android-session-replay"))
     implementation(project(":library:dd-sdk-android-ndk"))
+    implementation(project(":library:dd-sdk-android-trace"))
     implementation(project(":dd-sdk-android-ktx"))
     implementation(project(":dd-sdk-android-rx"))
     implementation(project(":dd-sdk-android-timber"))

@@ -6,7 +6,7 @@
 
 package com.datadog.android.sqldelight
 
-import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.trace.AndroidTracer
 import com.squareup.sqldelight.Transacter
 import com.squareup.sqldelight.Transacter.Transaction
 import com.squareup.sqldelight.TransactionWithReturn

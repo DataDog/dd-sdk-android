@@ -12,7 +12,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.nightly.SPECIAL_STRING_TAG_NAME
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.TestEncryption
@@ -23,10 +22,11 @@ import com.datadog.android.nightly.utils.measureSdkInitialize
 import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
-import com.datadog.android.tracing.AndroidTracer
-import com.datadog.android.tracing.TracingFeature
-import com.datadog.android.tracing.TracingHeaderType
-import com.datadog.android.tracing.model.SpanEvent
+import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.TracingFeature
+import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.trace.internal.domain.event.SpanEventMapper
+import com.datadog.android.trace.model.SpanEvent
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import io.opentracing.util.GlobalTracer
 import org.junit.Rule
@@ -44,7 +44,7 @@ class SpanConfigE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor()
      * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
      */
     @Test
@@ -66,7 +66,7 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor()
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setBatchSize(BatchSize): Builder
      */
     @Test
@@ -88,7 +88,7 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor()
      * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
      */
     @Test
@@ -111,8 +111,8 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setSpanEventMapper(com.datadog.android.event.SpanEventMapper): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor()
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setSpanEventMapper(com.datadog.android.trace.internal.domain.event.SpanEventMapper): Builder
      */
     @Test
     fun trace_config_set_span_event_mapper() {
@@ -148,8 +148,8 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setBundleWithRumEnabled(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor()
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun setBundleWithRumEnabled(Boolean): Builder
      */
     @Test
     fun trace_config_set_bundle_with_rum_enabled() {
@@ -181,8 +181,8 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setBundleWithRumEnabled(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor()
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun setBundleWithRumEnabled(Boolean): Builder
      */
     @Test
     fun trace_config_set_bundle_with_rum_disabled() {
@@ -211,8 +211,8 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setPartialFlushThreshold(Int): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor()
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun setPartialFlushThreshold(Int): Builder
      */
     @Test
     fun trace_config_flush_threshold_not_reached() {
@@ -238,8 +238,8 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setPartialFlushThreshold(Int): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor()
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun setPartialFlushThreshold(Int): Builder
      */
     @Test
     fun trace_config_flush_threshold_reached() {
@@ -265,8 +265,8 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun addGlobalTag(String, String): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor()
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun addGlobalTag(String, String): Builder
      */
     @Test
     fun trace_config_add_global_tag() {
@@ -291,8 +291,8 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setServiceName(String): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor()
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun setServiceName(String): Builder
      */
     @Test
     fun trace_config_set_service_name() {
@@ -314,8 +314,8 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setTracingHeaderTypes(Set<TracingHeaderType>): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor()
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun setTracingHeaderTypes(Set<TracingHeaderType>): Builder
      */
     @Test
     fun trace_config_set_tracing_header_type() {
@@ -337,7 +337,7 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor()
      * apiMethodSignature: com.datadog.android.Datadog#fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
      */
     @Test

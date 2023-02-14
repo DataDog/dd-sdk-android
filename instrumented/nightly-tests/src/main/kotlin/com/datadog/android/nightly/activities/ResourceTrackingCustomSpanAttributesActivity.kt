@@ -7,8 +7,8 @@
 package com.datadog.android.nightly.activities
 
 import com.datadog.android.okhttp.rum.RumInterceptor
-import com.datadog.android.okhttp.tracing.TracedRequestListener
-import com.datadog.android.okhttp.tracing.TracingInterceptor
+import com.datadog.android.okhttp.trace.TracedRequestListener
+import com.datadog.android.okhttp.trace.TracingInterceptor
 import io.opentracing.Span
 import okhttp3.OkHttpClient
 import okhttp3.Request

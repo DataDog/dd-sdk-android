@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.net
 
-import com.datadog.android.tracing.TracingHeaderType
+import com.datadog.android.trace.TracingHeaderType
 import okhttp3.HttpUrl
 import java.util.Locale
 

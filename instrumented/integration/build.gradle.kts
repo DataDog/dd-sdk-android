@@ -91,6 +91,7 @@ dependencies {
     implementation(project(":dd-sdk-android-okhttp"))
     implementation(project(":library:dd-sdk-android-session-replay"))
     implementation(project(":library:dd-sdk-android-logs"))
+    implementation(project(":library:dd-sdk-android-trace"))
 
     implementation(libs.gson)
     implementation(libs.kotlin)
