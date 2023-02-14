@@ -140,9 +140,6 @@ dependencies {
     implementation(libs.androidXRecyclerView)
     implementation(libs.androidXWorkManager)
 
-    // OpenTracing
-    api(libs.bundles.openTracing)
-
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
 
@@ -151,6 +148,7 @@ dependencies {
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)
+    testImplementation(libs.bundles.openTracing)
     unmock(libs.robolectric)
 
     // Static Analysis

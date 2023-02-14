@@ -27,7 +27,6 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.storage.DataWriter
-import io.opentracing.util.GlobalTracer
 import java.util.Locale
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrackingStrategy as VTS
 
@@ -235,11 +234,39 @@ internal class TelemetryEventHandler(
                     batchSize = coreConfig?.batchSize?.windowDurationMs,
                     batchUploadFrequency = coreConfig?.uploadFrequency?.baseStepMs,
                     mobileVitalsUpdatePeriod = rumConfig?.vitalsMonitorUpdateFrequency?.periodInMs,
-                    useTracing = traceFeature != null && GlobalTracer.isRegistered(),
+                    useTracing = traceFeature != null && isGlobalTracerRegistered(),
                     trackNetworkRequests = trackNetworkRequests
                 )
             )
         )
+    }
+
+    private fun isGlobalTracerRegistered(): Boolean {
+        // TODO RUMM-0000 we don't reference io.opentracing from RUM directly, so using this.
+        // alternatively we can afford maybe to reference it, because it seems transitive size
+        // of io.opentracing is like 30 KBs in total?
+        // Would be nice to add the test with the flavor which is has no io.opentracing and test
+        // for obfuscation enabled case.
+        return try {
+            val globalTracerClass = Class.forName("io.opentracing.util.GlobalTracer")
+            return try {
+                globalTracerClass.getMethod("isRegistered")
+                    .invoke(null) as Boolean
+            } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.TELEMETRY,
+                    "GlobalTracer class exists in the runtime classpath, but" +
+                        " there is an error invoking isRegistered method",
+                    t
+                )
+                false
+            }
+        } catch (@Suppress("SwallowedException", "TooGenericExceptionCaught") t: Throwable) {
+            // traces dependency is optional, so it is ok to not have such class
+            // it can be also the case that our Proguard rule didn't work and class name is obfuscated
+            false
+        }
     }
 
     private fun DatadogContext.rumContext(): RumContext {
