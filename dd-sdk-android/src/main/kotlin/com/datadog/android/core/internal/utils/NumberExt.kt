@@ -15,7 +15,10 @@ internal fun Int.toHexString() = toString(HEX_RADIX)
 
 internal fun Long.toHexString() = toString(HEX_RADIX)
 
-internal fun BigInteger.toHexString(): String {
+/**
+ * Converts [BigInteger] into hexadecimal representation.
+ */
+fun BigInteger.toHexString(): String {
     return toLong().toHexString()
 }
 

@@ -7,7 +7,7 @@
 package com.datadog.android.trace.internal.data
 
 import com.datadog.android.event.EventMapper
-import com.datadog.android.trace.internal.storage.ContextAwareMapper
+import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.android.utils.forge.Configurator

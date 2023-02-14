@@ -6,7 +6,6 @@
 
 package com.datadog.android.trace.internal.domain.event
 
-import com.datadog.android.core.internal.Mapper
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.event.EventMapper
 import com.datadog.android.trace.model.SpanEvent

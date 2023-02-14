@@ -14,8 +14,6 @@ import com.datadog.android.trace.internal.handlers.AndroidSpanLogsHandler
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.opentracing.DDTracer
 import com.datadog.opentracing.LogHandler
 import com.datadog.trace.api.Config
@@ -93,9 +91,20 @@ class AndroidTracer internal constructor(
         private var bundleWithRumEnabled: Boolean = true
 
         // TODO RUMM-0000 should have a nicer call chain
-        private var serviceName: String? = (Datadog.globalSdkCore as? DatadogCore)
-            ?.coreFeature
-            ?.serviceName
+        private var serviceName: String = ""
+            get() {
+                return field.ifEmpty {
+                    val service = Datadog.globalSdkCore.service
+                    if (service.isEmpty()) {
+                        internalLogger.log(
+                            InternalLogger.Level.ERROR,
+                            InternalLogger.Target.USER,
+                            DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
+                        )
+                    }
+                    service
+                }
+            }
         private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
         private var random: Random = SecureRandom()
 
@@ -111,17 +120,16 @@ class AndroidTracer internal constructor(
          * Builds a [AndroidTracer] based on the current state of this Builder.
          */
         fun build(): AndroidTracer {
-            val datadogCore = Datadog.globalSdkCore as? DatadogCore
-            val tracingFeature = datadogCore?.getFeature(Feature.TRACING_FEATURE_NAME)
+            val datadogCore = Datadog.globalSdkCore
+            val tracingFeature = datadogCore.getFeature(Feature.TRACING_FEATURE_NAME)
                 ?.unwrap<TracingFeature>()
-            val rumFeature = datadogCore?.rumFeature
+            val rumFeature = datadogCore.getFeature(Feature.RUM_FEATURE_NAME)
 
             if (tracingFeature == null) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    TRACING_NOT_ENABLED_ERROR_MESSAGE + "\n" +
-                        Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
+                    TRACING_NOT_ENABLED_ERROR_MESSAGE
                 )
             }
 
@@ -134,7 +142,7 @@ class AndroidTracer internal constructor(
                 bundleWithRumEnabled = false
             }
             return AndroidTracer(
-                datadogCore ?: NoOpSdkCore(),
+                datadogCore,
                 config(),
                 tracingFeature?.dataWriter ?: NoOpWriter(),
                 random,
@@ -204,10 +212,7 @@ class AndroidTracer internal constructor(
 
         internal fun properties(): Properties {
             val properties = Properties()
-            // TODO RUMM-0000 remove null assertion once we read serviceName in non-null way
-            if (serviceName != null) {
-                properties.setProperty(Config.SERVICE_NAME, serviceName)
-            }
+            properties.setProperty(Config.SERVICE_NAME, serviceName)
             properties.setProperty(
                 Config.PARTIAL_FLUSH_MIN_SPANS,
                 partialFlushThreshold.toString()
@@ -256,6 +261,9 @@ class AndroidTracer internal constructor(
             "You're trying to bundle the traces with a RUM context, " +
                 "but the RUM feature was disabled in your Configuration. " +
                 "No RUM context will be attached to your traces in this case."
+        internal const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE =
+            "Default service name is missing during" +
+                " AndroidTracer.Builder creation, did you initialize SDK?"
 
         // the minimum closed spans required for triggering a flush and deliver
         // everything to the writer

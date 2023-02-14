@@ -4,9 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal
+package com.datadog.android.trace.internal.domain.event
 
-internal interface Mapper<R, T> {
+import com.datadog.android.v2.api.context.DatadogContext
 
-    fun map(model: R): T
+internal interface ContextAwareMapper<R, T> {
+
+    fun map(datadogContext: DatadogContext, model: R): T
 }

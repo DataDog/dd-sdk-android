@@ -131,8 +131,10 @@ interface com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
   fun headerTypesForUrl(okhttp3.HttpUrl): Set<com.datadog.android.trace.TracingHeaderType>
   fun getAllHeaderTypes(): Set<com.datadog.android.trace.TracingHeaderType>
   fun isEmpty(): Boolean
+fun join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0)): ByteArray
 val NULL_MAP_VALUE: Object
 fun toJsonElement(): com.google.gson.JsonElement
+fun toHexString(): String
 fun percent()
 var internalLogger: com.datadog.android.v2.api.InternalLogger
 fun loggableStackTrace(): String

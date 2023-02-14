@@ -36,8 +36,12 @@ internal fun ByteArray.split(delimiter: Byte): List<ByteArray> {
 /**
  * Joins a collection of [ByteArray] elements into a single [ByteArray], taking into account
  * separator between elements and prefix and suffix decoration of the final array.
+ *
+ * @param separator Separator to use between the parts joined.
+ * @param prefix Optional prefix to add to the result.
+ * @param suffix Optional suffix to add to the result.
  */
-internal fun Collection<ByteArray>.join(
+fun Collection<ByteArray>.join(
     separator: ByteArray,
     prefix: ByteArray = ByteArray(0),
     suffix: ByteArray = ByteArray(0)
