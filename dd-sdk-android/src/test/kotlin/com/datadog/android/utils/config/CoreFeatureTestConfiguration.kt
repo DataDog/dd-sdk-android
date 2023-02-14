@@ -131,7 +131,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     }
 
     private fun configureCoreFeature() {
-        whenever(mockInstance.disableKronosBackgroundSync) doReturn true
         whenever(mockInstance.isMainProcess) doReturn true
         whenever(mockInstance.envName) doReturn fakeEnvName
         whenever(mockInstance.serviceName) doReturn fakeServiceName

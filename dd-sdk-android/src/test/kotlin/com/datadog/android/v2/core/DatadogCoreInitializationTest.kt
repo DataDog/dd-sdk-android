@@ -80,6 +80,8 @@ internal class DatadogCoreInitializationTest {
     fun `set up`() {
         // Prevent crash when initializing RumFeature
         mockChoreographerInstance()
+
+        CoreFeature.disableKronosBackgroundSync = true
     }
 
     @AfterEach

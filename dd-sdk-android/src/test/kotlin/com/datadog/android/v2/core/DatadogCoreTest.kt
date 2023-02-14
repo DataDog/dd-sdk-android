@@ -93,6 +93,8 @@ internal class DatadogCoreTest {
         // Prevent crash when initializing RumFeature
         mockChoreographerInstance()
 
+        CoreFeature.disableKronosBackgroundSync = true
+
         testedCore = DatadogCore(
             appContext.mockInstance,
             fakeCredentials,

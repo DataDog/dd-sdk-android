@@ -13,6 +13,7 @@ import androidx.work.impl.WorkManagerImpl
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -61,6 +62,8 @@ internal class WorkManagerUtilsTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         mockChoreographerInstance()
+
+        CoreFeature.disableKronosBackgroundSync = true
 
         Datadog.initialize(
             appContext.mockInstance,
