@@ -11,9 +11,15 @@ import java.math.BigInteger
 internal const val HUNDRED = 100.0
 internal const val HEX_RADIX = 16
 
-internal fun Int.toHexString() = toString(HEX_RADIX)
+/**
+ * Converts [Int] into hexadecimal representation.
+ */
+fun Int.toHexString(): String = toString(HEX_RADIX)
 
-internal fun Long.toHexString() = toString(HEX_RADIX)
+/**
+ * Converts [Long] into hexadecimal representation.
+ */
+fun Long.toHexString(): String = toString(HEX_RADIX)
 
 /**
  * Converts [BigInteger] into hexadecimal representation.
@@ -25,4 +31,4 @@ fun BigInteger.toHexString(): String {
 /**
  * Converts value (which should be in the range 0 to 100) to the percent format.
  */
-fun Float.percent() = this / HUNDRED
+fun Float.percent(): Double = this / HUNDRED

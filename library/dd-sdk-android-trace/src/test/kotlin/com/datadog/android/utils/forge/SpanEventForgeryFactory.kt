@@ -7,7 +7,6 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.core.internal.utils.toHexString
-import com.datadog.android.core.internal.utils.toMutableMap
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
@@ -54,7 +53,8 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
                     id = userInfo?.id,
                     name = userInfo?.name,
                     email = userInfo?.email,
-                    additionalProperties = userInfo?.additionalProperties?.toMutableMap().orEmpty()
+                    additionalProperties = userInfo?.additionalProperties?.toMutableMap()
+                        ?: mutableMapOf()
                 ),
                 network = SpanEvent.Network(
                     SpanEvent.Client(
@@ -76,20 +76,20 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
         )
     }
 
-    fun Forge.exhaustiveMetrics(): MutableMap<String, Number> {
+    private fun Forge.exhaustiveMetrics(): MutableMap<String, Number> {
         return listOf(
             aLong(),
             anInt(),
             aFloat(),
             aDouble()
         ).map { anAlphabeticalString() to it as Number }
-            .toMutableMap()
+            .toMap(mutableMapOf())
     }
 
-    fun Forge.exhaustiveMeta(): MutableMap<String, String> {
+    private fun Forge.exhaustiveMeta(): MutableMap<String, String> {
         return listOf(
             aString()
         ).map { anAlphabeticalString() to it }
-            .toMutableMap()
+            .toMap(mutableMapOf())
     }
 }

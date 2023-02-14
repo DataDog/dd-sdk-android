@@ -9,7 +9,6 @@ package com.datadog.android.trace.internal.domain.event
 import com.datadog.android.core.constraints.DatadogDataConstraints
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.trace.model.SpanEvent
-import com.datadog.android.utils.extension.getString
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.tools.unit.assertj.JsonObjectAssert
@@ -77,7 +76,7 @@ internal class SpanEventSerializerTest {
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
         val spanObject = jsonObject.getAsJsonArray(KEY_SPANS).first() as JsonObject
         assertJsonMatchesInputSpan(spanObject, fakeSpanEvent)
-        Assertions.assertThat(jsonObject.getString(KEY_ENV)).isEqualTo(fakeDatadogContext.env)
+        Assertions.assertThat(jsonObject.get(KEY_ENV).asString).isEqualTo(fakeDatadogContext.env)
     }
 
     @Test

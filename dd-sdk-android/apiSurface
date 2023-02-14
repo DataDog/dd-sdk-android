@@ -135,7 +135,9 @@ fun join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0)): ByteArr
 val NULL_MAP_VALUE: Object
 fun toJsonElement(): com.google.gson.JsonElement
 fun toHexString(): String
-fun percent()
+fun toHexString(): String
+fun toHexString(): String
+fun percent(): Double
 var internalLogger: com.datadog.android.v2.api.InternalLogger
 fun loggableStackTrace(): String
 interface com.datadog.android.core.persistence.Serializer<T: Any>
