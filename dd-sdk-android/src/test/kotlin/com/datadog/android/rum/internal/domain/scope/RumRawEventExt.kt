@@ -13,6 +13,7 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
+import java.lang.reflect.Type
 import java.net.URL
 import java.util.UUID
 
@@ -137,20 +138,23 @@ internal fun Forge.invalidBackgroundEvent(): RumRawEvent {
     )
 }
 
-internal fun Forge.anyRumEvent(): RumRawEvent {
+internal fun Forge.anyRumEvent(excluding: List<Type> = listOf()): RumRawEvent {
+    val allEvents = listOf(
+        startViewEvent(),
+        stopViewEvent(),
+        startActionEvent(),
+        stopActionEvent(),
+        startResourceEvent(),
+        stopResourceEvent(),
+        stopResourceWithErrorEvent(),
+        stopResourceWithStacktraceEvent(),
+        addErrorEvent(),
+        addLongTaskEvent()
+    )
     return this.anElementFrom(
-        listOf(
-            startViewEvent(),
-            stopViewEvent(),
-            startActionEvent(),
-            stopActionEvent(),
-            startResourceEvent(),
-            stopResourceEvent(),
-            stopResourceWithErrorEvent(),
-            stopResourceWithStacktraceEvent(),
-            addErrorEvent(),
-            addLongTaskEvent()
-        )
+        allEvents.filter {
+            it.javaClass !in excluding
+        }
     )
 }
 

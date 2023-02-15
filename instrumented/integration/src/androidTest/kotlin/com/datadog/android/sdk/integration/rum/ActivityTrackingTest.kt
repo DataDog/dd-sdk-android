@@ -29,7 +29,7 @@ internal abstract class ActivityTrackingTest :
 
         instrumentation.waitForIdleSync()
 
-        expectedEvents.add(ExpectedApplicationStart())
+        expectedEvents.add(ExpectedApplicationStartActionEvent())
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
                 docVersion = 2

@@ -39,7 +39,7 @@ internal fun List<JsonObject>.verifyEventMatches(
             is ExpectedApplicationLaunchViewEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedViewEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedGestureEvent -> event.verifyEventMatches(expectedEvent)
-            is ExpectedApplicationStart -> event.verifyEventMatches(expectedEvent)
+            is ExpectedApplicationStartActionEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedResourceEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedErrorEvent -> event.verifyEventMatches(expectedEvent)
             else -> {
@@ -77,7 +77,7 @@ private fun JsonObject.verifyEventMatches(event: ExpectedApplicationLaunchViewEv
     }
 }
 
-private fun JsonObject.verifyEventMatches(event: ExpectedApplicationStart) {
+private fun JsonObject.verifyEventMatches(event: ExpectedApplicationStartActionEvent) {
     assertThat(this)
         .hasField("application") {
             hasField("id", event.rumContext.applicationId)

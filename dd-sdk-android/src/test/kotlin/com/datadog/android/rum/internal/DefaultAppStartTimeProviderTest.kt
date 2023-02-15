@@ -27,10 +27,12 @@ import java.util.concurrent.TimeUnit
 )
 class DefaultAppStartTimeProviderTest {
     @Test
-    fun `M return process start time W appStartTime { N+ }`() {
+    fun `M return process start time W appStartTime { N+ }`(
+        @IntForgery(min = Build.VERSION_CODES.N) apiVersion: Int
+    ) {
         // GIVEN
         val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.O
+        whenever(mockBuildSdkVersionProvider.version()) doReturn apiVersion
         val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
         val startTimeNs = System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(diffMs)
 

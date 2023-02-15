@@ -76,19 +76,19 @@ internal class RumViewManagerScope(
     // region Internal
 
     @WorkerThread
-    internal fun startApplicationLaunchView(event: RumRawEvent, writer: DataWriter<Any>) {
+    private fun startApplicationLaunchView(event: RumRawEvent, writer: DataWriter<Any>) {
         val applicationLaunchViewTimeNs = appStartTimeProvider.appStartTimeNs
         val applicationLaunchViewTime = Time(
             timestamp = TimeUnit.NANOSECONDS.toMillis(applicationLaunchViewTimeNs),
             nanoTime = applicationLaunchViewTimeNs
         )
         val viewScope = createAppLaunchViewScope(applicationLaunchViewTime)
+        applicationDisplayed = true
         viewScope.handleEvent(
             RumRawEvent.ApplicationStarted(event.eventTime, applicationLaunchViewTimeNs),
             writer
         )
         childrenScopes.add(viewScope)
-        applicationDisplayed = true
     }
 
     @WorkerThread

@@ -17,7 +17,7 @@ internal data class ExpectedRumContext(
     val viewId: String
 )
 
-internal data class ExpectedApplicationStart(
+internal data class ExpectedApplicationStartActionEvent(
     override val rumContext: ExpectedRumContext = resolvedRumContext()
 ) : ExpectedEvent
 

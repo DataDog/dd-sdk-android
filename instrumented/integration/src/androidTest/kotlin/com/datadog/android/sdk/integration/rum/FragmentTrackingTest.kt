@@ -27,7 +27,7 @@ internal abstract class FragmentTrackingTest :
         val activity = mockServerRule.activity
         val expectedEvents = mutableListOf<ExpectedEvent>()
 
-        expectedEvents.add(ExpectedApplicationStart())
+        expectedEvents.add(ExpectedApplicationStartActionEvent())
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
                 docVersion = 2

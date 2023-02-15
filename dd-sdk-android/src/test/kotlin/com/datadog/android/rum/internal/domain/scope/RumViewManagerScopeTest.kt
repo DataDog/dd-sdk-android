@@ -525,7 +525,7 @@ internal class RumViewManagerScopeTest {
         CoreFeature.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         testedScope.applicationDisplayed = false
         val fakeEvent = forge.anyRumEvent()
-        val appStartTimeNs = fakeEvent.eventTime.nanoTime - TimeUnit.MILLISECONDS.toNanos(500)
+        val appStartTimeNs = forge.aLong(min = 0, max = fakeEvent.eventTime.nanoTime)
         whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn appStartTimeNs
 
         // When
@@ -533,8 +533,8 @@ internal class RumViewManagerScopeTest {
 
         // Then
         val appStartTimeMs = TimeUnit.NANOSECONDS.toMillis(appStartTimeNs)
-        val scopes = if (fakeEvent is RumRawEvent.StartView) 2 else 1
-        assertThat(testedScope.childrenScopes).hasSize(scopes)
+        val scopeCount = if (fakeEvent is RumRawEvent.StartView) 2 else 1
+        assertThat(testedScope.childrenScopes).hasSize(scopeCount)
         assertThat(testedScope.childrenScopes[0])
             .isInstanceOfSatisfying(RumViewScope::class.java) {
                 assertThat(it.eventTimestamp)
@@ -578,7 +578,8 @@ internal class RumViewManagerScopeTest {
             contextProvider = mockContextProvider
         )
         testedScope.applicationDisplayed = false
-        val fakeEvent = forge.anyRumEvent()
+        // Start view still creates a child scope
+        val fakeEvent = forge.anyRumEvent(excluding = listOf(RumRawEvent.StartView::class.java))
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
@@ -607,7 +608,8 @@ internal class RumViewManagerScopeTest {
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
-        val fakeEvent = forge.anyRumEvent()
+        // Start view still overide the current scope
+        val fakeEvent = forge.anyRumEvent(excluding = listOf(RumRawEvent.StartView::class.java))
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
@@ -652,7 +654,7 @@ internal class RumViewManagerScopeTest {
         }
         val fakeEvent = forge.anyRumEvent()
 
-        val appStartTimeNs = fakeEvent.eventTime.nanoTime - TimeUnit.MILLISECONDS.toNanos(500)
+        val appStartTimeNs = forge.aLong(min = 0, max = fakeEvent.eventTime.nanoTime)
         whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn appStartTimeNs
         CoreFeature.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
 
