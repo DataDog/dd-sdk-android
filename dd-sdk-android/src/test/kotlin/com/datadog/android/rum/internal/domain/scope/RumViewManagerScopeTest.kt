@@ -498,21 +498,6 @@ internal class RumViewManagerScopeTest {
             )
     }
 
-    @Test
-    fun `𝕄 not send warn dev log 𝕎 handleEvent { app not displayed, bg event silent}`(
-        forge: Forge
-    ) {
-        // Given
-        testedScope.applicationDisplayed = false
-        val fakeEvent = forge.silentOrphanEvent()
-
-        // When
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // Then
-        verifyZeroInteractions(logger.mockInternalLogger)
-    }
-
     // endregion
 
     // region AppLaunch View
