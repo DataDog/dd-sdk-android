@@ -6,9 +6,9 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
-internal data class ViewGlobalBounds(
-    val x: Long,
-    val y: Long,
-    val width: Long,
-    val height: Long
+import android.content.res.Configuration
+
+internal data class SystemInformation(
+    val screenBounds: GlobalBounds,
+    val screenOrientation: Int = Configuration.ORIENTATION_UNDEFINED
 )

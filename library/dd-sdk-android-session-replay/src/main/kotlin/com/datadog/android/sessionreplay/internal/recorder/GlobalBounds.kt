@@ -6,4 +6,9 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
-internal data class OrientationChanged(val width: Int, val height: Int)
+internal data class GlobalBounds(
+    val x: Long,
+    val y: Long,
+    val width: Long,
+    val height: Long
+)

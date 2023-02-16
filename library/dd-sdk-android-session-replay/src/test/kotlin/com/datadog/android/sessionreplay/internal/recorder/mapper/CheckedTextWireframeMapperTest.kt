@@ -11,7 +11,7 @@ import android.graphics.drawable.Drawable
 import android.os.Build
 import android.widget.CheckedTextView
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.ViewGlobalBounds
+import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.StringUtils
@@ -63,7 +63,7 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
     lateinit var mockViewUtils: ViewUtils
 
     @Forgery
-    lateinit var fakeViewGlobalBounds: ViewGlobalBounds
+    lateinit var fakeViewGlobalBounds: GlobalBounds
 
     lateinit var mockCheckedTextView: CheckedTextView
 

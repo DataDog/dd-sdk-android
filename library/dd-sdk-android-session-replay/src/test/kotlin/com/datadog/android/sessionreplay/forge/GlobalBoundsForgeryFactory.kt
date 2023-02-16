@@ -6,13 +6,13 @@
 
 package com.datadog.android.sessionreplay.forge
 
-import com.datadog.android.sessionreplay.internal.recorder.ViewGlobalBounds
+import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class ViewGlobalBoundsForgeryFactory : ForgeryFactory<ViewGlobalBounds> {
-    override fun getForgery(forge: Forge): ViewGlobalBounds {
-        return ViewGlobalBounds(
+internal class GlobalBoundsForgeryFactory : ForgeryFactory<GlobalBounds> {
+    override fun getForgery(forge: Forge): GlobalBounds {
+        return GlobalBounds(
             x = forge.aLong(),
             y = forge.aLong(),
             width = forge.aPositiveLong(),

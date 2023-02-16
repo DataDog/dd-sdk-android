@@ -6,12 +6,13 @@
 
 package com.datadog.android.sessionreplay.internal.processor
 
+import android.content.res.Configuration
 import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.sessionreplay.internal.RecordCallback
 import com.datadog.android.sessionreplay.internal.RecordWriter
 import com.datadog.android.sessionreplay.internal.recorder.Node
-import com.datadog.android.sessionreplay.internal.recorder.OrientationChanged
+import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
@@ -36,11 +37,12 @@ internal class RecordedDataProcessor(
     internal var prevRumContext: SessionReplayRumContext = SessionReplayRumContext()
     private var prevSnapshot: List<MobileSegment.Wireframe> = emptyList()
     private var lastSnapshotTimestamp = 0L
+    private var previousOrientation = Configuration.ORIENTATION_UNDEFINED
 
     @MainThread
     override fun processScreenSnapshots(
         nodes: List<Node>,
-        orientationChanged: OrientationChanged?
+        systemInformation: SystemInformation
     ) {
         buildRunnable { timestamp, newContext, currentContext ->
             Runnable {
@@ -50,7 +52,7 @@ internal class RecordedDataProcessor(
                     currentContext,
                     timestamp,
                     nodes,
-                    orientationChanged
+                    systemInformation
                 )
             }
         }?.let { executeRunnable(it) }
@@ -83,7 +85,7 @@ internal class RecordedDataProcessor(
         prevRumContext: SessionReplayRumContext,
         timestamp: Long,
         snapshots: List<Node>,
-        orientationChanged: OrientationChanged?
+        systemInformation: SystemInformation
     ) {
         val wireframes = snapshots.flatMap { nodeFlattener.flattenNode(it) }
 
@@ -95,16 +97,15 @@ internal class RecordedDataProcessor(
         val records: MutableList<MobileSegment.MobileRecord> = LinkedList()
         val isNewView = isNewView(prevRumContext, newRumContext)
         val isTimeForFullSnapshot = isTimeForFullSnapshot()
-        val fullSnapshotRequired = isNewView ||
-            isTimeForFullSnapshot ||
-            (orientationChanged != null)
+        val screenOrientationChanged = systemInformation.screenOrientation != previousOrientation
+        val fullSnapshotRequired = isNewView || isTimeForFullSnapshot || screenOrientationChanged
 
         if (isNewView) {
             handleViewEndRecord(prevRumContext, timestamp)
-            val rootWireframeBounds = wireframes[0].bounds()
+            val screenBounds = systemInformation.screenBounds
             val metaRecord = MobileSegment.MobileRecord.MetaRecord(
                 timestamp,
-                MobileSegment.Data1(rootWireframeBounds.width, rootWireframeBounds.height)
+                MobileSegment.Data1(screenBounds.width, screenBounds.height)
             )
             val focusRecord = MobileSegment.MobileRecord.FocusRecord(
                 timestamp,
@@ -114,10 +115,11 @@ internal class RecordedDataProcessor(
             records.add(focusRecord)
         }
 
-        if (orientationChanged != null) {
+        if (screenOrientationChanged) {
+            val screenBounds = systemInformation.screenBounds
             val viewPortResizeData = MobileSegment.MobileIncrementalData.ViewportResizeData(
-                orientationChanged.width.toLong(),
-                orientationChanged.height.toLong()
+                screenBounds.width,
+                screenBounds.height
             )
             val viewportRecord = MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
                 timestamp,
@@ -144,6 +146,7 @@ internal class RecordedDataProcessor(
             }
         }
         prevSnapshot = wireframes
+        previousOrientation = systemInformation.screenOrientation
         if (records.isNotEmpty()) {
             writer.write(bundleRecordInEnrichedRecord(newRumContext, records))
         }
