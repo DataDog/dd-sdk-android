@@ -14,8 +14,8 @@ import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.log.Logger
 import com.datadog.android.log.LogsFeature
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
-import com.datadog.android.tracing.AndroidTracer
-import com.datadog.android.tracing.TracingFeature
+import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.TracingFeature
 import java.util.UUID
 
 internal object RuntimeConfig {

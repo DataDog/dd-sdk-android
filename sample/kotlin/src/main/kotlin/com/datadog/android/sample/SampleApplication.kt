@@ -22,7 +22,7 @@ import com.datadog.android.log.LogsFeature
 import com.datadog.android.ndk.NdkCrashReportsFeature
 import com.datadog.android.okhttp.DatadogEventListener
 import com.datadog.android.okhttp.rum.RumInterceptor
-import com.datadog.android.okhttp.tracing.TracingInterceptor
+import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.model.ActionEvent
@@ -40,8 +40,8 @@ import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.timber.DatadogTree
-import com.datadog.android.tracing.AndroidTracer
-import com.datadog.android.tracing.TracingFeature
+import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.TracingFeature
 import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray

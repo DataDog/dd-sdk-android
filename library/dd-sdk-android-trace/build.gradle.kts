@@ -43,6 +43,8 @@ android {
         minSdk = AndroidConfig.MIN_SDK
         targetSdk = AndroidConfig.TARGET_SDK
         setLibraryVersion()
+
+        consumerProguardFiles("consumer-rules.pro")
     }
 
     namespace = "com.datadog.android.trace"
@@ -87,9 +89,13 @@ dependencies {
     implementation(project(":dd-sdk-android"))
     implementation(libs.kotlin)
     implementation(libs.gson)
+    implementation(libs.androidXAnnotation)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
+
+    // OpenTracing
+    api(libs.bundles.openTracing)
 
     testImplementation(project(":tools:unit"))
     testImplementation(libs.bundles.jUnit5)
@@ -103,6 +109,9 @@ dependencies {
 unMock {
     keepStartingWith("org.json")
 }
+
+apply(from = "clone_dd_trace.gradle.kts")
+apply(from = "generate_trace_models.gradle.kts")
 
 kotlinConfig()
 junitConfig()

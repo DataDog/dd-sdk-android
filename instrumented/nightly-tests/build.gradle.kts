@@ -101,6 +101,7 @@ dependencies {
     implementation(project(":dd-sdk-android-okhttp"))
     implementation(project(":library:dd-sdk-android-ndk"))
     implementation(project(":library:dd-sdk-android-logs"))
+    implementation(project(":library:dd-sdk-android-trace"))
 
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.gson)

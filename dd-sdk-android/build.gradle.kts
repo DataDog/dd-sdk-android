@@ -140,9 +140,6 @@ dependencies {
     implementation(libs.androidXRecyclerView)
     implementation(libs.androidXWorkManager)
 
-    // OpenTracing
-    api(libs.bundles.openTracing)
-
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
 
@@ -151,6 +148,7 @@ dependencies {
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)
+    testImplementation(libs.bundles.openTracing)
     unmock(libs.robolectric)
 
     // Static Analysis
@@ -173,12 +171,10 @@ unMock {
     keepStartingWith("org.json")
 }
 
-apply(from = "clone_dd_trace.gradle.kts")
 apply(from = "clone_rum_schema.gradle.kts")
 apply(from = "clone_telemetry_schema.gradle.kts")
 apply(from = "generate_rum_models.gradle.kts")
 apply(from = "generate_telemetry_models.gradle.kts")
-apply(from = "generate_trace_models.gradle.kts")
 
 kotlinConfig()
 junitConfig()

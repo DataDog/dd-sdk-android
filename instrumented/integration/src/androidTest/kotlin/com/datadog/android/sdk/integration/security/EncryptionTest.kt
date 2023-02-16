@@ -21,8 +21,8 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.security.Encryption
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayFeature
-import com.datadog.android.tracing.AndroidTracer
-import com.datadog.android.tracing.TracingFeature
+import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.TracingFeature
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.junit4.ForgeRule

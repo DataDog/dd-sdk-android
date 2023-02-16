@@ -7,9 +7,9 @@
 package com.datadog.android.okhttp.rum
 
 import com.datadog.android.core.sampling.RateBasedSampler
-import com.datadog.android.okhttp.tracing.NoOpTracedRequestListener
-import com.datadog.android.okhttp.tracing.TracingInterceptor
-import com.datadog.android.okhttp.tracing.TracingInterceptorNotSendingSpanTest
+import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
+import com.datadog.android.okhttp.trace.TracingInterceptor
+import com.datadog.android.okhttp.trace.TracingInterceptorNotSendingSpanTest
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension

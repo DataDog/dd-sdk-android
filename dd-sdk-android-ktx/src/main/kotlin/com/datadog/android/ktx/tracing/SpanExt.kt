@@ -1,6 +1,6 @@
 package com.datadog.android.ktx.tracing
 
-import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.trace.AndroidTracer
 import io.opentracing.Span
 import io.opentracing.util.GlobalTracer
 

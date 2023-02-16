@@ -10,9 +10,9 @@ import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.okhttp.tracing.TracedRequestListener
-import com.datadog.android.okhttp.tracing.TracingInterceptor
-import com.datadog.android.okhttp.tracing.TracingInterceptorTest
+import com.datadog.android.okhttp.trace.TracedRequestListener
+import com.datadog.android.okhttp.trace.TracingInterceptor
+import com.datadog.android.okhttp.trace.TracingInterceptorTest
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.config.InternalLoggerTestConfiguration

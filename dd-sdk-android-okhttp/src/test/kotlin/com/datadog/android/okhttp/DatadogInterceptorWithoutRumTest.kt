@@ -6,11 +6,11 @@
 
 package com.datadog.android.okhttp
 
-import com.datadog.android.okhttp.tracing.TracingInterceptor
-import com.datadog.android.okhttp.tracing.TracingInterceptorTest
+import com.datadog.android.okhttp.trace.TracingInterceptor
+import com.datadog.android.okhttp.trace.TracingInterceptorTest
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.RumResourceAttributesProvider
-import com.datadog.android.tracing.TracingHeaderType
+import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension

@@ -21,8 +21,8 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.tracing.AndroidTracer
-import com.datadog.android.tracing.TracingFeature
+import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.TracingFeature
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.setStaticValue

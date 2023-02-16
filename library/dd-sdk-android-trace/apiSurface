@@ -1,1 +1,84 @@
-class com.datadog.android.trace.Placeholder
+class com.datadog.android.trace.AndroidTracer : com.datadog.opentracing.DDTracer
+  override fun buildSpan(String): DDSpanBuilder
+  class Builder
+    constructor()
+    fun build(): AndroidTracer
+    fun setTracingHeaderTypes(Set<TracingHeaderType>): Builder
+    fun setServiceName(String): Builder
+    fun setPartialFlushThreshold(Int): Builder
+    fun addGlobalTag(String, String): Builder
+    fun setBundleWithRumEnabled(Boolean): Builder
+  companion object 
+    fun logThrowable(io.opentracing.Span, Throwable)
+    fun logErrorMessage(io.opentracing.Span, String)
+class com.datadog.android.trace.TracingFeature : com.datadog.android.v2.api.StorageBackedFeature
+  override val name: String
+  override fun onInitialize(com.datadog.android.v2.api.SdkCore, android.content.Context, com.datadog.android.v2.api.EnvironmentProvider)
+  override val requestFactory: com.datadog.android.v2.api.RequestFactory
+  override val storageConfiguration: com.datadog.android.v2.api.FeatureStorageConfiguration
+  override fun onStop()
+  class Builder
+    fun useSite(com.datadog.android.DatadogSite): Builder
+    fun useCustomEndpoint(String): Builder
+    fun setSpanEventMapper(com.datadog.android.trace.internal.domain.event.SpanEventMapper): Builder
+    fun build(): TracingFeature
+interface com.datadog.android.trace.internal.domain.event.SpanEventMapper : com.datadog.android.event.EventMapper<com.datadog.android.trace.model.SpanEvent>
+  override fun map(com.datadog.android.trace.model.SpanEvent): com.datadog.android.trace.model.SpanEvent
+data class com.datadog.android.trace.model.SpanEvent
+  constructor(kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.Long, kotlin.Long, kotlin.Long = 0L, Metrics, Meta)
+  val type: kotlin.String
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): SpanEvent
+    fun fromJsonObject(com.google.gson.JsonObject): SpanEvent
+  data class Metrics
+    constructor(kotlin.Long? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Number> = mutableMapOf())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Metrics
+      fun fromJsonObject(com.google.gson.JsonObject): Metrics
+  data class Meta
+    constructor(kotlin.String, Dd, Span, Tracer, Usr, Network, kotlin.collections.MutableMap<kotlin.String, kotlin.String> = mutableMapOf())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Meta
+      fun fromJsonObject(com.google.gson.JsonObject): Meta
+  data class Dd
+    constructor(kotlin.String? = "android")
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dd
+      fun fromJsonObject(com.google.gson.JsonObject): Dd
+  class Span
+    val kind: kotlin.String
+    fun toJson(): com.google.gson.JsonElement
+  data class Tracer
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Tracer
+      fun fromJsonObject(com.google.gson.JsonObject): Tracer
+  data class Usr
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Usr
+      fun fromJsonObject(com.google.gson.JsonObject): Usr
+  data class Network
+    constructor(Client)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Network
+      fun fromJsonObject(com.google.gson.JsonObject): Network
+  data class Client
+    constructor(SimCarrier? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Client
+      fun fromJsonObject(com.google.gson.JsonObject): Client
+  data class SimCarrier
+    constructor(kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): SimCarrier
+      fun fromJsonObject(com.google.gson.JsonObject): SimCarrier
