@@ -7,13 +7,14 @@
 package com.datadog.android.nightly.activities
 
 import android.webkit.WebView
+import com.datadog.android.Datadog
 import com.datadog.android.nightly.utils.measure
 import com.datadog.android.webview.DatadogEventBridge
 
 internal class WebViewTrackingBridgeHostsActivity : WebViewTrackingActivity() {
 
     override fun setupWebView(webView: WebView) {
-        val datadogEventBridge = DatadogEventBridge(listOf("datadoghq.dev"))
+        val datadogEventBridge = DatadogEventBridge(Datadog.globalSdkCore, listOf("datadoghq.dev"))
         measure(TEST_METHOD_NAME) {
             webView.addJavascriptInterface(datadogEventBridge, "DatadogEventBridge")
         }

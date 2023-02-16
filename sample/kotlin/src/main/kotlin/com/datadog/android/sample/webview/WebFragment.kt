@@ -13,6 +13,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import com.datadog.android.Datadog
 import com.datadog.android.sample.R
 import com.datadog.android.webview.DatadogEventBridge
 
@@ -32,7 +33,7 @@ internal class WebFragment : Fragment() {
         webView = rootView.findViewById(R.id.webview)
         webView.webViewClient = WebViewClient()
         webView.settings.javaScriptEnabled = true
-        DatadogEventBridge.setup(webView)
+        DatadogEventBridge.setup(Datadog.globalSdkCore, webView)
         return rootView
     }
 
