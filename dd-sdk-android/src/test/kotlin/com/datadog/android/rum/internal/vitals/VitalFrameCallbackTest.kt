@@ -26,6 +26,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -82,7 +83,7 @@ internal class VitalFrameCallbackTest {
     @Test
     fun `𝕄 do nothing 𝕎 doFrame() {negative duration}`(
         @LongForgery timestampNs: Long,
-        @LongForgery(1, ONE_MILLISSECOND_NS) frameDurationNs: Long
+        @LongForgery(1, ONE_MILLISECOND_NS) frameDurationNs: Long
     ) {
         // Given
         testedFrameCallback.lastFrameTimestampNs = timestampNs + frameDurationNs
@@ -97,7 +98,7 @@ internal class VitalFrameCallbackTest {
     @Test
     fun `𝕄 do nothing 𝕎 doFrame() {too small duration}`(
         @LongForgery timestampNs: Long,
-        @LongForgery(1, ONE_MILLISSECOND_NS) frameDurationNs: Long
+        @LongForgery(1, ONE_MILLISECOND_NS) frameDurationNs: Long
     ) {
         // Given
 
@@ -127,7 +128,7 @@ internal class VitalFrameCallbackTest {
     @Test
     fun `𝕄 forward frame rate to observer 𝕎 doFrame() {two frame timestamp}`(
         @LongForgery timestampNs: Long,
-        @LongForgery(ONE_MILLISSECOND_NS, ONE_SECOND_NS) frameDurationNs: Long
+        @LongForgery(ONE_MILLISECOND_NS, ONE_SECOND_NS) frameDurationNs: Long
     ) {
         // Given
         val expectedFrameRate = ONE_SECOND_NS.toDouble() / frameDurationNs.toDouble()
@@ -144,8 +145,8 @@ internal class VitalFrameCallbackTest {
     @Test
     fun `𝕄 forward scaled frame rate to observer 𝕎 doFrame() {two frame timestamp, with display}`(
         @LongForgery timestampNs: Long,
-        @LongForgery(ONE_MILLISSECOND_NS, QUARTER_SECOND_NS) frameDurationNs: Long,
-        @FloatForgery(.5f, 4f) deviceRefreshRateScale: Float
+        @FloatForgery(.5f, 4f) deviceRefreshRateScale: Float,
+        forge: Forge
     ) {
         // Given
         val mockWindowMgr = mock<WindowManager>()
@@ -154,6 +155,12 @@ internal class VitalFrameCallbackTest {
             .doReturn(mockWindowMgr)
         whenever(mockWindowMgr.defaultDisplay) doReturn mockDisplay
         whenever(mockDisplay.refreshRate) doReturn (60 * deviceRefreshRateScale)
+
+        val oneSecondScaled = ONE_SECOND_NS / deviceRefreshRateScale
+        val frameDurationNs = forge.aLong(
+            min = (oneSecondScaled / VitalFrameCallback.VALID_FPS_RANGE.endInclusive).toLong(),
+            max = (oneSecondScaled / VitalFrameCallback.VALID_FPS_RANGE.start).toLong()
+        )
         val expectedRawFrameRate = ONE_SECOND_NS.toDouble() / frameDurationNs.toDouble()
         val expectedFrameRate = expectedRawFrameRate / deviceRefreshRateScale
 
@@ -182,7 +189,7 @@ internal class VitalFrameCallbackTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 doFrame() {illegal exception when postiong frame}`(
+    fun `𝕄 do nothing 𝕎 doFrame() {illegal exception when posting frame}`(
         @LongForgery timestampNs: Long,
         @StringForgery message: String
     ) {
@@ -211,7 +218,7 @@ internal class VitalFrameCallbackTest {
     }
 
     companion object {
-        const val ONE_MILLISSECOND_NS: Long = 1000L * 1000L
+        const val ONE_MILLISECOND_NS: Long = 1000L * 1000L
         const val QUARTER_SECOND_NS: Long = 250L * 1000L * 1000L
         const val ONE_SECOND_NS: Long = 1000L * 1000L * 1000L
         const val TEN_SECOND_NS: Long = 10L * ONE_SECOND_NS
