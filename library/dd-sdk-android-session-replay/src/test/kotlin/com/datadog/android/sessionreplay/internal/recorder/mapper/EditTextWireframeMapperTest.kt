@@ -10,7 +10,7 @@ import android.content.res.ColorStateList
 import android.os.Build
 import android.widget.EditText
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.ViewGlobalBounds
+import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.internal.utils.StringUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -68,7 +68,7 @@ internal class EditTextWireframeMapperTest : BaseWireframeMapperTest() {
     lateinit var mockViewUtils: ViewUtils
 
     @Forgery
-    lateinit var fakeViewGlobalBounds: ViewGlobalBounds
+    lateinit var fakeViewGlobalBounds: GlobalBounds
 
     @BeforeEach
     fun `set up`() {

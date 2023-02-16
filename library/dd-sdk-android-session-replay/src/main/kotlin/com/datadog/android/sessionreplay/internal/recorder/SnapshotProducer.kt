@@ -11,8 +11,8 @@ import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.sessionreplay.internal.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.GenericWireframeMapper
+import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.datadog.android.sessionreplay.internal.utils.StringUtils
-import com.datadog.android.sessionreplay.internal.utils.ThemeUtils
 import com.datadog.android.sessionreplay.internal.utils.copy
 import com.datadog.android.sessionreplay.internal.utils.shapeStyle
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -22,7 +22,7 @@ internal class SnapshotProducer(
     private val wireframeMapper: GenericWireframeMapper,
     private val viewUtils: ViewUtils = ViewUtils(),
     private val stringUtils: StringUtils = StringUtils,
-    private val themeUtils: ThemeUtils = ThemeUtils
+    private val themeUtils: MiscUtils = MiscUtils
 ) {
 
     fun produce(theme: Theme, rootView: View, pixelsDensity: Float): Node? {

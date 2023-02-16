@@ -12,7 +12,7 @@ import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.RippleDrawable
 import android.os.Build
 import android.view.View
-import com.datadog.android.sessionreplay.internal.recorder.ViewGlobalBounds
+import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.internal.utils.StringUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -33,7 +33,7 @@ internal abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wirefram
     }
 
     protected fun resolveViewGlobalBounds(view: View, pixelsDensity: Float):
-        ViewGlobalBounds {
+        GlobalBounds {
         return viewUtils.resolveViewGlobalBounds(view, pixelsDensity)
     }
 

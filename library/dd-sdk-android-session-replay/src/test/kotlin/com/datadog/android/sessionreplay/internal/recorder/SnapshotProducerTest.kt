@@ -14,8 +14,8 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.mapper.AllowAllWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewScreenshotWireframeMapper
+import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.datadog.android.sessionreplay.internal.utils.StringUtils
-import com.datadog.android.sessionreplay.internal.utils.ThemeUtils
 import com.datadog.android.sessionreplay.internal.utils.copy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.nhaarman.mockitokotlin2.any
@@ -72,7 +72,7 @@ internal class SnapshotProducerTest {
     lateinit var mockStringUtils: StringUtils
 
     @Mock
-    lateinit var mockThemeUtils: ThemeUtils
+    lateinit var mockThemeUtils: MiscUtils
 
     @BeforeEach
     fun `set up`(forge: Forge) {

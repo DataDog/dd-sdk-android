@@ -45,7 +45,8 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(ShapeBorderForgeryFactory())
         forge.addFactory(SessionReplayConfigurationForgeryFactory())
         forge.addFactory(MobileSegmentForgeryFactory())
-        forge.addFactory(ViewGlobalBoundsForgeryFactory())
+        forge.addFactory(GlobalBoundsForgeryFactory())
+        forge.addFactory(SystemInformationForgeryFactory())
 
         forge.useJvmFactories()
     }

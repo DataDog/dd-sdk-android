@@ -6,6 +6,9 @@
 
 package com.datadog.android.sdk.integration.sessionreplay
 
+import android.app.Activity
+import android.graphics.Point
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -60,12 +63,13 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
             .densityNormalized(density)
         val decorHeight = decorView.height.toLong()
             .densityNormalized(density)
+        val screenDimensions = resolveScreenDimensions(this)
 
         val metaRecord = MobileSegment.MobileRecord.MetaRecord(
             System.currentTimeMillis(),
             MobileSegment.Data1(
-                decorWidth,
-                decorHeight
+                screenDimensions.first,
+                screenDimensions.second
             )
         )
         val focusRecord = MobileSegment.MobileRecord.FocusRecord(
@@ -73,8 +77,8 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
             MobileSegment.Data2(true)
         )
         val viewPortResizeData = MobileSegment.MobileIncrementalData.ViewportResizeData(
-            decorWidth,
-            decorHeight
+            screenDimensions.first,
+            screenDimensions.second
         )
         val viewportRecord = MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
             System.currentTimeMillis(),
@@ -203,6 +207,28 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
                 fullSnapshotRecord
             ).map { it.toJson() }
         )
+    }
+
+    @Suppress("DEPRECATION")
+    private fun resolveScreenDimensions(activity: Activity): Pair<Long, Long> {
+        val displayMetrics = activity.resources.displayMetrics
+        val screenDensity = displayMetrics.density
+        val screenHeight: Long
+        val screenWidth: Long
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val currentWindowMetrics = windowManager.currentWindowMetrics
+            val screenBounds = currentWindowMetrics.bounds
+            screenHeight = (screenBounds.bottom - screenBounds.top).toLong()
+                .densityNormalized(screenDensity)
+            screenWidth = (screenBounds.right - screenBounds.left).toLong()
+                .densityNormalized(screenDensity)
+        } else {
+            val size = Point()
+            windowManager.defaultDisplay.getSize(size)
+            screenHeight = size.y.toLong().densityNormalized(screenDensity)
+            screenWidth = size.x.toLong().densityNormalized(screenDensity)
+        }
+        return screenWidth to screenHeight
     }
 
     companion object {

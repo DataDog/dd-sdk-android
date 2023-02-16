@@ -44,7 +44,7 @@ internal class ViewUtils {
                 )
     }
 
-    internal fun resolveViewGlobalBounds(view: View, pixelsDensity: Float): ViewGlobalBounds {
+    internal fun resolveViewGlobalBounds(view: View, pixelsDensity: Float): GlobalBounds {
         val coordinates = IntArray(2)
         // this will always have size >= 2
         @Suppress("UnsafeThirdPartyFunctionCall")
@@ -53,6 +53,6 @@ internal class ViewUtils {
         val y = coordinates[1].densityNormalized(pixelsDensity).toLong()
         val height = view.height.densityNormalized(pixelsDensity).toLong()
         val width = view.width.densityNormalized(pixelsDensity).toLong()
-        return ViewGlobalBounds(x = x, y = y, height = height, width = width)
+        return GlobalBounds(x = x, y = y, height = height, width = width)
     }
 }
