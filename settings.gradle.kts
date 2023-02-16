@@ -25,6 +25,7 @@ include(":library:dd-sdk-android-session-replay")
 include(":library:dd-sdk-android-logs")
 include(":library:dd-sdk-android-ndk")
 include(":library:dd-sdk-android-trace")
+include(":library:dd-sdk-android-webview")
 
 include(":sample:kotlin")
 
