@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
+import com.datadog.android.Datadog
 import com.datadog.android.nightly.R
 import com.datadog.android.nightly.utils.measure
 import com.datadog.android.webview.DatadogEventBridge
@@ -35,7 +36,7 @@ internal open class WebViewTrackingActivity : AppCompatActivity() {
     }
 
     open fun setupWebView(webView: WebView) {
-        val datadogEventBridge = DatadogEventBridge()
+        val datadogEventBridge = DatadogEventBridge(Datadog.globalSdkCore)
         measure(TEST_METHOD_NAME) {
             webView.addJavascriptInterface(datadogEventBridge, "DatadogEventBridge")
         }

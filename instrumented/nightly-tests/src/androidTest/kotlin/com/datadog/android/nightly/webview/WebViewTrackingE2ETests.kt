@@ -42,7 +42,7 @@ internal class WebViewTrackingE2ETests {
     // region Tests
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor()
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setWebViewTrackingHosts(List<String>): Builder
@@ -54,7 +54,7 @@ internal class WebViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(List<String>)
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore, List<String>)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
      */
@@ -72,7 +72,7 @@ internal class WebViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor()
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
      */
@@ -90,7 +90,7 @@ internal class WebViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor()
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setWebViewTrackingHosts(List<String>): Builder
      */
@@ -108,7 +108,7 @@ internal class WebViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor()
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setWebViewTrackingHosts(List<String>): Builder
@@ -122,7 +122,7 @@ internal class WebViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor()
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setWebViewTrackingHosts(List<String>): Builder
@@ -137,7 +137,7 @@ internal class WebViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor()
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setWebViewTrackingHosts(List<String>): Builder

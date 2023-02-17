@@ -64,8 +64,6 @@ internal class DatadogCore(
     internal val features: MutableMap<String, SdkFeature> = mutableMapOf()
 
     internal var rumFeature: RumFeature? = null
-    internal var webViewLogsFeature: WebViewLogsFeature? = null
-    internal var webViewRumFeature: WebViewRumFeature? = null
 
     // TODO RUMM-0000 handle context
     internal val contextProvider: ContextProvider?
@@ -128,7 +126,6 @@ internal class DatadogCore(
             feature
         )
         features[feature.name] = sdkFeature
-        // TODO RUMM-2943 get rid of plugins -> only NDK crash reporting
         sdkFeature.initialize(
             this,
             context.applicationContext
@@ -140,7 +137,6 @@ internal class DatadogCore(
                 // TODO RUMM-0000 Related to above, read from configuration, for now use default
                 DatadogEndpoint.LOGS_US1
             )
-            this.webViewLogsFeature = webViewLogsFeature
             registerFeature(webViewLogsFeature)
         }
     }
@@ -189,8 +185,6 @@ internal class DatadogCore(
             // TODO RUMM-0000 Temporary thing
             when (it.key) {
                 Feature.RUM_FEATURE_NAME -> rumFeature = null
-                WebViewLogsFeature.WEB_LOGS_FEATURE_NAME -> webViewLogsFeature = null
-                WebViewRumFeature.WEB_RUM_FEATURE_NAME -> webViewRumFeature = null
             }
         }
         features.clear()
@@ -326,7 +320,6 @@ internal class DatadogCore(
             registerFeature(rumFeature)
 
             val webViewRumFeature = WebViewRumFeature(configuration.endpointUrl, coreFeature)
-            this.webViewRumFeature = webViewRumFeature
             registerFeature(webViewRumFeature)
         }
     }

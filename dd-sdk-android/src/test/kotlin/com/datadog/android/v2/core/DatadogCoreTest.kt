@@ -441,10 +441,6 @@ internal class DatadogCoreTest {
         testedCore.coreFeature = mockCoreFeature
         val mockRumFeature = mock<RumFeature>()
         testedCore.rumFeature = mockRumFeature
-        val mockWebViewLogsFeature = mock<WebViewLogsFeature>()
-        testedCore.webViewLogsFeature = mockWebViewLogsFeature
-        val mockWebViewRumFeature = mock<WebViewRumFeature>()
-        testedCore.webViewRumFeature = mockWebViewRumFeature
 
         val sdkFeatureMocks = listOf(
             Feature.RUM_FEATURE_NAME,
@@ -468,8 +464,6 @@ internal class DatadogCoreTest {
         }
 
         assertThat(testedCore.rumFeature).isNull()
-        assertThat(testedCore.webViewLogsFeature).isNull()
-        assertThat(testedCore.webViewRumFeature).isNull()
         assertThat(testedCore.contextProvider).isNull()
 
         assertThat(testedCore.features).isEmpty()
