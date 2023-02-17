@@ -155,6 +155,17 @@
             app:layout_constraintTop_toBottomOf="@id/navigation_compose"/>
 
         <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/navigation_picker_components"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/picker_components"
+            android:drawableStart="@drawable/baseline_edit_calendar_24"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/navigation_text_view_components"/>
+
+        <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/navigation_about"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -163,7 +174,7 @@
                 android:drawableStart="@drawable/ic_info_black_24"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/navigation_text_view_components"/>
+                app:layout_constraintTop_toBottomOf="@id/navigation_picker_components"/>
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
