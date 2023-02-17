@@ -11,7 +11,6 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.util.Log
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
@@ -37,8 +36,6 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.ContextProvider
-import com.datadog.android.webview.internal.log.WebViewLogsFeature
-import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -130,15 +127,6 @@ internal class DatadogCore(
             this,
             context.applicationContext
         )
-
-        if (feature.name == Feature.LOGS_FEATURE_NAME) {
-            // TODO RUMM-2996 WebView Logs has its own configuration
-            val webViewLogsFeature = WebViewLogsFeature(
-                // TODO RUMM-0000 Related to above, read from configuration, for now use default
-                DatadogEndpoint.LOGS_US1
-            )
-            registerFeature(webViewLogsFeature)
-        }
     }
 
     /** @inheritDoc */
@@ -318,9 +306,6 @@ internal class DatadogCore(
             val rumFeature = RumFeature(configuration, coreFeature)
             this.rumFeature = rumFeature
             registerFeature(rumFeature)
-
-            val webViewRumFeature = WebViewRumFeature(configuration.endpointUrl, coreFeature)
-            registerFeature(webViewRumFeature)
         }
     }
 

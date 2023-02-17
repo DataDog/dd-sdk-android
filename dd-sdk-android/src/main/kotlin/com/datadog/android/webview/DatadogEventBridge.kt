@@ -11,9 +11,12 @@ import android.webkit.WebView
 import androidx.annotation.MainThread
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.storage.NoOpDataWriter
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.NoOpWebViewEventConsumer
 import com.datadog.android.webview.internal.WebViewEventConsumer
@@ -115,6 +118,11 @@ internal constructor(
                 "tracking but the java script capability was not enabled for the given WebView."
         internal const val DATADOG_EVENT_BRIDGE_NAME = "DatadogEventBridge"
 
+        internal const val RUM_FEATURE_MISSING_INFO =
+            "RUM feature is not registered, will ignore RUM events from WebView."
+        internal const val LOGS_FEATURE_MISSING_INFO =
+            "Logs feature is not registered, will ignore Log events from WebView."
+
         /**
          * Attach the [DatadogEventBridge] to track events from the WebView as part of the same session.
          * This method must be called from the Main Thread.
@@ -145,24 +153,49 @@ internal constructor(
         }
 
         private fun buildWebViewEventConsumer(sdkCore: SdkCore): WebViewEventConsumer<String> {
-            val webViewRumFeature = sdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
-                ?.unwrap<WebViewRumFeature>()
-            val webViewLogsFeature = sdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
-                ?.unwrap<WebViewLogsFeature>()
+            val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+                ?.unwrap<StorageBackedFeature>()
+            val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
+                ?.unwrap<StorageBackedFeature>()
+
+            val webViewRumFeature = if (rumFeature != null) {
+                WebViewRumFeature(rumFeature.requestFactory, (sdkCore as DatadogCore).coreFeature)
+                    .apply { sdkCore.registerFeature(this) }
+            } else {
+                internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    InternalLogger.Target.USER,
+                    RUM_FEATURE_MISSING_INFO
+                )
+                null
+            }
+
+            val webViewLogsFeature = if (logsFeature != null) {
+                WebViewLogsFeature(logsFeature.requestFactory)
+                    .apply { sdkCore.registerFeature(this) }
+            } else {
+                internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    InternalLogger.Target.USER,
+                    LOGS_FEATURE_MISSING_INFO
+                )
+                null
+            }
+
             val contextProvider = WebViewRumEventContextProvider()
 
-            if (webViewLogsFeature == null || webViewRumFeature == null) {
+            if (webViewLogsFeature == null && webViewRumFeature == null) {
                 return NoOpWebViewEventConsumer()
             } else {
                 return MixedWebViewEventConsumer(
                     WebViewRumEventConsumer(
                         sdkCore = sdkCore,
-                        dataWriter = webViewRumFeature.dataWriter,
+                        dataWriter = webViewRumFeature?.dataWriter ?: NoOpDataWriter(),
                         contextProvider = contextProvider
                     ),
                     WebViewLogEventConsumer(
                         sdkCore = sdkCore,
-                        userLogsWriter = webViewLogsFeature.dataWriter,
+                        userLogsWriter = webViewLogsFeature?.dataWriter ?: NoOpDataWriter(),
                         rumContextProvider = contextProvider
                     )
                 )

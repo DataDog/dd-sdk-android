@@ -20,11 +20,10 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.android.v2.core.storage.NoOpDataWriter
-import com.datadog.android.v2.rum.internal.net.RumRequestFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class WebViewRumFeature(
-    endpointUrl: String,
+    override val requestFactory: RequestFactory,
     private val coreFeature: CoreFeature
 ) : StorageBackedFeature {
 
@@ -44,7 +43,6 @@ internal class WebViewRumFeature(
         initialized.set(true)
     }
 
-    override val requestFactory: RequestFactory = RumRequestFactory(endpointUrl)
     override val storageConfiguration: FeatureStorageConfiguration =
         FeatureStorageConfiguration.DEFAULT
 

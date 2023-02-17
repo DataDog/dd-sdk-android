@@ -13,9 +13,13 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.RequestFactory
+import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.storage.NoOpDataWriter
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
@@ -24,10 +28,14 @@ import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
+import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -63,35 +71,41 @@ internal class DatadogEventBridgeTest {
     lateinit var mockCore: DatadogCore
 
     @Mock
-    lateinit var mockWebViewRumFeatureScope: FeatureScope
+    lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock
-    lateinit var mockWebViewLogsFeatureScope: FeatureScope
+    lateinit var mockLogsFeatureScope: FeatureScope
 
     @Mock
-    lateinit var mockWebViewRumFeature: WebViewRumFeature
+    lateinit var mockRumFeature: StorageBackedFeature
 
     @Mock
-    lateinit var mockWebViewLogsFeature: WebViewLogsFeature
+    lateinit var mockLogsFeature: StorageBackedFeature
+
+    @Mock
+    lateinit var mockRumRequestFactory: RequestFactory
+
+    @Mock
+    lateinit var mockLogsRequestFactory: RequestFactory
 
     @BeforeEach
     fun `set up`() {
         whenever(
-            mockCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
-        ) doReturn mockWebViewRumFeatureScope
+            mockCore.getFeature(Feature.RUM_FEATURE_NAME)
+        ) doReturn mockRumFeatureScope
         whenever(
-            mockCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
-        ) doReturn mockWebViewLogsFeatureScope
+            mockCore.getFeature(Feature.LOGS_FEATURE_NAME)
+        ) doReturn mockLogsFeatureScope
 
         whenever(
-            mockWebViewRumFeatureScope.unwrap<WebViewRumFeature>()
-        ) doReturn mockWebViewRumFeature
+            mockRumFeatureScope.unwrap<StorageBackedFeature>()
+        ) doReturn mockRumFeature
         whenever(
-            mockWebViewLogsFeatureScope.unwrap<WebViewLogsFeature>()
-        ) doReturn mockWebViewLogsFeature
+            mockLogsFeatureScope.unwrap<StorageBackedFeature>()
+        ) doReturn mockLogsFeature
 
-        whenever(mockWebViewRumFeature.dataWriter) doReturn mock()
-        whenever(mockWebViewLogsFeature.dataWriter) doReturn mock()
+        whenever(mockRumFeature.requestFactory) doReturn mockRumRequestFactory
+        whenever(mockLogsFeature.requestFactory) doReturn mockLogsRequestFactory
 
         whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
 
@@ -104,6 +118,12 @@ internal class DatadogEventBridgeTest {
 
     @Test
     fun `M create a default WebEventConsumer W init()`() {
+        // Given
+        whenever(mockCore.registerFeature(any())) doAnswer {
+            val feature = it.getArgument<Feature>(0)
+            feature.onInitialize(mockCore, mock(), mock())
+        }
+
         // When
         val bridge = DatadogEventBridge(mockCore)
 
@@ -115,6 +135,102 @@ internal class DatadogEventBridgeTest {
             .isInstanceOf(WebViewLogEventConsumer::class.java)
         assertThat(mixedConsumer.rumEventConsumer)
             .isInstanceOf(WebViewRumEventConsumer::class.java)
+
+        argumentCaptor<Feature> {
+            verify(mockCore, times(2)).registerFeature(capture())
+
+            val webViewRumFeature = firstValue
+            val webViewLogsFeature = secondValue
+
+            assertThat((webViewRumFeature as WebViewRumFeature).requestFactory)
+                .isSameAs(mockRumRequestFactory)
+            assertThat((webViewLogsFeature as WebViewLogsFeature).requestFactory)
+                .isSameAs(mockLogsRequestFactory)
+        }
+    }
+
+    @Test
+    fun `M create a default WebEventConsumer W init() {RUM feature is not registered}`() {
+        // Given
+        whenever(mockCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
+        whenever(mockCore.registerFeature(any())) doAnswer {
+            val feature = it.getArgument<Feature>(0)
+            feature.onInitialize(mockCore, mock(), mock())
+        }
+
+        // When
+        val bridge = DatadogEventBridge(mockCore)
+
+        // Then
+        val consumer = bridge.webViewEventConsumer
+        assertThat(consumer).isInstanceOf(MixedWebViewEventConsumer::class.java)
+        val mixedConsumer = consumer as MixedWebViewEventConsumer
+        assertThat(mixedConsumer.logsEventConsumer)
+            .isInstanceOf(WebViewLogEventConsumer::class.java)
+        assertThat((mixedConsumer.logsEventConsumer as WebViewLogEventConsumer).userLogsWriter)
+            .isNotInstanceOf(NoOpDataWriter::class.java)
+        assertThat(mixedConsumer.rumEventConsumer)
+            .isInstanceOf(WebViewRumEventConsumer::class.java)
+        assertThat((mixedConsumer.rumEventConsumer as WebViewRumEventConsumer).dataWriter)
+            .isInstanceOf(NoOpDataWriter::class.java)
+
+        argumentCaptor<Feature> {
+            verify(mockCore, times(1)).registerFeature(capture())
+
+            val webViewLogsFeature = firstValue
+
+            assertThat((webViewLogsFeature as WebViewLogsFeature).requestFactory)
+                .isSameAs(mockLogsRequestFactory)
+        }
+
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                DatadogEventBridge.RUM_FEATURE_MISSING_INFO
+            )
+    }
+
+    @Test
+    fun `M create a default WebEventConsumer W init() {Logs feature is not registered}`() {
+        // Given
+        whenever(mockCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
+        whenever(mockCore.registerFeature(any())) doAnswer {
+            val feature = it.getArgument<Feature>(0)
+            feature.onInitialize(mockCore, mock(), mock())
+        }
+
+        // When
+        val bridge = DatadogEventBridge(mockCore)
+
+        // Then
+        val consumer = bridge.webViewEventConsumer
+        assertThat(consumer).isInstanceOf(MixedWebViewEventConsumer::class.java)
+        val mixedConsumer = consumer as MixedWebViewEventConsumer
+        assertThat(mixedConsumer.logsEventConsumer)
+            .isInstanceOf(WebViewLogEventConsumer::class.java)
+        assertThat((mixedConsumer.logsEventConsumer as WebViewLogEventConsumer).userLogsWriter)
+            .isInstanceOf(NoOpDataWriter::class.java)
+        assertThat(mixedConsumer.rumEventConsumer)
+            .isInstanceOf(WebViewRumEventConsumer::class.java)
+        assertThat((mixedConsumer.rumEventConsumer as WebViewRumEventConsumer).dataWriter)
+            .isNotInstanceOf(NoOpDataWriter::class.java)
+
+        argumentCaptor<Feature> {
+            verify(mockCore, times(1)).registerFeature(capture())
+
+            val webViewRumFeature = firstValue
+
+            assertThat((webViewRumFeature as WebViewRumFeature).requestFactory)
+                .isSameAs(mockRumRequestFactory)
+        }
+
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                DatadogEventBridge.LOGS_FEATURE_MISSING_INFO
+            )
     }
 
     @Test
