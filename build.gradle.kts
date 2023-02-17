@@ -82,7 +82,8 @@ tasks.register("assembleAll") {
         ":library:dd-sdk-android-session-replay:assemble",
         ":library:dd-sdk-android-logs:assemble",
         ":library:dd-sdk-android-ndk:assemble",
-        ":library:dd-sdk-android-trace:assemble"
+        ":library:dd-sdk-android-trace:assemble",
+        ":library:dd-sdk-android-webview:assemble"
     )
 }
 
@@ -102,7 +103,8 @@ tasks.register("unitTestRelease") {
         ":library:dd-sdk-android-session-replay:testReleaseUnitTest",
         ":library:dd-sdk-android-logs:testReleaseUnitTest",
         ":library:dd-sdk-android-ndk:testReleaseUnitTest",
-        ":library:dd-sdk-android-trace:testReleaseUnitTest"
+        ":library:dd-sdk-android-trace:testReleaseUnitTest",
+        ":library:dd-sdk-android-webview:testReleaseUnitTest"
     )
 }
 
@@ -122,7 +124,8 @@ tasks.register("unitTestDebug") {
         ":library:dd-sdk-android-session-replay:testDebugUnitTest",
         ":library:dd-sdk-android-logs:testDebugUnitTest",
         ":library:dd-sdk-android-ndk:testDebugUnitTest",
-        ":library:dd-sdk-android-trace:testDebugUnitTest"
+        ":library:dd-sdk-android-trace:testDebugUnitTest",
+        ":library:dd-sdk-android-webview:testDebugUnitTest"
     )
 }
 
@@ -157,7 +160,8 @@ tasks.register("lintCheckAll") {
         ":library:dd-sdk-android-session-replay:lintRelease",
         ":library:dd-sdk-android-logs:lintRelease",
         ":library:dd-sdk-android-ndk:lintRelease",
-        ":library:dd-sdk-android-trace:lintRelease"
+        ":library:dd-sdk-android-trace:lintRelease",
+        ":library:dd-sdk-android-webview:lintRelease"
     )
 }
 
@@ -177,7 +181,8 @@ tasks.register("checkThirdPartyLicensesAll") {
         ":library:dd-sdk-android-session-replay:checkThirdPartyLicences",
         ":library:dd-sdk-android-logs:checkThirdPartyLicences",
         ":library:dd-sdk-android-ndk:checkThirdPartyLicences",
-        ":library:dd-sdk-android-trace:checkThirdPartyLicences"
+        ":library:dd-sdk-android-trace:checkThirdPartyLicences",
+        ":library:dd-sdk-android-webview:checkThirdPartyLicences"
     )
 }
 
@@ -197,7 +202,8 @@ tasks.register("checkApiSurfaceChangesAll") {
         ":library:dd-sdk-android-session-replay:checkApiSurfaceChanges",
         ":library:dd-sdk-android-logs:checkApiSurfaceChanges",
         ":library:dd-sdk-android-ndk:checkApiSurfaceChanges",
-        ":library:dd-sdk-android-trace:checkApiSurfaceChanges"
+        ":library:dd-sdk-android-trace:checkApiSurfaceChanges",
+        ":library:dd-sdk-android-webview:checkApiSurfaceChanges"
     )
 }
 
@@ -221,7 +227,8 @@ tasks.register("koverReportAll") {
         ":library:dd-sdk-android-session-replay:koverXmlReport",
         ":library:dd-sdk-android-logs:koverXmlReport",
         ":library:dd-sdk-android-ndk:koverXmlReport",
-        ":library:dd-sdk-android-trace:koverXmlReport"
+        ":library:dd-sdk-android-trace:koverXmlReport",
+        ":library:dd-sdk-android-webview:koverXmlReport"
     )
 }
 
