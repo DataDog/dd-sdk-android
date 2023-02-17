@@ -112,9 +112,14 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
                 CheckableWireframeMapper.CHECKBOX_KEY_NAME
             )
         ).thenReturn(fakeGeneratedIdentifier)
-        whenever(mockTextWireframeMapper.map(mockCheckedTextView, fakePixelDensity))
+        whenever(mockTextWireframeMapper.map(mockCheckedTextView, fakeSystemInformation))
             .thenReturn(fakeTextWireframes)
-        whenever(mockViewUtils.resolveViewGlobalBounds(mockCheckedTextView, fakePixelDensity))
+        whenever(
+            mockViewUtils.resolveViewGlobalBounds(
+                mockCheckedTextView,
+                fakeSystemInformation.screenDensity
+            )
+        )
             .thenReturn(fakeViewGlobalBounds)
         testedCheckedTextWireframeMapper = CheckedTextViewWireframeMapper(
             textWireframeMapper = mockTextWireframeMapper,
@@ -137,7 +142,7 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + fakeViewGlobalBounds.width -
-                fakePaddingRight.toLong().densityNormalized(fakePixelDensity),
+                fakePaddingRight.toLong().densityNormalized(fakeSystemInformation.screenDensity),
             y = fakeViewGlobalBounds.y,
             width = checkBoxSize,
             height = checkBoxSize,
@@ -154,7 +159,7 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
-            fakePixelDensity
+            fakeSystemInformation
         )
 
         // Then
@@ -173,7 +178,7 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + fakeViewGlobalBounds.width -
-                fakePaddingRight.toLong().densityNormalized(fakePixelDensity),
+                fakePaddingRight.toLong().densityNormalized(fakeSystemInformation.screenDensity),
             y = fakeViewGlobalBounds.y,
             width = checkBoxSize,
             height = checkBoxSize,
@@ -187,7 +192,7 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
-            fakePixelDensity
+            fakeSystemInformation
         )
 
         // Then
@@ -206,7 +211,7 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + fakeViewGlobalBounds.width -
-                fakePaddingRight.toLong().densityNormalized(fakePixelDensity),
+                fakePaddingRight.toLong().densityNormalized(fakeSystemInformation.screenDensity),
             y = fakeViewGlobalBounds.y,
             width = 0,
             height = 0,
@@ -220,7 +225,7 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
-            fakePixelDensity
+            fakeSystemInformation
         )
 
         // Then
@@ -240,7 +245,7 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + fakeViewGlobalBounds.width -
-                fakePaddingRight.toLong().densityNormalized(fakePixelDensity),
+                fakePaddingRight.toLong().densityNormalized(fakeSystemInformation.screenDensity),
             y = fakeViewGlobalBounds.y,
             width = checkBoxSize,
             height = checkBoxSize,
@@ -253,7 +258,7 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
-            fakePixelDensity
+            fakeSystemInformation
         )
 
         // Then
@@ -273,7 +278,7 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + fakeViewGlobalBounds.width -
-                fakePaddingRight.toLong().densityNormalized(fakePixelDensity),
+                fakePaddingRight.toLong().densityNormalized(fakeSystemInformation.screenDensity),
             y = fakeViewGlobalBounds.y,
             width = checkBoxSize,
             height = checkBoxSize,
@@ -286,7 +291,7 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
-            fakePixelDensity
+            fakeSystemInformation
         )
 
         // Then
@@ -304,7 +309,7 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + fakeViewGlobalBounds.width -
-                fakePaddingRight.toLong().densityNormalized(fakePixelDensity),
+                fakePaddingRight.toLong().densityNormalized(fakeSystemInformation.screenDensity),
             y = fakeViewGlobalBounds.y,
             width = checkBoxSize,
             height = checkBoxSize,
@@ -317,7 +322,7 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
-            fakePixelDensity
+            fakeSystemInformation
         )
 
         // Then
@@ -337,7 +342,7 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedCheckedTextWireframeMapper.map(
             mockCheckedTextView,
-            fakePixelDensity
+            fakeSystemInformation
         )
 
         // Then
@@ -350,7 +355,8 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
 
     private fun resolveCheckBoxSize(): Long {
         val size = fakeCheckMarkHeight - fakePaddingBottom - fakePaddingTop
-        return (size * fakeTextSize / (fakeTextSize - 1)).toLong().densityNormalized(fakePixelDensity)
+        return (size * fakeTextSize / (fakeTextSize - 1)).toLong()
+            .densityNormalized(fakeSystemInformation.screenDensity)
     }
 
     // endregion

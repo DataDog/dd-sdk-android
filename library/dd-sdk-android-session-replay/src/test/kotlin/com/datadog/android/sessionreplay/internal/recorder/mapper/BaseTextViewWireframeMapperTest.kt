@@ -61,14 +61,14 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         }
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes().map {
             it.copy(
                 textStyle = MobileSegment.TextStyle(
                     expectedFontFamily,
-                    fakeFontSize.toLong().densityNormalized(fakePixelDensity),
+                    fakeFontSize.toLong().densityNormalized(fakeSystemInformation.screenDensity),
                     fakeStyleColor
                 )
             )
@@ -91,7 +91,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         }
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes().map {
@@ -121,7 +121,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         }
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes().map {
@@ -151,14 +151,14 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             whenever(this.totalPaddingEnd).thenReturn(fakeTextPaddingEnd)
         }
         val expectedWireframeTextPadding = MobileSegment.Padding(
-            fakeTextPaddingTop.densityNormalized(fakePixelDensity).toLong(),
-            fakeTextPaddingBottom.densityNormalized(fakePixelDensity).toLong(),
-            fakeTextPaddingStart.densityNormalized(fakePixelDensity).toLong(),
-            fakeTextPaddingEnd.densityNormalized(fakePixelDensity).toLong()
+            fakeTextPaddingTop.densityNormalized(fakeSystemInformation.screenDensity).toLong(),
+            fakeTextPaddingBottom.densityNormalized(fakeSystemInformation.screenDensity).toLong(),
+            fakeTextPaddingStart.densityNormalized(fakeSystemInformation.screenDensity).toLong(),
+            fakeTextPaddingEnd.densityNormalized(fakeSystemInformation.screenDensity).toLong()
         )
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes().map {
@@ -205,7 +205,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         }
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes().map {

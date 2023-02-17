@@ -80,9 +80,14 @@ internal class EditTextWireframeMapperTest : BaseWireframeMapperTest() {
             )
         ).thenReturn(fakeGeneratedIdentifier)
         whenever(mockEditText.backgroundTintList).thenReturn(mockBackgroundTintList)
-        whenever(mockTextWireframeMapper.map(mockEditText, fakePixelDensity))
+        whenever(mockTextWireframeMapper.map(mockEditText, fakeSystemInformation))
             .thenReturn(fakeTextWireframes)
-        whenever(mockViewUtils.resolveViewGlobalBounds(mockEditText, fakePixelDensity))
+        whenever(
+            mockViewUtils.resolveViewGlobalBounds(
+                mockEditText,
+                fakeSystemInformation.screenDensity
+            )
+        )
             .thenReturn(fakeViewGlobalBounds)
         testedEditTextWireframeMapper = EditTextWireframeMapper(
             mockTextWireframeMapper,
@@ -112,13 +117,13 @@ internal class EditTextWireframeMapperTest : BaseWireframeMapperTest() {
         )
 
         // When
-        assertThat(testedEditTextWireframeMapper.map(mockEditText, fakePixelDensity))
+        assertThat(testedEditTextWireframeMapper.map(mockEditText, fakeSystemInformation))
             .isEqualTo(fakeTextWireframes + expectedHintShapeWireframe)
     }
 
     @Test
     fun `M default to textMapper W map() { sdkVersion below LOLIPOP }`() {
-        assertThat(testedEditTextWireframeMapper.map(mockEditText, fakePixelDensity))
+        assertThat(testedEditTextWireframeMapper.map(mockEditText, fakeSystemInformation))
             .isEqualTo(fakeTextWireframes)
     }
 
@@ -133,7 +138,7 @@ internal class EditTextWireframeMapperTest : BaseWireframeMapperTest() {
         ).thenReturn(null)
 
         // Then
-        assertThat(testedEditTextWireframeMapper.map(mockEditText, fakePixelDensity))
+        assertThat(testedEditTextWireframeMapper.map(mockEditText, fakeSystemInformation))
             .isEqualTo(fakeTextWireframes)
     }
 }

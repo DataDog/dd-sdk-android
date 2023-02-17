@@ -53,26 +53,12 @@ internal class MiscUtilsTest {
     @Mock
     lateinit var mockTheme: Theme
 
+    // region Theme color
+
     @Test
     fun `M resolve theme color W resolveThemeColor{ theme has color }`(forge: Forge) {
         // Given
-        val fakeColor = forge.aPositiveInt()
-        whenever(
-            mockTheme.resolveAttribute(
-                eq(android.R.attr.windowBackground),
-                any(),
-                eq(true)
-            )
-        )
-            .doAnswer {
-                val typedValue = it.getArgument<TypedValue>(1)
-                typedValue.data = fakeColor
-                typedValue.type = forge.anInt(
-                    min = TypedValue.TYPE_FIRST_COLOR_INT,
-                    max = TypedValue.TYPE_LAST_COLOR_INT + 1
-                )
-                true
-            }
+        val fakeColor = forge.forgeThemeColor(mockTheme)
 
         // Then
         assertThat(MiscUtils.resolveThemeColor(mockTheme)).isEqualTo(fakeColor)
@@ -81,32 +67,25 @@ internal class MiscUtilsTest {
     @Test
     fun `M return null W resolveThemeColor{ theme has no color }`(forge: Forge) {
         // Given
-        val fakeColor = forge.aPositiveInt()
-        whenever(
-            mockTheme.resolveAttribute(
-                eq(android.R.attr.windowBackground),
-                any(),
-                eq(true)
-            )
-        )
-            .doAnswer {
-                val typedValue = it.getArgument<TypedValue>(1)
-                typedValue.data = fakeColor
-                typedValue.type = forge.anElementFrom(
-                    forge.anInt(min = Int.MIN_VALUE, max = TypedValue.TYPE_FIRST_COLOR_INT),
-                    forge.anInt(min = TypedValue.TYPE_LAST_COLOR_INT + 1, max = Int.MAX_VALUE)
-                )
-                true
-            }
+        forge.forgeThemeInvalidNoColor(mockTheme)
 
         // Then
         assertThat(MiscUtils.resolveThemeColor(mockTheme)).isNull()
     }
 
+    // endregion
+
+    // region System Information
+
     @Suppress("DEPRECATION")
     @Test
     fun `M resolve system information W resolveSystemInformation`(forge: Forge) {
         // Given
+        val fakeThemeColor = forge.forgeThemeColor(mockTheme)
+        val expectedThemeColorAsHexa = StringUtils.formatColorAndAlphaAsHexa(
+            fakeThemeColor,
+            MiscUtils.OPAQUE_ALPHA_VALUE
+        )
         val fakeDensity = forge.aPositiveFloat()
         val fakeScreenWidth = forge.aPositiveInt()
         val fakeScreenHeight = forge.aPositiveInt()
@@ -141,6 +120,7 @@ internal class MiscUtilsTest {
         val mockActivity: Activity = mock {
             whenever(it.windowManager).thenReturn(mockWindowManager)
             whenever(it.resources).thenReturn(mockResources)
+            whenever(it.theme).thenReturn(mockTheme)
         }
 
         // When
@@ -150,7 +130,9 @@ internal class MiscUtilsTest {
         assertThat(systemInformation).isEqualTo(
             SystemInformation(
                 screenBounds = GlobalBounds(0, 0, expectedScreenWidth, expectedScreenHeight),
-                screenOrientation = fakeOrientation
+                screenOrientation = fakeOrientation,
+                screenDensity = fakeDensity,
+                themeColor = expectedThemeColorAsHexa
             )
         )
     }
@@ -159,6 +141,11 @@ internal class MiscUtilsTest {
     @Test
     fun `M resolve system information W resolveSystemInformation{ R and above }`(forge: Forge) {
         // Given
+        val fakeThemeColor = forge.forgeThemeColor(mockTheme)
+        val expectedThemeColorAsHexa = StringUtils.formatColorAndAlphaAsHexa(
+            fakeThemeColor,
+            MiscUtils.OPAQUE_ALPHA_VALUE
+        )
         val fakeDensity = forge.aPositiveFloat()
         val fakeScreenWidth = forge.aPositiveInt(strict = true)
         val fakeScreenHeight = forge.aPositiveInt(strict = true)
@@ -198,6 +185,7 @@ internal class MiscUtilsTest {
         val mockActivity: Activity = mock {
             whenever(it.windowManager).thenReturn(mockWindowManager)
             whenever(it.resources).thenReturn(mockResources)
+            whenever(it.theme).thenReturn(mockTheme)
         }
 
         // When
@@ -206,13 +194,10 @@ internal class MiscUtilsTest {
         // Then
         assertThat(systemInformation).isEqualTo(
             SystemInformation(
-                screenBounds = GlobalBounds(
-                    0,
-                    0,
-                    expectedScreenWidth,
-                    expectedScreenHeight
-                ),
-                screenOrientation = fakeOrientation
+                screenBounds = GlobalBounds(0, 0, expectedScreenWidth, expectedScreenHeight),
+                screenOrientation = fakeOrientation,
+                screenDensity = fakeDensity,
+                themeColor = expectedThemeColorAsHexa
             )
         )
     }
@@ -222,6 +207,12 @@ internal class MiscUtilsTest {
         forge: Forge
     ) {
         // Given
+        val fakeThemeColor = forge.forgeThemeColor(mockTheme)
+        val fakeDensity = forge.aPositiveFloat()
+        val expectedThemeColorAsHexa = StringUtils.formatColorAndAlphaAsHexa(
+            fakeThemeColor,
+            MiscUtils.OPAQUE_ALPHA_VALUE
+        )
         val fakeOrientation = forge.anElementFrom(
             intArrayOf(
                 Configuration.ORIENTATION_UNDEFINED,
@@ -230,12 +221,17 @@ internal class MiscUtilsTest {
             )
         )
         val fakeConfiguration = Configuration().apply { orientation = fakeOrientation }
+        val fakeDisplayMetrics = DisplayMetrics().apply {
+            density = fakeDensity
+        }
         val mockResources: Resources = mock {
             whenever(it.configuration).thenReturn(fakeConfiguration)
+            whenever(it.displayMetrics).thenReturn(fakeDisplayMetrics)
         }
         val mockActivity: Activity = mock {
             whenever(it.windowManager).thenReturn(null)
             whenever(it.resources).thenReturn(mockResources)
+            whenever(it.theme).thenReturn(mockTheme)
         }
 
         // When
@@ -245,8 +241,99 @@ internal class MiscUtilsTest {
         assertThat(systemInformation).isEqualTo(
             SystemInformation(
                 screenBounds = GlobalBounds(0, 0, 0, 0),
-                screenOrientation = fakeOrientation
+                screenOrientation = fakeOrientation,
+                screenDensity = fakeDensity,
+                themeColor = expectedThemeColorAsHexa
             )
         )
     }
+
+    @Test
+    fun `M return null theme color W resolveSystemInformation{theme color is invalid}`(
+        forge: Forge
+    ) {
+        // Given
+        forge.forgeThemeInvalidNoColor(mockTheme)
+        val fakeDensity = forge.aPositiveFloat()
+        val fakeOrientation = forge.anElementFrom(
+            intArrayOf(
+                Configuration.ORIENTATION_UNDEFINED,
+                Configuration.ORIENTATION_LANDSCAPE,
+                Configuration.ORIENTATION_PORTRAIT
+            )
+        )
+        val fakeConfiguration = Configuration().apply { orientation = fakeOrientation }
+        val fakeDisplayMetrics = DisplayMetrics().apply {
+            density = fakeDensity
+        }
+        val mockResources: Resources = mock {
+            whenever(it.configuration).thenReturn(fakeConfiguration)
+            whenever(it.displayMetrics).thenReturn(fakeDisplayMetrics)
+        }
+        val mockActivity: Activity = mock {
+            whenever(it.windowManager).thenReturn(null)
+            whenever(it.resources).thenReturn(mockResources)
+            whenever(it.theme).thenReturn(mockTheme)
+        }
+
+        // When
+        val systemInformation = MiscUtils.resolveSystemInformation(mockActivity)
+
+        // Then
+        assertThat(systemInformation).isEqualTo(
+            SystemInformation(
+                screenBounds = GlobalBounds(0, 0, 0, 0),
+                screenOrientation = fakeOrientation,
+                screenDensity = fakeDensity,
+                themeColor = null
+            )
+        )
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun Forge.forgeThemeColor(theme: Theme): Int {
+        val fakeColor = aPositiveInt()
+        whenever(
+            theme.resolveAttribute(
+                eq(android.R.attr.windowBackground),
+                any(),
+                eq(true)
+            )
+        ).doAnswer {
+            val typedValue = it.getArgument<TypedValue>(1)
+            typedValue.data = fakeColor
+            typedValue.type = anInt(
+                min = TypedValue.TYPE_FIRST_COLOR_INT,
+                max = TypedValue.TYPE_LAST_COLOR_INT + 1
+            )
+            true
+        }
+
+        return fakeColor
+    }
+    private fun Forge.forgeThemeInvalidNoColor(theme: Theme): Int {
+        val fakeColor = aPositiveInt()
+        whenever(
+            theme.resolveAttribute(
+                eq(android.R.attr.windowBackground),
+                any(),
+                eq(true)
+            )
+        ).doAnswer {
+            val typedValue = it.getArgument<TypedValue>(1)
+            typedValue.data = fakeColor
+            typedValue.type = anElementFrom(
+                anInt(min = Int.MIN_VALUE, max = TypedValue.TYPE_FIRST_COLOR_INT),
+                anInt(min = TypedValue.TYPE_LAST_COLOR_INT + 1, max = Int.MAX_VALUE)
+            )
+            true
+        }
+
+        return fakeColor
+    }
+
+    // endregion
 }

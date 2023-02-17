@@ -25,7 +25,6 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -67,9 +66,6 @@ internal class WindowsOnDrawListenerTest {
     @Mock
     lateinit var mockDebouncer: Debouncer
 
-    @FloatForgery(min = 1.0f, max = 100.0f)
-    var fakeDensity: Float = 0f
-
     @IntForgery(min = 0)
     var fakeDecorWidth: Int = 0
 
@@ -97,7 +93,7 @@ internal class WindowsOnDrawListenerTest {
         fakeWindowsSnapshots = fakeMockedWindows.map { forge.getForgery() }
         whenever(mockActivity.theme).thenReturn(mockTheme)
         fakeMockedWindows.forEachIndexed { index, window ->
-            whenever(mockSnapshotProducer.produce(mockTheme, window.decorView, fakeDensity))
+            whenever(mockSnapshotProducer.produce(window.decorView, fakeSystemInformation))
                 .thenReturn(fakeWindowsSnapshots[index])
         }
         whenever(mockDecorView.width).thenReturn(fakeDecorWidth)
@@ -120,7 +116,6 @@ internal class WindowsOnDrawListenerTest {
         testedListener = WindowsOnDrawListener(
             mockActivity,
             fakeMockedWindows,
-            fakeDensity,
             mockProcessor,
             mockSnapshotProducer,
             mockDebouncer,
@@ -150,7 +145,6 @@ internal class WindowsOnDrawListenerTest {
         testedListener = WindowsOnDrawListener(
             mockActivity,
             emptyList(),
-            fakeDensity,
             mockProcessor,
             mockSnapshotProducer,
             mockDebouncer

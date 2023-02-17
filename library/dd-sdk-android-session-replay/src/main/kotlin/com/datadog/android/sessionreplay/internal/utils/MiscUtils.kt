@@ -17,6 +17,8 @@ import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 
 internal object MiscUtils {
 
+    internal const val OPAQUE_ALPHA_VALUE = 255
+
     fun resolveThemeColor(theme: Theme): Int? {
         val a = TypedValue()
         theme.resolveAttribute(android.R.attr.windowBackground, a, true)
@@ -31,18 +33,21 @@ internal object MiscUtils {
     }
 
     fun resolveSystemInformation(activity: Activity): SystemInformation {
+        val screenDensity = activity.resources.displayMetrics.density
+        val themeColorAsHexa = resolveThemeColor(activity.theme)?.let {
+            StringUtils.formatColorAndAlphaAsHexa(it, OPAQUE_ALPHA_VALUE)
+        }
         return SystemInformation(
-            screenBounds = resolveScreenBounds(activity),
-            screenOrientation = activity.resources.configuration.orientation
+            screenBounds = resolveScreenBounds(activity, screenDensity),
+            screenOrientation = activity.resources.configuration.orientation,
+            screenDensity = screenDensity,
+            themeColor = themeColorAsHexa
         )
     }
 
     @Suppress("DEPRECATION")
-    private fun resolveScreenBounds(activity: Activity): GlobalBounds {
-        // TODO: RUMM-2397 Add the proper telemetry logs here if windowManager is null
+    private fun resolveScreenBounds(activity: Activity, screenDensity: Float): GlobalBounds {
         val windowManager = activity.windowManager ?: return GlobalBounds(0, 0, 0, 0)
-        val displayMetrics = activity.resources.displayMetrics
-        val screenDensity = displayMetrics.density
         val screenHeight: Long
         val screenWidth: Long
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

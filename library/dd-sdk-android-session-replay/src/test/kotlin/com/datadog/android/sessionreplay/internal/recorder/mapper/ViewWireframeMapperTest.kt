@@ -55,7 +55,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         val expectedWireframes = mockView.toShapeWireframes()
 
         // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakePixelDensity)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
         assertThat(shapeWireframes).isEqualTo(expectedWireframes)
@@ -72,7 +72,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         val shapeWireframes = mockViews.flatMap {
             testedWireframeMapper.map(
                 it,
-                fakePixelDensity
+                fakeSystemInformation
             )
         }
 
@@ -111,7 +111,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakePixelDensity)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
         val expectedWireframes = mockView.toShapeWireframes().map {
@@ -158,7 +158,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakePixelDensity)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
         val expectedWireframes = mockView.toShapeWireframes().map {
@@ -201,7 +201,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakePixelDensity)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
         val expectedWireframes = mockView.toShapeWireframes()
@@ -241,7 +241,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakePixelDensity)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
         val expectedWireframes = mockView.toShapeWireframes().map {
@@ -285,7 +285,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakePixelDensity)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
         val expectedWireframes = mockView.toShapeWireframes()
@@ -309,7 +309,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakePixelDensity)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
         val expectedWireframes = mockView.toShapeWireframes()

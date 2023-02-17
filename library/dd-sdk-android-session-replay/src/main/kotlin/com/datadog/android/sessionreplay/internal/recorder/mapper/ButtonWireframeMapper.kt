@@ -7,15 +7,16 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.Button
+import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal class ButtonWireframeMapper(
     private val textWireframeMapper: TextWireframeMapper = TextWireframeMapper()
 ) :
     WireframeMapper<Button, MobileSegment.Wireframe.TextWireframe> {
-    override fun map(view: Button, pixelsDensity: Float):
+    override fun map(view: Button, systemInformation: SystemInformation):
         List<MobileSegment.Wireframe.TextWireframe> {
-        return textWireframeMapper.map(view, pixelsDensity).map {
+        return textWireframeMapper.map(view, systemInformation).map {
             if (it.shapeStyle == null && it.border == null) {
                 // we were not able to resolve the background for this button so just add a border
                 it.copy(border = MobileSegment.ShapeBorder(BLACK_COLOR, 1))
