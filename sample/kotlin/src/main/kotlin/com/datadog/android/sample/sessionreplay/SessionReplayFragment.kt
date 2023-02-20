@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.sample.home
+package com.datadog.android.sample.sessionreplay
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -13,16 +13,14 @@ import android.widget.Button
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProviders
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment.findNavController
 import com.datadog.android.sample.R
 
-internal class HomeFragment :
+internal class SessionReplayFragment :
     Fragment(),
     View.OnClickListener {
 
-    private lateinit var viewModel: HomeViewModel
     lateinit var navController: NavController
 
     // region Fragment
@@ -32,7 +30,7 @@ internal class HomeFragment :
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val rootView = inflater.inflate(R.layout.fragment_home, container, false)
+        val rootView = inflater.inflate(R.layout.fragment_session_replay, container, false)
         if (rootView is ViewGroup) {
             val constraintLayout = rootView.children.filterIsInstance<ConstraintLayout>()
                 .firstOrNull()
@@ -44,7 +42,6 @@ internal class HomeFragment :
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        viewModel = ViewModelProviders.of(this).get(HomeViewModel::class.java)
         navController = findNavController(this)
     }
 
@@ -54,18 +51,9 @@ internal class HomeFragment :
 
     override fun onClick(v: View) {
         val destination = when (v.id) {
-            R.id.navigation_logs -> R.id.fragment_logs
-            R.id.navigation_crash -> R.id.fragment_crash
-            R.id.navigation_traces -> R.id.fragment_trace
-            R.id.navigation_vitals -> R.id.fragment_vitals
-            R.id.navigation_webview -> R.id.fragment_webview
-            R.id.navigation_data_list -> R.id.fragment_data_list
-            R.id.navigation_view_pager -> R.id.activity_view_pager
-            R.id.navigation_picture -> R.id.fragment_picture
-            R.id.navigation_compose -> R.id.activity_jetpack_compose
-            R.id.navigation_session_replay -> R.id.fragment_session_replay
-            R.id.navigation_about -> R.id.fragment_about
-
+            R.id.navigation_picker_components -> R.id.fragment_picker_components
+            R.id.navigation_text_view_components -> R.id.fragment_text_view_components
+            R.id.navigation_radio_and_checkbox_components -> R.id.fragment_radio_checkbox_components
             else -> null
         }
         if (destination != null) {
