@@ -138,10 +138,10 @@ internal class InternalProxyTest {
         val mockWebRumFeatureScope = mock<FeatureScope>()
         val mockWebLogsFeatureScope = mock<FeatureScope>()
         whenever(mockCoreFeature.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME))doReturn
-                mockWebRumFeatureScope
+            mockWebRumFeatureScope
         whenever(mockCoreFeature.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)) doReturn
-                mockWebLogsFeatureScope
-        
+            mockWebLogsFeatureScope
+
         val mockDatadogContext = mock<DatadogContext>()
         val mockEventBatchWriter = mock<EventBatchWriter>()
         val proxy = _InternalProxy(telemetry = mock(), mockCoreFeature)
