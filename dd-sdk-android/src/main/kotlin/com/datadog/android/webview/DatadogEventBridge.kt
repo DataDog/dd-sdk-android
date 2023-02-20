@@ -9,7 +9,7 @@ package com.datadog.android.webview
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.annotation.MainThread
-import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
@@ -32,12 +32,10 @@ import com.google.gson.JsonArray
  * the displayed web page (if Datadog's browser-sdk is enabled).
  * The goal is to make those events part of a unique mobile session.
  * Please note that the WebView events will not be tracked unless the web page's URL Host is part of
- * the list defined in the global [Configuration], or in this constructor.
- * @see [Configuration.Builder.setWebViewTrackingHosts]
+ * the list in the constructor.
  */
 class DatadogEventBridge
 internal constructor(
-    private val sdkCore: SdkCore,
     internal val webViewEventConsumer: WebViewEventConsumer<String>,
     private val allowedHosts: List<String>
 ) {
@@ -47,33 +45,13 @@ internal constructor(
      * the displayed web page (if Datadog's browser-sdk is enabled).
      * The goal is to make those events part of a unique mobile session.
      * Please note that the WebView events will not be tracked unless the web page's URL Host is part of
-     * the list defined in the global [Configuration], or in the constructor.
-     *
-     * @param sdkCore SDK on which to attach the bridge.
-     * @see [Configuration.Builder.setWebViewTrackingHosts]
-     */
-    constructor(
-        sdkCore: SdkCore
-    ) : this(
-        sdkCore,
-        buildWebViewEventConsumer(sdkCore),
-        emptyList()
-    )
-
-    /**
-     * This [JavascriptInterface] is used to intercept all the Datadog events produced by
-     * the displayed web page (if Datadog's browser-sdk is enabled).
-     * The goal is to make those events part of a unique mobile session.
-     * Please note that the WebView events will not be tracked unless the web page's URL Host is part of
-     * the list defined in the global [Configuration], or in the constructor.
+     * the list defined in this constructor.
      *
      * @param sdkCore SDK instance on which to attach the bridge.
      * @param allowedHosts a list of all the hosts that you want to track when loaded in the
      * WebView (e.g.: `listOf("example.com", "example.net")`).
-     * @see [Configuration.Builder.setWebViewTrackingHosts]
      */
     constructor(sdkCore: SdkCore, allowedHosts: List<String>) : this(
-        sdkCore,
         buildWebViewEventConsumer(sdkCore),
         allowedHosts
     )
@@ -99,13 +77,11 @@ internal constructor(
     fun getAllowedWebViewHosts(): String {
         // We need to use a JsonArray here otherwise it cannot be parsed on the JS side
         val origins = JsonArray()
-        allowedHosts.forEach {
-            origins.add(it)
-        }
-        val coreFeature = (sdkCore as? DatadogCore)?.coreFeature
-        coreFeature?.webViewTrackingHosts?.forEach {
-            origins.add(it)
-        }
+        HostsSanitizer()
+            .sanitizeHosts(allowedHosts, WEB_VIEW_TRACKING_FEATURE_NAME)
+            .forEach {
+                origins.add(it)
+            }
         return origins.toString()
     }
 
@@ -118,6 +94,7 @@ internal constructor(
                 "tracking but the java script capability was not enabled for the given WebView."
         internal const val DATADOG_EVENT_BRIDGE_NAME = "DatadogEventBridge"
 
+        internal const val WEB_VIEW_TRACKING_FEATURE_NAME = "WebView"
         internal const val RUM_FEATURE_MISSING_INFO =
             "RUM feature is not registered, will ignore RUM events from WebView."
         internal const val LOGS_FEATURE_MISSING_INFO =
@@ -138,10 +115,12 @@ internal constructor(
          * ```
          * @param sdkCore SDK instance on which to attach the bridge.
          * @param webView the webView on which to attach the bridge.
+         * @param allowedHosts a list of all the hosts that you want to track when loaded in the
+         * WebView (e.g.: `listOf("example.com", "example.net")`).
          * [More here](https://developer.android.com/guide/webapps/webview#HandlingNavigation).
          */
         @MainThread
-        fun setup(sdkCore: SdkCore, webView: WebView) {
+        fun setup(sdkCore: SdkCore, webView: WebView, allowedHosts: List<String>) {
             if (!webView.settings.javaScriptEnabled) {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -149,7 +128,10 @@ internal constructor(
                     JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE
                 )
             }
-            webView.addJavascriptInterface(DatadogEventBridge(sdkCore), DATADOG_EVENT_BRIDGE_NAME)
+            webView.addJavascriptInterface(
+                DatadogEventBridge(sdkCore, allowedHosts),
+                DATADOG_EVENT_BRIDGE_NAME
+            )
         }
 
         private fun buildWebViewEventConsumer(sdkCore: SdkCore): WebViewEventConsumer<String> {

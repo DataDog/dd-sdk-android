@@ -99,7 +99,6 @@ internal class ConfigurationBuilderTest {
                 proxy = null,
                 proxyAuth = Authenticator.NONE,
                 encryption = null,
-                webViewTrackingHosts = emptyList(),
                 site = DatadogSite.US1
             )
         )
@@ -1046,100 +1045,6 @@ internal class ConfigurationBuilderTest {
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
         assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config with web tracking hosts 𝕎 setWebViewTrackingHosts() { ip addresses }`(
-        @StringForgery(
-            regex = "(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +
-                "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
-        ) hosts: List<String>
-    ) {
-        // When
-        val config = testedBuilder
-            .setWebViewTrackingHosts(hosts)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(webViewTrackingHosts = hosts)
-        )
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
-                    DatadogGesturesTracker(
-                        arrayOf(JetpackViewAttributesProvider()),
-                        NoOpInteractionPredicate()
-                    )
-                )
-            )
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config with web tracking hosts 𝕎 setWebViewTrackingHosts() { host names }`(
-        @StringForgery(
-            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
-                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
-        ) hosts: List<String>
-    ) {
-        // When
-        val config = testedBuilder
-            .setWebViewTrackingHosts(hosts)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(webViewTrackingHosts = hosts)
-        )
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `M use url host name W setWebViewTrackingHosts() { url }`(
-        @StringForgery(
-            regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
-        ) hosts: List<String>
-    ) {
-        // WHEN
-        val config = testedBuilder
-            .setWebViewTrackingHosts(hosts)
-            .build()
-
-        // THEN
-        assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG
-                .copy(webViewTrackingHosts = hosts.map { URL(it).host })
-        )
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 sanitize hosts 𝕎 setWebViewTrackingHosts()`(
-        @StringForgery(
-            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
-                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
-        ) hosts: List<String>
-    ) {
-        // When
-        val mockSanitizer: HostsSanitizer = mock()
-        testedBuilder.hostsSanitizer = mockSanitizer
-        testedBuilder
-            .setWebViewTrackingHosts(hosts)
-            .build()
-
-        // Then
-        verify(mockSanitizer)
-            .sanitizeHosts(
-                hosts,
-                Configuration.WEB_VIEW_TRACKING_FEATURE_NAME
-            )
     }
 
     @Test

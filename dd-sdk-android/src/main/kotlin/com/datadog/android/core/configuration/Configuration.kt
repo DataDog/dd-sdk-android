@@ -67,7 +67,6 @@ internal constructor(
         val proxy: Proxy?,
         val proxyAuth: Authenticator,
         val encryption: Encryption?,
-        val webViewTrackingHosts: List<String>,
         val site: DatadogSite
     )
 
@@ -177,24 +176,6 @@ internal constructor(
             )
             coreConfig = coreConfig.copy(
                 firstPartyHostsWithHeaderTypes = hostsWithHeaderType.filterKeys { sanitizedHosts.contains(it) }
-            )
-            return this
-        }
-
-        /**
-         * Sets the list of WebView tracked hosts.
-         * When a WebView loads a URL from any of these hosts, and the page has Datadog's
-         * Browser SDK setup, then the Logs and RUM Events from the webview will be tracked in
-         * the same session..
-         * @param hosts a list of all the hosts that you want to track when loaded in the
-         * WebView.
-         */
-        fun setWebViewTrackingHosts(hosts: List<String>): Builder {
-            coreConfig = coreConfig.copy(
-                webViewTrackingHosts = hostsSanitizer.sanitizeHosts(
-                    hosts,
-                    WEB_VIEW_TRACKING_FEATURE_NAME
-                )
             )
             return this
         }
@@ -575,7 +556,6 @@ internal constructor(
             proxy = null,
             proxyAuth = Authenticator.NONE,
             encryption = null,
-            webViewTrackingHosts = emptyList(),
             site = DatadogSite.US1
         )
         internal val DEFAULT_CRASH_CONFIG = Feature.CrashReport(
@@ -603,7 +583,6 @@ internal constructor(
             "Configuration.Builder, but you're trying to edit the RUM configuration with the " +
             "%s() method."
 
-        internal const val WEB_VIEW_TRACKING_FEATURE_NAME = "WebView"
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network requests"
 
         private fun provideUserTrackingStrategy(

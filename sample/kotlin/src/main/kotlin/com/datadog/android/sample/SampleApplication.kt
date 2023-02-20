@@ -65,10 +65,6 @@ class SampleApplication : Application() {
         "127.0.0.1"
     )
 
-    private val webViewTrackingHosts = listOf(
-        "datadoghq.dev"
-    )
-
     // TODO RUMM-0000 lazy is needed here, because without it global first party host resolver is
     //  not available yet at the interceptor construction time
     private val okHttpClient by lazy {
@@ -182,7 +178,6 @@ class SampleApplication : Application() {
         )
             .sampleTelemetry(100f)
             .setFirstPartyHosts(tracedHosts)
-            .setWebViewTrackingHosts(webViewTrackingHosts)
             .useViewTrackingStrategy(
                 NavigationViewTrackingStrategy(
                     R.id.nav_host_fragment,

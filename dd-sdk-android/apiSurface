@@ -67,7 +67,6 @@ data class com.datadog.android.core.configuration.Configuration
     fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
     fun setFirstPartyHosts(List<String>): Builder
     fun setFirstPartyHostsWithHeaderType(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>): Builder
-    fun setWebViewTrackingHosts(List<String>): Builder
     fun useSite(com.datadog.android.DatadogSite): Builder
     fun useCustomCrashReportsEndpoint(String): Builder
     fun useCustomRumEndpoint(String): Builder
@@ -547,12 +546,11 @@ class com.datadog.android.v2.log.net.LogsRequestFactory : com.datadog.android.v2
   override fun create(com.datadog.android.v2.api.context.DatadogContext, List<ByteArray>, ByteArray?): com.datadog.android.v2.api.Request
   companion object 
 class com.datadog.android.webview.DatadogEventBridge
-  constructor(com.datadog.android.v2.api.SdkCore)
   constructor(com.datadog.android.v2.api.SdkCore, List<String>)
   fun send(String)
   fun getAllowedWebViewHosts(): String
   companion object 
-    fun setup(com.datadog.android.v2.api.SdkCore, android.webkit.WebView)
+    fun setup(com.datadog.android.v2.api.SdkCore, android.webkit.WebView, List<String>)
 class com.datadog.tools.annotation.NoOpImplementation
 data class com.datadog.android.rum.model.ActionChildProperties
   constructor(Action? = null)

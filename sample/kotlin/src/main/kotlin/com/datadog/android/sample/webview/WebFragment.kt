@@ -22,6 +22,10 @@ internal class WebFragment : Fragment() {
     private lateinit var viewModel: WebViewModel
     private lateinit var webView: WebView
 
+    private val webViewTrackingHosts = listOf(
+        "datadoghq.dev"
+    )
+
     // region Fragment Lifecycle
 
     override fun onCreateView(
@@ -33,7 +37,7 @@ internal class WebFragment : Fragment() {
         webView = rootView.findViewById(R.id.webview)
         webView.webViewClient = WebViewClient()
         webView.settings.javaScriptEnabled = true
-        DatadogEventBridge.setup(Datadog.globalSdkCore, webView)
+        DatadogEventBridge.setup(Datadog.globalSdkCore, webView, webViewTrackingHosts)
         return rootView
     }
 

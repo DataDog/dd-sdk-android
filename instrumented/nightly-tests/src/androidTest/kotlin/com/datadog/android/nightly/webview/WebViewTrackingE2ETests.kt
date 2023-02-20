@@ -17,7 +17,6 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.nightly.activities.WebViewTrackingActivity
-import com.datadog.android.nightly.activities.WebViewTrackingBridgeHostsActivity
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.defaultConfigurationBuilder
 import com.datadog.android.nightly.utils.initializeSdk
@@ -42,37 +41,25 @@ internal class WebViewTrackingE2ETests {
     // region Tests
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore)
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setWebViewTrackingHosts(List<String>): Builder
-     */
-    @Test
-    fun web_view_page_view_tracking() {
-        initSdk()
-        launch(WebViewTrackingActivity::class.java)
-    }
-
-    /**
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore, List<String>)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
      */
     @Test
-    fun web_view_page_view_tracking_allowed_hosts_at_bridge_level() {
+    fun web_view_page_view_tracking() {
         val config = defaultConfigurationBuilder(
             crashReportsEnabled = true,
             rumEnabled = true
         ).build()
         initSdk(config)
-        launch(WebViewTrackingBridgeHostsActivity::class.java)
+        launch(WebViewTrackingActivity::class.java)
 
         // just to make sure the WebView loaded
         onWebView().withElement(findElement(Locator.ID, "change-route")).perform(webClick())
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore, List<String>)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
      */
@@ -90,9 +77,8 @@ internal class WebViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore, List<String>)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setWebViewTrackingHosts(List<String>): Builder
      */
     @Test
     fun web_view_action_tracking() {
@@ -108,10 +94,9 @@ internal class WebViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore, List<String>)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setWebViewTrackingHosts(List<String>): Builder
      */
     @Test
     fun web_view_error_tracking() {
@@ -122,10 +107,9 @@ internal class WebViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore, List<String>)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setWebViewTrackingHosts(List<String>): Builder
      */
     @Test
     fun web_view_resource_tracking() {
@@ -137,10 +121,9 @@ internal class WebViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(com.datadog.android.v2.api.SdkCore, List<String>)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setWebViewTrackingHosts(List<String>): Builder
      */
     @Test
     fun web_view_log_tracking() {
@@ -158,7 +141,7 @@ internal class WebViewTrackingE2ETests {
         config: Configuration = defaultConfigurationBuilder(
             crashReportsEnabled = true,
             rumEnabled = true
-        ).setWebViewTrackingHosts(listOf("datadoghq.dev")).build()
+        ).build()
     ) {
         measureSdkInitialize {
             initializeSdk(

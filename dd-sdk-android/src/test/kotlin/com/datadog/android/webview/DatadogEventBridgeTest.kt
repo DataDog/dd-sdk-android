@@ -110,22 +110,24 @@ internal class DatadogEventBridgeTest {
         whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
 
         testedDatadogEventBridge = DatadogEventBridge(
-            mockCore,
             mockWebViewEventConsumer,
             emptyList()
         )
     }
 
     @Test
-    fun `M create a default WebEventConsumer W init()`() {
+    fun `M create a default WebEventConsumer W init()`(
+        @Forgery fakeUrls: List<URL>
+    ) {
         // Given
+        val fakeHosts = fakeUrls.map { it.host }
         whenever(mockCore.registerFeature(any())) doAnswer {
             val feature = it.getArgument<Feature>(0)
             feature.onInitialize(mockCore, mock(), mock())
         }
 
         // When
-        val bridge = DatadogEventBridge(mockCore)
+        val bridge = DatadogEventBridge(mockCore, fakeHosts)
 
         // Then
         val consumer = bridge.webViewEventConsumer
@@ -150,8 +152,11 @@ internal class DatadogEventBridgeTest {
     }
 
     @Test
-    fun `M create a default WebEventConsumer W init() {RUM feature is not registered}`() {
+    fun `M create a default WebEventConsumer W init() {RUM feature is not registered}`(
+        @Forgery fakeUrls: List<URL>
+    ) {
         // Given
+        val fakeHosts = fakeUrls.map { it.host }
         whenever(mockCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
         whenever(mockCore.registerFeature(any())) doAnswer {
             val feature = it.getArgument<Feature>(0)
@@ -159,7 +164,7 @@ internal class DatadogEventBridgeTest {
         }
 
         // When
-        val bridge = DatadogEventBridge(mockCore)
+        val bridge = DatadogEventBridge(mockCore, fakeHosts)
 
         // Then
         val consumer = bridge.webViewEventConsumer
@@ -192,8 +197,11 @@ internal class DatadogEventBridgeTest {
     }
 
     @Test
-    fun `M create a default WebEventConsumer W init() {Logs feature is not registered}`() {
+    fun `M create a default WebEventConsumer W init() {Logs feature is not registered}`(
+        @Forgery fakeUrls: List<URL>
+    ) {
         // Given
+        val fakeHosts = fakeUrls.map { it.host }
         whenever(mockCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
         whenever(mockCore.registerFeature(any())) doAnswer {
             val feature = it.getArgument<Feature>(0)
@@ -201,7 +209,7 @@ internal class DatadogEventBridgeTest {
         }
 
         // When
-        val bridge = DatadogEventBridge(mockCore)
+        val bridge = DatadogEventBridge(mockCore, fakeHosts)
 
         // Then
         val consumer = bridge.webViewEventConsumer
@@ -243,13 +251,15 @@ internal class DatadogEventBridgeTest {
     }
 
     @Test
-    fun `M return the webViewTrackingHosts as JsonArray W getAllowedWebViewHosts() { global }`(
-        @Forgery fakeUrls: List<URL>
+    fun `M return sanitized webViewTrackingHosts W getAllowedWebViewHosts() { allow IP addresses }`(
+        @StringForgery(
+            regex = "(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +
+                "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
+        ) hosts: List<String>
     ) {
         // Given
-        val fakeHosts = fakeUrls.map { it.host }
-        val expectedHosts = fakeHosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        whenever(coreFeature.mockInstance.webViewTrackingHosts) doReturn fakeHosts
+        val expectedHosts = hosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
+        testedDatadogEventBridge = DatadogEventBridge(mockCore, hosts)
 
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
@@ -259,14 +269,15 @@ internal class DatadogEventBridgeTest {
     }
 
     @Test
-    fun `M return the webViewTrackingHosts as JsonArray W getAllowedWebViewHosts() { local }`(
-        @Forgery fakeUrls: List<URL>
+    fun `M return sanitized webViewTrackingHosts W getAllowedWebViewHosts() { allow host names }`(
+        @StringForgery(
+            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) hosts: List<String>
     ) {
         // Given
-        val fakeHosts = fakeUrls.map { it.host }
-        val expectedHosts = fakeHosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        whenever(coreFeature.mockInstance.webViewTrackingHosts) doReturn emptyList()
-        testedDatadogEventBridge = DatadogEventBridge(mockCore, fakeHosts)
+        val expectedHosts = hosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
+        testedDatadogEventBridge = DatadogEventBridge(mockCore, hosts)
 
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
@@ -276,17 +287,15 @@ internal class DatadogEventBridgeTest {
     }
 
     @Test
-    fun `M return the webViewTrackingHosts as JsonArray W getAllowedWebViewHosts() { mixed }`(
-        @Forgery fakeGlobalUrls: List<URL>,
-        @Forgery fakeLocalUrls: List<URL>
+    fun `M return sanitized webViewTrackingHosts W getAllowedWebViewHosts() { allow URLs }`(
+        @StringForgery(
+            regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
+        ) hosts: List<String>
     ) {
         // Given
-        val fakeLocalHosts = fakeLocalUrls.map { it.host }
-        val fakeGlobalHosts = fakeGlobalUrls.map { it.host }
-        val expectedHosts = (fakeLocalHosts + fakeGlobalHosts)
+        val expectedHosts = hosts.map { URL(it).host }
             .joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        whenever(coreFeature.mockInstance.webViewTrackingHosts) doReturn fakeGlobalHosts
-        testedDatadogEventBridge = DatadogEventBridge(mockCore, fakeLocalHosts)
+        testedDatadogEventBridge = DatadogEventBridge(mockCore, hosts)
 
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
@@ -296,9 +305,9 @@ internal class DatadogEventBridgeTest {
     }
 
     @Test
-    fun `M attach the bridge W setup`() {
+    fun `M attach the bridge W setup`(@Forgery fakeUrls: List<URL>) {
         // Given
-
+        val fakeHosts = fakeUrls.map { it.host }
         val mockSettings: WebSettings = mock {
             whenever(it.javaScriptEnabled).thenReturn(true)
         }
@@ -307,7 +316,7 @@ internal class DatadogEventBridgeTest {
         }
 
         // When
-        DatadogEventBridge.setup(mockCore, mockWebView)
+        DatadogEventBridge.setup(mockCore, mockWebView, fakeHosts)
 
         // Then
         verify(mockWebView).addJavascriptInterface(
@@ -317,9 +326,11 @@ internal class DatadogEventBridgeTest {
     }
 
     @Test
-    fun `M attach the bridge and send a warn log W setup { javascript not enabled }`() {
+    fun `M attach the bridge and send a warn log W setup { javascript not enabled }`(
+        @Forgery fakeUrls: List<URL>
+    ) {
         // Given
-
+        val fakeHosts = fakeUrls.map { it.host }
         val mockSettings: WebSettings = mock {
             whenever(it.javaScriptEnabled).thenReturn(false)
         }
@@ -328,7 +339,7 @@ internal class DatadogEventBridgeTest {
         }
 
         // When
-        DatadogEventBridge.setup(mockCore, mockWebView)
+        DatadogEventBridge.setup(mockCore, mockWebView, fakeHosts)
 
         // Then
         verify(mockWebView).addJavascriptInterface(
