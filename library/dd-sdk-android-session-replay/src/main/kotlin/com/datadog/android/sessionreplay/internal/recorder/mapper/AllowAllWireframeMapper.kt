@@ -13,12 +13,15 @@ internal open class AllowAllWireframeMapper(
     buttonMapper: ButtonWireframeMapper = ButtonWireframeMapper(textMapper),
     editTextWireframeMapper: EditTextWireframeMapper = EditTextWireframeMapper(textMapper),
     checkedTextViewWireframeMapper: CheckedTextViewWireframeMapper =
-        CheckedTextViewWireframeMapper(textMapper)
+        CheckedTextViewWireframeMapper(textMapper),
+    decorViewWireframeMapper: DecorViewWireframeMapper =
+        DecorViewWireframeMapper(viewWireframeMapper)
 ) : GenericWireframeMapper(
     viewWireframeMapper,
     imageMapper,
     textMapper,
     buttonMapper,
     editTextWireframeMapper,
-    checkedTextViewWireframeMapper
+    checkedTextViewWireframeMapper,
+    decorViewWireframeMapper
 )

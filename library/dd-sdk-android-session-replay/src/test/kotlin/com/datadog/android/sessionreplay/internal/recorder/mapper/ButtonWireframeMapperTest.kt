@@ -45,7 +45,7 @@ internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockTextWireframeMapper.map(mockButton, fakePixelDensity))
+        whenever(mockTextWireframeMapper.map(mockButton, fakeSystemInformation))
             .thenReturn(fakeTextWireframes)
         testedButtonWireframeMapper = ButtonWireframeMapper(mockTextWireframeMapper)
     }
@@ -56,11 +56,11 @@ internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
     ) {
         // Given
         fakeTextWireframes = fakeTextWireframes.map { it.copy(border = forge.getForgery()) }
-        whenever(mockTextWireframeMapper.map(mockButton, fakePixelDensity))
+        whenever(mockTextWireframeMapper.map(mockButton, fakeSystemInformation))
             .thenReturn(fakeTextWireframes)
 
         // When
-        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
+        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakeSystemInformation)
 
         // Then
         assertThat(buttonWireframes).isEqualTo(fakeTextWireframes)
@@ -72,11 +72,11 @@ internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
     ) {
         // Given
         fakeTextWireframes = fakeTextWireframes.map { it.copy(shapeStyle = forge.getForgery()) }
-        whenever(mockTextWireframeMapper.map(mockButton, fakePixelDensity))
+        whenever(mockTextWireframeMapper.map(mockButton, fakeSystemInformation))
             .thenReturn(fakeTextWireframes)
 
         // When
-        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
+        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakeSystemInformation)
 
         // Then
         assertThat(buttonWireframes).isEqualTo(fakeTextWireframes)
@@ -86,7 +86,7 @@ internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
     fun `M add a default border W map(){textMapper returns wireframes with no border, shapeStyle}`() {
         // Given
         fakeTextWireframes = fakeTextWireframes.map { it.copy(shapeStyle = null, border = null) }
-        whenever(mockTextWireframeMapper.map(mockButton, fakePixelDensity))
+        whenever(mockTextWireframeMapper.map(mockButton, fakeSystemInformation))
             .thenReturn(fakeTextWireframes)
 
         val expectedWireframes = fakeTextWireframes.map {
@@ -94,7 +94,7 @@ internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakePixelDensity)
+        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakeSystemInformation)
 
         // Then
         assertThat(buttonWireframes).isEqualTo(expectedWireframes)

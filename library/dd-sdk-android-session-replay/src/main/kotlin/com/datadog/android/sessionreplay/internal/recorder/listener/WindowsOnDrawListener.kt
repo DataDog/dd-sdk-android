@@ -18,7 +18,6 @@ import java.lang.ref.WeakReference
 internal class WindowsOnDrawListener(
     ownerActivity: Activity,
     zOrderedWindows: List<Window>,
-    private val pixelsDensity: Float,
     private val processor: Processor,
     private val snapshotProducer: SnapshotProducer,
     private val debouncer: Debouncer = Debouncer(),
@@ -43,14 +42,14 @@ internal class WindowsOnDrawListener(
         val ownerActivity = ownerActivityReference.get() ?: return@Runnable
 
         // is is very important to have the windows sorted by their z-order
+        val systemInformation = miscUtils.resolveSystemInformation(ownerActivity)
         val nodes = weakReferencedWindows
             .mapNotNull { it.get() }
             .mapNotNull {
                 val windowDecorView = it.decorView
-                snapshotProducer.produce(ownerActivity.theme, windowDecorView, pixelsDensity)
+                snapshotProducer.produce(windowDecorView, systemInformation)
             }
         if (nodes.isNotEmpty()) {
-            val systemInformation = miscUtils.resolveSystemInformation(ownerActivity)
             processor.processScreenSnapshots(
                 nodes,
                 systemInformation

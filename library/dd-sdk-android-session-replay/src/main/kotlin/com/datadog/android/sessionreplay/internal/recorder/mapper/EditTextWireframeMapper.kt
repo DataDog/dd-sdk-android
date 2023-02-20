@@ -10,6 +10,7 @@ import android.content.res.ColorStateList
 import android.os.Build
 import android.view.View
 import android.widget.EditText
+import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 
@@ -19,10 +20,10 @@ internal open class EditTextWireframeMapper(
     viewUtils: ViewUtils = ViewUtils()
 ) : BaseWireframeMapper<EditText, MobileSegment.Wireframe>(viewUtils = viewUtils) {
 
-    override fun map(view: EditText, pixelsDensity: Float):
+    override fun map(view: EditText, systemInformation: SystemInformation):
         List<MobileSegment.Wireframe> {
-        val mainWireframeList = textWireframeMapper.map(view, pixelsDensity)
-        resolveUnderlineWireframe(view, pixelsDensity)?.let { wireframe ->
+        val mainWireframeList = textWireframeMapper.map(view, systemInformation)
+        resolveUnderlineWireframe(view, systemInformation.screenDensity)?.let { wireframe ->
             return mainWireframeList + wireframe
         }
         return mainWireframeList

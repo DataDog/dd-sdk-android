@@ -42,7 +42,7 @@ internal class ViewScreenshotWireframeMapperTest : BaseWireframeMapperTest() {
         // Given
         val mockView: View = forge.aMockView()
         // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakePixelDensity)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
         val expectedWireframes = mockView.toShapeWireframes().map {

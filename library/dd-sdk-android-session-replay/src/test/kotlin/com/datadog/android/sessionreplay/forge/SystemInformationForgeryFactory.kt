@@ -27,7 +27,9 @@ internal class SystemInformationForgeryFactory : ForgeryFactory<SystemInformatio
                     Configuration.ORIENTATION_LANDSCAPE,
                     Configuration.ORIENTATION_UNDEFINED
                 )
-            )
+            ),
+            screenDensity = forge.aFloat(min = 1f, max = 10f),
+            themeColor = forge.aNullable { aStringMatching("#[0-9A-Fa-f]{6}[fF]{2}") }
         )
     }
 }

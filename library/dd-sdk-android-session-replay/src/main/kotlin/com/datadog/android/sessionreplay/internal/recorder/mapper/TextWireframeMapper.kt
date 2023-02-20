@@ -9,16 +9,18 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.Typeface
 import android.view.Gravity
 import android.widget.TextView
+import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal open class TextWireframeMapper :
     BaseWireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe>() {
 
-    override fun map(view: TextView, pixelsDensity: Float):
+    override fun map(view: TextView, systemInformation: SystemInformation):
         List<MobileSegment.Wireframe.TextWireframe> {
-        val viewGlobalBounds = resolveViewGlobalBounds(view, pixelsDensity)
-        val styleBorderPair = view.background?.resolveShapeStyleAndBorder(view.alpha)
+        val viewGlobalBounds = resolveViewGlobalBounds(view, systemInformation.screenDensity)
+        val (shapeStyle, border) = view.background?.resolveShapeStyleAndBorder(view.alpha)
+            ?: (null to null)
         return listOf(
             MobileSegment.Wireframe.TextWireframe(
                 id = resolveViewId(view),
@@ -26,11 +28,11 @@ internal open class TextWireframeMapper :
                 y = viewGlobalBounds.y,
                 width = viewGlobalBounds.width,
                 height = viewGlobalBounds.height,
-                shapeStyle = styleBorderPair?.first,
-                border = styleBorderPair?.second,
+                shapeStyle = shapeStyle,
+                border = border,
                 text = resolveTextValue(view),
-                textStyle = resolveTextStyle(view, pixelsDensity),
-                textPosition = resolveTextPosition(view, pixelsDensity)
+                textStyle = resolveTextStyle(view, systemInformation.screenDensity),
+                textPosition = resolveTextPosition(view, systemInformation.screenDensity)
             )
         )
     }

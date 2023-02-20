@@ -10,5 +10,7 @@ import android.content.res.Configuration
 
 internal data class SystemInformation(
     val screenBounds: GlobalBounds,
-    val screenOrientation: Int = Configuration.ORIENTATION_UNDEFINED
+    val screenOrientation: Int = Configuration.ORIENTATION_UNDEFINED,
+    val screenDensity: Float,
+    val themeColor: String? = null
 )

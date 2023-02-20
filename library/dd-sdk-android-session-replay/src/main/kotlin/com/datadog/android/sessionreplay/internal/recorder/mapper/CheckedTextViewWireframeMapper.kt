@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.os.Build
 import android.widget.CheckedTextView
+import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.StringUtils
@@ -21,9 +22,10 @@ internal class CheckedTextViewWireframeMapper(
     viewUtils: ViewUtils = ViewUtils()
 ) : CheckableWireframeMapper<CheckedTextView>(uniqueIdentifierGenerator, viewUtils) {
 
-    override fun map(view: CheckedTextView, pixelsDensity: Float): List<MobileSegment.Wireframe> {
-        val mainWireframeList = textWireframeMapper.map(view, pixelsDensity)
-        resolveCheckableWireframe(view, pixelsDensity)?.let { wireframe ->
+    override fun map(view: CheckedTextView, systemInformation: SystemInformation):
+        List<MobileSegment.Wireframe> {
+        val mainWireframeList = textWireframeMapper.map(view, systemInformation)
+        resolveCheckableWireframe(view, systemInformation.screenDensity)?.let { wireframe ->
             return mainWireframeList + wireframe
         }
         return mainWireframeList

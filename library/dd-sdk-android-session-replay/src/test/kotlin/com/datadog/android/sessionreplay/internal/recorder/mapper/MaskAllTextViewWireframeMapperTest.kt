@@ -71,7 +71,7 @@ internal class MaskAllTextViewWireframeMapperTest : BaseTextViewWireframeMapperT
         }
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
 
         // Then
         val expectedWireframes = mockTextView
@@ -98,7 +98,7 @@ internal class MaskAllTextViewWireframeMapperTest : BaseTextViewWireframeMapperT
         }
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
 
         // Then
         val expectedWireframes = mockTextView
@@ -108,7 +108,8 @@ internal class MaskAllTextViewWireframeMapperTest : BaseTextViewWireframeMapperT
                     text = fakeMaskedHintText,
                     textStyle = MobileSegment.TextStyle(
                         "sans-serif",
-                        mockTextView.textSize.toLong().densityNormalized(fakePixelDensity),
+                        mockTextView.textSize.toLong()
+                            .densityNormalized(fakeSystemInformation.screenDensity),
                         StringUtils.formatColorAndAlphaAsHexa(
                             fakeHintColor,
                             OPAQUE_ALPHA_VALUE
@@ -137,7 +138,7 @@ internal class MaskAllTextViewWireframeMapperTest : BaseTextViewWireframeMapperT
         }
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
 
         // Then
         val expectedWireframes = mockTextView
@@ -147,7 +148,8 @@ internal class MaskAllTextViewWireframeMapperTest : BaseTextViewWireframeMapperT
                     text = fakeMaskedHintText,
                     textStyle = MobileSegment.TextStyle(
                         "sans-serif",
-                        mockTextView.textSize.toLong().densityNormalized(fakePixelDensity),
+                        mockTextView.textSize.toLong()
+                            .densityNormalized(fakeSystemInformation.screenDensity),
                         StringUtils.formatColorAndAlphaAsHexa(
                             fakeTextColor,
                             OPAQUE_ALPHA_VALUE

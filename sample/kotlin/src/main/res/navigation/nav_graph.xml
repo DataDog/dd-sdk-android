@@ -70,6 +70,10 @@
         android:name="com.datadog.android.sample.input.TextViewComponentsFragment"
         android:label="@string/text_view_components"/>
 
+    <fragment android:id="@+id/fragment_picker_components"
+        android:name="com.datadog.android.sample.input.PickerComponentsFragment"
+        android:label="@string/picker_components"/>
+
     <dialog android:id="@+id/fragment_gdpr"
               android:name="com.datadog.android.sample.gdpr.GdprDialogFragment"
               android:label="@string/title_gdpr"/>

@@ -9,34 +9,53 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.Typeface
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
+import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.StringUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.mock
-import fr.xgouchet.elmyr.annotation.FloatForgery
+import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.annotation.Forgery
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.params.provider.Arguments
 import java.util.stream.Stream
 
 internal abstract class BaseWireframeMapperTest {
 
-    @FloatForgery(min = 1f, max = 10f)
-    var fakePixelDensity: Float = 1f
+    @Forgery
+    lateinit var fakeSystemInformation: SystemInformation
+
+    protected fun mockNonDecorView(): View {
+        return mock {
+            whenever(it.parent).thenReturn(mock<ViewGroup>())
+        }
+    }
+
+    protected fun mockViewWithNoViewTypeParent(): View {
+        return mock()
+    }
+
+    protected fun mockViewWithEmptyParent(): View {
+        return mock {
+            whenever(it.parent).thenReturn(mock())
+        }
+    }
 
     protected fun View.toShapeWireframes(): List<MobileSegment.Wireframe.ShapeWireframe> {
         val coordinates = IntArray(2)
         this.getLocationOnScreen(coordinates)
-        val x = coordinates[0].densityNormalized(fakePixelDensity).toLong()
-        val y = coordinates[1].densityNormalized(fakePixelDensity).toLong()
+        val x = coordinates[0].densityNormalized(fakeSystemInformation.screenDensity).toLong()
+        val y = coordinates[1].densityNormalized(fakeSystemInformation.screenDensity).toLong()
         return listOf(
             MobileSegment.Wireframe.ShapeWireframe(
                 System.identityHashCode(this).toLong(),
                 x = x,
                 y = y,
-                width = width.toLong().densityNormalized(fakePixelDensity),
-                height = height.toLong().densityNormalized(fakePixelDensity)
+                width = width.toLong().densityNormalized(fakeSystemInformation.screenDensity),
+                height = height.toLong().densityNormalized(fakeSystemInformation.screenDensity)
             )
         )
     }
@@ -44,8 +63,8 @@ internal abstract class BaseWireframeMapperTest {
     protected fun TextView.toTextWireframes(): List<MobileSegment.Wireframe.TextWireframe> {
         val coordinates = IntArray(2)
         this.getLocationOnScreen(coordinates)
-        val x = coordinates[0].densityNormalized(fakePixelDensity).toLong()
-        val y = coordinates[1].densityNormalized(fakePixelDensity).toLong()
+        val x = coordinates[0].densityNormalized(fakeSystemInformation.screenDensity).toLong()
+        val y = coordinates[1].densityNormalized(fakeSystemInformation.screenDensity).toLong()
         val textColor = StringUtils.formatColorAndAlphaAsHexa(currentTextColor, OPAQUE_ALPHA_VALUE)
         return listOf(
             MobileSegment.Wireframe.TextWireframe(
@@ -53,11 +72,11 @@ internal abstract class BaseWireframeMapperTest {
                 x = x,
                 y = y,
                 text = resolveTextValue(this),
-                width = width.toLong().densityNormalized(fakePixelDensity),
-                height = height.toLong().densityNormalized(fakePixelDensity),
+                width = width.toLong().densityNormalized(fakeSystemInformation.screenDensity),
+                height = height.toLong().densityNormalized(fakeSystemInformation.screenDensity),
                 textStyle = MobileSegment.TextStyle(
                     "sans-serif",
-                    textSize.toLong().densityNormalized(fakePixelDensity),
+                    textSize.toLong().densityNormalized(fakeSystemInformation.screenDensity),
                     textColor
                 ),
                 textPosition = MobileSegment.TextPosition(
