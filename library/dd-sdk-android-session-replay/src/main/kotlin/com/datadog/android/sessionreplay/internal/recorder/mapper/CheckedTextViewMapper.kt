@@ -15,7 +15,7 @@ import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.StringUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 
-internal open class CheckedTextViewWireframeMapper(
+internal open class CheckedTextViewMapper(
     private val textWireframeMapper: TextWireframeMapper,
     private val stringUtils: StringUtils = StringUtils,
     uniqueIdentifierGenerator: UniqueIdentifierResolver =

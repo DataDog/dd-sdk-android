@@ -45,22 +45,22 @@ internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
     lateinit var mockImageWireframeMapper: ViewScreenshotWireframeMapper
 
     @Mock
-    lateinit var mockMaskAllTextWireframeMapper: MaskAllTextWireframeMapper
+    lateinit var mockMaskAllTextViewMapper: MaskAllTextViewMapper
 
     @Mock
-    lateinit var mockButtonWireframeMapper: ButtonWireframeMapper
+    lateinit var mockButtonMapper: ButtonMapper
 
     @Mock
     lateinit var mockCheckedTextViewWireframeMapper: MaskAllCheckedTextViewMapper
 
     @Mock
-    lateinit var mockEditTextWireframeMapper: EditTextWireframeMapper
+    lateinit var mockEditTextViewMapper: EditTextViewMapper
 
     @Mock
-    lateinit var mockDecorViewWireframeMapper: DecorViewWireframeMapper
+    lateinit var mockDecorViewMapper: DecorViewMapper
 
     @Mock
-    lateinit var mockCheckBoxWireframeMapper: MaskAllCheckBoxWireframeMapper
+    lateinit var mockCheckBoxWireframeMapper: MaskAllCheckBoxMapper
 
     lateinit var mockShapeWireframes: List<MobileSegment.Wireframe.ShapeWireframe>
 
@@ -94,11 +94,11 @@ internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
         testedMaskAllWireframeMapper = MaskAllWireframeMapper(
             mockViewWireframeMapper,
             mockImageWireframeMapper,
-            mockMaskAllTextWireframeMapper,
-            mockButtonWireframeMapper,
-            mockEditTextWireframeMapper,
+            mockMaskAllTextViewMapper,
+            mockButtonMapper,
+            mockEditTextViewMapper,
             mockCheckedTextViewWireframeMapper,
-            mockDecorViewWireframeMapper,
+            mockDecorViewMapper,
             mockCheckBoxWireframeMapper
         )
     }
@@ -135,7 +135,7 @@ internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
     fun `M resolve a masked TextWireframe W map { TextView }`() {
         // Given
         val mockView: TextView = mock()
-        whenever(mockMaskAllTextWireframeMapper.map(mockView, fakeSystemInformation))
+        whenever(mockMaskAllTextViewMapper.map(mockView, fakeSystemInformation))
             .thenReturn(mockMaskedTextWireframes)
 
         // When
@@ -149,7 +149,7 @@ internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
     fun `M resolve a ButtonWireframe W map { Button }`() {
         // Given
         val mockView: Button = mock()
-        whenever(mockButtonWireframeMapper.map(mockView, fakeSystemInformation))
+        whenever(mockButtonMapper.map(mockView, fakeSystemInformation))
             .thenReturn(mockButtonWireframes)
 
         // When
@@ -163,7 +163,7 @@ internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
     fun `M delegate to EditTextWireframeMapper W map { EditText }`() {
         // Given
         val mockView: EditText = mock()
-        whenever(mockEditTextWireframeMapper.map(mockView, fakeSystemInformation))
+        whenever(mockEditTextViewMapper.map(mockView, fakeSystemInformation))
             .thenReturn(mockEditTextWireframes)
 
         // When
@@ -210,7 +210,7 @@ internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
     fun `M delegate to DecorViewWireframeMapper W map { view with no parent }`() {
         // Given
         val mockView: View = mockViewWithEmptyParent()
-        whenever(mockDecorViewWireframeMapper.map(mockView, fakeSystemInformation))
+        whenever(mockDecorViewMapper.map(mockView, fakeSystemInformation))
             .thenReturn(mockDecorViewWireframes)
 
         // When
@@ -224,7 +224,7 @@ internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
     fun `M delegate to DecorViewWireframeMapper W map { view with parent has no View type }`() {
         // Given
         val mockView: View = mockViewWithNoViewTypeParent()
-        whenever(mockDecorViewWireframeMapper.map(mockView, fakeSystemInformation))
+        whenever(mockDecorViewMapper.map(mockView, fakeSystemInformation))
             .thenReturn(mockDecorViewWireframes)
 
         // When

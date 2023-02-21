@@ -45,7 +45,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest() {
 
-    lateinit var testedCheckedTextWireframeMapper: CheckedTextViewWireframeMapper
+    lateinit var testedCheckedTextWireframeMapper: CheckedTextViewMapper
 
     @Mock
     lateinit var mockUniqueIdentifierResolver: UniqueIdentifierResolver
@@ -124,7 +124,7 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         testedCheckedTextWireframeMapper = setupTestedMapper()
     }
 
-    internal abstract fun setupTestedMapper(): CheckedTextViewWireframeMapper
+    internal abstract fun setupTestedMapper(): CheckedTextViewMapper
 
     internal open fun expectedCheckedShapeStyle(checkBoxColor: String): MobileSegment.ShapeStyle? {
         return MobileSegment.ShapeStyle(

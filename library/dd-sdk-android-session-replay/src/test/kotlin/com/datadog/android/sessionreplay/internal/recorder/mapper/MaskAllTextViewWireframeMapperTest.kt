@@ -48,7 +48,7 @@ internal class MaskAllTextViewWireframeMapperTest : BaseTextViewWireframeMapperT
 
     override fun initTestedMapper(): TextWireframeMapper {
         whenever(mockStringObfuscator.obfuscate(fakeText)).thenReturn(fakeMaskedStringValue)
-        return MaskAllTextWireframeMapper(stringObfuscator = mockStringObfuscator)
+        return MaskAllTextViewMapper(stringObfuscator = mockStringObfuscator)
     }
 
     override fun resolveTextValue(textView: TextView): String {

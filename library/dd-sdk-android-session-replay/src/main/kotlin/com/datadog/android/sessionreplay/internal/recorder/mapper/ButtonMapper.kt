@@ -10,7 +10,7 @@ import android.widget.Button
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
 
-internal class ButtonWireframeMapper(
+internal class ButtonMapper(
     private val textWireframeMapper: TextWireframeMapper = TextWireframeMapper()
 ) :
     WireframeMapper<Button, MobileSegment.Wireframe.TextWireframe> {

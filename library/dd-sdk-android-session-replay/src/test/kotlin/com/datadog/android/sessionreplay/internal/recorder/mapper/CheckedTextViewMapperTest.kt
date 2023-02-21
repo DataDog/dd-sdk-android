@@ -25,8 +25,8 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class CheckedTextViewMapperTest : BaseCheckedTextViewMapperTest() {
 
-    override fun setupTestedMapper(): CheckedTextViewWireframeMapper {
-        return CheckedTextViewWireframeMapper(
+    override fun setupTestedMapper(): CheckedTextViewMapper {
+        return CheckedTextViewMapper(
             textWireframeMapper = mockTextWireframeMapper,
             uniqueIdentifierGenerator = mockUniqueIdentifierResolver,
             viewUtils = mockViewUtils

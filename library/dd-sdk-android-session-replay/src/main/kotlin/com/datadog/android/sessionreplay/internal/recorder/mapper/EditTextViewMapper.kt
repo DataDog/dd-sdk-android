@@ -14,7 +14,7 @@ import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 
-internal open class EditTextWireframeMapper(
+internal open class EditTextViewMapper(
     private val textWireframeMapper: TextWireframeMapper,
     private val uniqueIdentifierGenerator: UniqueIdentifierResolver = UniqueIdentifierResolver,
     viewUtils: ViewUtils = ViewUtils()

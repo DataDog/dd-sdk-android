@@ -27,7 +27,7 @@ internal abstract class CheckableWireframeMapper<T>(
         return if (checkboxId != null) {
             val checkBoxColor = resolveCheckBoxColor(view)
             val checkBoxBounds = resolveCheckBoxBounds(view, pixelDensity)
-            val shapeStyle = resolveShapeStyle(view, checkBoxColor)
+            val shapeStyle = resolveCheckBoxShapeStyle(view, checkBoxColor)
             MobileSegment.Wireframe.ShapeWireframe(
                 id = checkboxId,
                 x = checkBoxBounds.x,
@@ -45,7 +45,8 @@ internal abstract class CheckableWireframeMapper<T>(
         }
     }
 
-    internal open fun resolveShapeStyle(view: T, checkBoxColor: String): MobileSegment.ShapeStyle? {
+    internal open fun resolveCheckBoxShapeStyle(view: T, checkBoxColor: String):
+        MobileSegment.ShapeStyle? {
         return if (view.isChecked) {
             MobileSegment.ShapeStyle(
                 backgroundColor = checkBoxColor,

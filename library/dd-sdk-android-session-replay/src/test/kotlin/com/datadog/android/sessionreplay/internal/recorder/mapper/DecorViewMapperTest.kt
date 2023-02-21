@@ -31,7 +31,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class DecorViewWireframeMapperTest : BaseWireframeMapperTest() {
+internal class DecorViewMapperTest : BaseWireframeMapperTest() {
 
     @Mock
     lateinit var mockViewWireframeMapper: ViewWireframeMapper
@@ -43,7 +43,7 @@ internal class DecorViewWireframeMapperTest : BaseWireframeMapperTest() {
 
     lateinit var mockViewWireframes: List<MobileSegment.Wireframe.ShapeWireframe>
 
-    private lateinit var testedDecorViewWireframeMapper: DecorViewWireframeMapper
+    private lateinit var testedDecorViewMapper: DecorViewMapper
 
     @LongForgery
     var fakeUniqueIdentifier: Long = 0L
@@ -54,7 +54,7 @@ internal class DecorViewWireframeMapperTest : BaseWireframeMapperTest() {
         whenever(
             mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
                 mockDecorView,
-                DecorViewWireframeMapper.WINDOW_KEY_NAME
+                DecorViewMapper.WINDOW_KEY_NAME
             )
         )
             .thenReturn(fakeUniqueIdentifier)
@@ -63,7 +63,7 @@ internal class DecorViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
         whenever(mockViewWireframeMapper.map(mockDecorView, fakeSystemInformation))
             .thenReturn(mockViewWireframes)
-        testedDecorViewWireframeMapper = DecorViewWireframeMapper(
+        testedDecorViewMapper = DecorViewMapper(
             mockViewWireframeMapper,
             mockUniqueIdentifierResolver
         )
@@ -93,7 +93,7 @@ internal class DecorViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val mappedDecorViewWireframes = testedDecorViewWireframeMapper
+        val mappedDecorViewWireframes = testedDecorViewMapper
             .map(mockDecorView, fakeSystemInformation)
             .filter { it.id in viewWireframesIds }
 
@@ -122,7 +122,7 @@ internal class DecorViewWireframeMapperTest : BaseWireframeMapperTest() {
         val expectedDecorViewWireframes = mockViewWireframes
 
         // When
-        val mappedDecorViewWireframes = testedDecorViewWireframeMapper
+        val mappedDecorViewWireframes = testedDecorViewMapper
             .map(mockDecorView, fakeSystemInformation)
             .filter { it.id in viewWireframesIds }
 
@@ -143,7 +143,7 @@ internal class DecorViewWireframeMapperTest : BaseWireframeMapperTest() {
         val expectedDecorViewWireframes = mockViewWireframes
 
         // When
-        val mappedDecorViewWireframes = testedDecorViewWireframeMapper
+        val mappedDecorViewWireframes = testedDecorViewMapper
             .map(mockDecorView, fakeSystemInformation)
             .filter { it.id in viewWireframesIds }
 
@@ -165,13 +165,13 @@ internal class DecorViewWireframeMapperTest : BaseWireframeMapperTest() {
             width = fakeSystemInformation.screenBounds.width,
             height = fakeSystemInformation.screenBounds.height,
             shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = DecorViewWireframeMapper.WINDOW_WIREFRAME_COLOR,
-                opacity = DecorViewWireframeMapper.WINDOW_WIREFRAME_OPACITY
+                backgroundColor = DecorViewMapper.WINDOW_WIREFRAME_COLOR,
+                opacity = DecorViewMapper.WINDOW_WIREFRAME_OPACITY
             )
         )
 
         // When
-        val wireframes = testedDecorViewWireframeMapper.map(mockDecorView, fakeSystemInformation)
+        val wireframes = testedDecorViewMapper.map(mockDecorView, fakeSystemInformation)
 
         // Then
         assertThat(wireframes.size).isEqualTo(mockViewWireframes.size + 1)
@@ -184,7 +184,7 @@ internal class DecorViewWireframeMapperTest : BaseWireframeMapperTest() {
         whenever(
             mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
                 mockDecorView,
-                DecorViewWireframeMapper.WINDOW_KEY_NAME
+                DecorViewMapper.WINDOW_KEY_NAME
             )
         ).thenReturn(null)
         val expectedWindowWireframe = MobileSegment.Wireframe.ShapeWireframe(
@@ -194,13 +194,13 @@ internal class DecorViewWireframeMapperTest : BaseWireframeMapperTest() {
             width = fakeSystemInformation.screenBounds.width,
             height = fakeSystemInformation.screenBounds.height,
             shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = DecorViewWireframeMapper.WINDOW_WIREFRAME_COLOR,
-                opacity = DecorViewWireframeMapper.WINDOW_WIREFRAME_OPACITY
+                backgroundColor = DecorViewMapper.WINDOW_WIREFRAME_COLOR,
+                opacity = DecorViewMapper.WINDOW_WIREFRAME_OPACITY
             )
         )
 
         // When
-        val wireframes = testedDecorViewWireframeMapper.map(mockDecorView, fakeSystemInformation)
+        val wireframes = testedDecorViewMapper.map(mockDecorView, fakeSystemInformation)
 
         // Then
         assertThat(wireframes.size).isEqualTo(mockViewWireframes.size)

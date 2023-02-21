@@ -10,20 +10,20 @@ internal open class AllowAllWireframeMapper(
     viewWireframeMapper: ViewWireframeMapper = ViewWireframeMapper(),
     imageMapper: ViewScreenshotWireframeMapper = ViewScreenshotWireframeMapper(viewWireframeMapper),
     textMapper: TextWireframeMapper = TextWireframeMapper(),
-    buttonMapper: ButtonWireframeMapper = ButtonWireframeMapper(textMapper),
-    editTextWireframeMapper: EditTextWireframeMapper = EditTextWireframeMapper(textMapper),
-    checkedTextViewWireframeMapper: CheckedTextViewWireframeMapper =
-        CheckedTextViewWireframeMapper(textMapper),
-    decorViewWireframeMapper: DecorViewWireframeMapper =
-        DecorViewWireframeMapper(viewWireframeMapper),
-    checkBoxWireframeMapper: CheckBoxWireframeMapper = CheckBoxWireframeMapper(textMapper)
+    buttonMapper: ButtonMapper = ButtonMapper(textMapper),
+    editTextViewMapper: EditTextViewMapper = EditTextViewMapper(textMapper),
+    checkedTextViewMapper: CheckedTextViewMapper =
+        CheckedTextViewMapper(textMapper),
+    decorViewMapper: DecorViewMapper =
+        DecorViewMapper(viewWireframeMapper),
+    checkBoxMapper: CheckBoxMapper = CheckBoxMapper(textMapper)
 ) : GenericWireframeMapper(
     viewWireframeMapper,
     imageMapper,
     textMapper,
     buttonMapper,
-    editTextWireframeMapper,
-    checkedTextViewWireframeMapper,
-    decorViewWireframeMapper,
-    checkBoxWireframeMapper
+    editTextViewMapper,
+    checkedTextViewMapper,
+    decorViewMapper,
+    checkBoxMapper
 )

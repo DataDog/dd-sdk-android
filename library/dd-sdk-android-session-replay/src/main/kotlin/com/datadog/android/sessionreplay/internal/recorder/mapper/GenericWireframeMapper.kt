@@ -20,21 +20,21 @@ internal abstract class GenericWireframeMapper(
     private val viewWireframeMapper: ViewWireframeMapper,
     internal val imageMapper: ViewScreenshotWireframeMapper,
     private val textMapper: TextWireframeMapper,
-    private val buttonMapper: ButtonWireframeMapper,
-    private val editTextWireframeMapper: EditTextWireframeMapper,
-    private val checkedTextViewWireframeMapper: CheckedTextViewWireframeMapper,
-    private val decorViewWireframeMapper: DecorViewWireframeMapper,
-    private val checkBoxWireframeMapper: CheckBoxWireframeMapper
+    private val buttonMapper: ButtonMapper,
+    private val editTextViewMapper: EditTextViewMapper,
+    private val checkedTextViewMapper: CheckedTextViewMapper,
+    private val decorViewMapper: DecorViewMapper,
+    private val checkBoxMapper: CheckBoxMapper
 ) : WireframeMapper<View, MobileSegment.Wireframe> {
 
     override fun map(view: View, systemInformation: SystemInformation):
         List<MobileSegment.Wireframe> {
         return when {
             CheckBox::class.java.isAssignableFrom(view::class.java) -> {
-                checkBoxWireframeMapper.map(view as CheckBox, systemInformation)
+                checkBoxMapper.map(view as CheckBox, systemInformation)
             }
             CheckedTextView::class.java.isAssignableFrom(view::class.java) -> {
-                checkedTextViewWireframeMapper.map(
+                checkedTextViewMapper.map(
                     view as CheckedTextView,
                     systemInformation
                 )
@@ -43,7 +43,7 @@ internal abstract class GenericWireframeMapper(
                 buttonMapper.map(view as Button, systemInformation)
             }
             EditText::class.java.isAssignableFrom(view::class.java) -> {
-                editTextWireframeMapper.map(view as EditText, systemInformation)
+                editTextViewMapper.map(view as EditText, systemInformation)
             }
             TextView::class.java.isAssignableFrom(view::class.java) -> {
                 textMapper.map(view as TextView, systemInformation)
@@ -56,7 +56,7 @@ internal abstract class GenericWireframeMapper(
                 if (viewParent == null ||
                     !View::class.java.isAssignableFrom(viewParent::class.java)
                 ) {
-                    decorViewWireframeMapper.map(view, systemInformation)
+                    decorViewMapper.map(view, systemInformation)
                 } else {
                     viewWireframeMapper.map(view, systemInformation)
                 }

@@ -10,7 +10,7 @@ import android.view.View
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
 
-internal class DecorViewWireframeMapper(
+internal class DecorViewMapper(
     private val viewWireframeMapper: ViewWireframeMapper,
     private val uniqueIdentifierGenerator: UniqueIdentifierResolver = UniqueIdentifierResolver
 ) : BaseWireframeMapper<View, MobileSegment.Wireframe.ShapeWireframe>() {

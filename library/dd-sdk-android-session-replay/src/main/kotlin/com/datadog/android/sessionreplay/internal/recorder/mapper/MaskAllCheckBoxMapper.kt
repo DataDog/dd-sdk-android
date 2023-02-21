@@ -11,16 +11,19 @@ import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.internal.utils.StringUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 
-internal class MaskAllCheckBoxWireframeMapper(
+internal class MaskAllCheckBoxMapper(
     textWireframeMapper: TextWireframeMapper,
     stringUtils: StringUtils = StringUtils,
     uniqueIdentifierGenerator: UniqueIdentifierResolver =
         UniqueIdentifierResolver,
     viewUtils: ViewUtils = ViewUtils()
-) : CheckBoxWireframeMapper(textWireframeMapper, stringUtils, uniqueIdentifierGenerator, viewUtils) {
+) : CheckBoxMapper(textWireframeMapper, stringUtils, uniqueIdentifierGenerator, viewUtils) {
 
-    override fun resolveShapeStyle(view: CheckBox, checkBoxColor: String):
+    override fun resolveCheckBoxShapeStyle(view: CheckBox, checkBoxColor: String):
         MobileSegment.ShapeStyle? {
+        // in case the MASK_ALL rule is applied we do not want to show the selection in the
+        // checkbox related wireframe and in order to achieve that we need to provide
+        // a null value for the `ShapeStyle` and only keep the `ShapeBorder`.
         return null
     }
 }

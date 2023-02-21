@@ -23,10 +23,10 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class CheckBoxWireframeMapperTest : BaseCheckBoxMapperTest() {
+internal class CheckBoxMapperTest : BaseCheckBoxMapperTest() {
 
-    override fun setupTestedMapper(): CheckBoxWireframeMapper {
-        return CheckBoxWireframeMapper(
+    override fun setupTestedMapper(): CheckBoxMapper {
+        return CheckBoxMapper(
             textWireframeMapper = mockTextWireframeMapper,
             uniqueIdentifierGenerator = mockUniqueIdentifierResolver,
             viewUtils = mockViewUtils

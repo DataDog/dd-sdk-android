@@ -30,9 +30,9 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
+internal class ButtonMapperTest : BaseWireframeMapperTest() {
 
-    private lateinit var testedButtonWireframeMapper: ButtonWireframeMapper
+    private lateinit var testedButtonMapper: ButtonMapper
 
     @Mock
     lateinit var mockTextWireframeMapper: TextWireframeMapper
@@ -47,7 +47,7 @@ internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
     fun `set up`() {
         whenever(mockTextWireframeMapper.map(mockButton, fakeSystemInformation))
             .thenReturn(fakeTextWireframes)
-        testedButtonWireframeMapper = ButtonWireframeMapper(mockTextWireframeMapper)
+        testedButtonMapper = ButtonMapper(mockTextWireframeMapper)
     }
 
     @Test
@@ -60,7 +60,7 @@ internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
             .thenReturn(fakeTextWireframes)
 
         // When
-        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakeSystemInformation)
+        val buttonWireframes = testedButtonMapper.map(mockButton, fakeSystemInformation)
 
         // Then
         assertThat(buttonWireframes).isEqualTo(fakeTextWireframes)
@@ -76,7 +76,7 @@ internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
             .thenReturn(fakeTextWireframes)
 
         // When
-        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakeSystemInformation)
+        val buttonWireframes = testedButtonMapper.map(mockButton, fakeSystemInformation)
 
         // Then
         assertThat(buttonWireframes).isEqualTo(fakeTextWireframes)
@@ -90,11 +90,11 @@ internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
             .thenReturn(fakeTextWireframes)
 
         val expectedWireframes = fakeTextWireframes.map {
-            it.copy(border = MobileSegment.ShapeBorder(ButtonWireframeMapper.BLACK_COLOR, 1))
+            it.copy(border = MobileSegment.ShapeBorder(ButtonMapper.BLACK_COLOR, 1))
         }
 
         // When
-        val buttonWireframes = testedButtonWireframeMapper.map(mockButton, fakeSystemInformation)
+        val buttonWireframes = testedButtonMapper.map(mockButton, fakeSystemInformation)
 
         // Then
         assertThat(buttonWireframes).isEqualTo(expectedWireframes)
