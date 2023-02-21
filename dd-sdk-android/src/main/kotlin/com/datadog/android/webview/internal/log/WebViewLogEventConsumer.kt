@@ -20,7 +20,7 @@ import com.google.gson.JsonObject
 
 internal class WebViewLogEventConsumer(
     private val sdkCore: SdkCore,
-    private val userLogsWriter: DataWriter<JsonObject>,
+    internal val userLogsWriter: DataWriter<JsonObject>,
     private val rumContextProvider: WebViewRumEventContextProvider
 ) : WebViewEventConsumer<Pair<JsonObject, String>> {
 

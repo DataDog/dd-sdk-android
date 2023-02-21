@@ -24,7 +24,6 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.CustomAttributes
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -120,11 +119,9 @@ internal class DatadogCoreInitializationTest {
         if (rumEnabled) {
             assertThat(testedCore.rumFeature!!.initialized.get()).isTrue()
             assertThat(testedCore.getFeature(Feature.RUM_FEATURE_NAME)).isNotNull
-            assertThat(testedCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)).isNotNull
         } else {
             assertThat(testedCore.rumFeature).isNull()
             assertThat(testedCore.getFeature(Feature.RUM_FEATURE_NAME)).isNull()
-            assertThat(testedCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)).isNull()
         }
     }
 

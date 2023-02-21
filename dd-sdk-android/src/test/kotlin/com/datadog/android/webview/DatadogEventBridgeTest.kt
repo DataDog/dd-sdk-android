@@ -13,9 +13,13 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.RequestFactory
+import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.storage.NoOpDataWriter
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
@@ -24,10 +28,14 @@ import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
+import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -63,49 +71,63 @@ internal class DatadogEventBridgeTest {
     lateinit var mockCore: DatadogCore
 
     @Mock
-    lateinit var mockWebViewRumFeatureScope: FeatureScope
+    lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock
-    lateinit var mockWebViewLogsFeatureScope: FeatureScope
+    lateinit var mockLogsFeatureScope: FeatureScope
 
     @Mock
-    lateinit var mockWebViewRumFeature: WebViewRumFeature
+    lateinit var mockRumFeature: StorageBackedFeature
 
     @Mock
-    lateinit var mockWebViewLogsFeature: WebViewLogsFeature
+    lateinit var mockLogsFeature: StorageBackedFeature
+
+    @Mock
+    lateinit var mockRumRequestFactory: RequestFactory
+
+    @Mock
+    lateinit var mockLogsRequestFactory: RequestFactory
 
     @BeforeEach
     fun `set up`() {
         whenever(
-            mockCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
-        ) doReturn mockWebViewRumFeatureScope
+            mockCore.getFeature(Feature.RUM_FEATURE_NAME)
+        ) doReturn mockRumFeatureScope
         whenever(
-            mockCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
-        ) doReturn mockWebViewLogsFeatureScope
+            mockCore.getFeature(Feature.LOGS_FEATURE_NAME)
+        ) doReturn mockLogsFeatureScope
 
         whenever(
-            mockWebViewRumFeatureScope.unwrap<WebViewRumFeature>()
-        ) doReturn mockWebViewRumFeature
+            mockRumFeatureScope.unwrap<StorageBackedFeature>()
+        ) doReturn mockRumFeature
         whenever(
-            mockWebViewLogsFeatureScope.unwrap<WebViewLogsFeature>()
-        ) doReturn mockWebViewLogsFeature
+            mockLogsFeatureScope.unwrap<StorageBackedFeature>()
+        ) doReturn mockLogsFeature
 
-        whenever(mockWebViewRumFeature.dataWriter) doReturn mock()
-        whenever(mockWebViewLogsFeature.dataWriter) doReturn mock()
+        whenever(mockRumFeature.requestFactory) doReturn mockRumRequestFactory
+        whenever(mockLogsFeature.requestFactory) doReturn mockLogsRequestFactory
 
         whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
 
         testedDatadogEventBridge = DatadogEventBridge(
-            mockCore,
             mockWebViewEventConsumer,
             emptyList()
         )
     }
 
     @Test
-    fun `M create a default WebEventConsumer W init()`() {
+    fun `M create a default WebEventConsumer W init()`(
+        @Forgery fakeUrls: List<URL>
+    ) {
+        // Given
+        val fakeHosts = fakeUrls.map { it.host }
+        whenever(mockCore.registerFeature(any())) doAnswer {
+            val feature = it.getArgument<Feature>(0)
+            feature.onInitialize(mockCore, mock(), mock())
+        }
+
         // When
-        val bridge = DatadogEventBridge(mockCore)
+        val bridge = DatadogEventBridge(mockCore, fakeHosts)
 
         // Then
         val consumer = bridge.webViewEventConsumer
@@ -115,6 +137,108 @@ internal class DatadogEventBridgeTest {
             .isInstanceOf(WebViewLogEventConsumer::class.java)
         assertThat(mixedConsumer.rumEventConsumer)
             .isInstanceOf(WebViewRumEventConsumer::class.java)
+
+        argumentCaptor<Feature> {
+            verify(mockCore, times(2)).registerFeature(capture())
+
+            val webViewRumFeature = firstValue
+            val webViewLogsFeature = secondValue
+
+            assertThat((webViewRumFeature as WebViewRumFeature).requestFactory)
+                .isSameAs(mockRumRequestFactory)
+            assertThat((webViewLogsFeature as WebViewLogsFeature).requestFactory)
+                .isSameAs(mockLogsRequestFactory)
+        }
+    }
+
+    @Test
+    fun `M create a default WebEventConsumer W init() {RUM feature is not registered}`(
+        @Forgery fakeUrls: List<URL>
+    ) {
+        // Given
+        val fakeHosts = fakeUrls.map { it.host }
+        whenever(mockCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
+        whenever(mockCore.registerFeature(any())) doAnswer {
+            val feature = it.getArgument<Feature>(0)
+            feature.onInitialize(mockCore, mock(), mock())
+        }
+
+        // When
+        val bridge = DatadogEventBridge(mockCore, fakeHosts)
+
+        // Then
+        val consumer = bridge.webViewEventConsumer
+        assertThat(consumer).isInstanceOf(MixedWebViewEventConsumer::class.java)
+        val mixedConsumer = consumer as MixedWebViewEventConsumer
+        assertThat(mixedConsumer.logsEventConsumer)
+            .isInstanceOf(WebViewLogEventConsumer::class.java)
+        assertThat((mixedConsumer.logsEventConsumer as WebViewLogEventConsumer).userLogsWriter)
+            .isNotInstanceOf(NoOpDataWriter::class.java)
+        assertThat(mixedConsumer.rumEventConsumer)
+            .isInstanceOf(WebViewRumEventConsumer::class.java)
+        assertThat((mixedConsumer.rumEventConsumer as WebViewRumEventConsumer).dataWriter)
+            .isInstanceOf(NoOpDataWriter::class.java)
+
+        argumentCaptor<Feature> {
+            verify(mockCore, times(1)).registerFeature(capture())
+
+            val webViewLogsFeature = firstValue
+
+            assertThat((webViewLogsFeature as WebViewLogsFeature).requestFactory)
+                .isSameAs(mockLogsRequestFactory)
+        }
+
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                DatadogEventBridge.RUM_FEATURE_MISSING_INFO
+            )
+    }
+
+    @Test
+    fun `M create a default WebEventConsumer W init() {Logs feature is not registered}`(
+        @Forgery fakeUrls: List<URL>
+    ) {
+        // Given
+        val fakeHosts = fakeUrls.map { it.host }
+        whenever(mockCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
+        whenever(mockCore.registerFeature(any())) doAnswer {
+            val feature = it.getArgument<Feature>(0)
+            feature.onInitialize(mockCore, mock(), mock())
+        }
+
+        // When
+        val bridge = DatadogEventBridge(mockCore, fakeHosts)
+
+        // Then
+        val consumer = bridge.webViewEventConsumer
+        assertThat(consumer).isInstanceOf(MixedWebViewEventConsumer::class.java)
+        val mixedConsumer = consumer as MixedWebViewEventConsumer
+        assertThat(mixedConsumer.logsEventConsumer)
+            .isInstanceOf(WebViewLogEventConsumer::class.java)
+        assertThat((mixedConsumer.logsEventConsumer as WebViewLogEventConsumer).userLogsWriter)
+            .isInstanceOf(NoOpDataWriter::class.java)
+        assertThat(mixedConsumer.rumEventConsumer)
+            .isInstanceOf(WebViewRumEventConsumer::class.java)
+        assertThat((mixedConsumer.rumEventConsumer as WebViewRumEventConsumer).dataWriter)
+            .isNotInstanceOf(NoOpDataWriter::class.java)
+
+        argumentCaptor<Feature> {
+            verify(mockCore, times(1)).registerFeature(capture())
+
+            val webViewRumFeature = firstValue
+
+            assertThat((webViewRumFeature as WebViewRumFeature).requestFactory)
+                .isSameAs(mockRumRequestFactory)
+        }
+
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                DatadogEventBridge.LOGS_FEATURE_MISSING_INFO
+            )
     }
 
     @Test
@@ -127,13 +251,15 @@ internal class DatadogEventBridgeTest {
     }
 
     @Test
-    fun `M return the webViewTrackingHosts as JsonArray W getAllowedWebViewHosts() { global }`(
-        @Forgery fakeUrls: List<URL>
+    fun `M return sanitized webViewTrackingHosts W getAllowedWebViewHosts() { allow IP addresses }`(
+        @StringForgery(
+            regex = "(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +
+                "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
+        ) hosts: List<String>
     ) {
         // Given
-        val fakeHosts = fakeUrls.map { it.host }
-        val expectedHosts = fakeHosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        whenever(coreFeature.mockInstance.webViewTrackingHosts) doReturn fakeHosts
+        val expectedHosts = hosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
+        testedDatadogEventBridge = DatadogEventBridge(mockCore, hosts)
 
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
@@ -143,14 +269,15 @@ internal class DatadogEventBridgeTest {
     }
 
     @Test
-    fun `M return the webViewTrackingHosts as JsonArray W getAllowedWebViewHosts() { local }`(
-        @Forgery fakeUrls: List<URL>
+    fun `M return sanitized webViewTrackingHosts W getAllowedWebViewHosts() { allow host names }`(
+        @StringForgery(
+            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) hosts: List<String>
     ) {
         // Given
-        val fakeHosts = fakeUrls.map { it.host }
-        val expectedHosts = fakeHosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        whenever(coreFeature.mockInstance.webViewTrackingHosts) doReturn emptyList()
-        testedDatadogEventBridge = DatadogEventBridge(mockCore, fakeHosts)
+        val expectedHosts = hosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
+        testedDatadogEventBridge = DatadogEventBridge(mockCore, hosts)
 
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
@@ -160,17 +287,15 @@ internal class DatadogEventBridgeTest {
     }
 
     @Test
-    fun `M return the webViewTrackingHosts as JsonArray W getAllowedWebViewHosts() { mixed }`(
-        @Forgery fakeGlobalUrls: List<URL>,
-        @Forgery fakeLocalUrls: List<URL>
+    fun `M return sanitized webViewTrackingHosts W getAllowedWebViewHosts() { allow URLs }`(
+        @StringForgery(
+            regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
+        ) hosts: List<String>
     ) {
         // Given
-        val fakeLocalHosts = fakeLocalUrls.map { it.host }
-        val fakeGlobalHosts = fakeGlobalUrls.map { it.host }
-        val expectedHosts = (fakeLocalHosts + fakeGlobalHosts)
+        val expectedHosts = hosts.map { URL(it).host }
             .joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        whenever(coreFeature.mockInstance.webViewTrackingHosts) doReturn fakeGlobalHosts
-        testedDatadogEventBridge = DatadogEventBridge(mockCore, fakeLocalHosts)
+        testedDatadogEventBridge = DatadogEventBridge(mockCore, hosts)
 
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
@@ -180,9 +305,9 @@ internal class DatadogEventBridgeTest {
     }
 
     @Test
-    fun `M attach the bridge W setup`() {
+    fun `M attach the bridge W setup`(@Forgery fakeUrls: List<URL>) {
         // Given
-
+        val fakeHosts = fakeUrls.map { it.host }
         val mockSettings: WebSettings = mock {
             whenever(it.javaScriptEnabled).thenReturn(true)
         }
@@ -191,7 +316,7 @@ internal class DatadogEventBridgeTest {
         }
 
         // When
-        DatadogEventBridge.setup(mockCore, mockWebView)
+        DatadogEventBridge.setup(mockCore, mockWebView, fakeHosts)
 
         // Then
         verify(mockWebView).addJavascriptInterface(
@@ -201,9 +326,11 @@ internal class DatadogEventBridgeTest {
     }
 
     @Test
-    fun `M attach the bridge and send a warn log W setup { javascript not enabled }`() {
+    fun `M attach the bridge and send a warn log W setup { javascript not enabled }`(
+        @Forgery fakeUrls: List<URL>
+    ) {
         // Given
-
+        val fakeHosts = fakeUrls.map { it.host }
         val mockSettings: WebSettings = mock {
             whenever(it.javaScriptEnabled).thenReturn(false)
         }
@@ -212,7 +339,7 @@ internal class DatadogEventBridgeTest {
         }
 
         // When
-        DatadogEventBridge.setup(mockCore, mockWebView)
+        DatadogEventBridge.setup(mockCore, mockWebView, fakeHosts)
 
         // Then
         verify(mockWebView).addJavascriptInterface(

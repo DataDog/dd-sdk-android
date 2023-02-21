@@ -41,7 +41,6 @@ internal class ConfigurationCoreForgeryFactory :
             proxy = proxy,
             proxyAuth = auth,
             encryption = forge.aNullable { NoOpEncryption() },
-            webViewTrackingHosts = forge.aList { getForgery<URL>().host },
             site = forge.aValueFrom(DatadogSite::class.java)
         )
     }

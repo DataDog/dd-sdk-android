@@ -124,7 +124,6 @@ internal class CoreFeature {
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: ExecutorService
     internal var localDataEncryption: Encryption? = null
-    internal lateinit var webViewTrackingHosts: List<String>
     internal lateinit var storageDir: File
     internal lateinit var androidInfoProvider: AndroidInfoProvider
 
@@ -147,7 +146,6 @@ internal class CoreFeature {
         setupOkHttpClient(configuration)
         firstPartyHostHeaderTypeResolver
             .addKnownHostsWithHeaderTypes(configuration.firstPartyHostsWithHeaderTypes)
-        webViewTrackingHosts = configuration.webViewTrackingHosts
         androidInfoProvider = DefaultAndroidInfoProvider(appContext)
         setupExecutors()
         storageDir = File(

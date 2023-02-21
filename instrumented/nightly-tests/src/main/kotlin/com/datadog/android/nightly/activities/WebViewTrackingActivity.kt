@@ -17,7 +17,7 @@ import com.datadog.android.webview.DatadogEventBridge
 import java.util.UUID
 import kotlin.random.Random
 
-internal open class WebViewTrackingActivity : AppCompatActivity() {
+internal class WebViewTrackingActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.webview_tracking_activity)
@@ -35,8 +35,8 @@ internal open class WebViewTrackingActivity : AppCompatActivity() {
         )
     }
 
-    open fun setupWebView(webView: WebView) {
-        val datadogEventBridge = DatadogEventBridge(Datadog.globalSdkCore)
+    private fun setupWebView(webView: WebView) {
+        val datadogEventBridge = DatadogEventBridge(Datadog.globalSdkCore, listOf("datadoghq.dev"))
         measure(TEST_METHOD_NAME) {
             webView.addJavascriptInterface(datadogEventBridge, "DatadogEventBridge")
         }

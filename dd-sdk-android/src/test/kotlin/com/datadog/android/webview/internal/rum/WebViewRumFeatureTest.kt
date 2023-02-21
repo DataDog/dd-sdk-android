@@ -12,15 +12,14 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.FeatureStorageConfiguration
+import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.storage.NoOpDataWriter
-import com.datadog.android.v2.rum.internal.net.RumRequestFactory
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.mock
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -45,15 +44,15 @@ internal class WebViewRumFeatureTest {
 
     private lateinit var testedFeature: WebViewRumFeature
 
-    @StringForgery(regex = "https://[a-z]+\\.com")
-    lateinit var endpointUrl: String
+    @Mock
+    lateinit var mockRequestFactory: RequestFactory
 
     @Mock
     lateinit var mockSdkCore: SdkCore
 
     @BeforeEach
     fun `set up`() {
-        testedFeature = WebViewRumFeature(endpointUrl, coreFeature.mockInstance)
+        testedFeature = WebViewRumFeature(mockRequestFactory, coreFeature.mockInstance)
     }
 
     @Test
@@ -74,10 +73,10 @@ internal class WebViewRumFeatureTest {
     }
 
     @Test
-    fun `𝕄 provide RUM request factory 𝕎 requestFactory()`() {
+    fun `𝕄 provide initial request factory 𝕎 requestFactory()`() {
         // When+Then
         assertThat(testedFeature.requestFactory)
-            .isInstanceOf(RumRequestFactory::class.java)
+            .isSameAs(mockRequestFactory)
     }
 
     @Test

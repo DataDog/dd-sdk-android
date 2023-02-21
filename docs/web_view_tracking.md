@@ -42,7 +42,6 @@ Set up the web page you want rendered on your mobile Android and Android TV appl
                 )
                .useSite()
                .trackInteractions()
-               .setWebViewTrackingHosts(hosts)
                .trackLongTasks(durationThreshold)
                .useViewTrackingStrategy(strategy)
                .build()
@@ -52,7 +51,7 @@ Set up the web page you want rendered on your mobile Android and Android TV appl
     }
    ```
 
-4. Configure the `DatadogEventBridge` for web views you want to track in your mobile Android application using `DatadogEventBridge.setup(webView)` in the configuration file when you initialize the RUM Android SDK.
+4. Configure the `DatadogEventBridge` for web views you want to track in your mobile Android application using `DatadogEventBridge.setup(sdkInstance, webView, allowedHosts)` in the configuration file after you initialize the RUM Android SDK.
 
 ## Access your web views
 
@@ -69,6 +68,6 @@ Click **Open View waterfall** to navigate from the session to a resource waterfa
 {{< partial name="whats-next/whats-next.html" >}}
 
 [1]: https://docs.datadoghq.com/real_user_monitoring/browser/#npm
-[2]: https://search.maven.org/artifact/com.datadoghq/dd-sdk-android/1.12.0-beta1/aar
+[2]: https://search.maven.org/artifact/com.datadoghq/dd-sdk-android/1.16.0/aar
 [3]: https://docs.datadoghq.com/real_user_monitoring/android/?tab=kotlin#setup
 [4]: https://app.datadoghq.com/rum/explorer

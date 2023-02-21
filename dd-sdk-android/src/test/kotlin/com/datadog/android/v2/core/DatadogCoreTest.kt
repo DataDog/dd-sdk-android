@@ -29,8 +29,6 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.ContextProvider
-import com.datadog.android.webview.internal.log.WebViewLogsFeature
-import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -445,9 +443,7 @@ internal class DatadogCoreTest {
         val sdkFeatureMocks = listOf(
             Feature.RUM_FEATURE_NAME,
             Feature.TRACING_FEATURE_NAME,
-            Feature.LOGS_FEATURE_NAME,
-            WebViewLogsFeature.WEB_LOGS_FEATURE_NAME,
-            WebViewRumFeature.WEB_RUM_FEATURE_NAME
+            Feature.LOGS_FEATURE_NAME
         ).map {
             it to mock<SdkFeature>()
         }

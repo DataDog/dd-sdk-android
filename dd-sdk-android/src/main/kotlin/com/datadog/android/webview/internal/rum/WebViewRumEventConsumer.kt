@@ -22,7 +22,7 @@ import java.lang.UnsupportedOperationException
 
 internal class WebViewRumEventConsumer(
     private val sdkCore: SdkCore,
-    private val dataWriter: DataWriter<Any>,
+    internal val dataWriter: DataWriter<Any>,
     private val webViewRumEventMapper: WebViewRumEventMapper = WebViewRumEventMapper(),
     private val contextProvider: WebViewRumEventContextProvider = WebViewRumEventContextProvider()
 ) : WebViewEventConsumer<JsonObject> {

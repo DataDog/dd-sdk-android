@@ -846,21 +846,6 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `M initialize webViewTrackingHosts W initialize()`() {
-        // When
-        testedFeature.initialize(
-            appContext.mockInstance,
-            fakeSdkInstanceId,
-            fakeCredentials,
-            fakeConfig,
-            fakeConsent
-        )
-
-        // Then
-        assertThat(testedFeature.webViewTrackingHosts).isEqualTo(fakeConfig.webViewTrackingHosts)
-    }
-
-    @Test
     fun `M initialize storage directory W initialize()`(
         @TempDir tempDir: File
     ) {
