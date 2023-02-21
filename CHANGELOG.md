@@ -1,3 +1,9 @@
+# 1.17.1 / 2023-02-20
+
+* [BUGFIX] RUM: Revert: Detect device's refresh rate from vital monitor. See [#1251](https://github.com/DataDog/dd-sdk-android/pull/1251)
+* [BUGFIX] RUM: The `RumEventMapper` checks `ViewEvent`s by reference. See [#1279](https://github.com/DataDog/dd-sdk-android/pull/1279)
+* [BUGFIX] Global: Remove `okhttp3.internal` package usage. See [#1288](https://github.com/DataDog/dd-sdk-android/pull/1288)
+
 # 1.17.0 / 2023-01-30
 
 * [FEATURE] Tracing: Allow the usage of OTel headers in distributed tracing. See [#1229](https://github.com/DataDog/dd-sdk-android/pull/1229)
