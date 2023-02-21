@@ -15,7 +15,7 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.android.v2.core.storage.NoOpDataWriter
-import com.datadog.android.v2.webview.internal.storage.WebViewLogsDataWriter
+import com.datadog.android.webview.internal.log.storage.WebViewLogsDataWriter
 import com.datadog.android.webview.internal.log.domain.event.WebViewLogEventSerializer
 import com.google.gson.JsonObject
 import java.util.concurrent.atomic.AtomicBoolean

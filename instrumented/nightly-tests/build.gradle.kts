@@ -102,6 +102,7 @@ dependencies {
     implementation(project(":library:dd-sdk-android-ndk"))
     implementation(project(":library:dd-sdk-android-logs"))
     implementation(project(":library:dd-sdk-android-trace"))
+    implementation(project(":library:dd-sdk-android-webview"))
 
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.gson)

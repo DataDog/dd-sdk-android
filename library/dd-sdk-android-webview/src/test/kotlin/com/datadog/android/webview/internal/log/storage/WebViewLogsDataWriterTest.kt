@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.v2.webview.internal.storage
+package com.datadog.android.webview.internal.log.storage
 
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.utils.forge.Configurator

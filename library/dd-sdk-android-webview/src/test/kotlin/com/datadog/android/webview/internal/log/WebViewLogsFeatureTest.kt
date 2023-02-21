@@ -14,7 +14,7 @@ import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.storage.NoOpDataWriter
-import com.datadog.android.v2.webview.internal.storage.WebViewLogsDataWriter
+import com.datadog.android.webview.internal.log.storage.WebViewLogsDataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension

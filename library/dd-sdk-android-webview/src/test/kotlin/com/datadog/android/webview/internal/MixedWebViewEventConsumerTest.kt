@@ -4,13 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.webview
+package com.datadog.android.webview.internal
 
-import com.datadog.android.utils.assertj.JsonElementAssert.Companion.assertThat
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider

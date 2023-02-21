@@ -1,1 +1,6 @@
-class com.datadog.android.webview.Placeholder
+class com.datadog.android.webview.DatadogEventBridge
+  constructor(com.datadog.android.v2.api.SdkCore, List<String>)
+  fun send(String)
+  fun getAllowedWebViewHosts(): String
+  companion object 
+    fun setup(com.datadog.android.v2.api.SdkCore, android.webkit.WebView, List<String>)
