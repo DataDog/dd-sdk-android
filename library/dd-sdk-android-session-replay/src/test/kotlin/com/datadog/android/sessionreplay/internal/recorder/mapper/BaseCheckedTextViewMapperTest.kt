@@ -43,7 +43,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
+internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest() {
 
     lateinit var testedCheckedTextWireframeMapper: CheckedTextViewWireframeMapper
 
@@ -121,10 +121,15 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
             )
         )
             .thenReturn(fakeViewGlobalBounds)
-        testedCheckedTextWireframeMapper = CheckedTextViewWireframeMapper(
-            textWireframeMapper = mockTextWireframeMapper,
-            uniqueIdentifierGenerator = mockUniqueIdentifierResolver,
-            viewUtils = mockViewUtils
+        testedCheckedTextWireframeMapper = setupTestedMapper()
+    }
+
+    internal abstract fun setupTestedMapper(): CheckedTextViewWireframeMapper
+
+    internal open fun expectedCheckedShapeStyle(checkBoxColor: String): MobileSegment.ShapeStyle? {
+        return MobileSegment.ShapeStyle(
+            backgroundColor = checkBoxColor,
+            opacity = mockCheckedTextView.alpha
         )
     }
 
@@ -150,10 +155,7 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
                 color = expectedCheckBoxColor,
                 width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
             ),
-            shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = expectedCheckBoxColor,
-                opacity = mockCheckedTextView.alpha
-            )
+            shapeStyle = expectedCheckedShapeStyle(expectedCheckBoxColor)
         )
 
         // When
@@ -355,7 +357,7 @@ internal class CheckedTextWireframeMapperTest : BaseWireframeMapperTest() {
 
     private fun resolveCheckBoxSize(): Long {
         val size = fakeCheckMarkHeight - fakePaddingBottom - fakePaddingTop
-        return (size * fakeTextSize / (fakeTextSize - 1)).toLong()
+        return (size * (fakeTextSize - 1) / fakeTextSize).toLong()
             .densityNormalized(fakeSystemInformation.screenDensity)
     }
 

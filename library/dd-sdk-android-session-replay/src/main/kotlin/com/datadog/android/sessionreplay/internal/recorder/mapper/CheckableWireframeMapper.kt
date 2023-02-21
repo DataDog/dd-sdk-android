@@ -8,8 +8,8 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.Checkable
 import android.widget.TextView
+import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal abstract class CheckableWireframeMapper<T>(
@@ -25,27 +25,15 @@ internal abstract class CheckableWireframeMapper<T>(
             CHECKBOX_KEY_NAME
         )
         return if (checkboxId != null) {
-            val textViewPaddingRight =
-                view.totalPaddingRight.toLong().densityNormalized(pixelDensity)
-            val viewGlobalBounds = resolveViewGlobalBounds(view, pixelDensity)
             val checkBoxColor = resolveCheckBoxColor(view)
-            val checkBoxSize = resolveCheckBoxSize(view, pixelDensity)
-            val checkBoxPosX = viewGlobalBounds.x + viewGlobalBounds.width - textViewPaddingRight
-            val checkBoxPosY = viewGlobalBounds.y
-            val shapeStyle = if (view.isChecked) {
-                MobileSegment.ShapeStyle(
-                    backgroundColor = checkBoxColor,
-                    view.alpha
-                )
-            } else {
-                null
-            }
+            val checkBoxBounds = resolveCheckBoxBounds(view, pixelDensity)
+            val shapeStyle = resolveShapeStyle(view, checkBoxColor)
             MobileSegment.Wireframe.ShapeWireframe(
                 id = checkboxId,
-                x = checkBoxPosX,
-                y = checkBoxPosY,
-                width = checkBoxSize,
-                height = checkBoxSize,
+                x = checkBoxBounds.x,
+                y = checkBoxBounds.y,
+                width = checkBoxBounds.width,
+                height = checkBoxBounds.height,
                 border = MobileSegment.ShapeBorder(
                     color = checkBoxColor,
                     width = CHECKBOX_BORDER_WIDTH
@@ -57,9 +45,19 @@ internal abstract class CheckableWireframeMapper<T>(
         }
     }
 
+    internal open fun resolveShapeStyle(view: T, checkBoxColor: String): MobileSegment.ShapeStyle? {
+        return if (view.isChecked) {
+            MobileSegment.ShapeStyle(
+                backgroundColor = checkBoxColor,
+                view.alpha
+            )
+        } else {
+            null
+        }
+    }
     internal abstract fun resolveCheckBoxColor(view: T): String
 
-    internal abstract fun resolveCheckBoxSize(view: T, pixelsDensity: Float): Long
+    internal abstract fun resolveCheckBoxBounds(view: T, pixelsDensity: Float): GlobalBounds
 
     companion object {
         internal const val CHECKBOX_KEY_NAME = "checkbox"

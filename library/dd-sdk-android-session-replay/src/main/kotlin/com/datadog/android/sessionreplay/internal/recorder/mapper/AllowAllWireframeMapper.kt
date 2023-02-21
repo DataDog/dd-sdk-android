@@ -15,7 +15,8 @@ internal open class AllowAllWireframeMapper(
     checkedTextViewWireframeMapper: CheckedTextViewWireframeMapper =
         CheckedTextViewWireframeMapper(textMapper),
     decorViewWireframeMapper: DecorViewWireframeMapper =
-        DecorViewWireframeMapper(viewWireframeMapper)
+        DecorViewWireframeMapper(viewWireframeMapper),
+    checkBoxWireframeMapper: CheckBoxWireframeMapper = CheckBoxWireframeMapper(textMapper)
 ) : GenericWireframeMapper(
     viewWireframeMapper,
     imageMapper,
@@ -23,5 +24,6 @@ internal open class AllowAllWireframeMapper(
     buttonMapper,
     editTextWireframeMapper,
     checkedTextViewWireframeMapper,
-    decorViewWireframeMapper
+    decorViewWireframeMapper,
+    checkBoxWireframeMapper
 )

@@ -12,10 +12,12 @@ internal class MaskAllWireframeMapper(
     textMapper: MaskAllTextWireframeMapper = MaskAllTextWireframeMapper(),
     buttonMapper: ButtonWireframeMapper = ButtonWireframeMapper(textMapper),
     editTextWireframeMapper: EditTextWireframeMapper = EditTextWireframeMapper(textMapper),
-    checkedTextViewWireframeMapper: CheckedTextViewWireframeMapper =
-        CheckedTextViewWireframeMapper(textMapper),
+    checkedTextViewWireframeMapper: MaskAllCheckedTextViewMapper =
+        MaskAllCheckedTextViewMapper(textMapper),
     decorViewWireframeMapper: DecorViewWireframeMapper =
-        DecorViewWireframeMapper(viewWireframeMapper)
+        DecorViewWireframeMapper(viewWireframeMapper),
+    checkBoxWireframeMapper: MaskAllCheckBoxWireframeMapper =
+        MaskAllCheckBoxWireframeMapper(textMapper)
 ) : GenericWireframeMapper(
     viewWireframeMapper,
     imageMapper,
@@ -23,5 +25,6 @@ internal class MaskAllWireframeMapper(
     buttonMapper,
     editTextWireframeMapper,
     checkedTextViewWireframeMapper,
-    decorViewWireframeMapper
+    decorViewWireframeMapper,
+    checkBoxWireframeMapper
 )

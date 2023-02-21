@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.CheckedTextView
 import android.widget.EditText
 import android.widget.ImageView
@@ -22,12 +23,16 @@ internal abstract class GenericWireframeMapper(
     private val buttonMapper: ButtonWireframeMapper,
     private val editTextWireframeMapper: EditTextWireframeMapper,
     private val checkedTextViewWireframeMapper: CheckedTextViewWireframeMapper,
-    private val decorViewWireframeMapper: DecorViewWireframeMapper
+    private val decorViewWireframeMapper: DecorViewWireframeMapper,
+    private val checkBoxWireframeMapper: CheckBoxWireframeMapper
 ) : WireframeMapper<View, MobileSegment.Wireframe> {
 
     override fun map(view: View, systemInformation: SystemInformation):
         List<MobileSegment.Wireframe> {
         return when {
+            CheckBox::class.java.isAssignableFrom(view::class.java) -> {
+                checkBoxWireframeMapper.map(view as CheckBox, systemInformation)
+            }
             CheckedTextView::class.java.isAssignableFrom(view::class.java) -> {
                 checkedTextViewWireframeMapper.map(
                     view as CheckedTextView,
