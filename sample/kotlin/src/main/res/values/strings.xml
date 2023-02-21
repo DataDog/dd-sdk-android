@@ -100,4 +100,5 @@
     <string name="app_compat_checked_text_view">App Compat Checked Text View</string>
     <string name="picker_components">Picker Components</string>
     <string name="pick_current_time">Pick Current Time</string>
+    <string name="pick_current_date">Pick Current Date</string>
 </resources>
