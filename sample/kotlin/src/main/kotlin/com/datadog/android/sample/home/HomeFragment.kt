@@ -63,7 +63,9 @@ internal class HomeFragment :
             R.id.navigation_view_pager -> R.id.activity_view_pager
             R.id.navigation_picture -> R.id.fragment_picture
             R.id.navigation_compose -> R.id.activity_jetpack_compose
+            R.id.navigation_session_replay -> R.id.fragment_session_replay
             R.id.navigation_about -> R.id.fragment_about
+
             else -> null
         }
         if (destination != null) {

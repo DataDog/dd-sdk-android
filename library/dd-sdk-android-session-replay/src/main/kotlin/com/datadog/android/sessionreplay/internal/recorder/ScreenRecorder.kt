@@ -31,7 +31,6 @@ internal class ScreenRecorder(
         val onDrawListener = WindowsOnDrawListener(
             ownerActivity,
             windows,
-            screenDensity,
             processor,
             snapshotProducer
         )

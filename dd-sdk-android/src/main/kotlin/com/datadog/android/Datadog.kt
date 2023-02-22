@@ -232,6 +232,7 @@ object Datadog {
      *
      * @param feature Feature to register.
      */
+    @JvmStatic
     fun registerFeature(feature: Feature) {
         globalSdkCore.registerFeature(feature)
     }

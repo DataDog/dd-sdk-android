@@ -19,11 +19,12 @@ internal class NodeFlattener(private val wireframeUtils: WireframeUtils = Wirefr
         stack.push(root)
         while (stack.isNotEmpty()) {
             val node = stack.pop()
-            var wireframe = node.wireframe
-            wireframeUtils.resolveWireframeClip(wireframe, node.parents)?.let { clip ->
-                wireframe = wireframe.copy(clip = clip)
-            }
-            list.add(wireframe)
+            node.wireframes
+                .map { wireframe ->
+                    val clip = wireframeUtils.resolveWireframeClip(wireframe, node.parents)
+                    wireframe.copy(clip = clip)
+                }
+                .forEach { list.add(it) }
 
             for (i in node.children.count() - 1 downTo 0) {
                 stack.push(node.children[i])

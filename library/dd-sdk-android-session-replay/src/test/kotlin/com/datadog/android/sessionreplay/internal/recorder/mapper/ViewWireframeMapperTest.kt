@@ -52,13 +52,13 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
     fun `M resolve a ShapeWireframe W map()`(forge: Forge) {
         // Given
         val mockView: View = forge.aMockView()
-        val expectedWireframe = mockView.toShapeWireframe()
+        val expectedWireframes = mockView.toShapeWireframes()
 
         // When
-        val shapeWireframe = testedWireframeMapper.map(mockView, fakePixelDensity)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
-        assertThat(shapeWireframe).isEqualTo(expectedWireframe)
+        assertThat(shapeWireframes).isEqualTo(expectedWireframes)
     }
 
     @Test
@@ -69,10 +69,10 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val shapeWireframes = mockViews.map {
+        val shapeWireframes = mockViews.flatMap {
             testedWireframeMapper.map(
                 it,
-                fakePixelDensity
+                fakeSystemInformation
             )
         }
 
@@ -111,18 +111,19 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val shapeWireframe = testedWireframeMapper.map(mockView, fakePixelDensity)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
-        val expectedWireframe = mockView.toShapeWireframe().copy(
-            shapeStyle = MobileSegment
-                .ShapeStyle(
+        val expectedWireframes = mockView.toShapeWireframes().map {
+            it.copy(
+                shapeStyle = MobileSegment.ShapeStyle(
                     backgroundColor = fakeStyleColor,
                     opacity = fakeViewAlpha,
                     cornerRadius = null
                 )
-        )
-        assertThat(shapeWireframe).isEqualTo(expectedWireframe)
+            )
+        }
+        assertThat(shapeWireframes).isEqualTo(expectedWireframes)
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
@@ -157,18 +158,19 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val shapeWireframe = testedWireframeMapper.map(mockView, fakePixelDensity)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
-        val expectedWireframe = mockView.toShapeWireframe().copy(
-            shapeStyle = MobileSegment
-                .ShapeStyle(
+        val expectedWireframes = mockView.toShapeWireframes().map {
+            it.copy(
+                shapeStyle = MobileSegment.ShapeStyle(
                     backgroundColor = fakeStyleColor,
                     opacity = fakeViewAlpha,
                     cornerRadius = null
                 )
-        )
-        assertThat(shapeWireframe).isEqualTo(expectedWireframe)
+            )
+        }
+        assertThat(shapeWireframes).isEqualTo(expectedWireframes)
     }
 
     @Test
@@ -199,12 +201,11 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val shapeWireframe = testedWireframeMapper.map(mockView, fakePixelDensity)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
-        val expectedWireframe = mockView.toShapeWireframe()
-            .copy(border = MobileSegment.ShapeBorder("#000000ff", 1))
-        assertThat(shapeWireframe).isEqualTo(expectedWireframe)
+        val expectedWireframes = mockView.toShapeWireframes()
+        assertThat(shapeWireframes).isEqualTo(expectedWireframes)
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
@@ -240,18 +241,19 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val shapeWireframe = testedWireframeMapper.map(mockView, fakePixelDensity)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
-        val expectedWireframe = mockView.toShapeWireframe().copy(
-            shapeStyle = MobileSegment
-                .ShapeStyle(
+        val expectedWireframes = mockView.toShapeWireframes().map {
+            it.copy(
+                shapeStyle = MobileSegment.ShapeStyle(
                     backgroundColor = fakeStyleColor,
                     opacity = fakeViewAlpha,
                     cornerRadius = null
                 )
-        )
-        assertThat(shapeWireframe).isEqualTo(expectedWireframe)
+            )
+        }
+        assertThat(shapeWireframes).isEqualTo(expectedWireframes)
     }
 
     @Test
@@ -283,14 +285,11 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val shapeWireframe = testedWireframeMapper.map(mockView, fakePixelDensity)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
-        val expectedWireframe = mockView.toShapeWireframe().copy(
-            border = MobileSegment.ShapeBorder
-            ("#000000ff", 1)
-        )
-        assertThat(shapeWireframe).isEqualTo(expectedWireframe)
+        val expectedWireframes = mockView.toShapeWireframes()
+        assertThat(shapeWireframes).isEqualTo(expectedWireframes)
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
@@ -310,11 +309,10 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
 
         // When
-        val shapeWireframe = testedWireframeMapper.map(mockView, fakePixelDensity)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
-        val expectedWireframe = mockView.toShapeWireframe()
-            .copy(border = MobileSegment.ShapeBorder("#000000ff", 1))
-        assertThat(shapeWireframe).isEqualTo(expectedWireframe)
+        val expectedWireframes = mockView.toShapeWireframes()
+        assertThat(shapeWireframes).isEqualTo(expectedWireframes)
     }
 }

@@ -6,36 +6,28 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
-import android.content.res.Resources.Theme
 import android.view.View
 import android.view.ViewGroup
-import com.datadog.android.sessionreplay.internal.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.GenericWireframeMapper
-import com.datadog.android.sessionreplay.internal.utils.StringUtils
-import com.datadog.android.sessionreplay.internal.utils.ThemeUtils
-import com.datadog.android.sessionreplay.internal.utils.copy
-import com.datadog.android.sessionreplay.internal.utils.shapeStyle
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.LinkedList
 
 internal class SnapshotProducer(
     private val wireframeMapper: GenericWireframeMapper,
-    private val viewUtils: ViewUtils = ViewUtils(),
-    private val stringUtils: StringUtils = StringUtils,
-    private val themeUtils: ThemeUtils = ThemeUtils
+    private val viewUtils: ViewUtils = ViewUtils()
 ) {
 
-    fun produce(theme: Theme, rootView: View, pixelsDensity: Float): Node? {
-        val snapshot = convertViewToNode(rootView, pixelsDensity, LinkedList()) ?: return null
-        // we call this at the end because we are waiting to see if the ViewMapper was able to
-        // resolve the root background from any drawable
-        return resolveRootBackgroundFromTheme(theme, rootView, snapshot)
+    fun produce(
+        rootView: View,
+        systemInformation: SystemInformation
+    ): Node? {
+        return convertViewToNode(rootView, systemInformation, LinkedList())
     }
 
     @Suppress("ComplexMethod", "ReturnCount")
     private fun convertViewToNode(
         view: View,
-        pixelsDensity: Float,
+        systemInformation: SystemInformation,
         parents: LinkedList<MobileSegment.Wireframe>
     ): Node? {
         if (viewUtils.checkIfNotVisible(view)) {
@@ -51,17 +43,17 @@ internal class SnapshotProducer(
             // It is too complex to de - structure this in multiple wireframes
             // and we cannot actually get all the details here.
             return Node(
-                wireframe = wireframeMapper.imageMapper.map(view, pixelsDensity)
+                wireframes = wireframeMapper.imageMapper.map(view, systemInformation)
             )
         }
 
         val childNodes = LinkedList<Node>()
-        val wireframe = wireframeMapper.map(view, pixelsDensity)
+        val wireframes = wireframeMapper.map(view, systemInformation)
         if (view is ViewGroup && view.childCount > 0) {
-            val parentsCopy = LinkedList(parents).apply { add(wireframe) }
+            val parentsCopy = LinkedList(parents).apply { addAll(wireframes) }
             for (i in 0 until view.childCount) {
                 val viewChild = view.getChildAt(i) ?: continue
-                convertViewToNode(viewChild, pixelsDensity, parentsCopy)?.let {
+                convertViewToNode(viewChild, systemInformation, parentsCopy)?.let {
                     childNodes.add(it)
                 }
             }
@@ -69,28 +61,8 @@ internal class SnapshotProducer(
 
         return Node(
             children = childNodes,
-            wireframe = wireframe,
+            wireframes = wireframes,
             parents = parents
         )
-    }
-
-    private fun resolveRootBackgroundFromTheme(theme: Theme, rootView: View, snapshot: Node): Node {
-        val rootShapeStyle = snapshot.wireframe.shapeStyle()
-        // we add a shapeStyle based on the Theme color in case the
-        // root wireframe does not have a ShapeStyle
-        if (rootShapeStyle == null) {
-            themeUtils.resolveThemeColor(theme)?.let {
-                val colorAndAlphaAsHexa = stringUtils.formatColorAndAlphaAsHexa(
-                    it,
-                    BaseWireframeMapper.OPAQUE_ALPHA_VALUE
-                )
-                val shapeStyle = MobileSegment.ShapeStyle(
-                    backgroundColor = colorAndAlphaAsHexa,
-                    opacity = rootView.alpha
-                )
-                return snapshot.copy(wireframe = snapshot.wireframe.copy(shapeStyle = shapeStyle))
-            }
-        }
-        return snapshot
     }
 }

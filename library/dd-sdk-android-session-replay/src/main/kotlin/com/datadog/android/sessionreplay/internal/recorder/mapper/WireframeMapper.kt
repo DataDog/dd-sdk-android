@@ -7,8 +7,9 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
+import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal interface WireframeMapper<T : View, S : MobileSegment.Wireframe> {
-    fun map(view: T, pixelsDensity: Float): S
+    fun map(view: T, systemInformation: SystemInformation): List<S>
 }

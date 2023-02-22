@@ -8,12 +8,18 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
 import android.widget.Button
+import android.widget.CheckBox
+import android.widget.CheckedTextView
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.annotation.FloatForgery
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -25,13 +31,12 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
-    ExtendWith(MockitoExtension::class)
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class MaskAllWireframeMapperTest {
-
-    @FloatForgery
-    var fakePixelDensity: Float = 1f
+@ForgeConfiguration(ForgeConfigurator::class)
+internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
 
     @Mock
     lateinit var mockViewWireframeMapper: ViewWireframeMapper
@@ -40,93 +45,192 @@ internal class MaskAllWireframeMapperTest {
     lateinit var mockImageWireframeMapper: ViewScreenshotWireframeMapper
 
     @Mock
-    lateinit var mockMaskAllTextWireframeMapper: MaskAllTextWireframeMapper
+    lateinit var mockMaskAllTextViewMapper: MaskAllTextViewMapper
 
     @Mock
-    lateinit var mockButtonWireframeMapper: ButtonWireframeMapper
+    lateinit var mockButtonMapper: ButtonMapper
 
     @Mock
-    lateinit var mockShapeWireframe: MobileSegment.Wireframe.ShapeWireframe
+    lateinit var mockCheckedTextViewWireframeMapper: MaskAllCheckedTextViewMapper
 
     @Mock
-    lateinit var mockImageWireframe: MobileSegment.Wireframe.ShapeWireframe
+    lateinit var mockEditTextViewMapper: EditTextViewMapper
 
     @Mock
-    lateinit var mockMaskedTextWireframe: MobileSegment.Wireframe.TextWireframe
+    lateinit var mockDecorViewMapper: DecorViewMapper
 
     @Mock
-    lateinit var mockButtonWireframe: MobileSegment.Wireframe.TextWireframe
+    lateinit var mockCheckBoxWireframeMapper: MaskAllCheckBoxMapper
+
+    lateinit var mockShapeWireframes: List<MobileSegment.Wireframe.ShapeWireframe>
+
+    lateinit var mockImageWireframes: List<MobileSegment.Wireframe.ShapeWireframe>
+
+    lateinit var mockMaskedTextWireframes: List<MobileSegment.Wireframe.TextWireframe>
+
+    lateinit var mockButtonWireframes: List<MobileSegment.Wireframe.TextWireframe>
+
+    lateinit var mockEditTextWireframes: List<MobileSegment.Wireframe>
+
+    lateinit var mockCheckedTextWireframes: List<MobileSegment.Wireframe>
+
+    lateinit var mockDecorViewWireframes: List<MobileSegment.Wireframe.ShapeWireframe>
+
+    lateinit var mockCheckBoxWireframes: List<MobileSegment.Wireframe>
 
     lateinit var testedMaskAllWireframeMapper: MaskAllWireframeMapper
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        mockShapeWireframes = forge.aList { mock() }
+        mockImageWireframes = forge.aList { mock() }
+        mockButtonWireframes = forge.aList { mock() }
+        mockShapeWireframes = forge.aList { mock() }
+        mockMaskedTextWireframes = forge.aList { mock() }
+        mockEditTextWireframes = forge.aList { mock() }
+        mockCheckedTextWireframes = forge.aList { mock() }
+        mockDecorViewWireframes = forge.aList { mock() }
+        mockCheckBoxWireframes = forge.aList { mock() }
         testedMaskAllWireframeMapper = MaskAllWireframeMapper(
             mockViewWireframeMapper,
             mockImageWireframeMapper,
-            mockMaskAllTextWireframeMapper,
-            mockButtonWireframeMapper
+            mockMaskAllTextViewMapper,
+            mockButtonMapper,
+            mockEditTextViewMapper,
+            mockCheckedTextViewWireframeMapper,
+            mockDecorViewMapper,
+            mockCheckBoxWireframeMapper
         )
     }
 
     @Test
-    fun `M resolve a ShapeWireframe W map { View }`() {
+    fun `M resolve a ShapeWireframe W map { non DecorView }`() {
         // Given
-        val mockView: View = mock()
-        whenever(mockViewWireframeMapper.map(mockView, fakePixelDensity))
-            .thenReturn(mockShapeWireframe)
+        val mockView: View = mockNonDecorView()
+        whenever(mockViewWireframeMapper.map(mockView, fakeSystemInformation))
+            .thenReturn(mockShapeWireframes)
 
         // When
-        val wireframe = testedMaskAllWireframeMapper.map(mockView, fakePixelDensity)
+        val wireframes = testedMaskAllWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
-        assertThat(wireframe).isEqualTo(mockShapeWireframe)
+        assertThat(wireframes).isEqualTo(mockShapeWireframes)
     }
 
     @Test
     fun `M resolve a ShapeWireframe W map { ImageView }`() {
         // Given
         val mockView: ImageView = mock()
-        whenever(mockImageWireframeMapper.map(mockView, fakePixelDensity))
-            .thenReturn(mockImageWireframe)
+        whenever(mockImageWireframeMapper.map(mockView, fakeSystemInformation))
+            .thenReturn(mockImageWireframes)
 
         // When
-        val wireframe = testedMaskAllWireframeMapper.map(mockView, fakePixelDensity)
+        val wireframes = testedMaskAllWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
-        assertThat(wireframe).isEqualTo(mockImageWireframe)
+        assertThat(wireframes).isEqualTo(mockImageWireframes)
     }
 
     @Test
     fun `M resolve a masked TextWireframe W map { TextView }`() {
         // Given
         val mockView: TextView = mock()
-        whenever(mockMaskAllTextWireframeMapper.map(mockView, fakePixelDensity))
-            .thenReturn(mockMaskedTextWireframe)
+        whenever(mockMaskAllTextViewMapper.map(mockView, fakeSystemInformation))
+            .thenReturn(mockMaskedTextWireframes)
 
         // When
-        val wireframe = testedMaskAllWireframeMapper.map(mockView, fakePixelDensity)
+        val wireframes = testedMaskAllWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
-        assertThat(wireframe).isEqualTo(mockMaskedTextWireframe)
+        assertThat(wireframes).isEqualTo(mockMaskedTextWireframes)
     }
 
     @Test
     fun `M resolve a ButtonWireframe W map { Button }`() {
         // Given
         val mockView: Button = mock()
-        whenever(mockButtonWireframeMapper.map(mockView, fakePixelDensity))
-            .thenReturn(mockButtonWireframe)
+        whenever(mockButtonMapper.map(mockView, fakeSystemInformation))
+            .thenReturn(mockButtonWireframes)
 
         // When
-        val wireframe = testedMaskAllWireframeMapper.map(mockView, fakePixelDensity)
+        val wireframes = testedMaskAllWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
-        assertThat(wireframe).isEqualTo(mockButtonWireframe)
+        assertThat(wireframes).isEqualTo(mockButtonWireframes)
+    }
+
+    @Test
+    fun `M delegate to EditTextWireframeMapper W map { EditText }`() {
+        // Given
+        val mockView: EditText = mock()
+        whenever(mockEditTextViewMapper.map(mockView, fakeSystemInformation))
+            .thenReturn(mockEditTextWireframes)
+
+        // When
+        val wireframes = testedMaskAllWireframeMapper.map(mockView, fakeSystemInformation)
+
+        // Then
+        assertThat(wireframes).isEqualTo(mockEditTextWireframes)
+    }
+
+    @Test
+    fun `M delegate to CheckedTextWireframeMapper W map { CheckedTextView }`() {
+        // Given
+        val mockView: CheckedTextView = mock()
+        whenever(mockCheckedTextViewWireframeMapper.map(mockView, fakeSystemInformation))
+            .thenReturn(mockCheckedTextWireframes)
+
+        // When
+        val wireframes = testedMaskAllWireframeMapper.map(mockView, fakeSystemInformation)
+
+        // Then
+        assertThat(wireframes).isEqualTo(mockCheckedTextWireframes)
+    }
+
+    @Test
+    fun `M delegate to CheckBoxWireframeMapper W map { CheckBox }`() {
+        // Given
+        val mockView: CheckBox = mock()
+        whenever(mockCheckBoxWireframeMapper.map(mockView, fakeSystemInformation))
+            .thenReturn(mockCheckBoxWireframes)
+
+        // When
+        val wireframes = testedMaskAllWireframeMapper.map(mockView, fakeSystemInformation)
+
+        // Then
+        assertThat(wireframes).isEqualTo(mockCheckBoxWireframes)
     }
 
     @Test
     fun `M return the ImageMapper W getImageMapper`() {
         assertThat(testedMaskAllWireframeMapper.imageMapper).isEqualTo(mockImageWireframeMapper)
+    }
+
+    @Test
+    fun `M delegate to DecorViewWireframeMapper W map { view with no parent }`() {
+        // Given
+        val mockView: View = mockViewWithEmptyParent()
+        whenever(mockDecorViewMapper.map(mockView, fakeSystemInformation))
+            .thenReturn(mockDecorViewWireframes)
+
+        // When
+        val wireframes = testedMaskAllWireframeMapper.map(mockView, fakeSystemInformation)
+
+        // Then
+        assertThat(wireframes).isEqualTo(mockDecorViewWireframes)
+    }
+
+    @Test
+    fun `M delegate to DecorViewWireframeMapper W map { view with parent has no View type }`() {
+        // Given
+        val mockView: View = mockViewWithNoViewTypeParent()
+        whenever(mockDecorViewMapper.map(mockView, fakeSystemInformation))
+            .thenReturn(mockDecorViewWireframes)
+
+        // When
+        val wireframes = testedMaskAllWireframeMapper.map(mockView, fakeSystemInformation)
+
+        // Then
+        assertThat(wireframes).isEqualTo(mockDecorViewWireframes)
     }
 }
