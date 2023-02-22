@@ -8,13 +8,14 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.os.Build
 import android.widget.CheckedTextView
+import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.StringUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 
-internal class CheckedTextViewWireframeMapper(
+internal open class CheckedTextViewMapper(
     private val textWireframeMapper: TextWireframeMapper,
     private val stringUtils: StringUtils = StringUtils,
     uniqueIdentifierGenerator: UniqueIdentifierResolver =
@@ -43,18 +44,29 @@ internal class CheckedTextViewWireframeMapper(
         return stringUtils.formatColorAndAlphaAsHexa(view.currentTextColor, OPAQUE_ALPHA_VALUE)
     }
 
-    override fun resolveCheckBoxSize(view: CheckedTextView, pixelsDensity: Float): Long {
+    override fun resolveCheckBoxBounds(view: CheckedTextView, pixelsDensity: Float): GlobalBounds {
+        val viewGlobalBounds = resolveViewGlobalBounds(view, pixelsDensity)
+        val textViewPaddingRight =
+            view.totalPaddingRight.toLong().densityNormalized(pixelsDensity)
+        var checkBoxHeight = 0L
         val checkMarkDrawable = view.checkMarkDrawable
-        return if (checkMarkDrawable != null && checkMarkDrawable.intrinsicHeight > 0) {
+        if (checkMarkDrawable != null && checkMarkDrawable.intrinsicHeight > 0) {
             val height = checkMarkDrawable.intrinsicHeight -
                 view.totalPaddingTop -
                 view.totalPaddingBottom
             // to solve the current font issues on the player side we lower the original font
             // size with 1 unit. We will need to normalize the current checkbox size
             // to this new size
-            (height * view.textSize / (view.textSize - 1)).toLong().densityNormalized(pixelsDensity)
-        } else {
-            0L
+            checkBoxHeight = (height * (view.textSize - 1) / view.textSize)
+                .toLong().densityNormalized(pixelsDensity)
         }
+
+        return GlobalBounds(
+            x = viewGlobalBounds.x + viewGlobalBounds.width - textViewPaddingRight,
+            y = viewGlobalBounds.y,
+            width = checkBoxHeight,
+            height = checkBoxHeight
+
+        )
     }
 }

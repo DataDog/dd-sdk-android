@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.input
+package com.datadog.android.sample.sessionreplay
 
 import android.os.Bundle
 import android.view.LayoutInflater

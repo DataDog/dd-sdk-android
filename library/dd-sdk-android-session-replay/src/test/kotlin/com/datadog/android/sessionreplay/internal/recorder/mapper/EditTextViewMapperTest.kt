@@ -39,9 +39,9 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class EditTextWireframeMapperTest : BaseWireframeMapperTest() {
+internal class EditTextViewMapperTest : BaseWireframeMapperTest() {
 
-    private lateinit var testedEditTextWireframeMapper: EditTextWireframeMapper
+    private lateinit var testedEditTextViewMapper: EditTextViewMapper
 
     @Mock
     lateinit var mockUniqueIdentifierResolver: UniqueIdentifierResolver
@@ -76,7 +76,7 @@ internal class EditTextWireframeMapperTest : BaseWireframeMapperTest() {
         whenever(
             mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
                 mockEditText,
-                EditTextWireframeMapper.UNDERLINE_KEY_NAME
+                EditTextViewMapper.UNDERLINE_KEY_NAME
             )
         ).thenReturn(fakeGeneratedIdentifier)
         whenever(mockEditText.backgroundTintList).thenReturn(mockBackgroundTintList)
@@ -89,7 +89,7 @@ internal class EditTextWireframeMapperTest : BaseWireframeMapperTest() {
             )
         )
             .thenReturn(fakeViewGlobalBounds)
-        testedEditTextWireframeMapper = EditTextWireframeMapper(
+        testedEditTextViewMapper = EditTextViewMapper(
             mockTextWireframeMapper,
             mockUniqueIdentifierResolver,
             mockViewUtils
@@ -107,9 +107,9 @@ internal class EditTextWireframeMapperTest : BaseWireframeMapperTest() {
             x = fakeViewGlobalBounds.x,
             y = fakeViewGlobalBounds.y +
                 fakeViewGlobalBounds.height -
-                EditTextWireframeMapper.UNDERLINE_HEIGHT_IN_PIXELS,
+                EditTextViewMapper.UNDERLINE_HEIGHT_IN_PIXELS,
             width = fakeViewGlobalBounds.width,
-            height = EditTextWireframeMapper.UNDERLINE_HEIGHT_IN_PIXELS,
+            height = EditTextViewMapper.UNDERLINE_HEIGHT_IN_PIXELS,
             shapeStyle = MobileSegment.ShapeStyle(
                 backgroundColor = expectedBackgroundColor,
                 opacity = mockEditText.alpha
@@ -117,13 +117,13 @@ internal class EditTextWireframeMapperTest : BaseWireframeMapperTest() {
         )
 
         // When
-        assertThat(testedEditTextWireframeMapper.map(mockEditText, fakeSystemInformation))
+        assertThat(testedEditTextViewMapper.map(mockEditText, fakeSystemInformation))
             .isEqualTo(fakeTextWireframes + expectedHintShapeWireframe)
     }
 
     @Test
     fun `M default to textMapper W map() { sdkVersion below LOLIPOP }`() {
-        assertThat(testedEditTextWireframeMapper.map(mockEditText, fakeSystemInformation))
+        assertThat(testedEditTextViewMapper.map(mockEditText, fakeSystemInformation))
             .isEqualTo(fakeTextWireframes)
     }
 
@@ -133,12 +133,12 @@ internal class EditTextWireframeMapperTest : BaseWireframeMapperTest() {
         whenever(
             mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
                 mockEditText,
-                EditTextWireframeMapper.UNDERLINE_KEY_NAME
+                EditTextViewMapper.UNDERLINE_KEY_NAME
             )
         ).thenReturn(null)
 
         // Then
-        assertThat(testedEditTextWireframeMapper.map(mockEditText, fakeSystemInformation))
+        assertThat(testedEditTextViewMapper.map(mockEditText, fakeSystemInformation))
             .isEqualTo(fakeTextWireframes)
     }
 }

@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.TextView
 
-internal class MaskAllTextWireframeMapper(
+internal class MaskAllTextViewMapper(
     private val stringObfuscator: StringObfuscator = StringObfuscator()
 ) : TextWireframeMapper() {
 

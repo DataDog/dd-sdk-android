@@ -101,4 +101,9 @@
     <string name="picker_components">Picker Components</string>
     <string name="pick_current_time">Pick Current Time</string>
     <string name="pick_current_date">Pick Current Date</string>
+    <string name="session_replay">Session Replay</string>
+    <string name="default_checkbox">Default CheckBox</string>
+    <string name="app_compat_checkbox">App Compat CheckBox</string>
+    <string name="material_checkbox">Material CheckBox</string>
+    <string name="radio_and_check_box_components">Radio and CheckBox Components</string>
 </resources>

@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.CheckedTextView
 import android.widget.EditText
 import android.widget.ImageView
@@ -46,16 +47,19 @@ internal class AllowAllWireframeMapperTest : BaseWireframeMapperTest() {
     lateinit var mockTextWireframeMapper: TextWireframeMapper
 
     @Mock
-    lateinit var mockButtonWireframeMapper: ButtonWireframeMapper
+    lateinit var mockButtonMapper: ButtonMapper
 
     @Mock
-    lateinit var mockCheckedTextViewWireframeMapper: CheckedTextViewWireframeMapper
+    lateinit var mockCheckedTextViewMapper: CheckedTextViewMapper
 
     @Mock
-    lateinit var mockEditTextWireframeMapper: EditTextWireframeMapper
+    lateinit var mockCheckBoxMapper: CheckBoxMapper
 
     @Mock
-    lateinit var mockDecorViewWireframeMapper: DecorViewWireframeMapper
+    lateinit var mockEditTextViewMapper: EditTextViewMapper
+
+    @Mock
+    lateinit var mockDecorViewMapper: DecorViewMapper
 
     lateinit var mockShapeWireframes: List<MobileSegment.Wireframe.ShapeWireframe>
 
@@ -68,6 +72,8 @@ internal class AllowAllWireframeMapperTest : BaseWireframeMapperTest() {
     lateinit var mockEditTextWireframes: List<MobileSegment.Wireframe>
 
     lateinit var mockCheckedTextWireframes: List<MobileSegment.Wireframe>
+
+    lateinit var mockCheckBoxWireframes: List<MobileSegment.Wireframe>
 
     lateinit var mockDecorViewWireframes: List<MobileSegment.Wireframe.ShapeWireframe>
 
@@ -83,14 +89,16 @@ internal class AllowAllWireframeMapperTest : BaseWireframeMapperTest() {
         mockEditTextWireframes = forge.aList { mock() }
         mockCheckedTextWireframes = forge.aList { mock() }
         mockDecorViewWireframes = forge.aList { mock() }
+        mockCheckBoxWireframes = forge.aList { mock() }
         testedAllowAllWireframeMapper = AllowAllWireframeMapper(
             mockViewWireframeMapper,
             mockImageWireframeMapper,
             mockTextWireframeMapper,
-            mockButtonWireframeMapper,
-            mockEditTextWireframeMapper,
-            mockCheckedTextViewWireframeMapper,
-            mockDecorViewWireframeMapper
+            mockButtonMapper,
+            mockEditTextViewMapper,
+            mockCheckedTextViewMapper,
+            mockDecorViewMapper,
+            mockCheckBoxMapper
         )
     }
 
@@ -140,7 +148,7 @@ internal class AllowAllWireframeMapperTest : BaseWireframeMapperTest() {
     fun `M resolve a ButtonWireframe W map { Button }`() {
         // Given
         val mockView: Button = mock()
-        whenever(mockButtonWireframeMapper.map(mockView, fakeSystemInformation))
+        whenever(mockButtonMapper.map(mockView, fakeSystemInformation))
             .thenReturn(mockButtonWireframes)
 
         // When
@@ -154,7 +162,7 @@ internal class AllowAllWireframeMapperTest : BaseWireframeMapperTest() {
     fun `M delegate to EditTextWireframeMapper W map { EditText }`() {
         // Given
         val mockView: EditText = mock()
-        whenever(mockEditTextWireframeMapper.map(mockView, fakeSystemInformation))
+        whenever(mockEditTextViewMapper.map(mockView, fakeSystemInformation))
             .thenReturn(mockEditTextWireframes)
 
         // When
@@ -165,10 +173,10 @@ internal class AllowAllWireframeMapperTest : BaseWireframeMapperTest() {
     }
 
     @Test
-    fun `M delegate to CheckedTextWireframeMapper W map { EditText }`() {
+    fun `M delegate to CheckedTextWireframeMapper W map { CheckedTextView }`() {
         // Given
         val mockView: CheckedTextView = mock()
-        whenever(mockCheckedTextViewWireframeMapper.map(mockView, fakeSystemInformation))
+        whenever(mockCheckedTextViewMapper.map(mockView, fakeSystemInformation))
             .thenReturn(mockCheckedTextWireframes)
 
         // When
@@ -176,6 +184,20 @@ internal class AllowAllWireframeMapperTest : BaseWireframeMapperTest() {
 
         // Then
         assertThat(wireframes).isEqualTo(mockCheckedTextWireframes)
+    }
+
+    @Test
+    fun `M delegate to CheckBoxWireframeMapper W map { CheckBox }`() {
+        // Given
+        val mockView: CheckBox = mock()
+        whenever(mockCheckBoxMapper.map(mockView, fakeSystemInformation))
+            .thenReturn(mockCheckBoxWireframes)
+
+        // When
+        val wireframes = testedAllowAllWireframeMapper.map(mockView, fakeSystemInformation)
+
+        // Then
+        assertThat(wireframes).isEqualTo(mockCheckBoxWireframes)
     }
 
     @Test
@@ -187,7 +209,7 @@ internal class AllowAllWireframeMapperTest : BaseWireframeMapperTest() {
     fun `M delegate to DecorViewWireframeMapper W map {  view with no parent }`() {
         // Given
         val mockView: View = mockViewWithEmptyParent()
-        whenever(mockDecorViewWireframeMapper.map(mockView, fakeSystemInformation))
+        whenever(mockDecorViewMapper.map(mockView, fakeSystemInformation))
             .thenReturn(mockDecorViewWireframes)
 
         // When
@@ -201,7 +223,7 @@ internal class AllowAllWireframeMapperTest : BaseWireframeMapperTest() {
     fun `M delegate to DecorViewWireframeMapper W map { view with parent has no View type }`() {
         // Given
         val mockView: View = mockViewWithNoViewTypeParent()
-        whenever(mockDecorViewWireframeMapper.map(mockView, fakeSystemInformation))
+        whenever(mockDecorViewMapper.map(mockView, fakeSystemInformation))
             .thenReturn(mockDecorViewWireframes)
 
         // When

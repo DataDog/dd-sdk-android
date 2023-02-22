@@ -9,19 +9,22 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 internal class MaskAllWireframeMapper(
     viewWireframeMapper: ViewWireframeMapper = ViewWireframeMapper(),
     imageMapper: ViewScreenshotWireframeMapper = ViewScreenshotWireframeMapper(viewWireframeMapper),
-    textMapper: MaskAllTextWireframeMapper = MaskAllTextWireframeMapper(),
-    buttonMapper: ButtonWireframeMapper = ButtonWireframeMapper(textMapper),
-    editTextWireframeMapper: EditTextWireframeMapper = EditTextWireframeMapper(textMapper),
-    checkedTextViewWireframeMapper: CheckedTextViewWireframeMapper =
-        CheckedTextViewWireframeMapper(textMapper),
-    decorViewWireframeMapper: DecorViewWireframeMapper =
-        DecorViewWireframeMapper(viewWireframeMapper)
+    textMapper: MaskAllTextViewMapper = MaskAllTextViewMapper(),
+    buttonMapper: ButtonMapper = ButtonMapper(textMapper),
+    editTextViewMapper: EditTextViewMapper = EditTextViewMapper(textMapper),
+    checkedTextViewWireframeMapper: MaskAllCheckedTextViewMapper =
+        MaskAllCheckedTextViewMapper(textMapper),
+    decorViewMapper: DecorViewMapper =
+        DecorViewMapper(viewWireframeMapper),
+    checkBoxWireframeMapper: MaskAllCheckBoxMapper =
+        MaskAllCheckBoxMapper(textMapper)
 ) : GenericWireframeMapper(
     viewWireframeMapper,
     imageMapper,
     textMapper,
     buttonMapper,
-    editTextWireframeMapper,
+    editTextViewMapper,
     checkedTextViewWireframeMapper,
-    decorViewWireframeMapper
+    decorViewMapper,
+    checkBoxWireframeMapper
 )
