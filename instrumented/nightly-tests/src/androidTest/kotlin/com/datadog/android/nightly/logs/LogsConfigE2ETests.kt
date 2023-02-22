@@ -108,7 +108,7 @@ class LogsConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
+     * apiMethodSignature: com.datadog.android.log.LogsFeature$Builder#fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
      */
     @Test
     fun logs_config_set_event_mapper() {
@@ -144,7 +144,7 @@ class LogsConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
+     * apiMethodSignature: com.datadog.android.log.LogsFeature$Builder#fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
      */
     @Test
     fun logs_config_set_event_mapper_with_drop_event() {

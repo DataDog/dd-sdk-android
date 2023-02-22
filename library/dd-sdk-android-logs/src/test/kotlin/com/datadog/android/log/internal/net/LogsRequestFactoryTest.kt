@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.v2.log.net
+package com.datadog.android.log.internal.net
 
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.utils.forge.Configurator

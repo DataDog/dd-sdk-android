@@ -112,7 +112,7 @@ class SpanConfigE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setSpanEventMapper(com.datadog.android.trace.internal.domain.event.SpanEventMapper): Builder
+     * apiMethodSignature: com.datadog.android.trace.TracingFeature$Builder#fun setSpanEventMapper(com.datadog.android.trace.internal.domain.event.SpanEventMapper): Builder
      */
     @Test
     fun trace_config_set_span_event_mapper() {
