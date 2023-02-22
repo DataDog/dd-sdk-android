@@ -15,8 +15,6 @@ import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
-import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.storage.NoOpDataWriter
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.NoOpWebViewEventConsumer
 import com.datadog.android.webview.internal.WebViewEventConsumer
@@ -25,6 +23,7 @@ import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
+import com.datadog.android.webview.internal.storage.NoOpDataWriter
 import com.google.gson.JsonArray
 
 /**
@@ -141,7 +140,7 @@ internal constructor(
                 ?.unwrap<StorageBackedFeature>()
 
             val webViewRumFeature = if (rumFeature != null) {
-                WebViewRumFeature(rumFeature.requestFactory, (sdkCore as DatadogCore).coreFeature)
+                WebViewRumFeature(rumFeature.requestFactory)
                     .apply { sdkCore.registerFeature(this) }
             } else {
                 internalLogger.log(

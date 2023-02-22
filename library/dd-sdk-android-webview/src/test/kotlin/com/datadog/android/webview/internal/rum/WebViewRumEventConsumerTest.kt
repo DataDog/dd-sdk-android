@@ -6,19 +6,17 @@
 
 package com.datadog.android.webview.internal.rum
 
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aRumEventAsJson
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
@@ -98,6 +96,9 @@ internal class WebViewRumEventConsumerTest {
     lateinit var mockWebViewRumFeatureScope: FeatureScope
 
     @Mock
+    lateinit var mockRumFeatureScope: FeatureScope
+
+    @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Forgery
@@ -157,6 +158,9 @@ internal class WebViewRumEventConsumerTest {
         val fakeViewEventAsJson = fakeViewEvent.toJson().asJsonObject
 
         whenever(
+            mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+        ) doReturn mockRumFeatureScope
+        whenever(
             mockWebViewRumEventMapper.mapEvent(
                 fakeViewEventAsJson,
                 fakeRumContext,
@@ -168,8 +172,11 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeViewEventAsJson)
 
         // Then
-        val mockedMonitor = GlobalRum.monitor as AdvancedRumMonitor
-        verify(mockedMonitor).sendWebViewEvent()
+        verify(mockRumFeatureScope).sendEvent(
+            mapOf(
+                "type" to "web_view_ingested_notification"
+            )
+        )
     }
 
     @Test
@@ -225,6 +232,9 @@ internal class WebViewRumEventConsumerTest {
         val fakeActionEventAsJson = fakeActionEvent.toJson().asJsonObject
 
         whenever(
+            mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+        ) doReturn mockRumFeatureScope
+        whenever(
             mockWebViewRumEventMapper.mapEvent(
                 fakeActionEventAsJson,
                 fakeRumContext,
@@ -236,8 +246,11 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeActionEventAsJson)
 
         // Then
-        val mockedMonitor = GlobalRum.monitor as AdvancedRumMonitor
-        verify(mockedMonitor).sendWebViewEvent()
+        verify(mockRumFeatureScope).sendEvent(
+            mapOf(
+                "type" to "web_view_ingested_notification"
+            )
+        )
     }
 
     @Test
@@ -290,6 +303,10 @@ internal class WebViewRumEventConsumerTest {
         // Given
         val fakeResourceEvent: ResourceEvent = forge.getForgery()
         val fakeResourceEventAsJson = fakeResourceEvent.toJson().asJsonObject
+
+        whenever(
+            mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+        ) doReturn mockRumFeatureScope
         whenever(
             mockWebViewRumEventMapper.mapEvent(
                 fakeResourceEventAsJson,
@@ -302,8 +319,11 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeResourceEventAsJson)
 
         // Then
-        val mockedMonitor = GlobalRum.monitor as AdvancedRumMonitor
-        verify(mockedMonitor).sendWebViewEvent()
+        verify(mockRumFeatureScope).sendEvent(
+            mapOf(
+                "type" to "web_view_ingested_notification"
+            )
+        )
     }
 
     @Test
@@ -356,6 +376,10 @@ internal class WebViewRumEventConsumerTest {
         // Given
         val fakeErrorEvent: ErrorEvent = forge.getForgery()
         val fakeErrorEventAsJson = fakeErrorEvent.toJson().asJsonObject
+
+        whenever(
+            mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+        ) doReturn mockRumFeatureScope
         whenever(
             mockWebViewRumEventMapper.mapEvent(
                 fakeErrorEventAsJson,
@@ -368,8 +392,11 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeErrorEventAsJson)
 
         // Then
-        val mockedMonitor = GlobalRum.monitor as AdvancedRumMonitor
-        verify(mockedMonitor).sendWebViewEvent()
+        verify(mockRumFeatureScope).sendEvent(
+            mapOf(
+                "type" to "web_view_ingested_notification"
+            )
+        )
     }
 
     @Test
@@ -422,6 +449,10 @@ internal class WebViewRumEventConsumerTest {
         // Given
         val fakeLongTaskEvent: LongTaskEvent = forge.getForgery()
         val fakeLongTaskEventAsJson = fakeLongTaskEvent.toJson().asJsonObject
+
+        whenever(
+            mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+        ) doReturn mockRumFeatureScope
         whenever(
             mockWebViewRumEventMapper.mapEvent(
                 fakeLongTaskEventAsJson,
@@ -434,8 +465,11 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeLongTaskEventAsJson)
 
         // Then
-        val mockedMonitor = GlobalRum.monitor as AdvancedRumMonitor
-        verify(mockedMonitor).sendWebViewEvent()
+        verify(mockRumFeatureScope).sendEvent(
+            mapOf(
+                "type" to "web_view_ingested_notification"
+            )
+        )
     }
 
     @Test
@@ -830,13 +864,12 @@ internal class WebViewRumEventConsumerTest {
     // endregion
 
     companion object {
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
         val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, rumMonitor)
+            return listOf(logger)
         }
 
         @JvmStatic

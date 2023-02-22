@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.webview.internal.log.storage
+package com.datadog.android.webview.internal.storage
 
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.utils.forge.Configurator
@@ -39,9 +39,9 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class WebViewLogsDataWriterTest {
+internal class WebViewDataWriterTest {
 
-    private lateinit var testedWriter: WebViewLogsDataWriter
+    private lateinit var testedWriter: WebViewDataWriter
 
     @Mock
     lateinit var mockSerializer: Serializer<JsonObject>
@@ -54,7 +54,7 @@ internal class WebViewLogsDataWriterTest {
 
     @BeforeEach
     fun `set up`() {
-        testedWriter = WebViewLogsDataWriter(mockSerializer, mockLogger)
+        testedWriter = WebViewDataWriter(mockSerializer, mockLogger)
     }
 
     @Test

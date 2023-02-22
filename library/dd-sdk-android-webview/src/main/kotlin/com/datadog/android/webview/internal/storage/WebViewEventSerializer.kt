@@ -4,12 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.webview.internal.log.domain.event
+package com.datadog.android.webview.internal.storage
 
 import com.datadog.android.core.persistence.Serializer
 import com.google.gson.JsonObject
 
-internal class WebViewLogEventSerializer :
+internal class WebViewEventSerializer :
     Serializer<JsonObject> {
 
     override fun serialize(model: JsonObject): String {

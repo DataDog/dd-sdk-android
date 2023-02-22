@@ -8,13 +8,13 @@ package com.datadog.android.webview.internal.rum
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.utils.internalLogger
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.android.webview.internal.WebViewEventConsumer
+import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonObject
 import java.lang.IllegalStateException
 import java.lang.NumberFormatException
@@ -22,7 +22,7 @@ import java.lang.UnsupportedOperationException
 
 internal class WebViewRumEventConsumer(
     private val sdkCore: SdkCore,
-    internal val dataWriter: DataWriter<Any>,
+    internal val dataWriter: DataWriter<JsonObject>,
     private val webViewRumEventMapper: WebViewRumEventMapper = WebViewRumEventMapper(),
     private val contextProvider: WebViewRumEventContextProvider = WebViewRumEventContextProvider()
 ) : WebViewEventConsumer<JsonObject> {
@@ -32,7 +32,11 @@ internal class WebViewRumEventConsumer(
     @WorkerThread
     override fun consume(event: JsonObject) {
         // make sure we send a noop event to the RumSessionScope to refresh the session if needed
-        GlobalRum.notifyIngestedWebViewEvent()
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(
+            mapOf(
+                "type" to "web_view_ingested_notification"
+            )
+        )
         sdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val rumContext = contextProvider.getRumContext(datadogContext)

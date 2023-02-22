@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.webview.internal.log.domain.event
+package com.datadog.android.webview.internal.storage
 
 import com.datadog.android.utils.forge.Configurator
 import com.google.gson.JsonObject
@@ -26,13 +26,13 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 @ForgeConfiguration(Configurator::class)
-internal class WebViewLogEventSerializerTest {
+internal class WebViewEventSerializerTest {
 
-    lateinit var testedSerializer: WebViewLogEventSerializer
+    lateinit var testedSerializer: WebViewEventSerializer
 
     @BeforeEach
     fun `set up`() {
-        testedSerializer = WebViewLogEventSerializer()
+        testedSerializer = WebViewEventSerializer()
     }
 
     @Test

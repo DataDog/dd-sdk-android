@@ -494,7 +494,7 @@ internal class RumFeatureTest {
             .unregisterActivityLifecycleCallbacks(listener)
     }
 
-    // region FeatureEventReceiver#onReceive + JVM crash
+    // region FeatureEventReceiver#onReceive
 
     @Test
     fun `𝕄 log dev warning and do nothing else 𝕎 onReceive() { unknown type }`() {
@@ -546,6 +546,10 @@ internal class RumFeatureTest {
             rumMonitor.mockInstance
         )
     }
+
+    // endregion
+
+    // region FeatureEventReceiver#onReceive + JVM crash
 
     @Test
     fun `𝕄 log dev warning 𝕎 onReceive() { JVM crash event + missing mandatory fields }`(
@@ -609,6 +613,8 @@ internal class RumFeatureTest {
         )
     }
 
+    // endregion
+
     @Test
     fun `𝕄 forward to RUM NDK crash event handler 𝕎 onReceive() { NDK crash event }`(
         @LongForgery fakeTimestamp: Long,
@@ -644,6 +650,8 @@ internal class RumFeatureTest {
             logger.mockInternalLogger
         )
     }
+
+    // region FeatureEventReceiver#onReceive + logger error
 
     @Test
     fun `𝕄 add error 𝕎 onReceive() { logger error event }`(
@@ -776,6 +784,26 @@ internal class RumFeatureTest {
     }
 
     // endregion
+
+    @Test
+    fun `𝕄 notify webview event received 𝕎 onReceive() {webview event received}`() {
+        // Given
+        val event = mapOf(
+            "type" to "web_view_ingested_notification"
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(rumMonitor.mockInstance)
+            .sendWebViewEvent()
+
+        verifyZeroInteractions(
+            mockSdkCore,
+            logger.mockInternalLogger
+        )
+    }
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)

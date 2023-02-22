@@ -7,27 +7,24 @@
 package com.datadog.android.webview.internal.rum
 
 import android.content.Context
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.utils.internalLogger
-import com.datadog.android.rum.internal.domain.RumDataWriter
-import com.datadog.android.rum.internal.domain.event.RumEventSerializer
-import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.v2.api.EnvironmentProvider
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.core.storage.DataWriter
-import com.datadog.android.v2.core.storage.NoOpDataWriter
+import com.datadog.android.webview.internal.storage.NoOpDataWriter
+import com.datadog.android.webview.internal.storage.WebViewDataWriter
+import com.datadog.android.webview.internal.storage.WebViewEventSerializer
+import com.google.gson.JsonObject
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class WebViewRumFeature(
-    override val requestFactory: RequestFactory,
-    private val coreFeature: CoreFeature
+    override val requestFactory: RequestFactory
 ) : StorageBackedFeature {
 
-    internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
+    internal var dataWriter: DataWriter<JsonObject> = NoOpDataWriter()
     internal val initialized = AtomicBoolean(false)
 
     // region Feature
@@ -53,15 +50,10 @@ internal class WebViewRumFeature(
 
     // endregion
 
-    private fun createDataWriter(): DataWriter<Any> {
-        return RumDataWriter(
-            serializer = RumEventSerializer(),
-            fileWriter = BatchFileReaderWriter.create(
-                internalLogger,
-                coreFeature.localDataEncryption
-            ),
-            internalLogger = internalLogger,
-            lastViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
+    private fun createDataWriter(): DataWriter<JsonObject> {
+        return WebViewDataWriter(
+            serializer = WebViewEventSerializer(),
+            internalLogger = internalLogger
         )
     }
 

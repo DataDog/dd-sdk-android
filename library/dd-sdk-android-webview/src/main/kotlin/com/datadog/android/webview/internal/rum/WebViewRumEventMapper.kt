@@ -6,8 +6,8 @@
 
 package com.datadog.android.webview.internal.rum
 
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonObject
 import java.lang.ClassCastException
 import java.lang.IllegalStateException
