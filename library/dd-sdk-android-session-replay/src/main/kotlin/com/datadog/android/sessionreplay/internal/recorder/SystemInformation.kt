@@ -6,4 +6,11 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
-internal data class OrientationChanged(val width: Int, val height: Int)
+import android.content.res.Configuration
+
+internal data class SystemInformation(
+    val screenBounds: GlobalBounds,
+    val screenOrientation: Int = Configuration.ORIENTATION_UNDEFINED,
+    val screenDensity: Float,
+    val themeColor: String? = null
+)

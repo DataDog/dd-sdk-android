@@ -14,10 +14,10 @@ internal class NodeForgeryFactory : ForgeryFactory<Node> {
 
     override fun getForgery(forge: Forge): Node {
         return Node(
-            wireframe = forge.getForgery(),
+            wireframes = forge.aList { getForgery() },
             children = forge.aList {
                 Node(
-                    wireframe = getForgery(),
+                    wireframes = forge.aList { getForgery() },
                     parents = aList { getForgery() }
                 )
             },

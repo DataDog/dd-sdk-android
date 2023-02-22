@@ -7,27 +7,23 @@
 package com.datadog.android.sessionreplay.internal.recorder.listener
 
 import android.app.Activity
-import android.content.res.Configuration
-import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.sessionreplay.internal.processor.Processor
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
-import com.datadog.android.sessionreplay.internal.recorder.OrientationChanged
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import java.lang.ref.WeakReference
 
 internal class WindowsOnDrawListener(
     ownerActivity: Activity,
     zOrderedWindows: List<Window>,
-    private val pixelsDensity: Float,
     private val processor: Processor,
     private val snapshotProducer: SnapshotProducer,
-    private val debouncer: Debouncer = Debouncer()
+    private val debouncer: Debouncer = Debouncer(),
+    private val miscUtils: MiscUtils = MiscUtils
 ) : ViewTreeObserver.OnDrawListener {
 
-    private var currentOrientation = Configuration.ORIENTATION_UNDEFINED
     internal val ownerActivityReference: WeakReference<Activity> = WeakReference(ownerActivity)
     internal val weakReferencedWindows: List<WeakReference<Window>>
 
@@ -44,38 +40,20 @@ internal class WindowsOnDrawListener(
             return@Runnable
         }
         val ownerActivity = ownerActivityReference.get() ?: return@Runnable
-        val ownerActivityWindow = ownerActivity.window ?: return@Runnable
 
-        // we will always consider the ownerActivityWindow as the root
-        val orientationChanged = resolveOrientationChange(
-            ownerActivity,
-            ownerActivityWindow.decorView
-        )
         // is is very important to have the windows sorted by their z-order
+        val systemInformation = miscUtils.resolveSystemInformation(ownerActivity)
         val nodes = weakReferencedWindows
             .mapNotNull { it.get() }
             .mapNotNull {
                 val windowDecorView = it.decorView
-                snapshotProducer.produce(ownerActivity.theme, windowDecorView, pixelsDensity)
+                snapshotProducer.produce(windowDecorView, systemInformation)
             }
         if (nodes.isNotEmpty()) {
-            processor.processScreenSnapshots(nodes, orientationChanged)
+            processor.processScreenSnapshots(
+                nodes,
+                systemInformation
+            )
         }
-    }
-
-    private fun resolveOrientationChange(activity: Activity, decorView: View):
-        OrientationChanged? {
-        val orientation = activity.resources.configuration.orientation
-        val orientationChanged =
-            if (currentOrientation != orientation) {
-                OrientationChanged(
-                    decorView.width.densityNormalized(pixelsDensity),
-                    decorView.height.densityNormalized(pixelsDensity)
-                )
-            } else {
-                null
-            }
-        currentOrientation = orientation
-        return orientationChanged
     }
 }

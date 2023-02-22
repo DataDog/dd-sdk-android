@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
@@ -54,5 +55,12 @@ internal inline fun <reified T : View> Forge.aMockView(): T {
         whenever(it.height).thenReturn(anInt(min = 1))
         whenever(it.isShown).thenReturn(true)
         whenever(it.alpha).thenReturn(1f)
+    }
+}
+
+internal fun Forge.aMockTextView(): TextView {
+    return aMockView<TextView>().apply {
+        whenever(currentTextColor).thenReturn(anInt(min = 0, max = 0xffffff))
+        whenever(textSize).thenReturn(aPositiveFloat(true))
     }
 }

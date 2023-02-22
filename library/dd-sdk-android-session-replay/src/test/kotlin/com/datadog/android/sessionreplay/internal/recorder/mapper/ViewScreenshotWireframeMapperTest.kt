@@ -42,11 +42,12 @@ internal class ViewScreenshotWireframeMapperTest : BaseWireframeMapperTest() {
         // Given
         val mockView: View = forge.aMockView()
         // When
-        val shapeWireframe = testedWireframeMapper.map(mockView, fakePixelDensity)
+        val shapeWireframes = testedWireframeMapper.map(mockView, fakeSystemInformation)
 
         // Then
-        val expectedWireframe = mockView.toShapeWireframe()
-            .copy(border = MobileSegment.ShapeBorder("#000000ff", 1))
-        assertThat(shapeWireframe).isEqualTo(expectedWireframe)
+        val expectedWireframes = mockView.toShapeWireframes().map {
+            it.copy(border = MobileSegment.ShapeBorder("#000000ff", 1))
+        }
+        assertThat(shapeWireframes).isEqualTo(expectedWireframes)
     }
 }

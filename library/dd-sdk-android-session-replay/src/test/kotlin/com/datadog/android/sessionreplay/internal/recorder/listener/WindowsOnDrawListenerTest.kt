@@ -16,23 +16,19 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.processor.Processor
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.Node
-import com.datadog.android.sessionreplay.internal.recorder.OrientationChanged
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.FloatForgery
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -70,9 +66,6 @@ internal class WindowsOnDrawListenerTest {
     @Mock
     lateinit var mockDebouncer: Debouncer
 
-    @FloatForgery(min = 1.0f, max = 100.0f)
-    var fakeDensity: Float = 0f
-
     @IntForgery(min = 0)
     var fakeDecorWidth: Int = 0
 
@@ -86,13 +79,21 @@ internal class WindowsOnDrawListenerTest {
     @Mock
     lateinit var mockTheme: Theme
 
+    @Mock
+    lateinit var mockMiscUtils: MiscUtils
+
+    @Forgery
+    lateinit var fakeSystemInformation: SystemInformation
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        whenever(mockMiscUtils.resolveSystemInformation(mockActivity))
+            .thenReturn(fakeSystemInformation)
         fakeMockedWindows = forge.aMockedWindowsList()
         fakeWindowsSnapshots = fakeMockedWindows.map { forge.getForgery() }
         whenever(mockActivity.theme).thenReturn(mockTheme)
         fakeMockedWindows.forEachIndexed { index, window ->
-            whenever(mockSnapshotProducer.produce(mockTheme, window.decorView, fakeDensity))
+            whenever(mockSnapshotProducer.produce(window.decorView, fakeSystemInformation))
                 .thenReturn(fakeWindowsSnapshots[index])
         }
         whenever(mockDecorView.width).thenReturn(fakeDecorWidth)
@@ -115,10 +116,10 @@ internal class WindowsOnDrawListenerTest {
         testedListener = WindowsOnDrawListener(
             mockActivity,
             fakeMockedWindows,
-            fakeDensity,
             mockProcessor,
             mockSnapshotProducer,
-            mockDebouncer
+            mockDebouncer,
+            mockMiscUtils
         )
     }
 
@@ -131,116 +132,10 @@ internal class WindowsOnDrawListenerTest {
         testedListener.onDraw()
 
         // Then
-        val argumentCaptor = argumentCaptor<OrientationChanged>()
         verify(mockProcessor).processScreenSnapshots(
-            eq(fakeWindowsSnapshots),
-            argumentCaptor.capture()
+            fakeWindowsSnapshots,
+            fakeSystemInformation
         )
-        assertThat(argumentCaptor.firstValue)
-            .isEqualTo(
-                OrientationChanged(
-                    fakeDecorWidth.densityNormalized(fakeDensity),
-                    fakeDecorHeight.densityNormalized(fakeDensity)
-                )
-            )
-    }
-
-    @Test
-    fun `M do nothing W onDraw() { activity window is null }`() {
-        // Given
-        whenever(mockActivity.window).thenReturn(null)
-        stubDebouncer()
-
-        // When
-        testedListener.onDraw()
-
-        // Then
-        verifyZeroInteractions(mockProcessor)
-    }
-
-    @Test
-    fun `M send OrientationChanged W onDraw() { first time }`() {
-        // Given
-        stubDebouncer()
-
-        // When
-        testedListener.onDraw()
-
-        // Then
-        val argumentCaptor = argumentCaptor<OrientationChanged>()
-        verify(mockProcessor).processScreenSnapshots(
-            eq(fakeWindowsSnapshots),
-            argumentCaptor.capture()
-        )
-        assertThat(argumentCaptor.firstValue)
-            .isEqualTo(
-                OrientationChanged(
-                    fakeDecorWidth.densityNormalized(fakeDensity),
-                    fakeDecorHeight.densityNormalized(fakeDensity)
-                )
-            )
-    }
-
-    @Test
-    fun `M send OrientationChanged only once W onDraw() { second time }`() {
-        // Given
-        stubDebouncer()
-
-        // When
-        testedListener.onDraw()
-        testedListener.onDraw()
-
-        // Then
-        val argumentCaptor = argumentCaptor<OrientationChanged>()
-        verify(mockProcessor, times(2)).processScreenSnapshots(
-            eq(fakeWindowsSnapshots),
-            argumentCaptor.capture()
-        )
-        assertThat(argumentCaptor.firstValue)
-            .isEqualTo(
-                OrientationChanged(
-                    fakeDecorWidth.densityNormalized(fakeDensity),
-                    fakeDecorHeight.densityNormalized(fakeDensity)
-                )
-            )
-        assertThat(argumentCaptor.secondValue).isNull()
-    }
-
-    @Test
-    fun `M send OrientationChanged twice W onDraw(){called 2 times with different orientation}`() {
-        // Given
-        stubDebouncer()
-
-        // When
-        val configuration1 =
-            Configuration().apply { orientation = Configuration.ORIENTATION_LANDSCAPE }
-        whenever(mockResources.configuration).thenReturn(configuration1)
-        testedListener.onDraw()
-        val configuration2 =
-            Configuration().apply { orientation = Configuration.ORIENTATION_PORTRAIT }
-        whenever(mockResources.configuration).thenReturn(configuration2)
-        testedListener.onDraw()
-
-        // Then
-        val argumentCaptor = argumentCaptor<OrientationChanged>()
-        verify(mockProcessor, times(2)).processScreenSnapshots(
-            eq(fakeWindowsSnapshots),
-            argumentCaptor.capture()
-        )
-        assertThat(argumentCaptor.firstValue)
-            .isEqualTo(
-                OrientationChanged(
-                    fakeDecorWidth.densityNormalized(fakeDensity),
-                    fakeDecorHeight.densityNormalized(fakeDensity)
-                )
-            )
-        assertThat(argumentCaptor.secondValue)
-            .isEqualTo(
-                OrientationChanged(
-                    fakeDecorWidth.densityNormalized(fakeDensity),
-                    fakeDecorHeight.densityNormalized(fakeDensity)
-                )
-            )
     }
 
     @Test
@@ -250,7 +145,6 @@ internal class WindowsOnDrawListenerTest {
         testedListener = WindowsOnDrawListener(
             mockActivity,
             emptyList(),
-            fakeDensity,
             mockProcessor,
             mockSnapshotProducer,
             mockDebouncer
