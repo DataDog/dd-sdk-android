@@ -545,12 +545,6 @@ class com.datadog.android.v2.log.net.LogsRequestFactory : com.datadog.android.v2
   constructor(String)
   override fun create(com.datadog.android.v2.api.context.DatadogContext, List<ByteArray>, ByteArray?): com.datadog.android.v2.api.Request
   companion object 
-class com.datadog.android.webview.DatadogEventBridge
-  constructor(com.datadog.android.v2.api.SdkCore, List<String>)
-  fun send(String)
-  fun getAllowedWebViewHosts(): String
-  companion object 
-    fun setup(com.datadog.android.v2.api.SdkCore, android.webkit.WebView, List<String>)
 class com.datadog.tools.annotation.NoOpImplementation
 data class com.datadog.android.rum.model.ActionChildProperties
   constructor(Action? = null)

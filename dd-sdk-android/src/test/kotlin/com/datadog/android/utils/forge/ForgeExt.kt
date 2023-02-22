@@ -11,7 +11,6 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 
 /**
@@ -32,15 +31,5 @@ internal fun Forge.aRumEvent(): Any {
         this.getForgery<ResourceEvent>(),
         this.getForgery<ErrorEvent>(),
         this.getForgery<LongTaskEvent>()
-    )
-}
-
-internal fun Forge.aRumEventAsJson(): JsonObject {
-    return anElementFrom(
-        this.getForgery<ViewEvent>().toJson().asJsonObject,
-        this.getForgery<LongTaskEvent>().toJson().asJsonObject,
-        this.getForgery<ActionEvent>().toJson().asJsonObject,
-        this.getForgery<ResourceEvent>().toJson().asJsonObject,
-        this.getForgery<ErrorEvent>().toJson().asJsonObject
     )
 }

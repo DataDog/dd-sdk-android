@@ -87,12 +87,10 @@ dependencies {
     implementation(project(":dd-sdk-android"))
     implementation(libs.kotlin)
     implementation(libs.gson)
+    implementation(libs.androidXAnnotation)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
-
-    // OpenTracing
-    api(libs.bundles.openTracing)
 
     testImplementation(project(":tools:unit"))
     testImplementation(libs.bundles.jUnit5)

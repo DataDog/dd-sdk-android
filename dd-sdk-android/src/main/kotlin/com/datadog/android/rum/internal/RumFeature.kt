@@ -196,6 +196,9 @@ internal class RumFeature(
             "ndk_crash" -> ndkCrashEventHandler.handleEvent(event, sdkCore, dataWriter)
             "logger_error" -> addLoggerError(event)
             "logger_error_with_stacktrace" -> addLoggerErrorWithStacktrace(event)
+            "web_view_ingested_notification" -> {
+                GlobalRum.notifyIngestedWebViewEvent()
+            }
             else -> {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
