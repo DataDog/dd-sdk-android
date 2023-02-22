@@ -75,7 +75,9 @@ internal class MixedWebViewEventConsumerTest {
         // Then
         argumentCaptor<JsonObject> {
             verify(mockRumEventConsumer).consume(capture())
-            assertThat(firstValue).isEqualTo(fakeBundledEvent)
+            // toString call because of how Gson is comparing Float/Double vs LazilyParsedNumber
+            // for JsonPrimitive https://github.com/google/gson/issues/1864
+            assertThat(firstValue.toString()).isEqualTo(fakeBundledEvent.toString())
         }
     }
 
@@ -92,7 +94,9 @@ internal class MixedWebViewEventConsumerTest {
         // Then
         argumentCaptor<Pair<JsonObject, String>> {
             verify(mockLogsEventConsumer).consume(capture())
-            assertThat(firstValue.first).isEqualTo(fakeBundledEvent)
+            // toString call because of how Gson is comparing Float/Double vs LazilyParsedNumber
+            // for JsonPrimitive https://github.com/google/gson/issues/1864
+            assertThat(firstValue.first.toString()).isEqualTo(fakeBundledEvent.toString())
             assertThat(firstValue.second).isEqualTo(fakeLogEventType)
         }
     }

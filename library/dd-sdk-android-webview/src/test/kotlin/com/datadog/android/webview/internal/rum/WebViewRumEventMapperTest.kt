@@ -6,15 +6,14 @@
 
 package com.datadog.android.webview.internal.rum
 
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.utils.extension.getString
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aRumEventAsJson
+import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
@@ -197,10 +196,12 @@ internal class WebViewRumEventMapperTest {
             fakeServerTimeOffset
         val expectedApplicationId = fakeRumJsonObject
             .getAsJsonObject(WebViewRumEventMapper.APPLICATION_KEY_NAME)
-            .getString(WebViewRumEventMapper.ID_KEY_NAME)
+            .getAsJsonPrimitive(WebViewRumEventMapper.ID_KEY_NAME)
+            .asString
         val expectedSessionId = fakeRumJsonObject
             .getAsJsonObject(WebViewRumEventMapper.SESSION_KEY_NAME)
-            .getString(WebViewRumEventMapper.ID_KEY_NAME)
+            .getAsJsonPrimitive(WebViewRumEventMapper.ID_KEY_NAME)
+            .asString
 
         // When
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(

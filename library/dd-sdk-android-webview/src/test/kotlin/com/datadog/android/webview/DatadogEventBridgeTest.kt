@@ -6,25 +6,22 @@
 
 package com.datadog.android.webview
 
-import android.content.Context
 import android.webkit.WebSettings
 import android.webkit.WebView
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
-import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.storage.NoOpDataWriter
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
+import com.datadog.android.webview.internal.storage.NoOpDataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -68,7 +65,7 @@ internal class DatadogEventBridgeTest {
     lateinit var mockWebViewEventConsumer: MixedWebViewEventConsumer
 
     @Mock
-    lateinit var mockCore: DatadogCore
+    lateinit var mockCore: SdkCore
 
     @Mock
     lateinit var mockRumFeatureScope: FeatureScope
@@ -106,8 +103,6 @@ internal class DatadogEventBridgeTest {
 
         whenever(mockRumFeature.requestFactory) doReturn mockRumRequestFactory
         whenever(mockLogsFeature.requestFactory) doReturn mockLogsRequestFactory
-
-        whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
 
         testedDatadogEventBridge = DatadogEventBridge(
             mockWebViewEventConsumer,
@@ -355,13 +350,11 @@ internal class DatadogEventBridgeTest {
 
     companion object {
         val logger = InternalLoggerTestConfiguration()
-        val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, coreFeature)
+            return listOf(logger)
         }
     }
 }

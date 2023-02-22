@@ -6,12 +6,12 @@
 
 package com.datadog.android.webview.internal.rum
 
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -30,6 +30,7 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -46,7 +47,10 @@ internal class WebViewRumEventContextProviderTest {
     lateinit var fakeDatadogContext: DatadogContext
 
     @Forgery
-    lateinit var fakeRumContext: RumContext
+    lateinit var fakeApplicationId: UUID
+
+    @Forgery
+    lateinit var fakeSessionId: UUID
 
     @BeforeEach
     fun `set up`() {
@@ -55,10 +59,8 @@ internal class WebViewRumEventContextProviderTest {
                 put(
                     Feature.RUM_FEATURE_NAME,
                     mapOf(
-                        "application_id" to fakeRumContext.applicationId,
-                        "session_id" to fakeRumContext.sessionId,
-                        "view_id" to fakeRumContext.viewId,
-                        "action_id" to fakeRumContext.actionId
+                        "application_id" to fakeApplicationId.toString(),
+                        "session_id" to fakeSessionId.toString()
                     )
                 )
             }
@@ -73,9 +75,9 @@ internal class WebViewRumEventContextProviderTest {
 
         // Then
         assertThat(rumContext?.applicationId)
-            .isEqualTo(fakeRumContext.applicationId)
+            .isEqualTo(fakeApplicationId.toString())
         assertThat(rumContext?.sessionId)
-            .isEqualTo(fakeRumContext.sessionId)
+            .isEqualTo(fakeSessionId.toString())
     }
 
     @ParameterizedTest
@@ -85,9 +87,7 @@ internal class WebViewRumEventContextProviderTest {
     ) {
         // Given
         val rumContext = mutableMapOf<String, Any?>(
-            "session_id" to fakeRumContext.sessionId,
-            "view_id" to fakeRumContext.viewId,
-            "action_id" to fakeRumContext.actionId
+            "session_id" to fakeSessionId
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["application_id"] = null
@@ -114,9 +114,7 @@ internal class WebViewRumEventContextProviderTest {
     ) {
         // Given
         val rumContext = mutableMapOf<String, Any?>(
-            "application_id" to fakeRumContext.applicationId,
-            "view_id" to fakeRumContext.viewId,
-            "action_id" to fakeRumContext.actionId
+            "application_id" to fakeApplicationId
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["session_id"] = null
@@ -143,9 +141,7 @@ internal class WebViewRumEventContextProviderTest {
     ) {
         // Given
         val rumContext = mutableMapOf<String, Any?>(
-            "session_id" to fakeRumContext.sessionId,
-            "view_id" to fakeRumContext.viewId,
-            "action_id" to fakeRumContext.actionId
+            "session_id" to fakeSessionId
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["application_id"] = null
@@ -179,9 +175,7 @@ internal class WebViewRumEventContextProviderTest {
     ) {
         // Given
         val rumContext = mutableMapOf<String, Any?>(
-            "session_id" to fakeRumContext.sessionId,
-            "view_id" to fakeRumContext.viewId,
-            "action_id" to fakeRumContext.actionId
+            "session_id" to fakeSessionId
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["application_id"] = null
@@ -215,9 +209,7 @@ internal class WebViewRumEventContextProviderTest {
     ) {
         // Given
         val rumContext = mutableMapOf<String, Any?>(
-            "application_id" to fakeRumContext.applicationId,
-            "view_id" to fakeRumContext.viewId,
-            "action_id" to fakeRumContext.actionId
+            "application_id" to fakeApplicationId
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["session_id"] = null
@@ -251,9 +243,7 @@ internal class WebViewRumEventContextProviderTest {
     ) {
         // Given
         val rumContext = mutableMapOf<String, Any?>(
-            "application_id" to fakeRumContext.applicationId,
-            "view_id" to fakeRumContext.viewId,
-            "action_id" to fakeRumContext.actionId
+            "application_id" to fakeApplicationId
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["session_id"] = null
@@ -288,9 +278,7 @@ internal class WebViewRumEventContextProviderTest {
     ) {
         // Given
         val rumContext = mutableMapOf<String, Any?>(
-            "application_id" to fakeRumContext.applicationId,
-            "view_id" to fakeRumContext.viewId,
-            "action_id" to fakeRumContext.actionId
+            "application_id" to fakeApplicationId
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["session_id"] = null
@@ -327,9 +315,7 @@ internal class WebViewRumEventContextProviderTest {
     ) {
         // Given
         val rumContext = mutableMapOf<String, Any?>(
-            "session_id" to fakeRumContext.sessionId,
-            "view_id" to fakeRumContext.viewId,
-            "action_id" to fakeRumContext.actionId
+            "session_id" to fakeSessionId
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["application_id"] = null
@@ -366,9 +352,7 @@ internal class WebViewRumEventContextProviderTest {
     ) {
         // Given
         val rumContext = mutableMapOf<String, Any?>(
-            "application_id" to fakeRumContext.applicationId,
-            "view_id" to fakeRumContext.viewId,
-            "action_id" to fakeRumContext.actionId
+            "application_id" to fakeApplicationId
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["session_id"] = null
@@ -405,9 +389,7 @@ internal class WebViewRumEventContextProviderTest {
     ) {
         // Given
         val rumContext = mutableMapOf<String, Any?>(
-            "session_id" to fakeRumContext.sessionId,
-            "view_id" to fakeRumContext.viewId,
-            "action_id" to fakeRumContext.actionId
+            "session_id" to fakeSessionId
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["application_id"] = null

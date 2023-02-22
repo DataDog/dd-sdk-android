@@ -6,19 +6,13 @@
 
 package com.datadog.android.webview.internal.log
 
-import android.app.Application
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.storage.NoOpDataWriter
+import com.datadog.android.webview.internal.storage.NoOpDataWriter
 import com.datadog.android.webview.internal.storage.WebViewDataWriter
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -35,8 +29,7 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -97,16 +90,5 @@ internal class WebViewLogsFeatureTest {
         // When+Then
         assertThat(testedFeature.storageConfiguration)
             .isEqualTo(FeatureStorageConfiguration.DEFAULT)
-    }
-
-    companion object {
-        val appContext = ApplicationContextTestConfiguration(Application::class.java)
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, coreFeature)
-        }
     }
 }

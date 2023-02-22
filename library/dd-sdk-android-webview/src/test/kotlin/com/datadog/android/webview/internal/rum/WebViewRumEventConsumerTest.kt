@@ -6,7 +6,6 @@
 
 package com.datadog.android.webview.internal.rum
 
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -23,6 +22,7 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.android.webview.internal.WebViewEventConsumer
+import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -66,7 +66,7 @@ internal class WebViewRumEventConsumerTest {
     lateinit var testedConsumer: WebViewEventConsumer<JsonObject>
 
     @Mock
-    lateinit var mockDataWriter: DataWriter<Any>
+    lateinit var mockDataWriter: DataWriter<JsonObject>
 
     lateinit var fakeMappedViewEvent: JsonObject
 

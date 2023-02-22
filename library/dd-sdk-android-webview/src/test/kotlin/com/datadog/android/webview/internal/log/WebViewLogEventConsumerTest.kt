@@ -7,7 +7,6 @@
 package com.datadog.android.webview.internal.log
 
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
@@ -18,6 +17,7 @@ import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
+import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
