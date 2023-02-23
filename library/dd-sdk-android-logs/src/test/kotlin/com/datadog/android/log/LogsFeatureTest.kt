@@ -10,6 +10,7 @@ import android.content.Context
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
+import com.datadog.android.log.internal.net.LogsRequestFactory
 import com.datadog.android.log.internal.storage.LogsDataWriter
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
@@ -25,13 +26,11 @@ import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.storage.DataWriter
-import com.datadog.android.v2.log.net.LogsRequestFactory
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
-import com.datadog.tools.unit.getFieldValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer

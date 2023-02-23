@@ -10,9 +10,9 @@ import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
+import com.datadog.android.log.internal.net.LogsRequestFactory
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.log.net.LogsRequestFactory
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
