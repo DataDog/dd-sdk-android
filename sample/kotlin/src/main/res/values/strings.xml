@@ -106,4 +106,7 @@
     <string name="app_compat_checkbox">App Compat CheckBox</string>
     <string name="material_checkbox">Material CheckBox</string>
     <string name="radio_and_check_box_components">Radio and CheckBox Components</string>
+    <string name="default_radio">Default Radio</string>
+    <string name="app_compat_radio">App Compat Radio</string>
+    <string name="material_radio">Material Radio</string>
 </resources>
