@@ -272,6 +272,8 @@ class LogsFeature internal constructor(
             }
     }
 
+    // endregion
+
     /**
      * A Builder class for a [LogsFeature].
      */
@@ -317,8 +319,6 @@ class LogsFeature internal constructor(
             )
         }
     }
-
-    // endregion
 
     internal companion object {
 

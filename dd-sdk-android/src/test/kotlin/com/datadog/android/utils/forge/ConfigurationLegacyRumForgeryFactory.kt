@@ -6,8 +6,8 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
@@ -16,10 +16,10 @@ import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class ConfigurationRumForgeryFactory :
-    ForgeryFactory<RumFeature.Configuration> {
-    override fun getForgery(forge: Forge): RumFeature.Configuration {
-        return RumFeature.Configuration(
+internal class ConfigurationLegacyRumForgeryFactory :
+    ForgeryFactory<Configuration.Feature.RUM> {
+    override fun getForgery(forge: Forge): Configuration.Feature.RUM {
+        return Configuration.Feature.RUM(
             endpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
             samplingRate = forge.aFloat(0f, 100f),
             telemetrySamplingRate = forge.aFloat(0f, 100f),

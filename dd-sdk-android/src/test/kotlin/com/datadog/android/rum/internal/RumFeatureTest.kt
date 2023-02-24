@@ -79,7 +79,7 @@ internal class RumFeatureTest {
     private lateinit var testedFeature: RumFeature
 
     @Forgery
-    lateinit var fakeConfiguration: Configuration.Feature.RUM
+    lateinit var fakeConfiguration: RumFeature.Configuration
 
     @Mock
     lateinit var mockChoreographer: Choreographer
