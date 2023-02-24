@@ -109,7 +109,7 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         whenever(
             mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
                 mockCheckedTextView,
-                CheckableWireframeMapper.CHECKBOX_KEY_NAME
+                CheckableTextViewMapper.CHECKABLE_KEY_NAME
             )
         ).thenReturn(fakeGeneratedIdentifier)
         whenever(mockTextWireframeMapper.map(mockCheckedTextView, fakeSystemInformation))
@@ -153,7 +153,7 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
                 color = expectedCheckBoxColor,
-                width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
+                width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             ),
             shapeStyle = expectedCheckedShapeStyle(expectedCheckBoxColor)
         )
@@ -186,7 +186,7 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
                 color = expectedCheckBoxColor,
-                width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
+                width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             ),
             shapeStyle = null
         )
@@ -219,7 +219,7 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
             height = 0,
             border = MobileSegment.ShapeBorder(
                 color = expectedCheckBoxColor,
-                width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
+                width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             ),
             shapeStyle = null
         )
@@ -253,7 +253,7 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
                 color = expectedCheckBoxColor,
-                width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
+                width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             )
         )
 
@@ -286,7 +286,7 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
                 color = expectedCheckBoxColor,
-                width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
+                width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             )
         )
 
@@ -317,7 +317,7 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
                 color = expectedCheckBoxColor,
-                width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
+                width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             )
         )
 
@@ -337,7 +337,7 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         whenever(
             mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
                 mockCheckedTextView,
-                CheckableWireframeMapper.CHECKBOX_KEY_NAME
+                CheckableTextViewMapper.CHECKABLE_KEY_NAME
             )
         ).thenReturn(null)
 

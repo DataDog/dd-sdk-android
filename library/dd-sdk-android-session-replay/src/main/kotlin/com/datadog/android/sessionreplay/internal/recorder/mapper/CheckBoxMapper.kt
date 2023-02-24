@@ -13,10 +13,9 @@ import com.datadog.android.sessionreplay.internal.utils.StringUtils
 internal open class CheckBoxMapper(
     textWireframeMapper: TextWireframeMapper,
     stringUtils: StringUtils = StringUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierResolver =
-        UniqueIdentifierResolver,
+    uniqueIdentifierGenerator: UniqueIdentifierResolver = UniqueIdentifierResolver,
     viewUtils: ViewUtils = ViewUtils()
-) : CompoundButtonMapper<CheckBox>(
+) : CheckableCompoundButtonMapper<CheckBox>(
     textWireframeMapper,
     stringUtils,
     uniqueIdentifierGenerator,

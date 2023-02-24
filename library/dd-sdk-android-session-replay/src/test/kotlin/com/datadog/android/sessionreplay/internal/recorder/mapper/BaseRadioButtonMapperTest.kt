@@ -72,7 +72,7 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
     @FloatForgery(min = 1f, max = 100f)
     var fakeTextSize: Float = 1f
 
-    @IntForgery(min = CompoundButtonMapper.DEFAULT_CHECKBOX_HEIGHT_IN_PX.toInt(), max = 100)
+    @IntForgery(min = CheckableCompoundButtonMapper.DEFAULT_CHECKABLE_HEIGHT_IN_PX.toInt(), max = 100)
     var fakeIntrinsicDrawableHeight = 1
 
     @BeforeEach
@@ -84,7 +84,7 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         whenever(
             mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
                 mockRadioButton,
-                CheckableWireframeMapper.CHECKBOX_KEY_NAME
+                CheckableTextViewMapper.CHECKABLE_KEY_NAME
             )
         ).thenReturn(fakeGeneratedIdentifier)
         whenever(mockTextWireframeMapper.map(mockRadioButton, fakeSystemInformation))
@@ -136,14 +136,14 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
             resolveRadioBoxSize(fakeIntrinsicDrawableHeight.toLong())
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
-            x = fakeViewGlobalBounds.x + CompoundButtonMapper.MIN_PADDING_IN_PX
+            x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
                 .densityNormalized(fakeSystemInformation.screenDensity),
             y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - checkBoxSize) / 2,
             width = checkBoxSize,
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
                 color = expectedRadioBoxColor,
-                width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
+                width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             ),
             shapeStyle = expectedCheckedShapeStyle(expectedRadioBoxColor)
         )
@@ -175,14 +175,14 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
             resolveRadioBoxSize(fakeIntrinsicDrawableHeight.toLong())
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
-            x = fakeViewGlobalBounds.x + CompoundButtonMapper.MIN_PADDING_IN_PX
+            x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
                 .densityNormalized(fakeSystemInformation.screenDensity),
             y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - checkBoxSize) / 2,
             width = checkBoxSize,
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
                 color = expectedRadioBoxColor,
-                width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
+                width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             ),
             shapeStyle = expectedNotCheckedShapeStyle(expectedRadioBoxColor)
         )
@@ -206,17 +206,17 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
             OPAQUE_ALPHA_VALUE
         )
         val checkBoxSize =
-            resolveRadioBoxSize(CompoundButtonMapper.DEFAULT_CHECKBOX_HEIGHT_IN_PX)
+            resolveRadioBoxSize(CheckableCompoundButtonMapper.DEFAULT_CHECKABLE_HEIGHT_IN_PX)
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
-            x = fakeViewGlobalBounds.x + CompoundButtonMapper.MIN_PADDING_IN_PX
+            x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
                 .densityNormalized(fakeSystemInformation.screenDensity),
             y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - checkBoxSize) / 2,
             width = checkBoxSize,
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
                 color = expectedRadioBoxColor,
-                width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
+                width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             ),
             shapeStyle = expectedCheckedShapeStyle(expectedRadioBoxColor)
         )
@@ -240,17 +240,17 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
             OPAQUE_ALPHA_VALUE
         )
         val checkBoxSize =
-            resolveRadioBoxSize(CompoundButtonMapper.DEFAULT_CHECKBOX_HEIGHT_IN_PX)
+            resolveRadioBoxSize(CheckableCompoundButtonMapper.DEFAULT_CHECKABLE_HEIGHT_IN_PX)
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
-            x = fakeViewGlobalBounds.x + CompoundButtonMapper.MIN_PADDING_IN_PX
+            x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
                 .densityNormalized(fakeSystemInformation.screenDensity),
             y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - checkBoxSize) / 2,
             width = checkBoxSize,
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
                 color = expectedRadioBoxColor,
-                width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
+                width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             ),
             shapeStyle = expectedNotCheckedShapeStyle(expectedRadioBoxColor)
         )
@@ -271,7 +271,7 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         whenever(
             mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
                 mockRadioButton,
-                CheckableWireframeMapper.CHECKBOX_KEY_NAME
+                CheckableTextViewMapper.CHECKABLE_KEY_NAME
             )
         ).thenReturn(null)
 
@@ -292,7 +292,7 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
     private fun resolveRadioBoxSize(radioSize: Long): Long {
         val density = fakeSystemInformation.screenDensity
         val textSize = fakeTextSize.toLong()
-        val size = radioSize - 2 * CompoundButtonMapper.MIN_PADDING_IN_PX
+        val size = radioSize - 2 * CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
         return (size * (textSize - 1) / textSize).densityNormalized(density)
     }
 
