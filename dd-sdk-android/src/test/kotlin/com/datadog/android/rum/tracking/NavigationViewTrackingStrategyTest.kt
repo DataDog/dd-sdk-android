@@ -27,7 +27,9 @@ import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -112,8 +114,10 @@ internal class NavigationViewTrackingStrategyTest {
         whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn mockNavController
         mockNavDestination = mockNavDestination(forge, fakeDestinationName)
 
-        val mockCore = mock<DatadogCore>()
-        whenever(mockCore.rumFeature) doReturn mock<RumFeature>()
+        val mockCore = mock<SdkCore>()
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mock()
+        whenever(mockCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         Datadog.globalSdkCore = mockCore
 
         testedStrategy = NavigationViewTrackingStrategy(fakeNavViewId, true, mockPredicate)

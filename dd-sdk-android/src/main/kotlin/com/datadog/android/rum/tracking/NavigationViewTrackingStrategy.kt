@@ -25,7 +25,7 @@ import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.api.Feature
 import java.lang.IllegalStateException
 import java.util.WeakHashMap
 
@@ -115,7 +115,9 @@ class NavigationViewTrackingStrategy(
      */
     fun startTracking() {
         val activity = startedActivity ?: return
-        val rumFeature = (Datadog.globalSdkCore as? DatadogCore)?.rumFeature ?: return
+        val rumFeature = Datadog.globalSdkCore
+            .getFeature(Feature.RUM_FEATURE_NAME)
+            ?.unwrap<RumFeature>() ?: return
         activity.findNavControllerOrNull(navigationViewId)?.let {
             if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
                 val navControllerFragmentCallbacks = NavControllerFragmentLifecycleCallbacks(

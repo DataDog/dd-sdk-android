@@ -60,8 +60,6 @@ internal class DatadogCore(
 
     internal val features: MutableMap<String, SdkFeature> = mutableMapOf()
 
-    internal var rumFeature: RumFeature? = null
-
     // TODO RUMM-0000 handle context
     internal val contextProvider: ContextProvider?
         get() {
@@ -170,10 +168,6 @@ internal class DatadogCore(
     override fun stop() {
         features.forEach {
             it.value.stop()
-            // TODO RUMM-0000 Temporary thing
-            when (it.key) {
-                Feature.RUM_FEATURE_NAME -> rumFeature = null
-            }
         }
         features.clear()
 
@@ -304,7 +298,6 @@ internal class DatadogCore(
                 )
             }
             val rumFeature = RumFeature(configuration, coreFeature)
-            this.rumFeature = rumFeature
             registerFeature(rumFeature)
         }
     }

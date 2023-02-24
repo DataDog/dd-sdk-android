@@ -17,13 +17,11 @@ import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.TimeInfo
@@ -432,19 +430,15 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `𝕄 stop all features 𝕎 stop()`() {
+    fun `𝕄 stop all features 𝕎 stop()`(
+        @StringForgery fakeFeatureNames: List<String>
+    ) {
         // Given
         val mockCoreFeature = mock<CoreFeature>()
         whenever(mockCoreFeature.initialized).thenReturn(mock())
         testedCore.coreFeature = mockCoreFeature
-        val mockRumFeature = mock<RumFeature>()
-        testedCore.rumFeature = mockRumFeature
 
-        val sdkFeatureMocks = listOf(
-            Feature.RUM_FEATURE_NAME,
-            Feature.TRACING_FEATURE_NAME,
-            Feature.LOGS_FEATURE_NAME
-        ).map {
+        val sdkFeatureMocks = fakeFeatureNames.map {
             it to mock<SdkFeature>()
         }
 
@@ -459,7 +453,6 @@ internal class DatadogCoreTest {
             verify(it.second).stop()
         }
 
-        assertThat(testedCore.rumFeature).isNull()
         assertThat(testedCore.contextProvider).isNull()
 
         assertThat(testedCore.features).isEmpty()

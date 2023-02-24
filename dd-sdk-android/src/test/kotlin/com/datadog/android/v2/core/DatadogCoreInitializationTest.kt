@@ -116,11 +116,10 @@ internal class DatadogCoreInitializationTest {
                 it.isNull()
             }
         }
+
         if (rumEnabled) {
-            assertThat(testedCore.rumFeature!!.initialized.get()).isTrue()
             assertThat(testedCore.getFeature(Feature.RUM_FEATURE_NAME)).isNotNull
         } else {
-            assertThat(testedCore.rumFeature).isNull()
             assertThat(testedCore.getFeature(Feature.RUM_FEATURE_NAME)).isNull()
         }
     }
@@ -140,7 +139,6 @@ internal class DatadogCoreInitializationTest {
 
         // Then
         assertThat(testedCore.coreFeature.initialized.get()).isTrue()
-        assertThat(testedCore.rumFeature!!.initialized.get()).isTrue()
         verify(logger.mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
@@ -163,7 +161,6 @@ internal class DatadogCoreInitializationTest {
 
         // Then
         assertThat(testedCore.coreFeature.initialized.get()).isTrue()
-        assertThat(testedCore.rumFeature).isNull()
         verify(logger.mockInternalLogger, never())
             .log(
                 any(),

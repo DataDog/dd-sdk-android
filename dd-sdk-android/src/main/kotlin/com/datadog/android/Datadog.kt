@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.telemetry
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
@@ -219,7 +220,8 @@ object Datadog {
      */
     @JvmStatic
     fun enableRumDebugging(enable: Boolean) {
-        val rumFeature = (globalSdkCore as? DatadogCore)?.rumFeature
+        val rumFeature = globalSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+            ?.unwrap<RumFeature>()
         if (enable) {
             rumFeature?.enableDebugging()
         } else {
