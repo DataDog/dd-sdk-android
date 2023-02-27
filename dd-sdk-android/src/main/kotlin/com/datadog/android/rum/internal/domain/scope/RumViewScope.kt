@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
@@ -28,8 +28,7 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
@@ -42,16 +41,15 @@ import kotlin.math.min
 @Suppress("TooManyFunctions", "LargeClass", "LongParameterList")
 internal open class RumViewScope(
     private val parentScope: RumScope,
-    private val sdkCore: SdkCore,
+    private val sdkCore: InternalSdkCore,
     key: Any,
     internal val name: String,
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
-    internal val firstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
+    internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     internal val cpuVitalMonitor: VitalMonitor,
     internal val memoryVitalMonitor: VitalMonitor,
     internal val frameRateVitalMonitor: VitalMonitor,
-    private val contextProvider: ContextProvider,
     private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate(),
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
     internal val type: RumViewType = RumViewType.FOREGROUND,
@@ -292,7 +290,6 @@ internal open class RumViewScope(
                     sdkCore,
                     event,
                     serverTimeOffsetInMs,
-                    contextProvider,
                     featuresContextResolver,
                     trackFrustrations
                 )
@@ -315,7 +312,6 @@ internal open class RumViewScope(
                 sdkCore,
                 event,
                 serverTimeOffsetInMs,
-                contextProvider,
                 featuresContextResolver,
                 trackFrustrations
             )
@@ -340,7 +336,6 @@ internal open class RumViewScope(
             updatedEvent,
             firstPartyHostHeaderTypeResolver,
             serverTimeOffsetInMs,
-            contextProvider,
             featuresContextResolver
         )
         pendingResourceCount++
@@ -1001,13 +996,12 @@ internal open class RumViewScope(
 
         internal fun fromEvent(
             parentScope: RumScope,
-            sdkCore: SdkCore,
+            sdkCore: InternalSdkCore,
             event: RumRawEvent.StartView,
-            firstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
+            firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
             cpuVitalMonitor: VitalMonitor,
             memoryVitalMonitor: VitalMonitor,
             frameRateVitalMonitor: VitalMonitor,
-            contextProvider: ContextProvider,
             trackFrustrations: Boolean
         ): RumViewScope {
             return RumViewScope(
@@ -1021,7 +1015,6 @@ internal open class RumViewScope(
                 cpuVitalMonitor,
                 memoryVitalMonitor,
                 frameRateVitalMonitor,
-                contextProvider,
                 trackFrustrations = trackFrustrations
             )
         }

@@ -7,27 +7,25 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.VitalMonitor
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 
 @Suppress("LongParameterList")
 internal class RumApplicationScope(
     applicationId: String,
-    sdkCore: SdkCore,
+    sdkCore: InternalSdkCore,
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
-    firstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
+    firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
-    sessionListener: RumSessionListener?,
-    contextProvider: ContextProvider
+    sessionListener: RumSessionListener?
 ) : RumScope {
 
     private val rumContext = RumContext(applicationId = applicationId)
@@ -41,8 +39,7 @@ internal class RumApplicationScope(
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
-        sessionListener,
-        contextProvider
+        sessionListener
     )
 
     // region RumScope

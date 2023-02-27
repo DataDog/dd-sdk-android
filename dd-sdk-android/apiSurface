@@ -539,6 +539,8 @@ data class com.datadog.android.v2.api.context.TimeInfo
   constructor(Long, Long, Long, Long)
 data class com.datadog.android.v2.api.context.UserInfo
   constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, Map<kotlin.String, kotlin.Any?> = emptyMap())
+interface com.datadog.android.v2.core.InternalSdkCore : com.datadog.android.v2.api.SdkCore
+  val networkInfo: com.datadog.android.v2.api.context.NetworkInfo
 interface com.datadog.android.v2.core.storage.DataWriter<T>
   fun write(com.datadog.android.v2.api.EventBatchWriter, T): Boolean
 class com.datadog.tools.annotation.NoOpImplementation

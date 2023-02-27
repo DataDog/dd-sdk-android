@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
@@ -15,8 +15,7 @@ import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.android.v2.core.storage.NoOpDataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -73,7 +72,7 @@ internal class RumSessionScopeTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
+    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockCpuVitalMonitor: VitalMonitor
@@ -91,10 +90,7 @@ internal class RumSessionScopeTest {
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
     @Mock
-    lateinit var mockContextProvider: ContextProvider
-
-    @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: InternalSdkCore
 
     @Forgery
     lateinit var fakeParentContext: RumContext
@@ -998,7 +994,6 @@ internal class RumSessionScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockContextProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS

@@ -20,7 +20,7 @@ import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -287,13 +287,18 @@ interface RumMonitor {
          * Builds a [RumMonitor] based on the current state of this Builder.
          */
         fun build(): RumMonitor {
-            val datadogCore = Datadog.globalSdkCore as? DatadogCore
-            val coreFeature = datadogCore?.coreFeature
-            val contextProvider = datadogCore?.contextProvider
-            val rumFeature = datadogCore?.getFeature(Feature.RUM_FEATURE_NAME)
+            val datadogCore = Datadog.globalSdkCore as? InternalSdkCore
+            val rumFeature = datadogCore
+                ?.getFeature(Feature.RUM_FEATURE_NAME)
                 ?.unwrap<RumFeature>()
-            val rumApplicationId = coreFeature?.rumApplicationId
-            return if (rumFeature == null || coreFeature == null || contextProvider == null) {
+            return if (datadogCore == null) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    UNEXPECTED_SDK_CORE_TYPE
+                )
+                NoOpRumMonitor()
+            } else if (rumFeature == null) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
@@ -301,7 +306,7 @@ interface RumMonitor {
                         Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
                 )
                 NoOpRumMonitor()
-            } else if (rumApplicationId.isNullOrBlank()) {
+            } else if (rumFeature.applicationId.isBlank()) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
@@ -310,7 +315,7 @@ interface RumMonitor {
                 NoOpRumMonitor()
             } else {
                 DatadogRumMonitor(
-                    applicationId = rumApplicationId,
+                    applicationId = rumFeature.applicationId,
                     sdkCore = datadogCore,
                     samplingRate = samplingRate ?: rumFeature.samplingRate,
                     writer = rumFeature.dataWriter,
@@ -319,26 +324,27 @@ interface RumMonitor {
                         sdkCore = datadogCore,
                         eventSampler = RateBasedSampler(rumFeature.telemetrySamplingRate.percent())
                     ),
-                    firstPartyHostHeaderTypeResolver = coreFeature.firstPartyHostHeaderTypeResolver,
+                    firstPartyHostHeaderTypeResolver = datadogCore.firstPartyHostResolver,
                     cpuVitalMonitor = rumFeature.cpuVitalMonitor,
                     memoryVitalMonitor = rumFeature.memoryVitalMonitor,
                     frameRateVitalMonitor = rumFeature.frameRateVitalMonitor,
                     backgroundTrackingEnabled = rumFeature.backgroundEventTracking,
                     trackFrustrations = rumFeature.trackFrustrations,
-                    sessionListener = sessionListener,
-                    contextProvider = contextProvider
+                    sessionListener = sessionListener
                 )
             }
         }
 
         internal companion object {
+            internal const val UNEXPECTED_SDK_CORE_TYPE =
+                "SDK instance provided doesn't implement InternalSdkCore."
             internal const val RUM_NOT_ENABLED_ERROR_MESSAGE =
                 "You're trying to create a RumMonitor instance, " +
                     "but the SDK was not initialized or RUM feature was disabled " +
                     "in your Configuration. No RUM data will be sent."
             internal const val INVALID_APPLICATION_ID_ERROR_MESSAGE =
                 "You're trying to create a RumMonitor instance, " +
-                    "but the RUM application id was null or empty. No RUM data will be sent."
+                    "but the RUM application id was empty. No RUM data will be sent."
         }
     }
 }

@@ -12,6 +12,7 @@ import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
@@ -24,6 +25,7 @@ import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.ContextProvider
@@ -382,6 +384,23 @@ internal class DatadogCoreTest {
 
         // Then
         assertThat(resolver).isSameAs(mockResolver)
+    }
+
+    @Test
+    fun `𝕄 provide network info 𝕎 networkInfo()`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
+        // Given
+        testedCore.coreFeature = mock()
+        val mockNetworkInfoProvider = mock<NetworkInfoProvider>()
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
+        whenever(testedCore.coreFeature.networkInfoProvider) doReturn mockNetworkInfoProvider
+
+        // When
+        val networkInfo = testedCore.networkInfo
+
+        // Then
+        assertThat(networkInfo).isSameAs(fakeNetworkInfo)
     }
 
     @Test

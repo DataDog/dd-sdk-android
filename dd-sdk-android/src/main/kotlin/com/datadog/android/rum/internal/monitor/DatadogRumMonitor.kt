@@ -8,8 +8,7 @@ package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -37,8 +36,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.telemetry.internal.TelemetryType
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import java.util.Locale
 import java.util.concurrent.ExecutorService
@@ -50,19 +48,18 @@ import java.util.concurrent.TimeUnit
 @Suppress("LongParameterList")
 internal class DatadogRumMonitor(
     applicationId: String,
-    sdkCore: SdkCore,
+    sdkCore: InternalSdkCore,
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
     private val writer: DataWriter<Any>,
     internal val handler: Handler,
     internal val telemetryEventHandler: TelemetryEventHandler,
-    firstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
+    firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener?,
-    contextProvider: ContextProvider,
     private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 ) : RumMonitor, AdvancedRumMonitor {
 
@@ -80,8 +77,7 @@ internal class DatadogRumMonitor(
             CombinedRumSessionListener(sessionListener, telemetryEventHandler)
         } else {
             telemetryEventHandler
-        },
-        contextProvider
+        }
     )
 
     internal val keepAliveRunnable = Runnable {
@@ -386,7 +382,7 @@ internal class DatadogRumMonitor(
             ?.queue
             ?.drainTo(tasks)
         executorService.shutdown()
-        executorService.awaitTermination(CoreFeature.DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
+        executorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
         tasks.forEach {
             it.run()
         }
@@ -471,5 +467,8 @@ internal class DatadogRumMonitor(
 
     companion object {
         internal val KEEP_ALIVE_MS = TimeUnit.MINUTES.toMillis(5)
+
+        // should be aligned with CoreFeature#DRAIN_WAIT_SECONDS, but not a requirement
+        internal const val DRAIN_WAIT_SECONDS = 10L
     }
 }

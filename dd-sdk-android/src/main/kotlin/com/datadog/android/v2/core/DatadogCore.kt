@@ -33,6 +33,7 @@ import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.ContextProvider
@@ -52,7 +53,7 @@ internal class DatadogCore(
     internal val credentials: Credentials,
     configuration: Configuration,
     internal val instanceId: String
-) : SdkCore {
+) : InternalSdkCore {
 
     internal var libraryVerbosity = Int.MAX_VALUE
 
@@ -113,6 +114,9 @@ internal class DatadogCore(
     /** @inheritDoc */
     override val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver
         get() = coreFeature.firstPartyHostHeaderTypeResolver
+
+    override val networkInfo: NetworkInfo
+        get() = coreFeature.networkInfoProvider.getLatestNetworkInfo()
 
     /** @inheritDoc */
     override fun registerFeature(feature: Feature) {
@@ -290,14 +294,16 @@ internal class DatadogCore(
 
     private fun initializeRumFeature(configuration: Configuration.Feature.RUM?) {
         if (configuration != null) {
-            if (coreFeature.rumApplicationId.isNullOrBlank()) {
+            val rumApplicationId = coreFeature.rumApplicationId
+            if (rumApplicationId.isNullOrBlank()) {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     WARNING_MESSAGE_APPLICATION_ID_IS_NULL
                 )
+                return
             }
-            val rumFeature = RumFeature(configuration, coreFeature)
+            val rumFeature = RumFeature(rumApplicationId, configuration, coreFeature)
             registerFeature(rumFeature)
         }
     }

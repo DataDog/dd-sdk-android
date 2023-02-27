@@ -6,24 +6,21 @@
 
 package com.datadog.android.rum
 
-import android.content.Context
 import android.os.Looper
 import com.datadog.android.Datadog
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -32,8 +29,11 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -46,6 +46,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -56,26 +57,35 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class RumMonitorBuilderTest {
 
-    lateinit var testedBuilder: RumMonitor.Builder
+    private lateinit var testedBuilder: RumMonitor.Builder
 
     @Forgery
-    lateinit var fakeConfig: Configuration.Feature.RUM
+    lateinit var fakeRumApplicationId: UUID
 
     @Mock
-    lateinit var mockSdkCore: DatadogCore
+    lateinit var mockSdkCore: InternalSdkCore
 
-    private lateinit var rumFeature: RumFeature
+    @Mock
+    lateinit var mockRumFeature: RumFeature
 
     @BeforeEach
-    fun `set up`() {
-        whenever(mockSdkCore.coreFeature) doReturn coreFeature.mockInstance
-        whenever(mockSdkCore.contextProvider) doReturn mock()
+    fun `set up`(
+        forge: Forge
+    ) {
+        whenever(mockRumFeature.applicationId) doReturn fakeRumApplicationId.toString()
+        whenever(mockRumFeature.dataWriter) doReturn mock()
+        whenever(mockRumFeature.cpuVitalMonitor) doReturn mock()
+        whenever(mockRumFeature.memoryVitalMonitor) doReturn mock()
+        whenever(mockRumFeature.frameRateVitalMonitor) doReturn mock()
+        whenever(mockRumFeature.backgroundEventTracking) doReturn forge.aBool()
+        whenever(mockRumFeature.trackFrustrations) doReturn forge.aBool()
+        whenever(mockRumFeature.telemetrySamplingRate) doReturn forge.aFloat(min = 0f, max = 100f)
+        whenever(mockRumFeature.samplingRate) doReturn forge.aFloat(min = 0f, max = 100f)
 
-        rumFeature = RumFeature(fakeConfig, coreFeature.mockInstance)
-        rumFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
         val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn rumFeature
+        whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
 
         Datadog.globalSdkCore = mockSdkCore
 
@@ -88,7 +98,14 @@ internal class RumMonitorBuilderTest {
     }
 
     @Test
-    fun `𝕄 builds a default RumMonitor 𝕎 build()`() {
+    fun `𝕄 builds a default RumMonitor 𝕎 build()`(
+        @FloatForgery(0f, 100f) fakeSamplingRate: Float,
+        @BoolForgery fakeBackgroundEventTracking: Boolean
+    ) {
+        // Given
+        whenever(mockRumFeature.samplingRate) doReturn fakeSamplingRate
+        whenever(mockRumFeature.backgroundEventTracking) doReturn fakeBackgroundEventTracking
+
         // When
         val monitor = testedBuilder.build()
 
@@ -97,16 +114,16 @@ internal class RumMonitorBuilderTest {
         assertThat(monitor.rootScope).isInstanceOf(RumApplicationScope::class.java)
         assertThat(monitor.rootScope)
             .overridingErrorMessage(
-                "Expecting root scope to have applicationId ${coreFeature.fakeRumApplicationId}"
+                "Expecting root scope to have applicationId $fakeRumApplicationId"
             )
             .matches {
                 (it as RumApplicationScope)
                     .getRumContext()
-                    .applicationId == coreFeature.fakeRumApplicationId
+                    .applicationId == fakeRumApplicationId.toString()
             }
         assertThat(monitor.handler.looper).isSameAs(Looper.getMainLooper())
-        assertThat(monitor.samplingRate).isEqualTo(fakeConfig.samplingRate)
-        assertThat(monitor.backgroundTrackingEnabled).isEqualTo(fakeConfig.backgroundEventTracking)
+        assertThat(monitor.samplingRate).isEqualTo(fakeSamplingRate)
+        assertThat(monitor.backgroundTrackingEnabled).isEqualTo(fakeBackgroundEventTracking)
 
         assertThat(monitor.telemetryEventHandler.sdkCore).isSameAs(mockSdkCore)
 
@@ -114,7 +131,7 @@ internal class RumMonitorBuilderTest {
         check(telemetrySampler is RateBasedSampler)
 
         assertThat(telemetrySampler.sampleRate)
-            .isEqualTo(rumFeature.telemetrySamplingRate / 100)
+            .isEqualTo(mockRumFeature.telemetrySamplingRate / 100)
     }
 
     @Test
@@ -131,12 +148,12 @@ internal class RumMonitorBuilderTest {
         assertThat(monitor.rootScope).isInstanceOf(RumApplicationScope::class.java)
         assertThat(monitor.rootScope)
             .overridingErrorMessage(
-                "Expecting root scope to have applicationId ${coreFeature.fakeRumApplicationId}"
+                "Expecting root scope to have applicationId $fakeRumApplicationId"
             )
             .matches {
                 (it as RumApplicationScope)
                     .getRumContext()
-                    .applicationId == coreFeature.fakeRumApplicationId
+                    .applicationId == fakeRumApplicationId.toString()
             }
         assertThat(monitor.handler.looper).isSameAs(Looper.getMainLooper())
         assertThat(monitor.samplingRate).isEqualTo(samplingRate)
@@ -180,9 +197,28 @@ internal class RumMonitorBuilderTest {
     }
 
     @Test
+    fun `𝕄 builds nothing 𝕎 build() and SDK instance doesn't implement InternalSdkCore`() {
+        // Given
+        val wrongSdkCore = mock<SdkCore>()
+        Datadog.globalSdkCore = wrongSdkCore
+        whenever(wrongSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
+
+        // When
+        val monitor = testedBuilder.build()
+
+        // Then
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            RumMonitor.Builder.UNEXPECTED_SDK_CORE_TYPE
+        )
+        check(monitor is NoOpRumMonitor)
+    }
+
+    @Test
     fun `𝕄 builds nothing 𝕎 build() and RumFeature is not initialized`() {
         // Given
-        Datadog.globalSdkCore = NoOpSdkCore()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
 
         // When
         val monitor = testedBuilder.build()
@@ -198,9 +234,11 @@ internal class RumMonitorBuilderTest {
     }
 
     @Test
-    fun `𝕄 builds nothing 𝕎 build() { rumApplicationId is null }`() {
+    fun `𝕄 builds nothing 𝕎 build() { rumApplicationId is missing }`(
+        @StringForgery(regex = "\\s*") fakeApplicationId: String
+    ) {
         // Given
-        whenever(coreFeature.mockInstance.rumApplicationId) doReturn null
+        whenever(mockRumFeature.applicationId) doReturn fakeApplicationId
 
         // When
         val monitor = testedBuilder.build()
@@ -215,14 +253,12 @@ internal class RumMonitorBuilderTest {
     }
 
     companion object {
-        val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
         val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, coreFeature)
+            return listOf(logger)
         }
     }
 }
