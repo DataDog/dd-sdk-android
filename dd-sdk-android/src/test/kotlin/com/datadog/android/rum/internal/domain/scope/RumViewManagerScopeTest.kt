@@ -517,17 +517,18 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        val appStartTimeMs = (
-            fakeEvent.eventTime.timestamp -
-                TimeUnit.NANOSECONDS.toMillis(fakeEvent.eventTime.nanoTime)
+        val timestampNs = (
+            TimeUnit.MILLISECONDS.toNanos(fakeEvent.eventTime.timestamp) -
+                fakeEvent.eventTime.nanoTime
             ) +
-            TimeUnit.NANOSECONDS.toMillis(appStartTimeNs)
+            appStartTimeNs
+        val timestampMs = TimeUnit.NANOSECONDS.toMillis((timestampNs))
         val scopeCount = if (fakeEvent is RumRawEvent.StartView) 2 else 1
         assertThat(testedScope.childrenScopes).hasSize(scopeCount)
         assertThat(testedScope.childrenScopes[0])
             .isInstanceOfSatisfying(RumViewScope::class.java) {
                 assertThat(it.eventTimestamp)
-                    .isEqualTo(resolveExpectedTimestamp(appStartTimeMs))
+                    .isEqualTo(resolveExpectedTimestamp(timestampMs))
                 assertThat(it.keyRef.get()).isEqualTo(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_URL)
                 assertThat(it.name).isEqualTo(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_NAME)
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
