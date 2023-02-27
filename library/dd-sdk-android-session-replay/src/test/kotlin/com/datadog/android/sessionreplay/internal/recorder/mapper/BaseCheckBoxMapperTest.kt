@@ -72,7 +72,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
     @FloatForgery(min = 1f, max = 100f)
     var fakeTextSize: Float = 1f
 
-    @IntForgery(min = CompoundButtonMapper.DEFAULT_CHECKBOX_HEIGHT_IN_PX.toInt(), max = 100)
+    @IntForgery(min = CheckableCompoundButtonMapper.DEFAULT_CHECKABLE_HEIGHT_IN_PX.toInt(), max = 100)
     var fakeIntrinsicDrawableHeight = 1
 
     @BeforeEach
@@ -84,7 +84,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         whenever(
             mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
                 mockCheckBox,
-                CheckableWireframeMapper.CHECKBOX_KEY_NAME
+                CheckableTextViewMapper.CHECKABLE_KEY_NAME
             )
         ).thenReturn(fakeGeneratedIdentifier)
         whenever(mockTextWireframeMapper.map(mockCheckBox, fakeSystemInformation))
@@ -127,14 +127,14 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
             resolveCheckBoxSize(fakeIntrinsicDrawableHeight.toLong())
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
-            x = fakeViewGlobalBounds.x + CompoundButtonMapper.MIN_PADDING_IN_PX
+            x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
                 .densityNormalized(fakeSystemInformation.screenDensity),
             y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - checkBoxSize) / 2,
             width = checkBoxSize,
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
                 color = expectedCheckBoxColor,
-                width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
+                width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             ),
             shapeStyle = expectedCheckedShapeStyle(expectedCheckBoxColor)
         )
@@ -166,14 +166,14 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
             resolveCheckBoxSize(fakeIntrinsicDrawableHeight.toLong())
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
-            x = fakeViewGlobalBounds.x + CompoundButtonMapper.MIN_PADDING_IN_PX
+            x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
                 .densityNormalized(fakeSystemInformation.screenDensity),
             y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - checkBoxSize) / 2,
             width = checkBoxSize,
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
                 color = expectedCheckBoxColor,
-                width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
+                width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             ),
             shapeStyle = null
         )
@@ -197,17 +197,17 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
             OPAQUE_ALPHA_VALUE
         )
         val checkBoxSize =
-            resolveCheckBoxSize(CompoundButtonMapper.DEFAULT_CHECKBOX_HEIGHT_IN_PX)
+            resolveCheckBoxSize(CheckableCompoundButtonMapper.DEFAULT_CHECKABLE_HEIGHT_IN_PX)
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
-            x = fakeViewGlobalBounds.x + CompoundButtonMapper.MIN_PADDING_IN_PX
+            x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
                 .densityNormalized(fakeSystemInformation.screenDensity),
             y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - checkBoxSize) / 2,
             width = checkBoxSize,
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
                 color = expectedCheckBoxColor,
-                width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
+                width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             ),
             shapeStyle = expectedCheckedShapeStyle(expectedCheckBoxColor)
         )
@@ -231,17 +231,17 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
             OPAQUE_ALPHA_VALUE
         )
         val checkBoxSize =
-            resolveCheckBoxSize(CompoundButtonMapper.DEFAULT_CHECKBOX_HEIGHT_IN_PX)
+            resolveCheckBoxSize(CheckableCompoundButtonMapper.DEFAULT_CHECKABLE_HEIGHT_IN_PX)
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
-            x = fakeViewGlobalBounds.x + CompoundButtonMapper.MIN_PADDING_IN_PX
+            x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
                 .densityNormalized(fakeSystemInformation.screenDensity),
             y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - checkBoxSize) / 2,
             width = checkBoxSize,
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
                 color = expectedCheckBoxColor,
-                width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
+                width = CheckableTextViewMapper.CHECKABLE_BORDER_WIDTH
             ),
             shapeStyle = null
         )
@@ -262,7 +262,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         whenever(
             mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
                 mockCheckBox,
-                CheckableWireframeMapper.CHECKBOX_KEY_NAME
+                CheckableTextViewMapper.CHECKABLE_KEY_NAME
             )
         ).thenReturn(null)
 
@@ -283,7 +283,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
     private fun resolveCheckBoxSize(checkBoxSize: Long): Long {
         val density = fakeSystemInformation.screenDensity
         val textSize = fakeTextSize.toLong()
-        val size = checkBoxSize - 2 * CompoundButtonMapper.MIN_PADDING_IN_PX
+        val size = checkBoxSize - 2 * CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
         return (size * (textSize - 1) / textSize).densityNormalized(density)
     }
 

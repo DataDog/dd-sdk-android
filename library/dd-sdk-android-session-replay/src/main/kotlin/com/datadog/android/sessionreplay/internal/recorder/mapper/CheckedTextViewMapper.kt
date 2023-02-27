@@ -9,28 +9,23 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.os.Build
 import android.widget.CheckedTextView
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.StringUtils
-import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal open class CheckedTextViewMapper(
-    private val textWireframeMapper: TextWireframeMapper,
+    textWireframeMapper: TextWireframeMapper,
     private val stringUtils: StringUtils = StringUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierResolver =
-        UniqueIdentifierResolver,
+    uniqueIdentifierGenerator: UniqueIdentifierResolver = UniqueIdentifierResolver,
     viewUtils: ViewUtils = ViewUtils()
-) : CheckableWireframeMapper<CheckedTextView>(uniqueIdentifierGenerator, viewUtils) {
+) : CheckableTextViewMapper<CheckedTextView>(
+    textWireframeMapper,
+    stringUtils,
+    uniqueIdentifierGenerator,
+    viewUtils
+) {
 
-    override fun map(view: CheckedTextView, systemInformation: SystemInformation):
-        List<MobileSegment.Wireframe> {
-        val mainWireframeList = textWireframeMapper.map(view, systemInformation)
-        resolveCheckableWireframe(view, systemInformation.screenDensity)?.let { wireframe ->
-            return mainWireframeList + wireframe
-        }
-        return mainWireframeList
-    }
+    // region CheckableTextViewMapper
 
     override fun resolveCheckableColor(view: CheckedTextView): String {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -69,4 +64,6 @@ internal open class CheckedTextViewMapper(
 
         )
     }
+
+    // endregion
 }

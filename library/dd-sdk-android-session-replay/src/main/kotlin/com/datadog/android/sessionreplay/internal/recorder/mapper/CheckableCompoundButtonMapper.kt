@@ -9,36 +9,27 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.os.Build
 import android.widget.CompoundButton
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.StringUtils
-import com.datadog.android.sessionreplay.model.MobileSegment
 
-internal abstract class CompoundButtonMapper<T : CompoundButton>(
-    private val textWireframeMapper: TextWireframeMapper,
-    private val stringUtils: StringUtils = StringUtils,
+internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
+    textWireframeMapper: TextWireframeMapper,
+    stringUtils: StringUtils = StringUtils,
     uniqueIdentifierGenerator: UniqueIdentifierResolver = UniqueIdentifierResolver,
     viewUtils: ViewUtils = ViewUtils()
-) :
-    CheckableWireframeMapper<T>(uniqueIdentifierGenerator, viewUtils) {
+) : CheckableTextViewMapper<T>(
+    textWireframeMapper,
+    stringUtils,
+    uniqueIdentifierGenerator,
+    viewUtils
+) {
 
-    override fun map(view: T, systemInformation: SystemInformation):
-        List<MobileSegment.Wireframe> {
-        val mainWireframeList = textWireframeMapper.map(view, systemInformation)
-        resolveCheckableWireframe(view, systemInformation.screenDensity)?.let { wireframe ->
-            return mainWireframeList + wireframe
-        }
-        return mainWireframeList
-    }
-
-    override fun resolveCheckableColor(view: T): String {
-        return stringUtils.formatColorAndAlphaAsHexa(view.currentTextColor, OPAQUE_ALPHA_VALUE)
-    }
+    // region CheckableTextViewMapper
 
     override fun resolveCheckableBounds(view: T, pixelsDensity: Float): GlobalBounds {
         val viewGlobalBounds = resolveViewGlobalBounds(view, pixelsDensity)
-        var checkBoxHeight = DEFAULT_CHECKBOX_HEIGHT_IN_PX
+        var checkBoxHeight = DEFAULT_CHECKABLE_HEIGHT_IN_PX
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             view.buttonDrawable?.let {
                 checkBoxHeight = it.intrinsicHeight.toLong()
@@ -60,8 +51,10 @@ internal abstract class CompoundButtonMapper<T : CompoundButton>(
         )
     }
 
+    // endregion
+
     companion object {
         internal const val MIN_PADDING_IN_PX = 20L
-        internal const val DEFAULT_CHECKBOX_HEIGHT_IN_PX = 84L
+        internal const val DEFAULT_CHECKABLE_HEIGHT_IN_PX = 84L
     }
 }

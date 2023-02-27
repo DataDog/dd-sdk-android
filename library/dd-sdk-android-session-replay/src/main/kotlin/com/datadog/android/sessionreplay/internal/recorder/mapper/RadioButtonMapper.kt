@@ -14,32 +14,36 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 internal open class RadioButtonMapper(
     textWireframeMapper: TextWireframeMapper,
     stringUtils: StringUtils = StringUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierResolver =
-        UniqueIdentifierResolver,
+    uniqueIdentifierGenerator: UniqueIdentifierResolver = UniqueIdentifierResolver,
     viewUtils: ViewUtils = ViewUtils()
-) : CompoundButtonMapper<RadioButton>(
+) : CheckableCompoundButtonMapper<RadioButton>(
     textWireframeMapper,
     stringUtils,
     uniqueIdentifierGenerator,
     viewUtils
 ) {
 
-    override fun resolveCheckableShapeStyle(view: RadioButton, checkBoxColor: String):
+    // region CheckableTextViewMapper
+
+    override fun resolveCheckedShapeStyle(view: RadioButton, checkBoxColor: String):
         MobileSegment.ShapeStyle? {
-        return if (view.isChecked) {
-            MobileSegment.ShapeStyle(
-                backgroundColor = checkBoxColor,
-                view.alpha,
-                cornerRadius = CORNER_RADIUS
-            )
-        } else {
-            MobileSegment.ShapeStyle(
-                backgroundColor = null,
-                view.alpha,
-                cornerRadius = CORNER_RADIUS
-            )
-        }
+        return MobileSegment.ShapeStyle(
+            backgroundColor = checkBoxColor,
+            view.alpha,
+            cornerRadius = CORNER_RADIUS
+        )
     }
+
+    override fun resolveNotCheckedShapeStyle(view: RadioButton, checkBoxColor: String):
+        MobileSegment.ShapeStyle? {
+        return MobileSegment.ShapeStyle(
+            backgroundColor = null,
+            view.alpha,
+            cornerRadius = CORNER_RADIUS
+        )
+    }
+
+    // endregion
 
     companion object {
         internal const val CORNER_RADIUS = 10

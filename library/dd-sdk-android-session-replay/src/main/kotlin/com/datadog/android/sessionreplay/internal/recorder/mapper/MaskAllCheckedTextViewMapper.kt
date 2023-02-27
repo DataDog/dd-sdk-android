@@ -24,7 +24,7 @@ internal class MaskAllCheckedTextViewMapper(
     viewUtils
 ) {
 
-    override fun resolveCheckableShapeStyle(view: CheckedTextView, checkBoxColor: String):
+    override fun resolveCheckedShapeStyle(view: CheckedTextView, checkBoxColor: String):
         MobileSegment.ShapeStyle? {
         // in case the MASK_ALL rule is applied we do not want to show the selection in the
         // checkbox related wireframe and in order to achieve that we need to provide

@@ -14,12 +14,11 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 internal class MaskAllCheckBoxMapper(
     textWireframeMapper: TextWireframeMapper,
     stringUtils: StringUtils = StringUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierResolver =
-        UniqueIdentifierResolver,
+    uniqueIdentifierGenerator: UniqueIdentifierResolver = UniqueIdentifierResolver,
     viewUtils: ViewUtils = ViewUtils()
 ) : CheckBoxMapper(textWireframeMapper, stringUtils, uniqueIdentifierGenerator, viewUtils) {
 
-    override fun resolveCheckableShapeStyle(view: CheckBox, checkBoxColor: String):
+    override fun resolveCheckedShapeStyle(view: CheckBox, checkBoxColor: String):
         MobileSegment.ShapeStyle? {
         // in case the MASK_ALL rule is applied we do not want to show the selection in the
         // checkbox related wireframe and in order to achieve that we need to provide
