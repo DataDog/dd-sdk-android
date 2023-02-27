@@ -20,6 +20,8 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
@@ -71,7 +73,9 @@ internal class RumMonitorBuilderTest {
 
         rumFeature = RumFeature(fakeConfig, coreFeature.mockInstance)
         rumFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
-        whenever(mockSdkCore.rumFeature) doReturn rumFeature
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn rumFeature
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         Datadog.globalSdkCore = mockSdkCore
 

@@ -12,6 +12,7 @@ import android.net.ConnectivityManager
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -20,6 +21,7 @@ import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.DatadogCore
@@ -280,11 +282,14 @@ internal class DatadogTest {
         )
             .build()
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
         val mockRumFeature = mock<RumFeature>()
+        val mockSdkFeature = mock<SdkFeature>()
+        whenever(mockSdkFeature.unwrap<RumFeature>()) doReturn mockRumFeature
+        (Datadog.globalSdkCore as DatadogCore).features +=
+            Feature.RUM_FEATURE_NAME to mockSdkFeature
 
         // When
-        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
-        (Datadog.globalSdkCore as DatadogCore).rumFeature = mockRumFeature
         Datadog.enableRumDebugging(true)
 
         // Then
@@ -300,11 +305,14 @@ internal class DatadogTest {
         )
             .build()
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
         val mockRumFeature = mock<RumFeature>()
+        val mockSdkFeature = mock<SdkFeature>()
+        whenever(mockSdkFeature.unwrap<RumFeature>()) doReturn mockRumFeature
+        (Datadog.globalSdkCore as DatadogCore).features +=
+            Feature.RUM_FEATURE_NAME to mockSdkFeature
 
         // When
-        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
-        (Datadog.globalSdkCore as DatadogCore).rumFeature = mockRumFeature
         Datadog.enableRumDebugging(false)
 
         // Then

@@ -15,8 +15,10 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.tools.annotation.NoOpImplementation
@@ -288,7 +290,8 @@ interface RumMonitor {
             val datadogCore = Datadog.globalSdkCore as? DatadogCore
             val coreFeature = datadogCore?.coreFeature
             val contextProvider = datadogCore?.contextProvider
-            val rumFeature = datadogCore?.rumFeature
+            val rumFeature = datadogCore?.getFeature(Feature.RUM_FEATURE_NAME)
+                ?.unwrap<RumFeature>()
             val rumApplicationId = coreFeature?.rumApplicationId
             return if (rumFeature == null || coreFeature == null || contextProvider == null) {
                 internalLogger.log(
