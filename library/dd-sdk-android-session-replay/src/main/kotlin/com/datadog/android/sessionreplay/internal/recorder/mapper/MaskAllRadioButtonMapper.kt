@@ -6,19 +6,29 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.widget.CheckBox
+import android.widget.RadioButton
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.internal.utils.StringUtils
+import com.datadog.android.sessionreplay.model.MobileSegment
 
-internal open class CheckBoxMapper(
+internal class MaskAllRadioButtonMapper(
     textWireframeMapper: TextWireframeMapper,
     stringUtils: StringUtils = StringUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierResolver =
-        UniqueIdentifierResolver,
+    uniqueIdentifierGenerator: UniqueIdentifierResolver = UniqueIdentifierResolver,
     viewUtils: ViewUtils = ViewUtils()
-) : CompoundButtonMapper<CheckBox>(
+) : RadioButtonMapper(
     textWireframeMapper,
     stringUtils,
     uniqueIdentifierGenerator,
     viewUtils
-)
+) {
+
+    override fun resolveCheckableShapeStyle(view: RadioButton, checkBoxColor: String):
+        MobileSegment.ShapeStyle? {
+        return MobileSegment.ShapeStyle(
+            backgroundColor = null,
+            view.alpha,
+            cornerRadius = CORNER_RADIUS
+        )
+    }
+}

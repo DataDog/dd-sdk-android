@@ -12,6 +12,7 @@ import android.widget.CheckBox
 import android.widget.CheckedTextView
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.RadioButton
 import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -24,12 +25,16 @@ internal abstract class GenericWireframeMapper(
     private val editTextViewMapper: EditTextViewMapper,
     private val checkedTextViewMapper: CheckedTextViewMapper,
     private val decorViewMapper: DecorViewMapper,
-    private val checkBoxMapper: CheckBoxMapper
+    private val checkBoxMapper: CheckBoxMapper,
+    private val radioButtonMapper: RadioButtonMapper = RadioButtonMapper(textMapper)
 ) : WireframeMapper<View, MobileSegment.Wireframe> {
 
     override fun map(view: View, systemInformation: SystemInformation):
         List<MobileSegment.Wireframe> {
         return when {
+            RadioButton::class.java.isAssignableFrom(view::class.java) -> {
+                radioButtonMapper.map(view as RadioButton, systemInformation)
+            }
             CheckBox::class.java.isAssignableFrom(view::class.java) -> {
                 checkBoxMapper.map(view as CheckBox, systemInformation)
             }

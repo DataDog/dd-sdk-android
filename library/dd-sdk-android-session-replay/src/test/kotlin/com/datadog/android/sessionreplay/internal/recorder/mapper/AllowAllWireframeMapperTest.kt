@@ -12,6 +12,7 @@ import android.widget.CheckBox
 import android.widget.CheckedTextView
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.RadioButton
 import android.widget.TextView
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -56,6 +57,9 @@ internal class AllowAllWireframeMapperTest : BaseWireframeMapperTest() {
     lateinit var mockCheckBoxMapper: CheckBoxMapper
 
     @Mock
+    lateinit var mockRadioButtonMapper: RadioButtonMapper
+
+    @Mock
     lateinit var mockEditTextViewMapper: EditTextViewMapper
 
     @Mock
@@ -75,6 +79,8 @@ internal class AllowAllWireframeMapperTest : BaseWireframeMapperTest() {
 
     lateinit var mockCheckBoxWireframes: List<MobileSegment.Wireframe>
 
+    lateinit var mockRadioButtonWireframes: List<MobileSegment.Wireframe>
+
     lateinit var mockDecorViewWireframes: List<MobileSegment.Wireframe.ShapeWireframe>
 
     lateinit var testedAllowAllWireframeMapper: AllowAllWireframeMapper
@@ -90,6 +96,7 @@ internal class AllowAllWireframeMapperTest : BaseWireframeMapperTest() {
         mockCheckedTextWireframes = forge.aList { mock() }
         mockDecorViewWireframes = forge.aList { mock() }
         mockCheckBoxWireframes = forge.aList { mock() }
+        mockRadioButtonWireframes = forge.aList { mock() }
         testedAllowAllWireframeMapper = AllowAllWireframeMapper(
             mockViewWireframeMapper,
             mockImageWireframeMapper,
@@ -98,7 +105,8 @@ internal class AllowAllWireframeMapperTest : BaseWireframeMapperTest() {
             mockEditTextViewMapper,
             mockCheckedTextViewMapper,
             mockDecorViewMapper,
-            mockCheckBoxMapper
+            mockCheckBoxMapper,
+            mockRadioButtonMapper
         )
     }
 
@@ -198,6 +206,20 @@ internal class AllowAllWireframeMapperTest : BaseWireframeMapperTest() {
 
         // Then
         assertThat(wireframes).isEqualTo(mockCheckBoxWireframes)
+    }
+
+    @Test
+    fun `M delegate to RadioButtonWireframeMapper W map { RadioButton }`() {
+        // Given
+        val mockView: RadioButton = mock()
+        whenever(mockRadioButtonMapper.map(mockView, fakeSystemInformation))
+            .thenReturn(mockRadioButtonWireframes)
+
+        // When
+        val wireframes = testedAllowAllWireframeMapper.map(mockView, fakeSystemInformation)
+
+        // Then
+        assertThat(wireframes).isEqualTo(mockRadioButtonWireframes)
     }
 
     @Test

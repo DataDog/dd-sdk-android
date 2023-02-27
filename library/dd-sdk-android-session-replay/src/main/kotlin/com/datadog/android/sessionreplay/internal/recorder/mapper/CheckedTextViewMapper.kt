@@ -32,7 +32,7 @@ internal open class CheckedTextViewMapper(
         return mainWireframeList
     }
 
-    override fun resolveCheckBoxColor(view: CheckedTextView): String {
+    override fun resolveCheckableColor(view: CheckedTextView): String {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             view.checkMarkTintList?.let {
                 return stringUtils.formatColorAndAlphaAsHexa(
@@ -44,7 +44,7 @@ internal open class CheckedTextViewMapper(
         return stringUtils.formatColorAndAlphaAsHexa(view.currentTextColor, OPAQUE_ALPHA_VALUE)
     }
 
-    override fun resolveCheckBoxBounds(view: CheckedTextView, pixelsDensity: Float): GlobalBounds {
+    override fun resolveCheckableBounds(view: CheckedTextView, pixelsDensity: Float): GlobalBounds {
         val viewGlobalBounds = resolveViewGlobalBounds(view, pixelsDensity)
         val textViewPaddingRight =
             view.totalPaddingRight.toLong().densityNormalized(pixelsDensity)

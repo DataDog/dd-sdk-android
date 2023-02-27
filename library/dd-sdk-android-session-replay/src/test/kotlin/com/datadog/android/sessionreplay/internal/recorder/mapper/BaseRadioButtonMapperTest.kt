@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.graphics.drawable.Drawable
 import android.os.Build
-import android.widget.CheckBox
+import android.widget.RadioButton
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
@@ -42,9 +42,9 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
+internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
 
-    lateinit var testedCheckBoxMapper: CheckBoxMapper
+    lateinit var testedRadioButtonMapper: RadioButtonMapper
 
     @Mock
     lateinit var mockUniqueIdentifierResolver: UniqueIdentifierResolver
@@ -64,7 +64,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
     @Forgery
     lateinit var fakeViewGlobalBounds: GlobalBounds
 
-    private lateinit var mockCheckBox: CheckBox
+    lateinit var mockRadioButton: RadioButton
 
     @IntForgery(min = 0, max = 0xffffff)
     var fakeCurrentTextColor: Int = 0
@@ -77,34 +77,43 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
 
     @BeforeEach
     fun `set up`() {
-        mockCheckBox = mock {
+        mockRadioButton = mock {
             whenever(it.textSize).thenReturn(fakeTextSize)
             whenever(it.currentTextColor).thenReturn(fakeCurrentTextColor)
         }
         whenever(
             mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
-                mockCheckBox,
+                mockRadioButton,
                 CheckableWireframeMapper.CHECKBOX_KEY_NAME
             )
         ).thenReturn(fakeGeneratedIdentifier)
-        whenever(mockTextWireframeMapper.map(mockCheckBox, fakeSystemInformation))
+        whenever(mockTextWireframeMapper.map(mockRadioButton, fakeSystemInformation))
             .thenReturn(fakeTextWireframes)
         whenever(
             mockViewUtils.resolveViewGlobalBounds(
-                mockCheckBox,
+                mockRadioButton,
                 fakeSystemInformation.screenDensity
             )
         )
             .thenReturn(fakeViewGlobalBounds)
-        testedCheckBoxMapper = setupTestedMapper()
+        testedRadioButtonMapper = setupTestedMapper()
     }
 
-    internal abstract fun setupTestedMapper(): CheckBoxMapper
+    internal abstract fun setupTestedMapper(): RadioButtonMapper
 
     internal open fun expectedCheckedShapeStyle(checkBoxColor: String): MobileSegment.ShapeStyle? {
         return MobileSegment.ShapeStyle(
             backgroundColor = checkBoxColor,
-            opacity = mockCheckBox.alpha
+            opacity = mockRadioButton.alpha,
+            cornerRadius = RadioButtonMapper.CORNER_RADIUS
+        )
+    }
+
+    internal open fun expectedNotCheckedShapeStyle(checkBoxColor: String): MobileSegment.ShapeStyle? {
+        return MobileSegment.ShapeStyle(
+            opacity = mockRadioButton.alpha,
+            cornerRadius = RadioButtonMapper.CORNER_RADIUS
+
         )
     }
 
@@ -117,14 +126,14 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         val mockDrawable = mock<Drawable> {
             whenever(it.intrinsicHeight).thenReturn(fakeIntrinsicDrawableHeight)
         }
-        whenever(mockCheckBox.buttonDrawable).thenReturn(mockDrawable)
-        whenever(mockCheckBox.isChecked).thenReturn(true)
-        val expectedCheckBoxColor = StringUtils.formatColorAndAlphaAsHexa(
+        whenever(mockRadioButton.buttonDrawable).thenReturn(mockDrawable)
+        whenever(mockRadioButton.isChecked).thenReturn(true)
+        val expectedRadioBoxColor = StringUtils.formatColorAndAlphaAsHexa(
             fakeCurrentTextColor,
             OPAQUE_ALPHA_VALUE
         )
         val checkBoxSize =
-            resolveCheckBoxSize(fakeIntrinsicDrawableHeight.toLong())
+            resolveRadioBoxSize(fakeIntrinsicDrawableHeight.toLong())
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + CompoundButtonMapper.MIN_PADDING_IN_PX
@@ -133,15 +142,15 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
             width = checkBoxSize,
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
-                color = expectedCheckBoxColor,
+                color = expectedRadioBoxColor,
                 width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
             ),
-            shapeStyle = expectedCheckedShapeStyle(expectedCheckBoxColor)
+            shapeStyle = expectedCheckedShapeStyle(expectedRadioBoxColor)
         )
 
         // When
-        val resolvedWireframes = testedCheckBoxMapper.map(
-            mockCheckBox,
+        val resolvedWireframes = testedRadioButtonMapper.map(
+            mockRadioButton,
             fakeSystemInformation
         )
 
@@ -156,14 +165,14 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         val mockDrawable = mock<Drawable> {
             whenever(it.intrinsicHeight).thenReturn(fakeIntrinsicDrawableHeight)
         }
-        whenever(mockCheckBox.buttonDrawable).thenReturn(mockDrawable)
-        whenever(mockCheckBox.isChecked).thenReturn(false)
-        val expectedCheckBoxColor = StringUtils.formatColorAndAlphaAsHexa(
+        whenever(mockRadioButton.buttonDrawable).thenReturn(mockDrawable)
+        whenever(mockRadioButton.isChecked).thenReturn(false)
+        val expectedRadioBoxColor = StringUtils.formatColorAndAlphaAsHexa(
             fakeCurrentTextColor,
             OPAQUE_ALPHA_VALUE
         )
         val checkBoxSize =
-            resolveCheckBoxSize(fakeIntrinsicDrawableHeight.toLong())
+            resolveRadioBoxSize(fakeIntrinsicDrawableHeight.toLong())
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + CompoundButtonMapper.MIN_PADDING_IN_PX
@@ -172,15 +181,15 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
             width = checkBoxSize,
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
-                color = expectedCheckBoxColor,
+                color = expectedRadioBoxColor,
                 width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
             ),
-            shapeStyle = null
+            shapeStyle = expectedNotCheckedShapeStyle(expectedRadioBoxColor)
         )
 
         // When
-        val resolvedWireframes = testedCheckBoxMapper.map(
-            mockCheckBox,
+        val resolvedWireframes = testedRadioButtonMapper.map(
+            mockRadioButton,
             fakeSystemInformation
         )
 
@@ -191,13 +200,13 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
     @Test
     fun `M resolve the checkbox as ShapeWireframe W map() { checked }`() {
         // Given
-        whenever(mockCheckBox.isChecked).thenReturn(true)
-        val expectedCheckBoxColor = StringUtils.formatColorAndAlphaAsHexa(
+        whenever(mockRadioButton.isChecked).thenReturn(true)
+        val expectedRadioBoxColor = StringUtils.formatColorAndAlphaAsHexa(
             fakeCurrentTextColor,
             OPAQUE_ALPHA_VALUE
         )
         val checkBoxSize =
-            resolveCheckBoxSize(CompoundButtonMapper.DEFAULT_CHECKBOX_HEIGHT_IN_PX)
+            resolveRadioBoxSize(CompoundButtonMapper.DEFAULT_CHECKBOX_HEIGHT_IN_PX)
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + CompoundButtonMapper.MIN_PADDING_IN_PX
@@ -206,15 +215,15 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
             width = checkBoxSize,
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
-                color = expectedCheckBoxColor,
+                color = expectedRadioBoxColor,
                 width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
             ),
-            shapeStyle = expectedCheckedShapeStyle(expectedCheckBoxColor)
+            shapeStyle = expectedCheckedShapeStyle(expectedRadioBoxColor)
         )
 
         // When
-        val resolvedWireframes = testedCheckBoxMapper.map(
-            mockCheckBox,
+        val resolvedWireframes = testedRadioButtonMapper.map(
+            mockRadioButton,
             fakeSystemInformation
         )
 
@@ -225,13 +234,13 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
     @Test
     fun `M resolve the checkbox as ShapeWireframe W map() { not checked }`() {
         // Given
-        whenever(mockCheckBox.isChecked).thenReturn(false)
-        val expectedCheckBoxColor = StringUtils.formatColorAndAlphaAsHexa(
+        whenever(mockRadioButton.isChecked).thenReturn(false)
+        val expectedRadioBoxColor = StringUtils.formatColorAndAlphaAsHexa(
             fakeCurrentTextColor,
             OPAQUE_ALPHA_VALUE
         )
         val checkBoxSize =
-            resolveCheckBoxSize(CompoundButtonMapper.DEFAULT_CHECKBOX_HEIGHT_IN_PX)
+            resolveRadioBoxSize(CompoundButtonMapper.DEFAULT_CHECKBOX_HEIGHT_IN_PX)
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + CompoundButtonMapper.MIN_PADDING_IN_PX
@@ -240,15 +249,15 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
             width = checkBoxSize,
             height = checkBoxSize,
             border = MobileSegment.ShapeBorder(
-                color = expectedCheckBoxColor,
+                color = expectedRadioBoxColor,
                 width = CheckableWireframeMapper.CHECKBOX_BORDER_WIDTH
             ),
-            shapeStyle = null
+            shapeStyle = expectedNotCheckedShapeStyle(expectedRadioBoxColor)
         )
 
         // When
-        val resolvedWireframes = testedCheckBoxMapper.map(
-            mockCheckBox,
+        val resolvedWireframes = testedRadioButtonMapper.map(
+            mockRadioButton,
             fakeSystemInformation
         )
 
@@ -261,14 +270,14 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         // Given
         whenever(
             mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
-                mockCheckBox,
+                mockRadioButton,
                 CheckableWireframeMapper.CHECKBOX_KEY_NAME
             )
         ).thenReturn(null)
 
         // When
-        val resolvedWireframes = testedCheckBoxMapper.map(
-            mockCheckBox,
+        val resolvedWireframes = testedRadioButtonMapper.map(
+            mockRadioButton,
             fakeSystemInformation
         )
 
@@ -280,10 +289,10 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
 
     // region Internal
 
-    private fun resolveCheckBoxSize(checkBoxSize: Long): Long {
+    private fun resolveRadioBoxSize(radioSize: Long): Long {
         val density = fakeSystemInformation.screenDensity
         val textSize = fakeTextSize.toLong()
-        val size = checkBoxSize - 2 * CompoundButtonMapper.MIN_PADDING_IN_PX
+        val size = radioSize - 2 * CompoundButtonMapper.MIN_PADDING_IN_PX
         return (size * (textSize - 1) / textSize).densityNormalized(density)
     }
 

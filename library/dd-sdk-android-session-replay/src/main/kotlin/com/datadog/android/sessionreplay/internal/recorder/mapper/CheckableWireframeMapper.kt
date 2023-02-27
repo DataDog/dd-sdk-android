@@ -25,19 +25,17 @@ internal abstract class CheckableWireframeMapper<T>(
             CHECKBOX_KEY_NAME
         )
         return if (checkboxId != null) {
-            val checkBoxColor = resolveCheckBoxColor(view)
-            val checkBoxBounds = resolveCheckBoxBounds(view, pixelDensity)
-            val shapeStyle = resolveCheckBoxShapeStyle(view, checkBoxColor)
+            val checkBoxColor = resolveCheckableColor(view)
+            val checkBoxBounds = resolveCheckableBounds(view, pixelDensity)
+            val shapeStyle = resolveCheckableShapeStyle(view, checkBoxColor)
+            val shapeBorder = resolveCheckableShapeBorder(view, checkBoxColor)
             MobileSegment.Wireframe.ShapeWireframe(
                 id = checkboxId,
                 x = checkBoxBounds.x,
                 y = checkBoxBounds.y,
                 width = checkBoxBounds.width,
                 height = checkBoxBounds.height,
-                border = MobileSegment.ShapeBorder(
-                    color = checkBoxColor,
-                    width = CHECKBOX_BORDER_WIDTH
-                ),
+                border = shapeBorder,
                 shapeStyle = shapeStyle
             )
         } else {
@@ -45,7 +43,7 @@ internal abstract class CheckableWireframeMapper<T>(
         }
     }
 
-    internal open fun resolveCheckBoxShapeStyle(view: T, checkBoxColor: String):
+    internal open fun resolveCheckableShapeStyle(view: T, checkBoxColor: String):
         MobileSegment.ShapeStyle? {
         return if (view.isChecked) {
             MobileSegment.ShapeStyle(
@@ -56,9 +54,18 @@ internal abstract class CheckableWireframeMapper<T>(
             null
         }
     }
-    internal abstract fun resolveCheckBoxColor(view: T): String
 
-    internal abstract fun resolveCheckBoxBounds(view: T, pixelsDensity: Float): GlobalBounds
+    internal open fun resolveCheckableShapeBorder(view: T, checkBoxColor: String):
+        MobileSegment.ShapeBorder? {
+        return MobileSegment.ShapeBorder(
+            color = checkBoxColor,
+            width = CHECKBOX_BORDER_WIDTH
+        )
+    }
+
+    internal abstract fun resolveCheckableColor(view: T): String
+
+    internal abstract fun resolveCheckableBounds(view: T, pixelsDensity: Float): GlobalBounds
 
     companion object {
         internal const val CHECKBOX_KEY_NAME = "checkbox"
