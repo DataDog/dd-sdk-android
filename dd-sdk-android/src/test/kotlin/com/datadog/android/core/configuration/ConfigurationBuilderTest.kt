@@ -14,7 +14,7 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.plugin.Feature
-import com.datadog.android.rum.assertj.ConfigurationRumAssert.Companion.assertThat
+import com.datadog.android.rum.assertj.ConfigurationLegacyRumAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy

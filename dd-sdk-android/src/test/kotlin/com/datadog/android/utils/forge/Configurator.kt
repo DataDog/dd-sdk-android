@@ -22,6 +22,7 @@ internal class Configurator :
         forge.addFactory(ConfigurationForgeryFactory())
         forge.addFactory(ConfigurationFeatureForgeryFactory())
         forge.addFactory(ConfigurationCrashReportForgeryFactory())
+        forge.addFactory(ConfigurationLegacyRumForgeryFactory())
         forge.addFactory(ConfigurationRumForgeryFactory())
         forge.addFactory(CredentialsForgeryFactory())
         forge.addFactory(NetworkInfoForgeryFactory())

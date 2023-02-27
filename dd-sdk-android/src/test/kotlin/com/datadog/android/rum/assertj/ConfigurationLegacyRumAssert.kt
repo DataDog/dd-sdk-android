@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
@@ -19,41 +19,41 @@ import com.datadog.android.rum.tracking.ViewAttributesProvider
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
-internal class ConfigurationRumAssert(actual: RumFeature.Configuration) :
-    AbstractObjectAssert<ConfigurationRumAssert, RumFeature.Configuration>(
+internal class ConfigurationLegacyRumAssert(actual: Configuration.Feature.RUM) :
+    AbstractObjectAssert<ConfigurationLegacyRumAssert, Configuration.Feature.RUM>(
         actual,
-        ConfigurationRumAssert::class.java
+        ConfigurationLegacyRumAssert::class.java
     ) {
 
     // region Assertions
 
     fun hasUserActionTrackingStrategy(
         userActionTrackingStrategy: UserActionTrackingStrategy
-    ): ConfigurationRumAssert {
+    ): ConfigurationLegacyRumAssert {
         assertThat(actual.userActionTrackingStrategy)
             .isEqualTo(userActionTrackingStrategy)
         return this
     }
 
-    fun hasNoOpUserActionTrackingStrategy(): ConfigurationRumAssert {
+    fun hasNoOpUserActionTrackingStrategy(): ConfigurationLegacyRumAssert {
         assertThat(actual.userActionTrackingStrategy)
             .isInstanceOf(NoOpUserActionTrackingStrategy::class.java)
         return this
     }
 
-    fun hasUserActionTrackingStrategyApi29(): ConfigurationRumAssert {
+    fun hasUserActionTrackingStrategyApi29(): ConfigurationLegacyRumAssert {
         assertThat(actual.userActionTrackingStrategy)
             .isInstanceOf(UserActionTrackingStrategyApi29::class.java)
         return this
     }
 
-    fun hasUserActionTrackingStrategyLegacy(): ConfigurationRumAssert {
+    fun hasUserActionTrackingStrategyLegacy(): ConfigurationLegacyRumAssert {
         assertThat(actual.userActionTrackingStrategy)
             .isInstanceOf(UserActionTrackingStrategyLegacy::class.java)
         return this
     }
 
-    fun hasLongTaskTrackingEnabled(expectedThresholdMs: Long): ConfigurationRumAssert {
+    fun hasLongTaskTrackingEnabled(expectedThresholdMs: Long): ConfigurationLegacyRumAssert {
         assertThat(actual.longTaskTrackingStrategy)
             .isNotNull()
             .isInstanceOf(MainLooperLongTaskStrategy::class.java)
@@ -64,7 +64,7 @@ internal class ConfigurationRumAssert(actual: RumFeature.Configuration) :
 
     fun hasActionTargetAttributeProviders(
         providers: Array<ViewAttributesProvider> = emptyArray()
-    ): ConfigurationRumAssert {
+    ): ConfigurationLegacyRumAssert {
         val gesturesTracker = actual.userActionTrackingStrategy?.getGesturesTracker()
         assertThat(gesturesTracker).isInstanceOf(DatadogGesturesTracker::class.java)
         RumGestureTrackerAssert.assertThat(gesturesTracker as DatadogGesturesTracker)
@@ -73,7 +73,7 @@ internal class ConfigurationRumAssert(actual: RumFeature.Configuration) :
         return this
     }
 
-    fun hasDefaultActionTargetAttributeProviders(): ConfigurationRumAssert {
+    fun hasDefaultActionTargetAttributeProviders(): ConfigurationLegacyRumAssert {
         val gesturesTracker = actual.userActionTrackingStrategy?.getGesturesTracker()
         assertThat(gesturesTracker).isInstanceOf(DatadogGesturesTracker::class.java)
         RumGestureTrackerAssert.assertThat(gesturesTracker as DatadogGesturesTracker)
@@ -83,7 +83,7 @@ internal class ConfigurationRumAssert(actual: RumFeature.Configuration) :
 
     fun hasInteractionPredicate(
         interactionPredicate: InteractionPredicate
-    ): ConfigurationRumAssert {
+    ): ConfigurationLegacyRumAssert {
         val gesturesTracker = actual.userActionTrackingStrategy?.getGesturesTracker()
         assertThat(gesturesTracker).isInstanceOf(DatadogGesturesTracker::class.java)
         RumGestureTrackerAssert.assertThat(gesturesTracker as DatadogGesturesTracker)
@@ -93,7 +93,7 @@ internal class ConfigurationRumAssert(actual: RumFeature.Configuration) :
 
     fun hasInteractionPredicateOfType(
         type: Class<*>
-    ): ConfigurationRumAssert {
+    ): ConfigurationLegacyRumAssert {
         val gesturesTracker = actual.userActionTrackingStrategy?.getGesturesTracker()
         assertThat(gesturesTracker).isInstanceOf(DatadogGesturesTracker::class.java)
         RumGestureTrackerAssert.assertThat(gesturesTracker as DatadogGesturesTracker)
@@ -101,7 +101,7 @@ internal class ConfigurationRumAssert(actual: RumFeature.Configuration) :
         return this
     }
 
-    fun hasViewTrackingStrategy(viewTrackingStrategy: TrackingStrategy): ConfigurationRumAssert {
+    fun hasViewTrackingStrategy(viewTrackingStrategy: TrackingStrategy): ConfigurationLegacyRumAssert {
         assertThat(actual.viewTrackingStrategy)
             .overridingErrorMessage(
                 "Expected the viewTrackingStrategy to " +
@@ -133,7 +133,7 @@ internal class ConfigurationRumAssert(actual: RumFeature.Configuration) :
 
     companion object {
 
-        internal fun assertThat(actual: RumFeature.Configuration): ConfigurationRumAssert =
-            ConfigurationRumAssert(actual)
+        internal fun assertThat(actual: Configuration.Feature.RUM): ConfigurationLegacyRumAssert =
+            ConfigurationLegacyRumAssert(actual)
     }
 }
