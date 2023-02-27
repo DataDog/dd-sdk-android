@@ -517,7 +517,11 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        val appStartTimeMs = TimeUnit.NANOSECONDS.toMillis(appStartTimeNs)
+        val appStartTimeMs = (
+            fakeEvent.eventTime.timestamp -
+                TimeUnit.NANOSECONDS.toMillis(fakeEvent.eventTime.nanoTime)
+            ) +
+            TimeUnit.NANOSECONDS.toMillis(appStartTimeNs)
         val scopeCount = if (fakeEvent is RumRawEvent.StartView) 2 else 1
         assertThat(testedScope.childrenScopes).hasSize(scopeCount)
         assertThat(testedScope.childrenScopes[0])
@@ -647,7 +651,11 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        val appStartTimeMs = TimeUnit.NANOSECONDS.toMillis(appStartTimeNs)
+        val appStartTimeMs = (
+            fakeEvent.eventTime.timestamp -
+                TimeUnit.NANOSECONDS.toMillis(fakeEvent.eventTime.nanoTime)
+            ) +
+            TimeUnit.NANOSECONDS.toMillis(appStartTimeNs)
         argumentCaptor<ActionEvent> {
             verify(mockWriter, atLeastOnce()).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue.action.type).isEqualTo(ActionEvent.ActionEventActionType.APPLICATION_START)
