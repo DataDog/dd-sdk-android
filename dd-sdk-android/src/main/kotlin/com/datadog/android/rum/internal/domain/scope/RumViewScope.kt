@@ -689,7 +689,6 @@ internal open class RumViewScope(
 
         sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
-
                 val user = datadogContext.userInfo
                 val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext)
 
@@ -712,7 +711,11 @@ internal open class RumViewScope(
                         customTimings = timings,
                         isActive = !viewComplete,
                         cpuTicksCount = eventCpuTicks,
-                        cpuTicksPerSecond = eventCpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs },
+                        cpuTicksPerSecond = if (updatedDurationNs >= ONE_SECOND_NS) {
+                            eventCpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs }
+                        } else {
+                            null
+                        },
                         memoryAverage = memoryInfo?.meanValue,
                         memoryMax = memoryInfo?.maxValue,
                         refreshRateAverage = refreshRateInfo?.meanValue?.let { it * eventRefreshRateScale },
@@ -972,7 +975,10 @@ internal open class RumViewScope(
         if (isFrozenFrame) pendingFrozenFrameCount++
     }
 
-    private fun onAddFeatureFlagEvaluation(event: RumRawEvent.AddFeatureFlagEvaluation, writer: DataWriter<Any>) {
+    private fun onAddFeatureFlagEvaluation(
+        event: RumRawEvent.AddFeatureFlagEvaluation,
+        writer: DataWriter<Any>
+    ) {
         featureFlags[event.name] = event.value
         sendViewUpdate(event, writer)
     }
