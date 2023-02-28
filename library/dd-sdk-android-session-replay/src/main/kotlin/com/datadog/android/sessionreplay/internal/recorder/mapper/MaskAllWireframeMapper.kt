@@ -18,7 +18,8 @@ internal class MaskAllWireframeMapper(
         DecorViewMapper(viewWireframeMapper),
     checkBoxWireframeMapper: MaskAllCheckBoxMapper =
         MaskAllCheckBoxMapper(textMapper),
-    radioButtonMapper: MaskAllRadioButtonMapper = MaskAllRadioButtonMapper(textMapper)
+    radioButtonMapper: MaskAllRadioButtonMapper = MaskAllRadioButtonMapper(textMapper),
+    switchCompatMapper: SwitchCompatMapper = SwitchCompatMapper(textMapper)
 ) : GenericWireframeMapper(
     viewWireframeMapper,
     imageMapper,
@@ -28,5 +29,6 @@ internal class MaskAllWireframeMapper(
     checkedTextViewWireframeMapper,
     decorViewMapper,
     checkBoxWireframeMapper,
-    radioButtonMapper
+    radioButtonMapper,
+    switchCompatMapper
 )

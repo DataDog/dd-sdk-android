@@ -34,6 +34,9 @@ internal abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wirefram
 
     protected fun resolveViewGlobalBounds(view: View, pixelsDensity: Float):
         GlobalBounds {
+        // RUMM-0000 return an array of primitives here instead of creating an object.
+        // This method is being called too often every time we take a screen snapshot
+        // and we might want to avoid creating too many instances.
         return viewUtils.resolveViewGlobalBounds(view, pixelsDensity)
     }
 
