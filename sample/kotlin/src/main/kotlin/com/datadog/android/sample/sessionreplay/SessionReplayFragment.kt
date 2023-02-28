@@ -54,6 +54,8 @@ internal class SessionReplayFragment :
             R.id.navigation_picker_components -> R.id.fragment_picker_components
             R.id.navigation_text_view_components -> R.id.fragment_text_view_components
             R.id.navigation_radio_and_checkbox_components -> R.id.fragment_radio_checkbox_components
+            R.id.navigation_dropdowns_and_switchers_components ->
+                R.id.fragment_dropdowns_switchers_components
             else -> null
         }
         if (destination != null) {

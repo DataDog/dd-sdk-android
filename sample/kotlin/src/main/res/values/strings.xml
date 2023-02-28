@@ -109,4 +109,10 @@
     <string name="default_radio">Default Radio</string>
     <string name="app_compat_radio">App Compat Radio</string>
     <string name="material_radio">Material Radio</string>
+    <string name="default_spinner">Default spinner</string>
+    <string name="app_compat_spinner">App Compat Spinner</string>
+    <string name="app_compat_switch">App Compat Switch</string>
+    <string name="material_switch">Material Switch</string>
+    <string name="default_switch">Default Switch</string>
+    <string name="dropdowns_and_switchers_components">Dropdowns and Switchers Components</string>
 </resources>
