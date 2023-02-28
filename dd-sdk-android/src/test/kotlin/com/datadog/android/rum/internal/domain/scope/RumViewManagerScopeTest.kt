@@ -652,16 +652,18 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        val appStartTimeMs = (
-            fakeEvent.eventTime.timestamp -
-                TimeUnit.NANOSECONDS.toMillis(fakeEvent.eventTime.nanoTime)
-            ) +
-            TimeUnit.NANOSECONDS.toMillis(appStartTimeNs)
+        val appStartTimestamp = TimeUnit.NANOSECONDS.toMillis(
+            (
+                TimeUnit.MILLISECONDS.toNanos(fakeEvent.eventTime.timestamp) -
+                    fakeEvent.eventTime.nanoTime
+                ) +
+                appStartTimeNs
+        )
         argumentCaptor<ActionEvent> {
             verify(mockWriter, atLeastOnce()).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue.action.type).isEqualTo(ActionEvent.ActionEventActionType.APPLICATION_START)
             // Application start event occurse at the start time
-            assertThat(firstValue.date).isEqualTo(resolveExpectedTimestamp(appStartTimeMs))
+            assertThat(firstValue.date).isEqualTo(resolveExpectedTimestamp(appStartTimestamp))
 
             // Duration lasts until the first event is sent to RUM (whatever that is)
             val loadingTime = fakeEvent.eventTime.nanoTime - appStartTimeNs
