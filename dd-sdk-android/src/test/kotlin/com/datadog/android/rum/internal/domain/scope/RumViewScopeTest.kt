@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import android.app.Activity
-import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.rum.GlobalRum
@@ -38,10 +38,10 @@ import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.TimeInfo
-import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -116,7 +116,7 @@ internal class RumViewScopeTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
+    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockCpuVitalMonitor: VitalMonitor
@@ -128,10 +128,7 @@ internal class RumViewScopeTest {
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
 
     @Mock
-    lateinit var mockContextProvider: ContextProvider
-
-    @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockRumFeatureScope: FeatureScope
@@ -158,6 +155,9 @@ internal class RumViewScopeTest {
 
     @Forgery
     lateinit var fakeTimeInfoAtScopeStart: TimeInfo
+
+    @Forgery
+    lateinit var fakeNetworkInfoAtScopeStart: NetworkInfo
 
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
@@ -233,7 +233,6 @@ internal class RumViewScopeTest {
         fakeEvent = mockEvent()
         fakeUrl = fakeKey.resolveViewUrl().replace('.', '/')
 
-        whenever(mockContextProvider.context) doReturn fakeDatadogContext
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         whenever(mockActionScope.handleEvent(any(), any())) doReturn mockActionScope
@@ -241,6 +240,7 @@ internal class RumViewScopeTest {
         whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(true)
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
+        whenever(mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
@@ -257,7 +257,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockContextProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             trackFrustrations = true
@@ -362,7 +361,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockContextProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             type = fakeViewEventType,
@@ -477,7 +475,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockContextProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             type = expectedViewType,
@@ -677,7 +674,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockContextProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             type = viewType,
@@ -733,7 +729,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockContextProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             type = viewType,
@@ -1283,7 +1278,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockContextProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
@@ -1445,7 +1439,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockContextProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
@@ -1541,7 +1534,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockContextProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
@@ -3167,7 +3159,7 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -5907,7 +5899,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockContextProvider,
             featuresContextResolver = mockFeaturesContextResolver,
             viewUpdatePredicate = mockViewUpdatePredicate,
             trackFrustrations = fakeTrackFrustrations
@@ -5998,7 +5989,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockContextProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
@@ -6520,7 +6510,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockContextProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations

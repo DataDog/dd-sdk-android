@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
@@ -22,8 +22,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import java.net.MalformedURLException
 import java.net.URL
@@ -33,15 +32,14 @@ import java.util.UUID
 @Suppress("LongParameterList")
 internal class RumResourceScope(
     internal val parentScope: RumScope,
-    internal val sdkCore: SdkCore,
+    internal val sdkCore: InternalSdkCore,
     internal val url: String,
     internal val method: String,
     internal val key: String,
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
     serverTimeOffsetInMs: Long,
-    internal val firstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
-    contextProvider: ContextProvider,
+    internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     private val featuresContextResolver: FeaturesContextResolver
 ) : RumScope {
 
@@ -54,7 +52,7 @@ internal class RumResourceScope(
 
     internal val eventTimestamp = eventTime.timestamp + serverTimeOffsetInMs
     private val startedNanos: Long = eventTime.nanoTime
-    private val networkInfo = contextProvider.context.networkInfo
+    private val networkInfo = sdkCore.networkInfo
 
     private var sent = false
     private var waitForTiming = false
@@ -401,11 +399,10 @@ internal class RumResourceScope(
         @Suppress("LongParameterList")
         fun fromEvent(
             parentScope: RumScope,
-            sdkCore: SdkCore,
+            sdkCore: InternalSdkCore,
             event: RumRawEvent.StartResource,
-            firstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
+            firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
             timestampOffset: Long,
-            contextProvider: ContextProvider,
             featuresContextResolver: FeaturesContextResolver
         ): RumScope {
             return RumResourceScope(
@@ -418,7 +415,6 @@ internal class RumResourceScope(
                 event.attributes,
                 timestampOffset,
                 firstPartyHostHeaderTypeResolver,
-                contextProvider,
                 featuresContextResolver
             )
         }

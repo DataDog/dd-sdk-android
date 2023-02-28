@@ -19,9 +19,9 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.api.context.NetworkInfo
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -74,13 +74,10 @@ internal class RumContinuousActionScopeTest {
     lateinit var mockParentScope: RumScope
 
     @Mock
-    lateinit var mockContextProvider: ContextProvider
-
-    @Mock
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockRumFeatureScope: FeatureScope
@@ -101,7 +98,7 @@ internal class RumContinuousActionScopeTest {
     lateinit var fakeParentContext: RumContext
 
     @Forgery
-    lateinit var fakeDatadogContextAtScopeStart: DatadogContext
+    lateinit var fakeNetworkInfoAtScopeStart: NetworkInfo
 
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
@@ -136,7 +133,7 @@ internal class RumContinuousActionScopeTest {
         fakeKey = forge.anAsciiString().toByteArray()
 
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
-        whenever(mockContextProvider.context) doReturn fakeDatadogContextAtScopeStart
+        whenever(mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
 
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
@@ -155,8 +152,7 @@ internal class RumContinuousActionScopeTest {
             fakeServerOffset,
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
-            trackFrustrations = true,
-            contextProvider = mockContextProvider
+            trackFrustrations = true
         )
     }
 
@@ -253,7 +249,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -316,7 +312,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -378,7 +374,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -443,7 +439,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -522,7 +518,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -605,7 +601,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -670,7 +666,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -743,7 +739,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -809,7 +805,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -882,7 +878,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -932,7 +928,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -986,7 +982,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -1040,7 +1036,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -1099,7 +1095,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -1160,7 +1156,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -1212,7 +1208,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -1246,8 +1242,7 @@ internal class RumContinuousActionScopeTest {
             fakeServerOffset,
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
-            trackFrustrations = fakeTrackFrustrations,
-            contextProvider = mockContextProvider
+            trackFrustrations = fakeTrackFrustrations
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.globalAttributes.remove(it) }
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
@@ -1291,7 +1286,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -1355,7 +1350,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -1413,7 +1408,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -1475,7 +1470,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -1538,7 +1533,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -1594,7 +1589,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -1654,7 +1649,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -1710,7 +1705,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -1833,7 +1828,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -1893,7 +1888,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }
@@ -1947,7 +1942,7 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                 }

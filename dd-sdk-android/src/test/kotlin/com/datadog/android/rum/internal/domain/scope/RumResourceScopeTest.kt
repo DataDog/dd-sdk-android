@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
@@ -28,9 +28,9 @@ import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.api.context.NetworkInfo
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -91,13 +91,10 @@ internal class RumResourceScopeTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
+    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
-    lateinit var mockContextProvider: ContextProvider
-
-    @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockRumFeatureScope: FeatureScope
@@ -116,6 +113,9 @@ internal class RumResourceScopeTest {
 
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
+
+    @Forgery
+    lateinit var fakeNetworkInfoAtScopeStart: NetworkInfo
 
     var fakeServerOffset: Long = 0L
 
@@ -167,7 +167,7 @@ internal class RumResourceScopeTest {
         fakeMethod = forge.anElementFrom("PUT", "POST", "GET", "DELETE")
         mockEvent = mockEvent()
 
-        whenever(mockContextProvider.context) doReturn fakeDatadogContext
+        whenever(mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         doAnswer { false }.whenever(mockResolver).isFirstPartyUrl(any<String>())
         whenever(
@@ -192,7 +192,6 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockResolver,
-            mockContextProvider,
             mockFeaturesContextResolver
         )
     }
@@ -252,7 +251,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -318,7 +317,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -372,7 +371,6 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockResolver,
-            mockContextProvider,
             mockFeaturesContextResolver
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
@@ -399,7 +397,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -472,7 +470,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -539,7 +537,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -597,7 +595,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -650,7 +648,7 @@ internal class RumResourceScopeTest {
                     hasKind(kind)
                     hasStatusCode(statusCode)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -746,7 +744,6 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockResolver,
-            mockContextProvider,
             mockFeaturesContextResolver
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
@@ -769,7 +766,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -837,7 +834,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -906,7 +903,7 @@ internal class RumResourceScopeTest {
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasTiming(timing)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -976,7 +973,7 @@ internal class RumResourceScopeTest {
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasNoTiming()
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1048,7 +1045,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1119,7 +1116,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1169,7 +1166,6 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockResolver,
-            mockContextProvider,
             mockFeaturesContextResolver
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
@@ -1202,7 +1198,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(brokenUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1256,7 +1252,6 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockResolver,
-            mockContextProvider,
             mockFeaturesContextResolver
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
@@ -1290,7 +1285,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(brokenUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1362,7 +1357,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1436,7 +1431,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1508,7 +1503,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1582,7 +1577,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1659,7 +1654,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, statusCode)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1739,7 +1734,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, statusCode)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1896,7 +1891,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1960,7 +1955,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -2026,7 +2021,7 @@ internal class RumResourceScopeTest {
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasTiming(timing)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -2141,7 +2136,7 @@ internal class RumResourceScopeTest {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -2205,7 +2200,7 @@ internal class RumResourceScopeTest {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)

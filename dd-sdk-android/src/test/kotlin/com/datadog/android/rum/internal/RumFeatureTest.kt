@@ -65,6 +65,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.ScheduledThreadPoolExecutor
 
 @Extensions(
@@ -79,6 +80,9 @@ internal class RumFeatureTest {
     private lateinit var testedFeature: RumFeature
 
     @Forgery
+    lateinit var fakeApplicationId: UUID
+
+    @Forgery
     lateinit var fakeConfiguration: RumFeature.Configuration
 
     @Mock
@@ -91,12 +95,17 @@ internal class RumFeatureTest {
     lateinit var mockNdkCrashEventHandler: NdkCrashEventHandler
 
     @BeforeEach
-    fun `set up RUM`() {
+    fun `set up`() {
         doNothing().whenever(mockChoreographer).postFrameCallback(any())
         mockChoreographerInstance(mockChoreographer)
 
         testedFeature =
-            RumFeature(fakeConfiguration, coreFeature.mockInstance, mockNdkCrashEventHandler)
+            RumFeature(
+                fakeApplicationId.toString(),
+                fakeConfiguration,
+                coreFeature.mockInstance,
+                mockNdkCrashEventHandler
+            )
     }
 
     @Test
@@ -139,12 +148,19 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 store and register viewTrackingStrategy 𝕎 initialize()`() {
+    fun `𝕄 store and register viewTrackingStrategy 𝕎 initialize()`(
+        @Forgery fakeApplicationId: UUID
+    ) {
         // Given
         val mockViewTrackingStrategy = mock<ViewTrackingStrategy>()
         fakeConfiguration =
             fakeConfiguration.copy(viewTrackingStrategy = mockViewTrackingStrategy)
-        testedFeature = RumFeature(fakeConfiguration, coreFeature.mockInstance, mockNdkCrashEventHandler)
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            coreFeature.mockInstance,
+            mockNdkCrashEventHandler
+        )
 
         // When
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
@@ -182,6 +198,7 @@ internal class RumFeatureTest {
     fun `𝕄 use noop viewTrackingStrategy 𝕎 initialize()`() {
         // Given
         testedFeature = RumFeature(
+            fakeApplicationId.toString(),
             fakeConfiguration.copy(viewTrackingStrategy = null),
             coreFeature.mockInstance,
             mockNdkCrashEventHandler
@@ -199,7 +216,12 @@ internal class RumFeatureTest {
     fun `𝕄 use noop userActionTrackingStrategy 𝕎 initialize()`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(userActionTrackingStrategy = null)
-        testedFeature = RumFeature(fakeConfiguration, coreFeature.mockInstance, mockNdkCrashEventHandler)
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            coreFeature.mockInstance,
+            mockNdkCrashEventHandler
+        )
 
         // When
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
@@ -213,7 +235,12 @@ internal class RumFeatureTest {
     fun `𝕄 use noop longTaskTrackingStrategy 𝕎 initialize()`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(longTaskTrackingStrategy = null)
-        testedFeature = RumFeature(fakeConfiguration, coreFeature.mockInstance, mockNdkCrashEventHandler)
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            coreFeature.mockInstance,
+            mockNdkCrashEventHandler
+        )
 
         // When
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
@@ -239,7 +266,12 @@ internal class RumFeatureTest {
     ) {
         // Given
         fakeConfiguration = fakeConfiguration.copy(vitalsMonitorUpdateFrequency = fakeFrequency)
-        testedFeature = RumFeature(fakeConfiguration, coreFeature.mockInstance, mockNdkCrashEventHandler)
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            coreFeature.mockInstance,
+            mockNdkCrashEventHandler
+        )
 
         // When
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
@@ -263,7 +295,12 @@ internal class RumFeatureTest {
         fakeConfiguration = fakeConfiguration.copy(
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER
         )
-        testedFeature = RumFeature(fakeConfiguration, coreFeature.mockInstance, mockNdkCrashEventHandler)
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            coreFeature.mockInstance,
+            mockNdkCrashEventHandler
+        )
 
         // When
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
@@ -288,7 +325,12 @@ internal class RumFeatureTest {
         // Given
         doThrow(IllegalStateException(message)).whenever(mockChoreographer).postFrameCallback(any())
         fakeConfiguration = fakeConfiguration.copy(vitalsMonitorUpdateFrequency = fakeFrequency)
-        testedFeature = RumFeature(fakeConfiguration, coreFeature.mockInstance, mockNdkCrashEventHandler)
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            coreFeature.mockInstance,
+            mockNdkCrashEventHandler
+        )
 
         // When
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
@@ -309,7 +351,12 @@ internal class RumFeatureTest {
         fakeConfiguration = fakeConfiguration.copy(
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER
         )
-        testedFeature = RumFeature(fakeConfiguration, coreFeature.mockInstance, mockNdkCrashEventHandler)
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            coreFeature.mockInstance,
+            mockNdkCrashEventHandler
+        )
 
         // When
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
@@ -397,7 +444,12 @@ internal class RumFeatureTest {
         fakeConfiguration = fakeConfiguration.copy(
             vitalsMonitorUpdateFrequency = fakeFrequency
         )
-        testedFeature = RumFeature(fakeConfiguration, coreFeature.mockInstance, mockNdkCrashEventHandler)
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            coreFeature.mockInstance,
+            mockNdkCrashEventHandler
+        )
 
         // When
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
@@ -413,7 +465,12 @@ internal class RumFeatureTest {
         fakeConfiguration = fakeConfiguration.copy(
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER
         )
-        testedFeature = RumFeature(fakeConfiguration, coreFeature.mockInstance, mockNdkCrashEventHandler)
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            coreFeature.mockInstance,
+            mockNdkCrashEventHandler
+        )
 
         // When
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())

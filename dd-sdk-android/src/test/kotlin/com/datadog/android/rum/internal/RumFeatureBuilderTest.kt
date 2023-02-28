@@ -44,6 +44,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -52,6 +53,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -62,10 +64,18 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class RumFeatureBuilderTest {
 
-    private val testedBuilder = RumFeature.Builder()
+    private lateinit var testedBuilder: RumFeature.Builder
 
     @Mock
     lateinit var mockCoreFeature: CoreFeature
+
+    @Forgery
+    lateinit var fakeApplicationId: UUID
+
+    @BeforeEach
+    fun `set up`() {
+        testedBuilder = RumFeature.Builder(fakeApplicationId.toString())
+    }
 
     @Test
     fun `𝕄 use sensible defaults 𝕎 build()`() {
@@ -92,6 +102,15 @@ internal class RumFeatureBuilderTest {
                 vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE
             )
         )
+    }
+
+    @Test
+    fun `𝕄 use applicationId provided 𝕎 build()`() {
+        // When
+        val rumFeature = testedBuilder.build(mockCoreFeature)
+
+        // Then
+        assertThat(rumFeature.applicationId).isEqualTo(fakeApplicationId.toString())
     }
 
     @Test

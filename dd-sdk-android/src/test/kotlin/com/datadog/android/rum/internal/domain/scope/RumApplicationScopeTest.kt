@@ -6,12 +6,11 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.verify
@@ -51,7 +50,7 @@ internal class RumApplicationScopeTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
+    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockCpuVitalMonitor: VitalMonitor
@@ -66,10 +65,7 @@ internal class RumApplicationScopeTest {
     lateinit var mockSessionListener: RumSessionListener
 
     @Mock
-    lateinit var mockContextProvider: ContextProvider
-
-    @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: InternalSdkCore
 
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
@@ -95,8 +91,7 @@ internal class RumApplicationScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockSessionListener,
-            mockContextProvider
+            mockSessionListener
         )
     }
 

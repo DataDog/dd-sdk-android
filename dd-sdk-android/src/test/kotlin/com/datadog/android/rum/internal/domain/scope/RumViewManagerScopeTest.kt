@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import android.app.ActivityManager.RunningAppProcessInfo
 import android.os.Build
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.RumFeature
@@ -21,10 +21,9 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.TimeInfo
-import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -77,7 +76,7 @@ internal class RumViewManagerScopeTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
+    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockCpuVitalMonitor: VitalMonitor
@@ -89,13 +88,10 @@ internal class RumViewManagerScopeTest {
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
 
     @Mock
-    lateinit var mockContextProvider: ContextProvider
-
-    @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: InternalSdkCore
 
     @Forgery
     lateinit var fakeParentContext: RumContext
@@ -111,7 +107,6 @@ internal class RumViewManagerScopeTest {
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockContextProvider.context) doReturn fakeDatadogContext
         whenever(mockSdkCore.time) doReturn fakeTime
 
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
@@ -128,8 +123,7 @@ internal class RumViewManagerScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockBuildSdkVersionProvider,
-            mockContextProvider
+            mockBuildSdkVersionProvider
         )
     }
 
@@ -391,8 +385,7 @@ internal class RumViewManagerScopeTest {
             firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
-            frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            contextProvider = mockContextProvider
+            frameRateVitalMonitor = mockFrameRateVitalMonitor
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -418,8 +411,7 @@ internal class RumViewManagerScopeTest {
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            buildSdkVersionProvider = mockBuildSdkVersionProvider,
-            contextProvider = mockContextProvider
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -448,8 +440,7 @@ internal class RumViewManagerScopeTest {
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            buildSdkVersionProvider = mockBuildSdkVersionProvider,
-            contextProvider = mockContextProvider
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -538,8 +529,7 @@ internal class RumViewManagerScopeTest {
             firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
-            frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            contextProvider = mockContextProvider
+            frameRateVitalMonitor = mockFrameRateVitalMonitor
         )
         testedScope.applicationDisplayed = false
         val fakeEvent = forge.validAppLaunchEvent()
@@ -580,8 +570,7 @@ internal class RumViewManagerScopeTest {
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            buildSdkVersionProvider = mockBuildSdkVersionProvider,
-            contextProvider = mockContextProvider
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true

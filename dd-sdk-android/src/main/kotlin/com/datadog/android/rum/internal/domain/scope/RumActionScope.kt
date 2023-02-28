@@ -14,8 +14,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import java.lang.ref.WeakReference
 import java.util.UUID
@@ -24,7 +23,7 @@ import kotlin.math.max
 
 internal class RumActionScope(
     val parentScope: RumScope,
-    private val sdkCore: SdkCore,
+    private val sdkCore: InternalSdkCore,
     val waitForStop: Boolean,
     eventTime: Time,
     initialType: RumActionType,
@@ -33,7 +32,6 @@ internal class RumActionScope(
     serverTimeOffsetInMs: Long,
     inactivityThresholdMs: Long = ACTION_INACTIVITY_MS,
     maxDurationMs: Long = ACTION_MAX_DURATION_MS,
-    contextProvider: ContextProvider,
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
     private val trackFrustrations: Boolean
 ) : RumScope {
@@ -47,7 +45,7 @@ internal class RumActionScope(
     internal var name: String = initialName
     private val startedNanos: Long = eventTime.nanoTime
     private var lastInteractionNanos: Long = startedNanos
-    private val networkInfo = contextProvider.context.networkInfo
+    private val networkInfo = sdkCore.networkInfo
 
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap().apply {
         putAll(GlobalRum.globalAttributes)
@@ -293,10 +291,9 @@ internal class RumActionScope(
         @Suppress("LongParameterList")
         fun fromEvent(
             parentScope: RumScope,
-            sdkCore: SdkCore,
+            sdkCore: InternalSdkCore,
             event: RumRawEvent.StartAction,
             timestampOffset: Long,
-            contextProvider: ContextProvider,
             featuresContextResolver: FeaturesContextResolver,
             trackFrustrations: Boolean
         ): RumScope {
@@ -309,7 +306,6 @@ internal class RumActionScope(
                 event.name,
                 event.attributes,
                 timestampOffset,
-                contextProvider = contextProvider,
                 featuresContextResolver = featuresContextResolver,
                 trackFrustrations = trackFrustrations
             )

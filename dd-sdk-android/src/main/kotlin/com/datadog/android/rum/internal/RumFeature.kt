@@ -90,15 +90,18 @@ import com.datadog.android.core.configuration.Configuration as LegacyConfigurati
 
 @Suppress("TooManyFunctions")
 internal class RumFeature(
+    internal val applicationId: String,
     internal val configuration: Configuration,
     private val coreFeature: CoreFeature,
     private val ndkCrashEventHandler: NdkCrashEventHandler = DatadogNdkCrashEventHandler()
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     constructor(
+        applicationId: String,
         configuration: LegacyConfiguration.Feature.RUM,
         coreFeature: CoreFeature
     ) : this(
+        applicationId,
         Configuration(
             endpointUrl = configuration.endpointUrl,
             samplingRate = configuration.samplingRate,
@@ -421,8 +424,10 @@ internal class RumFeature(
 
     /**
      * A Builder class for a [RumFeature].
+     *
+     * @param applicationId your applicationId for RUM events
      */
-    class Builder {
+    class Builder(private val applicationId: String) {
 
         private var rumConfig = DEFAULT_RUM_CONFIG
 
@@ -655,6 +660,7 @@ internal class RumFeature(
          */
         fun build(coreFeature: CoreFeature): RumFeature {
             return RumFeature(
+                applicationId = applicationId,
                 configuration = rumConfig,
                 coreFeature = coreFeature
             )

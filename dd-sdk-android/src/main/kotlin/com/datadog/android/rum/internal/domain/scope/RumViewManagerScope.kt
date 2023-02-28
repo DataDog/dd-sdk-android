@@ -14,7 +14,7 @@ import android.os.SystemClock
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.internalLogger
@@ -24,22 +24,20 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import java.util.concurrent.TimeUnit
 
 internal class RumViewManagerScope(
     private val parentScope: RumScope,
-    private val sdkCore: SdkCore,
+    private val sdkCore: InternalSdkCore,
     private val backgroundTrackingEnabled: Boolean,
     private val trackFrustrations: Boolean,
-    internal val firstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
+    internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
-    private val contextProvider: ContextProvider
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
 ) : RumScope {
 
     internal val childrenScopes = mutableListOf<RumScope>()
@@ -110,7 +108,6 @@ internal class RumViewManagerScope(
             cpuVitalMonitor,
             memoryVitalMonitor,
             frameRateVitalMonitor,
-            contextProvider,
             trackFrustrations
         )
         onViewDisplayed(event, viewScope, writer)
@@ -179,7 +176,6 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             type = RumViewScope.RumViewType.BACKGROUND,
-            contextProvider = contextProvider,
             trackFrustrations = trackFrustrations
         )
     }
@@ -197,7 +193,6 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             type = RumViewScope.RumViewType.APPLICATION_LAUNCH,
-            contextProvider = contextProvider,
             trackFrustrations = trackFrustrations
         )
     }
