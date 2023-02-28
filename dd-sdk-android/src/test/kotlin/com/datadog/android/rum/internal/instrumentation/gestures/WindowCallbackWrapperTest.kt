@@ -18,7 +18,9 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -368,10 +370,16 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.dispatchKeyEvent(null)
 
         // Then
-        verify(rumMonitor.mockInstance).sendErrorTelemetryEvent(
-            "Received KeyEvent=null",
-            null
-        )
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(
+                    InternalLogger.Target.MAINTAINER,
+                    InternalLogger.Target.TELEMETRY
+                ),
+                "Received KeyEvent=null",
+                null
+            )
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
@@ -651,11 +659,12 @@ internal class WindowCallbackWrapperTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
+            return listOf(rumMonitor, logger)
         }
     }
 }

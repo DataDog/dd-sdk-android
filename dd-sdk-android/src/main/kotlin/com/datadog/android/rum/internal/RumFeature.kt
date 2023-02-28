@@ -23,6 +23,7 @@ import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.core.internal.utils.telemetry
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
@@ -244,6 +245,8 @@ internal class RumFeature(
             "web_view_ingested_notification" -> {
                 GlobalRum.notifyIngestedWebViewEvent()
             }
+            "telemetry_error" -> logTelemetryError(event)
+            "telemetry_debug" -> logTelemetryDebug(event)
             else -> {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -418,6 +421,40 @@ internal class RumFeature(
             stacktrace,
             attributes ?: emptyMap()
         )
+    }
+
+    private fun logTelemetryError(telemetryEvent: Map<*, *>) {
+        val message = telemetryEvent[EVENT_MESSAGE_PROPERTY] as? String
+        if (message == null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                TELEMETRY_MISSING_MESSAGE_FIELD
+            )
+            return
+        }
+        val throwable = telemetryEvent[EVENT_THROWABLE_PROPERTY] as? Throwable
+        val stack = telemetryEvent[EVENT_STACKTRACE_PROPERTY] as? String
+        val kind = telemetryEvent["kind"] as? String
+
+        if (throwable != null) {
+            telemetry.error(message, throwable)
+        } else {
+            telemetry.error(message, stack, kind)
+        }
+    }
+
+    private fun logTelemetryDebug(telemetryEvent: Map<*, *>) {
+        val message = telemetryEvent[EVENT_MESSAGE_PROPERTY] as? String
+        if (message == null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                TELEMETRY_MISSING_MESSAGE_FIELD
+            )
+            return
+        }
+        telemetry.debug(message)
     }
 
     // endregion
@@ -734,10 +771,12 @@ internal class RumFeature(
                 " are either missing or have a wrong type."
         internal const val LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS =
             "RUM feature received a log event" +
-                " where mandatory message field is either missing or have a wrong type."
+                " where mandatory message field is either missing or has a wrong type."
         internal const val LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS =
             "RUM feature received a log event with stacktrace" +
-                " where mandatory message field is either missing or have a wrong type."
+                " where mandatory message field is either missing or has a wrong type."
+        internal const val TELEMETRY_MISSING_MESSAGE_FIELD = "RUM feature received a telemetry" +
+            " event, but mandatory message field is either missing or has a wrong type."
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,

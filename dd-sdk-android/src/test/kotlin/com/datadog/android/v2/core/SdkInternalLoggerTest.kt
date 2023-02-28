@@ -8,13 +8,11 @@ package com.datadog.android.v2.core
 
 import android.util.Log
 import com.datadog.android.Datadog
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
@@ -36,8 +34,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -49,6 +46,9 @@ internal class SdkInternalLoggerTest {
     @Mock
     lateinit var mockSdkLogHandler: LogcatLogHandler
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
     private lateinit var testedInternalLogger: SdkInternalLogger
 
     @BeforeEach
@@ -57,6 +57,7 @@ internal class SdkInternalLoggerTest {
             devLogHandlerFactory = { mockDevLogHandler },
             sdkLogHandlerFactory = { mockSdkLogHandler }
         )
+        Datadog.globalSdkCore = mockSdkCore
         Datadog.initialized.set(true)
     }
 
@@ -150,6 +151,8 @@ internal class SdkInternalLoggerTest {
     ) {
         // Given
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.INFO, InternalLogger.Level.DEBUG)
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         // When
         testedInternalLogger.log(
@@ -160,8 +163,13 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        verify(rumMonitor.mockInstance)
-            .sendDebugTelemetryEvent(fakeMessage)
+        verify(mockRumFeatureScope)
+            .sendEvent(
+                mapOf(
+                    "type" to "telemetry_debug",
+                    "message" to fakeMessage
+                )
+            )
     }
 
     @Test
@@ -171,6 +179,8 @@ internal class SdkInternalLoggerTest {
     ) {
         // Given
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.WARN, InternalLogger.Level.ERROR)
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         // When
         testedInternalLogger.log(
@@ -181,8 +191,14 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        verify(rumMonitor.mockInstance)
-            .sendErrorTelemetryEvent(fakeMessage, null)
+        verify(mockRumFeatureScope)
+            .sendEvent(
+                mapOf(
+                    "type" to "telemetry_error",
+                    "message" to fakeMessage,
+                    "throwable" to null
+                )
+            )
     }
 
     @Test
@@ -193,6 +209,8 @@ internal class SdkInternalLoggerTest {
         // Given
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
         val fakeThrowable = forge.aThrowable()
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         // When
         testedInternalLogger.log(
@@ -203,8 +221,14 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        verify(rumMonitor.mockInstance)
-            .sendErrorTelemetryEvent(fakeMessage, fakeThrowable)
+        verify(mockRumFeatureScope)
+            .sendEvent(
+                mapOf(
+                    "type" to "telemetry_error",
+                    "message" to fakeMessage,
+                    "throwable" to fakeThrowable
+                )
+            )
     }
 
     private fun InternalLogger.Level.toLogLevel(): Int {
@@ -214,16 +238,6 @@ internal class SdkInternalLoggerTest {
             InternalLogger.Level.INFO -> Log.INFO
             InternalLogger.Level.WARN -> Log.WARN
             InternalLogger.Level.ERROR -> Log.ERROR
-        }
-    }
-
-    companion object {
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
         }
     }
 }
