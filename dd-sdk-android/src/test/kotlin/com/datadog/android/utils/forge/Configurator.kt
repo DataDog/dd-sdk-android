@@ -47,6 +47,7 @@ internal class Configurator :
         forge.addFactory(ResourceTimingForgeryFactory())
         forge.addFactory(ViewEventForgeryFactory())
         forge.addFactory(VitalInfoForgeryFactory())
+        forge.addFactory(TelemetryCoreConfigurationForgeryFactory())
 
         // Telemetry
         forge.addFactory(TelemetryDebugEventForgeryFactory())

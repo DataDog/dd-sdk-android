@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -30,6 +29,7 @@ import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.telemetry.internal.TelemetryType
 import com.datadog.android.utils.forge.Configurator
@@ -1410,7 +1410,7 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.type).isEqualTo(TelemetryType.DEBUG)
             assertThat(lastValue.stack).isNull()
             assertThat(lastValue.kind).isNull()
-            assertThat(lastValue.configuration).isNull()
+            assertThat(lastValue.coreConfiguration).isNull()
         }
     }
 
@@ -1433,7 +1433,7 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.type).isEqualTo(TelemetryType.ERROR)
             assertThat(lastValue.stack).isEqualTo(stackTrace)
             assertThat(lastValue.kind).isEqualTo(kind)
-            assertThat(lastValue.configuration).isNull()
+            assertThat(lastValue.coreConfiguration).isNull()
         }
     }
 
@@ -1456,16 +1456,16 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.type).isEqualTo(TelemetryType.ERROR)
             assertThat(lastValue.stack).isEqualTo(throwable?.loggableStackTrace())
             assertThat(lastValue.kind).isEqualTo(throwable?.javaClass?.canonicalName)
-            assertThat(lastValue.configuration).isNull()
+            assertThat(lastValue.coreConfiguration).isNull()
         }
     }
 
     @Test
     fun `M handle configuration telemetry event W sendConfigurationTelemetryEvent()`(
-        @Forgery configuration: Configuration
+        @Forgery fakeConfiguration: TelemetryCoreConfiguration
     ) {
         // When
-        testedMonitor.sendConfigurationTelemetryEvent(configuration)
+        testedMonitor.sendConfigurationTelemetryEvent(fakeConfiguration)
 
         // Then
         argumentCaptor<RumRawEvent.SendTelemetry> {
@@ -1477,7 +1477,7 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.type).isEqualTo(TelemetryType.CONFIGURATION)
             assertThat(lastValue.stack).isNull()
             assertThat(lastValue.kind).isNull()
-            assertThat(lastValue.configuration).isSameAs(configuration)
+            assertThat(lastValue.coreConfiguration).isSameAs(fakeConfiguration)
         }
     }
 
@@ -1496,7 +1496,7 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.type).isEqualTo(TelemetryType.INTERCEPTOR_SETUP)
             assertThat(lastValue.stack).isNull()
             assertThat(lastValue.kind).isNull()
-            assertThat(lastValue.configuration).isNull()
+            assertThat(lastValue.coreConfiguration).isNull()
         }
     }
 

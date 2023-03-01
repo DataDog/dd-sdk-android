@@ -10,13 +10,15 @@ import android.app.Application
 import android.content.pm.ApplicationInfo
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
@@ -30,6 +32,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
@@ -290,6 +293,60 @@ internal class DatadogCoreInitializationTest {
             .isEqualTo(Log.VERBOSE)
     }
 
+    @Test
+    fun `𝕄 submit core config telemetry 𝕎 initializing()`(
+        forge: Forge
+    ) {
+        // Given
+        val trackErrors = forge.aBool()
+        val useProxy = forge.aBool()
+        val useLocalEncryption = forge.aBool()
+        val batchSize = forge.aValueFrom(BatchSize::class.java)
+        val uploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
+
+        val configuration = Configuration.Builder(
+            crashReportsEnabled = trackErrors,
+            rumEnabled = true
+        ).apply {
+            if (useProxy) {
+                setProxy(mock(), forge.aNullable { mock() })
+            }
+            if (useLocalEncryption) {
+                setEncryption(mock())
+            }
+        }
+            .setBatchSize(batchSize)
+            .setUploadFrequency(uploadFrequency)
+            .build()
+
+        // When
+        testedCore =
+            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+
+        // Then
+        val mockRumFeature = mock<SdkFeature>()
+        testedCore.features += Feature.RUM_FEATURE_NAME to mockRumFeature
+
+        testedCore.coreFeature.uploadExecutorService.queue
+            .toTypedArray()
+            .forEach {
+                it.run()
+            }
+        testedCore.coreFeature.uploadExecutorService.shutdownNow()
+
+        verify(mockRumFeature)
+            .sendEvent(
+                mapOf(
+                    "type" to "telemetry_configuration",
+                    "use_proxy" to useProxy,
+                    "use_local_encryption" to useLocalEncryption,
+                    "batch_size" to batchSize.windowDurationMs,
+                    "batch_upload_frequency" to uploadFrequency.baseStepMs,
+                    "track_errors" to trackErrors
+                )
+            )
+    }
+
     // region AdditionalConfig
 
     @Test
@@ -526,12 +583,11 @@ internal class DatadogCoreInitializationTest {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val mainLooper = MainLooperTestConfiguration()
         val logger = InternalLoggerTestConfiguration()
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, mainLooper, coreFeature)
+            return listOf(logger, appContext, mainLooper)
         }
     }
 }

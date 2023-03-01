@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
@@ -33,6 +32,7 @@ import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.telemetry.internal.TelemetryType
 import com.datadog.android.v2.api.InternalLogger
@@ -350,9 +350,9 @@ internal class DatadogRumMonitor(
     }
 
     @Suppress("FunctionMaxLength")
-    override fun sendConfigurationTelemetryEvent(configuration: Configuration) {
+    override fun sendConfigurationTelemetryEvent(coreConfiguration: TelemetryCoreConfiguration) {
         handleEvent(
-            RumRawEvent.SendTelemetry(TelemetryType.CONFIGURATION, "", null, null, configuration)
+            RumRawEvent.SendTelemetry(TelemetryType.CONFIGURATION, "", null, null, coreConfiguration)
         )
     }
 
