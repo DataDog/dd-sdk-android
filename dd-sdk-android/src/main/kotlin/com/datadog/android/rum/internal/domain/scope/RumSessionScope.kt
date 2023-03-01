@@ -148,6 +148,9 @@ internal class RumSessionScope(
         sessionState = if (keepSession) State.TRACKED else State.NOT_TRACKED
         sessionId = UUID.randomUUID().toString()
         sessionStartNs.set(nanoTime)
+        sdkCore.updateFeatureContext(RumFeature.RUM_FEATURE_NAME) {
+            it.putAll(getRumContext().toMap())
+        }
         sessionListener?.onSessionStarted(sessionId, !keepSession)
         sdkCore.getFeature(SESSION_REPLAY_FEATURE_NAME)?.sendEvent(
             mapOf(

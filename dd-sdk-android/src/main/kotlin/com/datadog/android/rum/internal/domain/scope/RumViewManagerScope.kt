@@ -91,9 +91,10 @@ internal class RumViewManagerScope(
             nanoTime = processStartTime
         )
         val viewScope = createAppLaunchViewScope(applicationLaunchViewTime)
+        val startupTime = event.eventTime.nanoTime - processStartTime
         applicationDisplayed = true
         viewScope.handleEvent(
-            RumRawEvent.ApplicationStarted(event.eventTime, processStartTime),
+            RumRawEvent.ApplicationStarted(applicationLaunchViewTime, startupTime),
             writer
         )
         childrenScopes.add(viewScope)

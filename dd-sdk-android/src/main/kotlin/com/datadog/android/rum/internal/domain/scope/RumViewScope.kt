@@ -839,7 +839,7 @@ internal open class RumViewScope(
                         crash = ActionEvent.Crash(0),
                         longTask = ActionEvent.LongTask(0),
                         resource = ActionEvent.Resource(0),
-                        loadingTime = getStartupTime(event)
+                        loadingTime = event.applicationStartupNanos
                     ),
                     view = ActionEvent.View(
                         id = rumContext.viewId.orEmpty(),
@@ -887,12 +887,6 @@ internal open class RumViewScope(
                 @Suppress("ThreadSafety") // called in a worker thread context
                 writer.write(eventBatchWriter, actionEvent)
             }
-    }
-
-    private fun getStartupTime(event: RumRawEvent.ApplicationStarted): Long {
-        val now = event.eventTime.nanoTime
-        val startupTime = event.applicationStartupNanos
-        return max(now - startupTime, 1L)
     }
 
     @Suppress("LongMethod")

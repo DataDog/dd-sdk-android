@@ -28,6 +28,7 @@ internal abstract class ActivityTrackingTest :
         )
 
         instrumentation.waitForIdleSync()
+        Thread.sleep(1000) // Just chill for a second
 
         expectedEvents.add(ExpectedApplicationStartActionEvent())
         expectedEvents.add(
