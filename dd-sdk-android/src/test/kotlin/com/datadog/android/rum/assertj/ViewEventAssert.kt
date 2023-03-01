@@ -325,10 +325,12 @@ internal class ViewEventAssert(actual: ViewEvent) :
             )
             .isEqualTo(expectedTicks)
 
-        val expectedTicksPerSeconds = if (expectedTicks != null) {
-            (expectedTicks * ONE_SECOND_NS) / actual.view.timeSpent
-        } else {
+        val expectedTicksPerSeconds = if (expectedTicks == null) {
             null
+        } else if (actual.view.timeSpent < ONE_SECOND_NS) {
+            null
+        } else {
+            (expectedTicks * ONE_SECOND_NS) / actual.view.timeSpent
         }
         assertThat(actual.view.cpuTicksPerSecond)
             .overridingErrorMessage(
