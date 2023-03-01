@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal
 
 import android.app.Application
 import android.view.Choreographer
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.event.NoOpEventMapper
@@ -45,6 +44,7 @@ import com.nhaarman.mockitokotlin2.doNothing
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -861,6 +861,141 @@ internal class RumFeatureTest {
             logger.mockInternalLogger
         )
     }
+
+    // region FeatureEventReceiver#onReceive + telemetry event
+
+    @Test
+    fun `𝕄 handle telemetry debug event 𝕎 onReceive()`(
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        val event = mapOf(
+            "type" to "telemetry_debug",
+            "message" to fakeMessage
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(rumMonitor.mockInstance)
+            .sendDebugTelemetryEvent(fakeMessage)
+
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
+
+        verifyZeroInteractions(
+            mockSdkCore,
+            logger.mockInternalLogger
+        )
+    }
+
+    @Test
+    fun `𝕄 log warning 𝕎 onReceive() { telemetry debug + message is missing }`() {
+        // Given
+        val event = mapOf(
+            "type" to "telemetry_debug"
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
+            )
+
+        verifyZeroInteractions(
+            rumMonitor.mockInstance,
+            mockSdkCore
+        )
+    }
+
+    @Test
+    fun `𝕄 handle telemetry error event 𝕎 onReceive() { with throwable }`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeThrowable = forge.aThrowable()
+        val event = mapOf(
+            "type" to "telemetry_error",
+            "message" to fakeMessage,
+            "throwable" to fakeThrowable
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(rumMonitor.mockInstance)
+            .sendErrorTelemetryEvent(fakeMessage, fakeThrowable)
+
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
+
+        verifyZeroInteractions(
+            mockSdkCore,
+            logger.mockInternalLogger
+        )
+    }
+
+    @Test
+    fun `𝕄 handle telemetry error event 𝕎 onReceive() { with stack and kind }`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeStack = forge.aNullable { aString() }
+        val fakeKind = forge.aNullable { aString() }
+        val event = mapOf(
+            "type" to "telemetry_error",
+            "message" to fakeMessage,
+            "stacktrace" to fakeStack,
+            "kind" to fakeKind
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(rumMonitor.mockInstance)
+            .sendErrorTelemetryEvent(fakeMessage, fakeStack, fakeKind)
+
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
+
+        verifyZeroInteractions(
+            mockSdkCore,
+            logger.mockInternalLogger
+        )
+    }
+
+    @Test
+    fun `𝕄 log warning 𝕎 onReceive() { telemetry error + message is missing }`() {
+        // Given
+        val event = mapOf(
+            "type" to "telemetry_error"
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
+            )
+
+        verifyZeroInteractions(
+            rumMonitor.mockInstance,
+            mockSdkCore
+        )
+    }
+
+    // endregion
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)

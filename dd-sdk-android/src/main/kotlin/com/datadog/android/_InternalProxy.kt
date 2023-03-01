@@ -9,8 +9,10 @@ package com.datadog.android
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.event.EventMapper
-import com.datadog.android.telemetry.internal.Telemetry
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.SdkCore
 
 /**
  * This class exposes internal methods that are used by other Datadog modules and cross platform
@@ -31,26 +33,46 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
     "VariableNaming"
 )
 class _InternalProxy internal constructor(
-    telemetry: Telemetry,
+    sdkCore: SdkCore,
     // TODO RUMM-0000 Shouldn't be nullable
     private val coreFeature: CoreFeature?
 ) {
-    class _TelemetryProxy internal constructor(private val telemetry: Telemetry) {
+    @Suppress("StringLiteralDuplication")
+    class _TelemetryProxy internal constructor(private val sdkCore: SdkCore) {
+
+        private val rumFeature: FeatureScope?
+            get() {
+                return sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+            }
 
         fun debug(message: String) {
-            telemetry.debug(message)
+            rumFeature?.sendEvent(mapOf("type" to "telemetry_debug", "message" to message))
         }
 
         fun error(message: String, throwable: Throwable? = null) {
-            telemetry.error(message, throwable)
+            rumFeature?.sendEvent(
+                mapOf(
+                    "type" to "telemetry_error",
+                    "message" to message,
+                    "throwable" to throwable
+                )
+            )
         }
 
         fun error(message: String, stack: String?, kind: String?) {
-            telemetry.error(message, stack, kind)
+            rumFeature?.sendEvent(
+                mapOf(
+                    "type" to "telemetry_error",
+                    "message" to message,
+                    "stacktrace" to stack,
+                    "kind" to kind
+                )
+            )
         }
     }
 
-    val _telemetry: _TelemetryProxy = _TelemetryProxy(telemetry)
+    @Suppress("PropertyName")
+    val _telemetry: _TelemetryProxy = _TelemetryProxy(sdkCore)
 
     fun setCustomAppVersion(version: String) {
         coreFeature?.packageVersionProvider?.version = version

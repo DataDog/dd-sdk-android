@@ -9,7 +9,7 @@ package com.datadog.android.v2.core
 import android.util.Log
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.utils.telemetry
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 
 internal class SdkInternalLogger(
@@ -29,7 +29,7 @@ internal class SdkInternalLogger(
 
     /**
      * Global Dev Logger. This logger is meant for user's debugging purposes.
-     * Logcat logs are conditioned by the [Datadog.libraryVerbosity].
+     * Logcat logs are conditioned by the [DatadogCore.libraryVerbosity].
      * No Datadog logs should be sent.
      */
     internal val devLogger = devLogHandlerFactory.invoke()
@@ -99,14 +99,24 @@ internal class SdkInternalLogger(
         message: String,
         error: Throwable?
     ) {
-        if (level == InternalLogger.Level.ERROR ||
+        val rumFeature = Datadog.globalSdkCore.getFeature(Feature.RUM_FEATURE_NAME) ?: return
+        val telemetryEvent = if (
+            level == InternalLogger.Level.ERROR ||
             level == InternalLogger.Level.WARN ||
             error != null
         ) {
-            telemetry.error(message, error)
+            mapOf(
+                "type" to "telemetry_error",
+                "message" to message,
+                "throwable" to error
+            )
         } else {
-            telemetry.debug(message)
+            mapOf(
+                "type" to "telemetry_debug",
+                "message" to message
+            )
         }
+        rumFeature.sendEvent(telemetryEvent)
     }
 
     private fun InternalLogger.Level.toLogLevel(): Int {

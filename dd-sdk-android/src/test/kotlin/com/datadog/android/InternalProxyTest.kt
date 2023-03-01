@@ -8,8 +8,10 @@ package com.datadog.android
 
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.system.AppVersionProvider
-import com.datadog.android.telemetry.internal.Telemetry
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.SdkCore
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -42,14 +44,21 @@ internal class InternalProxyTest {
         @StringForgery message: String
     ) {
         // Given
-        val mockTelemetry = mock<Telemetry>()
-        val proxy = _InternalProxy(mockTelemetry, mockCoreFeature)
+        val mockSdkCore = mock<SdkCore>()
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        val proxy = _InternalProxy(mockSdkCore, mockCoreFeature)
 
         // When
         proxy._telemetry.debug(message)
 
         // Then
-        verify(mockTelemetry).debug(message)
+        verify(mockRumFeatureScope).sendEvent(
+            mapOf(
+                "type" to "telemetry_debug",
+                "message" to message
+            )
+        )
     }
 
     @Test
@@ -59,14 +68,23 @@ internal class InternalProxyTest {
         @StringForgery kind: String
     ) {
         // Given
-        val mockTelemetry = mock<Telemetry>()
-        val proxy = _InternalProxy(mockTelemetry, mockCoreFeature)
+        val mockSdkCore = mock<SdkCore>()
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        val proxy = _InternalProxy(mockSdkCore, mockCoreFeature)
 
         // When
         proxy._telemetry.error(message, stack, kind)
 
         // Then
-        verify(mockTelemetry).error(message, stack, kind)
+        verify(mockRumFeatureScope).sendEvent(
+            mapOf(
+                "type" to "telemetry_error",
+                "message" to message,
+                "stacktrace" to stack,
+                "kind" to kind
+            )
+        )
     }
 
     @Test
@@ -75,14 +93,22 @@ internal class InternalProxyTest {
         @Forgery throwable: Throwable
     ) {
         // Given
-        val mockTelemetry = mock<Telemetry>()
-        val proxy = _InternalProxy(mockTelemetry, mockCoreFeature)
+        val mockSdkCore = mock<SdkCore>()
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        val proxy = _InternalProxy(mockSdkCore, mockCoreFeature)
 
         // When
         proxy._telemetry.error(message, throwable)
 
         // Then
-        verify(mockTelemetry).error(message, throwable)
+        verify(mockRumFeatureScope).sendEvent(
+            mapOf(
+                "type" to "telemetry_error",
+                "message" to message,
+                "throwable" to throwable
+            )
+        )
     }
 
     @Test
@@ -92,7 +118,7 @@ internal class InternalProxyTest {
         // Given
         val mockAppVersionProvider = mock<AppVersionProvider>()
         whenever(mockCoreFeature.packageVersionProvider) doReturn mockAppVersionProvider
-        val proxy = _InternalProxy(telemetry = mock(), mockCoreFeature)
+        val proxy = _InternalProxy(sdkCore = mock(), mockCoreFeature)
 
         // When
         proxy.setCustomAppVersion(version)
