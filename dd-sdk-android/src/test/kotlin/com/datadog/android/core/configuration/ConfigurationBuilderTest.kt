@@ -144,6 +144,7 @@ internal class ConfigurationBuilderTest {
                 plugins = emptyList(),
                 samplingRate = Configuration.DEFAULT_SAMPLING_RATE,
                 telemetrySamplingRate = Configuration.DEFAULT_TELEMETRY_SAMPLING_RATE,
+                telemetryConfigurationSamplingRate = Configuration.DEFAULT_TELEMETRY_CONFIGURATION_SAMPLING_RATE,
                 userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
                     DatadogGesturesTracker(
                         arrayOf(JetpackViewAttributesProvider()),
