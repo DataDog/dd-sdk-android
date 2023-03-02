@@ -2270,8 +2270,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val eventTime = Time()
-        val startedNanos = eventTime.nanoTime - duration
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         GlobalRum.globalAttributes.putAll(attributes)
 
@@ -2667,8 +2666,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope.stopped = true
         val eventTime = Time()
-        val startedNanos = eventTime.nanoTime - duration
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         val fakeActionSent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount)
 
         // When
@@ -2724,8 +2722,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope.stopped = true
         val eventTime = Time()
-        val startedNanos = eventTime.nanoTime - duration
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         val fakeActionSent = RumRawEvent.ActionDropped(testedScope.viewId)
 
         // When
@@ -3243,8 +3240,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val eventTime = Time()
-        val startedNanos = eventTime.nanoTime - duration
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         testedScope.activeActionScope = null
         testedScope.pendingActionCount = 0
 
@@ -6758,8 +6754,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val eventTime = Time()
-        val startedNanos = eventTime.nanoTime - duration
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         GlobalRum.globalAttributes.putAll(attributes)
         whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(false)
