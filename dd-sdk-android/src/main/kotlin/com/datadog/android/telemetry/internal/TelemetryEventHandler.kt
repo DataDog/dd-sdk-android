@@ -7,12 +7,12 @@
 package com.datadog.android.telemetry.internal
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -64,7 +64,8 @@ internal class TelemetryEventHandler(
                         )
                     }
                     TelemetryType.CONFIGURATION -> {
-                        if (event.configuration == null) {
+                        val coreConfiguration = event.coreConfiguration
+                        if (coreConfiguration == null) {
                             createErrorEvent(
                                 datadogContext,
                                 timestamp,
@@ -76,7 +77,7 @@ internal class TelemetryEventHandler(
                             createConfigurationEvent(
                                 datadogContext,
                                 timestamp,
-                                event.configuration
+                                coreConfiguration
                             )
                         }
                     }
@@ -191,12 +192,12 @@ internal class TelemetryEventHandler(
     private fun createConfigurationEvent(
         datadogContext: DatadogContext,
         timestamp: Long,
-        configuration: Configuration?
+        coreConfiguration: TelemetryCoreConfiguration
     ): TelemetryConfigurationEvent {
-        val coreConfig = configuration?.coreConfig
         val traceFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-        val rumConfig = configuration?.rumConfig
-        val crashConfig = configuration?.crashReportConfig
+        val rumConfig = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+            ?.unwrap<RumFeature>()
+            ?.configuration
         val viewTrackingStrategy = when (rumConfig?.viewTrackingStrategy) {
             is ActivityViewTrackingStrategy -> VTS.ACTIVITYVIEWTRACKINGSTRATEGY
             is FragmentViewTrackingStrategy -> VTS.FRAGMENTVIEWTRACKINGSTRATEGY
@@ -223,16 +224,16 @@ internal class TelemetryEventHandler(
                 TelemetryConfigurationEvent.Configuration(
                     sessionSampleRate = rumConfig?.samplingRate?.toLong(),
                     telemetrySampleRate = rumConfig?.telemetrySamplingRate?.toLong(),
-                    useProxy = coreConfig?.proxy != null,
+                    useProxy = coreConfiguration.useProxy,
                     trackFrustrations = rumConfig?.trackFrustrations,
-                    useLocalEncryption = coreConfig?.encryption != null,
+                    useLocalEncryption = coreConfiguration.useLocalEncryption,
                     viewTrackingStrategy = viewTrackingStrategy,
                     trackBackgroundEvents = rumConfig?.backgroundEventTracking,
                     trackInteractions = rumConfig?.userActionTrackingStrategy != null,
-                    trackErrors = crashConfig != null,
+                    trackErrors = coreConfiguration.trackErrors,
                     trackNativeLongTasks = rumConfig?.longTaskTrackingStrategy != null,
-                    batchSize = coreConfig?.batchSize?.windowDurationMs,
-                    batchUploadFrequency = coreConfig?.uploadFrequency?.baseStepMs,
+                    batchSize = coreConfiguration.batchSize,
+                    batchUploadFrequency = coreConfiguration.batchUploadFrequency,
                     mobileVitalsUpdatePeriod = rumConfig?.vitalsMonitorUpdateFrequency?.periodInMs,
                     useTracing = traceFeature != null && isGlobalTracerRegistered(),
                     trackNetworkRequests = trackNetworkRequests

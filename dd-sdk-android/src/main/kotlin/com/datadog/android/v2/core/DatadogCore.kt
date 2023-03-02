@@ -25,9 +25,7 @@ import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
@@ -282,7 +280,7 @@ internal class DatadogCore(
         setupLifecycleMonitorCallback(appContext)
 
         setupShutdownHook()
-        sendConfigurationTelemetryEvent(configuration)
+        sendCoreConfigurationTelemetryEvent(configuration)
     }
 
     private fun initializeCrashReportFeature(configuration: Configuration.Feature.CrashReport?) {
@@ -400,10 +398,18 @@ internal class DatadogCore(
     }
 
     @Suppress("FunctionMaxLength")
-    private fun sendConfigurationTelemetryEvent(configuration: Configuration) {
+    private fun sendCoreConfigurationTelemetryEvent(configuration: Configuration) {
         val runnable = Runnable {
-            val monitor = GlobalRum.get() as? AdvancedRumMonitor
-            monitor?.sendConfigurationTelemetryEvent(configuration)
+            val rumFeature = getFeature(Feature.RUM_FEATURE_NAME) ?: return@Runnable
+            val coreConfigurationEvent = mapOf(
+                "type" to "telemetry_configuration",
+                "track_errors" to (configuration.crashReportConfig != null),
+                "batch_size" to configuration.coreConfig.batchSize.windowDurationMs,
+                "batch_upload_frequency" to configuration.coreConfig.uploadFrequency.baseStepMs,
+                "use_proxy" to (configuration.coreConfig.proxy != null),
+                "use_local_encryption" to (configuration.coreConfig.encryption != null)
+            )
+            rumFeature.sendEvent(coreConfigurationEvent)
         }
         coreFeature.uploadExecutorService.scheduleSafe(
             "Configuration telemetry",

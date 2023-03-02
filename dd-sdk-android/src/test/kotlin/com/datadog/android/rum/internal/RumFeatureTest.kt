@@ -23,6 +23,7 @@ import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
@@ -48,6 +49,7 @@ import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -991,6 +993,45 @@ internal class RumFeatureTest {
 
         verifyZeroInteractions(
             rumMonitor.mockInstance,
+            mockSdkCore
+        )
+    }
+
+    @Test
+    fun `𝕄 submit configuration telemetry 𝕎 onReceive() { telemetry configuration }`(
+        @BoolForgery trackErrors: Boolean,
+        @BoolForgery useProxy: Boolean,
+        @BoolForgery useLocalEncryption: Boolean,
+        @LongForgery(min = 0L) batchSize: Long,
+        @LongForgery(min = 0L) batchUploadFrequency: Long
+    ) {
+        // Given
+        val event = mapOf(
+            "type" to "telemetry_configuration",
+            "track_errors" to trackErrors,
+            "batch_size" to batchSize,
+            "batch_upload_frequency" to batchUploadFrequency,
+            "use_proxy" to useProxy,
+            "use_local_encryption" to useLocalEncryption
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(rumMonitor.mockInstance)
+            .sendConfigurationTelemetryEvent(
+                TelemetryCoreConfiguration(
+                    trackErrors = trackErrors,
+                    batchSize = batchSize,
+                    batchUploadFrequency = batchUploadFrequency,
+                    useProxy = useProxy,
+                    useLocalEncryption = useLocalEncryption
+                )
+            )
+
+        verifyZeroInteractions(
+            logger.mockInternalLogger,
             mockSdkCore
         )
     }

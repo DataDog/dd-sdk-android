@@ -6,19 +6,15 @@
 
 package com.datadog.android.telemetry.internal
 
-import com.datadog.android.core.configuration.BatchSize
-import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.UploadFrequency
-import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
-import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.telemetry.assertj.TelemetryConfigurationEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.assertj.TelemetryDebugEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.assertj.TelemetryErrorEventAssert.Companion.assertThat
@@ -292,20 +288,24 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration with sampling rates}`(
+    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { with RUM config }`(
+        @Forgery fakeRumConfiguration: RumFeature.Configuration,
         forge: Forge
     ) {
         // Given
-        val sessionSampleRate = forge.aLong(0L, 100L)
-        val telemetrySamplingRate = forge.aLong(0L, 100L)
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
-        )
-            .sampleRumSessions(sessionSampleRate.toFloat())
-            .sampleTelemetry(telemetrySamplingRate.toFloat())
-            .build()
-        val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
+        val mockRumFeature = mock<RumFeature>()
+        whenever(mockRumFeature.configuration) doReturn fakeRumConfiguration
+        whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
+
+        val configRawEvent = forge.createRumRawTelemetryConfigurationEvent()
+
+        val expectedViewTrackingStrategy = when (fakeRumConfiguration.viewTrackingStrategy) {
+            is ActivityViewTrackingStrategy -> VTS.ACTIVITYVIEWTRACKINGSTRATEGY
+            is FragmentViewTrackingStrategy -> VTS.FRAGMENTVIEWTRACKINGSTRATEGY
+            is MixedViewTrackingStrategy -> VTS.MIXEDVIEWTRACKINGSTRATEGY
+            is NavigationViewTrackingStrategy -> VTS.NAVIGATIONVIEWTRACKINGSTRATEGY
+            else -> null
+        }
 
         // When
         testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
@@ -315,26 +315,25 @@ internal class TelemetryEventHandlerTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
             assertThat(firstValue)
-                .hasSessionSampleRate(sessionSampleRate)
-                .hasTelemetrySampleRate(telemetrySamplingRate)
+                .hasSessionSampleRate(fakeRumConfiguration.samplingRate.toLong())
+                .hasTelemetrySampleRate(fakeRumConfiguration.telemetrySamplingRate.toLong())
+                .hasTrackLongTasks(fakeRumConfiguration.longTaskTrackingStrategy != null)
+                .hasTrackFrustrations(fakeRumConfiguration.trackFrustrations)
+                .hasViewTrackingStrategy(expectedViewTrackingStrategy)
+                .hasTrackBackgroundEvents(fakeRumConfiguration.backgroundEventTracking)
+                .hasMobileVitalsUpdatePeriod(
+                    fakeRumConfiguration.vitalsMonitorUpdateFrequency.periodInMs
+                )
         }
     }
 
     @Test
-    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration with proxy}`(
+    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { with Core config }`(
+        @Forgery fakeCoreConfiguration: TelemetryCoreConfiguration,
         forge: Forge
     ) {
         // Given
-        val useProxy = forge.aBool()
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
-        ).apply {
-            if (useProxy) {
-                setProxy(mock(), forge.aNullable { mock() })
-            }
-        }.build()
-        val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
+        val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(fakeCoreConfiguration)
 
         // When
         testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
@@ -344,121 +343,25 @@ internal class TelemetryEventHandlerTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
             assertThat(firstValue)
-                .hasUseProxy(useProxy)
-        }
-    }
-
-    @Test
-    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration with local encryption}`(
-        forge: Forge
-    ) {
-        // Given
-        val useLocalEncryption = forge.aBool()
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
-        ).apply {
-            if (useLocalEncryption) {
-                setEncryption(mock())
-            }
-        }.build()
-        val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
-
-        // When
-        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
-
-        // Then
-        argumentCaptor<TelemetryConfigurationEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
-            assertThat(firstValue)
-                .hasUseLocalEncryption(useLocalEncryption)
-        }
-    }
-
-    @Test
-    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration with auto-instrumentation }`(
-        forge: Forge
-    ) {
-        // Given
-        val vts = forge.aValueFrom(VTS::class.java)
-        val trackErrors = forge.aBool()
-        val trackFrustrations = forge.aBool()
-        val trackBackgroundEvents = forge.aBool()
-        val trackLongTasks = forge.aBool()
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = trackErrors,
-            rumEnabled = true
-        )
-            .trackFrustrations(trackFrustrations)
-            .useViewTrackingStrategy(forge.aViewTrackingStrategy(vts))
-            .trackBackgroundRumEvents(trackBackgroundEvents)
-            .trackLongTasks(if (trackLongTasks) forge.aPositiveLong() else forge.aNegativeLong())
-            .build()
-        val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
-
-        // When
-        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
-
-        // Then
-        argumentCaptor<TelemetryConfigurationEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
-            assertThat(firstValue)
-                .hasTrackErrors(trackErrors)
-                .hasTrackLongTasks(trackLongTasks)
-                .hasTrackFrustrations(trackFrustrations)
-                .hasViewTrackingStrategy(vts)
-                .hasTrackBackgroundEvents(trackBackgroundEvents)
-        }
-    }
-
-    @Test
-    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration with rum settings }`(
-        forge: Forge
-    ) {
-        // Given
-        val vitalsUpdateFrequency = forge.aValueFrom(VitalsUpdateFrequency::class.java)
-        val batchSize = forge.aValueFrom(BatchSize::class.java)
-        val uploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
-        )
-            .setBatchSize(batchSize)
-            .setUploadFrequency(uploadFrequency)
-            .setVitalsUpdateFrequency(vitalsUpdateFrequency)
-            .build()
-        val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
-
-        // When
-        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
-
-        // Then
-        argumentCaptor<TelemetryConfigurationEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
-            assertThat(firstValue)
-                .hasBatchSize(batchSize.windowDurationMs)
-                .hasBatchUploadFrequency(uploadFrequency.baseStepMs)
-                .hasMobileVitalsUpdatePeriod(vitalsUpdateFrequency.periodInMs)
+                .hasUseProxy(fakeCoreConfiguration.useProxy)
+                .hasUseLocalEncryption(fakeCoreConfiguration.useLocalEncryption)
+                .hasTrackErrors(fakeCoreConfiguration.trackErrors)
+                .hasBatchSize(fakeCoreConfiguration.batchSize)
+                .hasBatchUploadFrequency(fakeCoreConfiguration.batchUploadFrequency)
         }
     }
 
     @Test
     fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration with tracing settings }`(
+        @Forgery fakeConfiguration: TelemetryCoreConfiguration,
         @BoolForgery useTracing: Boolean,
         forge: Forge
     ) {
         // Given
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
-        ).build()
         if (useTracing || forge.aBool()) {
             whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         }
-        val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
+        val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(fakeConfiguration)
         if (useTracing) {
             GlobalTracer.registerIfAbsent(mock<Tracer>())
         }
@@ -477,15 +380,12 @@ internal class TelemetryEventHandlerTest {
 
     @Test
     fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration with interceptor }`(
+        @Forgery fakeConfiguration: TelemetryCoreConfiguration,
         forge: Forge
     ) {
         // Given
         val trackNetworkRequests = forge.aBool()
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
-        ).build()
-        val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
+        val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(fakeConfiguration)
 
         // When
         if (trackNetworkRequests) {
@@ -830,31 +730,6 @@ internal class TelemetryEventHandlerTest {
 
     // region Forgeries
 
-    private fun Forge.aViewTrackingStrategy(vts: VTS): ViewTrackingStrategy {
-        return when (vts) {
-            VTS.ACTIVITYVIEWTRACKINGSTRATEGY -> ActivityViewTrackingStrategy(
-                trackExtras = aBool(),
-                componentPredicate = mock()
-            )
-            VTS.FRAGMENTVIEWTRACKINGSTRATEGY -> FragmentViewTrackingStrategy(
-                trackArguments = aBool(),
-                supportFragmentComponentPredicate = mock(),
-                defaultFragmentComponentPredicate = mock()
-            )
-            VTS.MIXEDVIEWTRACKINGSTRATEGY -> MixedViewTrackingStrategy(
-                trackExtras = aBool(),
-                componentPredicate = mock(),
-                supportFragmentComponentPredicate = mock(),
-                defaultFragmentComponentPredicate = mock()
-            )
-            VTS.NAVIGATIONVIEWTRACKINGSTRATEGY -> NavigationViewTrackingStrategy(
-                navigationViewId = anInt(),
-                trackArguments = aBool(),
-                componentPredicate = mock()
-            )
-        }
-    }
-
     private fun Forge.createRumRawTelemetryEvent(): RumRawEvent.SendTelemetry {
         return anElementFrom(
             createRumRawTelemetryDebugEvent(),
@@ -885,7 +760,7 @@ internal class TelemetryEventHandlerTest {
     }
 
     private fun Forge.createRumRawTelemetryConfigurationEvent(
-        configuration: Configuration? = null
+        configuration: TelemetryCoreConfiguration? = null
     ): RumRawEvent.SendTelemetry {
         return RumRawEvent.SendTelemetry(
             TelemetryType.CONFIGURATION,

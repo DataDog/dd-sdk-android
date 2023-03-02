@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumPerformanceMetric
@@ -15,6 +14,7 @@ import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.internal.TelemetryType
 
 internal sealed class RumRawEvent {
@@ -201,7 +201,7 @@ internal sealed class RumRawEvent {
         val message: String,
         val stack: String?,
         val kind: String?,
-        val configuration: Configuration?,
+        val coreConfiguration: TelemetryCoreConfiguration?,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 }

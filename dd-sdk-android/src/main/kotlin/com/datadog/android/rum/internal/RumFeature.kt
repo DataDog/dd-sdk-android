@@ -69,6 +69,7 @@ import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.v2.api.EnvironmentProvider
 import com.datadog.android.v2.api.Feature
@@ -247,6 +248,7 @@ internal class RumFeature(
             }
             "telemetry_error" -> logTelemetryError(event)
             "telemetry_debug" -> logTelemetryDebug(event)
+            "telemetry_configuration" -> logTelemetryConfiguration(event)
             else -> {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -455,6 +457,13 @@ internal class RumFeature(
             return
         }
         telemetry.debug(message)
+    }
+
+    private fun logTelemetryConfiguration(event: Map<*, *>) {
+        TelemetryCoreConfiguration.fromEvent(event)?.let {
+            (GlobalRum.get() as? AdvancedRumMonitor)
+                ?.sendConfigurationTelemetryEvent(it)
+        }
     }
 
     // endregion
