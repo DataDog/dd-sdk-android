@@ -13,6 +13,7 @@ import android.os.Build
 import android.view.WindowManager
 import androidx.annotation.WorkerThread
 import androidx.fragment.app.Fragment
+import androidx.navigation.NavController
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
@@ -34,6 +35,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
@@ -990,6 +992,10 @@ internal open class RumViewScope(
             is Activity -> key
             is Fragment -> key.activity
             is android.app.Fragment -> key.activity
+            is NavigationViewTrackingStrategy.NavigationKey -> {
+                navControllerActivityField?.isAccessible = true
+                navControllerActivityField?.get(key.controller) as? Activity
+            }
             else -> null
         } ?: return
 
@@ -1085,6 +1091,10 @@ internal open class RumViewScope(
 
         private fun invertValue(value: Double): Double {
             return if (value == 0.0) 0.0 else 1.0 / value
+        }
+
+        val navControllerActivityField = NavController::class.java.declaredFields.firstOrNull {
+            it.type == Activity::class.java
         }
     }
 }
