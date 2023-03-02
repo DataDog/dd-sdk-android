@@ -9,8 +9,7 @@ package com.datadog.android.ndk.com.datadog.android.ndk
 import android.content.Context
 import com.datadog.android.ndk.NdkCrashReportsFeature
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.v2.api.EnvironmentProvider
-import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
@@ -73,16 +72,15 @@ class NdkCrashReportsFeatureTest {
         trackingConsent: TrackingConsent
     ) {
         // GIVEN
-        val mockSdkCore = mock<SdkCore>()
-        val mockEnvProvider = mock<EnvironmentProvider>()
+        val mockSdkCore = mock<InternalSdkCore>()
         val mockContext: Context = mock()
-        whenever(mockEnvProvider.rootStorageDir) doReturn tempDir
-        whenever(mockEnvProvider.trackingConsent) doReturn trackingConsent
+        whenever(mockSdkCore.rootStorageDir) doReturn tempDir
+        whenever(mockSdkCore.trackingConsent) doReturn trackingConsent
         testedFeature.setFieldValue("nativeLibraryLoaded", true)
 
         // WHEN
         try {
-            testedFeature.onInitialize(mockSdkCore, mockContext, mockEnvProvider)
+            testedFeature.onInitialize(mockSdkCore, mockContext)
         } catch (e: UnsatisfiedLinkError) {
             // Do nothing. Just to avoid the NDK linkage error.
         }
@@ -98,15 +96,14 @@ class NdkCrashReportsFeatureTest {
         trackingConsent: TrackingConsent
     ) {
         // GIVEN
-        val mockSdkCore = mock<SdkCore>()
-        val mockEnvProvider = mock<EnvironmentProvider>()
+        val mockSdkCore = mock<InternalSdkCore>()
         val mockContext: Context = mock()
-        whenever(mockEnvProvider.rootStorageDir) doReturn tempDir
-        whenever(mockEnvProvider.trackingConsent) doReturn trackingConsent
+        whenever(mockSdkCore.rootStorageDir) doReturn tempDir
+        whenever(mockSdkCore.trackingConsent) doReturn trackingConsent
 
         // WHEN
         try {
-            testedFeature.onInitialize(mockSdkCore, mockContext, mockEnvProvider)
+            testedFeature.onInitialize(mockSdkCore, mockContext)
         } catch (e: UnsatisfiedLinkError) {
             // Do nothing. Just to avoid the NDK linkage error.
         }

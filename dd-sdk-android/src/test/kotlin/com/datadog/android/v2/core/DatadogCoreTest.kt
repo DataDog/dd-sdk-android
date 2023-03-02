@@ -18,6 +18,8 @@ import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
+import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
@@ -53,11 +55,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.io.File
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -401,6 +405,99 @@ internal class DatadogCoreTest {
 
         // Then
         assertThat(networkInfo).isSameAs(fakeNetworkInfo)
+    }
+
+    @Test
+    fun `𝕄 return tracking consent 𝕎 trackingConsent()`(
+        @Forgery fakeTrackingConsent: TrackingConsent
+    ) {
+        // Given
+        testedCore.coreFeature = mock()
+        val mockConsentProvider = mock<ConsentProvider>()
+        whenever(mockConsentProvider.getConsent()) doReturn fakeTrackingConsent
+        whenever(testedCore.coreFeature.trackingConsentProvider) doReturn mockConsentProvider
+
+        // When
+        val trackingConsent = testedCore.trackingConsent
+
+        // When + Then
+        assertThat(trackingConsent).isEqualTo(fakeTrackingConsent)
+    }
+
+    @Test
+    fun `𝕄 return root storage dir 𝕎 rootStorageDir()`() {
+        // When + Then
+        assertThat(testedCore.rootStorageDir).isEqualTo(testedCore.coreFeature.storageDir)
+    }
+
+    @Test
+    fun `𝕄 persist the event into the NDK crash folder 𝕎 writeLastViewEvent(){ViewEvent+dir exists}`(
+        @TempDir tempStorageDir: File,
+        @StringForgery viewEvent: String
+    ) {
+        // Given
+        val fakeViewEvent = viewEvent.toByteArray()
+
+        val ndkReportsFolder = File(
+            tempStorageDir,
+            DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME
+        )
+        ndkReportsFolder.mkdir()
+        val mockCoreFeature = mock<CoreFeature>()
+        whenever(mockCoreFeature.storageDir) doReturn tempStorageDir
+
+        val mockEncryption = mock<Encryption>()
+        whenever(mockCoreFeature.localDataEncryption) doReturn mockEncryption
+        whenever(mockEncryption.encrypt(fakeViewEvent)) doReturn fakeViewEvent.reversedArray()
+
+        testedCore.coreFeature = mockCoreFeature
+
+        // When
+        testedCore.writeLastViewEvent(fakeViewEvent)
+
+        // Then
+        val lastViewEventFile = File(
+            ndkReportsFolder,
+            DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME
+        )
+        assertThat(lastViewEventFile).exists()
+
+        val fileContent = lastViewEventFile.readBytes()
+        // file will have batch file format, so beginning will contain some metadata,
+        // we need to skip it for the comparison
+        val payload = fileContent.takeLast(fakeViewEvent.size).toByteArray()
+        assertThat(payload)
+            .isEqualTo(fakeViewEvent.reversedArray())
+    }
+
+    @Test
+    fun `𝕄 log info when writing last view event 𝕎 writeLastViewEvent(){ ViewEvent+no crash dir }`(
+        @TempDir tempStorageDir: File,
+        @StringForgery viewEvent: String
+    ) {
+        // Given
+        val ndkReportsFolder = File(
+            tempStorageDir,
+            DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME
+        )
+        val mockCoreFeature = mock<CoreFeature>()
+        whenever(mockCoreFeature.storageDir) doReturn tempStorageDir
+
+        testedCore.coreFeature = mockCoreFeature
+
+        // When
+        testedCore.writeLastViewEvent(viewEvent.toByteArray())
+
+        // Then
+        assertThat(ndkReportsFolder).doesNotExist()
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.MAINTAINER,
+            DatadogCore.LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(
+                Locale.US,
+                ndkReportsFolder
+            )
+        )
     }
 
     @Test

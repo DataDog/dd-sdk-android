@@ -7,8 +7,6 @@
 package com.datadog.android.rum.internal.domain
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.file.FileWriter
-import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.serializeToByteArray
 import com.datadog.android.rum.GlobalRum
@@ -21,15 +19,13 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
-import java.io.File
-import java.util.Locale
 
 internal class RumDataWriter(
     private val serializer: Serializer<Any>,
-    private val fileWriter: FileWriter,
-    private val internalLogger: InternalLogger,
-    private val lastViewEventFile: File
+    private val sdkCore: InternalSdkCore,
+    private val internalLogger: InternalLogger
 ) : DataWriter<Any> {
 
     // region DataWriter
@@ -77,18 +73,7 @@ internal class RumDataWriter(
 
     @WorkerThread
     private fun persistViewEvent(data: ByteArray) {
-        // directory structure may not exist: currently it is a file which is located in NDK reports
-        // folder, so if NDK reporting plugin is not initialized, this NDK reports dir won't exist
-        // as well (and no need to write).
-        if (lastViewEventFile.parentFile?.existsSafe() == true) {
-            fileWriter.writeData(lastViewEventFile, data, false)
-        } else {
-            internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.MAINTAINER,
-                LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(Locale.US, lastViewEventFile.parent)
-            )
-        }
+        sdkCore.writeLastViewEvent(data)
     }
 
     private fun notifyEventSent(viewId: String, storageEvent: StorageEvent) {
@@ -96,11 +81,6 @@ internal class RumDataWriter(
         if (rumMonitor is AdvancedRumMonitor) {
             rumMonitor.eventSent(viewId, storageEvent)
         }
-    }
-
-    companion object {
-        const val LAST_VIEW_EVENT_DIR_MISSING_MESSAGE = "Directory structure %s for writing" +
-            " last view event doesn't exist."
     }
 
     // endregion

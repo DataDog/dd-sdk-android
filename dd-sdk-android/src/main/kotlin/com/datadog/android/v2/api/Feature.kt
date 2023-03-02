@@ -23,12 +23,10 @@ interface Feature {
      *
      * @param sdkCore Instance of [SdkCore] this feature is registering with.
      * @param appContext Application context.
-     * @param environmentProvider Low-level environment data provider.
      */
     fun onInitialize(
         sdkCore: SdkCore,
-        appContext: Context,
-        environmentProvider: EnvironmentProvider
+        appContext: Context
     )
 
     /**
