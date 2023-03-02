@@ -24,6 +24,7 @@ internal class ConfigurationRumForgeryFactory :
             plugins = forge.aList { mock() },
             samplingRate = forge.aFloat(0f, 100f),
             telemetrySamplingRate = forge.aFloat(0f, 100f),
+            telemetryConfigurationSamplingRate = forge.aFloat(0f, 100f),
             userActionTrackingStrategy = mock(),
             viewTrackingStrategy = forge.anElementFrom(
                 ActivityViewTrackingStrategy(forge.aBool(), mock()),
