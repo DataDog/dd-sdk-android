@@ -77,15 +77,24 @@ internal class RumViewManagerScope(
 
     @WorkerThread
     private fun startApplicationLaunchView(event: RumRawEvent, writer: DataWriter<Any>) {
-        val applicationLaunchViewTimeNs = appStartTimeProvider.appStartTimeNs
+        val processStartTime = appStartTimeProvider.appStartTimeNs
+        // processStartTime is the time in nanoseconds since VM start. To get a timestamp, we want
+        // to convert it to milliseconds since epoch provided by System.currentTimeMillis.
+        // To do so, we take the offset of those times in the event time, which should be consistent,
+        // then add that to our processStartTime to get the correct value.
+        val timestampNs = (
+            TimeUnit.MILLISECONDS.toNanos(event.eventTime.timestamp) -
+                event.eventTime.nanoTime
+            ) + processStartTime
         val applicationLaunchViewTime = Time(
-            timestamp = TimeUnit.NANOSECONDS.toMillis(applicationLaunchViewTimeNs),
-            nanoTime = applicationLaunchViewTimeNs
+            timestamp = TimeUnit.NANOSECONDS.toMillis(timestampNs),
+            nanoTime = processStartTime
         )
         val viewScope = createAppLaunchViewScope(applicationLaunchViewTime)
+        val startupTime = event.eventTime.nanoTime - processStartTime
         applicationDisplayed = true
         viewScope.handleEvent(
-            RumRawEvent.ApplicationStarted(event.eventTime, applicationLaunchViewTimeNs),
+            RumRawEvent.ApplicationStarted(applicationLaunchViewTime, startupTime),
             writer
         )
         childrenScopes.add(viewScope)

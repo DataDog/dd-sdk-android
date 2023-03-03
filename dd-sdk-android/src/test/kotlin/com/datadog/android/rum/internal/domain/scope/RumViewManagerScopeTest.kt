@@ -517,13 +517,18 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        val appStartTimeMs = TimeUnit.NANOSECONDS.toMillis(appStartTimeNs)
+        val timestampNs = (
+            TimeUnit.MILLISECONDS.toNanos(fakeEvent.eventTime.timestamp) -
+                fakeEvent.eventTime.nanoTime
+            ) +
+            appStartTimeNs
+        val timestampMs = TimeUnit.NANOSECONDS.toMillis((timestampNs))
         val scopeCount = if (fakeEvent is RumRawEvent.StartView) 2 else 1
         assertThat(testedScope.childrenScopes).hasSize(scopeCount)
         assertThat(testedScope.childrenScopes[0])
             .isInstanceOfSatisfying(RumViewScope::class.java) {
                 assertThat(it.eventTimestamp)
-                    .isEqualTo(resolveExpectedTimestamp(appStartTimeMs))
+                    .isEqualTo(resolveExpectedTimestamp(timestampMs))
                 assertThat(it.keyRef.get()).isEqualTo(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_URL)
                 assertThat(it.name).isEqualTo(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_NAME)
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
@@ -647,12 +652,18 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        val appStartTimeMs = TimeUnit.NANOSECONDS.toMillis(appStartTimeNs)
+        val appStartTimestamp = TimeUnit.NANOSECONDS.toMillis(
+            (
+                TimeUnit.MILLISECONDS.toNanos(fakeEvent.eventTime.timestamp) -
+                    fakeEvent.eventTime.nanoTime
+                ) +
+                appStartTimeNs
+        )
         argumentCaptor<ActionEvent> {
             verify(mockWriter, atLeastOnce()).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue.action.type).isEqualTo(ActionEvent.ActionEventActionType.APPLICATION_START)
             // Application start event occurse at the start time
-            assertThat(firstValue.date).isEqualTo(resolveExpectedTimestamp(appStartTimeMs))
+            assertThat(firstValue.date).isEqualTo(resolveExpectedTimestamp(appStartTimestamp))
 
             // Duration lasts until the first event is sent to RUM (whatever that is)
             val loadingTime = fakeEvent.eventTime.nanoTime - appStartTimeNs
