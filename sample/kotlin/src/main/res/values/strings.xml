@@ -114,4 +114,5 @@
     <string name="app_compat_switch">App Compat Switch</string>
     <string name="material_switch">Material Switch</string>
     <string name="dropdowns_and_switchers_components">Dropdowns and Switchers Components</string>
+    <string name="planet">Planet</string>
 </resources>
