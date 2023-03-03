@@ -6,30 +6,37 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.callback
 
+import android.app.Activity
 import android.view.MotionEvent
 import android.view.Window
 import com.datadog.android.sessionreplay.internal.processor.Processor
+import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
+import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
+import java.lang.ref.WeakReference
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
 
 @Suppress("TooGenericExceptionCaught")
 internal class RecorderWindowCallback(
     private val processor: Processor,
-    private val pixelsDensity: Float,
     internal val wrappedCallback: Window.Callback,
     private val timeProvider: TimeProvider,
+    private val viewOnDrawInterceptor: ViewOnDrawInterceptor,
+    ownerActivity: Activity,
     private val copyEvent: (MotionEvent) -> MotionEvent = {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         MotionEvent.obtain(it)
     },
     private val motionEventUtils: MotionEventUtils = MotionEventUtils,
     private val motionUpdateThresholdInNs: Long = MOTION_UPDATE_DELAY_THRESHOLD_NS,
-    private val flushPositionBufferThresholdInNs: Long = FLUSH_BUFFER_THRESHOLD_NS
+    private val flushPositionBufferThresholdInNs: Long = FLUSH_BUFFER_THRESHOLD_NS,
+    private val windowInspector: WindowInspector = WindowInspector
 ) : Window.Callback by wrappedCallback {
-
+    private val pixelsDensity = ownerActivity.resources.displayMetrics.density
+    internal val activeActivityReference: WeakReference<Activity> = WeakReference(ownerActivity)
     internal var pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
     private var lastOnMoveUpdateTimeInNs: Long = 0L
     private var lastPerformedFlushTimeInNs: Long = System.nanoTime()
@@ -121,6 +128,18 @@ internal class RecorderWindowCallback(
         processor.processTouchEventsRecords(ArrayList(pointerInteractions))
         pointerInteractions.clear()
         lastPerformedFlushTimeInNs = System.nanoTime()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        activeActivityReference.get()?.let {
+            val rootViews = windowInspector.getGlobalWindowViews()
+            if (rootViews.isNotEmpty()) {
+                // a new window was added or removed so we stop recording the previous root views
+                // and we start recording the new ones.
+                viewOnDrawInterceptor.stopIntercepting()
+                viewOnDrawInterceptor.intercept(rootViews, it)
+            }
+        }
     }
 
     // endregion

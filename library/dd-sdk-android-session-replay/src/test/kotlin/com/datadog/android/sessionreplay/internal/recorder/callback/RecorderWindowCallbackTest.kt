@@ -6,10 +6,16 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.callback
 
+import android.app.Activity
+import android.content.res.Resources
+import android.util.DisplayMetrics
 import android.view.MotionEvent
+import android.view.View
 import android.view.Window
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.processor.Processor
+import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
+import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileIncrementalData
@@ -17,9 +23,11 @@ import com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord
 import com.datadog.tools.unit.forge.aThrowable
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -54,7 +62,16 @@ internal class RecorderWindowCallbackTest {
     lateinit var mockWrappedCallback: Window.Callback
 
     @Mock
+    lateinit var mockViewOnDrawInterceptor: ViewOnDrawInterceptor
+
+    @Mock
     lateinit var mockTimeProvider: TimeProvider
+
+    @Mock
+    lateinit var mockOwnerActivity: Activity
+
+    @Mock
+    lateinit var mockWindowInspector: WindowInspector
 
     @LongForgery(min = 0)
     var fakeTimestamp: Long = 0L
@@ -71,20 +88,27 @@ internal class RecorderWindowCallbackTest {
 
     @BeforeEach
     fun `set up`() {
+        val mockResources = mock<Resources> {
+            val displayMetrics = DisplayMetrics().apply { density = fakeDensity.toFloat() }
+            whenever(it.displayMetrics).thenReturn(displayMetrics)
+        }
+        whenever(mockOwnerActivity.resources).thenReturn(mockResources)
         whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTimestamp)
         testedWindowCallback = RecorderWindowCallback(
             mockProcessor,
-            fakeDensity.toFloat(),
             mockWrappedCallback,
             mockTimeProvider,
+            mockViewOnDrawInterceptor,
+            mockOwnerActivity,
             copyEvent = { it },
             mockEventUtils,
             TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS,
-            TEST_FLUSH_BUFFER_THRESHOLD_NS
+            TEST_FLUSH_BUFFER_THRESHOLD_NS,
+            mockWindowInspector
         )
     }
 
-    // region Unit Tests
+    // region Touch Events
 
     @Test
     fun `M delegate to the wrappedCallback W onTouchEvent`(forge: Forge) {
@@ -330,6 +354,52 @@ internal class RecorderWindowCallbackTest {
         val expectedRecords = fakeEvent1Records + fakeEvent2Records + fakeEvent3Records
         verify(mockProcessor).processTouchEventsRecords(expectedRecords)
         assertThat(testedWindowCallback.pointerInteractions).isEmpty()
+    }
+
+    // endregion
+
+    // region Window focus change
+
+    @Test
+    fun `M intercept the onDraw for the new decorViews W window focus changed`(forge: Forge) {
+        // Given
+        val fakeDecorViews: List<View> = forge.aList { mock() }
+        whenever(mockWindowInspector.getGlobalWindowViews()).thenReturn(fakeDecorViews)
+
+        // When
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+
+        // Then
+        inOrder(mockViewOnDrawInterceptor) {
+            verify(mockViewOnDrawInterceptor).stopIntercepting()
+            verify(mockViewOnDrawInterceptor).intercept(fakeDecorViews, mockOwnerActivity)
+        }
+    }
+
+    @Test
+    fun `M do nothing W window focus changed {decorViews could not be fetched}`(forge: Forge) {
+        // Given
+        whenever(mockWindowInspector.getGlobalWindowViews()).thenReturn(emptyList())
+
+        // When
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+
+        // Then
+        verifyZeroInteractions(mockViewOnDrawInterceptor)
+    }
+
+    @Test
+    fun `M do nothing W window focus changed {no owner activity}`(forge: Forge) {
+        // Given
+        val fakeDecorViews: List<View> = forge.aList { mock() }
+        whenever(mockWindowInspector.getGlobalWindowViews()).thenReturn(fakeDecorViews)
+        testedWindowCallback.activeActivityReference.clear()
+
+        // When
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+
+        // Then
+        verifyZeroInteractions(mockViewOnDrawInterceptor)
     }
 
     // endregion
