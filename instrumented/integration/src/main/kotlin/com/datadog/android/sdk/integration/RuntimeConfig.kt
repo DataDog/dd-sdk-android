@@ -8,6 +8,7 @@ package com.datadog.android.sdk.integration
 
 import android.os.Build
 import com.datadog.android.Datadog
+import com.datadog.android._InternalProxy
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
@@ -69,6 +70,9 @@ internal object RuntimeConfig {
         return Configuration.Builder(
             crashReportsEnabled = true
         )
+            .apply {
+                _InternalProxy.allowClearTextHttp(this)
+            }
             .setUploadFrequency(UploadFrequency.FREQUENT)
     }
 

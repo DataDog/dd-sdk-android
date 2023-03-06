@@ -55,6 +55,7 @@ class com.datadog.android._InternalProxy
   fun setCustomAppVersion(String)
   companion object 
     fun setTelemetryConfigurationEventMapper(com.datadog.android.rum.internal.RumFeature.Builder, com.datadog.android.event.EventMapper<com.datadog.android.telemetry.model.TelemetryConfigurationEvent>): com.datadog.android.rum.internal.RumFeature.Builder
+    fun allowClearTextHttp(com.datadog.android.core.configuration.Configuration.Builder): com.datadog.android.core.configuration.Configuration.Builder
 enum com.datadog.android.core.configuration.BatchSize
   constructor(Long)
   - SMALL

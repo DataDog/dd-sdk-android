@@ -209,6 +209,13 @@ internal constructor(
             return this
         }
 
+        internal fun allowClearTextHttp(): Builder {
+            coreConfig = coreConfig.copy(
+                needsClearTextHttp = true
+            )
+            return this
+        }
+
         private fun checkCustomEndpoint(endpoint: String) {
             if (endpoint.startsWith("http://")) {
                 coreConfig = coreConfig.copy(needsClearTextHttp = true)
