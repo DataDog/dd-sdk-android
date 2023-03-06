@@ -30,4 +30,25 @@
         android:textColor="@android:color/holo_red_dark"
         android:text="@string/material_switch" />
 
+    <Spinner
+        app:layout_constraintTop_toBottomOf="@id/material_switcher"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/default_spinner"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:prompt="@string/planet"
+        android:text="@string/default_spinner" />
+
+    <androidx.appcompat.widget.AppCompatSpinner
+        app:layout_constraintTop_toBottomOf="@id/default_spinner"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/app_compat_spinner"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:prompt="@string/planet"
+        android:text="@string/app_compat_spinner" />
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>
