@@ -10,6 +10,7 @@ import android.app.Application
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.util.Log
+import androidx.annotation.WorkerThread
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
@@ -20,12 +21,16 @@ import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.persistence.file.FileWriter
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
+import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
@@ -35,6 +40,7 @@ import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.ContextProvider
+import java.io.File
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -68,6 +74,13 @@ internal class DatadogCore(
                 null
             }
         }
+
+    private val ndkLastViewEventFileWriter: FileWriter by lazy {
+        BatchFileReaderWriter.create(
+            internalLogger = internalLogger,
+            encryption = coreFeature.localDataEncryption
+        )
+    }
 
     init {
         val isDebug = isAppDebuggable(context)
@@ -112,9 +125,6 @@ internal class DatadogCore(
     /** @inheritDoc */
     override val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver
         get() = coreFeature.firstPartyHostHeaderTypeResolver
-
-    override val networkInfo: NetworkInfo
-        get() = coreFeature.networkInfoProvider.getLatestNetworkInfo()
 
     /** @inheritDoc */
     override fun registerFeature(feature: Feature) {
@@ -243,6 +253,36 @@ internal class DatadogCore(
 
     // endregion
 
+    // region InternalSdkCore
+
+    override val networkInfo: NetworkInfo
+        get() = coreFeature.networkInfoProvider.getLatestNetworkInfo()
+
+    override val trackingConsent: TrackingConsent
+        get() = coreFeature.trackingConsentProvider.getConsent()
+
+    override val rootStorageDir: File
+        get() = coreFeature.storageDir
+
+    @WorkerThread
+    override fun writeLastViewEvent(data: ByteArray) {
+        // directory structure may not exist: currently it is a file which is located in NDK reports
+        // folder, so if NDK reporting plugin is not initialized, this NDK reports dir won't exist
+        // as well (and no need to write).
+        val lastViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
+        if (lastViewEventFile.parentFile?.existsSafe() == true) {
+            ndkLastViewEventFileWriter.writeData(lastViewEventFile, data, false)
+        } else {
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.MAINTAINER,
+                LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(Locale.US, lastViewEventFile.parent)
+            )
+        }
+    }
+
+    // endregion
+
     // region Internal Initialization
 
     private fun initialize(
@@ -301,7 +341,7 @@ internal class DatadogCore(
                 )
                 return
             }
-            val rumFeature = RumFeature(rumApplicationId, configuration, coreFeature)
+            val rumFeature = RumFeature(rumApplicationId, configuration)
             registerFeature(rumFeature)
         }
     }
@@ -442,6 +482,9 @@ internal class DatadogCore(
             "Cannot add event receiver for feature \"%s\", it is not registered."
         internal const val EVENT_RECEIVER_ALREADY_EXISTS =
             "Feature \"%s\" already has event receiver registered, overwriting it."
+
+        const val LAST_VIEW_EVENT_DIR_MISSING_MESSAGE = "Directory structure %s for writing" +
+            " last view event doesn't exist."
 
         internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
     }

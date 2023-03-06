@@ -7,7 +7,6 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
-import com.datadog.android.v2.api.EnvironmentProvider
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.SdkCore
 import java.util.concurrent.atomic.AtomicBoolean
@@ -24,8 +23,7 @@ internal class CrashReportsFeature : Feature {
 
     override fun onInitialize(
         sdkCore: SdkCore,
-        appContext: Context,
-        environmentProvider: EnvironmentProvider
+        appContext: Context
     ) {
         this.sdkCore = sdkCore
 

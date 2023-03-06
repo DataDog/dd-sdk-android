@@ -73,7 +73,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `𝕄 initialize writer 𝕎 initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // Then
         assertThat(testedFeature.dataWriter)
@@ -88,7 +88,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // When
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // Then
         assertThat(testedFeature.sessionReplayCallback)
@@ -103,7 +103,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // When
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // Then
         verify(mockSdkCore).setEventReceiver(
@@ -115,7 +115,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M register the Session Replay lifecycle callback W initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // Then
         verify(mockSessionReplayLifecycleCallback)
@@ -125,7 +125,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M unregister the Session Replay lifecycle callback W onStop()`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
         testedFeature.onStop()
@@ -138,7 +138,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M reset the Session Replay lifecycle callback W onStop()`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
         testedFeature.onStop()
@@ -151,7 +151,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M unregister the SessionReplayCallback W stopRecording() { was recording }`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
         testedFeature.stopRecording()
@@ -165,7 +165,7 @@ internal class SessionReplayFeatureTest {
     fun `M unregister only once the SessionReplayCallback W stopRecording() { multi threads }`() {
         // Given
         val countDownLatch = CountDownLatch(3)
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
         repeat(3) {
@@ -187,7 +187,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M do nothing W stopRecording() { was already stopped }`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
         testedFeature.stopRecording()
 
         // When
@@ -204,7 +204,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M do nothing W stopRecording() { initialize without Application context }`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, mock(), mock())
+        testedFeature.onInitialize(mockSdkCore, mock())
 
         // When
         testedFeature.stopRecording()
@@ -216,7 +216,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M register the SessionReplayCallback W startRecording() { was stopped before }`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
         testedFeature.stopRecording()
 
         // When
@@ -231,7 +231,7 @@ internal class SessionReplayFeatureTest {
     fun `M register only once the SessionReplayCallback W startRecording() { multi threads }`() {
         // Given
         val countDownLatch = CountDownLatch(3)
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
         repeat(3) {
@@ -250,7 +250,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M do nothing W startRecording() { was already started before }`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
         testedFeature.startRecording()
@@ -263,7 +263,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M do nothing W startRecording() { initialize without Application context }`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, mock(), mock())
+        testedFeature.onInitialize(mockSdkCore, mock())
 
         // When
         testedFeature.startRecording()
@@ -290,7 +290,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M stopRecording W rum session updated { session not tracked }`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
         val rumSessionUpdateBusMessage = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                 SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
@@ -313,7 +313,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M startRecording W rum session updated { session tracked }`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance, mock())
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
         testedFeature.stopRecording()
         val rumSessionUpdateBusMessage = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to

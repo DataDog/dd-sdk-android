@@ -10,10 +10,10 @@ import android.content.Context
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
-import com.datadog.android.v2.api.EnvironmentProvider
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.InternalSdkCore
 import java.io.File
 import java.lang.NullPointerException
 
@@ -29,15 +29,15 @@ class NdkCrashReportsFeature : Feature, TrackingConsentProviderCallback {
     // region Feature
     override fun onInitialize(
         sdkCore: SdkCore,
-        appContext: Context,
-        environmentProvider: EnvironmentProvider
+        appContext: Context
     ) {
         loadNativeLibrary()
         if (!nativeLibraryLoaded) {
             return
         }
+        val internalSdkCore = sdkCore as InternalSdkCore
         val ndkCrashesDirs = File(
-            environmentProvider.rootStorageDir,
+            internalSdkCore.rootStorageDir,
             NDK_CRASH_REPORTS_FOLDER
         )
         try {
@@ -53,7 +53,7 @@ class NdkCrashReportsFeature : Feature, TrackingConsentProviderCallback {
         }
         registerSignalHandler(
             ndkCrashesDirs.absolutePath,
-            consentToInt(environmentProvider.trackingConsent)
+            consentToInt(internalSdkCore.trackingConsent)
         )
     }
 

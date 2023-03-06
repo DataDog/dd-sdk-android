@@ -429,15 +429,12 @@ enum com.datadog.android.trace.TracingHeaderType
   - B3
   - B3MULTI
   - TRACECONTEXT
-interface com.datadog.android.v2.api.EnvironmentProvider
-  val trackingConsent: com.datadog.android.privacy.TrackingConsent
-  val rootStorageDir: java.io.File
 interface com.datadog.android.v2.api.EventBatchWriter
   fun currentMetadata(): ByteArray?
   fun write(ByteArray, ByteArray?): Boolean
 interface com.datadog.android.v2.api.Feature
   val name: String
-  fun onInitialize(SdkCore, android.content.Context, EnvironmentProvider)
+  fun onInitialize(SdkCore, android.content.Context)
   fun onStop()
   companion object 
     const val LOGS_FEATURE_NAME: String
@@ -541,6 +538,9 @@ data class com.datadog.android.v2.api.context.UserInfo
   constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, Map<kotlin.String, kotlin.Any?> = emptyMap())
 interface com.datadog.android.v2.core.InternalSdkCore : com.datadog.android.v2.api.SdkCore
   val networkInfo: com.datadog.android.v2.api.context.NetworkInfo
+  val trackingConsent: com.datadog.android.privacy.TrackingConsent
+  val rootStorageDir: java.io.File
+  fun writeLastViewEvent(ByteArray)
 interface com.datadog.android.v2.core.storage.DataWriter<T>
   fun write(com.datadog.android.v2.api.EventBatchWriter, T): Boolean
 class com.datadog.tools.annotation.NoOpImplementation

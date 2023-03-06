@@ -51,7 +51,7 @@ internal class WebViewLogsFeatureTest {
     @Test
     fun `𝕄 initialize data writer 𝕎 initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, mock(), mock())
+        testedFeature.onInitialize(mockSdkCore, mock())
 
         // Then
         assertThat(testedFeature.dataWriter)
@@ -61,7 +61,7 @@ internal class WebViewLogsFeatureTest {
     @Test
     fun `𝕄 reset data writer 𝕎 onStop()`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, mock(), mock())
+        testedFeature.onInitialize(mockSdkCore, mock())
 
         // When
         testedFeature.onStop()

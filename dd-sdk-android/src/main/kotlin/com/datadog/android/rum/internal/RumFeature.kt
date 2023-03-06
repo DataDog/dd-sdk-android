@@ -16,8 +16,6 @@ import androidx.annotation.FloatRange
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.core.internal.utils.executeSafe
@@ -42,7 +40,6 @@ import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrate
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashEventHandler
-import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.ndk.NdkCrashEventHandler
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
@@ -71,7 +68,6 @@ import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
-import com.datadog.android.v2.api.EnvironmentProvider
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureStorageConfiguration
@@ -79,6 +75,7 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.android.v2.core.storage.NoOpDataWriter
 import com.datadog.android.v2.rum.internal.net.RumRequestFactory
@@ -94,14 +91,12 @@ import com.datadog.android.core.configuration.Configuration as LegacyConfigurati
 internal class RumFeature(
     internal val applicationId: String,
     internal val configuration: Configuration,
-    private val coreFeature: CoreFeature,
     private val ndkCrashEventHandler: NdkCrashEventHandler = DatadogNdkCrashEventHandler()
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     constructor(
         applicationId: String,
-        configuration: LegacyConfiguration.Feature.RUM,
-        coreFeature: CoreFeature
+        configuration: LegacyConfiguration.Feature.RUM
     ) : this(
         applicationId,
         Configuration(
@@ -115,8 +110,7 @@ internal class RumFeature(
             backgroundEventTracking = configuration.backgroundEventTracking,
             trackFrustrations = configuration.trackFrustrations,
             vitalsMonitorUpdateFrequency = configuration.vitalsMonitorUpdateFrequency
-        ),
-        coreFeature
+        )
     )
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
@@ -152,13 +146,15 @@ internal class RumFeature(
 
     override fun onInitialize(
         sdkCore: SdkCore,
-        appContext: Context,
-        environmentProvider: EnvironmentProvider
+        appContext: Context
     ) {
         this.sdkCore = sdkCore
         this.appContext = appContext
 
-        dataWriter = createDataWriter(configuration)
+        dataWriter = createDataWriter(
+            configuration,
+            sdkCore as InternalSdkCore
+        )
 
         samplingRate = configuration.samplingRate
         telemetrySamplingRate = configuration.telemetrySamplingRate
@@ -210,19 +206,16 @@ internal class RumFeature(
     // endregion
 
     private fun createDataWriter(
-        configuration: Configuration
+        configuration: Configuration,
+        sdkCore: InternalSdkCore
     ): DataWriter<Any> {
         return RumDataWriter(
             serializer = MapperSerializer(
                 configuration.rumEventMapper,
                 RumEventSerializer()
             ),
-            fileWriter = BatchFileReaderWriter.create(
-                internalLogger,
-                coreFeature.localDataEncryption
-            ),
-            internalLogger = internalLogger,
-            lastViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
+            sdkCore = sdkCore,
+            internalLogger = internalLogger
         )
     }
 
@@ -701,14 +694,11 @@ internal class RumFeature(
 
         /**
          * Builds a [RumFeature] based on the current state of this Builder.
-         *
-         * @param coreFeature Temporary here, will go away.
          */
-        fun build(coreFeature: CoreFeature): RumFeature {
+        fun build(): RumFeature {
             return RumFeature(
                 applicationId = applicationId,
-                configuration = rumConfig,
-                coreFeature = coreFeature
+                configuration = rumConfig
             )
         }
 

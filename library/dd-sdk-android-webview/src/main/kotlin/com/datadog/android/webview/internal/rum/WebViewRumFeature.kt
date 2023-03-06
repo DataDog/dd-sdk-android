@@ -8,7 +8,6 @@ package com.datadog.android.webview.internal.rum
 
 import android.content.Context
 import com.datadog.android.core.internal.utils.internalLogger
-import com.datadog.android.v2.api.EnvironmentProvider
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
@@ -33,8 +32,7 @@ internal class WebViewRumFeature(
 
     override fun onInitialize(
         sdkCore: SdkCore,
-        appContext: Context,
-        environmentProvider: EnvironmentProvider
+        appContext: Context
     ) {
         dataWriter = createDataWriter()
         initialized.set(true)

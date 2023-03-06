@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.domain
 
-import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
@@ -18,6 +17,7 @@ import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -26,7 +26,6 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -45,8 +44,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.io.File
-import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -63,20 +60,17 @@ internal class RumDataWriterTest {
     lateinit var mockSerializer: Serializer<Any>
 
     @Mock
-    lateinit var mockFileWriter: FileWriter
-
-    @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
+    @Mock
+    lateinit var mockSdkCore: InternalSdkCore
+
     @StringForgery
     lateinit var fakeSerializedEvent: String
     lateinit var fakeSerializedData: ByteArray
-
-    @Mock
-    lateinit var fakeLastViewEventFile: File
 
     @BeforeEach
     fun `set up`() {
@@ -86,9 +80,8 @@ internal class RumDataWriterTest {
 
         testedWriter = RumDataWriter(
             mockSerializer,
-            mockFileWriter,
-            mockInternalLogger,
-            fakeLastViewEventFile
+            mockSdkCore,
+            mockInternalLogger
         )
     }
 
@@ -182,40 +175,13 @@ internal class RumDataWriterTest {
     fun `𝕄 persist the event into the NDK crash folder 𝕎 onDataWritten(){ViewEvent+dir exists}`(
         @Forgery viewEvent: ViewEvent
     ) {
-        // Given
-        val ndkReportsFolder = mock<File>()
-        whenever(ndkReportsFolder.exists()) doReturn true
-        whenever(fakeLastViewEventFile.parentFile) doReturn ndkReportsFolder
-
         // When
         testedWriter.onDataWritten(viewEvent, fakeSerializedData)
 
         // Then
-        verify(mockFileWriter)
-            .writeData(fakeLastViewEventFile, fakeSerializedData, false)
+        verify(mockSdkCore)
+            .writeLastViewEvent(fakeSerializedData)
         verifyZeroInteractions(mockInternalLogger)
-    }
-
-    @Test
-    fun `𝕄 log info when writing last view event 𝕎 onDataWritten(){ ViewEvent+no crash dir }`(
-        @Forgery viewEvent: ViewEvent
-    ) {
-        // Given
-        whenever(fakeLastViewEventFile.parentFile) doReturn null
-
-        // When
-        testedWriter.onDataWritten(viewEvent, fakeSerializedData)
-
-        // Then
-        verifyZeroInteractions(mockFileWriter)
-        verify(mockInternalLogger).log(
-            InternalLogger.Level.INFO,
-            InternalLogger.Target.MAINTAINER,
-            RumDataWriter.LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(
-                Locale.US,
-                fakeLastViewEventFile.parent
-            )
-        )
     }
 
     @Test
@@ -230,7 +196,7 @@ internal class RumDataWriterTest {
             actionEvent.view.id,
             StorageEvent.Action(frustrationCount = actionEvent.action.frustration?.type?.size ?: 0)
         )
-        verifyZeroInteractions(mockFileWriter)
+        verifyZeroInteractions(mockSdkCore)
     }
 
     @Test
@@ -242,7 +208,7 @@ internal class RumDataWriterTest {
 
         // Then
         verify(rumMonitor.mockInstance).eventSent(resourceEvent.view.id, StorageEvent.Resource)
-        verifyZeroInteractions(mockFileWriter)
+        verifyZeroInteractions(mockSdkCore)
     }
 
     @Test
@@ -257,7 +223,7 @@ internal class RumDataWriterTest {
 
         // Then
         verify(rumMonitor.mockInstance).eventSent(fakeEvent.view.id, StorageEvent.Error)
-        verifyZeroInteractions(mockFileWriter)
+        verifyZeroInteractions(mockSdkCore)
     }
 
     @Test
@@ -272,7 +238,7 @@ internal class RumDataWriterTest {
 
         // Then
         verify(rumMonitor.mockInstance, never()).eventSent(eq(fakeEvent.view.id), any())
-        verifyZeroInteractions(mockFileWriter)
+        verifyZeroInteractions(mockSdkCore)
     }
 
     @Test
@@ -293,7 +259,7 @@ internal class RumDataWriterTest {
 
         // Then
         verify(rumMonitor.mockInstance).eventSent(longTaskEvent.view.id, StorageEvent.LongTask)
-        verifyZeroInteractions(mockFileWriter)
+        verifyZeroInteractions(mockSdkCore)
     }
 
     @Test
@@ -317,7 +283,7 @@ internal class RumDataWriterTest {
             frozenFrameEvent.view.id,
             StorageEvent.FrozenFrame
         )
-        verifyZeroInteractions(mockFileWriter)
+        verifyZeroInteractions(mockSdkCore)
     }
 
     // endregion
