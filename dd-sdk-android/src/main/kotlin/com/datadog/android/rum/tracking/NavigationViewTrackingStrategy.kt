@@ -46,6 +46,11 @@ class NavigationViewTrackingStrategy(
     ViewTrackingStrategy,
     NavController.OnDestinationChangedListener {
 
+    internal data class NavigationKey(
+        val controller: NavController,
+        val destination: NavDestination
+    )
+
     private var startedActivity: Activity? = null
 
     private var lifecycleCallbackRefs =
@@ -94,7 +99,7 @@ class NavigationViewTrackingStrategy(
         componentPredicate.runIfValid(destination) {
             val attributes = if (trackArguments) convertToRumAttributes(arguments) else emptyMap()
             val viewName = componentPredicate.resolveViewName(destination)
-            GlobalRum.get().startView(destination, viewName, attributes)
+            GlobalRum.get().startView(NavigationKey(controller, destination), viewName, attributes)
         }
     }
 
