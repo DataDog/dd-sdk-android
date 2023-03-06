@@ -9,13 +9,14 @@ package com.datadog.android.rum.internal
 import android.os.Build
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
+import com.datadog.android._InternalProxy
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.rum.assertj.ConfigurationRumAssert
+import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
@@ -45,7 +46,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -518,10 +518,6 @@ internal class RumFeatureBuilderTest {
         )
     }
 
-    @Disabled(
-        "Temporarily disabled, because updating setTelemetryConfigurationEventMapper" +
-            " requires making RumFeature public, will address in the following PRs."
-    )
     @Test
     fun `𝕄 build config with RUM Telemetry eventMapper 𝕎 setTelemetryConfigurationEventMapper()`() {
         // Given
@@ -529,8 +525,7 @@ internal class RumFeatureBuilderTest {
 
         // When
         val builder = testedBuilder
-        // TODO RUMM-0000 Fix that, see comment above.
-        // _InternalProxy.setTelemetryConfigurationEventMapper(builder, eventMapper)
+        _InternalProxy.setTelemetryConfigurationEventMapper(builder, eventMapper)
         val rumFeature = builder.build()
 
         // Then

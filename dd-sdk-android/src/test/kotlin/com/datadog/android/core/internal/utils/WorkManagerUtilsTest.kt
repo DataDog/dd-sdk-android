@@ -18,7 +18,6 @@ import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
-import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -61,8 +60,6 @@ internal class WorkManagerUtilsTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        mockChoreographerInstance()
-
         CoreFeature.disableKronosBackgroundSync = true
 
         Datadog.initialize(
@@ -73,8 +70,7 @@ internal class WorkManagerUtilsTest {
                 Credentials.NO_VARIANT
             ),
             Configuration.Builder(
-                crashReportsEnabled = true,
-                rumEnabled = true
+                crashReportsEnabled = true
             ).build(),
             TrackingConsent.GRANTED
         )

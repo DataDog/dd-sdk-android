@@ -6,37 +6,15 @@
 
 package com.datadog.android.core.configuration
 
-import android.os.Build
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
-import com.datadog.android._InternalProxy
-import com.datadog.android.event.EventMapper
-import com.datadog.android.event.NoOpEventMapper
-import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.plugin.Feature
-import com.datadog.android.rum.assertj.ConfigurationLegacyRumAssert.Companion.assertThat
-import com.datadog.android.rum.internal.domain.event.RumEventMapper
-import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
-import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
-import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
-import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
-import com.datadog.android.rum.model.ActionEvent
-import com.datadog.android.rum.model.ErrorEvent
-import com.datadog.android.rum.model.LongTaskEvent
-import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
-import com.datadog.android.rum.tracking.InteractionPredicate
-import com.datadog.android.rum.tracking.NoOpInteractionPredicate
-import com.datadog.android.rum.tracking.ViewAttributesProvider
-import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.security.Encryption
-import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -44,10 +22,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
-import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.IntForgery
-import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -78,8 +53,7 @@ internal class ConfigurationBuilderTest {
     @BeforeEach
     fun `set up`() {
         testedBuilder = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
     }
 
@@ -107,25 +81,6 @@ internal class ConfigurationBuilderTest {
                 endpointUrl = DatadogEndpoint.LOGS_US1
             )
         )
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.Feature.RUM(
-                endpointUrl = DatadogEndpoint.RUM_US1,
-                samplingRate = Configuration.DEFAULT_SAMPLING_RATE,
-                telemetrySamplingRate = Configuration.DEFAULT_TELEMETRY_SAMPLING_RATE,
-                userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
-                    DatadogGesturesTracker(
-                        arrayOf(JetpackViewAttributesProvider()),
-                        NoOpInteractionPredicate()
-                    )
-                ),
-                viewTrackingStrategy = ActivityViewTrackingStrategy(false),
-                rumEventMapper = NoOpEventMapper(),
-                longTaskTrackingStrategy = MainLooperLongTaskStrategy(100L),
-                backgroundEventTracking = false,
-                trackFrustrations = true,
-                vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE
-            )
-        )
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -133,8 +88,7 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 build config without crashReportConfig 𝕎 build() { crashReports disabled }`() {
         // Given
         testedBuilder = Configuration.Builder(
-            crashReportsEnabled = false,
-            rumEnabled = true
+            crashReportsEnabled = false
         )
 
         // When
@@ -142,24 +96,6 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.crashReportConfig).isNull()
-        assertThat(config.rumConfig).isNotNull
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config without rumConfig 𝕎 build() { RUM disabled }`() {
-        // Given
-        testedBuilder = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = false
-        )
-
-        // When
-        val config = testedBuilder.build()
-
-        // Then
-        assertThat(config.crashReportConfig).isNotNull
-        assertThat(config.rumConfig).isNull()
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -177,21 +113,16 @@ internal class ConfigurationBuilderTest {
         assertThat(config.crashReportConfig).isEqualTo(
             Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = site.logsEndpoint())
         )
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = site.rumEndpoint())
-        )
         assertThat(config.additionalConfig).isEmpty()
     }
 
     @Test
     fun `𝕄 build config with custom endpoints 𝕎 useCustomXXXEndpoint() and build()`(
-        @StringForgery(regex = "https://[a-z]+\\.com") crashReportsUrl: String,
-        @StringForgery(regex = "https://[a-z]+\\.com") rumUrl: String
+        @StringForgery(regex = "https://[a-z]+\\.com") crashReportsUrl: String
     ) {
         // When
         val config = testedBuilder
             .useCustomCrashReportsEndpoint(crashReportsUrl)
-            .useCustomRumEndpoint(rumUrl)
             .build()
 
         // Then
@@ -203,21 +134,16 @@ internal class ConfigurationBuilderTest {
         assertThat(config.crashReportConfig).isEqualTo(
             Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = crashReportsUrl)
         )
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = rumUrl)
-        )
         assertThat(config.additionalConfig).isEmpty()
     }
 
     @Test
     fun `𝕄 build config with custom cleartext endpoints 𝕎 useCustomXXXEndpoint() and build()`(
-        @StringForgery(regex = "http://[a-z]+\\.com") crashReportsUrl: String,
-        @StringForgery(regex = "http://[a-z]+\\.com") rumUrl: String
+        @StringForgery(regex = "http://[a-z]+\\.com") crashReportsUrl: String
     ) {
         // When
         val config = testedBuilder
             .useCustomCrashReportsEndpoint(crashReportsUrl)
-            .useCustomRumEndpoint(rumUrl)
             .build()
 
         // Then
@@ -229,641 +155,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.crashReportConfig).isEqualTo(
             Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = crashReportsUrl)
         )
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = rumUrl)
-        )
         assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `M set the NoOpUserActionTrackingStrategy W disableInteractionTracking()`() {
-        // Given
-
-        // When
-        val config = testedBuilder
-            .disableInteractionTracking()
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig!!)
-            .hasNoOpUserActionTrackingStrategy()
-            .hasViewTrackingStrategy(Configuration.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
-            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 bundle the custom attributes providers W trackInteractions()`(
-        @IntForgery(0, 10) attributesCount: Int
-    ) {
-        // Given
-        val mockProviders = Array<ViewAttributesProvider>(attributesCount) {
-            mock()
-        }
-
-        // When
-        val config = testedBuilder
-            .trackInteractions(mockProviders)
-            .build()
-
-        // Then
-
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig!!)
-            .hasUserActionTrackingStrategyLegacy()
-            .hasActionTargetAttributeProviders(mockProviders)
-            .hasViewTrackingStrategy(Configuration.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
-            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 bundle only the default providers W trackInteractions { providers not provided }`() {
-        // When
-        val config = testedBuilder
-            .trackInteractions()
-            .build()
-
-        // Then
-
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig!!)
-            .hasUserActionTrackingStrategyLegacy()
-            .hasDefaultActionTargetAttributeProviders()
-            .hasViewTrackingStrategy(Configuration.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
-            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 use the custom predicate 𝕎 trackInteractions()`() {
-        // Given
-        val mockInteractionPredicate: InteractionPredicate = mock()
-
-        // When
-        val config = testedBuilder
-            .trackInteractions(interactionPredicate = mockInteractionPredicate)
-            .build()
-
-        // Then
-
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig!!)
-            .hasUserActionTrackingStrategyLegacy()
-            .hasInteractionPredicate(mockInteractionPredicate)
-            .hasViewTrackingStrategy(Configuration.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
-            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 use the NoOpInteractionPredicate 𝕎 trackInteractions() { predicate not provided }`() {
-        // When
-        val config = testedBuilder
-            .trackInteractions()
-            .build()
-
-        // Then
-
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig!!)
-            .hasUserActionTrackingStrategyLegacy()
-            .hasInteractionPredicateOfType(NoOpInteractionPredicate::class.java)
-            .hasViewTrackingStrategy(Configuration.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
-            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @TestTargetApi(Build.VERSION_CODES.Q)
-    @Test
-    fun `𝕄 build config with gestures enabled 𝕎 trackInteractions() and build() {Android Q}`(
-        @IntForgery(0, 10) attributesCount: Int
-    ) {
-        // Given
-        val mockProviders = Array<ViewAttributesProvider>(attributesCount) {
-            mock()
-        }
-
-        // When
-        val config = testedBuilder
-            .trackInteractions(mockProviders)
-            .build()
-
-        // Then
-
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig!!)
-            .hasUserActionTrackingStrategyApi29()
-            .hasActionTargetAttributeProviders(mockProviders)
-            .hasViewTrackingStrategy(Configuration.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
-            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config with long tasks enabled 𝕎 trackLongTasks() and build()`(
-        @LongForgery(1L, 65536L) durationMs: Long
-    ) {
-        // Given
-
-        // When
-        val config = testedBuilder
-            .trackLongTasks(durationMs)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                longTaskTrackingStrategy = MainLooperLongTaskStrategy(durationMs)
-            )
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config with long tasks disabled 𝕎 trackLongTasks() and build()`(
-        @LongForgery(0L, 65536L) durationMs: Long
-    ) {
-        // Given
-
-        // When
-        val config = testedBuilder
-            .trackLongTasks(-durationMs)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                longTaskTrackingStrategy = null
-            )
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config with view strategy enabled 𝕎 useViewTrackingStrategy() and build()`() {
-        // Given
-        val strategy: ViewTrackingStrategy = mock()
-
-        // When
-        val config = testedBuilder
-            .useViewTrackingStrategy(strategy)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
-                    DatadogGesturesTracker(
-                        arrayOf(JetpackViewAttributesProvider()),
-                        NoOpInteractionPredicate()
-                    )
-                ),
-                viewTrackingStrategy = strategy
-            )
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config without view strategy 𝕎 useViewTrackingStrategy(null) and build()`() {
-        // When
-        val config = testedBuilder
-            .useViewTrackingStrategy(null)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                viewTrackingStrategy = null
-            )
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config with sampling rate 𝕎 sampleRumSessions() and build()`(
-        @FloatForgery(min = 0f, max = 100f) sampling: Float
-    ) {
-        // When
-        val config = testedBuilder
-            .sampleRumSessions(sampling)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                samplingRate = sampling
-            )
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config with sampling rate 𝕎 sampleTelemetry() and build()`(
-        @FloatForgery(min = 0f, max = 100f) sampling: Float
-    ) {
-        // When
-        val config = testedBuilder
-            .sampleTelemetry(sampling)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                telemetrySamplingRate = sampling
-            )
-        )
-
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config with background event 𝕎 trackBackgroundEvents() and build()`(
-        @BoolForgery backgroundEventEnabled: Boolean
-    ) {
-        // When
-        val config = testedBuilder
-            .trackBackgroundRumEvents(backgroundEventEnabled)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                backgroundEventTracking = backgroundEventEnabled
-            )
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config with RUM View eventMapper 𝕎 setRumViewEventMapper() and build()`() {
-        // Given
-        val eventMapper: ViewEventMapper = mock()
-
-        // When
-        val config = testedBuilder
-            .setRumViewEventMapper(eventMapper)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        val expectedRumEventMapper = RumEventMapper(viewEventMapper = eventMapper)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                rumEventMapper = expectedRumEventMapper
-            )
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config with RUM Resource eventMapper 𝕎 setRumResourceEventMapper() & build()`() {
-        // Given
-        val eventMapper: EventMapper<ResourceEvent> = mock()
-
-        // When
-        val config = testedBuilder
-            .setRumResourceEventMapper(eventMapper)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        val expectedRumEventMapper = RumEventMapper(resourceEventMapper = eventMapper)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                rumEventMapper = expectedRumEventMapper
-            )
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config with RUM Action eventMapper 𝕎 setRumActionEventMapper() and build()`() {
-        // Given
-        val eventMapper: EventMapper<ActionEvent> = mock()
-
-        // When
-        val config = testedBuilder
-            .setRumActionEventMapper(eventMapper)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        val expectedRumEventMapper = RumEventMapper(actionEventMapper = eventMapper)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                rumEventMapper = expectedRumEventMapper
-            )
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config with RUM Error eventMapper 𝕎 setRumErrorEventMapper() and build()`() {
-        // Given
-        val eventMapper: EventMapper<ErrorEvent> = mock()
-
-        // When
-        val config = testedBuilder
-            .setRumErrorEventMapper(eventMapper)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        val expectedRumEventMapper = RumEventMapper(errorEventMapper = eventMapper)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                rumEventMapper = expectedRumEventMapper
-            )
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config with RUM LongTask eventMapper 𝕎 setRumLongTaskEventMapper() & build()`() {
-        // Given
-        val eventMapper: EventMapper<LongTaskEvent> = mock()
-
-        // When
-        val config = testedBuilder
-            .setRumLongTaskEventMapper(eventMapper)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        val expectedRumEventMapper = RumEventMapper(longTaskEventMapper = eventMapper)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                rumEventMapper = expectedRumEventMapper
-            )
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config with RUM Telemetry eventMapper 𝕎 setTelemetryConfigurationEventMapper()`() {
-        // Given
-        val eventMapper: EventMapper<TelemetryConfigurationEvent> = mock()
-
-        // When
-        val builder = testedBuilder
-        _InternalProxy.setTelemetryConfigurationEventMapper(builder, eventMapper)
-        val config = builder.build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        val expectedRumEventMapper = RumEventMapper(telemetryConfigurationMapper = eventMapper)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                rumEventMapper = expectedRumEventMapper
-            )
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 warn user 𝕎 trackInteractions() {RUM disabled}`() {
-        // Given
-        testedBuilder = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = false
-        )
-
-        // When
-        testedBuilder.trackInteractions()
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Configuration.ERROR_FEATURE_DISABLED.format(
-                Locale.US,
-                Feature.RUM.featureName,
-                "trackInteractions"
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 warn user 𝕎 trackLongTasks() {RUM disabled}`(
-        @LongForgery(1L, 65536L) durationMs: Long
-    ) {
-        // Given
-        testedBuilder = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = false
-        )
-
-        // When
-        testedBuilder.trackLongTasks(durationMs)
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Configuration.ERROR_FEATURE_DISABLED.format(
-                Locale.US,
-                Feature.RUM.featureName,
-                "trackLongTasks"
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 warn user 𝕎 useViewTrackingStrategy() {RUM disabled}`() {
-        // Given
-        testedBuilder = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = false
-        )
-        val viewStrategy: ViewTrackingStrategy = mock()
-
-        // When
-        testedBuilder.useViewTrackingStrategy(viewStrategy)
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Configuration.ERROR_FEATURE_DISABLED.format(
-                Locale.US,
-                Feature.RUM.featureName,
-                "useViewTrackingStrategy"
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 warn user 𝕎 sampleRumSessions() {RUM disabled}`(
-        @FloatForgery(0f, 100f) samplingRate: Float
-    ) {
-        // Given
-        testedBuilder = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = false
-        )
-
-        // When
-        testedBuilder.sampleRumSessions(samplingRate)
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Configuration.ERROR_FEATURE_DISABLED.format(
-                Locale.US,
-                Feature.RUM.featureName,
-                "sampleRumSessions"
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 warn user 𝕎 setRumViewEventMapper() {RUM disabled}`() {
-        // Given
-        testedBuilder = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = false
-        )
-        val eventMapper: ViewEventMapper = mock()
-
-        // When
-        testedBuilder.setRumViewEventMapper(eventMapper)
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Configuration.ERROR_FEATURE_DISABLED.format(
-                Locale.US,
-                Feature.RUM.featureName,
-                "setRumViewEventMapper"
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 warn user 𝕎 setRumResourceEventMapper() {RUM disabled}`() {
-        // Given
-        testedBuilder = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = false
-        )
-        val eventMapper: EventMapper<ResourceEvent> = mock()
-
-        // When
-        testedBuilder.setRumResourceEventMapper(eventMapper)
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Configuration.ERROR_FEATURE_DISABLED.format(
-                Locale.US,
-                Feature.RUM.featureName,
-                "setRumResourceEventMapper"
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 warn user 𝕎 setRumActionEventMapper() {RUM disabled}`() {
-        // Given
-        testedBuilder = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = false
-        )
-        val eventMapper: EventMapper<ActionEvent> = mock()
-
-        // When
-        testedBuilder.setRumActionEventMapper(eventMapper)
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Configuration.ERROR_FEATURE_DISABLED.format(
-                Locale.US,
-                Feature.RUM.featureName,
-                "setRumActionEventMapper"
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 warn user 𝕎 setRumErrorEventMapper() {RUM disabled}`() {
-        // Given
-        testedBuilder = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = false
-        )
-        val eventMapper: EventMapper<ErrorEvent> = mock()
-
-        // When
-        testedBuilder.setRumErrorEventMapper(eventMapper)
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Configuration.ERROR_FEATURE_DISABLED.format(
-                Locale.US,
-                Feature.RUM.featureName,
-                "setRumErrorEventMapper"
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 warn user 𝕎 setRumLongTaskEventMapper() {RUM disabled}`() {
-        // Given
-        testedBuilder = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = false
-        )
-        val eventMapper: EventMapper<LongTaskEvent> = mock()
-
-        // When
-        testedBuilder.setRumLongTaskEventMapper(eventMapper)
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Configuration.ERROR_FEATURE_DISABLED.format(
-                Locale.US,
-                Feature.RUM.featureName,
-                "setRumLongTaskEventMapper"
-            )
-        )
     }
 
     @Test
@@ -872,8 +164,7 @@ internal class ConfigurationBuilderTest {
     ) {
         // Given
         testedBuilder = Configuration.Builder(
-            crashReportsEnabled = false,
-            rumEnabled = true
+            crashReportsEnabled = false
         )
 
         // When
@@ -887,31 +178,6 @@ internal class ConfigurationBuilderTest {
                 Locale.US,
                 Feature.CRASH.featureName,
                 "useCustomCrashReportsEndpoint"
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 warn user 𝕎 useCustomRumEndpoint() {RUM feature disabled}`(
-        @StringForgery(regex = "https://[a-z]+\\.com") url: String
-    ) {
-        // Given
-        testedBuilder = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = false
-        )
-
-        // When
-        testedBuilder.useCustomRumEndpoint(url)
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Configuration.ERROR_FEATURE_DISABLED.format(
-                Locale.US,
-                Feature.RUM.featureName,
-                "useCustomRumEndpoint"
             )
         )
     }
@@ -936,16 +202,6 @@ internal class ConfigurationBuilderTest {
             )
         )
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
-                    DatadogGesturesTracker(
-                        arrayOf(JetpackViewAttributesProvider()),
-                        NoOpInteractionPredicate()
-                    )
-                )
-            )
-        )
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -972,12 +228,11 @@ internal class ConfigurationBuilderTest {
             )
         )
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
         assertThat(config.additionalConfig).isEmpty()
     }
 
     @Test
-    fun `M use url host name W setFirstPartyHosts() { url }`(
+    fun `𝕄 use url host name 𝕎 setFirstPartyHosts() { url }`(
         @StringForgery(
             regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
         ) hosts: List<String>
@@ -995,7 +250,6 @@ internal class ConfigurationBuilderTest {
             )
         )
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -1043,7 +297,6 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHostsWithHeaderTypes = hostWithHeaderTypes)
         )
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -1061,7 +314,6 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_CORE_CONFIG.copy(batchSize = batchSize)
         )
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -1096,7 +348,6 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_CORE_CONFIG.copy(uploadFrequency = uploadFrequency)
         )
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -1117,7 +368,6 @@ internal class ConfigurationBuilderTest {
 
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
     }
 
     @Test
@@ -1138,7 +388,6 @@ internal class ConfigurationBuilderTest {
                 proxyAuth = mockAuthenticator
             )
         )
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
     }
 
     @Test
@@ -1158,7 +407,6 @@ internal class ConfigurationBuilderTest {
                 proxyAuth = Authenticator.NONE
             )
         )
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
     }
 
     @Test
@@ -1176,22 +424,6 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_CORE_CONFIG.copy(
                 encryption = mockEncryption
             )
-        )
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
-    }
-
-    @Test
-    fun `M use the given frequency W setVitalsMonitorUpdateFrequency`(
-        @Forgery fakeFrequency: VitalsUpdateFrequency
-    ) {
-        // When
-        val config = testedBuilder
-            .setVitalsUpdateFrequency(fakeFrequency)
-            .build()
-
-        // Then
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(vitalsMonitorUpdateFrequency = fakeFrequency)
         )
     }
 

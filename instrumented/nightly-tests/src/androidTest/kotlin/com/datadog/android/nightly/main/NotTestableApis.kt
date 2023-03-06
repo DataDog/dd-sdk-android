@@ -12,15 +12,12 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.Datadog#fun isInitialized(): Boolean
  * apiMethodSignature: com.datadog.android.Datadog#fun setVerbosity(Int)
  * apiMethodSignature: com.datadog.android.Datadog#fun addUserExtraInfo(Map<String, Any?> = emptyMap())
- * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun sampleTelemetry(Float): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setUploadFrequency(UploadFrequency): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setAdditionalConfiguration(Map<String, Any>): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useCustomCrashReportsEndpoint(String): Builder
- * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useCustomRumEndpoint(String): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useSite(com.datadog.android.DatadogSite): Builder
- * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
  * apiMethodSignature: com.datadog.android.core.sampling.RateBasedSampler#constructor(Double)
  * apiMethodSignature: com.datadog.android.core.sampling.RateBasedSampler#constructor(Float)
  * apiMethodSignature: com.datadog.android.event.MapperSerializer<T#constructor(EventMapper<T>, com.datadog.android.core.persistence.Serializer<T>)
@@ -35,7 +32,7 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android._InternalProxy$_TelemetryProxy#fun error(String, Throwable? = null)
  * apiMethodSignature: com.datadog.android._InternalProxy#fun setCustomAppVersion(String)
  * apiMethodSignature: com.datadog.android.rum._RumInternalProxy#fun addLongTask(Long, String)
- * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun disableInteractionTracking(): Builder
+ * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun disableInteractionTracking(): Builder
  * apiMethodSignature: com.datadog.android.rum.resource.RumResourceInputStream#constructor(java.io.InputStream, String)
  * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#fun startTracking()
  * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#fun stopTracking()
@@ -43,4 +40,7 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.log.LogsFeature$Builder#fun useSite(com.datadog.android.DatadogSite): Builder
  * apiMethodSignature: com.datadog.android.trace.TracingFeature$Builder#fun useCustomEndpoint(String): Builder
  * apiMethodSignature: com.datadog.android.trace.TracingFeature$Builder#fun useSite(com.datadog.android.DatadogSite): Builder
+ * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun useCustomEndpoint(String): Builder
+ * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun useSite(com.datadog.android.DatadogSite): Builder
+ * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun sampleTelemetry(Float): Builder
  */

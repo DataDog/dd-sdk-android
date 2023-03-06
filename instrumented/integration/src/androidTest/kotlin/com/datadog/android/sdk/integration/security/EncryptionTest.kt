@@ -150,8 +150,7 @@ internal class EncryptionTest {
 
         return Configuration
             .Builder(
-                crashReportsEnabled = true,
-                rumEnabled = true
+                crashReportsEnabled = true
             )
             .setEncryption(encryption)
             .build()

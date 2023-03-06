@@ -231,8 +231,7 @@ class SampleApplication : Application() {
     private fun createDatadogConfiguration(): Configuration {
         @Suppress("DEPRECATION")
         val configBuilder = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .setFirstPartyHosts(tracedHosts)
 

@@ -16,7 +16,6 @@ internal class ConfigurationForgeryFactory :
         return Configuration(
             coreConfig = forge.getForgery(),
             crashReportConfig = forge.getForgery(),
-            rumConfig = forge.getForgery(),
             additionalConfig = forge.aMap { aString() to aString() }
         )
     }

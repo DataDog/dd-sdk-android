@@ -66,8 +66,7 @@ internal open class JvmCrashService : CrashService() {
     ) {
         Datadog.setVerbosity(Log.VERBOSE)
         val configBuilder = Configuration.Builder(
-            crashReportsEnabled = crashReportsEnabled,
-            rumEnabled = rumEnabled
+            crashReportsEnabled = crashReportsEnabled
         )
         Datadog.initialize(
             this,

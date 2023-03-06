@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.configuration
+package com.datadog.android.rum.configuration
 
 /**
  * Defines the frequency at which mobile vitals monitor updates the data.

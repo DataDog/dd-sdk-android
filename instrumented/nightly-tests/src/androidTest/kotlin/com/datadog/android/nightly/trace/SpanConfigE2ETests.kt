@@ -54,7 +54,6 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 config = defaultConfigurationBuilder(
-                    rumEnabled = true,
                     crashReportsEnabled = true
                 ).build()
             )
@@ -76,7 +75,6 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 config = defaultConfigurationBuilder(
-                    rumEnabled = true,
                     crashReportsEnabled = true
                 ).setBatchSize(forge.aValueFrom(BatchSize::class.java)).build()
             )
@@ -98,7 +96,6 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 config = defaultConfigurationBuilder(
-                    rumEnabled = true,
                     crashReportsEnabled = true
                 ).build(),
                 tracingFeatureProvider = { null }
@@ -122,7 +119,6 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 config = defaultConfigurationBuilder(
-                    rumEnabled = true,
                     crashReportsEnabled = true
                 ).build(),
                 tracingFeatureProvider = {
@@ -382,7 +378,6 @@ class SpanConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 config = Configuration
                     .Builder(
-                        rumEnabled = true,
                         crashReportsEnabled = true
                     )
                     .setEncryption(TestEncryption())

@@ -87,15 +87,13 @@ internal class DatadogCoreInitializationTest {
         }
     }
 
-    @RepeatedTest(16)
+    @RepeatedTest(4)
     fun `𝕄 initialize requested features 𝕎 initialize()`(
-        @BoolForgery crashReportEnabled: Boolean,
-        @BoolForgery rumEnabled: Boolean
+        @BoolForgery crashReportEnabled: Boolean
     ) {
         // Given
         val configuration = Configuration.Builder(
-            crashReportsEnabled = crashReportEnabled,
-            rumEnabled = rumEnabled
+            crashReportsEnabled = crashReportEnabled
         ).build()
 
         // When
@@ -124,8 +122,7 @@ internal class DatadogCoreInitializationTest {
         appContext.fakeAppInfo.flags = fakeFlags and ApplicationInfo.FLAG_DEBUGGABLE.inv()
         fakeCredentials = fakeCredentials.copy(envName = invalidEnvName)
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         ).build()
 
         // Then
@@ -150,8 +147,7 @@ internal class DatadogCoreInitializationTest {
         appContext.fakeAppInfo.flags = fakeFlags or ApplicationInfo.FLAG_DEBUGGABLE
         fakeCredentials = fakeCredentials.copy(envName = invalidEnvName)
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         ).build()
 
         // When
@@ -178,8 +174,7 @@ internal class DatadogCoreInitializationTest {
     fun `𝕄 initialize the ConsentProvider with PENDING 𝕎 initializing()`() {
         // Given
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         ).build()
 
         // When
@@ -198,8 +193,7 @@ internal class DatadogCoreInitializationTest {
         // Given
         appContext.fakeAppInfo.flags = fakeFlags and ApplicationInfo.FLAG_DEBUGGABLE.inv()
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .setUseDeveloperModeWhenDebuggable(true)
             .build()
@@ -220,8 +214,7 @@ internal class DatadogCoreInitializationTest {
         // Given
         appContext.fakeAppInfo.flags = fakeFlags or ApplicationInfo.FLAG_DEBUGGABLE
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .setUseDeveloperModeWhenDebuggable(true)
             .build()
@@ -247,8 +240,7 @@ internal class DatadogCoreInitializationTest {
         val uploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
 
         val configuration = Configuration.Builder(
-            crashReportsEnabled = trackErrors,
-            rumEnabled = true
+            crashReportsEnabled = trackErrors
         ).apply {
             if (useProxy) {
                 setProxy(mock(), forge.aNullable { mock() })
@@ -297,8 +289,7 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .setAdditionalConfiguration(mapOf(Datadog.DD_SOURCE_TAG to source))
             .build()
@@ -317,8 +308,7 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .setAdditionalConfiguration(mapOf(Datadog.DD_SOURCE_TAG to source))
             .build()
@@ -337,8 +327,7 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .setAdditionalConfiguration(mapOf(Datadog.DD_SOURCE_TAG to source))
             .build()
@@ -357,8 +346,7 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .setAdditionalConfiguration(customAttributes.nonNullData)
             .build()
@@ -377,8 +365,7 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .setAdditionalConfiguration(mapOf(Datadog.DD_SDK_VERSION_TAG to sdkVersion))
             .build()
@@ -397,8 +384,7 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .setAdditionalConfiguration(
                 mapOf(Datadog.DD_SDK_VERSION_TAG to sdkVersion)
@@ -419,8 +405,7 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .setAdditionalConfiguration(mapOf(Datadog.DD_SDK_VERSION_TAG to sdkVersion))
             .build()
@@ -439,8 +424,7 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .setAdditionalConfiguration(customAttributes.nonNullData)
             .build()
@@ -459,8 +443,7 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .setAdditionalConfiguration(mapOf(Datadog.DD_APP_VERSION_TAG to appVersion))
             .build()
@@ -479,8 +462,7 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .setAdditionalConfiguration(
                 mapOf(Datadog.DD_APP_VERSION_TAG to forge.aWhitespaceString())
@@ -503,8 +485,7 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .setAdditionalConfiguration(mapOf(Datadog.DD_APP_VERSION_TAG to forge.anInt()))
             .build()

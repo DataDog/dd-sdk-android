@@ -58,7 +58,8 @@ class LoggerE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean, Boolean, Boolean, Boolean)
+     * apiMethodSignature: com.datadog.android.log.LogsFeature$Builder#fun build(): LogsFeature
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
      */
     @Before
     fun setUp() {

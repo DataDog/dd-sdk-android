@@ -35,7 +35,8 @@ class NdkCrashHandlerE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#constructor(String)
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun build(): RumFeature
      */
     @Test
     fun ndk_crash_reports_rum_enabled() {
@@ -60,7 +61,8 @@ class NdkCrashHandlerE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#constructor(String)
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun build(): RumFeature
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setEncryption(Encryption): Builder
      * apiMethodSignature: com.datadog.android.security.Encryption#fun encrypt(ByteArray): ByteArray
      * apiMethodSignature: com.datadog.android.security.Encryption#fun decrypt(ByteArray): ByteArray
@@ -82,8 +84,7 @@ class NdkCrashHandlerE2ETests {
             // need that to be able to read encrypted data written by NDK crash service
             config = Configuration
                 .Builder(
-                    crashReportsEnabled = true,
-                    rumEnabled = true
+                    crashReportsEnabled = true
                 )
                 .setEncryption(NeverUseThatEncryption())
                 .build()
@@ -93,7 +94,6 @@ class NdkCrashHandlerE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
      */
     @Test
     fun ndk_crash_reports_feature_disabled() {

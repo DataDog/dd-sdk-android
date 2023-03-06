@@ -54,7 +54,7 @@ class com.datadog.android._InternalProxy
   val _telemetry: _TelemetryProxy
   fun setCustomAppVersion(String)
   companion object 
-    fun setTelemetryConfigurationEventMapper(com.datadog.android.core.configuration.Configuration.Builder, com.datadog.android.event.EventMapper<com.datadog.android.telemetry.model.TelemetryConfigurationEvent>): com.datadog.android.core.configuration.Configuration.Builder
+    fun setTelemetryConfigurationEventMapper(com.datadog.android.rum.internal.RumFeature.Builder, com.datadog.android.event.EventMapper<com.datadog.android.telemetry.model.TelemetryConfigurationEvent>): com.datadog.android.rum.internal.RumFeature.Builder
 enum com.datadog.android.core.configuration.BatchSize
   constructor(Long)
   - SMALL
@@ -62,33 +62,18 @@ enum com.datadog.android.core.configuration.BatchSize
   - LARGE
 data class com.datadog.android.core.configuration.Configuration
   class Builder
-    constructor(Boolean, Boolean)
+    constructor(Boolean)
     fun build(): Configuration
     fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
     fun setFirstPartyHosts(List<String>): Builder
     fun setFirstPartyHostsWithHeaderType(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>): Builder
     fun useSite(com.datadog.android.DatadogSite): Builder
     fun useCustomCrashReportsEndpoint(String): Builder
-    fun useCustomRumEndpoint(String): Builder
-    fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
-    fun disableInteractionTracking(): Builder
-    fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
-    fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
     fun setBatchSize(BatchSize): Builder
     fun setUploadFrequency(UploadFrequency): Builder
-    fun sampleRumSessions(Float): Builder
-    fun sampleTelemetry(Float): Builder
-    fun trackBackgroundRumEvents(Boolean): Builder
-    fun trackFrustrations(Boolean): Builder
-    fun setRumViewEventMapper(com.datadog.android.event.ViewEventMapper): Builder
-    fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
-    fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
-    fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
-    fun setRumLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
     fun setAdditionalConfiguration(Map<String, Any>): Builder
     fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
     fun setEncryption(com.datadog.android.security.Encryption): Builder
-    fun setVitalsUpdateFrequency(VitalsUpdateFrequency): Builder
 data class com.datadog.android.core.configuration.Credentials
   constructor(String, String, String, String? = null)
   companion object 
@@ -100,12 +85,6 @@ enum com.datadog.android.core.configuration.UploadFrequency
   - FREQUENT
   - AVERAGE
   - RARE
-enum com.datadog.android.core.configuration.VitalsUpdateFrequency
-  constructor(Long)
-  - FREQUENT
-  - AVERAGE
-  - RARE
-  - NEVER
 interface com.datadog.android.core.constraints.DataConstraints
   fun <T: Any?> validateAttributes(Map<String, T>, String? = null, String? = null, Set<String> = emptySet()): MutableMap<String, T>
   fun validateTags(List<String>): List<String>
@@ -213,7 +192,6 @@ object com.datadog.android.log.LogAttributes
 enum com.datadog.android.plugin.Feature
   constructor(String)
   - CRASH
-  - RUM
 enum com.datadog.android.privacy.TrackingConsent
   - GRANTED
   - NOT_GRANTED
@@ -323,6 +301,12 @@ interface com.datadog.android.rum.RumSessionListener
 class com.datadog.android.rum._RumInternalProxy
   fun addLongTask(Long, String)
   fun updatePerformanceMetric(RumPerformanceMetric, Double)
+enum com.datadog.android.rum.configuration.VitalsUpdateFrequency
+  constructor(Long)
+  - FREQUENT
+  - AVERAGE
+  - RARE
+  - NEVER
 class com.datadog.android.rum.internal.RumFeature : com.datadog.android.v2.api.StorageBackedFeature, com.datadog.android.v2.api.FeatureEventReceiver
   override val name: String
   override fun onInitialize(com.datadog.android.v2.api.SdkCore, android.content.Context)
@@ -345,7 +329,7 @@ class com.datadog.android.rum.internal.RumFeature : com.datadog.android.v2.api.S
     fun setRumLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
     fun trackBackgroundRumEvents(Boolean): Builder
     fun trackFrustrations(Boolean): Builder
-    fun setVitalsUpdateFrequency(com.datadog.android.core.configuration.VitalsUpdateFrequency): Builder
+    fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
     fun useSite(com.datadog.android.DatadogSite): Builder
     fun useCustomEndpoint(String): Builder
     fun build(): RumFeature

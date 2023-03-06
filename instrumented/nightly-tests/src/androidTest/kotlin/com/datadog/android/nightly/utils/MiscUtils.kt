@@ -130,12 +130,10 @@ fun initializeSdk(
  * Default builder for nightly runs with telemetry set to 100%.
  */
 fun defaultConfigurationBuilder(
-    crashReportsEnabled: Boolean = true,
-    rumEnabled: Boolean = true
+    crashReportsEnabled: Boolean = true
 ): Configuration.Builder {
     return Configuration.Builder(
-        crashReportsEnabled = crashReportsEnabled,
-        rumEnabled = rumEnabled
+        crashReportsEnabled = crashReportsEnabled
     )
 }
 

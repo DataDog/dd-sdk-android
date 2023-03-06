@@ -334,10 +334,11 @@ internal class DatadogCore(
             coreConfig = configuration.coreConfig.copy(
                 batchSize = BatchSize.SMALL,
                 uploadFrequency = UploadFrequency.FREQUENT
-            ),
-            rumConfig = configuration.rumConfig?.copy(
-                samplingRate = 100.0f
             )
+            // TODO RUMM-0000 RUM is not a part of the core anymore, need to find another way.
+//            rumConfig = configuration.rumConfig?.copy(
+//                samplingRate = 100.0f
+//            )
         )
     }
 

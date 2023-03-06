@@ -72,8 +72,7 @@ internal open class NdkCrashService : CrashService() {
     ) {
         Datadog.setVerbosity(Log.VERBOSE)
         val configBuilder = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = rumEnabled
+            crashReportsEnabled = true
         )
         if (encryptionEnabled) {
             configBuilder.setEncryption(NeverUseThatEncryption())

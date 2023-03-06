@@ -33,7 +33,7 @@ internal class RumUserInteractionTrackingE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
      */
     @Test
     fun rum_user_interaction_tracking_strategy() {
@@ -44,8 +44,7 @@ internal class RumUserInteractionTrackingE2ETests {
                     it.trackInteractions().build()
                 },
                 config = defaultConfigurationBuilder(
-                    crashReportsEnabled = true,
-                    rumEnabled = true
+                    crashReportsEnabled = true
                 )
                     .build()
             )
@@ -55,7 +54,7 @@ internal class RumUserInteractionTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
      */
     @Test
     fun rum_user_interaction_tracking_strategy_custom_target_name() {
@@ -73,8 +72,7 @@ internal class RumUserInteractionTrackingE2ETests {
                         .build()
                 },
                 config = defaultConfigurationBuilder(
-                    crashReportsEnabled = true,
-                    rumEnabled = true
+                    crashReportsEnabled = true
                 ).build()
             )
         }

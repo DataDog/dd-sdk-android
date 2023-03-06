@@ -67,8 +67,7 @@ internal object RuntimeConfig {
 
     fun configBuilder(): Configuration.Builder {
         return Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .setUploadFrequency(UploadFrequency.FREQUENT)
     }

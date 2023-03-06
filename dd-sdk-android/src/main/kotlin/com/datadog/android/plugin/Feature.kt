@@ -10,6 +10,5 @@ package com.datadog.android.plugin
  * Provides the available feature for which some functionality can be assigned.
  */
 enum class Feature(internal val featureName: String) {
-    CRASH("Crash Reporting"),
-    RUM("RUM")
+    CRASH("Crash Reporting")
 }
