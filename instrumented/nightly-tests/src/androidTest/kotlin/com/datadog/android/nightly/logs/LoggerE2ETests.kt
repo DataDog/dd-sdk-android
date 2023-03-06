@@ -22,6 +22,7 @@ import com.datadog.android.nightly.SPECIAL_INT_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_JSONARRAY_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_JSONOBJECT_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_LONG_ATTRIBUTE_NAME
+import com.datadog.android.nightly.SPECIAL_MAP_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_STRING_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_TAG_NAME
 import com.datadog.android.nightly.rules.NightlyTestRule
@@ -303,7 +304,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Boolean)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
     fun logs_logger_add_boolean_attribute() {
@@ -314,7 +315,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Int)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
     fun logs_logger_add_int_attribute() {
@@ -325,7 +326,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Long)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
     fun logs_logger_add_long_attribute() {
@@ -340,7 +341,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, String?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
     fun logs_logger_add_string_attribute() {
@@ -353,7 +354,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, String?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
     fun logs_logger_add_string_null_attribute() {
@@ -366,7 +367,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Float)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
     fun logs_logger_add_float_attribute() {
@@ -377,7 +378,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Double)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
     fun logs_logger_add_double_attribute() {
@@ -388,7 +389,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, com.google.gson.JsonArray?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
     fun logs_logger_add_gson_jsonarray_attribute() {
@@ -400,7 +401,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, com.google.gson.JsonArray?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
     fun logs_logger_add_gson_jsonarray_null_attribute() {
@@ -413,7 +414,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, com.google.gson.JsonObject?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
     fun logs_logger_add_gson_jsonobject_attribute() {
@@ -428,7 +429,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, com.google.gson.JsonObject?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
     fun logs_logger_add_gson_jsonobject_null_attribute() {
@@ -441,7 +442,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, org.json.JSONArray?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
     fun logs_logger_add_org_json_jsonarray_attribute() {
@@ -456,7 +457,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, org.json.JSONArray?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
     fun logs_logger_add_org_json_jsonarray_null_attribute() {
@@ -469,7 +470,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, org.json.JSONObject?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
     fun logs_logger_add_org_json_jsonobject_attribute() {
@@ -484,7 +485,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, org.json.JSONObject?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
     fun logs_logger_add_org_json_jsonobject_null_attribute() {
@@ -497,7 +498,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, java.util.Date?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
     fun logs_logger_add_date_attribute() {
@@ -509,14 +510,30 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, java.util.Date?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
      */
     @Test
-    fun logs_logger_add_date_null_attribute() {
+    fun logs_logger_add_map_attribute() {
         val testMethodName = "logs_logger_add_date_null_attribute"
         val nullDate: Date? = null
         measure(testMethodName) {
             logger.addAttribute(SPECIAL_DATE_ATTRIBUTE_NAME, nullDate)
+        }
+        logger.sendRandomLog(testMethodName, forge)
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
+     */
+    @Test
+    fun logs_logger_add_date_null_attribute() {
+        val testMethodName = "logs_logger_add_map_attribute"
+        val value = forge.aMap {
+            anAlphabeticalString() to aMap { anHexadecimalString() to aLong() }
+        }
+
+        measure(testMethodName) {
+            logger.addAttribute(SPECIAL_MAP_ATTRIBUTE_NAME, value)
         }
         logger.sendRandomLog(testMethodName, forge)
     }

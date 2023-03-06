@@ -19,11 +19,6 @@ import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import org.json.JSONArray
-import org.json.JSONObject
-import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArraySet
 import android.util.Log as AndroidLog
@@ -370,7 +365,6 @@ internal constructor(internal var handler: LogHandler) {
     // endregion
 
     // region Context Information (attributes, tags)
-
     /**
      * Add a custom attribute to all future logs sent by this logger.
      *
@@ -378,136 +372,14 @@ internal constructor(internal var handler: LogHandler) {
      * using more than 10 levels will be sanitized by SDK.
      *
      * @param key the key for this attribute
-     * @param value the boolean value of this attribute
+     * @param value the attribute value
      */
-    fun addAttribute(key: String, value: Boolean) {
-        attributes[key] = value
-    }
-
-    /**
-     * Add a custom attribute to all future logs sent by this logger.
-     *
-     * Values can be nested up to 10 levels deep. Keys
-     * using more than 10 levels will be sanitized by SDK.
-     *
-     * @param key the key for this attribute
-     * @param value the integer value of this attribute
-     */
-    fun addAttribute(key: String, value: Int) {
-        attributes[key] = value
-    }
-
-    /**
-     * Add a custom attribute to all future logs sent by this logger.
-     *
-     * Values can be nested up to 10 levels deep. Keys
-     * using more than 10 levels will be sanitized by SDK.
-     *
-     * @param key the key for this attribute
-     * @param value the long value of this attribute
-     */
-    fun addAttribute(key: String, value: Long) {
-        attributes[key] = value
-    }
-
-    /**
-     * Add a custom attribute to all future logs sent by this logger.
-     *
-     * Values can be nested up to 10 levels deep. Keys
-     * using more than 10 levels will be sanitized by SDK.
-     *
-     * @param key the key for this attribute
-     * @param value the float value of this attribute
-     */
-    fun addAttribute(key: String, value: Float) {
-        attributes[key] = value
-    }
-
-    /**
-     * Add a custom attribute to all future logs sent by this logger.
-     *
-     * Values can be nested up to 10 levels deep. Keys
-     * using more than 10 levels will be sanitized by SDK.
-     *
-     * @param key the key for this attribute
-     * @param value the double value of this attribute
-     */
-    fun addAttribute(key: String, value: Double) {
-        attributes[key] = value
-    }
-
-    /**
-     * Add a custom attribute to all future logs sent by this logger.
-     *
-     * Values can be nested up to 10 levels deep. Keys
-     * using more than 10 levels will be sanitized by SDK.
-     *
-     * @param key the key for this attribute
-     * @param value the (nullable) String value of this attribute
-     */
-    fun addAttribute(key: String, value: String?) {
-        safelyAddAttribute(key, value)
-    }
-
-    /**
-     * Add a custom attribute to all future logs sent by this logger.
-     * @param key the key for this attribute
-     * @param value the (nullable) [Date] value of this attribute
-     */
-    fun addAttribute(key: String, value: Date?) {
-        safelyAddAttribute(key, value)
-    }
-
-    /**
-     * Add a custom attribute to all future logs sent by this logger.
-     *
-     * Values can be nested up to 10 levels deep. Keys
-     * using more than 10 levels will be sanitized by SDK.
-     *
-     * @param key the key for this attribute
-     * @param value the (nullable) [JsonObject] value of this attribute
-     */
-    fun addAttribute(key: String, value: JsonObject?) {
-        safelyAddAttribute(key, value)
-    }
-
-    /**
-     * Add a custom attribute to all future logs sent by this logger.
-     *
-     * Values can be nested up to 10 levels deep. Keys
-     * using more than 10 levels will be sanitized by SDK.
-     *
-     * @param key the key for this attribute
-     * @param value the (nullable) [JsonArray] value of this attribute
-     */
-    fun addAttribute(key: String, value: JsonArray?) {
-        safelyAddAttribute(key, value)
-    }
-
-    /**
-     * Add a custom attribute to all future logs sent by this logger.
-     *
-     * Values can be nested up to 10 levels deep. Keys
-     * using more than 10 levels will be sanitized by SDK.
-     *
-     * @param key the key for this attribute
-     * @param value the (nullable) [JSONObject] value of this attribute
-     */
-    fun addAttribute(key: String, value: JSONObject?) {
-        safelyAddAttribute(key, value)
-    }
-
-    /**
-     * Add a custom attribute to all future logs sent by this logger.
-     *
-     * Values can be nested up to 10 levels deep. Keys
-     * using more than 10 levels will be sanitized by SDK.
-     *
-     * @param key the key for this attribute
-     * @param value the (nullable) [JSONArray] value of this attribute
-     */
-    fun addAttribute(key: String, value: JSONArray?) {
-        safelyAddAttribute(key, value)
+    fun addAttribute(key: String, value: Any?) {
+        if (value == null) {
+            attributes[key] = NULL_MAP_VALUE
+        } else {
+            attributes[key] = value
+        }
     }
 
     /**
@@ -630,11 +502,6 @@ internal constructor(internal var handler: LogHandler) {
 
     private fun removeTagInternal(tag: String) {
         tags.remove(tag)
-    }
-
-    private fun safelyAddAttribute(key: String, value: Any?) {
-        val attributeValue = value ?: NULL_MAP_VALUE
-        attributes[key] = attributeValue
     }
 
     private fun safelyRemoveTagsWithKey(keyFilter: (String) -> Boolean) {
