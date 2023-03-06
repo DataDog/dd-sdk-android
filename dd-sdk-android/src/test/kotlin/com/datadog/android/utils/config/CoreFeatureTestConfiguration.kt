@@ -35,7 +35,6 @@ import java.io.File
 import java.lang.ref.WeakReference
 import java.nio.file.Files
 import java.util.Locale
-import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
 
@@ -45,7 +44,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
 
     lateinit var fakeServiceName: String
     lateinit var fakeEnvName: String
-    lateinit var fakeRumApplicationId: String
     lateinit var fakeSourceName: String
     lateinit var fakeClientToken: String
     lateinit var fakeSdkVersion: String
@@ -94,7 +92,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     private fun createFakeInfo(forge: Forge) {
         fakeEnvName = forge.anAlphabeticalString()
         fakeServiceName = forge.anAlphabeticalString()
-        fakeRumApplicationId = forge.getForgery<UUID>().toString()
         fakeSourceName = forge.anAlphabeticalString()
         fakeClientToken = forge.anHexadecimalString().lowercase(Locale.US)
         fakeSdkVersion = forge.aStringMatching("[0-9](\\.[0-9]{1,2}){1,3}")
@@ -137,7 +134,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.packageName) doReturn appContext.fakePackageName
         whenever(mockInstance.packageVersionProvider) doReturn mockAppVersionProvider
         whenever(mockInstance.variant) doReturn appContext.fakeVariant
-        whenever(mockInstance.rumApplicationId) doReturn fakeRumApplicationId
         whenever(mockInstance.sourceName) doReturn fakeSourceName
         whenever(mockInstance.clientToken) doReturn fakeClientToken
         whenever(mockInstance.sdkVersion) doReturn fakeSdkVersion

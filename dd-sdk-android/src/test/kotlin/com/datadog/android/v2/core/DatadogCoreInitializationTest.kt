@@ -19,21 +19,15 @@ import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.CustomAttributes
 import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.anyOrNull
-import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -119,58 +113,6 @@ internal class DatadogCoreInitializationTest {
                 it.isNull()
             }
         }
-
-        if (rumEnabled) {
-            assertThat(testedCore.getFeature(Feature.RUM_FEATURE_NAME)).isNotNull
-        } else {
-            assertThat(testedCore.getFeature(Feature.RUM_FEATURE_NAME)).isNull()
-        }
-    }
-
-    @Test
-    fun `𝕄 log a warning 𝕎 initialize() { null applicationID, rumEnabled }`() {
-        // Given
-        fakeCredentials = fakeCredentials.copy(rumApplicationId = null)
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = false,
-            rumEnabled = true
-        ).build()
-
-        // When
-        testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
-
-        // Then
-        assertThat(testedCore.coreFeature.initialized.get()).isTrue()
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            DatadogCore.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
-        )
-    }
-
-    @Test
-    fun `𝕄 do nothing 𝕎 initialize() { null applicationID, rumDisabled }`() {
-        // Given
-        fakeCredentials = fakeCredentials.copy(rumApplicationId = null)
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = false,
-            rumEnabled = false
-        ).build()
-
-        // When
-        testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
-
-        // Then
-        assertThat(testedCore.coreFeature.initialized.get()).isTrue()
-        verify(logger.mockInternalLogger, never())
-            .log(
-                any(),
-                any<InternalLogger.Target>(),
-                eq(DatadogCore.WARNING_MESSAGE_APPLICATION_ID_IS_NULL),
-                anyOrNull()
-            )
     }
 
     @Test
@@ -582,12 +524,11 @@ internal class DatadogCoreInitializationTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val mainLooper = MainLooperTestConfiguration()
-        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, mainLooper)
+            return listOf(appContext, mainLooper)
         }
     }
 }

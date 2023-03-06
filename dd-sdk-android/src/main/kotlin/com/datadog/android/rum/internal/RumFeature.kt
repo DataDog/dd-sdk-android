@@ -87,14 +87,17 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import com.datadog.android.core.configuration.Configuration as LegacyConfiguration
 
+/**
+ * RUM feature class, which needs to be registered with Datadog SDK instance.
+ */
 @Suppress("TooManyFunctions")
-internal class RumFeature(
+class RumFeature internal constructor(
     internal val applicationId: String,
     internal val configuration: Configuration,
     private val ndkCrashEventHandler: NdkCrashEventHandler = DatadogNdkCrashEventHandler()
 ) : StorageBackedFeature, FeatureEventReceiver {
 
-    constructor(
+    internal constructor(
         applicationId: String,
         configuration: LegacyConfiguration.Feature.RUM
     ) : this(
@@ -725,7 +728,7 @@ internal class RumFeature(
         val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency
     )
 
-    companion object {
+    internal companion object {
 
         internal const val DEFAULT_SAMPLING_RATE: Float = 100f
         internal const val DEFAULT_TELEMETRY_SAMPLING_RATE: Float = 20f

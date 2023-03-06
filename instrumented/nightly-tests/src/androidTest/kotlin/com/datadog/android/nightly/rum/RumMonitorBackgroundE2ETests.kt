@@ -55,13 +55,15 @@ class RumMonitorBackgroundE2ETests {
     fun setUp() {
         initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
+            rumFeatureProvider = {
+                it.trackBackgroundRumEvents(true)
+                    .trackFrustrations(true)
+                    .build()
+            },
             config = defaultConfigurationBuilder(
                 crashReportsEnabled = true,
                 rumEnabled = true
-            )
-                .trackBackgroundRumEvents(true)
-                .trackFrustrations(true)
-                .build()
+            ).build()
         )
     }
 

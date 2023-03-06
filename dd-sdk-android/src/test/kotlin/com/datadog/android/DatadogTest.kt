@@ -179,7 +179,7 @@ internal class DatadogTest {
     @Test
     fun `𝕄 return true 𝕎 initialize(context, credential, , consent) + isInitialized()`() {
         // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
         val configuration = Configuration.Builder(
             crashReportsEnabled = true,
             rumEnabled = true
@@ -196,7 +196,7 @@ internal class DatadogTest {
     @Test
     fun `𝕄 warn 𝕎 initialize() + initialize()`() {
         // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
         val configuration = Configuration.Builder(
             crashReportsEnabled = true,
             rumEnabled = true
@@ -281,7 +281,7 @@ internal class DatadogTest {
             rumEnabled = true
         )
             .build()
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
         Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
         val mockRumFeature = mock<RumFeature>()
         val mockSdkFeature = mock<SdkFeature>()
@@ -304,7 +304,7 @@ internal class DatadogTest {
             rumEnabled = true
         )
             .build()
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
         Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
         val mockRumFeature = mock<RumFeature>()
         val mockSdkFeature = mock<SdkFeature>()

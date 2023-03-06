@@ -30,15 +30,19 @@ internal class FragmentTrackingPlaygroundActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val credentials = RuntimeConfig.credentials()
         val config = RuntimeConfig.configBuilder()
-            .trackInteractions()
-            .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
-            .useViewTrackingStrategy(FragmentViewTrackingStrategy(true))
             .build()
         val trackingConsent = intent.getTrackingConsent()
 
         Datadog.initialize(this, credentials, config, trackingConsent)
         Datadog.setVerbosity(Log.VERBOSE)
 
+        Datadog.registerFeature(
+            RuntimeConfig.rumFeatureBuilder()
+                .trackInteractions()
+                .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
+                .useViewTrackingStrategy(FragmentViewTrackingStrategy(true))
+                .build()
+        )
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
 
         setContentView(R.layout.fragment_tracking_layout)

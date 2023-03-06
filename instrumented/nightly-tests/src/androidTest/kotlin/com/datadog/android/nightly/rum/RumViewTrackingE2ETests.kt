@@ -49,11 +49,13 @@ internal class RumViewTrackingE2ETests {
             val config = defaultConfigurationBuilder(
                 crashReportsEnabled = true,
                 rumEnabled = true
-            )
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-                .build()
+            ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                        .build()
+                },
                 config = config
             )
         }
@@ -70,24 +72,25 @@ internal class RumViewTrackingE2ETests {
             val config = defaultConfigurationBuilder(
                 crashReportsEnabled = true,
                 rumEnabled = true
-            )
-                .useViewTrackingStrategy(
-                    ActivityViewTrackingStrategy(
-                        true,
-                        componentPredicate = object : ComponentPredicate<Activity> {
-                            override fun accept(component: Activity): Boolean {
-                                return false
-                            }
-
-                            override fun getViewName(component: Activity): String {
-                                return "ViewTrackingActivityAllViewsDropped"
-                            }
-                        }
-                    )
-                )
-                .build()
+            ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(
+                        ActivityViewTrackingStrategy(
+                            true,
+                            componentPredicate = object : ComponentPredicate<Activity> {
+                                override fun accept(component: Activity): Boolean {
+                                    return false
+                                }
+
+                                override fun getViewName(component: Activity): String {
+                                    return "ViewTrackingActivityAllViewsDropped"
+                                }
+                            }
+                        )
+                    ).build()
+                },
                 config = config
             )
         }
@@ -104,24 +107,25 @@ internal class RumViewTrackingE2ETests {
             val config = defaultConfigurationBuilder(
                 crashReportsEnabled = true,
                 rumEnabled = true
-            )
-                .useViewTrackingStrategy(
-                    ActivityViewTrackingStrategy(
-                        true,
-                        componentPredicate = object : ComponentPredicate<Activity> {
-                            override fun accept(component: Activity): Boolean {
-                                return true
-                            }
-
-                            override fun getViewName(component: Activity): String {
-                                return "ViewTrackingActivityCustomView"
-                            }
-                        }
-                    )
-                )
-                .build()
+            ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(
+                        ActivityViewTrackingStrategy(
+                            true,
+                            componentPredicate = object : ComponentPredicate<Activity> {
+                                override fun accept(component: Activity): Boolean {
+                                    return true
+                                }
+
+                                override fun getViewName(component: Activity): String {
+                                    return "ViewTrackingActivityCustomView"
+                                }
+                            }
+                        )
+                    ).build()
+                },
                 config = config
             )
         }
@@ -138,11 +142,13 @@ internal class RumViewTrackingE2ETests {
             val config = defaultConfigurationBuilder(
                 crashReportsEnabled = true,
                 rumEnabled = true
-            )
-                .useViewTrackingStrategy(FragmentViewTrackingStrategy(true))
-                .build()
+            ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(FragmentViewTrackingStrategy(true))
+                        .build()
+                },
                 config = config
             )
         }
@@ -159,24 +165,26 @@ internal class RumViewTrackingE2ETests {
             val config = defaultConfigurationBuilder(
                 crashReportsEnabled = true,
                 rumEnabled = true
-            )
-                .useViewTrackingStrategy(
-                    FragmentViewTrackingStrategy(
-                        true,
-                        supportFragmentComponentPredicate = object : ComponentPredicate<Fragment> {
-                            override fun accept(component: Fragment): Boolean {
-                                return false
-                            }
-
-                            override fun getViewName(component: Fragment): String? {
-                                return "ViewTrackingFragmentAllViewsDropped"
-                            }
-                        }
-                    )
-                )
-                .build()
+            ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(
+                        FragmentViewTrackingStrategy(
+                            true,
+                            supportFragmentComponentPredicate = object :
+                                ComponentPredicate<Fragment> {
+                                override fun accept(component: Fragment): Boolean {
+                                    return false
+                                }
+
+                                override fun getViewName(component: Fragment): String? {
+                                    return "ViewTrackingFragmentAllViewsDropped"
+                                }
+                            }
+                        )
+                    ).build()
+                },
                 config = config
             )
         }
@@ -193,24 +201,26 @@ internal class RumViewTrackingE2ETests {
             val config = defaultConfigurationBuilder(
                 crashReportsEnabled = true,
                 rumEnabled = true
-            )
-                .useViewTrackingStrategy(
-                    FragmentViewTrackingStrategy(
-                        true,
-                        supportFragmentComponentPredicate = object : ComponentPredicate<Fragment> {
-                            override fun accept(component: Fragment): Boolean {
-                                return true
-                            }
-
-                            override fun getViewName(component: Fragment): String? {
-                                return "ViewTrackingFragmentCustomView"
-                            }
-                        }
-                    )
-                )
-                .build()
+            ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(
+                        FragmentViewTrackingStrategy(
+                            true,
+                            supportFragmentComponentPredicate = object :
+                                ComponentPredicate<Fragment> {
+                                override fun accept(component: Fragment): Boolean {
+                                    return true
+                                }
+
+                                override fun getViewName(component: Fragment): String? {
+                                    return "ViewTrackingFragmentCustomView"
+                                }
+                            }
+                        )
+                    ).build()
+                },
                 config = config
             )
         }
@@ -227,16 +237,18 @@ internal class RumViewTrackingE2ETests {
             val config = defaultConfigurationBuilder(
                 crashReportsEnabled = true,
                 rumEnabled = true
-            )
-                .useViewTrackingStrategy(
-                    NavigationViewTrackingStrategy(
-                        R.id.nav_host_fragment,
-                        true
-                    )
-                )
-                .build()
+            ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(
+                        NavigationViewTrackingStrategy(
+                            R.id.nav_host_fragment,
+                            true
+                        )
+                    )
+                        .build()
+                },
                 config = config
             )
         }
@@ -253,25 +265,26 @@ internal class RumViewTrackingE2ETests {
             val config = defaultConfigurationBuilder(
                 crashReportsEnabled = true,
                 rumEnabled = true
-            )
-                .useViewTrackingStrategy(
-                    NavigationViewTrackingStrategy(
-                        R.id.nav_host_fragment,
-                        true,
-                        object : ComponentPredicate<NavDestination> {
-                            override fun accept(component: NavDestination): Boolean {
-                                return false
-                            }
-
-                            override fun getViewName(component: NavDestination): String {
-                                return "ViewTrackingNavigationAllViewsDropped"
-                            }
-                        }
-                    )
-                )
-                .build()
+            ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(
+                        NavigationViewTrackingStrategy(
+                            R.id.nav_host_fragment,
+                            true,
+                            object : ComponentPredicate<NavDestination> {
+                                override fun accept(component: NavDestination): Boolean {
+                                    return false
+                                }
+
+                                override fun getViewName(component: NavDestination): String {
+                                    return "ViewTrackingNavigationAllViewsDropped"
+                                }
+                            }
+                        )
+                    ).build()
+                },
                 config = config
             )
         }
@@ -288,25 +301,26 @@ internal class RumViewTrackingE2ETests {
             val config = defaultConfigurationBuilder(
                 crashReportsEnabled = true,
                 rumEnabled = true
-            )
-                .useViewTrackingStrategy(
-                    NavigationViewTrackingStrategy(
-                        R.id.nav_host_fragment,
-                        true,
-                        object : ComponentPredicate<NavDestination> {
-                            override fun accept(component: NavDestination): Boolean {
-                                return true
-                            }
-
-                            override fun getViewName(component: NavDestination): String {
-                                return component.label.toString()
-                            }
-                        }
-                    )
-                )
-                .build()
+            ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(
+                        NavigationViewTrackingStrategy(
+                            R.id.nav_host_fragment,
+                            true,
+                            object : ComponentPredicate<NavDestination> {
+                                override fun accept(component: NavDestination): Boolean {
+                                    return true
+                                }
+
+                                override fun getViewName(component: NavDestination): String {
+                                    return component.label.toString()
+                                }
+                            }
+                        )
+                    ).build()
+                },
                 config = config
             )
         }
@@ -323,11 +337,13 @@ internal class RumViewTrackingE2ETests {
             val config = defaultConfigurationBuilder(
                 crashReportsEnabled = true,
                 rumEnabled = true
-            )
-                .useViewTrackingStrategy(MixedViewTrackingStrategy(true))
-                .build()
+            ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(MixedViewTrackingStrategy(true))
+                        .build()
+                },
                 config = config
             )
         }
@@ -344,11 +360,13 @@ internal class RumViewTrackingE2ETests {
             val config = defaultConfigurationBuilder(
                 crashReportsEnabled = true,
                 rumEnabled = true
-            )
-                .useViewTrackingStrategy(MixedViewTrackingStrategy(true))
-                .build()
+            ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(MixedViewTrackingStrategy(true))
+                        .build()
+                },
                 config = config
             )
         }

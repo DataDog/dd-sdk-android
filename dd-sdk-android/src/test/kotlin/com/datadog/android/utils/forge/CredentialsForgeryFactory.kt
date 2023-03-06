@@ -9,7 +9,6 @@ package com.datadog.android.utils.forge
 import com.datadog.android.core.configuration.Credentials
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
-import java.util.UUID
 
 internal class CredentialsForgeryFactory :
     ForgeryFactory<Credentials> {
@@ -18,8 +17,7 @@ internal class CredentialsForgeryFactory :
             clientToken = forge.anHexadecimalString(),
             envName = forge.aStringMatching("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]"),
             variant = forge.anElementFrom(forge.anAlphabeticalString(), ""),
-            serviceName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+"),
-            rumApplicationId = forge.getForgery<UUID>().toString()
+            serviceName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         )
     }
 }

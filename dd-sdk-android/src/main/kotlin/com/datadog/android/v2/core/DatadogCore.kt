@@ -29,7 +29,6 @@ import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
@@ -311,7 +310,6 @@ internal class DatadogCore(
 
         applyAdditionalConfiguration(mutableConfig.additionalConfig)
 
-        initializeRumFeature(mutableConfig.rumConfig)
         initializeCrashReportFeature(mutableConfig.crashReportConfig)
 
         // TODO RUMM-2995 Handle NDK crashes for SDK v2 arch
@@ -327,22 +325,6 @@ internal class DatadogCore(
         if (configuration != null) {
             val crashReportsFeature = CrashReportsFeature()
             registerFeature(crashReportsFeature)
-        }
-    }
-
-    private fun initializeRumFeature(configuration: Configuration.Feature.RUM?) {
-        if (configuration != null) {
-            val rumApplicationId = coreFeature.rumApplicationId
-            if (rumApplicationId.isNullOrBlank()) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    WARNING_MESSAGE_APPLICATION_ID_IS_NULL
-                )
-                return
-            }
-            val rumFeature = RumFeature(rumApplicationId, configuration)
-            registerFeature(rumFeature)
         }
     }
 
@@ -469,14 +451,6 @@ internal class DatadogCore(
             "The environment name should contain maximum 196 of the following allowed characters " +
                 "[a-zA-Z0-9_:./-] and should never finish with a semicolon." +
                 "In this case the Datadog SDK will not be initialised."
-
-        internal const val WARNING_MESSAGE_APPLICATION_ID_IS_NULL =
-            "You're trying to enable RUM but no Application Id was provided. " +
-                "Please pass this value into the Datadog Credentials:\n" +
-                "val credentials = " +
-                "Credentials" +
-                "(\"<CLIENT_TOKEN>\", \"<ENVIRONMENT>\", \"<VARIANT>\", \"<APPLICATION_ID>\")\n" +
-                "Datadog.initialize(context, credentials, configuration, trackingConsent);"
 
         internal const val MISSING_FEATURE_FOR_EVENT_RECEIVER =
             "Cannot add event receiver for feature \"%s\", it is not registered."

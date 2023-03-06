@@ -42,15 +42,16 @@ internal class RumResourceTrackingE2ETests {
     @Test
     fun rum_resource_tracking() {
         measureSdkInitialize {
-            val config = defaultConfigurationBuilder(
-                crashReportsEnabled = true,
-                rumEnabled = true
-            )
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-                .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = config
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                        .build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                ).build()
             )
         }
         launch(ResourceTrackingActivity::class.java)
@@ -65,15 +66,16 @@ internal class RumResourceTrackingE2ETests {
     @Test
     fun rum_resource_tracking_with_custom_attributes() {
         measureSdkInitialize {
-            val config = defaultConfigurationBuilder(
-                crashReportsEnabled = true,
-                rumEnabled = true
-            )
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-                .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = config
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                        .build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                ).build()
             )
         }
         launch(ResourceTrackingCustomAttributesActivity::class.java)
@@ -98,11 +100,13 @@ internal class RumResourceTrackingE2ETests {
                 crashReportsEnabled = true,
                 rumEnabled = true
             )
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                 .setFirstPartyHosts(listOf(ResourceTrackingFirstPartyHostsActivity.HOST))
                 .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true)).build()
+                },
                 config = config
             )
         }
@@ -128,7 +132,6 @@ internal class RumResourceTrackingE2ETests {
                 crashReportsEnabled = true,
                 rumEnabled = true
             )
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                 .setFirstPartyHostsWithHeaderType(
                     mapOf(
                         ResourceTrackingFirstPartyHostsWithTracingHeaderTypeActivity.HOST to setOf(
@@ -139,6 +142,10 @@ internal class RumResourceTrackingE2ETests {
                 .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                        .build()
+                },
                 config = config
             )
         }
@@ -157,15 +164,16 @@ internal class RumResourceTrackingE2ETests {
         // "okhttp.request" Span we do not have to create the custom metric as the
         // "hits" and "duration" metrics are automatically created.
         measureSdkInitialize {
-            val config = defaultConfigurationBuilder(
-                crashReportsEnabled = true,
-                rumEnabled = true
-            )
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-                .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = config
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                        .build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                ).build()
             )
         }
         launch(ResourceTrackingNetworkInterceptorActivity::class.java)
@@ -184,15 +192,16 @@ internal class RumResourceTrackingE2ETests {
         // a normal "okhttp.request" Span that will automatically generate "hits" and "duration"
         // metrics.
         measureSdkInitialize {
-            val config = defaultConfigurationBuilder(
-                crashReportsEnabled = true,
-                rumEnabled = true
-            )
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-                .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = config
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                        .build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                ).build()
             )
         }
         launch(ResourceTrackingCustomSpanAttributesActivity::class.java)
@@ -209,15 +218,16 @@ internal class RumResourceTrackingE2ETests {
         // 1. RUM monitor - it should check that number of RUM resources is not affected by sampling
         // 2. APM monitor - number of traces should be affected by sampling
         measureSdkInitialize {
-            val config = defaultConfigurationBuilder(
-                crashReportsEnabled = true,
-                rumEnabled = true
-            )
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-                .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = config
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                        .build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                ).build()
             )
         }
         launch(ResourceTrackingTraceSamplingActivity::class.java)

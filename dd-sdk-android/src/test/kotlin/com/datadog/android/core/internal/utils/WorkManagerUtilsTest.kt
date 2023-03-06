@@ -70,8 +70,7 @@ internal class WorkManagerUtilsTest {
             Credentials(
                 forge.anHexadecimalString(),
                 forge.anAlphabeticalString(),
-                Credentials.NO_VARIANT,
-                null
+                Credentials.NO_VARIANT
             ),
             Configuration.Builder(
                 crashReportsEnabled = true,

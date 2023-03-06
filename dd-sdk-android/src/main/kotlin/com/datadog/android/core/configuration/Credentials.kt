@@ -13,7 +13,6 @@ package com.datadog.android.core.configuration
  * filter your events on different environments (e.g.: "staging" vs. "production").
  * @param variant the variant of your application, which should be the value from your
  * `BuildConfig.FLAVOR` constant if you have different flavors, [NO_VARIANT] otherwise.
- * @param rumApplicationId your applicationId for RUM events
  * @param serviceName the service name (if set to null, it'll be set to your application's
  * package name, e.g.: com.example.android)
  */
@@ -21,7 +20,6 @@ data class Credentials(
     val clientToken: String,
     val envName: String,
     val variant: String,
-    val rumApplicationId: String?,
     val serviceName: String? = null
 ) {
     companion object {

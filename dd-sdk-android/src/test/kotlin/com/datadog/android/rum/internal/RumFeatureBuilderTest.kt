@@ -503,6 +503,21 @@ internal class RumFeatureBuilderTest {
         )
     }
 
+    @Test
+    fun `𝕄 log warning 𝕎 builder with missing application ID`(
+        @BoolForgery fakeTrackFrustrations: Boolean
+    ) {
+        // When
+        val rumFeature = testedBuilder
+            .trackFrustrations(fakeTrackFrustrations)
+            .build()
+
+        // Then
+        assertThat(rumFeature.configuration).isEqualTo(
+            RumFeature.DEFAULT_RUM_CONFIG.copy(trackFrustrations = fakeTrackFrustrations)
+        )
+    }
+
     @Disabled(
         "Temporarily disabled, because updating setTelemetryConfigurationEventMapper" +
             " requires making RumFeature public, will address in the following PRs."

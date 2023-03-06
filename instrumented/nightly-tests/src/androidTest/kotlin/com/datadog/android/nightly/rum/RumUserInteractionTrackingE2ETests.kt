@@ -38,15 +38,16 @@ internal class RumUserInteractionTrackingE2ETests {
     @Test
     fun rum_user_interaction_tracking_strategy() {
         measureSdkInitialize {
-            val config = defaultConfigurationBuilder(
-                crashReportsEnabled = true,
-                rumEnabled = true
-            )
-                .trackInteractions()
-                .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = config
+                rumFeatureProvider = {
+                    it.trackInteractions().build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                )
+                    .build()
             )
         }
         launch(UserInteractionTrackingActivity::class.java)
@@ -59,21 +60,22 @@ internal class RumUserInteractionTrackingE2ETests {
     @Test
     fun rum_user_interaction_tracking_strategy_custom_target_name() {
         measureSdkInitialize {
-            val config = defaultConfigurationBuilder(
-                crashReportsEnabled = true,
-                rumEnabled = true
-            )
-                .trackInteractions(
-                    interactionPredicate = object : InteractionPredicate {
-                        override fun getTargetName(target: Any): String {
-                            return "UserInteractionTrackingCustomTargetName"
-                        }
-                    }
-                )
-                .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = config
+                rumFeatureProvider = {
+                    it.trackInteractions(
+                        interactionPredicate = object : InteractionPredicate {
+                            override fun getTargetName(target: Any): String {
+                                return "UserInteractionTrackingCustomTargetName"
+                            }
+                        }
+                    )
+                        .build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                ).build()
             )
         }
         launch(UserInteractionCustomTargetActivity::class.java)
