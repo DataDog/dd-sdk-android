@@ -993,11 +993,30 @@ internal open class RumViewScope(
             is Fragment -> key.activity
             is android.app.Fragment -> key.activity
             is NavigationViewTrackingStrategy.NavigationKey -> {
-                navControllerActivityField?.isAccessible = true
-                navControllerActivityField?.get(key.controller) as? Activity
+                if (navControllerActivityField == null) {
+                    internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.TELEMETRY,
+                        "Unable to retrieve the activity field from the navigationController"
+                    )
+                    null
+                } else {
+                    navControllerActivityField.isAccessible = true
+                    navControllerActivityField.get(key.controller) as? Activity
+                }
             }
             else -> null
-        } ?: return
+        }
+
+        if (activity == null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.TELEMETRY,
+                "Unable to retrieve the activity from $key, " +
+                    "the frame rate might be reported with the wrong scale"
+            )
+            return
+        }
 
         val display = if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.R) {
             activity.display
@@ -1034,6 +1053,10 @@ internal open class RumViewScope(
         internal const val SLOW_RENDERED_THRESHOLD_FPS = 55
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +
             "view: %s was 0 or negative. In order to keep the view we forced it to 1ns."
+
+        val navControllerActivityField = NavController::class.java.declaredFields.firstOrNull {
+            it.type == Activity::class.java
+        }
 
         internal fun fromEvent(
             parentScope: RumScope,
@@ -1091,10 +1114,6 @@ internal open class RumViewScope(
 
         private fun invertValue(value: Double): Double {
             return if (value == 0.0) 0.0 else 1.0 / value
-        }
-
-        val navControllerActivityField = NavController::class.java.declaredFields.firstOrNull {
-            it.type == Activity::class.java
         }
     }
 }

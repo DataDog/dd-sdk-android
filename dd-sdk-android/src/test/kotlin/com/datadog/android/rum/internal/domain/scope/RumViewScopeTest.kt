@@ -3034,8 +3034,6 @@ internal class RumViewScopeTest {
                 (fakeEvent as RumRawEvent.StartAction).name
             )
         )
-
-        verifyNoMoreInteractions(logger.mockInternalLogger)
     }
 
     @Test
@@ -3068,8 +3066,6 @@ internal class RumViewScopeTest {
                 (fakeEvent as RumRawEvent.StartAction).name
             )
         )
-
-        verifyNoMoreInteractions(logger.mockInternalLogger)
     }
 
     @Test

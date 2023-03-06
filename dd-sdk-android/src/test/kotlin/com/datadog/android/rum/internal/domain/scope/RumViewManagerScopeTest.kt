@@ -154,7 +154,7 @@ internal class RumViewManagerScopeTest {
         // Then
         verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
         assertThat(result).isSameAs(testedScope)
-        verifyZeroInteractions(mockWriter, logger.mockInternalLogger)
+        verifyZeroInteractions(mockWriter)
     }
 
     @Test
