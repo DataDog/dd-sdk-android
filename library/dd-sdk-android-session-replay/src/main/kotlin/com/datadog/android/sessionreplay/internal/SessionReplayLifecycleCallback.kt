@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import android.view.View
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
@@ -16,6 +17,7 @@ import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.callback.RecorderFragmentLifecycleCallback
+import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import java.util.concurrent.LinkedBlockingDeque
@@ -30,7 +32,8 @@ internal class SessionReplayLifecycleCallback(
     privacy: SessionReplayPrivacy,
     recordWriter: RecordWriter,
     timeProvider: TimeProvider,
-    recordCallback: RecordCallback = NoOpRecordCallback()
+    recordCallback: RecordCallback = NoOpRecordCallback(),
+    customMappers: Map<Class<*>, WireframeMapper<View, *>> = emptyMap()
 ) : LifecycleCallback {
 
     @Suppress("UnsafeThirdPartyFunctionCall") // workQueue can't be null
@@ -48,7 +51,10 @@ internal class SessionReplayLifecycleCallback(
         recordWriter,
         recordCallback
     )
-    internal var viewOnDrawInterceptor = ViewOnDrawInterceptor(processor, SnapshotProducer(privacy.mapper()))
+    internal var viewOnDrawInterceptor = ViewOnDrawInterceptor(
+        processor,
+        SnapshotProducer(privacy.mapper(customMappers))
+    )
 
     internal var windowCallbackInterceptor =
         WindowCallbackInterceptor(processor, viewOnDrawInterceptor, timeProvider)
