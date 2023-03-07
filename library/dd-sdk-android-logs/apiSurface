@@ -19,17 +19,7 @@ class com.datadog.android.log.Logger
     fun setBundleWithTraceEnabled(Boolean): Builder
     fun setBundleWithRumEnabled(Boolean): Builder
     fun setSampleRate(Float): Builder
-  fun addAttribute(String, Boolean)
-  fun addAttribute(String, Int)
-  fun addAttribute(String, Long)
-  fun addAttribute(String, Float)
-  fun addAttribute(String, Double)
-  fun addAttribute(String, String?)
-  fun addAttribute(String, java.util.Date?)
-  fun addAttribute(String, com.google.gson.JsonObject?)
-  fun addAttribute(String, com.google.gson.JsonArray?)
-  fun addAttribute(String, org.json.JSONObject?)
-  fun addAttribute(String, org.json.JSONArray?)
+  fun addAttribute(String, Any?)
   fun removeAttribute(String)
   fun addTag(String, String)
   fun addTag(String)
