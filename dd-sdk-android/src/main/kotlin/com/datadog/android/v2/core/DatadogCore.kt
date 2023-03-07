@@ -287,10 +287,10 @@ internal class DatadogCore(
 
         // Special case -- needs to apply to the RUM config before initializing it.
         mutableConfig.additionalConfig[Datadog.DD_TELEMETRY_CONFIG_SAMPLE_RATE_TAG]?. let {
-            if (it is Float && mutableConfig.rumConfig != null) {
+            if (it is Number && mutableConfig.rumConfig != null) {
                 mutableConfig = mutableConfig.copy(
                     rumConfig = mutableConfig.rumConfig?.copy(
-                        telemetryConfigurationSamplingRate = it
+                        telemetryConfigurationSamplingRate = it.toFloat()
                     )
                 )
             }
