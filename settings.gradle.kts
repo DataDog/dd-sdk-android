@@ -21,6 +21,7 @@ include(":dd-sdk-android-okhttp")
 include(":instrumented:integration")
 include(":instrumented:nightly-tests")
 
+include(":library:dd-sdk-android-rum")
 include(":library:dd-sdk-android-session-replay")
 include(":library:dd-sdk-android-logs")
 include(":library:dd-sdk-android-ndk")
