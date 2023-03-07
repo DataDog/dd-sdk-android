@@ -11,6 +11,8 @@ import android.os.Build
 import android.view.Display
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import androidx.navigation.NavController
+import androidx.navigation.NavDestination
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
@@ -36,6 +38,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -3031,8 +3034,6 @@ internal class RumViewScopeTest {
                 (fakeEvent as RumRawEvent.StartAction).name
             )
         )
-
-        verifyNoMoreInteractions(logger.mockInternalLogger)
     }
 
     @Test
@@ -3065,8 +3066,6 @@ internal class RumViewScopeTest {
                 (fakeEvent as RumRawEvent.StartAction).name
             )
         )
-
-        verifyNoMoreInteractions(logger.mockInternalLogger)
     }
 
     @Test
@@ -6376,6 +6375,101 @@ internal class RumViewScopeTest {
                     hasRefreshRateMetric(expectedAverage, expectedMinimum)
                     isActive(true)
                     isSlowRendered(false)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 detect slow refresh rate 𝕎 init()+onVitalUpdate()+handleEvent(KeepAlive) {Navigation}`(
+        @FloatForgery(120.0f, 240.0f) deviceRefreshRate: Float,
+        @DoubleForgery(30.0, 55.0) meanRefreshRate: Double,
+        @DoubleForgery(0.0, 30.0) minRefreshRate: Double
+    ) {
+        // Given
+        val mockActivity = mock<Activity>()
+        val mockDisplay = mock<Display>()
+        whenever(mockActivity.display) doReturn mockDisplay
+        whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
+        reset(mockFrameRateVitalMonitor)
+        val navController = NavController(mockActivity)
+        val mockDestination = mock<NavDestination>()
+
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
+        val testedScope = RumViewScope(
+            mockParentScope,
+            mockSdkCore,
+            NavigationViewTrackingStrategy.NavigationKey(navController, mockDestination),
+            fakeName,
+            fakeEventTime,
+            fakeAttributes,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockContextProvider,
+            mockBuildSdkVersionProvider,
+            featuresContextResolver = mockFeaturesContextResolver,
+            viewUpdatePredicate = mockViewUpdatePredicate,
+            trackFrustrations = fakeTrackFrustrations
+        )
+        val listenerCaptor = argumentCaptor<VitalListener> {
+            verify(mockFrameRateVitalMonitor).register(capture())
+        }
+        val listener = listenerCaptor.firstValue
+
+        // When
+        listener.onVitalUpdate(VitalInfo(1, minRefreshRate, meanRefreshRate * 2, meanRefreshRate))
+        val result = testedScope.handleEvent(RumRawEvent.KeepAlive(), mockWriter)
+
+        // Then
+        val expectedAverage = (meanRefreshRate * 60.0) / deviceRefreshRate
+        val expectedMinimum = (minRefreshRate * 60.0) / deviceRefreshRate
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasFrustrationCount(0)
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(expectedAverage, expectedMinimum)
+                    isActive(true)
+                    isSlowRendered(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)

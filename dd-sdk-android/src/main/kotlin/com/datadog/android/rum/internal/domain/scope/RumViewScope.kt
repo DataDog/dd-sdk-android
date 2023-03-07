@@ -13,6 +13,7 @@ import android.os.Build
 import android.view.WindowManager
 import androidx.annotation.WorkerThread
 import androidx.fragment.app.Fragment
+import androidx.navigation.NavController
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
@@ -34,6 +35,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
@@ -990,8 +992,31 @@ internal open class RumViewScope(
             is Activity -> key
             is Fragment -> key.activity
             is android.app.Fragment -> key.activity
+            is NavigationViewTrackingStrategy.NavigationKey -> {
+                if (navControllerActivityField == null) {
+                    internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.TELEMETRY,
+                        "Unable to retrieve the activity field from the navigationController"
+                    )
+                    null
+                } else {
+                    navControllerActivityField.isAccessible = true
+                    navControllerActivityField.get(key.controller) as? Activity
+                }
+            }
             else -> null
-        } ?: return
+        }
+
+        if (activity == null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.TELEMETRY,
+                "Unable to retrieve the activity from $key, " +
+                    "the frame rate might be reported with the wrong scale"
+            )
+            return
+        }
 
         val display = if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.R) {
             activity.display
@@ -1028,6 +1053,10 @@ internal open class RumViewScope(
         internal const val SLOW_RENDERED_THRESHOLD_FPS = 55
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +
             "view: %s was 0 or negative. In order to keep the view we forced it to 1ns."
+
+        val navControllerActivityField = NavController::class.java.declaredFields.firstOrNull {
+            it.type == Activity::class.java
+        }
 
         internal fun fromEvent(
             parentScope: RumScope,
