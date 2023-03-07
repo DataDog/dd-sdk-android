@@ -112,7 +112,6 @@ internal class CoreFeature {
     internal var serviceName: String = ""
     internal var sourceName: String = DEFAULT_SOURCE_NAME
     internal var sdkVersion: String = DEFAULT_SDK_VERSION
-    internal var rumApplicationId: String? = null
     internal var isMainProcess: Boolean = true
     internal var envName: String = ""
     internal var variant: String = ""
@@ -307,7 +306,6 @@ internal class CoreFeature {
         )
         clientToken = credentials.clientToken
         serviceName = credentials.serviceName ?: appContext.packageName
-        rumApplicationId = credentials.rumApplicationId
         envName = credentials.envName
         variant = credentials.variant
         contextRef = WeakReference(appContext)
@@ -494,7 +492,6 @@ internal class CoreFeature {
         serviceName = ""
         sourceName = DEFAULT_SOURCE_NAME
         sdkVersion = DEFAULT_SDK_VERSION
-        rumApplicationId = null
         isMainProcess = true
         envName = ""
         variant = ""

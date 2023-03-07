@@ -9,6 +9,7 @@ package com.datadog.android
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.event.EventMapper
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
@@ -81,10 +82,16 @@ class _InternalProxy internal constructor(
     companion object {
         @Suppress("FunctionMaxLength")
         fun setTelemetryConfigurationEventMapper(
-            builder: Configuration.Builder,
+            builder: RumFeature.Builder,
             eventMapper: EventMapper<TelemetryConfigurationEvent>
-        ): Configuration.Builder {
+        ): RumFeature.Builder {
             return builder.setTelemetryConfigurationEventMapper(eventMapper)
+        }
+
+        // TODO RUMM-3008 Expose it as public API? Needed for the integration tests at least,
+        //  because OkHttp MockWebServer is HTTP based
+        fun allowClearTextHttp(builder: Configuration.Builder): Configuration.Builder {
+            return builder.allowClearTextHttp()
         }
     }
 }

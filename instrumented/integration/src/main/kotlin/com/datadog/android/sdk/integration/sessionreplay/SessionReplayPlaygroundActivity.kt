@@ -10,6 +10,7 @@ import android.app.Activity
 import android.graphics.Point
 import android.os.Build
 import android.os.Bundle
+import android.provider.ContactsContract.Data
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
@@ -34,15 +35,19 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val credentials = RuntimeConfig.credentials()
-        // we will use a large long task threshold to make sure we will not have LongTask events
-        // noise in our integration tests.
-        val config = RuntimeConfig.configBuilder()
-            .trackInteractions()
-            .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
-            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-            .build()
+        val config = RuntimeConfig.configBuilder().build()
         val trackingConsent = intent.getTrackingConsent()
         Datadog.initialize(this, credentials, config, trackingConsent)
+        Datadog.registerFeature(
+            // we will use a large long task threshold to make sure we will not have LongTask events
+            // noise in our integration tests.
+            RuntimeConfig.rumFeatureBuilder()
+                .trackInteractions()
+                .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
+                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                .build()
+
+        )
         val sessionReplayConfig = RuntimeConfig.sessionReplayConfigBuilder()
             .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
             .build()

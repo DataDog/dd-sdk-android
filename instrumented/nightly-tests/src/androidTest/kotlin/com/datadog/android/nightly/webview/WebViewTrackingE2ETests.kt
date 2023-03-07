@@ -48,8 +48,7 @@ internal class WebViewTrackingE2ETests {
     @Test
     fun web_view_page_view_tracking() {
         val config = defaultConfigurationBuilder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         ).build()
         initSdk(config)
         launch(WebViewTrackingActivity::class.java)
@@ -66,8 +65,7 @@ internal class WebViewTrackingE2ETests {
     @Test
     fun web_view_no_allowed_host_no_tracking() {
         val config = defaultConfigurationBuilder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         ).build()
         initSdk(config)
         launch(WebViewTrackingActivity::class.java)
@@ -139,8 +137,7 @@ internal class WebViewTrackingE2ETests {
 
     private fun initSdk(
         config: Configuration = defaultConfigurationBuilder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         ).build()
     ) {
         measureSdkInitialize {

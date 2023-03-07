@@ -35,29 +35,29 @@ internal class RumResourceTrackingE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      * apiMethodSignature: com.datadog.android.okhttp.rum.RumInterceptor#constructor(List<String> = emptyList(), RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
      */
     @Test
     fun rum_resource_tracking() {
         measureSdkInitialize {
-            val config = defaultConfigurationBuilder(
-                crashReportsEnabled = true,
-                rumEnabled = true
-            )
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-                .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = config
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                        .build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
+                ).build()
             )
         }
         launch(ResourceTrackingActivity::class.java)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      * apiMethodSignature: com.datadog.android.okhttp.rum.RumInterceptor#constructor(List<String> = emptyList(), RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
      * apiMethodSignature: com.datadog.android.okhttp.trace.DatadogInterceptor#constructor(List<String>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
@@ -65,22 +65,22 @@ internal class RumResourceTrackingE2ETests {
     @Test
     fun rum_resource_tracking_with_custom_attributes() {
         measureSdkInitialize {
-            val config = defaultConfigurationBuilder(
-                crashReportsEnabled = true,
-                rumEnabled = true
-            )
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-                .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = config
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                        .build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
+                ).build()
             )
         }
         launch(ResourceTrackingCustomAttributesActivity::class.java)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      * apiMethodSignature: com.datadog.android.okhttp.trace.TracingInterceptor#constructor(TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
      * apiMethodSignature: com.datadog.android.okhttp.trace.DatadogInterceptor#constructor(com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
@@ -95,14 +95,15 @@ internal class RumResourceTrackingE2ETests {
         // in the monitor.
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                crashReportsEnabled = true,
-                rumEnabled = true
+                crashReportsEnabled = true
             )
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                 .setFirstPartyHosts(listOf(ResourceTrackingFirstPartyHostsActivity.HOST))
                 .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true)).build()
+                },
                 config = config
             )
         }
@@ -110,7 +111,7 @@ internal class RumResourceTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      * apiMethodSignature: com.datadog.android.okhttp.trace.TracingInterceptor#constructor(TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
      * apiMethodSignature: com.datadog.android.okhttp.trace.DatadogInterceptor#constructor(com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
@@ -125,10 +126,8 @@ internal class RumResourceTrackingE2ETests {
         // this behaviour in the monitor.
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
-                crashReportsEnabled = true,
-                rumEnabled = true
+                crashReportsEnabled = true
             )
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                 .setFirstPartyHostsWithHeaderType(
                     mapOf(
                         ResourceTrackingFirstPartyHostsWithTracingHeaderTypeActivity.HOST to setOf(
@@ -139,6 +138,10 @@ internal class RumResourceTrackingE2ETests {
                 .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                        .build()
+                },
                 config = config
             )
         }
@@ -146,7 +149,7 @@ internal class RumResourceTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      * apiMethodSignature: com.datadog.android.okhttp.rum.RumInterceptor#constructor(List<String> = emptyList(), RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
      * apiMethodSignature: com.datadog.android.okhttp.trace.TracingInterceptor#constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
@@ -157,22 +160,22 @@ internal class RumResourceTrackingE2ETests {
         // "okhttp.request" Span we do not have to create the custom metric as the
         // "hits" and "duration" metrics are automatically created.
         measureSdkInitialize {
-            val config = defaultConfigurationBuilder(
-                crashReportsEnabled = true,
-                rumEnabled = true
-            )
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-                .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = config
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                        .build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
+                ).build()
             )
         }
         launch(ResourceTrackingNetworkInterceptorActivity::class.java)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      * apiMethodSignature: com.datadog.android.okhttp.rum.RumInterceptor#constructor(List<String> = emptyList(), RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
      * apiMethodSignature: com.datadog.android.okhttp.trace.DatadogInterceptor#constructor(List<String>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
@@ -184,22 +187,22 @@ internal class RumResourceTrackingE2ETests {
         // a normal "okhttp.request" Span that will automatically generate "hits" and "duration"
         // metrics.
         measureSdkInitialize {
-            val config = defaultConfigurationBuilder(
-                crashReportsEnabled = true,
-                rumEnabled = true
-            )
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-                .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = config
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                        .build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
+                ).build()
             )
         }
         launch(ResourceTrackingCustomSpanAttributesActivity::class.java)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      * apiMethodSignature: com.datadog.android.okhttp.rum.RumInterceptor#constructor(List<String> = emptyList(), RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
      */
@@ -209,15 +212,15 @@ internal class RumResourceTrackingE2ETests {
         // 1. RUM monitor - it should check that number of RUM resources is not affected by sampling
         // 2. APM monitor - number of traces should be affected by sampling
         measureSdkInitialize {
-            val config = defaultConfigurationBuilder(
-                crashReportsEnabled = true,
-                rumEnabled = true
-            )
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-                .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = config
+                rumFeatureProvider = {
+                    it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                        .build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
+                ).build()
             )
         }
         launch(ResourceTrackingTraceSamplingActivity::class.java)

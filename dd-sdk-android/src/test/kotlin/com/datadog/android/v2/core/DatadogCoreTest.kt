@@ -22,8 +22,6 @@ import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
-import com.datadog.android.utils.config.MainLooperTestConfiguration
-import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.InternalLogger
@@ -92,9 +90,6 @@ internal class DatadogCoreTest {
 
     @BeforeEach
     fun `set up`() {
-        // Prevent crash when initializing RumFeature
-        mockChoreographerInstance()
-
         CoreFeature.disableKronosBackgroundSync = true
 
         testedCore = DatadogCore(
@@ -576,13 +571,12 @@ internal class DatadogCoreTest {
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
-        val mainLooper = MainLooperTestConfiguration()
         val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, mainLooper)
+            return listOf(logger, appContext)
         }
     }
 }

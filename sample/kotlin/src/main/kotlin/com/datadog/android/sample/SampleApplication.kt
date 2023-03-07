@@ -25,6 +25,7 @@ import com.datadog.android.okhttp.rum.RumInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -114,6 +115,9 @@ class SampleApplication : Application() {
         )
         Datadog.setVerbosity(Log.VERBOSE)
 
+        val rumFeature = createRumFeature()
+        Datadog.registerFeature(rumFeature)
+
         val sessionReplayConfig = SessionReplayConfiguration.Builder()
             .apply {
                 useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
@@ -169,19 +173,18 @@ class SampleApplication : Application() {
         return Credentials(
             clientToken = BuildConfig.DD_CLIENT_TOKEN,
             envName = BuildConfig.BUILD_TYPE,
-            variant = BuildConfig.FLAVOR,
-            rumApplicationId = BuildConfig.DD_RUM_APPLICATION_ID
+            variant = BuildConfig.FLAVOR
         )
     }
 
-    private fun createDatadogConfiguration(): Configuration {
-        @Suppress("DEPRECATION")
-        val configBuilder = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
-        )
-            .sampleTelemetry(100f)
-            .setFirstPartyHosts(tracedHosts)
+    private fun createRumFeature(): RumFeature {
+        return RumFeature.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
+            .useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
+            .apply {
+                if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
+                    useCustomEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
+                }
+            }
             .useViewTrackingStrategy(
                 NavigationViewTrackingStrategy(
                     R.id.nav_host_fragment,
@@ -189,10 +192,9 @@ class SampleApplication : Application() {
                     SampleNavigationPredicate()
                 )
             )
+            .sampleTelemetry(100f)
             .trackInteractions()
             .trackLongTasks(250L)
-
-        configBuilder
             .setRumViewEventMapper(object : ViewEventMapper {
                 override fun map(event: ViewEvent): ViewEvent {
                     event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
@@ -223,6 +225,15 @@ class SampleApplication : Application() {
                     return event
                 }
             })
+            .build()
+    }
+
+    private fun createDatadogConfiguration(): Configuration {
+        @Suppress("DEPRECATION")
+        val configBuilder = Configuration.Builder(
+            crashReportsEnabled = true
+        )
+            .setFirstPartyHosts(tracedHosts)
 
         try {
             configBuilder.useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
@@ -232,9 +243,6 @@ class SampleApplication : Application() {
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
             configBuilder.useCustomCrashReportsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
-        }
-        if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
-            configBuilder.useCustomRumEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
         }
         return configBuilder.build()
     }

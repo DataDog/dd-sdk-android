@@ -8,11 +8,13 @@ package com.datadog.android.sdk.integration
 
 import android.os.Build
 import com.datadog.android.Datadog
+import com.datadog.android._InternalProxy
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.log.Logger
 import com.datadog.android.log.LogsFeature
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingFeature
@@ -58,20 +60,25 @@ internal object RuntimeConfig {
 
     fun credentials(): Credentials {
         return Credentials(
-            DD_TOKEN,
-            INTEGRATION_TESTS_ENVIRONMENT,
-            Credentials.NO_VARIANT,
-            APP_ID
+            clientToken = DD_TOKEN,
+            envName = INTEGRATION_TESTS_ENVIRONMENT,
+            variant = Credentials.NO_VARIANT
         )
     }
 
     fun configBuilder(): Configuration.Builder {
         return Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
-            .useCustomRumEndpoint(rumEndpointUrl)
+            .apply {
+                _InternalProxy.allowClearTextHttp(this)
+            }
             .setUploadFrequency(UploadFrequency.FREQUENT)
+    }
+
+    fun rumFeatureBuilder(): RumFeature.Builder {
+        return RumFeature.Builder(APP_ID)
+            .useCustomEndpoint(rumEndpointUrl)
     }
 
     fun sessionReplayConfigBuilder(): SessionReplayConfiguration.Builder {

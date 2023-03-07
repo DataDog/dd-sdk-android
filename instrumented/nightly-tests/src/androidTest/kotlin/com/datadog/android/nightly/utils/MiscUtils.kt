@@ -21,6 +21,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingFeature
 import com.datadog.tools.unit.forge.aThrowable
@@ -96,6 +97,9 @@ fun initializeSdk(
     config: Configuration = createDatadogDefaultConfiguration(),
     logsFeatureProvider: () -> LogsFeature? = { LogsFeature.Builder().build() },
     tracingFeatureProvider: () -> TracingFeature? = { TracingFeature.Builder().build() },
+    rumFeatureProvider: (RumFeature.Builder) -> RumFeature? = {
+        it.build()
+    },
     tracerProvider: () -> Tracer = { createDefaultAndroidTracer() },
     rumMonitorProvider: () -> RumMonitor = { createDefaultRumMonitor() }
 ) {
@@ -105,13 +109,19 @@ fun initializeSdk(
         config,
         consent
     )
-    logsFeatureProvider.invoke()?.let {
-        Datadog.registerFeature(it)
-    }
-    tracingFeatureProvider.invoke()?.let {
-        Datadog.registerFeature(it)
-    }
     Datadog.setVerbosity(Log.VERBOSE)
+    rumFeatureProvider(
+        RumFeature.Builder(BuildConfig.NIGHTLY_TESTS_RUM_APP_ID)
+            .sampleTelemetry(100f)
+    )?.let {
+        Datadog.registerFeature(it)
+    }
+    logsFeatureProvider()?.let {
+        Datadog.registerFeature(it)
+    }
+    tracingFeatureProvider()?.let {
+        Datadog.registerFeature(it)
+    }
     GlobalTracer.registerIfAbsent(tracerProvider.invoke())
     GlobalRum.registerIfAbsent(rumMonitorProvider.invoke())
 }
@@ -120,15 +130,11 @@ fun initializeSdk(
  * Default builder for nightly runs with telemetry set to 100%.
  */
 fun defaultConfigurationBuilder(
-    crashReportsEnabled: Boolean = true,
-    rumEnabled: Boolean = true
+    crashReportsEnabled: Boolean = true
 ): Configuration.Builder {
-    val configBuilder = Configuration.Builder(
-        crashReportsEnabled = crashReportsEnabled,
-        rumEnabled = rumEnabled
+    return Configuration.Builder(
+        crashReportsEnabled = crashReportsEnabled
     )
-    return configBuilder
-        .sampleTelemetry(100f)
 }
 
 fun cleanStorageFiles() {
@@ -146,8 +152,7 @@ private fun createDatadogCredentials(): Credentials {
     return Credentials(
         clientToken = BuildConfig.NIGHTLY_TESTS_TOKEN,
         envName = ENV_NAME,
-        variant = "",
-        rumApplicationId = BuildConfig.NIGHTLY_TESTS_RUM_APP_ID
+        variant = ""
     )
 }
 

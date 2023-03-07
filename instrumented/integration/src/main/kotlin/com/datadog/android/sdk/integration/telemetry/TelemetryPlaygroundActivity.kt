@@ -37,18 +37,24 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
         super.onCreate(savedInstanceState)
 
         val credentials = RuntimeConfig.credentials()
-        // we will use a large long task threshold to make sure we will not have LongTask events
-        // noise in our integration tests.
         val config = RuntimeConfig.configBuilder()
-            .sampleTelemetry(HUNDRED_PERCENT)
-            .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
-            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
             .build()
 
         val trackingConsent = intent.getTrackingConsent()
 
         Datadog.initialize(this, credentials, config, trackingConsent)
         Datadog.setVerbosity(Log.VERBOSE)
+
+        Datadog.registerFeature(
+            // we will use a large long task threshold to make sure we will not have LongTask events
+            // noise in our integration tests.
+            RuntimeConfig.rumFeatureBuilder()
+                .sampleTelemetry(HUNDRED_PERCENT)
+                .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
+                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                .build()
+
+        )
 
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
     }

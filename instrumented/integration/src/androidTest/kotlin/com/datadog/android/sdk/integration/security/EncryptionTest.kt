@@ -18,6 +18,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.security.Encryption
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayFeature
@@ -57,6 +58,9 @@ internal class EncryptionTest {
         val credentials = createCredentials()
 
         Datadog.initialize(targetContext, credentials, configuration, TrackingConsent.PENDING)
+        Datadog.registerFeature(
+            RumFeature.Builder(applicationId = forge.anAlphaNumericalString()).build()
+        )
         Datadog.registerFeature(LogsFeature.Builder().build())
         Datadog.registerFeature(TracingFeature.Builder().build())
 
@@ -108,7 +112,7 @@ internal class EncryptionTest {
 
             assertThat(files)
                 .overridingErrorMessage("Expecting ${directory.path} to contain files")
-                .isNotEmpty()
+                .isNotEmpty
 
             files.forEach { file ->
                 val content = file.readText()
@@ -129,8 +133,7 @@ internal class EncryptionTest {
         return Credentials(
             clientToken = forge.anAlphaNumericalString(),
             envName = forge.anAlphaNumericalString(),
-            variant = Credentials.NO_VARIANT,
-            rumApplicationId = forge.anAlphaNumericalString()
+            variant = Credentials.NO_VARIANT
         )
     }
 
@@ -147,8 +150,7 @@ internal class EncryptionTest {
 
         return Configuration
             .Builder(
-                crashReportsEnabled = true,
-                rumEnabled = true
+                crashReportsEnabled = true
             )
             .setEncryption(encryption)
             .build()

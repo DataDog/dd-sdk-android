@@ -21,8 +21,6 @@ import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
-import com.datadog.android.utils.config.MainLooperTestConfiguration
-import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
@@ -105,16 +103,11 @@ internal class DatadogExceptionHandlerTest {
     @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
 
-    @StringForgery(regex = "([a-z]{2,8}\\.){1,4}[a-z]{2,8}")
-    lateinit var fakeServiceName: String
-
     @StringForgery
     lateinit var fakeVariant: String
 
     @BeforeEach
     fun `set up`() {
-        mockChoreographerInstance()
-
         whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn mockLogsFeatureScope
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
@@ -122,10 +115,9 @@ internal class DatadogExceptionHandlerTest {
 
         Datadog.initialize(
             appContext.mockInstance,
-            Credentials(fakeToken, fakeEnvName, fakeVariant, null),
+            Credentials(fakeToken, fakeEnvName, fakeVariant),
             Configuration.Builder(
-                crashReportsEnabled = true,
-                rumEnabled = true
+                crashReportsEnabled = true
             ).build(),
             TrackingConsent.GRANTED
         )
@@ -568,13 +560,12 @@ internal class DatadogExceptionHandlerTest {
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val mainLooper = MainLooperTestConfiguration()
         val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, mainLooper)
+            return listOf(logger, appContext)
         }
     }
 }

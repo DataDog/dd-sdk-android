@@ -44,9 +44,11 @@ class RumMonitorBackgroundE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean, Boolean, Boolean, Boolean)
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun trackBackgroundRumEvents(Boolean): Builder
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun trackFrustrations(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#constructor(String)
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun build(): RumFeature
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun trackBackgroundRumEvents(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun trackFrustrations(Boolean): Builder
      * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun get(): RumMonitor
      * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun isRegistered(): Boolean
      * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun registerIfAbsent(RumMonitor): Boolean
@@ -55,13 +57,14 @@ class RumMonitorBackgroundE2ETests {
     fun setUp() {
         initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
+            rumFeatureProvider = {
+                it.trackBackgroundRumEvents(true)
+                    .trackFrustrations(true)
+                    .build()
+            },
             config = defaultConfigurationBuilder(
-                crashReportsEnabled = true,
-                rumEnabled = true
-            )
-                .trackBackgroundRumEvents(true)
-                .trackFrustrations(true)
-                .build()
+                crashReportsEnabled = true
+            ).build()
         )
     }
 

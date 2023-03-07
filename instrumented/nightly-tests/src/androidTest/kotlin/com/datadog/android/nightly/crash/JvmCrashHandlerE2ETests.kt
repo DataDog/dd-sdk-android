@@ -32,7 +32,9 @@ class JvmCrashHandlerE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean, Boolean, Boolean, Boolean)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#constructor(String)
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun build(): RumFeature
      */
     @Test
     fun crash_reports_rum_enabled() {
@@ -53,7 +55,7 @@ class JvmCrashHandlerE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean, Boolean, Boolean, Boolean)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
      */
     @Test
     fun crash_reports_rum_disabled() {
@@ -69,7 +71,7 @@ class JvmCrashHandlerE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean, Boolean, Boolean, Boolean)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
      */
     @Test
     fun crash_reports_feature_disabled() {

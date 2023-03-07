@@ -15,7 +15,6 @@ import android.view.Choreographer
 import androidx.annotation.FloatRange
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
-import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.core.internal.utils.executeSafe
@@ -29,6 +28,7 @@ import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.RumDataWriter
@@ -85,33 +85,16 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import com.datadog.android.core.configuration.Configuration as LegacyConfiguration
 
+/**
+ * RUM feature class, which needs to be registered with Datadog SDK instance.
+ */
 @Suppress("TooManyFunctions")
-internal class RumFeature(
+class RumFeature internal constructor(
     internal val applicationId: String,
     internal val configuration: Configuration,
     private val ndkCrashEventHandler: NdkCrashEventHandler = DatadogNdkCrashEventHandler()
 ) : StorageBackedFeature, FeatureEventReceiver {
-
-    constructor(
-        applicationId: String,
-        configuration: LegacyConfiguration.Feature.RUM
-    ) : this(
-        applicationId,
-        Configuration(
-            endpointUrl = configuration.endpointUrl,
-            samplingRate = configuration.samplingRate,
-            telemetrySamplingRate = configuration.telemetrySamplingRate,
-            userActionTrackingStrategy = configuration.userActionTrackingStrategy,
-            viewTrackingStrategy = configuration.viewTrackingStrategy,
-            longTaskTrackingStrategy = configuration.longTaskTrackingStrategy,
-            rumEventMapper = configuration.rumEventMapper,
-            backgroundEventTracking = configuration.backgroundEventTracking,
-            trackFrustrations = configuration.trackFrustrations,
-            vitalsMonitorUpdateFrequency = configuration.vitalsMonitorUpdateFrequency
-        )
-    )
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
     internal val initialized = AtomicBoolean(false)
@@ -725,7 +708,7 @@ internal class RumFeature(
         val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency
     )
 
-    companion object {
+    internal companion object {
 
         internal const val DEFAULT_SAMPLING_RATE: Float = 100f
         internal const val DEFAULT_TELEMETRY_SAMPLING_RATE: Float = 20f

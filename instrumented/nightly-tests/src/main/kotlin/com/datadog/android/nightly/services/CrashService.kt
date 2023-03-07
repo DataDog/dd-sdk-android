@@ -30,11 +30,12 @@ internal abstract class CrashService : Service() {
         GlobalRum.get().addTiming("foo")
     }
 
+    protected val rumApplicationId = BuildConfig.NIGHTLY_TESTS_RUM_APP_ID
+
     protected fun getCredentials() = Credentials(
         clientToken = BuildConfig.NIGHTLY_TESTS_TOKEN,
         envName = "instrumentation",
-        variant = "",
-        rumApplicationId = BuildConfig.NIGHTLY_TESTS_RUM_APP_ID
+        variant = ""
     )
 
     companion object {

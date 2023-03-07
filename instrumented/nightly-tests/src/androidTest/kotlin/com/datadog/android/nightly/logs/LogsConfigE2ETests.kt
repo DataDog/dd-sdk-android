@@ -51,7 +51,6 @@ class LogsConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    rumEnabled = true,
                     crashReportsEnabled = true
                 ).build()
             )
@@ -73,7 +72,6 @@ class LogsConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    rumEnabled = true,
                     crashReportsEnabled = true
                 ).setBatchSize(forge.aValueFrom(BatchSize::class.java)).build()
             )
@@ -95,7 +93,6 @@ class LogsConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    rumEnabled = true,
                     crashReportsEnabled = true
                 ).build(),
                 logsFeatureProvider = { null }
@@ -118,7 +115,6 @@ class LogsConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    rumEnabled = true,
                     crashReportsEnabled = true
                 ).build(),
                 logsFeatureProvider = {
@@ -154,7 +150,6 @@ class LogsConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
-                    rumEnabled = true,
                     crashReportsEnabled = true
                 ).build(),
                 logsFeatureProvider = {
@@ -192,7 +187,6 @@ class LogsConfigE2ETests {
                 TrackingConsent.GRANTED,
                 Configuration
                     .Builder(
-                        rumEnabled = true,
                         crashReportsEnabled = true
                     )
                     .setEncryption(TestEncryption())

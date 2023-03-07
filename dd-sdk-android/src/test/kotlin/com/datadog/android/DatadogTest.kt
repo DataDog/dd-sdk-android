@@ -16,10 +16,7 @@ import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
-import com.datadog.android.utils.config.MainLooperTestConfiguration
-import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
@@ -77,9 +74,6 @@ internal class DatadogTest {
     @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
 
-    @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
-    lateinit var fakeApplicationId: String
-
     @Forgery
     lateinit var fakeConsent: TrackingConsent
 
@@ -87,9 +81,6 @@ internal class DatadogTest {
     fun `set up`() {
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
-
-        // Prevent crash when initializing RumFeature
-        mockChoreographerInstance()
 
         CoreFeature.disableKronosBackgroundSync = true
     }
@@ -179,10 +170,9 @@ internal class DatadogTest {
     @Test
     fun `𝕄 return true 𝕎 initialize(context, credential, , consent) + isInitialized()`() {
         // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         ).build()
 
         // When
@@ -196,10 +186,9 @@ internal class DatadogTest {
     @Test
     fun `𝕄 warn 𝕎 initialize() + initialize()`() {
         // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
         val configuration = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         ).build()
 
         // When
@@ -277,11 +266,10 @@ internal class DatadogTest {
     fun `𝕄 enable RUM debugging 𝕎 enableRumDebugging(true)`() {
         // Given
         val config = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .build()
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
         Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
         val mockRumFeature = mock<RumFeature>()
         val mockSdkFeature = mock<SdkFeature>()
@@ -300,11 +288,10 @@ internal class DatadogTest {
     fun `𝕄 disable RUM debugging 𝕎 enableRumDebugging(false)`() {
         // Given
         val config = Configuration.Builder(
-            crashReportsEnabled = true,
-            rumEnabled = true
+            crashReportsEnabled = true
         )
             .build()
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
         Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
         val mockRumFeature = mock<RumFeature>()
         val mockSdkFeature = mock<SdkFeature>()
@@ -334,14 +321,12 @@ internal class DatadogTest {
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
-        val mainLooper = MainLooperTestConfiguration()
         val logger = InternalLoggerTestConfiguration()
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, mainLooper, coreFeature)
+            return listOf(logger, appContext)
         }
     }
 }
