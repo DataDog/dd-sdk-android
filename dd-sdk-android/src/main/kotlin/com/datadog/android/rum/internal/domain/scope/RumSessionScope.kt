@@ -8,10 +8,10 @@ package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.AppStartTimeProvider
+import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -37,7 +37,7 @@ internal class RumSessionScope(
     frameRateVitalMonitor: VitalMonitor,
     internal val sessionListener: RumSessionListener?,
     contextProvider: ContextProvider,
-    buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
+    appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider(),
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {
@@ -61,7 +61,7 @@ internal class RumSessionScope(
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
-        buildSdkVersionProvider,
+        appStartTimeProvider,
         contextProvider
     )
 
@@ -148,6 +148,9 @@ internal class RumSessionScope(
         sessionState = if (keepSession) State.TRACKED else State.NOT_TRACKED
         sessionId = UUID.randomUUID().toString()
         sessionStartNs.set(nanoTime)
+        sdkCore.updateFeatureContext(RumFeature.RUM_FEATURE_NAME) {
+            it.putAll(getRumContext().toMap())
+        }
         sessionListener?.onSessionStarted(sessionId, !keepSession)
         sdkCore.getFeature(SESSION_REPLAY_FEATURE_NAME)?.sendEvent(
             mapOf(

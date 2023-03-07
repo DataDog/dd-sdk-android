@@ -16,7 +16,7 @@ dependencies {
 }
 ```
 
-3. Initialize the library with your application context, tracking consent, and the [Datadog client token][4] and Application ID generated when you create a new RUM application in the Datadog UI (see [Getting Started with Android RUM Collection][7] for more information). For security reasons, you must use a client token: you cannot use [Datadog API keys][5] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][4]:
+2. Initialize the library with your application context, tracking consent, and the [Datadog client token][4] and Application ID generated when you create a new RUM application in the Datadog UI (see [Getting Started with Android RUM Collection][7] for more information). For security reasons, you must use a client token: you cannot use [Datadog API keys][5] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][4]:
 
 **US** 
 
@@ -386,7 +386,7 @@ final Span serverSpan = tracer.buildSpan("<SERVER_SPAN_NAME>").asChildOf(extract
 span.setTag("http.url", url)
 ```
 
-11. (Optional) To mark a span as having an error, log it using OpenTracing tags:
+10. (Optional) To mark a span as having an error, log it using OpenTracing tags:
 
 ```kotlin
 span.log(mapOf(Fields.ERROR_OBJECT to throwable))
@@ -403,7 +403,7 @@ AndroidTracer.logThrowable(span, throwable)
 AndroidTracer.logErrorMessage(span, message)
 ```
 
-12. If you need to modify some attributes in your Span events before batching you can do so by providing an implementation of `SpanEventMapper` when initializing the SDK:
+11. If you need to modify some attributes in your Span events before batching you can do so by providing an implementation of `SpanEventMapper` when initializing the SDK:
 
 {{< tabs >}} 
 {{% tab "Kotlin" %}}

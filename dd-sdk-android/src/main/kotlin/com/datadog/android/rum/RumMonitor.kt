@@ -244,6 +244,17 @@ interface RumMonitor {
     )
 
     /**
+     * Adds result of evaluating a feature flag to the view.
+     * Feature flag evaluations are local to the active view and are cleared when the view is stopped.
+     * @param name the name of the feature flag
+     * @param value the value the feature flag evaluated to
+     */
+    fun addFeatureFlagEvaluation(
+        name: String,
+        value: Any
+    )
+
+    /**
      * For Datadog internal use only.
      *
      * @see _RumInternalProxy
@@ -314,7 +325,10 @@ interface RumMonitor {
                     handler = Handler(Looper.getMainLooper()),
                     telemetryEventHandler = TelemetryEventHandler(
                         sdkCore = datadogCore,
-                        eventSampler = RateBasedSampler(rumFeature.telemetrySamplingRate.percent())
+                        eventSampler = RateBasedSampler(rumFeature.telemetrySamplingRate.percent()),
+                        configurationExtraSampler = RateBasedSampler(
+                            rumFeature.telemetryConfigurationSamplingRate.percent()
+                        )
                     ),
                     firstPartyHostHeaderTypeResolver = coreFeature.firstPartyHostHeaderTypeResolver,
                     cpuVitalMonitor = rumFeature.cpuVitalMonitor,

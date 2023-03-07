@@ -250,6 +250,15 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun addFeatureFlagEvaluation(name: String, value: Any) {
+        handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name,
+                value
+            )
+        )
+    }
+
     // endregion
 
     // region AdvancedRumMonitor

@@ -9,11 +9,25 @@ package com.datadog.android
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.telemetry.internal.Telemetry
+import com.datadog.android.utils.assertj.JsonElementAssert
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.datadog.android.webview.internal.MixedWebViewEventConsumer
+import com.datadog.android.webview.internal.log.WebViewLogsFeature
+import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
+import com.datadog.android.webview.internal.rum.WebViewRumFeature
+import com.google.gson.JsonObject
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -35,7 +49,7 @@ import org.mockito.quality.Strictness
 internal class InternalProxyTest {
 
     @Mock
-    lateinit var mockCoreFeature: CoreFeature
+    lateinit var mockCoreFeature: DatadogCore
 
     @Test
     fun `M proxy telemetry to RumMonitor W debug()`(
@@ -91,7 +105,9 @@ internal class InternalProxyTest {
     ) {
         // Given
         val mockAppVersionProvider = mock<AppVersionProvider>()
-        whenever(mockCoreFeature.packageVersionProvider) doReturn mockAppVersionProvider
+        val mockCore = mock<CoreFeature>()
+        whenever(mockCoreFeature.coreFeature) doReturn mockCore
+        whenever(mockCore.packageVersionProvider) doReturn mockAppVersionProvider
         val proxy = _InternalProxy(telemetry = mock(), mockCoreFeature)
 
         // When
@@ -100,4 +116,61 @@ internal class InternalProxyTest {
         // Then
         verify(mockAppVersionProvider).version = version
     }
+
+    @Test
+    fun `M pass web view event to RumWebEventConsumer W consumeWebViewEvent()`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeBundledEvent = forge.getForgery<JsonObject>()
+        val fakeRumEventType = forge.anElementFrom(WebViewRumEventConsumer.RUM_EVENT_TYPES)
+        val fakeWebEvent = bundleWebEvent(fakeBundledEvent, fakeRumEventType)
+
+        val mockWebViewRumFeature = mock<WebViewRumFeature>()
+        val mockWebViewLogsFeature = mock<WebViewLogsFeature>()
+        val mockRumDataWriter = mock<DataWriter<Any>>()
+        val mockLogsDataWriter = mock<DataWriter<JsonObject>>()
+        whenever(mockCoreFeature.webViewRumFeature) doReturn mockWebViewRumFeature
+        whenever(mockCoreFeature.webViewLogsFeature) doReturn mockWebViewLogsFeature
+        whenever(mockWebViewRumFeature.dataWriter) doReturn mockRumDataWriter
+        whenever(mockWebViewLogsFeature.dataWriter) doReturn mockLogsDataWriter
+
+        val mockWebRumFeatureScope = mock<FeatureScope>()
+        val mockWebLogsFeatureScope = mock<FeatureScope>()
+        whenever(mockCoreFeature.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME))doReturn
+            mockWebRumFeatureScope
+        whenever(mockCoreFeature.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)) doReturn
+            mockWebLogsFeatureScope
+
+        val mockDatadogContext = mock<DatadogContext>()
+        val mockEventBatchWriter = mock<EventBatchWriter>()
+        val proxy = _InternalProxy(telemetry = mock(), mockCoreFeature)
+
+        // When
+        proxy.consumeWebviewEvent(fakeWebEvent.toString())
+        argumentCaptor<(DatadogContext, EventBatchWriter) -> Unit> {
+            verify(mockWebRumFeatureScope).withWriteContext(any(), capture())
+            firstValue(mockDatadogContext, mockEventBatchWriter)
+        }
+
+        // Then
+        argumentCaptor<JsonObject> {
+            verify(mockRumDataWriter).write(any(), capture())
+            JsonElementAssert.assertThat(firstValue).isEqualTo(fakeBundledEvent)
+        }
+    }
+}
+
+private fun bundleWebEvent(
+    fakeBundledEvent: JsonObject?,
+    eventType: String?
+): JsonObject {
+    val fakeWebEvent = JsonObject()
+    fakeBundledEvent?.let {
+        fakeWebEvent.add(MixedWebViewEventConsumer.EVENT_KEY, it)
+    }
+    eventType?.let {
+        fakeWebEvent.addProperty(MixedWebViewEventConsumer.EVENT_TYPE_KEY, it)
+    }
+    return fakeWebEvent
 }
