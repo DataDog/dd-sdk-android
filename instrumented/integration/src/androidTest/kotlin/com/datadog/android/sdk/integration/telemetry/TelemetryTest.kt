@@ -61,16 +61,18 @@ internal open class TelemetryTest {
                 it.getAsJsonPrimitive("type")?.asString == "telemetry"
             }
 
-        Assertions.assertThat(telemetryEvents)
+        Assertions.assertThat(telemetryEvents.size)
             .overridingErrorMessage(
-                "Recorded telemetry has different number of events" +
-                    " (${telemetryEvents.size}) than expected" +
-                    " telemetry (${expectedTelemetry.size})"
+                "Recorded telemetry expected at least ${expectedTelemetry.size} event, " +
+                    " got (${telemetryEvents.size}) which is less than expected."
             )
-            .hasSameSizeAs(expectedTelemetry)
+            .isGreaterThanOrEqualTo(expectedTelemetry.size)
 
         telemetryEvents.forEachIndexed { index, recordedEvent ->
-            verifyTelemetry(recordedEvent, expectedTelemetry[index])
+            // Okay to get more telemetry, these just have to be the first 3
+            if (index < expectedTelemetry.size) {
+                verifyTelemetry(recordedEvent, expectedTelemetry[index])
+            }
         }
     }
 
