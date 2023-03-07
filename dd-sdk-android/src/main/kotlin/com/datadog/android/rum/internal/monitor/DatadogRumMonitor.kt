@@ -41,6 +41,7 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import java.util.Locale
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
@@ -432,6 +433,25 @@ internal class DatadogRumMonitor(
                         e
                     )
                 }
+            }
+        }
+    }
+
+    /**
+     * Wait for any pending events. This is mostly for integration tests to ensure that the
+     * RUM context is in the correct state before proceeding.
+     */
+    @Suppress("unused")
+    private fun waitForPendingEvents() {
+        if (!executorService.isShutdown) {
+            val latch = CountDownLatch(1)
+            // Submit an empty task, and wait for it to complete
+            executorService.submit {
+                latch.countDown()
+            }
+            try {
+                latch.await()
+            } catch (_: InterruptedException) {
             }
         }
     }
