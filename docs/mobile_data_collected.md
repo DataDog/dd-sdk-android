@@ -64,7 +64,9 @@ The following OS-related attributes are attached automatically to all events col
 
 ### Geo-location
 
-The following attributes are related to the geo-location of IP addresses:
+The below attributes are related to the geo-location of IP addresses.
+
+**Note:** If you want to stop collecting geo-location attributes, change the setting in your [application details][9].
 
 | Fullname                                    | Type   | Description                                                                                                                          |
 |:--------------------------------------------|:-------|:-------------------------------------------------------------------------------------------------------------------------------------|
@@ -230,3 +232,4 @@ is unlocked won't be captured, since the credential encrypted storage won't be a
 [6]: https://source.android.com/security/app-sandbox
 [7]: https://developer.android.com/training/articles/direct-boot
 [8]: https://docs.datadoghq.com/data_security/real_user_monitoring/#ip-address
+[9]: https://docs.datadoghq.com/data_security/real_user_monitoring/#geolocation
