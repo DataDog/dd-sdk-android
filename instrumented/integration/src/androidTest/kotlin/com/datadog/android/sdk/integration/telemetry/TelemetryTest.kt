@@ -65,7 +65,7 @@ internal open class TelemetryTest {
         Assertions.assertThat(telemetryEvents.size)
             .overridingErrorMessage(
                 "Recorded telemetry expected at least ${expectedTelemetry.size} events, " +
-                    " got (${telemetryEvents.size}) which is less than expected."
+                    " got ${telemetryEvents.size} which is less than expected."
             )
             .isGreaterThanOrEqualTo(expectedTelemetry.size)
 
