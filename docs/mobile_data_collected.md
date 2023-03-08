@@ -64,7 +64,9 @@ The following OS-related attributes are attached automatically to all events col
 
 ### Geo-location
 
-The following attributes are related to the geo-location of IP addresses:
+The below attributes are related to the geo-location of IP addresses.
+
+**Note:** If you want to stop collecting geo-location attributes, change the setting in your [application details][9].
 
 | Fullname                                    | Type   | Description                                                                                                                          |
 |:--------------------------------------------|:-------|:-------------------------------------------------------------------------------------------------------------------------------------|
@@ -113,7 +115,7 @@ Metrics are quantifiable values that can be used for measurements related to the
 | `session.initial_view.name` | string | Name of the initial view of the session. |
 | `session.last_view.url` | string | URL of the last view of the session. |
 | `session.last_view.name` | string | Name of the last view of the session. |
-| `session.ip` | string | IP address of the session extracted from the TCP connection of the intake. |
+| `session.ip` | string | IP address of the session extracted from the TCP connection of the intake. If you want to stop collecting this attribute, change the setting in your [application details][8]. |
 | `session.useragent` | string | System user agent info to interpret device info.  |
 
 ### View metrics
@@ -229,3 +231,5 @@ is unlocked won't be captured, since the credential encrypted storage won't be a
 [5]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#track-user-sessions
 [6]: https://source.android.com/security/app-sandbox
 [7]: https://developer.android.com/training/articles/direct-boot
+[8]: https://docs.datadoghq.com/data_security/real_user_monitoring/#ip-address
+[9]: https://docs.datadoghq.com/data_security/real_user_monitoring/#geolocation
