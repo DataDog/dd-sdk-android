@@ -135,6 +135,7 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
         Datadog.setVerbosity(Log.VERBOSE)
 
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder

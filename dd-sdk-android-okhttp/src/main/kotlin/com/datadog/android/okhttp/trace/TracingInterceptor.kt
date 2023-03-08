@@ -64,7 +64,7 @@ import java.util.concurrent.atomic.AtomicReference
  *         .build();
  * ```
  */
-@Suppress("TooManyFunctions", "StringLiteralDuplication")
+@Suppress("TooManyFunctions", "StringLiteralDuplication", "DEPRECATION") // TODO RUMM-3103 remove deprecated references)
 open class TracingInterceptor
 internal constructor(
     internal val tracedHosts: Map<String, Set<TracingHeaderType>>,

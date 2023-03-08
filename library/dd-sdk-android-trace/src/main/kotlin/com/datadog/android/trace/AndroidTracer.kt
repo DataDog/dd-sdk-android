@@ -84,6 +84,7 @@ class AndroidTracer internal constructor(
      * Builds a [AndroidTracer] instance.
      *
      */
+    @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
     class Builder
     internal constructor(private val logsHandler: LogHandler) {
 

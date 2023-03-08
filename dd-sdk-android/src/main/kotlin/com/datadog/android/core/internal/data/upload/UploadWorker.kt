@@ -23,6 +23,7 @@ import java.util.Queue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class UploadWorker(
     appContext: Context,
     workerParams: WorkerParameters

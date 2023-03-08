@@ -286,6 +286,7 @@ interface RumMonitor {
         /**
          * Builds a [RumMonitor] based on the current state of this Builder.
          */
+        @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
         fun build(): RumMonitor {
             val datadogCore = Datadog.globalSdkCore as? InternalSdkCore
             val rumFeature = datadogCore

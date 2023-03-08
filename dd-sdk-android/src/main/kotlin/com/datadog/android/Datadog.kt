@@ -21,54 +21,67 @@ import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.android.v2.core.internal.HashGenerator
+import com.datadog.android.v2.core.internal.SdkCoreRegistry
 import com.datadog.android.v2.core.internal.Sha256HashGenerator
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * This class initializes the Datadog SDK, and sets up communication with the server.
  */
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 @SuppressWarnings("TooManyFunctions")
 object Datadog {
 
-    // TODO RUMM-2984 Implement global registry
+    internal val registry = SdkCoreRegistry(internalLogger)
+
     /**
      * Temporary thing, until global registry is implemented.
      */
+    @Deprecated("Will be removed in RUMM-3103")
     var globalSdkCore: SdkCore = NoOpSdkCore()
         internal set
 
     internal var hashGenerator: HashGenerator = Sha256HashGenerator()
 
+    @Deprecated("Will be removed in RUMM-3103")
     internal val initialized = AtomicBoolean(false)
 
     // region Initialization
 
     /**
-     * Initializes the Datadog SDK.
+     * Initializes a named instance of the Datadog SDK.
+     * @param instanceName the name of the instance (or null to initialize the default instance
      * @param context your application context
      * @param credentials your organization credentials
      * @param configuration the configuration for the SDK library
-     * @param trackingConsent as the initial state of the tracking consent flag.
+     * @param trackingConsent as the initial state of the tracking consent flag
+     * @return the initialized SDK instance, or null if something prevents the SDK from
+     * being initialized
      * @see [Credentials]
      * @see [Configuration]
      * @see [TrackingConsent]
      * @throws IllegalArgumentException if the env name is using illegal characters and your
      * application is in debug mode otherwise returns false and stops initializing the SDK
      */
+    @Suppress("ReturnCount")
     @JvmStatic
     fun initialize(
+        instanceName: String?,
         context: Context,
         credentials: Credentials,
         configuration: Configuration,
         trackingConsent: TrackingConsent
-    ) {
-        if (initialized.get()) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                MESSAGE_ALREADY_INITIALIZED
-            )
-            return
+    ): SdkCore? {
+        synchronized(registry) {
+            val existing = registry.getInstance(instanceName)
+            if (existing != null) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    MESSAGE_ALREADY_INITIALIZED
+                )
+                return existing
+            }
         }
 
         val sdkInstanceId = hashGenerator.generate(
@@ -81,22 +94,62 @@ object Datadog {
                 InternalLogger.Target.USER,
                 CANNOT_CREATE_SDK_INSTANCE_ID_ERROR
             )
-            return
+            return null
         }
 
-        globalSdkCore = DatadogCore(context, credentials, configuration, sdkInstanceId)
-        globalSdkCore.setTrackingConsent(trackingConsent)
+        val sdkCore = DatadogCore(context, credentials, configuration, sdkInstanceId)
+        sdkCore.setTrackingConsent(trackingConsent)
+        registry.register(instanceName, sdkCore)
 
-        initialized.set(true)
+        // TODO RUMM-3103 remove this
+        if (instanceName == null) {
+            globalSdkCore = sdkCore
+        }
+        return sdkCore
     }
 
     /**
-     * Checks if the Datadog SDK was already initialized.
-     * @return true if the SDK was initialized, false otherwise
+     * Initializes the Datadog SDK.
+     * @param context your application context
+     * @param credentials your organization credentials
+     * @param configuration the configuration for the SDK library
+     * @param trackingConsent as the initial state of the tracking consent flag
+     * @return the initialized SDK instance, or null if something prevents the SDK from
+     * being initialized
+     * @see [Credentials]
+     * @see [Configuration]
+     * @see [TrackingConsent]
+     * @throws IllegalArgumentException if the env name is using illegal characters and your
+     * application is in debug mode otherwise returns false and stops initializing the SDK
+     */
+    @JvmStatic
+    fun initialize(
+        context: Context,
+        credentials: Credentials,
+        configuration: Configuration,
+        trackingConsent: TrackingConsent
+    ): SdkCore? {
+        return initialize(null, context, credentials, configuration, trackingConsent)
+    }
+
+    /**
+     * Checks if a default instance of the Datadog SDK was already initialized.
+     * @return true if a default instance of the SDK was initialized, false otherwise
      */
     @JvmStatic
     fun isInitialized(): Boolean {
         return initialized.get()
+    }
+
+    /**
+     * Retrieve the initialized SDK instance attached to the given name,
+     * or the default instance if the name is null.
+     * @param instanceName the name of the instance to retrieve,
+     * or null to get the default instance
+     * @return the existing instance linked with the given name, or null
+     */
+    fun getInstance(instanceName: String? = null): SdkCore? {
+        return registry.getInstance(instanceName)
     }
 
     // endregion
@@ -107,7 +160,14 @@ object Datadog {
      * Clears all data that has not already been sent to Datadog servers.
      */
     @JvmStatic
+    @Deprecated(
+        "RUMM-3103 use getInstance().clearAllData()",
+        ReplaceWith(
+            "Datadog.getInstance()?.clearAllData()"
+        )
+    )
     fun clearAllData() {
+        // TODO RUMM-3103 deprecate this
         globalSdkCore.clearAllData()
     }
 
@@ -151,6 +211,12 @@ object Datadog {
      * [android.util.Log.WARN], [android.util.Log.ERROR], [android.util.Log.ASSERT]).
      */
     @JvmStatic
+    @Deprecated(
+        "RUMM-3103 use getInstance().setVerbosity(level)",
+        ReplaceWith(
+            "Datadog.getInstance()?.setVerbosity(level)"
+        )
+    )
     fun setVerbosity(level: Int) {
         globalSdkCore.setVerbosity(level)
     }
@@ -162,6 +228,12 @@ object Datadog {
      * ([TrackingConsent.PENDING], [TrackingConsent.GRANTED], [TrackingConsent.NOT_GRANTED])
      */
     @JvmStatic
+    @Deprecated(
+        "RUMM-3103 use getInstance().setTrackingConsent()",
+        ReplaceWith(
+            "Datadog.getInstance()?.setTrackingConsent(consent)"
+        )
+    )
     fun setTrackingConsent(consent: TrackingConsent) {
         globalSdkCore.setTrackingConsent(consent)
     }
@@ -177,6 +249,12 @@ object Datadog {
      */
     @JvmStatic
     @JvmOverloads
+    @Deprecated(
+        "RUMM-3103 use getInstance().setUserInfo()",
+        ReplaceWith(
+            "Datadog.getInstance()?.setUserInfo(id, name, email, extraInfo)"
+        )
+    )
     fun setUserInfo(
         id: String? = null,
         name: String? = null,
@@ -204,6 +282,12 @@ object Datadog {
      */
     @JvmStatic
     @JvmOverloads
+    @Deprecated(
+        "RUMM-3103 use getInstance().addUserExtraInfo()",
+        ReplaceWith(
+            "Datadog.getInstance()?.addUserExtraInfo(extraInfo)"
+        )
+    )
     fun addUserExtraInfo(
         extraInfo: Map<String, Any?> = emptyMap()
     ) {
@@ -213,7 +297,8 @@ object Datadog {
     /**
      * Utility setting to inspect the active RUM View.
      * If set, a debugging outline will be displayed on top of the application, describing the name
-     * of the active RUM View. May be used to debug issues with RUM instrumentation in your app.
+     * of the active RUM View in the default SDK instance (if any).
+     * May be used to debug issues with RUM instrumentation in your app.
      *
      * @param enable if enabled, then app will show an overlay describing the active RUM view.
      */
@@ -234,6 +319,12 @@ object Datadog {
      * @param feature Feature to register.
      */
     @JvmStatic
+    @Deprecated(
+        "RUMM-3103 use getInstance().registerFeature()",
+        ReplaceWith(
+            "Datadog.getInstance()?.registerFeature(feature)"
+        )
+    )
     fun registerFeature(feature: Feature) {
         globalSdkCore.registerFeature(feature)
     }
