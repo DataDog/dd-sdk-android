@@ -13,11 +13,11 @@ import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.storage.NoOpDataWriter
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
-import com.datadog.android.v2.core.storage.NoOpDataWriter
 import java.security.SecureRandom
 import java.util.UUID
 import java.util.concurrent.TimeUnit

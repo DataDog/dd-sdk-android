@@ -6,6 +6,15 @@
 
 package com.datadog.android.core.internal.system
 
-internal interface BuildSdkVersionProvider {
+import android.os.Build
+
+/**
+ * Wrapper around [Build.VERSION.SDK_INT] in order to simplify mocking in tests.
+ */
+interface BuildSdkVersionProvider {
+
+    /**
+     * Value of [Build.VERSION.SDK_INT].
+     */
     fun version(): Int
 }

@@ -7,7 +7,6 @@
 package com.datadog.android.rum
 
 import com.datadog.android.event.EventMapper
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 

@@ -110,7 +110,21 @@ interface com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
   fun headerTypesForUrl(okhttp3.HttpUrl): Set<com.datadog.android.trace.TracingHeaderType>
   fun getAllHeaderTypes(): Set<com.datadog.android.trace.TracingHeaderType>
   fun isEmpty(): Boolean
+interface com.datadog.android.core.internal.persistence.Deserializer<P: Any, R: Any>
+  fun deserialize(P): R?
+fun canReadSafe(): Boolean
+fun existsSafe(): Boolean
+fun readTextSafe(java.nio.charset.Charset = Charsets.UTF_8): String?
+fun readLinesSafe(java.nio.charset.Charset = Charsets.UTF_8): List<String>?
+interface com.datadog.android.core.internal.system.BuildSdkVersionProvider
+  fun version(): Int
+class com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider : BuildSdkVersionProvider
+  override fun version(): Int
+class com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor : java.util.concurrent.ScheduledThreadPoolExecutor
+  constructor(Int, com.datadog.android.v2.api.InternalLogger)
+  override fun afterExecute(Runnable?, Throwable?)
 fun join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0)): ByteArray
+fun executeSafe(String, Runnable)
 val NULL_MAP_VALUE: Object
 fun toJsonElement(): com.google.gson.JsonElement
 fun toHexString(): String
@@ -317,6 +331,7 @@ interface com.datadog.android.v2.core.InternalSdkCore : com.datadog.android.v2.a
   val networkInfo: com.datadog.android.v2.api.context.NetworkInfo
   val trackingConsent: com.datadog.android.privacy.TrackingConsent
   val rootStorageDir: java.io.File
+  val processImportance: Int
   fun writeLastViewEvent(ByteArray)
 interface com.datadog.android.v2.core.storage.DataWriter<T>
   fun write(com.datadog.android.v2.api.EventBatchWriter, T): Boolean

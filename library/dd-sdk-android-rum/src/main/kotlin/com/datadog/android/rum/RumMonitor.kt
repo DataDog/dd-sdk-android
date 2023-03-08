@@ -15,7 +15,6 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.v2.api.Feature
@@ -303,8 +302,7 @@ interface RumMonitor {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    RUM_NOT_ENABLED_ERROR_MESSAGE + "\n" +
-                        Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
+                    RUM_NOT_ENABLED_ERROR_MESSAGE
                 )
                 NoOpRumMonitor()
             } else if (rumFeature.applicationId.isBlank()) {

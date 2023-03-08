@@ -19,7 +19,7 @@ import com.datadog.android.nightly.activities.HUNDRED_PERCENT
 import com.datadog.android.nightly.exceptions.RumDisabledException
 import com.datadog.android.nightly.exceptions.RumEnabledException
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.RumFeature
 import com.datadog.android.trace.TracingFeature
 
 internal open class JvmCrashService : CrashService() {

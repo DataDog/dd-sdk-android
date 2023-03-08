@@ -13,12 +13,11 @@ import android.os.Process
 import android.os.SystemClock
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.internalLogger
-import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.RumFeature
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
@@ -87,7 +86,7 @@ internal class RumViewManagerScope(
 
     @WorkerThread
     private fun handleOrphanEvent(event: RumRawEvent, writer: DataWriter<Any>) {
-        val processFlag = CoreFeature.processImportance
+        val processFlag = sdkCore.processImportance
         val importanceForeground = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         val isForegroundProcess = processFlag == importanceForeground
 
@@ -206,7 +205,7 @@ internal class RumViewManagerScope(
     ) {
         if (!applicationDisplayed) {
             applicationDisplayed = true
-            val isForegroundProcess = CoreFeature.processImportance ==
+            val isForegroundProcess = sdkCore.processImportance ==
                 ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
             if (isForegroundProcess) {
                 val applicationStartTime = resolveStartupTimeNs()

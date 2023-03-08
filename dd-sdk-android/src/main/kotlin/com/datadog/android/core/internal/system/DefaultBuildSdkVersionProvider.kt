@@ -8,6 +8,11 @@ package com.datadog.android.core.internal.system
 
 import android.os.Build
 
-internal class DefaultBuildSdkVersionProvider : BuildSdkVersionProvider {
+/**
+ * Check [BuildSdkVersionProvider] docs.
+ */
+class DefaultBuildSdkVersionProvider : BuildSdkVersionProvider {
+
+    /** @inheritdoc */
     override fun version(): Int = Build.VERSION.SDK_INT
 }

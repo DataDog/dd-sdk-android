@@ -16,7 +16,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.resolveViewUrl
-import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.RumFeature
 import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration

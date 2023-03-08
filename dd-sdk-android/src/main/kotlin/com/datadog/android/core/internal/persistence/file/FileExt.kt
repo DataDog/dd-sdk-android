@@ -60,7 +60,10 @@ internal fun File.canWriteSafe(): Boolean {
     }
 }
 
-internal fun File.canReadSafe(): Boolean {
+/**
+ * Non-throwing version of [File.canRead]. If exception happens, false is returned.
+ */
+fun File.canReadSafe(): Boolean {
     return safeCall(default = false) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         canRead()
@@ -74,7 +77,10 @@ internal fun File.deleteSafe(): Boolean {
     }
 }
 
-internal fun File.existsSafe(): Boolean {
+/**
+ * Non-throwing version of [File.exists]. If exception happens, false is returned.
+ */
+fun File.existsSafe(): Boolean {
     return safeCall(default = false) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         exists()
@@ -130,7 +136,10 @@ internal fun File.renameToSafe(dest: File): Boolean {
     }
 }
 
-internal fun File.readTextSafe(charset: Charset = Charsets.UTF_8): String? {
+/**
+ * Non-throwing version of [File.readText]. If exception happens, null is returned.
+ */
+fun File.readTextSafe(charset: Charset = Charsets.UTF_8): String? {
     return if (existsSafe() && canReadSafe()) {
         safeCall(default = null) {
             @Suppress("UnsafeThirdPartyFunctionCall")
@@ -152,7 +161,10 @@ internal fun File.readBytesSafe(): ByteArray? {
     }
 }
 
-internal fun File.readLinesSafe(charset: Charset = Charsets.UTF_8): List<String>? {
+/**
+ * Non-throwing version of [File.readLines]. If exception happens, null is returned.
+ */
+fun File.readLinesSafe(charset: Charset = Charsets.UTF_8): List<String>? {
     return if (existsSafe() && canReadSafe()) {
         safeCall(default = null) {
             @Suppress("UnsafeThirdPartyFunctionCall")

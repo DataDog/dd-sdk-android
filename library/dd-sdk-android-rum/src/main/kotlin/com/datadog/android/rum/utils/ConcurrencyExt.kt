@@ -4,11 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.utils
+package com.datadog.android.rum.utils
 
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
-import java.util.concurrent.Executor
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
@@ -16,27 +16,8 @@ import java.util.concurrent.TimeUnit
 
 internal const val ERROR_TASK_REJECTED = "Unable to schedule %s task on the executor"
 
-/**
- * Executes runnable without throwing [RejectedExecutionException] if it cannot be accepted
- * for execution.
- *
- * @param operationName Name of the task.
- * @param runnable Task to run.
- */
-fun Executor.executeSafe(operationName: String, runnable: Runnable) {
-    try {
-        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-        execute(runnable)
-    } catch (e: RejectedExecutionException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            ERROR_TASK_REJECTED.format(Locale.US, operationName),
-            e
-        )
-    }
-}
-
+// TODO RUMM-0000 this is a copy of the similar function from core package. Have to make it this
+//  way because API surface task is failing trying to parse star-projection here. Will be solved later.
 internal fun ScheduledExecutorService.scheduleSafe(
     operationName: String,
     delay: Long,

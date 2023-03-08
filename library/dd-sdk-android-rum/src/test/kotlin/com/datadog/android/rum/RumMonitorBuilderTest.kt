@@ -10,7 +10,6 @@ import android.os.Looper
 import com.datadog.android.Datadog
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.CombinedRumSessionListener
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
