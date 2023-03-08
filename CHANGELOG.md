@@ -1,3 +1,8 @@
+# 1.17.2 / 2023-03-06
+
+* [BUGFIX] Global: Handle devices not reported properly their power source. See [#1315](https://github.com/DataDog/dd-sdk-android/pull/1315)
+* [BUGFIX] RUM: Detect device's refresh rate with NavigationViewTrackingStrategy. See [#1312](https://github.com/DataDog/dd-sdk-android/pull/1312)
+
 # 1.17.1 / 2023-02-20
 
 * [BUGFIX] RUM: Revert: Detect device's refresh rate from vital monitor. See [#1251](https://github.com/DataDog/dd-sdk-android/pull/1251)
