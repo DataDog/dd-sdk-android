@@ -11,6 +11,7 @@ import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.config.setLibraryVersion
+import java.nio.file.Paths
 
 plugins {
     // Build
@@ -42,6 +43,9 @@ android {
     defaultConfig {
         minSdk = AndroidConfig.MIN_SDK
         targetSdk = AndroidConfig.TARGET_SDK
+
+        consumerProguardFiles(Paths.get(rootDir.path, "consumer-rules.pro").toString())
+
         setLibraryVersion()
     }
 

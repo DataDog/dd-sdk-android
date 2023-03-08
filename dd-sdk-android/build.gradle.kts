@@ -54,8 +54,6 @@ android {
         targetSdk = AndroidConfig.TARGET_SDK
 
         setLibraryVersion()
-
-        consumerProguardFiles("consumer-rules.pro")
     }
 
     namespace = "com.datadog.android"
