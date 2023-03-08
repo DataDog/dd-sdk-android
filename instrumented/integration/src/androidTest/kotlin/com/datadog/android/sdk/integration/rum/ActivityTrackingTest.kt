@@ -28,6 +28,7 @@ internal abstract class ActivityTrackingTest :
         )
 
         instrumentation.waitForIdleSync()
+        waitForPendingRUMEvents()
 
         expectedEvents.add(ExpectedApplicationStartActionEvent())
         expectedEvents.add(

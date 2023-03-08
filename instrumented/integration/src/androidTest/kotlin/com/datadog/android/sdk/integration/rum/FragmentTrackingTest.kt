@@ -34,8 +34,16 @@ internal abstract class FragmentTrackingTest :
             )
         )
 
+        expectedEvents.add(
+            ExpectedApplicationLaunchViewEvent(
+                docVersion = 3
+            )
+        )
+
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()
+        waitForPendingRUMEvents()
+
         val fragmentAViewUrl = currentFragmentViewUrl(activity)
         // one for view start
         expectedEvents.add(
@@ -43,13 +51,6 @@ internal abstract class FragmentTrackingTest :
                 fragmentAViewUrl,
                 2,
                 currentFragmentExtras(activity)
-            )
-        )
-
-        // Application launch is stopped after fragment starts
-        expectedEvents.add(
-            ExpectedApplicationLaunchViewEvent(
-                docVersion = 3
             )
         )
 
