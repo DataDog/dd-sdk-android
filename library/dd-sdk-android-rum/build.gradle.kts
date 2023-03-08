@@ -87,7 +87,12 @@ dependencies {
     implementation(project(":dd-sdk-android"))
     implementation(libs.kotlin)
     implementation(libs.gson)
-    implementation(libs.androidXAnnotation)
+    implementation(libs.okHttp)
+
+    // Android Instrumentation
+    implementation(libs.androidXCore)
+    implementation(libs.bundles.androidXNavigation)
+    implementation(libs.androidXRecyclerView)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
@@ -104,6 +109,11 @@ dependencies {
 unMock {
     keepStartingWith("org.json")
 }
+
+apply(from = "clone_rum_schema.gradle.kts")
+apply(from = "clone_telemetry_schema.gradle.kts")
+apply(from = "generate_rum_models.gradle.kts")
+apply(from = "generate_telemetry_models.gradle.kts")
 
 kotlinConfig()
 junitConfig()

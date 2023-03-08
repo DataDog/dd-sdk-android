@@ -16,7 +16,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.event.EventMapper
-import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
 import com.datadog.android.nightly.activities.ViewTrackingActivity
 import com.datadog.android.nightly.rules.NightlyTestRule
@@ -40,6 +39,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -125,7 +125,7 @@ class RumConfigE2ETests {
     // region ViewEventMapper
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumViewEventMapper(com.datadog.android.event.ViewEventMapper): Builder
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumViewEventMapper(com.datadog.android.rum.event.ViewEventMapper): Builder
      */
     @Test
     fun rum_config_set_rum_view_event_mapper() {
@@ -162,7 +162,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumViewEventMapper(com.datadog.android.event.ViewEventMapper): Builder
+     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumViewEventMapper(com.datadog.android.rum.event.ViewEventMapper): Builder
      */
     @Test
     fun rum_config_set_rum_view_event_mapper_map_to_copy() {

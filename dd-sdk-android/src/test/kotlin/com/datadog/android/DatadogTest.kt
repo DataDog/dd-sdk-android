@@ -12,16 +12,14 @@ import android.net.ConnectivityManager
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.android.v2.core.internal.HashGenerator
 import com.datadog.android.v2.core.internal.Sha256HashGenerator
 import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
@@ -469,47 +467,30 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 enable RUM debugging 𝕎 enableRumDebugging(true)`() {
+    fun `𝕄 stop initialization and log error 𝕎 initialize() { cannot create instance id }`(
+        @Forgery fakeCredentials: Credentials,
+        @Forgery fakeConfiguration: Configuration
+    ) {
         // Given
-        val config = Configuration.Builder(
-            crashReportsEnabled = true
-        )
-            .build()
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
-        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
-        val mockRumFeature = mock<RumFeature>()
-        val mockSdkFeature = mock<SdkFeature>()
-        whenever(mockSdkFeature.unwrap<RumFeature>()) doReturn mockRumFeature
-        (Datadog.globalSdkCore as DatadogCore).features +=
-            Feature.RUM_FEATURE_NAME to mockSdkFeature
+        val mockHashGenerator: HashGenerator = mock()
+        whenever(
+            mockHashGenerator.generate(
+                fakeCredentials.clientToken + fakeConfiguration.coreConfig.site.siteName
+            )
+        ) doReturn null
+        Datadog.hashGenerator = mockHashGenerator
 
         // When
-        Datadog.enableRumDebugging(true)
+        Datadog.initialize(appContext.mockInstance, fakeCredentials, fakeConfiguration, fakeConsent)
 
         // Then
-        verify(mockRumFeature).enableDebugging()
-    }
-
-    @Test
-    fun `𝕄 disable RUM debugging 𝕎 enableRumDebugging(false)`() {
-        // Given
-        val config = Configuration.Builder(
-            crashReportsEnabled = true
+        assertThat(Datadog.isInitialized()).isFalse()
+        assertThat(Datadog.globalSdkCore).isInstanceOf(NoOpSdkCore::class.java)
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            Datadog.CANNOT_CREATE_SDK_INSTANCE_ID_ERROR
         )
-            .build()
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
-        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
-        val mockRumFeature = mock<RumFeature>()
-        val mockSdkFeature = mock<SdkFeature>()
-        whenever(mockSdkFeature.unwrap<RumFeature>()) doReturn mockRumFeature
-        (Datadog.globalSdkCore as DatadogCore).features +=
-            Feature.RUM_FEATURE_NAME to mockSdkFeature
-
-        // When
-        Datadog.enableRumDebugging(false)
-
-        // Then
-        verify(mockRumFeature).disableDebugging()
     }
 
     @Test

@@ -62,7 +62,6 @@ android {
 
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
-        java.srcDir("build/generated/json2kotlin/main/kotlin")
     }
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
@@ -135,9 +134,7 @@ dependencies {
     implementation(libs.kronosNTP)
 
     // Android Instrumentation
-    implementation(libs.androidXCore)
-    implementation(libs.bundles.androidXNavigation)
-    implementation(libs.androidXRecyclerView)
+    implementation(libs.androidXAnnotation)
     implementation(libs.androidXWorkManager)
 
     // Generate NoOp implementations
@@ -170,11 +167,6 @@ unMock {
     keep("android.view.DisplayEventReceiver")
     keepStartingWith("org.json")
 }
-
-apply(from = "clone_rum_schema.gradle.kts")
-apply(from = "clone_telemetry_schema.gradle.kts")
-apply(from = "generate_rum_models.gradle.kts")
-apply(from = "generate_telemetry_models.gradle.kts")
 
 kotlinConfig()
 junitConfig()

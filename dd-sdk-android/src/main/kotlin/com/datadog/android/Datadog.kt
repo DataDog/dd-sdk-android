@@ -11,9 +11,6 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
@@ -196,10 +193,12 @@ object Datadog {
         // we need to drain, execute and flush from a background thread or ensure we're
         // not in the main thread!
         if (initialized.get()) {
-            (GlobalRum.get() as? DatadogRumMonitor)?.let {
-                it.stopKeepAliveCallback()
-                it.drainExecutorService()
-            }
+            globalSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+                ?.sendEvent(
+                    mapOf(
+                        "type" to "flush_and_stop_monitor"
+                    )
+                )
             globalSdkCore.flushStoredData()
         }
     }
@@ -296,25 +295,6 @@ object Datadog {
         extraInfo: Map<String, Any?> = emptyMap()
     ) {
         globalSdkCore.addUserProperties(extraInfo)
-    }
-
-    /**
-     * Utility setting to inspect the active RUM View.
-     * If set, a debugging outline will be displayed on top of the application, describing the name
-     * of the active RUM View in the default SDK instance (if any).
-     * May be used to debug issues with RUM instrumentation in your app.
-     *
-     * @param enable if enabled, then app will show an overlay describing the active RUM view.
-     */
-    @JvmStatic
-    fun enableRumDebugging(enable: Boolean) {
-        val rumFeature = globalSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-            ?.unwrap<RumFeature>()
-        if (enable) {
-            rumFeature?.enableDebugging()
-        } else {
-            rumFeature?.disableDebugging()
-        }
     }
 
     /**

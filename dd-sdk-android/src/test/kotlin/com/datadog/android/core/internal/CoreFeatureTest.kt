@@ -29,9 +29,9 @@ import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
+import com.datadog.android.ndk.DatadogNdkCrashHandler
+import com.datadog.android.ndk.NoOpNdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
-import com.datadog.android.rum.internal.ndk.NoOpNdkCrashHandler
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.core.internal.DatadogContextProvider
