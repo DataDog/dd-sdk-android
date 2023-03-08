@@ -6,14 +6,12 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.connect
 import com.datadog.android.rum.internal.domain.scope.dns
 import com.datadog.android.rum.internal.domain.scope.download
 import com.datadog.android.rum.internal.domain.scope.firstByte
 import com.datadog.android.rum.internal.domain.scope.ssl
-import com.datadog.android.rum.internal.domain.scope.toResourceSchemaType
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -102,21 +100,19 @@ internal class ResourceEventForgeryFactory :
                 ResourceEvent.CiTest(anHexadecimalString())
             },
             os = forge.aNullable {
-                val androidInfoProvider = getForgery(AndroidInfoProvider::class.java)
                 ResourceEvent.Os(
-                    name = androidInfoProvider.osName,
-                    version = androidInfoProvider.osVersion,
-                    versionMajor = androidInfoProvider.osMajorVersion
+                    name = forge.aString(),
+                    version = "${forge.aSmallInt()}.${forge.aSmallInt()}.${forge.aSmallInt()}",
+                    versionMajor = forge.aSmallInt().toString()
                 )
             },
             device = forge.aNullable {
-                val androidInfoProvider = getForgery(AndroidInfoProvider::class.java)
                 ResourceEvent.Device(
-                    name = androidInfoProvider.deviceName,
-                    model = androidInfoProvider.deviceModel,
-                    brand = androidInfoProvider.deviceBrand,
-                    type = androidInfoProvider.deviceType.toResourceSchemaType(),
-                    architecture = androidInfoProvider.architecture
+                    name = forge.aString(),
+                    model = forge.aString(),
+                    brand = forge.aString(),
+                    type = forge.aValueFrom(ResourceEvent.DeviceType::class.java),
+                    architecture = forge.aString()
                 )
             },
             context = forge.aNullable {

@@ -104,6 +104,8 @@ dependencies {
     testImplementation(project(":tools:unit"))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
+    testImplementation(libs.okHttpMock)
+    testImplementation(libs.bundles.openTracing)
     unmock(libs.robolectric)
 
     // TODO MTG-12 detekt(project(":tools:detekt"))
@@ -111,6 +113,17 @@ dependencies {
 }
 
 unMock {
+    keep("android.os.BaseBundle")
+    keep("android.os.Bundle")
+    keep("android.os.Parcel")
+    keepStartingWith("com.android.internal.util.")
+    keepStartingWith("android.util.")
+    keep("android.content.ComponentName")
+    keep("android.os.Looper")
+    keep("android.os.MessageQueue")
+    keep("android.os.SystemProperties")
+    keep("android.view.Choreographer")
+    keep("android.view.DisplayEventReceiver")
     keepStartingWith("org.json")
 }
 

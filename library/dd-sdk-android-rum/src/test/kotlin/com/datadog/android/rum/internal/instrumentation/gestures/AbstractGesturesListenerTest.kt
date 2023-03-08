@@ -13,9 +13,9 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.Window
 import com.datadog.android.Datadog
+import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration

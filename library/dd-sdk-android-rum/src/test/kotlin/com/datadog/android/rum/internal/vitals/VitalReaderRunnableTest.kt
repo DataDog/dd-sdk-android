@@ -7,8 +7,8 @@
 package com.datadog.android.rum.internal.vitals
 
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
+import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore

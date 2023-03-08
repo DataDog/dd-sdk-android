@@ -13,17 +13,17 @@ import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
+import com.datadog.android.rum.utils.config.DatadogSingletonTestConfiguration
+import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.InternalSdkCore
-import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -36,7 +36,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -63,9 +62,6 @@ internal class RumMonitorBuilderTest {
     lateinit var fakeRumApplicationId: UUID
 
     @Mock
-    lateinit var mockSdkCore: InternalSdkCore
-
-    @Mock
     lateinit var mockRumFeature: RumFeature
 
     @BeforeEach
@@ -84,17 +80,12 @@ internal class RumMonitorBuilderTest {
 
         val mockRumFeatureScope = mock<FeatureScope>()
         whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
-
-        Datadog.globalSdkCore = mockSdkCore
+        whenever(
+            datadog.mockInstance.getFeature(Feature.RUM_FEATURE_NAME)
+        ) doReturn mockRumFeatureScope
+        whenever(datadog.mockInstance.firstPartyHostResolver) doReturn mock()
 
         testedBuilder = RumMonitor.Builder()
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        Datadog.globalSdkCore = NoOpSdkCore()
     }
 
     @Test
@@ -125,12 +116,12 @@ internal class RumMonitorBuilderTest {
         assertThat(monitor.samplingRate).isEqualTo(fakeSamplingRate)
         assertThat(monitor.backgroundTrackingEnabled).isEqualTo(fakeBackgroundEventTracking)
 
-        assertThat(monitor.telemetryEventHandler.sdkCore).isSameAs(mockSdkCore)
+        assertThat(monitor.telemetryEventHandler.sdkCore).isSameAs(datadog.mockInstance)
 
         val telemetrySampler = monitor.telemetryEventHandler.eventSampler
         check(telemetrySampler is RateBasedSampler)
 
-        assertThat(telemetrySampler.sampleRate)
+        assertThat(telemetrySampler.getSamplingRate())
             .isEqualTo(mockRumFeature.telemetrySamplingRate / 100)
     }
 
@@ -200,7 +191,7 @@ internal class RumMonitorBuilderTest {
     fun `𝕄 builds nothing 𝕎 build() and SDK instance doesn't implement InternalSdkCore`() {
         // Given
         val wrongSdkCore = mock<SdkCore>()
-        Datadog.globalSdkCore = wrongSdkCore
+        Datadog::class.java.setStaticValue("globalSdkCore", wrongSdkCore)
         whenever(wrongSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
 
         // When
@@ -218,7 +209,7 @@ internal class RumMonitorBuilderTest {
     @Test
     fun `𝕄 builds nothing 𝕎 build() and RumFeature is not initialized`() {
         // Given
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
+        whenever(datadog.mockInstance.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
 
         // When
         val monitor = testedBuilder.build()
@@ -227,8 +218,7 @@ internal class RumMonitorBuilderTest {
         verify(logger.mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            RumMonitor.Builder.RUM_NOT_ENABLED_ERROR_MESSAGE + "\n" +
-                Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
+            RumMonitor.Builder.RUM_NOT_ENABLED_ERROR_MESSAGE
         )
         check(monitor is NoOpRumMonitor)
     }
@@ -254,11 +244,12 @@ internal class RumMonitorBuilderTest {
 
     companion object {
         val logger = InternalLoggerTestConfiguration()
+        val datadog = DatadogSingletonTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
+            return listOf(logger, datadog)
         }
     }
 }

@@ -7,8 +7,8 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.utils.asTimingsPayload
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.utils.asTimingsPayload
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

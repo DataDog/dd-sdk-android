@@ -8,7 +8,6 @@ package com.datadog.android.rum
 
 import android.app.Activity
 import android.os.Bundle
-import com.datadog.android.core.internal.utils.toMutableMap
 import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -443,6 +442,10 @@ internal class ActivityViewTrackingStrategyTest :
 
     private fun Any.resolveViewName(): String {
         return javaClass.canonicalName ?: javaClass.simpleName
+    }
+
+    private fun <K, V> Iterable<Pair<K, V>>.toMutableMap(): MutableMap<K, V> {
+        return toMap(mutableMapOf())
     }
 
     // endregion

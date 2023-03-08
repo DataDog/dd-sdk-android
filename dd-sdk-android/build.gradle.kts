@@ -142,8 +142,6 @@ dependencies {
     testImplementation(project(":tools:unit"))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
-    testImplementation(libs.okHttpMock)
-    testImplementation(libs.bundles.openTracing)
     unmock(libs.robolectric)
 
     // Static Analysis
@@ -161,8 +159,6 @@ unMock {
     keep("android.os.Looper")
     keep("android.os.MessageQueue")
     keep("android.os.SystemProperties")
-    keep("android.view.Choreographer")
-    keep("android.view.DisplayEventReceiver")
     keepStartingWith("org.json")
 }
 

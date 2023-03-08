@@ -14,16 +14,14 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
-import com.datadog.android.Datadog
-import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.rum.RumFeature
 import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
+import com.datadog.android.rum.utils.config.DatadogSingletonTestConfiguration
+import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.rum.utils.resolveViewUrl
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.tools.unit.ObjectTest
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -44,7 +42,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -94,18 +91,13 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         whenever(mockActivity.fragmentManager)
             .thenReturn(mockDefaultFragmentManager)
 
-        val mockCore = mock<SdkCore>()
         val mockRumFeatureScope = mock<FeatureScope>()
         whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mock()
-        whenever(mockCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        Datadog.globalSdkCore = mockCore
+        whenever(
+            datadog.mockInstance.getFeature(Feature.RUM_FEATURE_NAME)
+        ) doReturn mockRumFeatureScope
 
         testedStrategy = FragmentViewTrackingStrategy(true)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        Datadog.globalSdkCore = NoOpSdkCore()
     }
 
     @Test
@@ -604,11 +596,12 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val datadog = DatadogSingletonTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
+            return listOf(rumMonitor, datadog)
         }
     }
 }

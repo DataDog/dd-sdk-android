@@ -6,8 +6,6 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.core.internal.system.AndroidInfoProvider
-import com.datadog.android.rum.internal.domain.scope.toLongTaskSchemaType
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -73,21 +71,19 @@ internal class LongTaskEventForgeryFactory :
                 LongTaskEvent.CiTest(anHexadecimalString())
             },
             os = forge.aNullable {
-                val androidInfoProvider = getForgery(AndroidInfoProvider::class.java)
                 LongTaskEvent.Os(
-                    name = androidInfoProvider.osName,
-                    version = androidInfoProvider.osVersion,
-                    versionMajor = androidInfoProvider.osMajorVersion
+                    name = forge.aString(),
+                    version = "${forge.aSmallInt()}.${forge.aSmallInt()}.${forge.aSmallInt()}",
+                    versionMajor = forge.aSmallInt().toString()
                 )
             },
             device = forge.aNullable {
-                val androidInfoProvider = getForgery(AndroidInfoProvider::class.java)
                 LongTaskEvent.Device(
-                    name = androidInfoProvider.deviceName,
-                    model = androidInfoProvider.deviceModel,
-                    brand = androidInfoProvider.deviceBrand,
-                    type = androidInfoProvider.deviceType.toLongTaskSchemaType(),
-                    architecture = androidInfoProvider.architecture
+                    name = forge.aString(),
+                    model = forge.aString(),
+                    brand = forge.aString(),
+                    type = forge.aValueFrom(LongTaskEvent.DeviceType::class.java),
+                    architecture = forge.aString()
                 )
             },
             context = forge.aNullable {

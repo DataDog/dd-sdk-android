@@ -12,8 +12,8 @@ import android.content.Context
 import android.content.Intent
 import android.view.Window
 import com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy
+import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.tools.unit.ObjectTest
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension

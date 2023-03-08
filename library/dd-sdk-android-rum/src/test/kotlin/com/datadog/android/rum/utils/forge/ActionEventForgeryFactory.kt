@@ -6,8 +6,6 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.core.internal.system.AndroidInfoProvider
-import com.datadog.android.rum.internal.domain.scope.toActionSchemaType
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -85,21 +83,19 @@ internal class ActionEventForgeryFactory :
                 ActionEvent.CiTest(anHexadecimalString())
             },
             os = forge.aNullable {
-                val androidInfoProvider = getForgery(AndroidInfoProvider::class.java)
                 ActionEvent.Os(
-                    name = androidInfoProvider.osName,
-                    version = androidInfoProvider.osVersion,
-                    versionMajor = androidInfoProvider.osMajorVersion
+                    name = forge.aString(),
+                    version = "${forge.aSmallInt()}.${forge.aSmallInt()}.${forge.aSmallInt()}",
+                    versionMajor = forge.aSmallInt().toString()
                 )
             },
             device = forge.aNullable {
-                val androidInfoProvider = getForgery(AndroidInfoProvider::class.java)
                 ActionEvent.Device(
-                    name = androidInfoProvider.deviceName,
-                    model = androidInfoProvider.deviceModel,
-                    brand = androidInfoProvider.deviceBrand,
-                    type = androidInfoProvider.deviceType.toActionSchemaType(),
-                    architecture = androidInfoProvider.architecture
+                    name = forge.aString(),
+                    model = forge.aString(),
+                    brand = forge.aString(),
+                    type = forge.aValueFrom(ActionEvent.DeviceType::class.java),
+                    architecture = forge.aString()
                 )
             },
             context = forge.aNullable {

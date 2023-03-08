@@ -6,9 +6,7 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
@@ -94,21 +92,19 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                 ErrorEvent.CiTest(anHexadecimalString())
             },
             os = forge.aNullable {
-                val androidInfoProvider = getForgery(AndroidInfoProvider::class.java)
                 ErrorEvent.Os(
-                    name = androidInfoProvider.osName,
-                    version = androidInfoProvider.osVersion,
-                    versionMajor = androidInfoProvider.osMajorVersion
+                    name = forge.aString(),
+                    version = "${forge.aSmallInt()}.${forge.aSmallInt()}.${forge.aSmallInt()}",
+                    versionMajor = forge.aSmallInt().toString()
                 )
             },
             device = forge.aNullable {
-                val androidInfoProvider = getForgery(AndroidInfoProvider::class.java)
                 ErrorEvent.Device(
-                    name = androidInfoProvider.deviceName,
-                    model = androidInfoProvider.deviceModel,
-                    brand = androidInfoProvider.deviceBrand,
-                    type = androidInfoProvider.deviceType.toErrorSchemaType(),
-                    architecture = androidInfoProvider.architecture
+                    name = forge.aString(),
+                    model = forge.aString(),
+                    brand = forge.aString(),
+                    type = forge.aValueFrom(ErrorEvent.DeviceType::class.java),
+                    architecture = forge.aString()
                 )
             },
             context = forge.aNullable {

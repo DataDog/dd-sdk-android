@@ -9,8 +9,6 @@ package com.datadog.android.rum
 import android.os.Build
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
-import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.assertj.ConfigurationRumAssert
@@ -48,7 +46,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -64,9 +61,6 @@ import java.util.UUID
 internal class RumFeatureBuilderTest {
 
     private lateinit var testedBuilder: RumFeature.Builder
-
-    @Mock
-    lateinit var mockCoreFeature: CoreFeature
 
     @Forgery
     lateinit var fakeApplicationId: UUID
@@ -153,7 +147,7 @@ internal class RumFeatureBuilderTest {
         ConfigurationRumAssert.assertThat(rumFeature.configuration)
             .hasNoOpUserActionTrackingStrategy()
             .hasViewTrackingStrategy(RumFeature.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
-            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
+            .hasLongTaskTrackingEnabled(RumFeature.DEFAULT_LONG_TASK_THRESHOLD_MS)
     }
 
     @Test
@@ -175,7 +169,7 @@ internal class RumFeatureBuilderTest {
             .hasUserActionTrackingStrategyLegacy()
             .hasActionTargetAttributeProviders(mockProviders)
             .hasViewTrackingStrategy(RumFeature.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
-            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
+            .hasLongTaskTrackingEnabled(RumFeature.DEFAULT_LONG_TASK_THRESHOLD_MS)
     }
 
     @Test
@@ -190,7 +184,7 @@ internal class RumFeatureBuilderTest {
             .hasUserActionTrackingStrategyLegacy()
             .hasDefaultActionTargetAttributeProviders()
             .hasViewTrackingStrategy(RumFeature.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
-            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
+            .hasLongTaskTrackingEnabled(RumFeature.DEFAULT_LONG_TASK_THRESHOLD_MS)
     }
 
     @Test
@@ -208,7 +202,7 @@ internal class RumFeatureBuilderTest {
             .hasUserActionTrackingStrategyLegacy()
             .hasInteractionPredicate(mockInteractionPredicate)
             .hasViewTrackingStrategy(RumFeature.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
-            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
+            .hasLongTaskTrackingEnabled(RumFeature.DEFAULT_LONG_TASK_THRESHOLD_MS)
     }
 
     @Test
@@ -223,7 +217,7 @@ internal class RumFeatureBuilderTest {
             .hasUserActionTrackingStrategyLegacy()
             .hasInteractionPredicateOfType(NoOpInteractionPredicate::class.java)
             .hasViewTrackingStrategy(RumFeature.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
-            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
+            .hasLongTaskTrackingEnabled(RumFeature.DEFAULT_LONG_TASK_THRESHOLD_MS)
     }
 
     @TestTargetApi(Build.VERSION_CODES.Q)
@@ -246,7 +240,7 @@ internal class RumFeatureBuilderTest {
             .hasUserActionTrackingStrategyApi29()
             .hasActionTargetAttributeProviders(mockProviders)
             .hasViewTrackingStrategy(RumFeature.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
-            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
+            .hasLongTaskTrackingEnabled(RumFeature.DEFAULT_LONG_TASK_THRESHOLD_MS)
     }
 
     @Test

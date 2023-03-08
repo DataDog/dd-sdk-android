@@ -6,12 +6,12 @@
 
 package com.datadog.android.telemetry.internal
 
+import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.rum.utils.forge.aStringNotMatchingSet
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
-import com.datadog.android.utils.forge.aStringNotMatchingSet
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension

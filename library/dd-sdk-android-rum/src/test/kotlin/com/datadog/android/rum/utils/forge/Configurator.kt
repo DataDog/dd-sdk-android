@@ -14,6 +14,14 @@ internal class Configurator : BaseConfigurator() {
     override fun configure(forge: Forge) {
         super.configure(forge)
 
+        // Core
+        forge.addFactory(DatadogContextForgeryFactory())
+        forge.addFactory(TimeInfoForgeryFactory())
+        forge.addFactory(ProcessInfoForgeryFactory())
+        forge.addFactory(NetworkInfoForgeryFactory())
+        forge.addFactory(UserInfoForgeryFactory())
+        forge.addFactory(DeviceInfoForgeryFactory())
+
         // RUM
         forge.addFactory(ConfigurationRumForgeryFactory())
         forge.addFactory(ActionEventForgeryFactory())

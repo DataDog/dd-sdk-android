@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.domain.scope
 
 import android.app.ActivityManager.RunningAppProcessInfo
 import android.os.Build
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.RumErrorSource
@@ -18,8 +17,8 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.TimeInfo
@@ -303,7 +302,7 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        CoreFeature.processImportance = forge.anElementFrom(
+        whenever(mockSdkCore.processImportance) doReturn forge.anElementFrom(
             RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
             RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
             @Suppress("DEPRECATION")
@@ -481,7 +480,7 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        CoreFeature.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        whenever(mockSdkCore.processImportance) doReturn RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         testedScope.applicationDisplayed = false
         val fakeEvent = forge.validAppLaunchEvent()
 
@@ -508,7 +507,7 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        CoreFeature.processImportance = forge.anElementFrom(
+        whenever(mockSdkCore.processImportance) doReturn forge.anElementFrom(
             RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
             RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
             @Suppress("DEPRECATION")
@@ -629,7 +628,7 @@ internal class RumViewManagerScopeTest {
         @IntForgery(min = Build.VERSION_CODES.KITKAT, max = Build.VERSION_CODES.N) apiVersion: Int
     ) {
         // Given
-        CoreFeature.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        whenever(mockSdkCore.processImportance) doReturn RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         whenever(mockBuildSdkVersionProvider.version()) doReturn apiVersion
         val childView: RumViewScope = mock()
         val startViewEvent = forge.startViewEvent()
@@ -653,7 +652,7 @@ internal class RumViewManagerScopeTest {
         @IntForgery(min = Build.VERSION_CODES.N) apiVersion: Int
     ) {
         // Given
-        CoreFeature.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        whenever(mockSdkCore.processImportance) doReturn RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         whenever(mockBuildSdkVersionProvider.version()) doReturn apiVersion
         val childView: RumViewScope = mock()
         val startViewEvent = forge.startViewEvent()
@@ -693,7 +692,7 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        CoreFeature.processImportance = forge.anElementFrom(
+        whenever(mockSdkCore.processImportance) doReturn forge.anElementFrom(
             RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
             RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
             @Suppress("DEPRECATION")

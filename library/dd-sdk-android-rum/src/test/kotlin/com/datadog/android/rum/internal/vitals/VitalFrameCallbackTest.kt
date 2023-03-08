@@ -11,9 +11,9 @@ import android.content.Context
 import android.view.Choreographer
 import android.view.Display
 import android.view.WindowManager
+import com.datadog.android.rum.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
