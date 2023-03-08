@@ -450,8 +450,13 @@ internal class DatadogRumMonitor(
                 latch.countDown()
             }
             try {
-                latch.await()
+                latch.await(1, TimeUnit.SECONDS)
             } catch (_: InterruptedException) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.MAINTAINER,
+                    "Waiting for pending RUM events was interrupted"
+                )
             }
         }
     }
