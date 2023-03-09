@@ -43,12 +43,14 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useCustomEndpoint(String): Builder
  * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useSite(com.datadog.android.DatadogSite): Builder
  * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun sampleTelemetry(Float): Builder
- * apiMethodSignature: #fun executeSafe(String, Runnable)
- * apiMethodSignature: #fun join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0)): ByteArray
- * apiMethodSignature: #fun loggableStackTrace(): String
- * apiMethodSignature: #fun percent(): Double
- * apiMethodSignature: #fun scheduleSafe(String, Long, java.util.concurrent.TimeUnit, Runnable): java.util.concurrent.ScheduledFuture<*>?
- * apiMethodSignature: #fun toHexString(): String
- * apiMethodSignature: #fun toJsonElement(): com.google.gson.JsonElement
+ * apiMethodSignature: fun Any?.toJsonElement(): com.google.gson.JsonElement
+ * apiMethodSignature: fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0)): ByteArray
+ * apiMethodSignature: fun Float.percent(): Double
+ * apiMethodSignature: fun Int.toHexString(): String
+ * apiMethodSignature: fun Long.toHexString(): String
+ * apiMethodSignature: fun Throwable.loggableStackTrace(): String
+ * apiMethodSignature: fun java.math.BigInteger.toHexString(): String
+ * apiMethodSignature: fun java.util.concurrent.Executor.executeSafe(String, Runnable)
+ * apiMethodSignature: fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, Runnable): java.util.concurrent.ScheduledFuture<*>?
  * apiMethodSignature: com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor#constructor(Int, com.datadog.android.v2.api.InternalLogger)
  */

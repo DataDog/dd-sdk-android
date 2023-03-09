@@ -87,5 +87,6 @@ class ApiSurface:
                 else:
                     if self.verbose:
                         print(f"Keeping {type_attributes} {type} {prefix}{API_SEPARATOR}{row.strip()}")
-                    to_return.add(prefix + API_SEPARATOR + row.strip())
+                    separator = API_SEPARATOR if prefix else ""
+                    to_return.add(prefix + separator + row.strip())
         return to_return

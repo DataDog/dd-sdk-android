@@ -926,6 +926,22 @@ internal class KotlinFileVisitorTest {
         )
     }
 
+    @Test
+    fun `describes extension functions`() {
+        tempFile.writeText(
+            """
+            fun String.withFooBar(): String = this + "foobar"
+            """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "fun String.withFooBar(): String\n",
+            testedVisitor.description.toString()
+        )
+    }
+
     companion object {
         const val FILE_NAME = "file.kt"
     }

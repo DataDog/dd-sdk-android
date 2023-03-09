@@ -175,6 +175,11 @@ class KotlinFileVisitor {
             description.append(" ")
         }
 
+        visitReceiver(node)
+        if (node.hasChildNode("receiverType")) {
+            description.append(".")
+        }
+
         // Name
         description.append(node.identifierName())
 
@@ -262,6 +267,11 @@ class KotlinFileVisitor {
         description.append(
             generics.joinToString(", ", prefix = "<", postfix = ">")
         )
+    }
+
+    private fun visitReceiver(node: AstNode) {
+        val receiverType = node.firstChildNodeOrNull("receiverType") ?: return
+        description.append(receiverType.typeName())
     }
 
     private fun visitFunctionParameters(node: AstNode) {
