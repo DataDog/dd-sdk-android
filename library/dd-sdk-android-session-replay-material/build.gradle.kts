@@ -72,11 +72,10 @@ android {
     }
 }
 dependencies {
-    api(project(":dd-sdk-android"))
-    implementation(libs.okHttp)
+    api(project(":library:dd-sdk-android-session-replay"))
     implementation(libs.kotlin)
     implementation(libs.gson)
-    implementation(libs.androidXAppCompat)
+    implementation(libs.googleMaterial)
 
     testImplementation(project(":tools:unit"))
     testImplementation(libs.bundles.jUnit5)
@@ -86,14 +85,10 @@ dependencies {
     // TODO MTG-12 detekt(libs.detektCli)
 }
 
-apply(from = "clone_session_replay_schema.gradle.kts")
-apply(from = "generate_session_replay_models.gradle.kts")
-
 kotlinConfig()
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()
 publishingConfig(
-    "The Session Replay feature to use with the Datadog monitoring " +
-        "library for Android applications."
+    "Session Replay Extension Support for Material UI components."
 )
