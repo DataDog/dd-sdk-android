@@ -12,11 +12,15 @@ import android.net.ConnectivityManager
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.internal.HashGenerator
 import com.datadog.android.v2.core.internal.Sha256HashGenerator
@@ -29,6 +33,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -55,6 +60,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 @ProhibitLeavingStaticMocksIn(Datadog::class)
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class DatadogTest {
 
     @Mock
@@ -93,7 +99,7 @@ internal class DatadogTest {
     @Test
     fun `𝕄 return sdk instance 𝕎 initialize() + getInstance()`() {
         // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
         val configuration = Configuration.Builder(
             crashReportsEnabled = true
         ).build()
@@ -116,7 +122,7 @@ internal class DatadogTest {
         @StringForgery name: String
     ) {
         // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
         val configuration = Configuration.Builder(
             crashReportsEnabled = true
         ).build()
@@ -138,7 +144,7 @@ internal class DatadogTest {
     @Test
     fun `𝕄 warn 𝕎 initialize() + initialize()`() {
         // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
         val configuration = Configuration.Builder(
             crashReportsEnabled = true
         ).build()
@@ -171,7 +177,7 @@ internal class DatadogTest {
         @StringForgery name: String
     ) {
         // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
         val configuration = Configuration.Builder(
             crashReportsEnabled = true
         ).build()
@@ -309,7 +315,7 @@ internal class DatadogTest {
         // Given
         Datadog.hashGenerator = mock()
         whenever(Datadog.hashGenerator.generate(any())) doReturn null
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
         val configuration = Configuration.Builder(
             crashReportsEnabled = true
         ).build()
@@ -338,7 +344,7 @@ internal class DatadogTest {
         // Given
         Datadog.hashGenerator = mock()
         whenever(Datadog.hashGenerator.generate(any())) doReturn null
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
         val configuration = Configuration.Builder(
             crashReportsEnabled = true
         ).build()
@@ -361,8 +367,6 @@ internal class DatadogTest {
     }
 
     // endregion
-
-    /*
 
     @Test
     fun `𝕄 do nothing 𝕎 stop() without initialize`() {
@@ -520,8 +524,6 @@ internal class DatadogTest {
         // Then
         verify(mockCore).clearAllData()
     }
-
-    */
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)

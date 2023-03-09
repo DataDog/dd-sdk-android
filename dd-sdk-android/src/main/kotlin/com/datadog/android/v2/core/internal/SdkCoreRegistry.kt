@@ -10,7 +10,7 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 
 /**
- * A Registry holding all [SdkCore] instances alive, allowing customers to retrieve the one
+ * A Registry for all [SdkCore] instances, allowing customers to retrieve the one
  * they want from anywhere in the code.
  */
 internal class SdkCoreRegistry(

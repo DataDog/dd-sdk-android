@@ -44,6 +44,7 @@ import kotlin.math.abs
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal abstract class AbstractGesturesListenerTest {
 
     lateinit var testedListener: GesturesListener

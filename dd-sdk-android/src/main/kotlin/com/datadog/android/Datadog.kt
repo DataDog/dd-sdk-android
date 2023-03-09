@@ -50,7 +50,7 @@ object Datadog {
 
     /**
      * Initializes a named instance of the Datadog SDK.
-     * @param instanceName the name of the instance (or null to initialize the default instance
+     * @param instanceName the name of the instance (or null to initialize the default instance)
      * @param context your application context
      * @param credentials your organization credentials
      * @param configuration the configuration for the SDK library
@@ -61,7 +61,7 @@ object Datadog {
      * @see [Configuration]
      * @see [TrackingConsent]
      * @throws IllegalArgumentException if the env name is using illegal characters and your
-     * application is in debug mode otherwise returns false and stops initializing the SDK
+     * application is in debug mode otherwise returns null and stops initializing the SDK
      */
     @Suppress("ReturnCount")
     @JvmStatic
@@ -104,6 +104,7 @@ object Datadog {
         // TODO RUMM-3103 remove this
         if (instanceName == null) {
             globalSdkCore = sdkCore
+            initialized.set(true)
         }
         return sdkCore
     }
@@ -120,7 +121,7 @@ object Datadog {
      * @see [Configuration]
      * @see [TrackingConsent]
      * @throws IllegalArgumentException if the env name is using illegal characters and your
-     * application is in debug mode otherwise returns false and stops initializing the SDK
+     * application is in debug mode otherwise returns null and stops initializing the SDK
      */
     @JvmStatic
     fun initialize(
@@ -148,6 +149,8 @@ object Datadog {
      * or null to get the default instance
      * @return the existing instance linked with the given name, or null
      */
+    @JvmStatic
+    @JvmOverloads
     fun getInstance(instanceName: String? = null): SdkCore? {
         return registry.getInstance(instanceName)
     }
@@ -177,6 +180,7 @@ object Datadog {
             globalSdkCore.stop()
             initialized.set(false)
             globalSdkCore = NoOpSdkCore()
+            registry.unregister()
         }
     }
 

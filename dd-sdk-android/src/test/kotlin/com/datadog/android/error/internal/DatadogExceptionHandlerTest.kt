@@ -73,6 +73,7 @@ import java.util.concurrent.TimeUnit
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class DatadogExceptionHandlerTest {
 
     private var originalHandler: Thread.UncaughtExceptionHandler? = null

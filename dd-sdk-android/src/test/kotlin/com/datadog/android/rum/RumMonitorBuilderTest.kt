@@ -55,6 +55,7 @@ import java.util.UUID
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class RumMonitorBuilderTest {
 
     private lateinit var testedBuilder: RumMonitor.Builder

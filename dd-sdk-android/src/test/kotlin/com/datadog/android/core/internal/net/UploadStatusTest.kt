@@ -42,6 +42,7 @@ internal class UploadStatusTest {
     var fakeByteSize: Int = 0
 
     @BeforeEach
+    @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
     fun `set up`(forge: Forge) {
         fakeContext = forge.anAlphabeticalString()
         Datadog.setVerbosity(Log.VERBOSE)

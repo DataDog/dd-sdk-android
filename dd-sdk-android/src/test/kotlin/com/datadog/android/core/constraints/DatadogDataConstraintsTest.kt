@@ -41,6 +41,7 @@ import java.util.Locale
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class DatadogDataConstraintsTest {
 
     lateinit var testedConstraints: DataConstraints
