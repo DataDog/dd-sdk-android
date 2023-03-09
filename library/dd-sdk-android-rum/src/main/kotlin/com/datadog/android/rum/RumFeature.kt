@@ -18,6 +18,7 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
@@ -64,7 +65,6 @@ import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
-import com.datadog.android.rum.utils.scheduleSafe
 import com.datadog.android.rum.utils.telemetry
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent

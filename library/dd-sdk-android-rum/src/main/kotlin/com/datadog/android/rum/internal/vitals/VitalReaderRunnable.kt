@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.internal.vitals
 
+import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
-import com.datadog.android.rum.utils.scheduleSafe
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.SdkCore
 import java.util.concurrent.ScheduledExecutorService

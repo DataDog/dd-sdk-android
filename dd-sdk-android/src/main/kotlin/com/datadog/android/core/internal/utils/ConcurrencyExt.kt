@@ -37,7 +37,16 @@ fun Executor.executeSafe(operationName: String, runnable: Runnable) {
     }
 }
 
-internal fun ScheduledExecutorService.scheduleSafe(
+/**
+ * Executes runnable without throwing [RejectedExecutionException] if it cannot be accepted
+ * for execution.
+ *
+ * @param operationName Name of the task.
+ * @param delay Task scheduling delay.
+ * @param unit Delay unit.
+ * @param runnable Task to run.
+ */
+fun ScheduledExecutorService.scheduleSafe(
     operationName: String,
     delay: Long,
     unit: TimeUnit,

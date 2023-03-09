@@ -125,6 +125,7 @@ class com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecuto
   override fun afterExecute(Runnable?, Throwable?)
 fun join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0)): ByteArray
 fun executeSafe(String, Runnable)
+fun scheduleSafe(String, Long, java.util.concurrent.TimeUnit, Runnable): java.util.concurrent.ScheduledFuture<*>?
 val NULL_MAP_VALUE: Object
 fun toJsonElement(): com.google.gson.JsonElement
 fun toHexString(): String
