@@ -117,6 +117,7 @@ class SampleApplication : Application() {
 
         val rumFeature = createRumFeature()
         Datadog.registerFeature(rumFeature)
+        rumFeature.enableRumDebugging(true)
 
         val sessionReplayConfig = SessionReplayConfiguration.Builder()
             .apply {
@@ -149,7 +150,6 @@ class SampleApplication : Application() {
         val ndkCrashReportsFeature = NdkCrashReportsFeature()
         Datadog.registerFeature(ndkCrashReportsFeature)
 
-        Datadog.enableRumDebugging(true)
         setUserInfo(
             preferences.getUserId(),
             preferences.getUserName(),
