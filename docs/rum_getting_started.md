@@ -44,7 +44,7 @@ dependencies {
 3. To instrument your web views, click the **Instrument your webviews** toggle. For more information, see [Web View Tracking][13].
 4. To disable automatic user data collection for either client IP or geolocation data, uncheck the boxes for those settings. For more information, see [RUM Android Data Collected][15].
 
-   {{< img src="real_user_monitoring/android/new-rum-app-android-1.png" alt="Create a RUM application for Android in Datadog" style="width:90%;">}}
+   {{< img src="real_user_monitoring/android/android-new-application.png" alt="Create a RUM application for Android in Datadog" style="width:90%;">}}
 
 To ensure the safety of your data, you must use a client token. If you used only [Datadog API keys][3] to configure the `dd-sdk-android` library, they would be exposed client-side in the Android application's APK byte code. 
 
