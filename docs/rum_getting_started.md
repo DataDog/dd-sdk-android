@@ -43,7 +43,7 @@ dependencies {
 2. Select `android` as the application type and enter an application name to generate a unique Datadog application ID and client token.
 3. To instrument your web views, click the **Instrument your webviews** toggle. For more information, see [Web View Tracking][13].
 
-{{< img src="real_user_monitoring/android/create_rum_application.png" alt="Create a RUM application in Datadog workflow" style="width:90%;">}}
+{{< img src="real_user_monitoring/android/android-new-application.png" alt="Create a RUM application in Datadog workflow" style="width:90%;">}}
 
 To ensure the safety of your data, you must use a client token. If you used only [Datadog API keys][3] to configure the `dd-sdk-android` library, they would be exposed client-side in the Android application's APK byte code. 
 
