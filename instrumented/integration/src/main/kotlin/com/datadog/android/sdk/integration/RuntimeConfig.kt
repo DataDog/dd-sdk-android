@@ -14,7 +14,7 @@ import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.log.Logger
 import com.datadog.android.log.LogsFeature
-import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.RumFeature
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingFeature

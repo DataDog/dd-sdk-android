@@ -17,8 +17,8 @@ import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
+import com.datadog.android.ndk.DatadogNdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration

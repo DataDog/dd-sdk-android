@@ -92,6 +92,7 @@ dependencies {
     implementation(project(":library:dd-sdk-android-session-replay"))
     implementation(project(":library:dd-sdk-android-logs"))
     implementation(project(":library:dd-sdk-android-trace"))
+    implementation(project(":library:dd-sdk-android-rum"))
 
     implementation(libs.gson)
     implementation(libs.kotlin)

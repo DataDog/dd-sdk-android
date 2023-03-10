@@ -84,6 +84,7 @@ android {
 
 dependencies {
     api(project(":dd-sdk-android"))
+    api(project(":library:dd-sdk-android-rum"))
     implementation(libs.kotlin)
     implementation(libs.androidXComposeRuntime)
     implementation(libs.androidXComposeMaterial)

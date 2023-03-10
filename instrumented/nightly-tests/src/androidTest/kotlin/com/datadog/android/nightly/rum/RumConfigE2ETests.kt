@@ -16,7 +16,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.event.EventMapper
-import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
 import com.datadog.android.nightly.activities.ViewTrackingActivity
 import com.datadog.android.nightly.rules.NightlyTestRule
@@ -40,6 +39,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -125,7 +125,7 @@ class RumConfigE2ETests {
     // region ViewEventMapper
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumViewEventMapper(com.datadog.android.event.ViewEventMapper): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setRumViewEventMapper(com.datadog.android.rum.event.ViewEventMapper): Builder
      */
     @Test
     fun rum_config_set_rum_view_event_mapper() {
@@ -162,7 +162,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumViewEventMapper(com.datadog.android.event.ViewEventMapper): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setRumViewEventMapper(com.datadog.android.rum.event.ViewEventMapper): Builder
      */
     @Test
     fun rum_config_set_rum_view_event_mapper_map_to_copy() {
@@ -201,7 +201,7 @@ class RumConfigE2ETests {
     // region ResourceEventMapper
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_resource_event_mapper_map_to_null() {
@@ -229,7 +229,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_resource_event_mapper_map_to_copy() {
@@ -257,7 +257,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_resource_event_mapper() {
@@ -290,7 +290,7 @@ class RumConfigE2ETests {
     // region ActionEventMapper
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_action_event_mapper_map_to_null() {
@@ -318,7 +318,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_action_event_mapper_map_to_copy() {
@@ -346,7 +346,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_action_event_mapper() {
@@ -379,7 +379,7 @@ class RumConfigE2ETests {
     // region ErrorEventMapper
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_error_event_mapper_map_to_null() {
@@ -407,7 +407,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_error_event_mapper_map_to_copy() {
@@ -435,7 +435,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_error_event_mapper() {
@@ -468,8 +468,8 @@ class RumConfigE2ETests {
     // region LongTaskEventMapper
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setRumLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_longtask_event_mapper_map_to_null() {
@@ -497,8 +497,8 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setRumLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_longtask_event_mapper_map_to_copy() {
@@ -526,8 +526,8 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setRumLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setRumLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_longtask_event_mapper() {
@@ -560,7 +560,7 @@ class RumConfigE2ETests {
     // region Session Sample
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun sampleRumSessions(Float): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun sampleRumSessions(Float): Builder
      */
     @Test
     fun rum_config_sample_rum_sessions_all_in() {
@@ -582,7 +582,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun sampleRumSessions(Float): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun sampleRumSessions(Float): Builder
      */
     @Test
     fun rum_config_sample_rum_sessions_all_out() {
@@ -604,7 +604,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun sampleRumSessions(Float): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun sampleRumSessions(Float): Builder
      */
     @Test
     fun rum_config_sample_rum_sessions_75_percent_in() {
@@ -655,7 +655,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
      */
     @Test
     fun rum_config_set_vitals_update_frequency_never() {
@@ -701,7 +701,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
      */
     @Test
     fun rum_config_set_vitals_update_frequency() {

@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.utils
 
-import com.datadog.android.telemetry.internal.Telemetry
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.SdkInternalLogger
 import java.util.Locale
@@ -15,8 +14,6 @@ import java.util.Locale
 //  at least as var
 @Suppress("UndocumentedPublicProperty")
 var internalLogger: InternalLogger = SdkInternalLogger()
-
-internal val telemetry: Telemetry = Telemetry()
 
 /**
  * Warns the user that they're using a deprecated feature.

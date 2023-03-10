@@ -9,7 +9,7 @@ package com.datadog.android.core.internal.persistence
 /**
  * The Deserializer<P, R> generic interface. Should be implemented by any custom deserializer.
  */
-internal interface Deserializer<P : Any, R : Any> {
+interface Deserializer<P : Any, R : Any> {
 
     /**
      * Deserializes the data from the given payload type into given output type.

@@ -467,6 +467,29 @@ internal class KotlinFileVisitorTest {
     }
 
     @Test
+    fun `describes wildcard generics in functions`() {
+        tempFile.writeText(
+            """
+            package foo.bar
+            import java.io.IOException
+            class Spam {
+                fun <K, V> doSomethingElse(map : Map<*, *>) : Pair<List<*>, List<*>> {
+                    TODO()
+                }
+            }
+            """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "class foo.bar.Spam\n" +
+                "  fun <K, V> doSomethingElse(Map<*, *>): Pair<List<*>, List<*>>\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
     fun `describes parent class and interfaces in class types`() {
         tempFile.writeText(
             """
@@ -899,6 +922,22 @@ internal class KotlinFileVisitorTest {
         assertEquals(
             "class foo.bar.internal.Spam\n" +
                 "  val data: String\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
+    fun `describes extension functions`() {
+        tempFile.writeText(
+            """
+            fun String.withFooBar(): String = this + "foobar"
+            """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "fun String.withFooBar(): String\n",
             testedVisitor.description.toString()
         )
     }

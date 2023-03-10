@@ -93,6 +93,7 @@ dependencies {
     ksp(project(":tools:noopfactory"))
 
     testImplementation(project(":tools:unit"))
+    testImplementation(project(":library:dd-sdk-android-rum"))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)

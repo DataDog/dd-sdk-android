@@ -73,6 +73,7 @@ android {
 dependencies {
     api(project(":dd-sdk-android"))
     api(project(":library:dd-sdk-android-trace"))
+    api(project(":library:dd-sdk-android-rum"))
     implementation(libs.kotlin)
     implementation(libs.okHttp)
     implementation(libs.sqlDelight)

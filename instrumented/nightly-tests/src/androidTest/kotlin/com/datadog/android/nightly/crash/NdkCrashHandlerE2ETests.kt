@@ -35,8 +35,8 @@ class NdkCrashHandlerE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#constructor(String)
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun build(): RumFeature
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#constructor(String)
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun build(): RumFeature
      */
     @Test
     fun ndk_crash_reports_rum_enabled() {
@@ -61,8 +61,8 @@ class NdkCrashHandlerE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#constructor(String)
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun build(): RumFeature
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#constructor(String)
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun build(): RumFeature
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setEncryption(Encryption): Builder
      * apiMethodSignature: com.datadog.android.security.Encryption#fun encrypt(ByteArray): ByteArray
      * apiMethodSignature: com.datadog.android.security.Encryption#fun decrypt(ByteArray): ByteArray

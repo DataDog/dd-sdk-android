@@ -33,7 +33,7 @@ internal class RumUserInteractionTrackingE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
      */
     @Test
     fun rum_user_interaction_tracking_strategy() {
@@ -54,7 +54,7 @@ internal class RumUserInteractionTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.internal.RumFeature$Builder#fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
      */
     @Test
     fun rum_user_interaction_tracking_strategy_custom_target_name() {

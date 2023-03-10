@@ -16,7 +16,6 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.event.EventMapper
-import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.log.Logger
 import com.datadog.android.log.LogsFeature
 import com.datadog.android.ndk.NdkCrashReportsFeature
@@ -24,8 +23,9 @@ import com.datadog.android.okhttp.DatadogEventListener
 import com.datadog.android.okhttp.rum.RumInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumFeature
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -117,6 +117,7 @@ class SampleApplication : Application() {
 
         val rumFeature = createRumFeature()
         Datadog.registerFeature(rumFeature)
+        rumFeature.enableRumDebugging(true)
 
         val sessionReplayConfig = SessionReplayConfiguration.Builder()
             .apply {
@@ -149,7 +150,6 @@ class SampleApplication : Application() {
         val ndkCrashReportsFeature = NdkCrashReportsFeature()
         Datadog.registerFeature(ndkCrashReportsFeature)
 
-        Datadog.enableRumDebugging(true)
         setUserInfo(
             preferences.getUserId(),
             preferences.getUserName(),

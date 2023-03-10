@@ -12,12 +12,17 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 /**
  * [ScheduledThreadPoolExecutor] with a [ScheduledThreadPoolExecutor.afterExecute] hook,
  * which will log any unhandled exception raised.
+ *
+ * @param corePoolSize see [ScheduledThreadPoolExecutor] docs.
+ * @param logger [InternalLogger] instance.
  */
-internal class LoggingScheduledThreadPoolExecutor(
+class LoggingScheduledThreadPoolExecutor(
     corePoolSize: Int,
     private val logger: InternalLogger
 ) :
     ScheduledThreadPoolExecutor(corePoolSize) {
+
+    /** @inheritdoc */
     override fun afterExecute(r: Runnable?, t: Throwable?) {
         @Suppress("UnsafeThirdPartyFunctionCall") // we just call super
         super.afterExecute(r, t)

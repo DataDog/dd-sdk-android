@@ -28,8 +28,8 @@ import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.error.internal.CrashReportsFeature
+import com.datadog.android.ndk.DatadogNdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
@@ -262,6 +262,9 @@ internal class DatadogCore(
 
     override val rootStorageDir: File
         get() = coreFeature.storageDir
+
+    override val processImportance: Int
+        get() = CoreFeature.processImportance
 
     @WorkerThread
     override fun writeLastViewEvent(data: ByteArray) {

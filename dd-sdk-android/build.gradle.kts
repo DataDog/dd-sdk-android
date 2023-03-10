@@ -54,15 +54,12 @@ android {
         targetSdk = AndroidConfig.TARGET_SDK
 
         setLibraryVersion()
-
-        consumerProguardFiles("consumer-rules.pro")
     }
 
     namespace = "com.datadog.android"
 
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
-        java.srcDir("build/generated/json2kotlin/main/kotlin")
     }
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
@@ -135,9 +132,7 @@ dependencies {
     implementation(libs.kronosNTP)
 
     // Android Instrumentation
-    implementation(libs.androidXCore)
-    implementation(libs.bundles.androidXNavigation)
-    implementation(libs.androidXRecyclerView)
+    implementation(libs.androidXAnnotation)
     implementation(libs.androidXWorkManager)
 
     // Generate NoOp implementations
@@ -147,8 +142,6 @@ dependencies {
     testImplementation(project(":tools:unit"))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
-    testImplementation(libs.okHttpMock)
-    testImplementation(libs.bundles.openTracing)
     unmock(libs.robolectric)
 
     // Static Analysis
@@ -166,15 +159,8 @@ unMock {
     keep("android.os.Looper")
     keep("android.os.MessageQueue")
     keep("android.os.SystemProperties")
-    keep("android.view.Choreographer")
-    keep("android.view.DisplayEventReceiver")
     keepStartingWith("org.json")
 }
-
-apply(from = "clone_rum_schema.gradle.kts")
-apply(from = "clone_telemetry_schema.gradle.kts")
-apply(from = "generate_rum_models.gradle.kts")
-apply(from = "generate_telemetry_models.gradle.kts")
 
 kotlinConfig()
 junitConfig()

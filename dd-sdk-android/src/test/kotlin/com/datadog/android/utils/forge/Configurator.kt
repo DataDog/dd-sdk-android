@@ -22,7 +22,6 @@ internal class Configurator :
         forge.addFactory(ConfigurationForgeryFactory())
         forge.addFactory(ConfigurationFeatureForgeryFactory())
         forge.addFactory(ConfigurationCrashReportForgeryFactory())
-        forge.addFactory(ConfigurationRumForgeryFactory())
         forge.addFactory(CredentialsForgeryFactory())
         forge.addFactory(NetworkInfoForgeryFactory())
         forge.addFactory(UserInfoForgeryFactory())
@@ -34,24 +33,6 @@ internal class Configurator :
         forge.addFactory(BatchForgeryFactory())
         forge.addFactory(PayloadDecorationForgeryFactory())
         forge.addFactory(WorkerParametersForgeryFactory())
-
-        // RUM
-        forge.addFactory(ActionEventForgeryFactory())
-        forge.addFactory(ErrorEventForgeryFactory())
-        forge.addFactory(LongTaskEventForgeryFactory())
-        forge.addFactory(MotionEventForgeryFactory())
-        forge.addFactory(RumEventMapperFactory())
-        forge.addFactory(RumContextForgeryFactory())
-        forge.addFactory(ResourceEventForgeryFactory())
-        forge.addFactory(ResourceTimingForgeryFactory())
-        forge.addFactory(ViewEventForgeryFactory())
-        forge.addFactory(VitalInfoForgeryFactory())
-        forge.addFactory(TelemetryCoreConfigurationForgeryFactory())
-
-        // Telemetry
-        forge.addFactory(TelemetryDebugEventForgeryFactory())
-        forge.addFactory(TelemetryErrorEventForgeryFactory())
-        forge.addFactory(TelemetryConfigurationEventForgeryFactory())
 
         // NDK Crash
         forge.addFactory(NdkCrashLogForgeryFactory())

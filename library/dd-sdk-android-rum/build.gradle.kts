@@ -11,6 +11,7 @@ import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.config.setLibraryVersion
+import java.nio.file.Paths
 
 plugins {
     // Build
@@ -42,6 +43,9 @@ android {
     defaultConfig {
         minSdk = AndroidConfig.MIN_SDK
         targetSdk = AndroidConfig.TARGET_SDK
+
+        consumerProguardFiles(Paths.get(rootDir.path, "consumer-rules.pro").toString())
+
         setLibraryVersion()
     }
 
@@ -87,7 +91,12 @@ dependencies {
     implementation(project(":dd-sdk-android"))
     implementation(libs.kotlin)
     implementation(libs.gson)
-    implementation(libs.androidXAnnotation)
+    implementation(libs.okHttp)
+
+    // Android Instrumentation
+    implementation(libs.androidXCore)
+    implementation(libs.bundles.androidXNavigation)
+    implementation(libs.androidXRecyclerView)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
@@ -95,6 +104,8 @@ dependencies {
     testImplementation(project(":tools:unit"))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
+    testImplementation(libs.okHttpMock)
+    testImplementation(libs.bundles.openTracing)
     unmock(libs.robolectric)
 
     // TODO MTG-12 detekt(project(":tools:detekt"))
@@ -102,8 +113,24 @@ dependencies {
 }
 
 unMock {
+    keep("android.os.BaseBundle")
+    keep("android.os.Bundle")
+    keep("android.os.Parcel")
+    keepStartingWith("com.android.internal.util.")
+    keepStartingWith("android.util.")
+    keep("android.content.ComponentName")
+    keep("android.os.Looper")
+    keep("android.os.MessageQueue")
+    keep("android.os.SystemProperties")
+    keep("android.view.Choreographer")
+    keep("android.view.DisplayEventReceiver")
     keepStartingWith("org.json")
 }
+
+apply(from = "clone_rum_schema.gradle.kts")
+apply(from = "clone_telemetry_schema.gradle.kts")
+apply(from = "generate_rum_models.gradle.kts")
+apply(from = "generate_telemetry_models.gradle.kts")
 
 kotlinConfig()
 junitConfig()

@@ -16,7 +16,14 @@ import java.util.concurrent.TimeUnit
 
 internal const val ERROR_TASK_REJECTED = "Unable to schedule %s task on the executor"
 
-internal fun Executor.executeSafe(operationName: String, runnable: Runnable) {
+/**
+ * Executes runnable without throwing [RejectedExecutionException] if it cannot be accepted
+ * for execution.
+ *
+ * @param operationName Name of the task.
+ * @param runnable Task to run.
+ */
+fun Executor.executeSafe(operationName: String, runnable: Runnable) {
     try {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         execute(runnable)
@@ -30,7 +37,16 @@ internal fun Executor.executeSafe(operationName: String, runnable: Runnable) {
     }
 }
 
-internal fun ScheduledExecutorService.scheduleSafe(
+/**
+ * Executes runnable without throwing [RejectedExecutionException] if it cannot be accepted
+ * for execution.
+ *
+ * @param operationName Name of the task.
+ * @param delay Task scheduling delay.
+ * @param unit Delay unit.
+ * @param runnable Task to run.
+ */
+fun ScheduledExecutorService.scheduleSafe(
     operationName: String,
     delay: Long,
     unit: TimeUnit,

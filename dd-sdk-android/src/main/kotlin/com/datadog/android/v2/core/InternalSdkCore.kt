@@ -6,6 +6,7 @@
 
 package com.datadog.android.v2.core
 
+import android.app.ActivityManager
 import androidx.annotation.WorkerThread
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.SdkCore
@@ -31,6 +32,11 @@ interface InternalSdkCore : SdkCore {
      * Root folder for the hosting SDK instance.
      */
     val rootStorageDir: File
+
+    /**
+     * One of [ActivityManager.RunningAppProcessInfo] taken at the moment when SDK class was loaded.
+     */
+    val processImportance: Int
 
     /**
      * Writes current RUM view event to the dedicated file for the needs of NDK crash reporting.

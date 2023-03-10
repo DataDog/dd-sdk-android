@@ -33,10 +33,6 @@ data class UserInfo(
     val email: String? = null,
     val additionalProperties: Map<String, Any?> = emptyMap()
 ) {
-    internal fun hasUserData(): Boolean {
-        return id != null || name != null ||
-            email != null || additionalProperties.isNotEmpty()
-    }
 
     @Suppress("StringLiteralDuplication")
     internal fun toJson(): JsonElement {
