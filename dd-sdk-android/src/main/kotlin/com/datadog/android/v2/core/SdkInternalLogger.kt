@@ -12,6 +12,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class SdkInternalLogger(
     devLogHandlerFactory: () -> LogcatLogHandler = {
         LogcatLogHandler(DEV_LOG_TAG) { level ->

@@ -68,6 +68,7 @@ import java.util.concurrent.Executors
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class UploadWorkerTest {
 
     private lateinit var testedWorker: Worker

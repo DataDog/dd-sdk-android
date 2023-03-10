@@ -68,6 +68,7 @@ internal typealias NavLifecycleCallbacks =
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class NavigationViewTrackingStrategyTest {
 
     lateinit var testedStrategy: NavigationViewTrackingStrategy

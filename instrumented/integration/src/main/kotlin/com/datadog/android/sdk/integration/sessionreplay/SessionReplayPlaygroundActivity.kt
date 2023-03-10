@@ -28,6 +28,7 @@ import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
     lateinit var titleTextView: TextView
     lateinit var clickMeButton: Button

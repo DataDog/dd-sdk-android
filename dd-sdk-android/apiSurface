@@ -1,14 +1,16 @@
 object com.datadog.android.Datadog
-  var globalSdkCore: com.datadog.android.v2.api.SdkCore
-  fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
+  DEPRECATED var globalSdkCore: com.datadog.android.v2.api.SdkCore
+  fun initialize(String?, android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.v2.api.SdkCore?
+  fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.v2.api.SdkCore?
   fun isInitialized(): Boolean
-  fun clearAllData()
-  fun setVerbosity(Int)
-  fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
-  fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
-  fun addUserExtraInfo(Map<String, Any?> = emptyMap())
+  fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
+  DEPRECATED fun clearAllData()
+  DEPRECATED fun setVerbosity(Int)
+  DEPRECATED fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+  DEPRECATED fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
+  DEPRECATED fun addUserExtraInfo(Map<String, Any?> = emptyMap())
   fun enableRumDebugging(Boolean)
-  fun registerFeature(com.datadog.android.v2.api.Feature)
+  DEPRECATED fun registerFeature(com.datadog.android.v2.api.Feature)
   val _internal: _InternalProxy
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US1: String

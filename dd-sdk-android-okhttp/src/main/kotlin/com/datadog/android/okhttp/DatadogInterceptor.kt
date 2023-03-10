@@ -71,6 +71,7 @@ import java.util.Locale
  *         .build();
  * ```
  */
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 open class DatadogInterceptor
 internal constructor(
     tracedHosts: Map<String, Set<TracingHeaderType>>,

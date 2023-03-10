@@ -19,6 +19,7 @@ import com.datadog.android.v2.core.DatadogCore
 import java.lang.ref.WeakReference
 import java.util.concurrent.ThreadPoolExecutor
 
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class DatadogExceptionHandler(
     private val sdkCore: SdkCore,
     appContext: Context

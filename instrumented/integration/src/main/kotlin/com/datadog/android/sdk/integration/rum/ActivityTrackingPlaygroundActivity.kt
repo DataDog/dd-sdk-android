@@ -17,6 +17,7 @@ import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getTrackingConsent
 
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
