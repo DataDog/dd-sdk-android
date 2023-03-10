@@ -113,6 +113,7 @@ dependencies {
 
     implementation(project(":dd-sdk-android"))
     implementation(project(":library:dd-sdk-android-session-replay"))
+    implementation(project(":library:dd-sdk-android-session-replay-material"))
     implementation(project(":dd-sdk-android-ktx"))
     implementation(project(":dd-sdk-android-ndk"))
     implementation(project(":dd-sdk-android-rx"))
