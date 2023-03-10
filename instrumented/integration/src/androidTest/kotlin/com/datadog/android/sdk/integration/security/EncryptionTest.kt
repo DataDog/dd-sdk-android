@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.experimental.inv
 
 @MediumTest
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class EncryptionTest {
 
     @get:Rule

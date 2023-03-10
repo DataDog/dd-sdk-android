@@ -20,6 +20,7 @@ import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingFeature
 import java.util.UUID
 
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal object RuntimeConfig {
 
     val APP_ID = UUID.randomUUID().toString()

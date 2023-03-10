@@ -15,6 +15,7 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.RuntimeConfig
 
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class GesturesTrackingActivityTestRule<T : Activity>(
     activityClass: Class<T>,
     keepRequests: Boolean = false,

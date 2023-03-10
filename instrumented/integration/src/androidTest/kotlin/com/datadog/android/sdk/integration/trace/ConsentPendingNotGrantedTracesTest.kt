@@ -21,6 +21,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class ConsentPendingNotGrantedTracesTest : TracesTest() {
 
     @get:Rule

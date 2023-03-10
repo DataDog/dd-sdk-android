@@ -19,6 +19,7 @@ import fr.xgouchet.elmyr.Forge
 import io.opentracing.Scope
 import java.util.LinkedList
 
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class ActivityLifecycleTrace : AppCompatActivity() {
 
     private val forge = Forge()

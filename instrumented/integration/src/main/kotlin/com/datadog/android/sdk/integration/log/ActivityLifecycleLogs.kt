@@ -16,6 +16,7 @@ import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getTrackingConsent
 import fr.xgouchet.elmyr.Forge
 
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class ActivityLifecycleLogs : AppCompatActivity() {
 
     private val forge = Forge()
