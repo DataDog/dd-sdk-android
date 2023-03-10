@@ -9,16 +9,17 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.Rect
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
-import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.internal.utils.StringUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.sessionreplay.utils.ViewUtils
 
 internal open class SwitchCompatMapper(
     private val textWireframeMapper: TextWireframeMapper,
     private val stringUtils: StringUtils = StringUtils,
-    private val uniqueIdentifierGenerator: UniqueIdentifierResolver = UniqueIdentifierResolver,
-    viewUtils: ViewUtils = ViewUtils()
+    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
+    viewUtils: ViewUtils = ViewUtils
 ) : CheckableWireframeMapper<SwitchCompat>(viewUtils) {
 
     // region CheckableWireframeMapper

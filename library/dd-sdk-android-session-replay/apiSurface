@@ -27,6 +27,12 @@ data class com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 typealias MapperCondition = (android.view.View) -> Boolean
 interface com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper<T: android.view.View, S: com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
   fun map(T, com.datadog.android.sessionreplay.internal.recorder.SystemInformation): List<S>
+object com.datadog.android.sessionreplay.utils.StringUtils
+  fun formatColorAndAlphaAsHexa(Int, Int): String
+object com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+  fun resolveChildUniqueIdentifier(android.view.View, String): Long?
+object com.datadog.android.sessionreplay.utils.ViewUtils
+  fun resolveViewGlobalBounds(android.view.View, Float): com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 data class com.datadog.android.sessionreplay.model.MobileSegment
   constructor(Application, Session, View, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long? = null, kotlin.Boolean? = null, Source, kotlin.collections.List<MobileRecord>)
   fun toJson(): com.google.gson.JsonElement

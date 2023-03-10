@@ -29,7 +29,7 @@ internal class MaskAllCheckBoxMapperTest : BaseCheckBoxMapperTest() {
     override fun setupTestedMapper(): CheckBoxMapper {
         return MaskAllCheckBoxMapper(
             textWireframeMapper = mockTextWireframeMapper,
-            uniqueIdentifierGenerator = mockUniqueIdentifierResolver,
+            uniqueIdentifierGenerator = mockuniqueIdentifierGenerator,
             viewUtils = mockViewUtils
         )
     }

@@ -7,15 +7,16 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.RadioButton
-import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
-import com.datadog.android.sessionreplay.internal.utils.StringUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.sessionreplay.utils.ViewUtils
 
 internal open class RadioButtonMapper(
     textWireframeMapper: TextWireframeMapper,
     stringUtils: StringUtils = StringUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierResolver = UniqueIdentifierResolver,
-    viewUtils: ViewUtils = ViewUtils()
+    uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
+    viewUtils: ViewUtils = ViewUtils
 ) : CheckableCompoundButtonMapper<RadioButton>(
     textWireframeMapper,
     stringUtils,

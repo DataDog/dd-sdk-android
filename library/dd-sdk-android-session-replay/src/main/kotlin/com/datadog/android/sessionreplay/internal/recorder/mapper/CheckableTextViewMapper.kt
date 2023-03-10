@@ -10,15 +10,16 @@ import android.widget.Checkable
 import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
-import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
-import com.datadog.android.sessionreplay.internal.utils.StringUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.sessionreplay.utils.ViewUtils
 
 internal abstract class CheckableTextViewMapper<T>(
     private val textWireframeMapper: TextWireframeMapper,
     private val stringUtils: StringUtils = StringUtils,
-    private val uniqueIdentifierGenerator: UniqueIdentifierResolver,
-    viewUtils: ViewUtils = ViewUtils()
+    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator,
+    viewUtils: ViewUtils = ViewUtils
 ) : CheckableWireframeMapper<T>(viewUtils) where T : TextView, T : Checkable {
 
     // region CheckableWireframeMapper

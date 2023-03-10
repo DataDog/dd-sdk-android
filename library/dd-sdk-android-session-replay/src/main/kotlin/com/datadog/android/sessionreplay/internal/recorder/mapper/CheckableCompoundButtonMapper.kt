@@ -9,15 +9,16 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.os.Build
 import android.widget.CompoundButton
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
-import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.internal.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.sessionreplay.utils.ViewUtils
 
 internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
     textWireframeMapper: TextWireframeMapper,
     stringUtils: StringUtils = StringUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierResolver = UniqueIdentifierResolver,
-    viewUtils: ViewUtils = ViewUtils()
+    uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
+    viewUtils: ViewUtils = ViewUtils
 ) : CheckableTextViewMapper<T>(
     textWireframeMapper,
     stringUtils,

@@ -28,7 +28,7 @@ internal class CheckBoxMapperTest : BaseCheckBoxMapperTest() {
     override fun setupTestedMapper(): CheckBoxMapper {
         return CheckBoxMapper(
             textWireframeMapper = mockTextWireframeMapper,
-            uniqueIdentifierGenerator = mockUniqueIdentifierResolver,
+            uniqueIdentifierGenerator = mockuniqueIdentifierGenerator,
             viewUtils = mockViewUtils
         )
     }

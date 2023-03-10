@@ -7,8 +7,8 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.utils.StringUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.StringUtils
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -32,7 +32,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
     override fun setupTestedMapper(): SwitchCompatMapper {
         return SwitchCompatMapper(
             mockTextWireframeMapper,
-            uniqueIdentifierGenerator = mockUniqueIdentifierResolver,
+            uniqueIdentifierGenerator = mockuniqueIdentifierGenerator,
             viewUtils = mockViewUtils
         )
     }
@@ -143,7 +143,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
     ) {
         // Given
         whenever(
-            mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
+            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
                 mockSwitch,
                 SwitchCompatMapper.THUMB_KEY_NAME
             )
