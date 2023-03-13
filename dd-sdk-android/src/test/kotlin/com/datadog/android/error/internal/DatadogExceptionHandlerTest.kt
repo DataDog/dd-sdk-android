@@ -11,22 +11,18 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
 import com.datadog.android.Datadog
-import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
-import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -73,7 +69,6 @@ import java.util.concurrent.TimeUnit
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class DatadogExceptionHandlerTest {
 
     private var originalHandler: Thread.UncaughtExceptionHandler? = null
@@ -84,7 +79,7 @@ internal class DatadogExceptionHandlerTest {
     lateinit var mockPreviousHandler: Thread.UncaughtExceptionHandler
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockLogsFeatureScope: FeatureScope
@@ -113,15 +108,6 @@ internal class DatadogExceptionHandlerTest {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         CoreFeature.disableKronosBackgroundSync = true
-
-        Datadog.initialize(
-            appContext.mockInstance,
-            Credentials(fakeToken, fakeEnvName, fakeVariant),
-            Configuration.Builder(
-                crashReportsEnabled = true
-            ).build(),
-            TrackingConsent.GRANTED
-        )
 
         originalHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler(mockPreviousHandler)
@@ -351,8 +337,7 @@ internal class DatadogExceptionHandlerTest {
     fun `M wait for the executor to idle W exception caught`() {
         // Given
         val mockScheduledThreadExecutor: ThreadPoolExecutor = mock()
-        (Datadog.globalSdkCore as DatadogCore).coreFeature
-            .persistenceExecutorService = mockScheduledThreadExecutor
+        whenever(mockSdkCore.getPersistenceExecutorService()) doReturn mockScheduledThreadExecutor
         Thread.setDefaultUncaughtExceptionHandler(null)
         testedHandler.register()
         val currentThread = Thread.currentThread()
@@ -377,8 +362,7 @@ internal class DatadogExceptionHandlerTest {
             whenever(it.taskCount).thenReturn(2)
             whenever(it.completedTaskCount).thenReturn(0)
         }
-        (Datadog.globalSdkCore as DatadogCore).coreFeature
-            .persistenceExecutorService = mockScheduledThreadExecutor
+        whenever(mockSdkCore.getPersistenceExecutorService()) doReturn mockScheduledThreadExecutor
         Thread.setDefaultUncaughtExceptionHandler(null)
         testedHandler.register()
         val currentThread = Thread.currentThread()

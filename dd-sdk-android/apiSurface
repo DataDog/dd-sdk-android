@@ -1,16 +1,9 @@
 object com.datadog.android.Datadog
-  DEPRECATED var globalSdkCore: com.datadog.android.v2.api.SdkCore
   fun initialize(String?, android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.v2.api.SdkCore?
   fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.v2.api.SdkCore?
-  fun isInitialized(): Boolean
   fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
-  DEPRECATED fun clearAllData()
-  DEPRECATED fun setVerbosity(Int)
-  DEPRECATED fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
-  DEPRECATED fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
-  DEPRECATED fun addUserExtraInfo(Map<String, Any?> = emptyMap())
-  DEPRECATED fun registerFeature(com.datadog.android.v2.api.Feature)
-  val _internal: _InternalProxy
+  fun stopInstance(String? = null)
+  fun _internalProxy(String? = null): _InternalProxy?
 object com.datadog.android.DatadogEndpoint
   DEPRECATED const val LOGS_US1: String
   DEPRECATED const val LOGS_US3: String
@@ -334,6 +327,9 @@ interface com.datadog.android.v2.core.InternalSdkCore : com.datadog.android.v2.a
   val rootStorageDir: java.io.File
   val processImportance: Int
   fun writeLastViewEvent(ByteArray)
+  fun getPersistenceExecutorService(): java.util.concurrent.ExecutorService
+  fun getAllFeatures(): List<com.datadog.android.v2.api.FeatureScope>
+  fun getDatadogContext(): com.datadog.android.v2.api.context.DatadogContext?
 interface com.datadog.android.v2.core.storage.DataWriter<T>
   fun write(com.datadog.android.v2.api.EventBatchWriter, T): Boolean
 class com.datadog.tools.annotation.NoOpImplementation

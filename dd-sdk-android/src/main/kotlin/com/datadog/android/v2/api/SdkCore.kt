@@ -6,7 +6,6 @@
 
 package com.datadog.android.v2.api
 
-import com.datadog.android.Datadog
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.context.TimeInfo
@@ -91,7 +90,7 @@ interface SdkCore {
     /**
      * Sets additional information on the [UserInfo] object
      *
-     * If properties had originally been set with [Datadog.setUserInfo], they will be preserved.
+     * If properties had originally been set with [SdkCore.setUserInfo], they will be preserved.
      * In the event of a conflict on key, the new property will prevail.
      *
      * @param extraInfo additional information. An extra information can be

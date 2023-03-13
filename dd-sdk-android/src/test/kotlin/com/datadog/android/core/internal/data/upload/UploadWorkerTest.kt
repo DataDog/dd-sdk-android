@@ -10,17 +10,14 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.datadog.android.Datadog
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.NoOpSdkCore
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.net.DataUploader
 import com.datadog.android.v2.core.internal.storage.BatchConfirmation
@@ -36,7 +33,6 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -44,7 +40,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -68,13 +63,12 @@ import java.util.concurrent.Executors
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class UploadWorkerTest {
 
     private lateinit var testedWorker: Worker
 
     @Mock
-    lateinit var mockGlobalSdkCore: DatadogCore
+    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockContextProvider: ContextProvider
@@ -111,29 +105,20 @@ internal class UploadWorkerTest {
 
     @BeforeEach
     fun `set up`() {
-        Datadog.initialized.set(true)
-        Datadog.globalSdkCore = mockGlobalSdkCore
-
-        whenever(mockGlobalSdkCore.contextProvider) doReturn mockContextProvider
-        whenever(mockContextProvider.context) doReturn fakeContext
+        whenever(mockSdkCore.getDatadogContext()) doReturn fakeContext
 
         stubFeatures(
-            mockGlobalSdkCore,
+            mockSdkCore,
             listOf(mockFeatureA, mockFeatureB),
             listOf(mockStorageA, mockStorageB),
             listOf(mockUploaderA, mockUploaderB)
         )
 
         testedWorker = UploadWorker(
+            mockSdkCore,
             appContext.mockInstance,
             fakeWorkerParameters
         )
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        Datadog.globalSdkCore = NoOpSdkCore()
-        Datadog.initialized.set(false)
     }
 
     // region doWork
@@ -531,33 +516,12 @@ internal class UploadWorkerTest {
             .isEqualTo(ListenableWorker.Result.success())
     }
 
-    @Test
-    fun `𝕄 log error 𝕎 doWork() { SDK is not initialized }`() {
-        // Given
-        Datadog.initialized.set(false)
-
-        // When
-        val result = testedWorker.doWork()
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Datadog.MESSAGE_NOT_INITIALIZED
-        )
-        verifyZeroInteractions(mockFeatureA, mockBatchReaderA, mockUploaderA)
-        verifyZeroInteractions(mockFeatureB, mockBatchReaderB, mockUploaderB)
-
-        assertThat(result)
-            .isEqualTo(ListenableWorker.Result.success())
-    }
-
     // endregion
 
     // region private
 
     private fun stubFeatures(
-        core: DatadogCore,
+        core: InternalSdkCore,
         features: List<SdkFeature>,
         storages: List<Storage>,
         uploaders: List<DataUploader>

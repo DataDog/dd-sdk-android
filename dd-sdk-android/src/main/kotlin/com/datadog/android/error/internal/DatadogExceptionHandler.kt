@@ -7,7 +7,6 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
-import com.datadog.android.Datadog
 import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.isWorkManagerInitialized
@@ -15,11 +14,10 @@ import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.InternalSdkCore
 import java.lang.ref.WeakReference
 import java.util.concurrent.ThreadPoolExecutor
 
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class DatadogExceptionHandler(
     private val sdkCore: SdkCore,
     appContext: Context
@@ -73,9 +71,8 @@ internal class DatadogExceptionHandler(
         // TODO RUMM-0000 If DatadogExceptionHandler goes into dedicated module (module of 1 class
         //  only?), we have to wait for the write in some other way
         // give some time to the persistence executor service to finish its tasks
-        val coreFeature = (Datadog.globalSdkCore as? DatadogCore)?.coreFeature
-        if (coreFeature != null) {
-            val idled = (coreFeature.persistenceExecutorService as? ThreadPoolExecutor)
+        if (sdkCore is InternalSdkCore) {
+            val idled = (sdkCore.getPersistenceExecutorService() as? ThreadPoolExecutor)
                 ?.waitToIdle(MAX_WAIT_FOR_IDLE_TIME_IN_MS) ?: true
             if (!idled) {
                 internalLogger.log(

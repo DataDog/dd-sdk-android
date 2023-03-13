@@ -38,7 +38,6 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class SdkInternalLoggerTest {
 
     @Mock
@@ -58,14 +57,12 @@ internal class SdkInternalLoggerTest {
             devLogHandlerFactory = { mockDevLogHandler },
             sdkLogHandlerFactory = { mockSdkLogHandler }
         )
-        Datadog.globalSdkCore = mockSdkCore
-        Datadog.initialized.set(true)
+        Datadog.registry.register(null, mockSdkCore)
     }
 
     @AfterEach
     fun `tear down`() {
-        Datadog.initialized.set(false)
-        Datadog.globalSdkCore = NoOpSdkCore()
+        Datadog.registry.clear()
     }
 
     @Test
@@ -99,9 +96,7 @@ internal class SdkInternalLoggerTest {
         @IntForgery(min = Log.VERBOSE, max = (Log.ASSERT + 1)) sdkVerbosity: Int
     ) {
         // Given
-        val mockSdkCore: SdkCore = mock()
         whenever(mockSdkCore.getVerbosity()) doReturn sdkVerbosity
-        Datadog.globalSdkCore = mockSdkCore
 
         // When
         testedInternalLogger = SdkInternalLogger(

@@ -6,8 +6,8 @@
 
 package com.datadog.android.log
 
-import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.v2.api.SdkCore
 
 /**
  * This class holds constant log attribute keys.
@@ -295,21 +295,21 @@ object LogAttributes {
     /**
      * The user email. (String)
      * This value is filled automatically by the [Logger].
-     * @see [Datadog.setUserInfo]
+     * @see [SdkCore.setUserInfo]
      */
     const val USR_EMAIL: String = "$USR_ATTRIBUTES_GROUP.email"
 
     /**
      * The user identifier. (String)
      * This value is filled automatically by the [Logger].
-     * @see [Datadog.setUserInfo]
+     * @see [SdkCore.setUserInfo]
      */
     const val USR_ID: String = "$USR_ATTRIBUTES_GROUP.id"
 
     /**
      * The user friendly name. (String)
      * This value is filled automatically by the [Logger].
-     * @see [Datadog.setUserInfo]
+     * @see [SdkCore.setUserInfo]
      */
     const val USR_NAME: String = "$USR_ATTRIBUTES_GROUP.name"
 

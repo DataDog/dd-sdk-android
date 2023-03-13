@@ -6,8 +6,6 @@
 
 package com.datadog.android.core.internal.net
 
-import android.util.Log
-import com.datadog.android.Datadog
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
 import com.nhaarman.mockitokotlin2.verify
@@ -42,10 +40,8 @@ internal class UploadStatusTest {
     var fakeByteSize: Int = 0
 
     @BeforeEach
-    @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
     fun `set up`(forge: Forge) {
         fakeContext = forge.anAlphabeticalString()
-        Datadog.setVerbosity(Log.VERBOSE)
     }
 
     @Test

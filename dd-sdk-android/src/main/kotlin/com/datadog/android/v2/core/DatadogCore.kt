@@ -35,12 +35,14 @@ import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.ContextProvider
 import java.io.File
 import java.util.Locale
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
 /**
@@ -243,13 +245,6 @@ internal class DatadogCore(
         features[featureName]?.eventReceiver?.set(null)
     }
 
-    /**
-     * Returns all registered features.
-     */
-    fun getAllFeatures(): List<FeatureScope> {
-        return features.values.toList()
-    }
-
     // endregion
 
     // region InternalSdkCore
@@ -281,6 +276,18 @@ internal class DatadogCore(
                 LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(Locale.US, lastViewEventFile.parent)
             )
         }
+    }
+
+    override fun getPersistenceExecutorService(): ExecutorService {
+        return coreFeature.persistenceExecutorService
+    }
+
+    override fun getAllFeatures(): List<FeatureScope> {
+        return features.values.toList()
+    }
+
+    override fun getDatadogContext(): DatadogContext? {
+        return contextProvider?.context
     }
 
     // endregion
