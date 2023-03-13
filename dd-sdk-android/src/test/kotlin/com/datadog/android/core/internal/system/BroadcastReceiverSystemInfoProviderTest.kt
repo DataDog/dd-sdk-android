@@ -138,6 +138,8 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_LEVEL), any()))
             .doReturn(scaledLevel)
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_SCALE), any())) doReturn scale
+        whenever(batteryIntent.getBooleanExtra(eq(BatteryManager.EXTRA_PRESENT), any()))
+            .doReturn(true)
         whenever(batteryIntent.action) doReturn Intent.ACTION_BATTERY_CHANGED
         val powerSaveModeIntent: Intent = mock()
         whenever(mockPowerMgr.isPowerSaveMode) doReturn powerSaveMode
@@ -175,6 +177,8 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_LEVEL), any()))
             .doReturn(scaledLevel)
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_SCALE), any())) doReturn scale
+        whenever(batteryIntent.getBooleanExtra(eq(BatteryManager.EXTRA_PRESENT), any()))
+            .doReturn(true)
         whenever(batteryIntent.action) doReturn Intent.ACTION_BATTERY_CHANGED
 
         val powerSaveModeIntent: Intent = mock()
@@ -200,6 +204,9 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         // Given
         whenever(mockIntent.getIntExtra(any(), any())) doAnswer {
             it.arguments[1] as Int
+        }
+        whenever(mockIntent.getBooleanExtra(any(), any())) doAnswer {
+            it.arguments[1] as Boolean
         }
         whenever(mockIntent.action) doReturn Intent.ACTION_BATTERY_CHANGED
 
@@ -227,6 +234,8 @@ internal class BroadcastReceiverSystemInfoProviderTest {
             .doReturn(status.androidStatus())
         whenever(mockIntent.getIntExtra(eq(BatteryManager.EXTRA_LEVEL), any())) doReturn scaledLevel
         whenever(mockIntent.getIntExtra(eq(BatteryManager.EXTRA_SCALE), any())) doReturn scale
+        whenever(mockIntent.getBooleanExtra(eq(BatteryManager.EXTRA_PRESENT), any()))
+            .doReturn(true)
         whenever(mockIntent.action) doReturn Intent.ACTION_BATTERY_CHANGED
 
         // When
@@ -443,6 +452,46 @@ internal class BroadcastReceiverSystemInfoProviderTest {
             scaledLevel
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_PLUGGED), any()))
             .doReturn(0)
+        whenever(batteryIntent.getBooleanExtra(eq(BatteryManager.EXTRA_PRESENT), any()))
+            .doReturn(true)
+        whenever(batteryIntent.action) doReturn Intent.ACTION_BATTERY_CHANGED
+
+        // When
+        testedProvider.onReceive(mockContext, batteryIntent)
+        val systemInfo = testedProvider.getLatestSystemInfo()
+
+        // Then
+        assertThat(systemInfo).hasOnExternalPowerSource(false)
+    }
+
+    @Test
+    fun `M set onExternalPowerSource to true W onReceive { battery absent }`() {
+        // Given
+        val batteryIntent: Intent = mock()
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_SCALE), any())) doReturn 100
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_LEVEL), any())) doReturn 0
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_PLUGGED), any())) doReturn 0
+        whenever(batteryIntent.getBooleanExtra(eq(BatteryManager.EXTRA_PRESENT), any()))
+            .doReturn(false)
+        whenever(batteryIntent.action) doReturn Intent.ACTION_BATTERY_CHANGED
+
+        // When
+        testedProvider.onReceive(mockContext, batteryIntent)
+        val systemInfo = testedProvider.getLatestSystemInfo()
+
+        // Then
+        assertThat(systemInfo).hasOnExternalPowerSource(true)
+    }
+
+    @Test
+    fun `M set onExternalPowerSource to false W onReceive { battery present }`() {
+        // Given
+        val batteryIntent: Intent = mock()
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_SCALE), any())) doReturn 100
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_LEVEL), any())) doReturn 0
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_PLUGGED), any())) doReturn 0
+        whenever(batteryIntent.getBooleanExtra(eq(BatteryManager.EXTRA_PRESENT), any()))
+            .doReturn(true)
         whenever(batteryIntent.action) doReturn Intent.ACTION_BATTERY_CHANGED
 
         // When

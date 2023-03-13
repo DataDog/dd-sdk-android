@@ -7,7 +7,6 @@
 package com.datadog.android.core.configuration
 
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.security.Encryption
@@ -139,7 +138,7 @@ internal constructor(
          * Let the SDK target your preferred Datadog's site.
          */
         fun useSite(site: DatadogSite): Builder {
-            crashReportConfig = crashReportConfig.copy(endpointUrl = site.logsEndpoint())
+            crashReportConfig = crashReportConfig.copy(endpointUrl = site.intakeEndpoint)
             coreConfig = coreConfig.copy(needsClearTextHttp = false, site = site)
             return this
         }
@@ -246,7 +245,6 @@ internal constructor(
     // endregion
 
     internal companion object {
-        internal const val DEFAULT_LONG_TASK_THRESHOLD_MS = 100L
 
         internal val DEFAULT_CORE_CONFIG = Core(
             needsClearTextHttp = false,
@@ -259,8 +257,9 @@ internal constructor(
             encryption = null,
             site = DatadogSite.US1
         )
+
         internal val DEFAULT_CRASH_CONFIG = Feature.CrashReport(
-            endpointUrl = DatadogEndpoint.LOGS_US1
+            endpointUrl = DatadogSite.US1.intakeEndpoint
         )
 
         internal const val ERROR_FEATURE_DISABLED = "The %s feature has been disabled in your " +

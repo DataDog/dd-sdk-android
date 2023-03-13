@@ -9,7 +9,6 @@ package com.datadog.android.log
 import android.content.Context
 import android.util.Log
 import androidx.annotation.AnyThread
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.event.EventMapper
@@ -276,14 +275,14 @@ class LogsFeature internal constructor(
      * A Builder class for a [LogsFeature].
      */
     class Builder {
-        private var endpointUrl = DatadogEndpoint.LOGS_US1
+        private var endpointUrl = DatadogSite.US1.intakeEndpoint
         private var logsEventMapper: EventMapper<LogEvent> = NoOpEventMapper()
 
         /**
          * Let the Logs feature target your preferred Datadog's site.
          */
         fun useSite(site: DatadogSite): Builder {
-            endpointUrl = site.logsEndpoint()
+            endpointUrl = site.intakeEndpoint
             return this
         }
 

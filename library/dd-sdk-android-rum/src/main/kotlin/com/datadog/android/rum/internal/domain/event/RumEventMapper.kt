@@ -83,7 +83,7 @@ internal data class RumEventMapper(
         // In case the event is of type ViewEvent this cannot be null according with the interface
         // but it can happen that if used from Java code to have null values. In this case we will
         // log a warning and we will use the original event.
-        return if (event is ViewEvent && (mappedEvent == null || mappedEvent != event)) {
+        return if (event is ViewEvent && (mappedEvent == null || mappedEvent !== event)) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,

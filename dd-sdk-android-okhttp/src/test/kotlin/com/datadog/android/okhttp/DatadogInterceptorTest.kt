@@ -56,7 +56,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.io.IOException
-import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -186,7 +185,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl.lowercase(Locale.US),
+                fakeUrl,
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -224,7 +223,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl.lowercase(Locale.US),
+                fakeUrl,
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -272,7 +271,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl.lowercase(Locale.US),
+                fakeUrl,
                 emptyMap()
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -318,7 +317,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl.lowercase(Locale.US),
+                fakeUrl,
                 emptyMap()
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -377,7 +376,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl.lowercase(Locale.US),
+                fakeUrl,
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -434,7 +433,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl.lowercase(Locale.US),
+                fakeUrl,
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -474,7 +473,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl.lowercase(Locale.US),
+                fakeUrl,
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -512,7 +511,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl.lowercase(Locale.US),
+                fakeUrl,
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -545,13 +544,13 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl.lowercase(Locale.US),
+                fakeUrl,
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResourceWithError(
                 requestId,
                 null,
-                "OkHttp request error $fakeMethod ${fakeUrl.lowercase(Locale.US)}",
+                "OkHttp request error $fakeMethod $fakeUrl",
                 RumErrorSource.NETWORK,
                 throwable,
                 fakeAttributes

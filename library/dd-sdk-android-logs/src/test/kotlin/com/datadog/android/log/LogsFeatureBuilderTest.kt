@@ -6,7 +6,6 @@
 
 package com.datadog.android.log
 
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
@@ -40,7 +39,7 @@ internal class LogsFeatureBuilderTest {
         val requestFactory = config.requestFactory
         assertThat(requestFactory).isInstanceOf(LogsRequestFactory::class.java)
         assertThat((requestFactory as LogsRequestFactory).endpointUrl)
-            .isEqualTo(DatadogEndpoint.LOGS_US1)
+            .isEqualTo(DatadogSite.US1.intakeEndpoint)
 
         assertThat(config.eventMapper).isInstanceOf(NoOpEventMapper::class.java)
     }
@@ -56,7 +55,7 @@ internal class LogsFeatureBuilderTest {
         val requestFactory = config.requestFactory
         assertThat(requestFactory).isInstanceOf(LogsRequestFactory::class.java)
         assertThat((requestFactory as LogsRequestFactory).endpointUrl)
-            .isEqualTo(site.logsEndpoint())
+            .isEqualTo(site.intakeEndpoint)
     }
 
     @Test

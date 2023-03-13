@@ -86,6 +86,21 @@ internal constructor(
 
     // endregion
 
+    @Suppress(
+        "UndocumentedPublicClass",
+        "UndocumentedPublicFunction",
+        "ClassName",
+        "ClassNaming"
+    )
+    class _InternalWebViewProxy(sdkCore: SdkCore) {
+
+        private val consumer = buildWebViewEventConsumer(sdkCore)
+
+        fun consumeWebviewEvent(event: String) {
+            consumer.consume(event)
+        }
+    }
+
     companion object {
 
         internal const val JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE =

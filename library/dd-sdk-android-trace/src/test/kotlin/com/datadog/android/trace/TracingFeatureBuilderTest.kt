@@ -6,7 +6,6 @@
 
 package com.datadog.android.trace
 
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.trace.internal.domain.event.NoOpSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapper
@@ -39,7 +38,7 @@ internal class TracingFeatureBuilderTest {
         val requestFactory = config.requestFactory
         assertThat(requestFactory).isInstanceOf(TracesRequestFactory::class.java)
         assertThat((requestFactory as TracesRequestFactory).endpointUrl)
-            .isEqualTo(DatadogEndpoint.TRACES_US1)
+            .isEqualTo(DatadogSite.US1.intakeEndpoint)
 
         assertThat(config.spanEventMapper).isInstanceOf(NoOpSpanEventMapper::class.java)
     }
@@ -55,7 +54,7 @@ internal class TracingFeatureBuilderTest {
         val requestFactory = config.requestFactory
         assertThat(requestFactory).isInstanceOf(TracesRequestFactory::class.java)
         assertThat((requestFactory as TracesRequestFactory).endpointUrl)
-            .isEqualTo(site.tracesEndpoint())
+            .isEqualTo(site.intakeEndpoint)
     }
 
     @Test

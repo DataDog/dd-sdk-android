@@ -7,10 +7,10 @@
 package com.datadog.android
 
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.DatadogCore
 
 /**
  * This class exposes internal methods that are used by other Datadog modules and cross platform
@@ -33,7 +33,7 @@ import com.datadog.android.v2.api.SdkCore
 class _InternalProxy internal constructor(
     sdkCore: SdkCore,
     // TODO RUMM-0000 Shouldn't be nullable
-    private val coreFeature: CoreFeature?
+    private val datadogCore: DatadogCore?
 ) {
     @Suppress("StringLiteralDuplication")
     class _TelemetryProxy internal constructor(private val sdkCore: SdkCore) {
@@ -73,7 +73,7 @@ class _InternalProxy internal constructor(
     val _telemetry: _TelemetryProxy = _TelemetryProxy(sdkCore)
 
     fun setCustomAppVersion(version: String) {
-        coreFeature?.packageVersionProvider?.version = version
+        datadogCore?.coreFeature?.packageVersionProvider?.version = version
     }
 
     companion object {

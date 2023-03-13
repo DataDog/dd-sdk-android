@@ -7,8 +7,8 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.storage.NoOpDataWriter
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -87,7 +87,7 @@ internal class RumSessionScopeTest {
     lateinit var mockSessionListener: RumSessionListener
 
     @Mock
-    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+    lateinit var mockAppStartTimeProvider: AppStartTimeProvider
 
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
@@ -994,7 +994,7 @@ internal class RumSessionScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockBuildSdkVersionProvider,
+            mockAppStartTimeProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )

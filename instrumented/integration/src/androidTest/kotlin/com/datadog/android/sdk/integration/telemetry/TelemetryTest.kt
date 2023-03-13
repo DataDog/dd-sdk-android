@@ -15,6 +15,7 @@ import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import java.util.concurrent.TimeUnit
@@ -38,7 +39,7 @@ internal open class TelemetryTest {
         )
 
         ConditionWatcher {
-            verifyContainsOnlyExpectedTelemetry(
+            verifyContainsExpectedTelemetry(
                 handledRequests = mockServerRule.getRequests(RuntimeConfig.rumEndpointUrl),
                 expectedTelemetry
             )
@@ -48,7 +49,7 @@ internal open class TelemetryTest {
 
     // region Internal
 
-    private fun verifyContainsOnlyExpectedTelemetry(
+    private fun verifyContainsExpectedTelemetry(
         handledRequests: List<HandledRequest>,
         expectedTelemetry: List<ExpectedTelemetryEvent>
     ) {
@@ -62,16 +63,28 @@ internal open class TelemetryTest {
                 it.getAsJsonPrimitive("type")?.asString == "telemetry"
             }
 
-        Assertions.assertThat(telemetryEvents)
+        Assertions.assertThat(telemetryEvents.size)
             .overridingErrorMessage(
-                "Recorded telemetry has different number of events" +
-                    " (${telemetryEvents.size}) than expected" +
-                    " telemetry (${expectedTelemetry.size})"
+                "Recorded telemetry expected at least ${expectedTelemetry.size} events, " +
+                    " got ${telemetryEvents.size} which is less than expected."
             )
-            .hasSameSizeAs(expectedTelemetry)
+            .isGreaterThanOrEqualTo(expectedTelemetry.size)
 
-        telemetryEvents.forEachIndexed { index, recordedEvent ->
-            verifyTelemetry(recordedEvent, expectedTelemetry[index])
+        expectedTelemetry.forEach { expectedEvent ->
+            assertThat(
+                telemetryEvents.firstOrNull { recordedEvent ->
+                    telemetryMatches(recordedEvent, expectedEvent)
+                }
+            ).isNotNull
+        }
+    }
+
+    private fun telemetryMatches(recordedEvent: JsonObject, expectedEvent: ExpectedTelemetryEvent): Boolean {
+        try {
+            verifyTelemetry(recordedEvent, expectedEvent)
+            return true
+        } catch (e: AssertionError) {
+            return false
         }
     }
 

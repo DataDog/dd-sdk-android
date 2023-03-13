@@ -7,7 +7,6 @@
 package com.datadog.android.trace
 
 import android.content.Context
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.trace.internal.data.NoOpWriter
@@ -76,14 +75,14 @@ class TracingFeature internal constructor(
      * A Builder class for a [TracingFeature].
      */
     class Builder {
-        private var endpointUrl = DatadogEndpoint.TRACES_US1
+        private var endpointUrl = DatadogSite.US1.intakeEndpoint
         private var spanEventMapper: SpanEventMapper = NoOpSpanEventMapper()
 
         /**
          * Let the Tracing feature target your preferred Datadog's site.
          */
         fun useSite(site: DatadogSite): Builder {
-            endpointUrl = site.tracesEndpoint()
+            endpointUrl = site.intakeEndpoint
             return this
         }
 

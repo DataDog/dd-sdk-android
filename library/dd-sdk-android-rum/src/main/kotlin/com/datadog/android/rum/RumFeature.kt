@@ -13,7 +13,6 @@ import android.os.Handler
 import android.os.Looper
 import android.view.Choreographer
 import androidx.annotation.FloatRange
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.executeSafe
@@ -99,6 +98,7 @@ class RumFeature internal constructor(
 
     internal var samplingRate: Float = 0f
     internal var telemetrySamplingRate: Float = 0f
+    internal var telemetryConfigurationSamplingRate: Float = 0f
     internal var backgroundEventTracking: Boolean = false
     internal var trackFrustrations: Boolean = false
 
@@ -139,6 +139,7 @@ class RumFeature internal constructor(
 
         samplingRate = configuration.samplingRate
         telemetrySamplingRate = configuration.telemetrySamplingRate
+        telemetryConfigurationSamplingRate = configuration.telemetryConfigurationSamplingRate
         backgroundEventTracking = configuration.backgroundEventTracking
         trackFrustrations = configuration.trackFrustrations
         rumEventMapper = configuration.rumEventMapper
@@ -304,7 +305,7 @@ class RumFeature internal constructor(
         initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor, periodInMs)
         initializeVitalMonitor(MemoryVitalReader(), memoryVitalMonitor, periodInMs)
 
-        val vitalFrameCallback = VitalFrameCallback(appContext, frameRateVitalMonitor) {
+        val vitalFrameCallback = VitalFrameCallback(frameRateVitalMonitor) {
             initialized.get()
         }
         try {
@@ -683,7 +684,7 @@ class RumFeature internal constructor(
          * Let the RUM feature target your preferred Datadog's site.
          */
         fun useSite(site: DatadogSite): Builder {
-            rumConfig = rumConfig.copy(endpointUrl = site.rumEndpoint())
+            rumConfig = rumConfig.copy(endpointUrl = site.intakeEndpoint)
             return this
         }
 
@@ -719,6 +720,7 @@ class RumFeature internal constructor(
         val endpointUrl: String,
         val samplingRate: Float,
         val telemetrySamplingRate: Float,
+        val telemetryConfigurationSamplingRate: Float,
         val userActionTrackingStrategy: UserActionTrackingStrategy?,
         val viewTrackingStrategy: ViewTrackingStrategy?,
         val longTaskTrackingStrategy: TrackingStrategy?,
@@ -732,14 +734,14 @@ class RumFeature internal constructor(
 
         internal const val DEFAULT_SAMPLING_RATE: Float = 100f
         internal const val DEFAULT_TELEMETRY_SAMPLING_RATE: Float = 20f
+        internal const val DEFAULT_TELEMETRY_CONFIGURATION_SAMPLING_RATE: Float = 20f
         internal const val DEFAULT_LONG_TASK_THRESHOLD_MS = 100L
 
         internal val DEFAULT_RUM_CONFIG = Configuration(
-            endpointUrl = DatadogEndpoint.RUM_US1,
-            samplingRate =
-            DEFAULT_SAMPLING_RATE,
-            telemetrySamplingRate =
-            DEFAULT_TELEMETRY_SAMPLING_RATE,
+            endpointUrl = DatadogSite.US1.intakeEndpoint,
+            samplingRate = DEFAULT_SAMPLING_RATE,
+            telemetrySamplingRate = DEFAULT_TELEMETRY_SAMPLING_RATE,
+            telemetryConfigurationSamplingRate = DEFAULT_TELEMETRY_CONFIGURATION_SAMPLING_RATE,
             userActionTrackingStrategy =
             provideUserTrackingStrategy(
                 emptyArray(),
