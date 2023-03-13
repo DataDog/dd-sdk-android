@@ -64,7 +64,7 @@ import java.util.concurrent.atomic.AtomicReference
  *         .build();
  * ```
  */
-@Suppress("TooManyFunctions", "StringLiteralDuplication", "DEPRECATION") // TODO RUMM-3103 remove deprecated references)
+@Suppress("TooManyFunctions", "StringLiteralDuplication")
 open class TracingInterceptor
 internal constructor(
     internal val tracedHosts: Map<String, Set<TracingHeaderType>>,
@@ -273,7 +273,7 @@ internal constructor(
 
     @Synchronized
     private fun resolveTracer(): Tracer? {
-        val tracingFeature = Datadog.globalSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
+        val tracingFeature = Datadog.getInstance()?.getFeature(Feature.TRACING_FEATURE_NAME)
         return if (tracingFeature == null) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -573,7 +573,8 @@ internal constructor(
          */
         @Suppress("FunctionMaxLength")
         internal fun getGlobalFirstPartyHostResolver(): FirstPartyHostHeaderTypeResolver {
-            return Datadog.globalSdkCore.firstPartyHostResolver
+            return Datadog.getInstance()?.firstPartyHostResolver
+                ?: DefaultFirstPartyHostHeaderTypeResolver(emptyMap())
         }
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"

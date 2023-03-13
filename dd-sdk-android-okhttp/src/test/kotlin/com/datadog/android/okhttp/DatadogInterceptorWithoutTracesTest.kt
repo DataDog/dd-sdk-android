@@ -6,8 +6,6 @@
 
 package com.datadog.android.okhttp
 
-import android.util.Log
-import com.datadog.android.Datadog
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.trace.TracedRequestListener
@@ -135,9 +133,6 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
-        Datadog.setVerbosity(Log.VERBOSE)
-
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.withOrigin(DatadogInterceptor.ORIGIN_RUM)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.asChildOf(null as SpanContext?)) doReturn mockSpanBuilder
