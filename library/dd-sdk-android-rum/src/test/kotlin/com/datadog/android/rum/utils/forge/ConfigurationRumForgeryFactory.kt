@@ -37,7 +37,8 @@ internal class ConfigurationRumForgeryFactory :
             longTaskTrackingStrategy = mock(),
             backgroundEventTracking = forge.aBool(),
             trackFrustrations = forge.aBool(),
-            vitalsMonitorUpdateFrequency = forge.aValueFrom(VitalsUpdateFrequency::class.java)
+            vitalsMonitorUpdateFrequency = forge.aValueFrom(VitalsUpdateFrequency::class.java),
+            additionalConfig = forge.aMap { aString() to aString() }
         )
     }
 }

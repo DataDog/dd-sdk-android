@@ -38,7 +38,6 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -494,30 +493,6 @@ internal class DatadogCoreInitializationTest {
         assertThat(testedCore.coreFeature.packageVersionProvider.version).isEqualTo(
             appContext.fakeVersionName
         )
-    }
-
-    // TODO RUMM-0000 RUM is not a part of the core anymore, need to find another way.
-    @Disabled
-    @Test
-    fun `𝕄 apply configuration telemetry sample rate W applyAdditionalConfig(confic) { with sample rate }`(
-        // @FloatForgery(0.0f, 100.0f) sampleRate: Float
-    ) {
-//        // Given
-//        val configuration = Configuration.Builder(
-//            logsEnabled = true,
-//            tracesEnabled = true,
-//            crashReportsEnabled = true,
-//            rumEnabled = true
-//        )
-//            .setAdditionalConfiguration(mapOf(Datadog.DD_TELEMETRY_CONFIG_SAMPLE_RATE_TAG to sampleRate))
-//            .build()
-//
-//        // When
-//        testedCore =
-//            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
-//
-//        // Then
-//        assertThat(testedCore.rumFeature?.telemetryConfigurationSamplingRate).isEqualTo(sampleRate)
     }
 
     // endregion

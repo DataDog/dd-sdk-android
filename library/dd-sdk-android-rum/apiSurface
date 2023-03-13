@@ -82,6 +82,7 @@ class com.datadog.android.rum.RumFeature : com.datadog.android.v2.api.StorageBac
     fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
     fun useSite(com.datadog.android.DatadogSite): Builder
     fun useCustomEndpoint(String): Builder
+    fun setAdditionalConfiguration(Map<String, Any>): Builder
     fun build(): RumFeature
 interface com.datadog.android.rum.RumMonitor
   fun startView(Any, String, Map<String, Any?> = emptyMap())

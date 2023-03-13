@@ -92,7 +92,8 @@ internal class RumFeatureBuilderTest {
                 longTaskTrackingStrategy = MainLooperLongTaskStrategy(100L),
                 backgroundEventTracking = false,
                 trackFrustrations = true,
-                vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE
+                vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
+                additionalConfig = emptyMap()
             )
         )
     }
@@ -528,5 +529,21 @@ internal class RumFeatureBuilderTest {
                 rumEventMapper = expectedRumEventMapper
             )
         )
+    }
+
+    @Test
+    fun `𝕄 apply configuration telemetry sample rate W applyAdditionalConfig(config) { with sample rate }`(
+        @FloatForgery(0.0f, 100.0f) sampleRate: Float
+    ) {
+        // When
+        val rumFeature = testedBuilder
+            .setAdditionalConfiguration(
+                mapOf(RumFeature.DD_TELEMETRY_CONFIG_SAMPLE_RATE_TAG to sampleRate)
+            )
+            .build()
+
+        // Then
+        assertThat(rumFeature.configuration.telemetryConfigurationSamplingRate)
+            .isEqualTo(sampleRate)
     }
 }

@@ -8,7 +8,6 @@ package com.datadog.android.nightly.main
 
 /**
  * apiMethodSignature: com.datadog.android.Datadog#fun clearAllData()
- * apiMethodSignature: com.datadog.android.Datadog#fun enableRumDebugging(Boolean)
  * apiMethodSignature: com.datadog.android.Datadog#fun isInitialized(): Boolean
  * apiMethodSignature: com.datadog.android.Datadog#fun setVerbosity(Int)
  * apiMethodSignature: com.datadog.android.Datadog#fun addUserExtraInfo(Map<String, Any?> = emptyMap())
@@ -53,4 +52,6 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: fun java.util.concurrent.Executor.executeSafe(String, Runnable)
  * apiMethodSignature: fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, Runnable): java.util.concurrent.ScheduledFuture<*>?
  * apiMethodSignature: com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor#constructor(Int, com.datadog.android.v2.api.InternalLogger)
+ * apiMethodSignature: com.datadog.android.rum.RumFeature#fun enableRumDebugging(Boolean)
+ * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setAdditionalConfiguration(Map<String, Any>): Builder
  */

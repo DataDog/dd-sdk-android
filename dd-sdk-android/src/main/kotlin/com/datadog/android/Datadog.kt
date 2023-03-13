@@ -348,7 +348,6 @@ object Datadog {
     internal const val DD_SOURCE_TAG = "_dd.source"
     internal const val DD_SDK_VERSION_TAG = "_dd.sdk_version"
     internal const val DD_APP_VERSION_TAG = "_dd.version"
-    internal const val DD_TELEMETRY_CONFIG_SAMPLE_RATE_TAG = "_dd.telemetry.configuration_sample_rate"
 
     // endregion
 }
