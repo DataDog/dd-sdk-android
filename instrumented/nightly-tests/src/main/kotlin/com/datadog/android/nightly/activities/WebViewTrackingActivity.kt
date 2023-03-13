@@ -17,6 +17,7 @@ import com.datadog.android.webview.DatadogEventBridge
 import java.util.UUID
 import kotlin.random.Random
 
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class WebViewTrackingActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

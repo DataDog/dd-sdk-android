@@ -13,6 +13,7 @@ import com.datadog.android.nightly.utils.defaultTestAttributes
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 fun initializeLogger() = Logger.Builder(Datadog.globalSdkCore)
     .setLoggerName(LOGGER_NAME)
     .build()
