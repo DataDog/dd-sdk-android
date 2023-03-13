@@ -35,6 +35,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import java.io.File
+import java.util.Random
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.experimental.inv
 
@@ -59,14 +60,16 @@ internal class EncryptionTest {
         val credentials = createCredentials()
 
         Datadog.initialize(targetContext, credentials, configuration, TrackingConsent.PENDING)
-        Datadog.registerFeature(
-            RumFeature.Builder(applicationId = forge.anAlphaNumericalString()).build()
+        val features = mutableListOf(
+            RumFeature.Builder(applicationId = forge.anAlphaNumericalString()).build(),
+            LogsFeature.Builder().build(),
+            TracingFeature.Builder().build(),
+            SessionReplayFeature(SessionReplayConfiguration.Builder().build())
         )
-        Datadog.registerFeature(LogsFeature.Builder().build())
-        Datadog.registerFeature(TracingFeature.Builder().build())
 
-        val sessionReplayConfig = SessionReplayConfiguration.Builder().build()
-        Datadog.registerFeature(SessionReplayFeature(sessionReplayConfig))
+        features.shuffled(Random(forge.seed)).forEach {
+            Datadog.registerFeature(it)
+        }
 
         val rumMonitor = RumMonitor.Builder().build()
         GlobalRum.registerIfAbsent(rumMonitor)

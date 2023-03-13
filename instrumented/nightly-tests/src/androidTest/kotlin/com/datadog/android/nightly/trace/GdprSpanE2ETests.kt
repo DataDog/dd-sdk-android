@@ -42,6 +42,7 @@ class GdprSpanE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.PENDING
             )
         }
@@ -61,6 +62,7 @@ class GdprSpanE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.GRANTED
             )
         }
@@ -80,6 +82,7 @@ class GdprSpanE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.NOT_GRANTED
             )
         }
@@ -99,6 +102,7 @@ class GdprSpanE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.PENDING
             )
         }
@@ -121,6 +125,7 @@ class GdprSpanE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.PENDING
             )
         }
@@ -143,6 +148,7 @@ class GdprSpanE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.GRANTED
             )
         }
@@ -165,6 +171,7 @@ class GdprSpanE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.NOT_GRANTED
             )
         }
@@ -187,6 +194,7 @@ class GdprSpanE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.NOT_GRANTED
             )
         }
@@ -209,6 +217,7 @@ class GdprSpanE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.GRANTED
             )
         }

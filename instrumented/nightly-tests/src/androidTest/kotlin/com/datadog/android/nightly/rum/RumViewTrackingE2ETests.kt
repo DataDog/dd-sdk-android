@@ -28,6 +28,7 @@ import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
+import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -38,6 +39,9 @@ internal class RumViewTrackingE2ETests {
 
     @get:Rule
     val nightlyTestRule = NightlyTestRule()
+
+    @get:Rule
+    val forge = ForgeRule()
 
     /**
      * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
@@ -51,6 +55,7 @@ internal class RumViewTrackingE2ETests {
             ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 rumFeatureProvider = {
                     it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                         .build()
@@ -73,6 +78,7 @@ internal class RumViewTrackingE2ETests {
             ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 rumFeatureProvider = {
                     it.useViewTrackingStrategy(
                         ActivityViewTrackingStrategy(
@@ -107,6 +113,7 @@ internal class RumViewTrackingE2ETests {
             ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 rumFeatureProvider = {
                     it.useViewTrackingStrategy(
                         ActivityViewTrackingStrategy(
@@ -141,6 +148,7 @@ internal class RumViewTrackingE2ETests {
             ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 rumFeatureProvider = {
                     it.useViewTrackingStrategy(FragmentViewTrackingStrategy(true))
                         .build()
@@ -163,6 +171,7 @@ internal class RumViewTrackingE2ETests {
             ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 rumFeatureProvider = {
                     it.useViewTrackingStrategy(
                         FragmentViewTrackingStrategy(
@@ -198,6 +207,7 @@ internal class RumViewTrackingE2ETests {
             ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 rumFeatureProvider = {
                     it.useViewTrackingStrategy(
                         FragmentViewTrackingStrategy(
@@ -233,6 +243,7 @@ internal class RumViewTrackingE2ETests {
             ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 rumFeatureProvider = {
                     it.useViewTrackingStrategy(
                         NavigationViewTrackingStrategy(
@@ -260,6 +271,7 @@ internal class RumViewTrackingE2ETests {
             ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 rumFeatureProvider = {
                     it.useViewTrackingStrategy(
                         NavigationViewTrackingStrategy(
@@ -295,6 +307,7 @@ internal class RumViewTrackingE2ETests {
             ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 rumFeatureProvider = {
                     it.useViewTrackingStrategy(
                         NavigationViewTrackingStrategy(
@@ -330,6 +343,7 @@ internal class RumViewTrackingE2ETests {
             ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 rumFeatureProvider = {
                     it.useViewTrackingStrategy(MixedViewTrackingStrategy(true))
                         .build()
@@ -352,6 +366,7 @@ internal class RumViewTrackingE2ETests {
             ).build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 rumFeatureProvider = {
                     it.useViewTrackingStrategy(MixedViewTrackingStrategy(true))
                         .build()

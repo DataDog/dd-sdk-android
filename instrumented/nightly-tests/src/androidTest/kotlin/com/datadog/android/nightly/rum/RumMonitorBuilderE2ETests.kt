@@ -40,6 +40,7 @@ class RumMonitorBuilderE2ETests {
 
         initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
+            forgeSeed = forge.seed,
             rumMonitorProvider = {
                 measureRumMonitorInitialize {
                     RumMonitor.Builder().build()
@@ -59,6 +60,7 @@ class RumMonitorBuilderE2ETests {
         val testMethodName = "rum_rummonitor_builder_sample_all_out"
         initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
+            forgeSeed = forge.seed,
             rumMonitorProvider = {
                 measureRumMonitorInitialize {
                     RumMonitor.Builder().sampleRumSessions(0f).build()
@@ -78,6 +80,7 @@ class RumMonitorBuilderE2ETests {
         val eventsNumber = 100
         initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
+            forgeSeed = forge.seed,
             rumMonitorProvider = {
                 measureRumMonitorInitialize {
                     RumMonitor.Builder().sampleRumSessions(75f).build()

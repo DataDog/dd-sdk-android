@@ -74,6 +74,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder().build()
             )
@@ -90,6 +91,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder()
                     .setBatchSize(forge.aValueFrom(BatchSize::class.java))
@@ -108,6 +110,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     null
@@ -133,6 +136,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.setRumViewEventMapper(
@@ -170,6 +174,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.setRumViewEventMapper(
@@ -209,6 +214,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.setRumResourceEventMapper(
@@ -237,6 +243,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.setRumResourceEventMapper(
@@ -265,6 +272,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.setRumResourceEventMapper(
@@ -298,6 +306,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.setRumActionEventMapper(
@@ -326,6 +335,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.setRumActionEventMapper(
@@ -354,6 +364,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.setRumActionEventMapper(
@@ -387,6 +398,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.setRumErrorEventMapper(
@@ -415,6 +427,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.setRumErrorEventMapper(
@@ -443,6 +456,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.setRumErrorEventMapper(
@@ -477,6 +491,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.setRumLongTaskEventMapper(
@@ -506,6 +521,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.setRumLongTaskEventMapper(
@@ -535,6 +551,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.setRumLongTaskEventMapper(
@@ -568,6 +585,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.sampleRumSessions(100f).build()
@@ -590,6 +608,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.sampleRumSessions(0f).build()
@@ -613,6 +632,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 rumFeatureProvider = {
                     it.sampleRumSessions(75f).build()
@@ -644,6 +664,7 @@ class RumConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 Configuration.Builder(
                     crashReportsEnabled = true
@@ -681,6 +702,7 @@ class RumConfigE2ETests {
                 ).build()
                 initializeSdk(
                     InstrumentationRegistry.getInstrumentation().targetContext,
+                    forgeSeed = forge.seed,
                     rumFeatureProvider = {
                         it.useViewTrackingStrategy(strategy)
                             .setVitalsUpdateFrequency(VitalsUpdateFrequency.NEVER).build()
@@ -731,6 +753,7 @@ class RumConfigE2ETests {
                 ).build()
                 initializeSdk(
                     InstrumentationRegistry.getInstrumentation().targetContext,
+                    forgeSeed = forge.seed,
                     rumFeatureProvider = {
                         it.useViewTrackingStrategy(strategy).setVitalsUpdateFrequency(fakeFrequency)
                             .build()

@@ -57,6 +57,7 @@ class RumMonitorBackgroundE2ETests {
     fun setUp() {
         initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
+            forgeSeed = forge.seed,
             rumFeatureProvider = {
                 it.trackBackgroundRumEvents(true)
                     .trackFrustrations(true)

@@ -54,6 +54,7 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 config = defaultConfigurationBuilder(
                     crashReportsEnabled = true
                 ).build()
@@ -75,6 +76,7 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 config = defaultConfigurationBuilder(
                     crashReportsEnabled = true
                 ).setBatchSize(forge.aValueFrom(BatchSize::class.java)).build()
@@ -96,6 +98,7 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 config = defaultConfigurationBuilder(
                     crashReportsEnabled = true
                 ).build(),
@@ -119,6 +122,7 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 config = defaultConfigurationBuilder(
                     crashReportsEnabled = true
                 ).build(),
@@ -155,6 +159,7 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 tracerProvider = { AndroidTracer.Builder().setBundleWithRumEnabled(true).build() }
             )
         }
@@ -188,6 +193,7 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 tracerProvider = { AndroidTracer.Builder().setBundleWithRumEnabled(false).build() }
             )
         }
@@ -218,6 +224,7 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 tracerProvider = {
                     AndroidTracer.Builder().setPartialFlushThreshold(partialFlushThreshold).build()
                 }
@@ -245,6 +252,7 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 tracerProvider = {
                     AndroidTracer.Builder().setPartialFlushThreshold(partialFlushThreshold).build()
                 }
@@ -271,6 +279,7 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 tracerProvider = {
                     AndroidTracer.Builder()
                         .addGlobalTag(
@@ -297,6 +306,7 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 tracerProvider = {
                     AndroidTracer.Builder()
                         .setServiceName("service-$testMethodName")
@@ -320,6 +330,7 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 tracerProvider = {
                     AndroidTracer.Builder()
                         .setTracingHeaderTypes(setOf(TracingHeaderType.TRACECONTEXT))
@@ -341,7 +352,7 @@ class SpanConfigE2ETests {
     fun trace_config_set_user_info() {
         val testMethodName = "trace_config_set_user_info"
         measureSdkInitialize {
-            initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+            initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext, forgeSeed = forge.seed)
         }
 
         val userId = "some-id-${forge.anAlphaNumericalString()}"
@@ -377,6 +388,7 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 config = Configuration
                     .Builder(
                         crashReportsEnabled = true

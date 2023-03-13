@@ -29,3 +29,5 @@ fun Intent.addTrackingConsent(consent: TrackingConsent) {
     }
     this.putExtra(TRACKING_CONSENT_KEY, consentToInt)
 }
+
+fun Intent.addForgeSeed(seed: Long) = this.putExtra(FORGE_SEED_KEY, seed)

@@ -17,6 +17,7 @@ import com.datadog.android.nightly.services.JvmCrashService
 import com.datadog.android.nightly.services.RumDisabledCrashService
 import com.datadog.android.nightly.services.RumEnabledCrashService
 import com.datadog.android.nightly.utils.initializeSdk
+import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,6 +27,9 @@ import org.junit.runner.RunWith
 class JvmCrashHandlerE2ETests {
 
     // region Tests
+
+    @get:Rule
+    val forgeRule = ForgeRule()
 
     @get:Rule
     val nightlyTestRule = NightlyTestRule()
@@ -44,7 +48,10 @@ class JvmCrashHandlerE2ETests {
         // measure to prevent sending an event twice from 2 different process. For this reason
         // we are using a NoOpOkHttpUploader in case the process is not the app main process.
         val testMethodName = "crash_reports_rum_enabled"
-        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+        initializeSdk(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            forgeSeed = forgeRule.seed
+        )
         startService(
             testMethodName,
             RumEnabledCrashService::class.java
@@ -60,7 +67,10 @@ class JvmCrashHandlerE2ETests {
     @Test
     fun crash_reports_rum_disabled() {
         val testMethodName = "crash_reports_rum_disabled"
-        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+        initializeSdk(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            forgeSeed = forgeRule.seed
+        )
         startService(
             testMethodName,
             RumDisabledCrashService::class.java
@@ -76,7 +86,10 @@ class JvmCrashHandlerE2ETests {
     @Test
     fun crash_reports_feature_disabled() {
         val testMethodName = "crash_reports_feature_disabled"
-        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+        initializeSdk(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            forgeSeed = forgeRule.seed
+        )
         startService(
             testMethodName,
             CrashHandlerDisabledCrashService::class.java

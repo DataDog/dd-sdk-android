@@ -17,6 +17,7 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryException
@@ -32,7 +33,7 @@ import java.lang.RuntimeException
 @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_activity_layout) {
 
-    private val forge = Forge()
+    private val forge by lazy { Forge().apply { seed = intent.getForgeSeed() } }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

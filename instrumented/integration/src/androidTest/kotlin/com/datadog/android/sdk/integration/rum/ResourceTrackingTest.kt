@@ -20,7 +20,6 @@ import com.datadog.android.sdk.utils.exhaustiveAttributes
 import com.datadog.android.sdk.utils.isRumUrl
 import com.datadog.tools.unit.ConditionWatcher
 import com.google.gson.JsonObject
-import fr.xgouchet.elmyr.junit4.ForgeRule
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -42,15 +41,12 @@ internal class ResourceTrackingTest {
         trackingConsent = TrackingConsent.GRANTED
     )
 
-    @get:Rule
-    val forge = ForgeRule()
-
     private lateinit var okHttpClient: OkHttpClient
     private lateinit var extraAttributes: Map<String, Any?>
 
     @Before
     fun setUp() {
-        extraAttributes = forge.exhaustiveAttributes()
+        extraAttributes = mockServerRule.forge.exhaustiveAttributes()
 
         okHttpClient = OkHttpClient.Builder()
             .addInterceptor(

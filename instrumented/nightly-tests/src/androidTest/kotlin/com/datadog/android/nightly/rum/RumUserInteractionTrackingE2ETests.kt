@@ -21,6 +21,7 @@ import com.datadog.android.nightly.utils.defaultConfigurationBuilder
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measureSdkInitialize
 import com.datadog.android.rum.tracking.InteractionPredicate
+import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,6 +33,9 @@ internal class RumUserInteractionTrackingE2ETests {
     @get:Rule
     val nightlyTestRule = NightlyTestRule()
 
+    @get:Rule
+    val forge = ForgeRule()
+
     /**
      * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
      */
@@ -40,6 +44,7 @@ internal class RumUserInteractionTrackingE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 rumFeatureProvider = {
                     it.trackInteractions().build()
                 },
@@ -61,6 +66,7 @@ internal class RumUserInteractionTrackingE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 rumFeatureProvider = {
                     it.trackInteractions(
                         interactionPredicate = object : InteractionPredicate {
