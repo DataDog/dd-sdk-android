@@ -8,6 +8,7 @@ class com.datadog.android.trace.AndroidTracer : com.datadog.opentracing.DDTracer
     fun setPartialFlushThreshold(Int): Builder
     fun addGlobalTag(String, String): Builder
     fun setBundleWithRumEnabled(Boolean): Builder
+  override fun toString(): String
   companion object 
     fun logThrowable(io.opentracing.Span, Throwable)
     fun logErrorMessage(io.opentracing.Span, String)
