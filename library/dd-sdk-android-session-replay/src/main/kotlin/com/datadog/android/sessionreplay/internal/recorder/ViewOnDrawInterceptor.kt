@@ -8,30 +8,37 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.app.Activity
 import android.view.View
-import android.view.ViewTreeObserver
+import android.view.ViewTreeObserver.OnDrawListener
 import com.datadog.android.sessionreplay.internal.processor.Processor
 import com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener
 import java.util.WeakHashMap
 
 internal class ViewOnDrawInterceptor(
     private val processor: Processor,
-    private val snapshotProducer: SnapshotProducer
+    private val snapshotProducer: SnapshotProducer,
+    private val onDrawListenerProducer: (Activity, List<View>) -> OnDrawListener =
+        { activity, decorViews ->
+            WindowsOnDrawListener(
+                activity,
+                decorViews,
+                processor,
+                snapshotProducer
+            )
+        }
 ) {
-    internal val decorOnDrawListeners: WeakHashMap<View, ViewTreeObserver.OnDrawListener> =
+    internal val decorOnDrawListeners: WeakHashMap<View, OnDrawListener> =
         WeakHashMap()
 
     fun intercept(decorViews: List<View>, ownerActivity: Activity) {
         stopInterceptingAndRemove(decorViews)
-        val onDrawListener = WindowsOnDrawListener(
-            ownerActivity,
-            decorViews,
-            processor,
-            snapshotProducer
-        )
+        val onDrawListener = onDrawListenerProducer(ownerActivity, decorViews)
         decorViews.forEach { decorView ->
             decorOnDrawListeners[decorView] = onDrawListener
             decorView.viewTreeObserver?.addOnDrawListener(onDrawListener)
         }
+        // force onDraw here in order to make sure we take at least one snapshot if the
+        // window is changed very fast
+        onDrawListener.onDraw()
     }
 
     fun stopIntercepting(decorViews: List<View>) {

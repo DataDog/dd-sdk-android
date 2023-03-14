@@ -77,6 +77,25 @@ internal class ViewOnDrawInterceptorTest {
     }
 
     @Test
+    fun `M force onDraw on the listener when registered()`() {
+        // Given
+        val mockOnDrawListener = mock<ViewTreeObserver.OnDrawListener>()
+        testedInterceptor = ViewOnDrawInterceptor(
+            mockProcessor,
+            mockSnapshotProducer
+        ) { _, _ -> mockOnDrawListener }
+
+        // When
+        testedInterceptor.intercept(fakeDecorViews, mockActivity)
+
+        // Then
+        fakeDecorViews.forEach {
+            verify(it.viewTreeObserver).addOnDrawListener(mockOnDrawListener)
+        }
+        verify(mockOnDrawListener).onDraw()
+    }
+
+    @Test
     fun `M register one single listener instance W intercept()`() {
         // When
         testedInterceptor.intercept(fakeDecorViews, mockActivity)
