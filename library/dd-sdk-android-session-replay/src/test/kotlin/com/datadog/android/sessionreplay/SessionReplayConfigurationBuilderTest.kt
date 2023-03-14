@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay
 
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -38,7 +37,7 @@ internal class SessionReplayConfigurationBuilderTest {
         val config = testedBuilder.build()
 
         // Then
-        assertThat(config.endpointUrl).isEqualTo(DatadogEndpoint.SESSION_REPLAY_US1)
+        assertThat(config.endpointUrl).isEqualTo(DatadogSite.US1.intakeEndpoint)
         assertThat(config.privacy).isEqualTo(SessionReplayPrivacy.MASK_ALL)
     }
 
@@ -50,7 +49,7 @@ internal class SessionReplayConfigurationBuilderTest {
         val config = testedBuilder.useSite(site).build()
 
         // Then
-        assertThat(config.endpointUrl).isEqualTo(site.sessionReplayEndpoint())
+        assertThat(config.endpointUrl).isEqualTo(site.intakeEndpoint)
     }
 
     @Test

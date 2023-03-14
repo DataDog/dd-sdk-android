@@ -39,6 +39,7 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import java.util.Locale
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
@@ -246,6 +247,15 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun addFeatureFlagEvaluation(name: String, value: Any) {
+        handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name,
+                value
+            )
+        )
+    }
+
     // endregion
 
     // region AdvancedRumMonitor
@@ -419,6 +429,30 @@ internal class DatadogRumMonitor(
                         e
                     )
                 }
+            }
+        }
+    }
+
+    /**
+     * Wait for any pending events. This is mostly for integration tests to ensure that the
+     * RUM context is in the correct state before proceeding.
+     */
+    @Suppress("unused")
+    private fun waitForPendingEvents() {
+        if (!executorService.isShutdown) {
+            val latch = CountDownLatch(1)
+            // Submit an empty task, and wait for it to complete
+            executorService.submit {
+                latch.countDown()
+            }
+            try {
+                latch.await(1, TimeUnit.SECONDS)
+            } catch (_: InterruptedException) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.MAINTAINER,
+                    "Waiting for pending RUM events was interrupted"
+                )
             }
         }
     }

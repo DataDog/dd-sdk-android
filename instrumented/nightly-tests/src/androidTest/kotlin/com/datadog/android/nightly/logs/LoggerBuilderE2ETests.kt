@@ -25,6 +25,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class LoggerBuilderE2ETests {

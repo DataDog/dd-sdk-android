@@ -91,6 +91,7 @@ fun flushAndShutdownExecutors() {
     Datadog.invokeMethod("flushAndShutdownExecutors")
 }
 
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 fun initializeSdk(
     targetContext: Context,
     consent: TrackingConsent = TrackingConsent.GRANTED,

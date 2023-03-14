@@ -7,7 +7,6 @@
 package com.datadog.android.rum
 
 import android.os.Build
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
@@ -78,9 +77,10 @@ internal class RumFeatureBuilderTest {
         // Then
         assertThat(rumFeature.configuration).isEqualTo(
             RumFeature.Configuration(
-                endpointUrl = DatadogEndpoint.RUM_US1,
+                endpointUrl = DatadogSite.US1.intakeEndpoint,
                 samplingRate = RumFeature.DEFAULT_SAMPLING_RATE,
                 telemetrySamplingRate = RumFeature.DEFAULT_TELEMETRY_SAMPLING_RATE,
+                telemetryConfigurationSamplingRate = RumFeature.DEFAULT_TELEMETRY_CONFIGURATION_SAMPLING_RATE,
                 userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
                     DatadogGesturesTracker(
                         arrayOf(JetpackViewAttributesProvider()),
@@ -92,7 +92,8 @@ internal class RumFeatureBuilderTest {
                 longTaskTrackingStrategy = MainLooperLongTaskStrategy(100L),
                 backgroundEventTracking = false,
                 trackFrustrations = true,
-                vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE
+                vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
+                additionalConfig = emptyMap()
             )
         )
     }
@@ -115,7 +116,7 @@ internal class RumFeatureBuilderTest {
 
         // Then
         assertThat(rumFeature.configuration).isEqualTo(
-            RumFeature.DEFAULT_RUM_CONFIG.copy(endpointUrl = site.rumEndpoint())
+            RumFeature.DEFAULT_RUM_CONFIG.copy(endpointUrl = site.intakeEndpoint)
         )
     }
 
@@ -528,5 +529,21 @@ internal class RumFeatureBuilderTest {
                 rumEventMapper = expectedRumEventMapper
             )
         )
+    }
+
+    @Test
+    fun `𝕄 apply configuration telemetry sample rate W applyAdditionalConfig(config) { with sample rate }`(
+        @FloatForgery(0.0f, 100.0f) sampleRate: Float
+    ) {
+        // When
+        val rumFeature = testedBuilder
+            .setAdditionalConfiguration(
+                mapOf(RumFeature.DD_TELEMETRY_CONFIG_SAMPLE_RATE_TAG to sampleRate)
+            )
+            .build()
+
+        // Then
+        assertThat(rumFeature.configuration.telemetryConfigurationSamplingRate)
+            .isEqualTo(sampleRate)
     }
 }

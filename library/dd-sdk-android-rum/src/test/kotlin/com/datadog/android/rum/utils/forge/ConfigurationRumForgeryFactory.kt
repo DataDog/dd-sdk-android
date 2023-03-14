@@ -23,6 +23,7 @@ internal class ConfigurationRumForgeryFactory :
             endpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
             samplingRate = forge.aFloat(0f, 100f),
             telemetrySamplingRate = forge.aFloat(0f, 100f),
+            telemetryConfigurationSamplingRate = forge.aFloat(0f, 100f),
             userActionTrackingStrategy = mock(),
             viewTrackingStrategy = forge.anElementFrom(
                 ActivityViewTrackingStrategy(forge.aBool(), mock()),
@@ -36,7 +37,8 @@ internal class ConfigurationRumForgeryFactory :
             longTaskTrackingStrategy = mock(),
             backgroundEventTracking = forge.aBool(),
             trackFrustrations = forge.aBool(),
-            vitalsMonitorUpdateFrequency = forge.aValueFrom(VitalsUpdateFrequency::class.java)
+            vitalsMonitorUpdateFrequency = forge.aValueFrom(VitalsUpdateFrequency::class.java),
+            additionalConfig = forge.aMap { aString() to aString() }
         )
     }
 }

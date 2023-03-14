@@ -22,6 +22,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.RumFeature
 import com.datadog.android.trace.TracingFeature
 
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal open class NdkCrashService : CrashService() {
 
     // region Service

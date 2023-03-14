@@ -44,6 +44,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.TimeZone
 
+@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class LoggerE2ETests {

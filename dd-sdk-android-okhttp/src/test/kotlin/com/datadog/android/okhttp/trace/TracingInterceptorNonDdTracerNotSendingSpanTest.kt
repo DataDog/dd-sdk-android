@@ -863,7 +863,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
         val response = testedInterceptor.intercept(mockChain)
 
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan, never()).finish()
@@ -879,7 +879,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
         val response = testedInterceptor.intercept(mockChain)
 
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan, never()).finish()
@@ -895,7 +895,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
         val response = testedInterceptor.intercept(mockChain)
 
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan, never()).finish()
@@ -909,7 +909,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
         val response = testedInterceptor.intercept(mockChain)
 
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", 404)
         verify(mockSpan, never()).finish()
@@ -928,7 +928,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
             testedInterceptor.intercept(mockChain)
         }
 
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("error.type", throwable.javaClass.canonicalName)
         verify(mockSpan).setTag("error.msg", throwable.message)
@@ -974,7 +974,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
         val response = testedInterceptor.intercept(mockChain)
 
-        verify(localSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(localSpan).setTag("http.url", fakeUrl)
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
         verify(localSpan, never()).finish()
@@ -1010,11 +1010,11 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         val response2 = testedInterceptor.intercept(mockChain)
         val expectedResponse2 = fakeResponse
 
-        verify(localSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(localSpan).setTag("http.url", fakeUrl)
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
         verify(localSpan, never()).finish()
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan, never()).finish()
@@ -1046,7 +1046,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
         val response = testedInterceptor.intercept(mockChain)
 
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(tagKey, tagValue)
@@ -1072,7 +1072,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
         val response = testedInterceptor.intercept(mockChain)
 
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(tagKey, tagValue)
@@ -1118,7 +1118,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
             testedInterceptor.intercept(mockChain)
         }
 
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("error.type", throwable.javaClass.canonicalName)
         verify(mockSpan).setTag("error.msg", throwable.message)
@@ -1237,7 +1237,9 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         val protocol = forge.anElementFrom("http", "https")
         val host = knownHost ?: forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN)
         val path = forge.anAlphaNumericalString()
-        return "$protocol://$host/$path"
+        // RUMM-2900 host is by definition case insensitive,
+        // and OkHttp lowercases it when building the request
+        return "$protocol://${host.lowercase(Locale.US)}/$path"
     }
 
     private fun forgeRequest(

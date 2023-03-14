@@ -10,12 +10,14 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
+import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
@@ -25,16 +27,19 @@ import com.datadog.android.webview.internal.storage.NoOpDataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.isNull
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -346,6 +351,62 @@ internal class DatadogEventBridgeTest {
             InternalLogger.Target.USER,
             DatadogEventBridge.JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE
         )
+    }
+
+    @Test
+    fun `M pass web view event to RumWebEventConsumer W consumeWebViewEvent()`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeBundledEvent = forge.getForgery<JsonObject>()
+        val fakeRumEventType = forge.anElementFrom(WebViewRumEventConsumer.RUM_EVENT_TYPES)
+        val fakeWebEvent = bundleWebEvent(fakeBundledEvent, fakeRumEventType)
+        val mockWebViewRumFeature = mock<FeatureScope>()
+        val mockWebViewLogsFeature = mock<FeatureScope>()
+
+        whenever(
+            mockCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
+        ) doReturn mockWebViewRumFeature
+        whenever(
+            mockCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
+        ) doReturn mockWebViewLogsFeature
+
+        whenever(mockCore.registerFeature(any())) doAnswer {
+            val feature = it.getArgument<Feature>(0)
+            feature.onInitialize(mockCore, mock())
+        }
+
+        val mockDatadogContext = mock<DatadogContext>()
+        val mockEventBatchWriter = mock<EventBatchWriter>()
+        val proxy = DatadogEventBridge._InternalWebViewProxy(mockCore)
+
+        // When
+        proxy.consumeWebviewEvent(fakeWebEvent.toString())
+        argumentCaptor<(DatadogContext, EventBatchWriter) -> Unit> {
+            verify(mockWebViewRumFeature).withWriteContext(any(), capture())
+            firstValue(mockDatadogContext, mockEventBatchWriter)
+        }
+
+        // Then
+        argumentCaptor<ByteArray> {
+            verify(mockEventBatchWriter).write(capture(), isNull())
+            val capturedJson = String(firstValue, Charsets.UTF_8)
+            assertThat(capturedJson).isEqualTo(fakeBundledEvent.toString())
+        }
+    }
+
+    private fun bundleWebEvent(
+        fakeBundledEvent: JsonObject?,
+        eventType: String?
+    ): JsonObject {
+        val fakeWebEvent = JsonObject()
+        fakeBundledEvent?.let {
+            fakeWebEvent.add(MixedWebViewEventConsumer.EVENT_KEY, it)
+        }
+        eventType?.let {
+            fakeWebEvent.addProperty(MixedWebViewEventConsumer.EVENT_TYPE_KEY, it)
+        }
+        return fakeWebEvent
     }
 
     companion object {

@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.configuration
 
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.plugin.Feature
 import com.datadog.android.security.Encryption
@@ -78,7 +77,7 @@ internal class ConfigurationBuilderTest {
         )
         assertThat(config.crashReportConfig).isEqualTo(
             Configuration.Feature.CrashReport(
-                endpointUrl = DatadogEndpoint.LOGS_US1
+                endpointUrl = DatadogSite.US1.intakeEndpoint
             )
         )
         assertThat(config.additionalConfig).isEmpty()
@@ -111,7 +110,7 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_CORE_CONFIG.copy(site = site)
         )
         assertThat(config.crashReportConfig).isEqualTo(
-            Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = site.logsEndpoint())
+            Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = site.intakeEndpoint)
         )
         assertThat(config.additionalConfig).isEmpty()
     }

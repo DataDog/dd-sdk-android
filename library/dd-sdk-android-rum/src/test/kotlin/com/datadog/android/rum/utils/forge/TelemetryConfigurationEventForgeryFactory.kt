@@ -61,7 +61,14 @@ internal class TelemetryConfigurationEventForgeryFactory :
                     forge.aNullable { aBool() },
                     forge.aNullable { aString() },
                     forge.aNullable { aBool() },
+                    forge.aNullable { aBool() },
+                    forge.aNullable {
+                        aList {
+                            aValueFrom(TelemetryConfigurationEvent.SelectedTracingPropagator::class.java)
+                        }
+                    },
                     forge.aNullable { aString() },
+                    forge.aNullable { aBool() },
                     forge.aNullable { aBool() },
                     forge.aNullable { aBool() },
                     forge.aNullable { aBool() },
@@ -84,7 +91,10 @@ internal class TelemetryConfigurationEventForgeryFactory :
                     forge.aNullable { aString() },
                     forge.aNullable { aBool() },
                     forge.aNullable { aLong() },
-                    forge.aNullable { aLong() }
+                    forge.aNullable { aLong() },
+                    forge.aNullable { aString() },
+                    forge.aNullable { aString() },
+                    forge.aNullable { aString() }
                 )
             )
         )

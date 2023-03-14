@@ -904,7 +904,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan, never()).finish()
@@ -922,8 +922,8 @@ internal open class TracingInterceptorNotSendingSpanTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan as MutableSpan).setResourceName(fakeUrl.lowercase(Locale.US))
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan as MutableSpan).setResourceName(fakeUrl)
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan as MutableSpan).setError(true)
@@ -942,8 +942,8 @@ internal open class TracingInterceptorNotSendingSpanTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan as MutableSpan).setResourceName(fakeUrl.lowercase(Locale.US))
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan as MutableSpan).setResourceName(fakeUrl)
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan as MutableSpan, never()).setError(true)
@@ -960,7 +960,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", 404)
         verify(mockSpan as MutableSpan).setError(true)
@@ -983,7 +983,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         }
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("error.type", throwable.javaClass.canonicalName)
         verify(mockSpan).setTag("error.msg", throwable.message)
@@ -1031,7 +1031,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(localSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(localSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(localSpan).setTag("http.url", fakeUrl)
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
         verify(localSpan, never()).finish()
@@ -1069,13 +1069,13 @@ internal open class TracingInterceptorNotSendingSpanTest {
         val expectedResponse2 = fakeResponse
 
         verify(localSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(localSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(localSpan).setTag("http.url", fakeUrl)
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
         verify(localSpan, never()).finish()
         verify(localSpan as MutableSpan).drop()
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan, never()).finish()
@@ -1109,7 +1109,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(tagKey, tagValue)
@@ -1137,7 +1137,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(tagKey, tagValue)
@@ -1185,7 +1185,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         }
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("error.type", throwable.javaClass.canonicalName)
         verify(mockSpan).setTag("error.msg", throwable.message)
@@ -1305,7 +1305,9 @@ internal open class TracingInterceptorNotSendingSpanTest {
         val protocol = forge.anElementFrom("http", "https")
         val host = knownHost ?: forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN)
         val path = forge.anAlphaNumericalString()
-        return "$protocol://$host/$path"
+        // RUMM-2900 host is by definition case insensitive,
+        // and OkHttp lowercases it when building the request
+        return "$protocol://${host.lowercase(Locale.US)}/$path"
     }
 
     private fun forgeRequest(

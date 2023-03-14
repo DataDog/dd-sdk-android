@@ -6,20 +6,15 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import android.annotation.SuppressLint
 import android.app.ActivityManager
-import android.os.Build
-import android.os.Process
-import android.os.SystemClock
-import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.internalLogger
-import com.datadog.android.rum.RumFeature
+import com.datadog.android.rum.internal.AppStartTimeProvider
+import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.v2.api.InternalLogger
@@ -36,7 +31,7 @@ internal class RumViewManagerScope(
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
+    private val appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider()
 ) : RumScope {
 
     internal val childrenScopes = mutableListOf<RumScope>()
@@ -46,10 +41,18 @@ internal class RumViewManagerScope(
 
     @WorkerThread
     override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope {
+        if (!applicationDisplayed) {
+            val isForegroundProcess = sdkCore.processImportance ==
+                ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+            if (isForegroundProcess) {
+                startApplicationLaunchView(event, writer)
+            }
+        }
+
         delegateToChildren(event, writer)
 
         if (event is RumRawEvent.StartView) {
-            startForegroundView(event, writer)
+            startForegroundView(event)
         } else if (childrenScopes.count { it.isActive() } == 0) {
             handleOrphanEvent(event, writer)
         }
@@ -68,6 +71,31 @@ internal class RumViewManagerScope(
     // endregion
 
     // region Internal
+
+    @WorkerThread
+    private fun startApplicationLaunchView(event: RumRawEvent, writer: DataWriter<Any>) {
+        val processStartTime = appStartTimeProvider.appStartTimeNs
+        // processStartTime is the time in nanoseconds since VM start. To get a timestamp, we want
+        // to convert it to milliseconds since epoch provided by System.currentTimeMillis.
+        // To do so, we take the offset of those times in the event time, which should be consistent,
+        // then add that to our processStartTime to get the correct value.
+        val timestampNs = (
+            TimeUnit.MILLISECONDS.toNanos(event.eventTime.timestamp) -
+                event.eventTime.nanoTime
+            ) + processStartTime
+        val applicationLaunchViewTime = Time(
+            timestamp = TimeUnit.NANOSECONDS.toMillis(timestampNs),
+            nanoTime = processStartTime
+        )
+        val viewScope = createAppLaunchViewScope(applicationLaunchViewTime)
+        val startupTime = event.eventTime.nanoTime - processStartTime
+        applicationDisplayed = true
+        viewScope.handleEvent(
+            RumRawEvent.ApplicationStarted(applicationLaunchViewTime, startupTime),
+            writer
+        )
+        childrenScopes.add(viewScope)
+    }
 
     @WorkerThread
     private fun delegateToChildren(
@@ -93,12 +121,19 @@ internal class RumViewManagerScope(
         if (applicationDisplayed || !isForegroundProcess) {
             handleBackgroundEvent(event, writer)
         } else {
-            handleAppLaunchEvent(event, writer)
+            val isSilentOrphanEvent = event.javaClass in silentOrphanEventTypes
+            if (!isSilentOrphanEvent) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    MESSAGE_MISSING_VIEW
+                )
+            }
         }
     }
 
     @WorkerThread
-    private fun startForegroundView(event: RumRawEvent.StartView, writer: DataWriter<Any>) {
+    private fun startForegroundView(event: RumRawEvent.StartView) {
         val viewScope = RumViewScope.fromEvent(
             this,
             sdkCore,
@@ -109,7 +144,7 @@ internal class RumViewManagerScope(
             frameRateVitalMonitor,
             trackFrustrations
         )
-        onViewDisplayed(event, viewScope, writer)
+        applicationDisplayed = true
         childrenScopes.add(viewScope)
     }
 
@@ -141,27 +176,6 @@ internal class RumViewManagerScope(
         }
     }
 
-    @WorkerThread
-    private fun handleAppLaunchEvent(
-        event: RumRawEvent,
-        actualWriter: DataWriter<Any>
-    ) {
-        val isValidAppLaunchEvent = event.javaClass in validAppLaunchEventTypes
-        val isSilentOrphanEvent = event.javaClass in silentOrphanEventTypes
-
-        if (isValidAppLaunchEvent) {
-            val viewScope = createAppLaunchViewScope(event)
-            viewScope.handleEvent(event, actualWriter)
-            childrenScopes.add(viewScope)
-        } else if (!isSilentOrphanEvent) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                MESSAGE_MISSING_VIEW
-            )
-        }
-    }
-
     private fun createBackgroundViewScope(event: RumRawEvent): RumViewScope {
         return RumViewScope(
             this,
@@ -179,13 +193,13 @@ internal class RumViewManagerScope(
         )
     }
 
-    private fun createAppLaunchViewScope(event: RumRawEvent): RumViewScope {
+    private fun createAppLaunchViewScope(time: Time): RumViewScope {
         return RumViewScope(
             this,
             sdkCore,
             RUM_APP_LAUNCH_VIEW_URL,
             RUM_APP_LAUNCH_VIEW_NAME,
-            event.eventTime,
+            time,
             emptyMap(),
             firstPartyHostHeaderTypeResolver,
             NoOpVitalMonitor(),
@@ -196,50 +210,12 @@ internal class RumViewManagerScope(
         )
     }
 
-    @WorkerThread
-    @VisibleForTesting
-    internal fun onViewDisplayed(
-        event: RumRawEvent.StartView,
-        viewScope: RumViewScope,
-        writer: DataWriter<Any>
-    ) {
-        if (!applicationDisplayed) {
-            applicationDisplayed = true
-            val isForegroundProcess = sdkCore.processImportance ==
-                ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-            if (isForegroundProcess) {
-                val applicationStartTime = resolveStartupTimeNs()
-                viewScope.handleEvent(
-                    RumRawEvent.ApplicationStarted(event.eventTime, applicationStartTime),
-                    writer
-                )
-            }
-        }
-    }
-
-    @SuppressLint("NewApi")
-    private fun resolveStartupTimeNs(): Long {
-        return when {
-            buildSdkVersionProvider.version() >= Build.VERSION_CODES.N -> {
-                val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
-                System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(diffMs)
-            }
-            else -> RumFeature.startupTimeNs
-        }
-    }
-
     // endregion
 
     companion object {
 
         internal val validBackgroundEventTypes = arrayOf<Class<*>>(
             RumRawEvent.AddError::class.java,
-            RumRawEvent.StartAction::class.java,
-            RumRawEvent.StartResource::class.java
-        )
-        internal val validAppLaunchEventTypes = arrayOf<Class<*>>(
-            RumRawEvent.AddError::class.java,
-            RumRawEvent.AddLongTask::class.java,
             RumRawEvent.StartAction::class.java,
             RumRawEvent.StartResource::class.java
         )

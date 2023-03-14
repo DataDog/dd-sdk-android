@@ -322,7 +322,7 @@ object Datadog {
     val _internal: _InternalProxy by lazy {
         _InternalProxy(
             globalSdkCore,
-            (globalSdkCore as? DatadogCore)?.coreFeature
+            globalSdkCore as? DatadogCore
         )
     }
 
