@@ -38,13 +38,10 @@ internal class RumRequestFactoryTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
-    @StringForgery(regex = "https://[a-z]+\\.com")
-    lateinit var fakeEndpoint: String
-
     @BeforeEach
     fun `set up`() {
         testedFactory = RumRequestFactory(
-            endpointUrl = fakeEndpoint
+            customEndpointUrl = null
         )
     }
 
@@ -56,6 +53,42 @@ internal class RumRequestFactoryTest {
         forge: Forge
     ) {
         // Given
+        val batchData = batchData.map { it.toByteArray() }
+        val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
+
+        // When
+        val request = testedFactory.create(fakeDatadogContext, batchData, batchMetadata)
+
+        // Then
+        assertThat(request.url).isEqualTo(expectedUrl(fakeDatadogContext.site.intakeEndpoint))
+        assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
+        assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
+            mapOf(
+                RequestFactory.HEADER_API_KEY to fakeDatadogContext.clientToken,
+                RequestFactory.HEADER_EVP_ORIGIN to fakeDatadogContext.source,
+                RequestFactory.HEADER_EVP_ORIGIN_VERSION to fakeDatadogContext.sdkVersion
+            )
+        )
+        assertThat(request.headers[RequestFactory.HEADER_REQUEST_ID]).isNotEmpty()
+        assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
+        assertThat(request.description).isEqualTo("RUM Request")
+        assertThat(request.body).isEqualTo(
+            batchData.join(
+                separator = "\n".toByteArray()
+            )
+        )
+    }
+
+    @Suppress("NAME_SHADOWING")
+    @Test
+    fun `𝕄 create a proper request 𝕎 create() { custom endpoint }`(
+        @StringForgery(regex = "https://[a-z]+\\.com") fakeEndpoint: String,
+        @StringForgery batchData: List<String>,
+        @StringForgery batchMetadata: String,
+        forge: Forge
+    ) {
+        // Given
+        testedFactory = RumRequestFactory(customEndpointUrl = fakeEndpoint)
         val batchData = batchData.map { it.toByteArray() }
         val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
 

@@ -15,7 +15,7 @@ import java.util.Locale
 import java.util.UUID
 
 internal class RumRequestFactory(
-    private val endpointUrl: String
+    private val customEndpointUrl: String?
 ) : RequestFactory {
 
     override fun create(
@@ -54,7 +54,10 @@ internal class RumRequestFactory(
             )
         )
 
-        val intakeUrl = "%s/api/v2/rum".format(Locale.US, endpointUrl)
+        val intakeUrl = "%s/api/v2/rum".format(
+            Locale.US,
+            customEndpointUrl ?: context.site.intakeEndpoint
+        )
 
         return intakeUrl + queryParams.map { "${it.key}=${it.value}" }
             .joinToString("&", prefix = "?")

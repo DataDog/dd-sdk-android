@@ -83,7 +83,7 @@ class SessionReplayFeature internal constructor(
     }
 
     override val requestFactory: RequestFactory =
-        SessionReplayRequestFactory(configuration.endpointUrl)
+        SessionReplayRequestFactory(configuration.customEndpointUrl)
 
     override val storageConfiguration: FeatureStorageConfiguration =
         FeatureStorageConfiguration.DEFAULT

@@ -6,13 +6,11 @@
 
 package com.datadog.android.trace
 
-import com.datadog.android.DatadogSite
 import com.datadog.android.trace.internal.domain.event.NoOpSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapper
 import com.datadog.android.trace.internal.net.TracesRequestFactory
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.mock
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -37,24 +35,10 @@ internal class TracingFeatureBuilderTest {
         // Then
         val requestFactory = config.requestFactory
         assertThat(requestFactory).isInstanceOf(TracesRequestFactory::class.java)
-        assertThat((requestFactory as TracesRequestFactory).endpointUrl)
-            .isEqualTo(DatadogSite.US1.intakeEndpoint)
+        assertThat((requestFactory as TracesRequestFactory).customEndpointUrl)
+            .isNull()
 
         assertThat(config.spanEventMapper).isInstanceOf(NoOpSpanEventMapper::class.java)
-    }
-
-    @Test
-    fun `𝕄 build feature with custom site 𝕎 useSite() and build()`(
-        @Forgery site: DatadogSite
-    ) {
-        // When
-        val config = testedBuilder.useSite(site).build()
-
-        // Then
-        val requestFactory = config.requestFactory
-        assertThat(requestFactory).isInstanceOf(TracesRequestFactory::class.java)
-        assertThat((requestFactory as TracesRequestFactory).endpointUrl)
-            .isEqualTo(site.intakeEndpoint)
     }
 
     @Test
@@ -67,7 +51,7 @@ internal class TracingFeatureBuilderTest {
         // Then
         val requestFactory = config.requestFactory
         assertThat(requestFactory).isInstanceOf(TracesRequestFactory::class.java)
-        assertThat((requestFactory as TracesRequestFactory).endpointUrl)
+        assertThat((requestFactory as TracesRequestFactory).customEndpointUrl)
             .isEqualTo(tracesEndpointUrl)
     }
 

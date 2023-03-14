@@ -9,7 +9,6 @@ package com.datadog.android.log
 import android.content.Context
 import android.util.Log
 import androidx.annotation.AnyThread
-import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
@@ -40,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Logs feature class, which needs to be registered with Datadog SDK instance.
  */
 class LogsFeature internal constructor(
-    endpointUrl: String,
+    customEndpointUrl: String?,
     internal val eventMapper: EventMapper<LogEvent>
 ) : StorageBackedFeature, FeatureEventReceiver {
 
@@ -67,7 +66,7 @@ class LogsFeature internal constructor(
         initialized.set(true)
     }
 
-    override val requestFactory: RequestFactory = LogsRequestFactory(endpointUrl)
+    override val requestFactory: RequestFactory = LogsRequestFactory(customEndpointUrl)
     override val storageConfiguration: FeatureStorageConfiguration =
         FeatureStorageConfiguration.DEFAULT
 
@@ -275,22 +274,14 @@ class LogsFeature internal constructor(
      * A Builder class for a [LogsFeature].
      */
     class Builder {
-        private var endpointUrl = DatadogSite.US1.intakeEndpoint
+        private var customEndpointUrl: String? = null
         private var logsEventMapper: EventMapper<LogEvent> = NoOpEventMapper()
-
-        /**
-         * Let the Logs feature target your preferred Datadog's site.
-         */
-        fun useSite(site: DatadogSite): Builder {
-            endpointUrl = site.intakeEndpoint
-            return this
-        }
 
         /**
          * Let the Logs feature target a custom server.
          */
         fun useCustomEndpoint(endpoint: String): Builder {
-            endpointUrl = endpoint
+            customEndpointUrl = endpoint
             return this
         }
 
@@ -311,7 +302,7 @@ class LogsFeature internal constructor(
          */
         fun build(): LogsFeature {
             return LogsFeature(
-                endpointUrl = endpointUrl,
+                customEndpointUrl = customEndpointUrl,
                 eventMapper = logsEventMapper
             )
         }

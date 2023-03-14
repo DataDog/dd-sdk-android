@@ -1,6 +1,5 @@
 data class com.datadog.android.sessionreplay.SessionReplayConfiguration
   class Builder
-    fun useSite(com.datadog.android.DatadogSite): Builder
     fun useCustomEndpoint(String): Builder
     fun setPrivacy(SessionReplayPrivacy): Builder
     fun build(): SessionReplayConfiguration

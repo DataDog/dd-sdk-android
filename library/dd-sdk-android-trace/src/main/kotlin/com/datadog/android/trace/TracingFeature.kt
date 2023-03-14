@@ -7,7 +7,6 @@
 package com.datadog.android.trace
 
 import android.content.Context
-import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.trace.internal.data.NoOpWriter
 import com.datadog.android.trace.internal.data.TraceWriter
@@ -29,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Tracing feature class, which needs to be registered with Datadog SDK instance.
  */
 class TracingFeature internal constructor(
-    endpointUrl: String,
+    customEndpointUrl: String?,
     internal val spanEventMapper: SpanEventMapper
 ) : StorageBackedFeature {
 
@@ -48,7 +47,7 @@ class TracingFeature internal constructor(
         initialized.set(true)
     }
 
-    override val requestFactory: RequestFactory = TracesRequestFactory(endpointUrl)
+    override val requestFactory: RequestFactory = TracesRequestFactory(customEndpointUrl)
     override val storageConfiguration: FeatureStorageConfiguration =
         FeatureStorageConfiguration.DEFAULT
 
@@ -75,22 +74,14 @@ class TracingFeature internal constructor(
      * A Builder class for a [TracingFeature].
      */
     class Builder {
-        private var endpointUrl = DatadogSite.US1.intakeEndpoint
+        private var customEndpointUrl: String? = null
         private var spanEventMapper: SpanEventMapper = NoOpSpanEventMapper()
-
-        /**
-         * Let the Tracing feature target your preferred Datadog's site.
-         */
-        fun useSite(site: DatadogSite): Builder {
-            endpointUrl = site.intakeEndpoint
-            return this
-        }
 
         /**
          * Let the Tracing feature target a custom server.
          */
         fun useCustomEndpoint(endpoint: String): Builder {
-            endpointUrl = endpoint
+            customEndpointUrl = endpoint
             return this
         }
 
@@ -111,7 +102,7 @@ class TracingFeature internal constructor(
          */
         fun build(): TracingFeature {
             return TracingFeature(
-                endpointUrl = endpointUrl,
+                customEndpointUrl = customEndpointUrl,
                 spanEventMapper = spanEventMapper
             )
         }

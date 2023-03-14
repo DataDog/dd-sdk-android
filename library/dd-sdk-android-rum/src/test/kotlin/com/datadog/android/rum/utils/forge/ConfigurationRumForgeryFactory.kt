@@ -20,7 +20,7 @@ internal class ConfigurationRumForgeryFactory :
     ForgeryFactory<RumFeature.Configuration> {
     override fun getForgery(forge: Forge): RumFeature.Configuration {
         return RumFeature.Configuration(
-            endpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
+            customEndpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
             samplingRate = forge.aFloat(0f, 100f),
             telemetrySamplingRate = forge.aFloat(0f, 100f),
             telemetryConfigurationSamplingRate = forge.aFloat(0f, 100f),

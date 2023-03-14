@@ -22,7 +22,6 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.event.MapperSerializer<T#constructor(EventMapper<T>, com.datadog.android.core.persistence.Serializer<T>)
  * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun setPrivacy(com.datadog.android.sessionreplay.SessionReplayPrivacy): Builder
  * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun useCustomEndpoint(String): Builder
- * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun useSite(com.datadog.android.DatadogSite): Builder
  * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun setSessionListener(RumSessionListener): Builder
  * apiMethodSignature: com.datadog.android.log.Logger#fun log(Int, String, Throwable? = null, Map<String, Any?> = emptyMap())
  * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setLogcatLogsEnabled(Boolean): Builder
@@ -36,11 +35,8 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#fun startTracking()
  * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#fun stopTracking()
  * apiMethodSignature: com.datadog.android.log.LogsFeature$Builder#fun useCustomEndpoint(String): Builder
- * apiMethodSignature: com.datadog.android.log.LogsFeature$Builder#fun useSite(com.datadog.android.DatadogSite): Builder
  * apiMethodSignature: com.datadog.android.trace.TracingFeature$Builder#fun useCustomEndpoint(String): Builder
- * apiMethodSignature: com.datadog.android.trace.TracingFeature$Builder#fun useSite(com.datadog.android.DatadogSite): Builder
  * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useCustomEndpoint(String): Builder
- * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useSite(com.datadog.android.DatadogSite): Builder
  * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun sampleTelemetry(Float): Builder
  * apiMethodSignature: fun Any?.toJsonElement(): com.google.gson.JsonElement
  * apiMethodSignature: fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0)): ByteArray

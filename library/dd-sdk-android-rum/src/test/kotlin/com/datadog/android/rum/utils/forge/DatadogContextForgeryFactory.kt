@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.utils.forge
 
+import com.datadog.android.DatadogSite
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.tools.unit.forge.exhaustiveAttributes
@@ -18,6 +19,7 @@ internal class DatadogContextForgeryFactory : ForgeryFactory<DatadogContext> {
 
     override fun getForgery(forge: Forge): DatadogContext {
         return DatadogContext(
+            site = forge.aValueFrom(DatadogSite::class.java),
             clientToken = forge.anHexadecimalString().lowercase(Locale.US),
             service = forge.anAlphabeticalString(),
             version = forge.aStringMatching("[0-9](\\.[0-9]{1,3}){2,3}"),

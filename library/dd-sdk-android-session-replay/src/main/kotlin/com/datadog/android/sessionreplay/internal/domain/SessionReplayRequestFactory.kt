@@ -18,19 +18,10 @@ import java.util.Locale
 import java.util.UUID
 
 internal class SessionReplayRequestFactory(
-    private val endpoint: String,
+    private val customEndpointUrl: String?,
     private val batchToSegmentsMapper: BatchesToSegmentsMapper = BatchesToSegmentsMapper(),
     private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory()
 ) : RequestFactory {
-
-    private val intakeUrl by lazy {
-        String.format(
-            Locale.US,
-            UPLOAD_URL,
-            endpoint,
-            "replay"
-        )
-    }
 
     override fun create(
         context: DatadogContext,
@@ -68,6 +59,12 @@ internal class SessionReplayRequestFactory(
 
     private fun buildUrl(datadogContext: DatadogContext): String {
         val queryParams = buildQueryParameters(datadogContext)
+        val intakeUrl = String.format(
+            Locale.US,
+            UPLOAD_URL,
+            customEndpointUrl ?: datadogContext.site.intakeEndpoint,
+            "replay"
+        )
         return intakeUrl + queryParams.map { "${it.key}=${it.value}" }
             .joinToString("&", prefix = "?")
     }

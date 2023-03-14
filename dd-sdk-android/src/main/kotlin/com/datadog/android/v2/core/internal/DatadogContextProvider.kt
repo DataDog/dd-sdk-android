@@ -19,6 +19,7 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
             // IMPORTANT All properties should be immutable and be frozen at the state
             // of the context construction moment
             return DatadogContext(
+                site = coreFeature.site,
                 clientToken = coreFeature.clientToken,
                 service = coreFeature.serviceName,
                 env = coreFeature.envName,

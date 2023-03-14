@@ -56,9 +56,6 @@ internal class SessionReplayRequestFactoryTest {
     @Mock
     lateinit var mockRequestBodyFactory: RequestBodyFactory
 
-    @StringForgery(regex = "https://[a-z]+\\.com")
-    lateinit var fakeEndpoint: String
-
     @Forgery
     lateinit var fakeSegment: MobileSegment
 
@@ -98,7 +95,7 @@ internal class SessionReplayRequestFactoryTest {
         whenever(mockBatchesToSegmentsMapper.map(fakeBatchData))
             .thenReturn(Pair(fakeSegment, fakeSerializedSegment))
         testedRequestFactory = SessionReplayRequestFactory(
-            fakeEndpoint,
+            customEndpointUrl = null,
             mockBatchesToSegmentsMapper,
             mockRequestBodyFactory
         )
@@ -109,6 +106,38 @@ internal class SessionReplayRequestFactoryTest {
     @Test
     fun `M return a valid Request W create`() {
         // When
+        val request = testedRequestFactory.create(
+            fakeDatadogContext,
+            fakeBatchData,
+            fakeBatchMetadata
+        )
+
+        // Then
+        assertThat(request.url).isEqualTo(expectedUrl(fakeDatadogContext.site.intakeEndpoint))
+        assertThat(request.contentType).isEqualTo(fakeMediaType.toString())
+        assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
+            mapOf(
+                RequestFactory.HEADER_API_KEY to fakeDatadogContext.clientToken,
+                RequestFactory.HEADER_EVP_ORIGIN to fakeDatadogContext.source,
+                RequestFactory.HEADER_EVP_ORIGIN_VERSION to fakeDatadogContext.sdkVersion
+            )
+        )
+        assertThat(request.headers[RequestFactory.HEADER_REQUEST_ID]).isNotEmpty
+        assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
+        assertThat(request.description).isEqualTo("Session Replay Segment Upload Request")
+        assertThat(request.body).isEqualTo(mockRequestBody.toByteArray())
+    }
+
+    @Test
+    fun `M return a valid Request W create { custom endpoint }`(
+        @StringForgery(regex = "https://[a-z]+\\.com") fakeEndpoint: String
+    ) {
+        // When
+        testedRequestFactory = SessionReplayRequestFactory(
+            customEndpointUrl = fakeEndpoint,
+            mockBatchesToSegmentsMapper,
+            mockRequestBodyFactory
+        )
         val request = testedRequestFactory.create(
             fakeDatadogContext,
             fakeBatchData,

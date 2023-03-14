@@ -18,7 +18,6 @@ class com.datadog.android.trace.TracingFeature : com.datadog.android.v2.api.Stor
   override val storageConfiguration: com.datadog.android.v2.api.FeatureStorageConfiguration
   override fun onStop()
   class Builder
-    fun useSite(com.datadog.android.DatadogSite): Builder
     fun useCustomEndpoint(String): Builder
     fun setSpanEventMapper(com.datadog.android.trace.internal.domain.event.SpanEventMapper): Builder
     fun build(): TracingFeature

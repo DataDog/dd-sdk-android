@@ -15,7 +15,7 @@ internal class SessionReplayConfigurationForgeryFactory :
     ForgeryFactory<SessionReplayConfiguration> {
     override fun getForgery(forge: Forge): SessionReplayConfiguration {
         return SessionReplayConfiguration(
-            endpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
+            customEndpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
             privacy = forge.aValueFrom(SessionReplayPrivacy::class.java)
         )
     }
