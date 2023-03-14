@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay
 
-import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
 
 /**
@@ -14,7 +13,7 @@ import com.datadog.android.core.configuration.Configuration
  */
 data class SessionReplayConfiguration
 internal constructor(
-    internal val endpointUrl: String,
+    internal val customEndpointUrl: String?,
     internal val privacy: SessionReplayPrivacy
 ) {
 
@@ -22,22 +21,14 @@ internal constructor(
      * A Builder class for a [SessionReplayConfiguration].
      */
     class Builder {
-        private var endpointUrl = DatadogSite.US1.intakeEndpoint
+        private var customEndpointUrl: String? = null
         private var privacy = SessionReplayPrivacy.MASK_ALL
-
-        /**
-         * Let the Session Replay target your preferred Datadog's site.
-         */
-        fun useSite(site: DatadogSite): Builder {
-            endpointUrl = site.intakeEndpoint
-            return this
-        }
 
         /**
          * Let the Session Replay target a custom server.
          */
         fun useCustomEndpoint(endpoint: String): Builder {
-            endpointUrl = endpoint
+            customEndpointUrl = endpoint
             return this
         }
 
@@ -57,7 +48,7 @@ internal constructor(
          */
         fun build(): SessionReplayConfiguration {
             return SessionReplayConfiguration(
-                endpointUrl = endpointUrl,
+                customEndpointUrl = customEndpointUrl,
                 privacy = privacy
             )
         }

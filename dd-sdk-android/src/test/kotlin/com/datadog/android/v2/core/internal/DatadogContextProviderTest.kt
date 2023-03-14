@@ -95,6 +95,7 @@ internal class DatadogContextProviderTest {
         val context = testedProvider.context
 
         // Then
+        assertThat(context.site).isEqualTo(coreFeature.mockInstance.site)
         assertThat(context.env).isEqualTo(coreFeature.mockInstance.envName)
         assertThat(context.clientToken).isEqualTo(coreFeature.mockInstance.clientToken)
         assertThat(context.service).isEqualTo(coreFeature.mockInstance.serviceName)

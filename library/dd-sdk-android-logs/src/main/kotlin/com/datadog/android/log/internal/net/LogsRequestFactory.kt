@@ -15,10 +15,10 @@ import java.util.UUID
 
 /**
  * Request factory for the Logs feature.
- * @param endpointUrl URL of the Logs intake.
+ * @param customEndpointUrl URL of the Logs intake.
  */
 internal class LogsRequestFactory(
-    internal val endpointUrl: String
+    internal val customEndpointUrl: String?
 ) : RequestFactory {
 
     /** @inheritdoc */
@@ -32,7 +32,7 @@ internal class LogsRequestFactory(
         return Request(
             id = requestId,
             description = "Logs Request",
-            url = buildUrl(context.source),
+            url = buildUrl(context.source, context),
             headers = buildHeaders(
                 requestId,
                 context.clientToken,
@@ -48,9 +48,14 @@ internal class LogsRequestFactory(
         )
     }
 
-    private fun buildUrl(source: String): String {
+    private fun buildUrl(source: String, context: DatadogContext): String {
         return "%s/api/v2/logs?%s=%s"
-            .format(Locale.US, endpointUrl, RequestFactory.QUERY_PARAM_SOURCE, source)
+            .format(
+                Locale.US,
+                customEndpointUrl ?: context.site.intakeEndpoint,
+                RequestFactory.QUERY_PARAM_SOURCE,
+                source
+            )
     }
 
     private fun buildHeaders(

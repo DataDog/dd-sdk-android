@@ -7,7 +7,6 @@
 package com.datadog.android.rum
 
 import android.os.Build
-import com.datadog.android.DatadogSite
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.assertj.ConfigurationRumAssert
@@ -77,7 +76,7 @@ internal class RumFeatureBuilderTest {
         // Then
         assertThat(rumFeature.configuration).isEqualTo(
             RumFeature.Configuration(
-                endpointUrl = DatadogSite.US1.intakeEndpoint,
+                customEndpointUrl = null,
                 samplingRate = RumFeature.DEFAULT_SAMPLING_RATE,
                 telemetrySamplingRate = RumFeature.DEFAULT_TELEMETRY_SAMPLING_RATE,
                 telemetryConfigurationSamplingRate = RumFeature.DEFAULT_TELEMETRY_CONFIGURATION_SAMPLING_RATE,
@@ -108,19 +107,6 @@ internal class RumFeatureBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with custom site 𝕎 useSite() and build()`(
-        @Forgery site: DatadogSite
-    ) {
-        // When
-        val rumFeature = testedBuilder.useSite(site).build()
-
-        // Then
-        assertThat(rumFeature.configuration).isEqualTo(
-            RumFeature.DEFAULT_RUM_CONFIG.copy(endpointUrl = site.intakeEndpoint)
-        )
-    }
-
-    @Test
     fun `𝕄 build config with custom endpoint 𝕎 useCustomEndpoint() and build()`(
         @StringForgery(regex = "https://[a-z]+\\.com") rumUrl: String
     ) {
@@ -131,7 +117,7 @@ internal class RumFeatureBuilderTest {
 
         // Then
         assertThat(rumFeature.configuration).isEqualTo(
-            RumFeature.DEFAULT_RUM_CONFIG.copy(endpointUrl = rumUrl)
+            RumFeature.DEFAULT_RUM_CONFIG.copy(customEndpointUrl = rumUrl)
         )
     }
 

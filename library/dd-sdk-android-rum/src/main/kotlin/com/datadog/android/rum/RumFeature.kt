@@ -13,7 +13,6 @@ import android.os.Handler
 import android.os.Looper
 import android.view.Choreographer
 import androidx.annotation.FloatRange
-import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.internalLogger
@@ -159,7 +158,7 @@ class RumFeature internal constructor(
         initialized.set(true)
     }
 
-    override val requestFactory: RequestFactory = RumRequestFactory(configuration.endpointUrl)
+    override val requestFactory: RequestFactory = RumRequestFactory(configuration.customEndpointUrl)
     override val storageConfiguration: FeatureStorageConfiguration =
         FeatureStorageConfiguration.DEFAULT
 
@@ -681,18 +680,10 @@ class RumFeature internal constructor(
         }
 
         /**
-         * Let the RUM feature target your preferred Datadog's site.
-         */
-        fun useSite(site: DatadogSite): Builder {
-            rumConfig = rumConfig.copy(endpointUrl = site.intakeEndpoint)
-            return this
-        }
-
-        /**
          * Let the RUM feature target a custom server.
          */
         fun useCustomEndpoint(endpoint: String): Builder {
-            rumConfig = rumConfig.copy(endpointUrl = endpoint)
+            rumConfig = rumConfig.copy(customEndpointUrl = endpoint)
             return this
         }
 
@@ -738,7 +729,7 @@ class RumFeature internal constructor(
     }
 
     internal data class Configuration(
-        val endpointUrl: String,
+        val customEndpointUrl: String?,
         val samplingRate: Float,
         val telemetrySamplingRate: Float,
         val telemetryConfigurationSamplingRate: Float,
@@ -762,7 +753,7 @@ class RumFeature internal constructor(
             "_dd.telemetry.configuration_sample_rate"
 
         internal val DEFAULT_RUM_CONFIG = Configuration(
-            endpointUrl = DatadogSite.US1.intakeEndpoint,
+            customEndpointUrl = null,
             samplingRate = DEFAULT_SAMPLING_RATE,
             telemetrySamplingRate = DEFAULT_TELEMETRY_SAMPLING_RATE,
             telemetryConfigurationSamplingRate = DEFAULT_TELEMETRY_CONFIGURATION_SAMPLING_RATE,

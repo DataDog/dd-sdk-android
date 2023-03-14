@@ -13,7 +13,6 @@ import com.datadog.android.v2.api.context.DatadogContext
  */
 fun interface RequestFactory {
 
-    // TODO RUMM-2298 Support 1:many relationship between batch and requests
     /**
      * Creates a request for the given batch.
      * @param context Datadog SDK context.

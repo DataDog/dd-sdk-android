@@ -297,7 +297,7 @@ interface com.datadog.android.v2.api.StorageBackedFeature : Feature
 data class com.datadog.android.v2.api.context.CarrierInfo
   constructor(String?, String?)
 data class com.datadog.android.v2.api.context.DatadogContext
-  constructor(String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, Map<String, Map<String, Any?>>)
+  constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, Map<String, Map<String, Any?>>)
 data class com.datadog.android.v2.api.context.DeviceInfo
   constructor(String, String, String, DeviceType, String, String, String, String, String)
 enum com.datadog.android.v2.api.context.DeviceType

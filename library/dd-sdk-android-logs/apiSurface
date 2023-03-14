@@ -33,7 +33,6 @@ class com.datadog.android.log.LogsFeature : com.datadog.android.v2.api.StorageBa
   override fun onStop()
   override fun onReceive(Any)
   class Builder
-    fun useSite(com.datadog.android.DatadogSite): Builder
     fun useCustomEndpoint(String): Builder
     fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
     fun build(): LogsFeature

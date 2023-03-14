@@ -121,7 +121,6 @@ class SampleApplication : Application() {
 
         val sessionReplayConfig = SessionReplayConfiguration.Builder()
             .apply {
-                useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
                 if (BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL.isNotBlank()) {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
                 }
@@ -132,7 +131,6 @@ class SampleApplication : Application() {
         Datadog.registerFeature(sessionReplayFeature)
 
         val logsFeature = LogsFeature.Builder().apply {
-            useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
             if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
                 useCustomEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
             }
@@ -140,7 +138,6 @@ class SampleApplication : Application() {
         Datadog.registerFeature(logsFeature)
 
         val tracingFeature = TracingFeature.Builder().apply {
-            useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
             if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
                 useCustomEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
             }
@@ -179,7 +176,6 @@ class SampleApplication : Application() {
 
     private fun createRumFeature(): RumFeature {
         return RumFeature.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
-            .useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
             .apply {
                 if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)

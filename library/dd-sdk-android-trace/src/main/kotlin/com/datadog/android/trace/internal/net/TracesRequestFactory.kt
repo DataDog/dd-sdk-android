@@ -14,7 +14,7 @@ import java.util.Locale
 import java.util.UUID
 
 internal class TracesRequestFactory(
-    internal val endpointUrl: String
+    internal val customEndpointUrl: String?
 ) : RequestFactory {
 
     override fun create(
@@ -27,7 +27,10 @@ internal class TracesRequestFactory(
         return Request(
             id = requestId,
             description = "Traces Request",
-            url = "%s/api/v2/spans".format(Locale.US, endpointUrl),
+            url = "%s/api/v2/spans".format(
+                Locale.US,
+                customEndpointUrl ?: context.site.intakeEndpoint
+            ),
             headers = buildHeaders(
                 requestId,
                 context.clientToken,
