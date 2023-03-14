@@ -57,7 +57,7 @@ class RumMonitorE2ETests {
      */
     @Before
     fun setUp() {
-        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext, forgeSeed = forge.seed)
     }
 
     // region View

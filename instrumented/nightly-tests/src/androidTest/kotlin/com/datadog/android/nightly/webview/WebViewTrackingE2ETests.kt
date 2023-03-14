@@ -21,6 +21,7 @@ import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.defaultConfigurationBuilder
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measureSdkInitialize
+import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -32,6 +33,9 @@ internal class WebViewTrackingE2ETests {
 
     @get:Rule
     val nightlyTestRule = NightlyTestRule()
+
+    @get:Rule
+    val forge = ForgeRule()
 
     @After
     fun tearDown() {
@@ -155,6 +159,7 @@ internal class WebViewTrackingE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 config = config
             )
         }

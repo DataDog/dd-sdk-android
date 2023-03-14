@@ -49,6 +49,7 @@ class LogsConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
                     crashReportsEnabled = true
@@ -70,6 +71,7 @@ class LogsConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
                     crashReportsEnabled = true
@@ -91,6 +93,7 @@ class LogsConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
                     crashReportsEnabled = true
@@ -113,6 +116,7 @@ class LogsConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
                     crashReportsEnabled = true
@@ -148,6 +152,7 @@ class LogsConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder(
                     crashReportsEnabled = true
@@ -184,6 +189,7 @@ class LogsConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 Configuration
                     .Builder(

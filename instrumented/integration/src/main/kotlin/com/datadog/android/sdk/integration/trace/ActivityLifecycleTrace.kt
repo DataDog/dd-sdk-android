@@ -12,17 +12,20 @@ import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
 import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.v2.api.Feature
 import com.datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
 import io.opentracing.Scope
 import java.util.LinkedList
+import java.util.Random
 
 @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class ActivityLifecycleTrace : AppCompatActivity() {
 
-    private val forge = Forge()
+    private val forge by lazy { Forge().apply { seed = intent.getForgeSeed() } }
 
     lateinit var tracer: AndroidTracer
     private val sentSpans = LinkedList<DDSpan>()
@@ -41,8 +44,14 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
 
         Datadog.initialize(this, credentials, config, trackingConsent)
         Datadog.setVerbosity(Log.VERBOSE)
-        Datadog.registerFeature(RuntimeConfig.logsFeatureBuilder().build())
-        Datadog.registerFeature(RuntimeConfig.tracingFeatureBuilder().build())
+        mutableListOf<Feature>(
+            RuntimeConfig.logsFeatureBuilder().build(),
+            RuntimeConfig.tracingFeatureBuilder().build()
+        )
+            .shuffled(Random(intent.getForgeSeed()))
+            .forEach {
+                Datadog.registerFeature(it)
+            }
 
         tracer = RuntimeConfig.tracer()
         setContentView(R.layout.main_activity_layout)

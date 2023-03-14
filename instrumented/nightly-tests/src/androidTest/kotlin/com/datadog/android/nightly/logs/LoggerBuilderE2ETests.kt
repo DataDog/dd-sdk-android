@@ -40,7 +40,10 @@ class LoggerBuilderE2ETests {
 
     @Before
     fun setUp() {
-        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+        initializeSdk(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            forgeSeed = forge.seed
+        )
     }
 
     /**
@@ -183,7 +186,8 @@ class LoggerBuilderE2ETests {
     fun logs_logger_builder_set_service_name() {
         val testMethodName = "logs_logger_builder_set_service_name"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.globalSdkCore).setServiceName(CUSTOM_SERVICE_NAME).build()
+            logger =
+                Logger.Builder(Datadog.globalSdkCore).setServiceName(CUSTOM_SERVICE_NAME).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }

@@ -30,6 +30,7 @@ import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
+import java.util.Random
 import java.util.concurrent.atomic.AtomicBoolean
 
 fun defaultTestAttributes(testMethodName: String) = mapOf(
@@ -94,6 +95,7 @@ fun flushAndShutdownExecutors() {
 @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 fun initializeSdk(
     targetContext: Context,
+    forgeSeed: Long,
     consent: TrackingConsent = TrackingConsent.GRANTED,
     config: Configuration = createDatadogDefaultConfiguration(),
     logsFeatureProvider: () -> LogsFeature? = { LogsFeature.Builder().build() },
@@ -111,18 +113,20 @@ fun initializeSdk(
         consent
     )
     Datadog.setVerbosity(Log.VERBOSE)
-    rumFeatureProvider(
-        RumFeature.Builder(BuildConfig.NIGHTLY_TESTS_RUM_APP_ID)
-            .sampleTelemetry(100f)
-    )?.let {
-        Datadog.registerFeature(it)
-    }
-    logsFeatureProvider()?.let {
-        Datadog.registerFeature(it)
-    }
-    tracingFeatureProvider()?.let {
-        Datadog.registerFeature(it)
-    }
+
+    mutableListOf(
+        rumFeatureProvider(
+            RumFeature.Builder(BuildConfig.NIGHTLY_TESTS_RUM_APP_ID)
+                .sampleTelemetry(100f)
+        ),
+        logsFeatureProvider(),
+        tracingFeatureProvider()
+    )
+        .filterNotNull()
+        .shuffled(Random(forgeSeed))
+        .forEach {
+            Datadog.registerFeature(it)
+        }
     GlobalTracer.registerIfAbsent(tracerProvider.invoke())
     GlobalRum.registerIfAbsent(rumMonitorProvider.invoke())
 }

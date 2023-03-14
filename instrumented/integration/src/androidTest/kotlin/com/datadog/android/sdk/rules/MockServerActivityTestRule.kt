@@ -17,14 +17,18 @@ import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.utils.addForgeSeed
 import com.datadog.android.sdk.utils.addTrackingConsent
 import com.datadog.tools.unit.getFieldValue
 import com.google.gson.JsonParser
+import fr.xgouchet.elmyr.Forge
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import okhttp3.mockwebserver.SocketPolicy
+import org.junit.runner.Description
+import org.junit.runners.model.Statement
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -41,6 +45,8 @@ internal open class MockServerActivityTestRule<T : Activity>(
 
     private val requests = mutableListOf<HandledRequest>()
 
+    val forge = Forge()
+
     // region ActivityTestRule
 
     override fun getActivityIntent(): Intent {
@@ -49,6 +55,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
             activityClass
         ).apply {
             addTrackingConsent(trackingConsent)
+            addForgeSeed(forge.seed)
         }
     }
 
@@ -109,6 +116,24 @@ internal open class MockServerActivityTestRule<T : Activity>(
             }
         GlobalRum.getFieldValue<AtomicBoolean, GlobalRum>("isRegistered").set(false)
         super.afterActivityFinished()
+    }
+
+    // endregion
+
+    // region TestRule
+
+    override fun apply(base: Statement, description: Description): Statement {
+        val original = super.apply(base, description)
+        return object : Statement() {
+            override fun evaluate() {
+                try {
+                    original.evaluate()
+                } catch (t: Throwable) {
+                    Log.e(TAG, "Test run failed with Forge seed = ${forge.seed}")
+                    throw t
+                }
+            }
+        }
     }
 
     // endregion

@@ -13,15 +13,17 @@ import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
 import fr.xgouchet.elmyr.Forge
+import java.util.Random
 
 @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class ActivityLifecycleLogs : AppCompatActivity() {
 
-    private val forge = Forge()
+    private val forge by lazy { Forge().apply { seed = intent.getForgeSeed() } }
 
-    private val randomAttributes = forge.aMap { anAlphabeticalString() to anHexadecimalString() }
+    private val randomAttributes by lazy { forge.aMap { anAlphabeticalString() to anHexadecimalString() } }
     private val sentMessages = mutableListOf<Pair<Int, String>>()
 
     lateinit var logger: Logger
@@ -36,9 +38,14 @@ internal class ActivityLifecycleLogs : AppCompatActivity() {
         val trackingConsent = intent.getTrackingConsent()
 
         Datadog.initialize(this, credentials, config, trackingConsent)
-        Datadog.registerFeature(RuntimeConfig.logsFeatureBuilder().build())
-        Datadog.registerFeature(RuntimeConfig.tracingFeatureBuilder().build())
         Datadog.setVerbosity(Log.VERBOSE)
+        val features = mutableListOf(
+            RuntimeConfig.logsFeatureBuilder().build(),
+            RuntimeConfig.tracingFeatureBuilder().build()
+        )
+        features.shuffled(Random(intent.getForgeSeed())).forEach {
+            Datadog.registerFeature(it)
+        }
 
         logger = RuntimeConfig.logger()
         setContentView(R.layout.main_activity_layout)

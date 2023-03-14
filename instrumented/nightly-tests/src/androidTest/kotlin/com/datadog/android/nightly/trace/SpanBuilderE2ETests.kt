@@ -12,6 +12,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measure
+import fr.xgouchet.elmyr.junit4.ForgeRule
 import io.opentracing.Span
 import io.opentracing.util.GlobalTracer
 import org.junit.Before
@@ -26,6 +27,9 @@ class SpanBuilderE2ETests {
     @get:Rule
     val nightlyTestRule = NightlyTestRule()
 
+    @get:Rule
+    val forge = ForgeRule()
+
     /**
      * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
@@ -35,7 +39,7 @@ class SpanBuilderE2ETests {
      */
     @Before
     fun setUp() {
-        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext, forgeSeed = forge.seed)
     }
 
     /**

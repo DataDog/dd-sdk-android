@@ -23,10 +23,12 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
 import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
+import java.util.Random
 
 @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
@@ -39,22 +41,25 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
         val config = RuntimeConfig.configBuilder().build()
         val trackingConsent = intent.getTrackingConsent()
         Datadog.initialize(this, credentials, config, trackingConsent)
-        Datadog.registerFeature(
+        Datadog.setVerbosity(Log.VERBOSE)
+        val features = mutableListOf(
             // we will use a large long task threshold to make sure we will not have LongTask events
             // noise in our integration tests.
             RuntimeConfig.rumFeatureBuilder()
                 .trackInteractions()
                 .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
                 .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-                .build()
-
+                .build(),
+            SessionReplayFeature(
+                RuntimeConfig.sessionReplayConfigBuilder()
+                    .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
+                    .build()
+            )
         )
-        val sessionReplayConfig = RuntimeConfig.sessionReplayConfigBuilder()
-            .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
-            .build()
-        val sessionReplayFeature = SessionReplayFeature(sessionReplayConfig)
-        Datadog.registerFeature(sessionReplayFeature)
-        Datadog.setVerbosity(Log.VERBOSE)
+        features.shuffled(Random(intent.getForgeSeed()))
+            .forEach {
+                Datadog.registerFeature(it)
+            }
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
         setContentView(R.layout.session_replay_layout)
         titleTextView = findViewById(R.id.title)
