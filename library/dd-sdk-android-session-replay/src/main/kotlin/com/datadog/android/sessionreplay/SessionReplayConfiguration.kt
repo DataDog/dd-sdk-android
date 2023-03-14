@@ -6,9 +6,11 @@
 
 package com.datadog.android.sessionreplay
 
+import android.view.View
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 
 /**
  * An object describing the configuration of the Session Replay.
@@ -16,7 +18,8 @@ import com.datadog.android.core.configuration.Configuration
 data class SessionReplayConfiguration
 internal constructor(
     internal val endpointUrl: String,
-    internal val privacy: SessionReplayPrivacy
+    internal val privacy: SessionReplayPrivacy,
+    internal val extensionSupport: ExtensionSupport
 ) {
 
     /**
@@ -25,6 +28,18 @@ internal constructor(
     class Builder {
         private var endpointUrl = DatadogEndpoint.SESSION_REPLAY_US1
         private var privacy = SessionReplayPrivacy.MASK_ALL
+        private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
+
+        /**
+         * Adds an extension support implementation. This is mostly used when you want to provide
+         * different behaviour of the Session Replay when using other Android UI frameworks
+         * than the default ones.
+         * @see [ExtensionSupport.getCustomViewMappers]
+         */
+        fun addExtensionSupport(extensionSupport: ExtensionSupport): Builder {
+            this.extensionSupport = extensionSupport
+            return this
+        }
 
         /**
          * Let the Session Replay target your preferred Datadog's site.
@@ -59,8 +74,22 @@ internal constructor(
         fun build(): SessionReplayConfiguration {
             return SessionReplayConfiguration(
                 endpointUrl = endpointUrl,
-                privacy = privacy
+                privacy = privacy,
+                extensionSupport = extensionSupport
             )
         }
     }
+
+    // region Internal
+
+    internal fun customMappers(): Map<Class<*>, WireframeMapper<View, *>> {
+        extensionSupport.getCustomViewMappers().entries.forEach {
+            if (it.key.name == privacy.name) {
+                return it.value
+            }
+        }
+        return emptyMap()
+    }
+
+    // endregion
 }

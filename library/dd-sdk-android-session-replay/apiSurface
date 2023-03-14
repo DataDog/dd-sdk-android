@@ -1,5 +1,8 @@
+interface com.datadog.android.sessionreplay.ExtensionSupport
+  fun getCustomViewMappers(): Map<SessionReplayPrivacy, Map<Class<*>, com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper<android.view.View, *>>>
 data class com.datadog.android.sessionreplay.SessionReplayConfiguration
   class Builder
+    fun addExtensionSupport(ExtensionSupport): Builder
     fun useSite(com.datadog.android.DatadogSite): Builder
     fun useCustomEndpoint(String): Builder
     fun setPrivacy(SessionReplayPrivacy): Builder
@@ -17,6 +20,13 @@ class com.datadog.android.sessionreplay.SessionReplayFeature : com.datadog.andro
 enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - ALLOW_ALL
   - MASK_ALL
+data class com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
+  constructor(Long, Long, Long, Long)
+data class com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+  constructor(GlobalBounds, Int = Configuration.ORIENTATION_UNDEFINED, Float, String? = null)
+typealias MapperCondition = (android.view.View) -> Boolean
+interface com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper<T: android.view.View, S: com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
+  fun map(T, com.datadog.android.sessionreplay.internal.recorder.SystemInformation): List<S>
 data class com.datadog.android.sessionreplay.model.MobileSegment
   constructor(Application, Session, View, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long? = null, kotlin.Boolean? = null, Source, kotlin.collections.List<MobileRecord>)
   fun toJson(): com.google.gson.JsonElement

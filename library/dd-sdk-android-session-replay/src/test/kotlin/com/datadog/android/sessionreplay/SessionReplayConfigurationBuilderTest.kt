@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -40,6 +41,7 @@ internal class SessionReplayConfigurationBuilderTest {
         // Then
         assertThat(config.endpointUrl).isEqualTo(DatadogEndpoint.SESSION_REPLAY_US1)
         assertThat(config.privacy).isEqualTo(SessionReplayPrivacy.MASK_ALL)
+        assertThat(config.extensionSupport).isInstanceOf(NoOpExtensionSupport::class.java)
     }
 
     @Test
@@ -73,5 +75,17 @@ internal class SessionReplayConfigurationBuilderTest {
 
         // Then
         assertThat(config.privacy).isEqualTo(fakePrivacy)
+    }
+
+    @Test
+    fun `𝕄 use the given extension support 𝕎 addExtensionSupport`() {
+        // Given
+        val mockExtensionSupport: ExtensionSupport = mock()
+
+        // When
+        val config = testedBuilder.addExtensionSupport(mockExtensionSupport).build()
+
+        // Then
+        assertThat(config.extensionSupport).isEqualTo(mockExtensionSupport)
     }
 }

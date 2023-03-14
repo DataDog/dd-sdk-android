@@ -38,7 +38,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
+internal class MaskAllWireframeMapperTest : BaseGenericWireframeMapperTest() {
 
     @Mock
     lateinit var mockViewWireframeMapper: ViewWireframeMapper
@@ -93,7 +93,8 @@ internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
     lateinit var testedMaskAllWireframeMapper: MaskAllWireframeMapper
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
+    override fun `set up`(forge: Forge) {
+        super.`set up`(forge)
         mockShapeWireframes = forge.aList { mock() }
         mockImageWireframes = forge.aList { mock() }
         mockButtonWireframes = forge.aList { mock() }
@@ -115,8 +116,39 @@ internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
             mockDecorViewMapper,
             mockCheckBoxWireframeMapper,
             mockRadioButtonMapper,
-            mockSwitchCompatMapper
+            mockSwitchCompatMapper,
+            mockCustomMappers
         )
+    }
+
+    @Test
+    fun `M resolve first from customMappers W map { customMappers provided }`(forge: Forge) {
+        // Given
+        mockCustomMappers = mockCustomMappedToData.associate {
+            val mockWireframeMapper = mock<WireframeMapper<View, *>>()
+            whenever(mockWireframeMapper.map(it.first, fakeSystemInformation)).thenReturn(it.second)
+            it.first::class.java to mockWireframeMapper
+        }
+        val fakeCustomMappedIndex = forge.anInt(min = 0, max = mockCustomMappedToData.size)
+        val mockCustomMappedView = mockCustomMappedToData[fakeCustomMappedIndex].first
+        val expectedWireframeData = mockCustomMappedToData[fakeCustomMappedIndex].second
+        testedMaskAllWireframeMapper = MaskAllWireframeMapper(
+            mockViewWireframeMapper,
+            mockImageWireframeMapper,
+            mockMaskAllTextViewMapper,
+            mockButtonMapper,
+            mockEditTextViewMapper,
+            mockCheckedTextViewWireframeMapper,
+            mockDecorViewMapper,
+            mockCheckBoxWireframeMapper,
+            mockRadioButtonMapper,
+            mockSwitchCompatMapper,
+            mockCustomMappers
+        )
+
+        // Then
+        assertThat(testedMaskAllWireframeMapper.map(mockCustomMappedView, fakeSystemInformation))
+            .isEqualTo(expectedWireframeData)
     }
 
     @Test

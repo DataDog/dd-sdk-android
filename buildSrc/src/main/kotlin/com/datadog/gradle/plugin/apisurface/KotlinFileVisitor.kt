@@ -450,7 +450,8 @@ class KotlinFileVisitor {
             val generics = userType.firstChildNodeOrNull("typeArguments")
                 ?.childrenNodes("typeProjection")
                 ?.joinToString(", ", prefix = "<", postfix = ">") {
-                    it.firstChildNode("type").typeName()
+                    it.firstChildNodeOrNull("type")?.typeName()
+                        ?: it.firstChildTerminalOrNull("MULT")?.text.toString()
                 } ?: ""
             if (aggr.isEmpty()) {
                 (imports[typeName] ?: typeName) + generics
