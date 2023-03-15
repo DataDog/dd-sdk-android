@@ -23,8 +23,11 @@ internal class LogsFragment :
     private var interactionsCount = 0
     private lateinit var viewModel: LogsViewModel
 
+    @Suppress("CheckInternal")
     private val logger: Logger by lazy {
-        Logger.Builder(Datadog.globalSdkCore)
+        val sdkCore = Datadog.getInstance()
+        checkNotNull(sdkCore)
+        Logger.Builder(sdkCore)
             .setLoggerName("logs_fragment")
             .setLogcatLogsEnabled(true)
             .build()

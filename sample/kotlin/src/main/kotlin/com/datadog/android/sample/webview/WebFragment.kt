@@ -5,6 +5,7 @@
  */
 package com.datadog.android.sample.webview
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -28,6 +29,7 @@ internal class WebFragment : Fragment() {
 
     // region Fragment Lifecycle
 
+    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -37,7 +39,9 @@ internal class WebFragment : Fragment() {
         webView = rootView.findViewById(R.id.webview)
         webView.webViewClient = WebViewClient()
         webView.settings.javaScriptEnabled = true
-        DatadogEventBridge.setup(Datadog.globalSdkCore, webView, webViewTrackingHosts)
+        Datadog.getInstance()?.let {
+            DatadogEventBridge.setup(it, webView, webViewTrackingHosts)
+        }
         return rootView
     }
 
