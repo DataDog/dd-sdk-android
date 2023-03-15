@@ -24,6 +24,7 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingFeature
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.setStaticValue
@@ -105,15 +106,15 @@ fun initializeSdk(
     },
     tracerProvider: () -> Tracer = { createDefaultAndroidTracer() },
     rumMonitorProvider: () -> RumMonitor = { createDefaultRumMonitor() }
-) {
-    Datadog.initialize(
+): SdkCore {
+    val sdkCore = Datadog.initialize(
         targetContext,
         createDatadogCredentials(),
         config,
         consent
     )
-    Datadog.setVerbosity(Log.VERBOSE)
-
+    checkNotNull(sdkCore)
+    sdkCore.setVerbosity(Log.VERBOSE)
     mutableListOf(
         rumFeatureProvider(
             RumFeature.Builder(BuildConfig.NIGHTLY_TESTS_RUM_APP_ID)
@@ -125,10 +126,11 @@ fun initializeSdk(
         .filterNotNull()
         .shuffled(Random(forgeSeed))
         .forEach {
-            Datadog.registerFeature(it)
+            sdkCore.registerFeature(it)
         }
     GlobalTracer.registerIfAbsent(tracerProvider.invoke())
     GlobalRum.registerIfAbsent(rumMonitorProvider.invoke())
+    return sdkCore
 }
 
 /**

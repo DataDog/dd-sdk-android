@@ -9,7 +9,6 @@ package com.datadog.android.nightly.logs
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.initializeSdk
@@ -41,7 +40,7 @@ class GdprLogsE2ETests {
     @Test
     fun logs_config_consent_pending() {
         val testMethodName = "logs_config_consent_pending"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -49,7 +48,7 @@ class GdprLogsE2ETests {
             )
         }
         measureLoggerInitialize {
-            logger = initializeLogger()
+            logger = initializeLogger(sdkCore)
         }
         logger.sendRandomLog(
             testMethodName,
@@ -63,7 +62,7 @@ class GdprLogsE2ETests {
     @Test
     fun logs_config_consent_granted() {
         val testMethodName = "logs_config_consent_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -71,7 +70,7 @@ class GdprLogsE2ETests {
             )
         }
         measureLoggerInitialize {
-            logger = initializeLogger()
+            logger = initializeLogger(sdkCore)
         }
         logger.sendRandomLog(
             testMethodName,
@@ -85,7 +84,7 @@ class GdprLogsE2ETests {
     @Test
     fun logs_config_consent_not_granted() {
         val testMethodName = "logs_config_consent_not_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -93,7 +92,7 @@ class GdprLogsE2ETests {
             )
         }
         measureLoggerInitialize {
-            logger = initializeLogger()
+            logger = initializeLogger(sdkCore)
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -104,7 +103,7 @@ class GdprLogsE2ETests {
     @Test
     fun logs_config_consent_pending_to_granted() {
         val testMethodName = "logs_config_consent_pending_to_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -112,11 +111,11 @@ class GdprLogsE2ETests {
             )
         }
         measureLoggerInitialize {
-            logger = initializeLogger()
+            logger = initializeLogger(sdkCore)
         }
         logger.sendRandomLog(testMethodName, forge)
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.GRANTED)
+            sdkCore.setTrackingConsent(TrackingConsent.GRANTED)
         }
     }
 
@@ -126,7 +125,7 @@ class GdprLogsE2ETests {
     @Test
     fun logs_config_consent_pending_to_not_granted() {
         val testMethodName = "logs_config_consent_pending_to_not_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -134,11 +133,11 @@ class GdprLogsE2ETests {
             )
         }
         measureLoggerInitialize {
-            logger = initializeLogger()
+            logger = initializeLogger(sdkCore)
         }
         logger.sendRandomLog(testMethodName, forge)
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.NOT_GRANTED)
+            sdkCore.setTrackingConsent(TrackingConsent.NOT_GRANTED)
         }
     }
 
@@ -148,7 +147,7 @@ class GdprLogsE2ETests {
     @Test
     fun logs_config_consent_granted_to_not_granted() {
         val testMethodName = "logs_config_consent_granted_to_not_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -156,10 +155,10 @@ class GdprLogsE2ETests {
             )
         }
         measureLoggerInitialize {
-            logger = initializeLogger()
+            logger = initializeLogger(sdkCore)
         }
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.NOT_GRANTED)
+            sdkCore.setTrackingConsent(TrackingConsent.NOT_GRANTED)
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -170,7 +169,7 @@ class GdprLogsE2ETests {
     @Test
     fun logs_config_consent_not_granted_to_granted() {
         val testMethodName = "logs_config_consent_not_granted_to_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -178,10 +177,10 @@ class GdprLogsE2ETests {
             )
         }
         measureLoggerInitialize {
-            logger = initializeLogger()
+            logger = initializeLogger(sdkCore)
         }
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.GRANTED)
+            sdkCore.setTrackingConsent(TrackingConsent.GRANTED)
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -192,7 +191,7 @@ class GdprLogsE2ETests {
     @Test
     fun logs_config_consent_not_granted_to_pending() {
         val testMethodName = "logs_config_consent_not_granted_to_pending"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -200,10 +199,10 @@ class GdprLogsE2ETests {
             )
         }
         measureLoggerInitialize {
-            logger = initializeLogger()
+            logger = initializeLogger(sdkCore)
         }
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.PENDING)
+            sdkCore.setTrackingConsent(TrackingConsent.PENDING)
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -214,7 +213,7 @@ class GdprLogsE2ETests {
     @Test
     fun logs_config_consent_granted_to_pending() {
         val testMethodName = "logs_config_consent_granted_to_pending"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -222,10 +221,10 @@ class GdprLogsE2ETests {
             )
         }
         measureLoggerInitialize {
-            logger = initializeLogger()
+            logger = initializeLogger(sdkCore)
         }
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.PENDING)
+            sdkCore.setTrackingConsent(TrackingConsent.PENDING)
         }
         logger.sendRandomLog(testMethodName, forge)
     }

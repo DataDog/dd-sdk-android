@@ -62,14 +62,12 @@ class LoggerE2ETests {
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
      * apiMethodSignature: com.datadog.android.log.LogsFeature$Builder#fun build(): LogsFeature
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Before
     fun setUp() {
-        initializeSdk(
-            InstrumentationRegistry.getInstrumentation().targetContext,
-            forgeSeed = forge.seed
-        )
-        logger = Logger.Builder(Datadog.globalSdkCore)
+        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+        logger = Logger.Builder(Datadog.getInstance()!!)
             .setLoggerName(LOGGER_NAME)
             .build()
     }

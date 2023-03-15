@@ -7,14 +7,13 @@
 package com.datadog.android.nightly.logs
 
 import android.util.Log
-import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.android.nightly.utils.defaultTestAttributes
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
-fun initializeLogger() = Logger.Builder(Datadog.globalSdkCore)
+fun initializeLogger(sdkCore: SdkCore) = Logger.Builder(sdkCore)
     .setLoggerName(LOGGER_NAME)
     .build()
 

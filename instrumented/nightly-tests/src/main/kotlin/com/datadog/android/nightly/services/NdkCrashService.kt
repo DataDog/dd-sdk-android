@@ -66,36 +66,38 @@ internal open class NdkCrashService : CrashService() {
         Handler(Looper.getMainLooper()).postDelayed({ simulateNdkCrash() }, CRASH_DELAY_MS)
     }
 
+    @Suppress("CheckInternal")
     private fun startSdk(
         ndkCrashReportsEnabled: Boolean = true,
         encryptionEnabled: Boolean = false,
         rumEnabled: Boolean = true
     ) {
-        Datadog.setVerbosity(Log.VERBOSE)
         val configBuilder = Configuration.Builder(
             crashReportsEnabled = true
         )
         if (encryptionEnabled) {
             configBuilder.setEncryption(NeverUseThatEncryption())
         }
-        Datadog.initialize(
+        val sdkCore = Datadog.initialize(
             this,
             getCredentials(),
             configBuilder.build(),
             TrackingConsent.GRANTED
         )
+        checkNotNull(sdkCore)
+        sdkCore.setVerbosity(Log.VERBOSE)
         if (rumEnabled) {
-            Datadog.registerFeature(
+            sdkCore.registerFeature(
                 RumFeature.Builder(rumApplicationId)
                     .sampleTelemetry(HUNDRED_PERCENT)
                     .build()
             )
         }
-        Datadog.registerFeature(LogsFeature.Builder().build())
-        Datadog.registerFeature(TracingFeature.Builder().build())
+        sdkCore.registerFeature(LogsFeature.Builder().build())
+        sdkCore.registerFeature(TracingFeature.Builder().build())
         if (ndkCrashReportsEnabled) {
             val ndkCrashReportsFeature = NdkCrashReportsFeature()
-            Datadog.registerFeature(ndkCrashReportsFeature)
+            sdkCore.registerFeature(ndkCrashReportsFeature)
         }
     }
 

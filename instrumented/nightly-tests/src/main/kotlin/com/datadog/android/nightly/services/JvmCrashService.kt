@@ -61,29 +61,31 @@ internal open class JvmCrashService : CrashService() {
         Handler(Looper.getMainLooper()).postDelayed({ throw exception }, CRASH_DELAY_MS)
     }
 
+    @Suppress("CheckInternal")
     private fun startSdk(
         crashReportsEnabled: Boolean = true,
         rumEnabled: Boolean = true
     ) {
-        Datadog.setVerbosity(Log.VERBOSE)
         val configBuilder = Configuration.Builder(
             crashReportsEnabled = crashReportsEnabled
         )
-        Datadog.initialize(
+        val sdkCore = Datadog.initialize(
             this,
             getCredentials(),
             configBuilder.build(),
             TrackingConsent.GRANTED
         )
+        checkNotNull(sdkCore)
+        sdkCore.setVerbosity(Log.VERBOSE)
         if (rumEnabled) {
-            Datadog.registerFeature(
+            sdkCore.registerFeature(
                 RumFeature.Builder(rumApplicationId)
                     .sampleTelemetry(HUNDRED_PERCENT)
                     .build()
             )
         }
-        Datadog.registerFeature(LogsFeature.Builder().build())
-        Datadog.registerFeature(TracingFeature.Builder().build())
+        sdkCore.registerFeature(LogsFeature.Builder().build())
+        sdkCore.registerFeature(TracingFeature.Builder().build())
     }
 
     // endregion
