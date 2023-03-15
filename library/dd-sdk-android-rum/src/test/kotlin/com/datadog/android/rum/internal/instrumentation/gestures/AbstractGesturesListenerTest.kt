@@ -64,13 +64,13 @@ internal abstract class AbstractGesturesListenerTest {
 
     @BeforeEach
     open fun `set up`() {
-        Datadog.setVerbosity(Log.VERBOSE)
+        Datadog.getInstance()?.setVerbosity(Log.VERBOSE)
         whenever(mockAppContext.resources).thenReturn(mockResources)
     }
 
     @AfterEach
     fun `tear down`() {
-        Datadog.setVerbosity(Integer.MAX_VALUE)
+        Datadog.getInstance()?.setVerbosity(Integer.MAX_VALUE)
     }
 
     // endregion

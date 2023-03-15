@@ -7,11 +7,10 @@
 package com.datadog.android.rum.utils.config
 
 import com.datadog.android.Datadog
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
-import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
-import kotlin.reflect.full.memberFunctions
 
 // TODO RUMM-2949 Share forgeries/test configurations between modules
 internal class DatadogSingletonTestConfiguration :
@@ -19,12 +18,26 @@ internal class DatadogSingletonTestConfiguration :
 
     override fun setUp(forge: Forge) {
         super.setUp(forge)
-        Datadog::class.java.setStaticValue("globalSdkCore", mockInstance)
+
+        val registry = registryField.get(null)
+        registryRegisterMethod.invoke(registry, null, mockInstance)
     }
 
     override fun tearDown(forge: Forge) {
-        Datadog::class.memberFunctions.first { it.name == "stop" }
-            .call(Datadog::class.objectInstance)
+        val registry = registryField.get(null)
+        registryClearMethod.invoke(registry)
         super.tearDown(forge)
+    }
+
+    companion object {
+        private val registryField = Datadog::class.java.getDeclaredField("registry").apply {
+            isAccessible = true
+        }
+        private val registryRegisterMethod = registryField.type.getMethod(
+            "register",
+            String::class.java,
+            SdkCore::class.java
+        )
+        private val registryClearMethod = registryField.type.getMethod("clear")
     }
 }

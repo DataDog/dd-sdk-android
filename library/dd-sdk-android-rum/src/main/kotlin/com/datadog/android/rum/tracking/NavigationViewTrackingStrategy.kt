@@ -121,8 +121,8 @@ class NavigationViewTrackingStrategy(
     @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
     fun startTracking() {
         val activity = startedActivity ?: return
-        val rumFeature = Datadog.globalSdkCore
-            .getFeature(Feature.RUM_FEATURE_NAME)
+        val rumFeature = Datadog.getInstance()
+            ?.getFeature(Feature.RUM_FEATURE_NAME)
             ?.unwrap<RumFeature>() ?: return
         activity.findNavControllerOrNull(navigationViewId)?.let {
             if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
