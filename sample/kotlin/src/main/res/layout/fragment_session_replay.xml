@@ -57,6 +57,17 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/navigation_radio_and_checkbox_components"/>
 
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/navigation_sliders_and_steppers_components"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/dropdowns_and_switchers_components"
+            android:drawableStart="@drawable/baseline_reorder_24"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/navigation_dropdowns_and_switchers_components"/>
+
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>

@@ -9,8 +9,8 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.view.View
 import android.widget.Checkable
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
-import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.ViewUtils
 
 internal abstract class CheckableWireframeMapper<T>(viewUtils: ViewUtils) :
     BaseWireframeMapper<T, MobileSegment.Wireframe>(viewUtils = viewUtils)

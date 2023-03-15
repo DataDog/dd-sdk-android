@@ -39,6 +39,7 @@ import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.tracing.TracingInterceptor
@@ -123,6 +124,7 @@ class SampleApplication : Application() {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
                 }
             }
+            .addExtensionSupport(MaterialExtensionSupport())
             .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
             .build()
         val sessionReplayFeature = SessionReplayFeature(sessionReplayConfig)

@@ -10,9 +10,10 @@ import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
-import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.sessionreplay.utils.ViewUtils
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
@@ -30,7 +31,7 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
     lateinit var testedSwitchCompatMapper: SwitchCompatMapper
 
     @Mock
-    lateinit var mockUniqueIdentifierResolver: UniqueIdentifierResolver
+    lateinit var mockuniqueIdentifierGenerator: UniqueIdentifierGenerator
 
     @Mock
     lateinit var mockTextWireframeMapper: TextWireframeMapper
@@ -116,13 +117,13 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
             whenever(it.thumbDrawable).thenReturn(mockThumbDrawable)
         }
         whenever(
-            mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
+            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
                 mockSwitch,
                 SwitchCompatMapper.TRACK_KEY_NAME
             )
         ).thenReturn(fakeTrackIdentifier)
         whenever(
-            mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
+            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
                 mockSwitch,
                 SwitchCompatMapper.THUMB_KEY_NAME
             )
@@ -178,7 +179,7 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
     ) {
         // Given
         whenever(
-            mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
+            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
                 mockSwitch,
                 SwitchCompatMapper.TRACK_KEY_NAME
             )

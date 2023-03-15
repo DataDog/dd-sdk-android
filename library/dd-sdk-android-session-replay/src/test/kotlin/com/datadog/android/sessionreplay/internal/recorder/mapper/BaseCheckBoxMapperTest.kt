@@ -11,10 +11,11 @@ import android.os.Build
 import android.widget.CheckBox
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
-import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.internal.utils.StringUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.sessionreplay.utils.ViewUtils
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.mock
@@ -47,7 +48,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
     lateinit var testedCheckBoxMapper: CheckBoxMapper
 
     @Mock
-    lateinit var mockUniqueIdentifierResolver: UniqueIdentifierResolver
+    lateinit var mockuniqueIdentifierGenerator: UniqueIdentifierGenerator
 
     @Mock
     lateinit var mockTextWireframeMapper: TextWireframeMapper
@@ -82,7 +83,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
             whenever(it.currentTextColor).thenReturn(fakeCurrentTextColor)
         }
         whenever(
-            mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
+            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
                 mockCheckBox,
                 CheckableTextViewMapper.CHECKABLE_KEY_NAME
             )
@@ -260,7 +261,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
     fun `M ignore the checkbox W map() { unique id could not be generated }`() {
         // Given
         whenever(
-            mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
+            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
                 mockCheckBox,
                 CheckableTextViewMapper.CHECKABLE_KEY_NAME
             )

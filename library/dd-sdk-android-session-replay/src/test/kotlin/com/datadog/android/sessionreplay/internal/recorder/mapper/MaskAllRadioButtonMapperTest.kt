@@ -29,7 +29,7 @@ internal class MaskAllRadioButtonMapperTest : BaseRadioButtonMapperTest() {
     override fun setupTestedMapper(): RadioButtonMapper {
         return MaskAllRadioButtonMapper(
             textWireframeMapper = mockTextWireframeMapper,
-            uniqueIdentifierGenerator = mockUniqueIdentifierResolver,
+            uniqueIdentifierGenerator = mockuniqueIdentifierGenerator,
             viewUtils = mockViewUtils
         )
     }

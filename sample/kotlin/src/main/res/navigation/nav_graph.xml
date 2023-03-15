@@ -82,6 +82,10 @@
         android:name="com.datadog.android.sample.sessionreplay.DropDownSwitchersFragment"
         android:label="@string/dropdowns_and_switchers_components"/>
 
+    <fragment android:id="@+id/fragment_sliders_steppers_components"
+        android:name="com.datadog.android.sample.sessionreplay.SlidersSteppersFragment"
+        android:label="@string/sliders_and_steppers_components"/>
+
     <fragment android:id="@+id/fragment_session_replay"
         android:name="com.datadog.android.sample.sessionreplay.SessionReplayFragment"
         android:label="@string/session_replay"/>

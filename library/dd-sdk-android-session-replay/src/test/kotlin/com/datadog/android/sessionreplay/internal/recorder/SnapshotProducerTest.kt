@@ -58,7 +58,7 @@ internal class SnapshotProducerTest {
     lateinit var fakeShapeScreenShotWireframes: List<MobileSegment.Wireframe.ShapeWireframe>
 
     @Mock
-    lateinit var mockViewUtils: ViewUtils
+    lateinit var mockViewUtilsInternal: ViewUtilsInternal
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -76,11 +76,11 @@ internal class SnapshotProducerTest {
             .thenReturn(fakeViewWireframes)
         whenever(mockGenericWireframeMapper.imageMapper)
             .thenReturn(mockViewScreenshotWireframeMapper)
-        whenever(mockViewUtils.checkIfNotVisible(any())).thenReturn(false)
-        whenever(mockViewUtils.checkIfSystemNoise(any())).thenReturn(false)
+        whenever(mockViewUtilsInternal.checkIfNotVisible(any())).thenReturn(false)
+        whenever(mockViewUtilsInternal.checkIfSystemNoise(any())).thenReturn(false)
         testedSnapshotProducer = SnapshotProducer(
             mockGenericWireframeMapper,
-            mockViewUtils
+            mockViewUtilsInternal
         )
     }
 
@@ -121,7 +121,7 @@ internal class SnapshotProducerTest {
         // Given
         val fakeRoot = forge
             .aMockViewWithChildren(2, 0, 2)
-            .apply { whenever(mockViewUtils.checkIfNotVisible(this)).thenReturn(true) }
+            .apply { whenever(mockViewUtilsInternal.checkIfNotVisible(this)).thenReturn(true) }
 
         // Then
         assertThat(testedSnapshotProducer.produce(fakeRoot, fakeSystemInformation)).isNull()
@@ -136,7 +136,7 @@ internal class SnapshotProducerTest {
         // Given
         val fakeRoot = forge
             .aMockViewWithChildren(2, 0, 2)
-            .apply { whenever(mockViewUtils.checkIfSystemNoise(this)).thenReturn(true) }
+            .apply { whenever(mockViewUtilsInternal.checkIfSystemNoise(this)).thenReturn(true) }
 
         // Then
         assertThat(testedSnapshotProducer.produce(fakeRoot, fakeSystemInformation)).isNull()
@@ -152,7 +152,7 @@ internal class SnapshotProducerTest {
     ) {
         // Given
         val mockToolBar: Toolbar = forge.aMockView<Toolbar>().apply {
-            whenever(mockViewUtils.checkIsToolbar(this)).thenReturn(true)
+            whenever(mockViewUtilsInternal.checkIsToolbar(this)).thenReturn(true)
         }
 
         // When

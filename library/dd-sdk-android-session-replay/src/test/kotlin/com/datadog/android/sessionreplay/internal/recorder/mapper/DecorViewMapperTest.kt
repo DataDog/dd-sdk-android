@@ -10,6 +10,7 @@ import android.view.View
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.aMockView
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -37,7 +38,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
     lateinit var mockViewWireframeMapper: ViewWireframeMapper
 
     @Mock
-    lateinit var mockUniqueIdentifierResolver: UniqueIdentifierResolver
+    lateinit var mockuniqueIdentifierGenerator: UniqueIdentifierGenerator
 
     lateinit var mockDecorView: View
 
@@ -52,7 +53,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
     fun `set up`(forge: Forge) {
         mockDecorView = forge.aMockView()
         whenever(
-            mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
+            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
                 mockDecorView,
                 DecorViewMapper.WINDOW_KEY_NAME
             )
@@ -65,7 +66,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
             .thenReturn(mockViewWireframes)
         testedDecorViewMapper = DecorViewMapper(
             mockViewWireframeMapper,
-            mockUniqueIdentifierResolver
+            mockuniqueIdentifierGenerator
         )
     }
 
@@ -182,7 +183,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
     fun `M do not handle the Window W map {uniqueIdentifier could not be generated}`() {
         // Given
         whenever(
-            mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
+            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
                 mockDecorView,
                 DecorViewMapper.WINDOW_KEY_NAME
             )

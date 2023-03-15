@@ -13,13 +13,13 @@ import android.graphics.drawable.RippleDrawable
 import android.os.Build
 import android.view.View
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
-import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
-import com.datadog.android.sessionreplay.internal.utils.StringUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.ViewUtils
 
 internal abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
     private val stringUtils: StringUtils = StringUtils,
-    private val viewUtils: ViewUtils = ViewUtils()
+    private val viewUtils: ViewUtils = ViewUtils
 ) : WireframeMapper<T, S> {
 
     protected fun resolveViewId(view: View): Long {
