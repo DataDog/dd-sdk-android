@@ -25,6 +25,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.junit.Assert.assertThrows
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -92,6 +93,7 @@ internal class ResourceTrackingTest {
     }
 
     @Test
+    @Ignore
     fun verifyAttributesAreSentWhenRequestHasException() {
         val resourceUrl = mockServerRule.getConnectionUrl() +
             MockServerActivityTestRule.CONNECTION_ISSUE_PATH

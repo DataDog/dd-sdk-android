@@ -30,11 +30,11 @@ import java.lang.ArithmeticException
 import java.lang.IndexOutOfBoundsException
 import java.lang.RuntimeException
 
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_activity_layout) {
 
     private val forge by lazy { Forge().apply { seed = intent.getForgeSeed() } }
 
+    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -44,10 +44,11 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
 
         val trackingConsent = intent.getTrackingConsent()
 
-        Datadog.initialize(this, credentials, config, trackingConsent)
-        Datadog.setVerbosity(Log.VERBOSE)
+        val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
+        checkNotNull(sdkCore)
+        sdkCore.setVerbosity(Log.VERBOSE)
 
-        Datadog.registerFeature(
+        sdkCore.registerFeature(
             // we will use a large long task threshold to make sure we will not have LongTask events
             // noise in our integration tests.
             RuntimeConfig.rumFeatureBuilder()
@@ -66,7 +67,7 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
         submitTelemetry(intent)
     }
 
-    @Suppress("ThrowingInternalException")
+    @Suppress("ThrowingInternalException", "CheckInternal")
     private fun submitTelemetry(intent: Intent) {
         val debugMessage = intent.getStringExtra(TELEMETRY_DEBUG_MESSAGE_KEY)
             ?: throw IllegalArgumentException("Telemetry debug message should be provided")
@@ -74,9 +75,11 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
         val errorMessage = intent.getStringExtra(TELEMETRY_ERROR_MESSAGE_KEY)
             ?: throw IllegalArgumentException("Telemetry error message should be provided")
 
-        Datadog._internal._telemetry.debug(debugMessage)
-        Datadog._internal._telemetry.error(errorMessage)
-        Datadog._internal._telemetry.error(errorMessage, forge.aThrowable())
+        val internalProxy = Datadog._internalProxy()
+        checkNotNull(internalProxy)
+        internalProxy._telemetry.debug(debugMessage)
+        internalProxy._telemetry.error(errorMessage)
+        internalProxy._telemetry.error(errorMessage, forge.aThrowable())
     }
 
     private fun Forge.aThrowable() = anElementFrom(anError(), anException())

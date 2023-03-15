@@ -19,7 +19,6 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.addForgeSeed
 import com.datadog.android.sdk.utils.addTrackingConsent
-import com.datadog.tools.unit.getFieldValue
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import okhttp3.mockwebserver.Dispatcher
@@ -32,7 +31,7 @@ import org.junit.runners.model.Statement
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.util.concurrent.atomic.AtomicBoolean
+import java.net.HttpURLConnection
 import java.util.zip.GZIPInputStream
 
 internal open class MockServerActivityTestRule<T : Activity>(
@@ -81,8 +80,10 @@ internal open class MockServerActivityTestRule<T : Activity>(
 
                     return if (request.path == CONNECTION_ISSUE_PATH) {
                         MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE)
-                    } else {
+                    } else if (request.path.endsWith("nyan-cat.gif")) {
                         mockResponse(200)
+                    } else {
+                        mockResponse(HttpURLConnection.HTTP_ACCEPTED)
                     }
                 }
             }
@@ -114,7 +115,10 @@ internal open class MockServerActivityTestRule<T : Activity>(
             .cacheDir.deleteRecursively {
                 Log.i("MockServerActivityTestRule", "After activity finished, deleting file $it")
             }
-        GlobalRum.getFieldValue<AtomicBoolean, GlobalRum>("isRegistered").set(false)
+
+        Datadog.stopInstance()
+        GlobalRum::class.java.getDeclaredMethod("reset").invoke(null)
+
         super.afterActivityFinished()
     }
 
@@ -141,13 +145,13 @@ internal open class MockServerActivityTestRule<T : Activity>(
     // region MockServerRule
 
     fun getRequests(): List<HandledRequest> {
-        Log.i(TAG, "Caught ${requests.size} requests")
+//        Log.i(TAG, "Caught ${requests.size} requests")
         return requests.toList()
     }
 
     fun getRequests(endpoint: String): List<HandledRequest> {
         val filteredRequests = requests.filter { it.url?.startsWith(endpoint) ?: false }.toList()
-        Log.i(TAG, "Caught ${filteredRequests.size} requests for endpoint: $endpoint")
+//        Log.i(TAG, "Caught ${filteredRequests.size} requests for endpoint: $endpoint")
         return filteredRequests
     }
 

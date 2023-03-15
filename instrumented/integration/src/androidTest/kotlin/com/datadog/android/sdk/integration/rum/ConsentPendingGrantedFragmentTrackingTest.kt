@@ -20,7 +20,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class ConsentPendingGrantedFragmentTrackingTest : FragmentTrackingTest() {
 
     @get:Rule
@@ -35,7 +34,7 @@ internal class ConsentPendingGrantedFragmentTrackingTest : FragmentTrackingTest(
         val expectedEvents = runInstrumentationScenario(mockServerRule)
 
         // update the tracking consent
-        Datadog.setTrackingConsent(TrackingConsent.GRANTED)
+        Datadog.getInstance()?.setTrackingConsent(TrackingConsent.GRANTED)
 
         // Wait to make sure all batches are consumed
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()

@@ -22,7 +22,6 @@ import io.opentracing.Scope
 import java.util.LinkedList
 import java.util.Random
 
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class ActivityLifecycleTrace : AppCompatActivity() {
 
     private val forge by lazy { Forge().apply { seed = intent.getForgeSeed() } }
@@ -35,6 +34,7 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
 
     // region Activity
 
+    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -42,15 +42,16 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
         val config = RuntimeConfig.configBuilder().build()
         val trackingConsent = intent.getTrackingConsent()
 
-        Datadog.initialize(this, credentials, config, trackingConsent)
-        Datadog.setVerbosity(Log.VERBOSE)
+        val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
+        checkNotNull(sdkCore)
+        sdkCore.setVerbosity(Log.VERBOSE)
         mutableListOf<Feature>(
             RuntimeConfig.logsFeatureBuilder().build(),
             RuntimeConfig.tracingFeatureBuilder().build()
         )
             .shuffled(Random(intent.getForgeSeed()))
             .forEach {
-                Datadog.registerFeature(it)
+                sdkCore.registerFeature(it)
             }
 
         tracer = RuntimeConfig.tracer()
