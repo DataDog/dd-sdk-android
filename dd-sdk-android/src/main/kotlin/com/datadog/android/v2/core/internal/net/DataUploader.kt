@@ -12,7 +12,6 @@ import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface DataUploader {
-    // TODO RUMM-2298 Support 1:many relationship between batch and requests
     fun upload(
         context: DatadogContext,
         batch: List<ByteArray>,

@@ -29,6 +29,7 @@ import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.ndk.DatadogNdkCrashHandler
+import com.datadog.android.ndk.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
@@ -64,7 +65,6 @@ internal class DatadogCore(
 
     internal val features: MutableMap<String, SdkFeature> = mutableMapOf()
 
-    // TODO RUMM-0000 handle context
     internal val contextProvider: ContextProvider?
         get() {
             return if (coreFeature.initialized.get()) {
@@ -136,6 +136,17 @@ internal class DatadogCore(
             this,
             context.applicationContext
         )
+
+        when (feature.name) {
+            Feature.LOGS_FEATURE_NAME -> {
+                coreFeature.ndkCrashHandler
+                    .handleNdkCrash(this, NdkCrashHandler.ReportTarget.LOGS)
+            }
+            Feature.RUM_FEATURE_NAME -> {
+                coreFeature.ndkCrashHandler
+                    .handleNdkCrash(this, NdkCrashHandler.ReportTarget.RUM)
+            }
+        }
     }
 
     /** @inheritDoc */
@@ -314,9 +325,6 @@ internal class DatadogCore(
         applyAdditionalConfiguration(mutableConfig.additionalConfig)
 
         initializeCrashReportFeature(mutableConfig.crashReportConfig)
-
-        // TODO RUMM-2995 Handle NDK crashes for SDK v2 arch
-        coreFeature.ndkCrashHandler.handleNdkCrash(this)
 
         setupLifecycleMonitorCallback(appContext)
 

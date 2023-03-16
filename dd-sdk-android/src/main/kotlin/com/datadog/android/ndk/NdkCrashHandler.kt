@@ -13,5 +13,10 @@ import com.datadog.tools.annotation.NoOpImplementation
 internal interface NdkCrashHandler {
     fun prepareData()
 
-    fun handleNdkCrash(sdkCore: SdkCore)
+    fun handleNdkCrash(sdkCore: SdkCore, reportTarget: ReportTarget)
+
+    enum class ReportTarget {
+        RUM,
+        LOGS
+    }
 }
