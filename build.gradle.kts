@@ -1,5 +1,7 @@
+import com.android.build.gradle.LibraryExtension
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.nightlyTestsCoverageConfig
+import org.gradle.api.internal.file.UnionFileTree
 
 /*
  * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
@@ -275,4 +277,40 @@ kover {
         "unit"
     )
     instrumentAndroidPackage = false
+}
+
+tasks.register("printSdkDebugRuntimeClasspath") {
+    val fileTreeClassPathCollector = UnionFileTree()
+    val nonFileTreeClassPathCollector = mutableListOf<FileCollection>()
+    allprojects.minus(project).forEach { subproject ->
+        val childTask = subproject.tasks.register("printDebugRuntimeClasspath") {
+            doLast {
+                val ext =
+                    subproject.extensions.findByType(LibraryExtension::class.java) ?: return@doLast
+                val classpath = ext.libraryVariants
+                    .filter { it.name == "debug" }
+                    .map {
+                        // returns also test part of classpath for now, no idea how to filter it out
+                        it.getCompileClasspath(null).filter { it.exists() }
+                    }
+                    .first()
+                if (classpath is FileTree) {
+                    fileTreeClassPathCollector.addToUnion(classpath)
+                } else {
+                    nonFileTreeClassPathCollector += classpath
+                }
+            }
+        }
+        this@register.dependsOn(childTask)
+    }
+    doLast {
+        val result = mutableListOf<FileCollection>()
+        result.addAll(nonFileTreeClassPathCollector)
+        if (!fileTreeClassPathCollector.isEmpty) {
+            result.add(fileTreeClassPathCollector)
+        }
+        println(
+            result.joinToString(":") { it.asPath }
+        )
+    }
 }

@@ -6,11 +6,10 @@
 
 package com.datadog.android.webview.internal
 
-import androidx.annotation.WorkerThread
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface WebViewEventConsumer<T : Any> {
-    @WorkerThread
+
     fun consume(event: T)
 }

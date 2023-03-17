@@ -6,7 +6,6 @@
 
 package com.datadog.android.webview.internal.log
 
-import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.v2.api.InternalLogger
@@ -24,13 +23,13 @@ internal class WebViewLogEventConsumer(
     private val rumContextProvider: WebViewRumEventContextProvider
 ) : WebViewEventConsumer<Pair<JsonObject, String>> {
 
-    @WorkerThread
     override fun consume(event: Pair<JsonObject, String>) {
         if (event.second == USER_LOG_EVENT_TYPE) {
             sdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
                 ?.withWriteContext { datadogContext, eventBatchWriter ->
                     val rumContext = rumContextProvider.getRumContext(datadogContext)
                     val mappedEvent = map(event.first, datadogContext, rumContext)
+                    @Suppress("ThreadSafety") // inside worker thread context
                     userLogsWriter.write(eventBatchWriter, mappedEvent)
                 }
         }

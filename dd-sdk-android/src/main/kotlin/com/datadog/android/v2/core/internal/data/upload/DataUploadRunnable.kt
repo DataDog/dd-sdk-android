@@ -127,6 +127,7 @@ internal class DataUploadRunnable(
     private fun decreaseInterval() {
         currentDelayIntervalMs = max(
             minDelayMs,
+            @Suppress("UnsafeThirdPartyFunctionCall") // not a NaN
             (currentDelayIntervalMs * DECREASE_PERCENT).roundToLong()
         )
     }
@@ -134,6 +135,7 @@ internal class DataUploadRunnable(
     private fun increaseInterval() {
         currentDelayIntervalMs = min(
             maxDelayMs,
+            @Suppress("UnsafeThirdPartyFunctionCall") // not a NaN
             (currentDelayIntervalMs * INCREASE_PERCENT).roundToLong()
         )
     }

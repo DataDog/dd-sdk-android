@@ -41,6 +41,7 @@ internal class WebViewRumEventConsumer(
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val rumContext = contextProvider.getRumContext(datadogContext)
                 val mappedEvent = map(event, datadogContext, rumContext)
+                @Suppress("ThreadSafety") // inside worker thread context
                 dataWriter.write(eventBatchWriter, mappedEvent)
             }
     }
