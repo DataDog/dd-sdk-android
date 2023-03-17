@@ -266,8 +266,11 @@ internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewMod
 
         var activeSpanInMainThread: Span? = null
 
+        @Suppress("CheckInternal")
         private val logger: Logger by lazy {
-            Logger.Builder(Datadog.globalSdkCore)
+            val sdkCore = Datadog.getInstance()
+            checkNotNull(sdkCore)
+            Logger.Builder(sdkCore)
                 .setLoggerName("async_task")
                 .setLogcatLogsEnabled(true)
                 .build()

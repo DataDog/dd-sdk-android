@@ -10,7 +10,6 @@ import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.android.nightly.SPECIAL_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_BOOL_ATTRIBUTE_NAME
@@ -62,14 +61,15 @@ class LoggerE2ETests {
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
      * apiMethodSignature: com.datadog.android.log.LogsFeature$Builder#fun build(): LogsFeature
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Before
     fun setUp() {
-        initializeSdk(
+        val sdkCore = initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
             forgeSeed = forge.seed
         )
-        logger = Logger.Builder(Datadog.globalSdkCore)
+        logger = Logger.Builder(sdkCore)
             .setLoggerName(LOGGER_NAME)
             .build()
     }

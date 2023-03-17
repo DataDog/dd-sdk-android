@@ -26,6 +26,7 @@ import com.datadog.android.sdk.utils.getTrackingConsent
 internal class FragmentTrackingPlaygroundActivity : AppCompatActivity() {
     lateinit var viewPager: ViewPager
 
+    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val credentials = RuntimeConfig.credentials()
@@ -33,10 +34,11 @@ internal class FragmentTrackingPlaygroundActivity : AppCompatActivity() {
             .build()
         val trackingConsent = intent.getTrackingConsent()
 
-        Datadog.initialize(this, credentials, config, trackingConsent)
-        Datadog.setVerbosity(Log.VERBOSE)
+        val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
+        checkNotNull(sdkCore)
+        sdkCore.setVerbosity(Log.VERBOSE)
 
-        Datadog.registerFeature(
+        sdkCore.registerFeature(
             RuntimeConfig.rumFeatureBuilder()
                 .trackInteractions()
                 .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)

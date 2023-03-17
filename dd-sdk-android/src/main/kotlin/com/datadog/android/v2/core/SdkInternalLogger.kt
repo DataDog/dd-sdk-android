@@ -12,11 +12,10 @@ import com.datadog.android.Datadog
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class SdkInternalLogger(
     devLogHandlerFactory: () -> LogcatLogHandler = {
         LogcatLogHandler(DEV_LOG_TAG) { level ->
-            level >= Datadog.globalSdkCore.getVerbosity()
+            level >= (Datadog.getInstance()?.getVerbosity() ?: Log.WARN)
         }
     },
     sdkLogHandlerFactory: () -> LogcatLogHandler? = {
@@ -100,7 +99,7 @@ internal class SdkInternalLogger(
         message: String,
         error: Throwable?
     ) {
-        val rumFeature = Datadog.globalSdkCore.getFeature(Feature.RUM_FEATURE_NAME) ?: return
+        val rumFeature = Datadog.getInstance()?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
         val telemetryEvent = if (
             level == InternalLogger.Level.ERROR ||
             level == InternalLogger.Level.WARN ||

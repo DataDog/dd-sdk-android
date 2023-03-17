@@ -31,9 +31,7 @@ import com.datadog.android.v2.core.DatadogCore
     "VariableNaming"
 )
 class _InternalProxy internal constructor(
-    sdkCore: SdkCore,
-    // TODO RUMM-0000 Shouldn't be nullable
-    private val datadogCore: DatadogCore?
+    private val sdkCore: SdkCore
 ) {
     @Suppress("StringLiteralDuplication")
     class _TelemetryProxy internal constructor(private val sdkCore: SdkCore) {
@@ -73,7 +71,8 @@ class _InternalProxy internal constructor(
     val _telemetry: _TelemetryProxy = _TelemetryProxy(sdkCore)
 
     fun setCustomAppVersion(version: String) {
-        datadogCore?.coreFeature?.packageVersionProvider?.version = version
+        val coreFeature = (sdkCore as? DatadogCore)?.coreFeature
+        coreFeature?.packageVersionProvider?.version = version
     }
 
     companion object {

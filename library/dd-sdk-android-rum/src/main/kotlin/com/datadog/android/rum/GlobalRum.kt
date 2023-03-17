@@ -142,7 +142,10 @@ object GlobalRum {
         (monitor as? AdvancedRumMonitor)?.sendWebViewEvent()
     }
 
-    internal fun reset() {
+    // This method is mainly for test purposes.
+    @Suppress("unused")
+    @JvmStatic
+    private fun reset() {
         globalAttributes.clear()
         monitor = NoOpRumMonitor()
         isRegistered.set(false)

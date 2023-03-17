@@ -20,7 +20,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class ConsentPendingNotGrantedActivityTrackingTest : ActivityTrackingTest() {
 
     @get:Rule
@@ -36,7 +35,7 @@ internal class ConsentPendingNotGrantedActivityTrackingTest : ActivityTrackingTe
         runInstrumentationScenario(mockServerRule)
 
         // update the tracking consent
-        Datadog.setTrackingConsent(TrackingConsent.NOT_GRANTED)
+        Datadog.getInstance()?.setTrackingConsent(TrackingConsent.NOT_GRANTED)
 
         // Wait to make sure all batches are consumed
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()

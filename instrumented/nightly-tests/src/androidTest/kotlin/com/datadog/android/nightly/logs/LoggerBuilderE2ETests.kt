@@ -50,12 +50,13 @@ class LoggerBuilderE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setSampleRate(Float): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
     fun logs_logger_builder_sample_all_in() {
         val testMethodName = "logs_logger_builder_sample_all_in"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.globalSdkCore).setSampleRate(1f).build()
+            logger = Logger.Builder(Datadog.getInstance()!!).setSampleRate(1f).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -64,12 +65,13 @@ class LoggerBuilderE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setSampleRate(Float): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
     fun logs_logger_builder_sample_all_out() {
         val testMethodName = "logs_logger_builder_sample_all_out"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.globalSdkCore).setSampleRate(0f).build()
+            logger = Logger.Builder(Datadog.getInstance()!!).setSampleRate(0f).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -78,13 +80,14 @@ class LoggerBuilderE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setSampleRate(Float): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
     fun logs_logger_builder_sample_in_75_percent() {
         val testMethodName = "logs_logger_builder_sample_in_75_percent"
         val logsNumber = 10
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.globalSdkCore).setSampleRate(0.75f).build()
+            logger = Logger.Builder(Datadog.getInstance()!!).setSampleRate(0.75f).build()
         }
         repeat(logsNumber) {
             logger.sendRandomLog(testMethodName, forge)
@@ -95,12 +98,13 @@ class LoggerBuilderE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setDatadogLogsEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
     fun logs_logger_builder_datadog_logs_enabled() {
         val testMethodName = "logs_logger_builder_datadog_logs_enabled"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.globalSdkCore).setDatadogLogsEnabled(true).build()
+            logger = Logger.Builder(Datadog.getInstance()!!).setDatadogLogsEnabled(true).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -109,12 +113,13 @@ class LoggerBuilderE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setDatadogLogsEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
     fun logs_logger_builder_datadog_logs_disabled() {
         val testMethodName = "logs_logger_builder_datadog_logs_disabled"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.globalSdkCore).setDatadogLogsEnabled(false).build()
+            logger = Logger.Builder(Datadog.getInstance()!!).setDatadogLogsEnabled(false).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -123,6 +128,7 @@ class LoggerBuilderE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setDatadogLogsMinPriority(Int): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
     fun logs_logger_builder_datadog_min_log_priority() {
@@ -136,7 +142,7 @@ class LoggerBuilderE2ETests {
         )
 
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.globalSdkCore)
+            logger = Logger.Builder(Datadog.getInstance()!!)
                 .setDatadogLogsEnabled(true)
                 .setDatadogLogsMinPriority(minLogLevel)
                 .build()
@@ -153,12 +159,13 @@ class LoggerBuilderE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setNetworkInfoEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
     fun logs_logger_builder_network_info_enabled() {
         val testMethodName = "logs_logger_builder_network_info_enabled"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.globalSdkCore).setNetworkInfoEnabled(true).build()
+            logger = Logger.Builder(Datadog.getInstance()!!).setNetworkInfoEnabled(true).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -167,12 +174,13 @@ class LoggerBuilderE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setNetworkInfoEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
     fun logs_logger_builder_network_info_disabled() {
         val testMethodName = "logs_logger_builder_network_info_disabled"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.globalSdkCore).setNetworkInfoEnabled(false).build()
+            logger = Logger.Builder(Datadog.getInstance()!!).setNetworkInfoEnabled(false).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -181,13 +189,13 @@ class LoggerBuilderE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setServiceName(String): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
     fun logs_logger_builder_set_service_name() {
         val testMethodName = "logs_logger_builder_set_service_name"
         measureLoggerInitialize {
-            logger =
-                Logger.Builder(Datadog.globalSdkCore).setServiceName(CUSTOM_SERVICE_NAME).build()
+            logger = Logger.Builder(Datadog.getInstance()!!).setServiceName(CUSTOM_SERVICE_NAME).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -196,12 +204,13 @@ class LoggerBuilderE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setLoggerName(String): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
     fun logs_logger_builder_set_logger_name() {
         val testMethodName = "logs_logger_builder_set_logger_name"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.globalSdkCore).setLoggerName(CUSTOM_LOGGER_NAME).build()
+            logger = Logger.Builder(Datadog.getInstance()!!).setLoggerName(CUSTOM_LOGGER_NAME).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -210,12 +219,13 @@ class LoggerBuilderE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setBundleWithRumEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
     fun logs_logger_builder_bundle_with_rum_enabled() {
         val testMethodName = "logs_logger_builder_bundle_with_rum_enabled"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.globalSdkCore).setBundleWithRumEnabled(true).build()
+            logger = Logger.Builder(Datadog.getInstance()!!).setBundleWithRumEnabled(true).build()
         }
         val viewKey = forge.anAlphabeticalString()
         val actionName = forge.anAlphabeticalString()
@@ -234,12 +244,13 @@ class LoggerBuilderE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setBundleWithTraceEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
     fun logs_logger_builder_bundle_with_trace_enabled() {
         val testMethodName = "logs_logger_builder_bundle_with_trace_enabled"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.globalSdkCore).setBundleWithTraceEnabled(true).build()
+            logger = Logger.Builder(Datadog.getInstance()!!).setBundleWithTraceEnabled(true).build()
         }
         val spanName = forge.anAlphabeticalString()
         val span = GlobalTracer.get().buildSpan(spanName).start()
@@ -253,12 +264,13 @@ class LoggerBuilderE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setBundleWithRumEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
     fun logs_logger_builder_bundle_with_rum_disabled() {
         val testMethodName = "logs_logger_builder_bundle_with_rum_disabled"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.globalSdkCore).setBundleWithRumEnabled(false).build()
+            logger = Logger.Builder(Datadog.getInstance()!!).setBundleWithRumEnabled(false).build()
         }
         val viewKey = forge.anAlphabeticalString()
         GlobalRum.get().startView(viewKey, forge.anAlphabeticalString())
@@ -270,12 +282,13 @@ class LoggerBuilderE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setBundleWithTraceEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
     fun logs_logger_builder_bundle_with_trace_disabled() {
         val testMethodName = "logs_logger_builder_bundle_with_trace_disabled"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.globalSdkCore).setBundleWithTraceEnabled(false).build()
+            logger = Logger.Builder(Datadog.getInstance()!!).setBundleWithTraceEnabled(false).build()
         }
         val spanName = forge.anAlphabeticalString()
         val span = GlobalTracer.get().buildSpan(spanName).start()

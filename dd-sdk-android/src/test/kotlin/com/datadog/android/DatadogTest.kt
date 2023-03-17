@@ -17,9 +17,7 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.android.v2.core.internal.HashGenerator
 import com.datadog.android.v2.core.internal.Sha256HashGenerator
 import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
@@ -58,7 +56,6 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 @ProhibitLeavingStaticMocksIn(Datadog::class)
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class DatadogTest {
 
     @Mock
@@ -86,9 +83,8 @@ internal class DatadogTest {
 
     @AfterEach
     fun `tear down`() {
-        Datadog.setVerbosity(Int.MAX_VALUE)
         Datadog.hashGenerator = Sha256HashGenerator()
-        Datadog.stop()
+        Datadog.stopInstance()
         Datadog.registry.clear()
     }
 
@@ -355,6 +351,7 @@ internal class DatadogTest {
             configuration,
             fakeConsent
         )
+
         // Then
         verify(logger.mockInternalLogger).log(
             InternalLogger.Level.ERROR,
@@ -364,146 +361,88 @@ internal class DatadogTest {
         assertThat(instance).isNull()
     }
 
+    @Test
+    fun `𝕄 stop specific instance 𝕎 stopInstance()`() {
+        // Given
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
+        val configuration = Configuration.Builder(crashReportsEnabled = true).build()
+        val sdk = Datadog.initialize(
+            appContext.mockInstance,
+            credentials,
+            configuration,
+            fakeConsent
+        ) as? DatadogCore
+        checkNotNull(sdk)
+
+        // When
+        Datadog.stopInstance()
+        val getInstance = Datadog.getInstance()
+
+        // Then
+        assertThat(getInstance).isNull()
+        assertThat(sdk.coreFeature.initialized.get()).isFalse()
+    }
+
+    @Test
+    fun `𝕄 stop specific instance 𝕎 stopInstance(name)`(
+        @StringForgery name: String
+    ) {
+        // Given
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
+        val configuration = Configuration.Builder(crashReportsEnabled = true).build()
+        val sdk = Datadog.initialize(
+            name,
+            appContext.mockInstance,
+            credentials,
+            configuration,
+            fakeConsent
+        ) as? DatadogCore
+        checkNotNull(sdk)
+
+        // When
+        Datadog.stopInstance(name)
+        val getInstance = Datadog.getInstance(name)
+
+        // Then
+        assertThat(getInstance).isNull()
+        assertThat(sdk.coreFeature.initialized.get()).isFalse()
+    }
+
+    @Test
+    fun `𝕄 not stop specific instance 𝕎 stopInstance(name) {different name}`(
+        @StringForgery name: String,
+        @StringForgery name2: String
+    ) {
+        // Given
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
+        val configuration = Configuration.Builder(crashReportsEnabled = true).build()
+        val sdk = Datadog.initialize(
+            name,
+            appContext.mockInstance,
+            credentials,
+            configuration,
+            fakeConsent
+        ) as? DatadogCore
+        checkNotNull(sdk)
+
+        // When
+        Datadog.stopInstance(name2)
+        val getInstance = Datadog.getInstance(name)
+
+        // Then
+        assertThat(getInstance).isSameAs(sdk)
+        assertThat(sdk.coreFeature.initialized.get()).isTrue()
+    }
+
     // endregion
 
     @Test
     fun `𝕄 do nothing 𝕎 stop() without initialize`() {
         // When
-        Datadog.stop()
+        Datadog.stopInstance()
 
         // Then
         verifyZeroInteractions(appContext.mockInstance)
-    }
-
-    @Test
-    fun `𝕄 clears userInfoProvider 𝕎 setUserInfo() with defaults`(
-        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
-        @StringForgery name: String,
-        @StringForgery(regex = "\\w+@\\w+") email: String
-    ) {
-        // Given
-        val mockCore = mock<DatadogCore>()
-        Datadog.globalSdkCore = mockCore
-
-        // When
-        Datadog.setUserInfo(id, name, email)
-        Datadog.setUserInfo()
-
-        // Then
-        verify(mockCore).setUserInfo(
-            UserInfo(
-                id,
-                name,
-                email
-            )
-        )
-        verify(mockCore).setUserInfo(
-            UserInfo(
-                null,
-                null,
-                null
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 set additional user info 𝕎 addUserExtraInfo() is called`(
-        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
-        @StringForgery name: String,
-        @StringForgery(regex = "\\w+@\\w+") email: String
-    ) {
-        // Given
-        val mockCore = mock<DatadogCore>()
-        Datadog.globalSdkCore = mockCore
-
-        // When
-        Datadog.setUserInfo(id, name, email)
-        Datadog.addUserExtraInfo(
-            mapOf(
-                "key1" to 1,
-                "key2" to "one"
-            )
-        )
-
-        // Then
-        verify(mockCore).setUserInfo(
-            UserInfo(
-                id,
-                name,
-                email
-            )
-        )
-        verify(mockCore).addUserProperties(
-            extraInfo = mapOf(
-                "key1" to 1,
-                "key2" to "one"
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return true 𝕎 initialize(context, credential, , consent) + isInitialized()`() {
-        // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        ).build()
-
-        // When
-        Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
-        val initialized = Datadog.isInitialized()
-
-        // Then
-        assertThat(initialized).isTrue()
-    }
-
-    @Test
-    fun `𝕄 return false 𝕎 isInitialized()`() {
-        // When
-        val initialized = Datadog.isInitialized()
-
-        // Then
-        assertThat(initialized).isFalse()
-    }
-
-    @Test
-    fun `𝕄 stop initialization and log error 𝕎 initialize() { cannot create instance id }`(
-        @Forgery fakeCredentials: Credentials,
-        @Forgery fakeConfiguration: Configuration
-    ) {
-        // Given
-        val mockHashGenerator: HashGenerator = mock()
-        whenever(
-            mockHashGenerator.generate(
-                fakeCredentials.clientToken + fakeConfiguration.coreConfig.site.siteName
-            )
-        ) doReturn null
-        Datadog.hashGenerator = mockHashGenerator
-
-        // When
-        Datadog.initialize(appContext.mockInstance, fakeCredentials, fakeConfiguration, fakeConsent)
-
-        // Then
-        assertThat(Datadog.isInitialized()).isFalse()
-        assertThat(Datadog.globalSdkCore).isInstanceOf(NoOpSdkCore::class.java)
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Datadog.CANNOT_CREATE_SDK_INSTANCE_ID_ERROR
-        )
-    }
-
-    @Test
-    fun `𝕄 clear data in all features 𝕎 clearAllData()`() {
-        // Given
-        val mockCore = mock<DatadogCore>()
-        Datadog.globalSdkCore = mockCore
-
-        // When
-        Datadog.clearAllData()
-
-        // Then
-        verify(mockCore).clearAllData()
     }
 
     companion object {

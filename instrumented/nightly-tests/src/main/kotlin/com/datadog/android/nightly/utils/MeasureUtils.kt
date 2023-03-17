@@ -22,9 +22,9 @@ internal inline fun <reified R> measure(methodName: String, codeBlock: () -> R):
     return result
 }
 
-internal fun measureSdkInitialize(codeBlock: () -> Unit) {
+internal fun <T> measureSdkInitialize(codeBlock: () -> T): T {
     val start = TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis())
-    codeBlock()
+    val result: T = codeBlock()
     val stop = TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis())
 
     val span =
@@ -33,6 +33,7 @@ internal fun measureSdkInitialize(codeBlock: () -> Unit) {
             .withStartTimestamp(start)
             .start()
     span.finish(stop)
+    return result
 }
 
 internal fun measureSetTrackingConsent(codeBlock: () -> Unit) {

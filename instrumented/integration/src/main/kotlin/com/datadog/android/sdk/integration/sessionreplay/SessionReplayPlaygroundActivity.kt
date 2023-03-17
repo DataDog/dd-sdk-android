@@ -10,7 +10,6 @@ import android.app.Activity
 import android.graphics.Point
 import android.os.Build
 import android.os.Bundle
-import android.provider.ContactsContract.Data
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
@@ -30,18 +29,19 @@ import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.Random
 
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
     lateinit var titleTextView: TextView
     lateinit var clickMeButton: Button
 
+    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val credentials = RuntimeConfig.credentials()
         val config = RuntimeConfig.configBuilder().build()
         val trackingConsent = intent.getTrackingConsent()
-        Datadog.initialize(this, credentials, config, trackingConsent)
-        Datadog.setVerbosity(Log.VERBOSE)
+        val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
+        checkNotNull(sdkCore)
+        sdkCore.setVerbosity(Log.VERBOSE)
         val features = mutableListOf(
             // we will use a large long task threshold to make sure we will not have LongTask events
             // noise in our integration tests.
@@ -58,7 +58,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
         )
         features.shuffled(Random(intent.getForgeSeed()))
             .forEach {
-                Datadog.registerFeature(it)
+                sdkCore.registerFeature(it)
             }
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
         setContentView(R.layout.session_replay_layout)

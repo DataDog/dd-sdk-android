@@ -16,14 +16,13 @@ import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.internal.net.DataUploader
 import java.util.LinkedList
 import java.util.Queue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class UploadWorker(
     appContext: Context,
     workerParams: WorkerParameters
@@ -33,38 +32,35 @@ internal class UploadWorker(
 
     @WorkerThread
     override fun doWork(): Result {
-        if (!Datadog.isInitialized()) {
+        // the idea behind upload is the following:
+        // 1. we shuffle features list to randomize initial upload task sequence. It is done to
+        // avoid the possible bottleneck when some feature has big batches which are uploaded
+        // slowly, so that next time other features don't wait and have a chance to go before.
+        // 2. we introduce FIFO queue also to avoid the bottleneck: if some feature batch cannot
+        // be uploaded we put retry task to the end of queue, so that batches of other features
+        // have a chance to go.
+        val instanceName = inputData.getString(DATADOG_INSTANCE_NAME)
+        val sdkCore = Datadog.getInstance(instanceName) as? InternalSdkCore
+        if (sdkCore == null) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                Datadog.MESSAGE_NOT_INITIALIZED
+                MESSAGE_NOT_INITIALIZED
             )
             return Result.success()
         }
 
-        val globalSdkCore: DatadogCore? = (Datadog.globalSdkCore as? DatadogCore)
+        val features = sdkCore.getAllFeatures().mapNotNull { it as? SdkFeature }.shuffled()
 
-        if (globalSdkCore != null) {
-            // the idea behind upload is the following:
-            // 1. we shuffle features list to randomize initial upload task sequence. It is done to
-            // avoid the possible bottleneck when some feature has big batches which are uploaded
-            // slowly, so that next time other features don't wait and have a chance to go before.
-            // 2. we introduce FIFO queue also to avoid the bottleneck: if some feature batch cannot
-            // be uploaded we put retry task to the end of queue, so that batches of other features
-            // have a chance to go.
-            val features =
-                globalSdkCore.getAllFeatures().mapNotNull { it as? SdkFeature }.shuffled()
+        val tasksQueue = LinkedList<UploadNextBatchTask>()
 
-            val tasksQueue = LinkedList<UploadNextBatchTask>()
+        features.forEach {
+            @Suppress("UnsafeThirdPartyFunctionCall") // safe to add
+            tasksQueue.offer(UploadNextBatchTask(tasksQueue, sdkCore, it))
+        }
 
-            features.forEach {
-                @Suppress("UnsafeThirdPartyFunctionCall") // safe to add
-                tasksQueue.offer(UploadNextBatchTask(tasksQueue, globalSdkCore, it))
-            }
-
-            while (!tasksQueue.isEmpty()) {
-                tasksQueue.poll()?.run()
-            }
+        while (!tasksQueue.isEmpty()) {
+            tasksQueue.poll()?.run()
         }
 
         return Result.success()
@@ -76,7 +72,7 @@ internal class UploadWorker(
 
     class UploadNextBatchTask(
         private val taskQueue: Queue<UploadNextBatchTask>,
-        private val datadogCore: DatadogCore,
+        private val sdkCore: InternalSdkCore,
         private val feature: SdkFeature
     ) : Runnable {
 
@@ -85,7 +81,7 @@ internal class UploadWorker(
             // context is unique for each batch query instead of using the same one for all the
             // batches which will be uploaded, because it can change by the time the upload
             // of the next batch is requested.
-            val context = datadogCore.contextProvider?.context ?: return
+            val context = sdkCore.getDatadogContext() ?: return
 
             val storage = feature.storage
             val uploader = feature.uploader
@@ -104,7 +100,7 @@ internal class UploadWorker(
                 storage.confirmBatchRead(batchId) { confirmation ->
                     confirmation.markAsRead(deleteBatch = success)
                     @Suppress("UnsafeThirdPartyFunctionCall") // safe to add
-                    taskQueue.offer(UploadNextBatchTask(taskQueue, datadogCore, feature))
+                    taskQueue.offer(UploadNextBatchTask(taskQueue, sdkCore, feature))
                     lock.countDown()
                 }
             }
@@ -129,5 +125,9 @@ internal class UploadWorker(
 
     companion object {
         const val LOCK_AWAIT_SECONDS = 30L
+
+        const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized."
+
+        const val DATADOG_INSTANCE_NAME = "_dd.sdk.instanceName"
     }
 }

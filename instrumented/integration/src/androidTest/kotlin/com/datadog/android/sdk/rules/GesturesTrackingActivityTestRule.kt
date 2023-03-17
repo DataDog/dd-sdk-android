@@ -15,7 +15,6 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.RuntimeConfig
 
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class GesturesTrackingActivityTestRule<T : Activity>(
     activityClass: Class<T>,
     keepRequests: Boolean = false,
@@ -33,8 +32,7 @@ internal class GesturesTrackingActivityTestRule<T : Activity>(
             config,
             trackingConsent
         )
-        Datadog.registerFeature(
-            // attach the gestures tracker
+        Datadog.getInstance()?.registerFeature( // attach the gestures tracker
             // we will use a large long task threshold to make sure we will not have LongTask events
             // noise in our integration tests.
             RuntimeConfig.rumFeatureBuilder()

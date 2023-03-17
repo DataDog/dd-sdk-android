@@ -59,7 +59,10 @@ internal class SdkCoreRegistry(
         return instances[key]
     }
 
-    internal fun clear() {
+    /**
+     * Clears all registered instances.
+     */
+    fun clear() {
         instances.clear()
     }
 

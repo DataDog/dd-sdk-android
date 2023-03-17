@@ -9,7 +9,6 @@ package com.datadog.android.nightly.rum
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.Datadog
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measureSdkInitialize
@@ -37,7 +36,7 @@ class GdprRumE2ETests {
     @Test
     fun rum_config_consent_pending() {
         val testMethodName = "rum_config_consent_pending"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -53,7 +52,7 @@ class GdprRumE2ETests {
     @Test
     fun rum_config_consent_granted() {
         val testMethodName = "rum_config_consent_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -69,7 +68,7 @@ class GdprRumE2ETests {
     @Test
     fun rum_config_consent_not_granted() {
         val testMethodName = "rum_config_consent_not_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -85,7 +84,7 @@ class GdprRumE2ETests {
     @Test
     fun rum_config_consent_pending_to_granted() {
         val testMethodName = "rum_config_consent_pending_to_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -94,7 +93,7 @@ class GdprRumE2ETests {
         }
         sendAllRumEvents(forge, testMethodName)
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.GRANTED)
+            sdkCore.setTrackingConsent(TrackingConsent.GRANTED)
         }
     }
 
@@ -104,7 +103,7 @@ class GdprRumE2ETests {
     @Test
     fun rum_config_consent_pending_to_not_granted() {
         val testMethodName = "rum_config_consent_pending_to_not_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -113,7 +112,7 @@ class GdprRumE2ETests {
         }
         sendRandomRumEvent(forge, testMethodName)
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.NOT_GRANTED)
+            sdkCore.setTrackingConsent(TrackingConsent.NOT_GRANTED)
         }
     }
 
@@ -123,7 +122,7 @@ class GdprRumE2ETests {
     @Test
     fun rum_config_consent_granted_to_not_granted() {
         val testMethodName = "rum_config_consent_granted_to_not_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -131,7 +130,7 @@ class GdprRumE2ETests {
             )
         }
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.NOT_GRANTED)
+            sdkCore.setTrackingConsent(TrackingConsent.NOT_GRANTED)
         }
         sendRandomRumEvent(forge, testMethodName)
     }
@@ -142,7 +141,7 @@ class GdprRumE2ETests {
     @Test
     fun rum_config_consent_granted_to_pending() {
         val testMethodName = "rum_config_consent_granted_to_pending"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -150,7 +149,7 @@ class GdprRumE2ETests {
             )
         }
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.PENDING)
+            sdkCore.setTrackingConsent(TrackingConsent.PENDING)
         }
         sendRandomRumEvent(forge, testMethodName)
     }
@@ -161,7 +160,7 @@ class GdprRumE2ETests {
     @Test
     fun rum_config_consent_not_granted_to_granted() {
         val testMethodName = "rum_config_consent_not_granted_to_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -169,7 +168,7 @@ class GdprRumE2ETests {
             )
         }
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.GRANTED)
+            sdkCore.setTrackingConsent(TrackingConsent.GRANTED)
         }
         sendAllRumEvents(forge, testMethodName)
     }
@@ -180,7 +179,7 @@ class GdprRumE2ETests {
     @Test
     fun rum_config_consent_not_granted_to_pending() {
         val testMethodName = "rum_config_consent_not_granted_to_pending"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -188,7 +187,7 @@ class GdprRumE2ETests {
             )
         }
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.PENDING)
+            sdkCore.setTrackingConsent(TrackingConsent.PENDING)
         }
         sendRandomRumEvent(forge, testMethodName)
     }

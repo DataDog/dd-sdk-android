@@ -6,8 +6,6 @@
 
 package com.datadog.android.okhttp.trace
 
-import android.util.Log
-import com.datadog.android.Datadog
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.Sampler
@@ -153,9 +151,6 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
     @BeforeEach
     open fun `set up`(forge: Forge) {
-        @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
-        Datadog.setVerbosity(Log.VERBOSE)
-
         whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.asChildOf(null as SpanContext?)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.start()) doReturn mockSpan

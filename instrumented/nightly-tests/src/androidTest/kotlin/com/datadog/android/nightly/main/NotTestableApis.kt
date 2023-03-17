@@ -50,4 +50,5 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor#constructor(Int, com.datadog.android.v2.api.InternalLogger)
  * apiMethodSignature: com.datadog.android.rum.RumFeature#fun enableRumDebugging(Boolean)
  * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setAdditionalConfiguration(Map<String, Any>): Builder
+ * apiMethodSignature: com.datadog.android.Datadog#fun stopInstance(String? = null)
  */

@@ -6,11 +6,14 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.trace.AndroidTracer
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDTracer
+import com.datadog.opentracing.DDTracer.DDSpanBuilder
+import com.datadog.trace.api.Config
+import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
+import java.security.SecureRandom
 
 internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
 
@@ -71,7 +74,8 @@ internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
 
     companion object {
         // TODO remove service call once Tracer gets default value
-        val TEST_TRACER = AndroidTracer.Builder().setServiceName("foobar").build()
+        val TEST_TRACER = object : DDTracer(Config.get(), mock(), SecureRandom()) {
+        }
 
         fun generateSpanBuilder(
             operationName: String,
@@ -81,8 +85,7 @@ internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
             isWithErrorFlag: Boolean,
             tags: Map<String, Any>
         ): DDTracer.DDSpanBuilder {
-            val spanBuilder = TEST_TRACER
-                .buildSpan(operationName)
+            val spanBuilder = (TEST_TRACER.buildSpan(operationName) as DDSpanBuilder)
                 .withSpanType(spanType)
                 .withResourceName(resourceName)
                 .withServiceName(serviceName)

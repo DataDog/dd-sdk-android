@@ -84,7 +84,6 @@ class AndroidTracer internal constructor(
      * Builds a [AndroidTracer] instance.
      *
      */
-    @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
     class Builder
     internal constructor(private val logsHandler: LogHandler) {
 
@@ -95,15 +94,15 @@ class AndroidTracer internal constructor(
         private var serviceName: String = ""
             get() {
                 return field.ifEmpty {
-                    val service = Datadog.globalSdkCore.service
-                    if (service.isEmpty()) {
+                    val service = Datadog.getInstance()?.service
+                    if (service.isNullOrEmpty()) {
                         internalLogger.log(
                             InternalLogger.Level.ERROR,
                             InternalLogger.Target.USER,
                             DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
                         )
                     }
-                    service
+                    service.orEmpty()
                 }
             }
         private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
@@ -112,7 +111,8 @@ class AndroidTracer internal constructor(
         private val globalTags: MutableMap<String, String> = mutableMapOf()
 
         constructor() : this(
-            AndroidSpanLogsHandler(Datadog.globalSdkCore)
+            // TODO RUMM-3105 add sdk core instance in builder
+            AndroidSpanLogsHandler(Datadog.getInstance())
         )
 
         // region Public API
@@ -121,7 +121,8 @@ class AndroidTracer internal constructor(
          * Builds a [AndroidTracer] based on the current state of this Builder.
          */
         fun build(): AndroidTracer {
-            val datadogCore = Datadog.globalSdkCore
+            @Suppress("UnsafeCallOnNullableType") // TODO RUMM-3105 add sdk core instance in builder
+            val datadogCore = Datadog.getInstance()!!
             val tracingFeature = datadogCore.getFeature(Feature.TRACING_FEATURE_NAME)
                 ?.unwrap<TracingFeature>()
             val rumFeature = datadogCore.getFeature(Feature.RUM_FEATURE_NAME)
@@ -252,6 +253,10 @@ class AndroidTracer internal constructor(
     }
 
     // endregion
+
+    override fun toString(): String {
+        return "AndroidTracer/${super.toString()}"
+    }
 
     companion object {
         internal const val TRACING_NOT_ENABLED_ERROR_MESSAGE =

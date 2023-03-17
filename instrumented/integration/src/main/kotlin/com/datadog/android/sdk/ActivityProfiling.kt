@@ -14,11 +14,10 @@ import com.datadog.android.sdk.integration.RuntimeConfig
 
 internal class ActivityProfiling : AppCompatActivity() {
 
-    lateinit var logger: Logger
+    val logger: Logger by lazy { RuntimeConfig.logger() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        logger = RuntimeConfig.logger()
         setContentView(R.layout.main_activity_layout)
     }
 }

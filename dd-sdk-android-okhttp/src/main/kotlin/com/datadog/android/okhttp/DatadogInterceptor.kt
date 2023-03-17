@@ -71,7 +71,6 @@ import java.util.Locale
  *         .build();
  * ```
  */
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 open class DatadogInterceptor
 internal constructor(
     tracedHosts: Map<String, Set<TracingHeaderType>>,
@@ -197,7 +196,7 @@ internal constructor(
 
     /** @inheritdoc */
     override fun intercept(chain: Interceptor.Chain): Response {
-        val rumFeature = Datadog.globalSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+        val rumFeature = Datadog.getInstance()?.getFeature(Feature.RUM_FEATURE_NAME)
         if (rumFeature != null) {
             val request = chain.request()
             val url = request.url().toString()
@@ -227,7 +226,7 @@ internal constructor(
         throwable: Throwable?
     ) {
         super.onRequestIntercepted(request, span, response, throwable)
-        val rumFeature = Datadog.globalSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+        val rumFeature = Datadog.getInstance()?.getFeature(Feature.RUM_FEATURE_NAME)
         if (rumFeature != null) {
             if (response != null) {
                 handleResponse(request, response, span, span != null)
@@ -239,7 +238,7 @@ internal constructor(
 
     /** @inheritdoc */
     override fun canSendSpan(): Boolean {
-        val rumFeature = Datadog.globalSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+        val rumFeature = Datadog.getInstance()?.getFeature(Feature.RUM_FEATURE_NAME)
         return rumFeature == null
     }
 

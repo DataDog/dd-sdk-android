@@ -43,7 +43,7 @@ internal class InternalProxyTest {
         val mockSdkCore = mock<DatadogCore>()
         val mockRumFeatureScope = mock<FeatureScope>()
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        val proxy = _InternalProxy(mockSdkCore, mockSdkCore)
+        val proxy = _InternalProxy(mockSdkCore)
 
         // When
         proxy._telemetry.debug(message)
@@ -67,7 +67,7 @@ internal class InternalProxyTest {
         val mockSdkCore = mock<DatadogCore>()
         val mockRumFeatureScope = mock<FeatureScope>()
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        val proxy = _InternalProxy(mockSdkCore, mockSdkCore)
+        val proxy = _InternalProxy(mockSdkCore)
 
         // When
         proxy._telemetry.error(message, stack, kind)
@@ -92,7 +92,7 @@ internal class InternalProxyTest {
         val mockSdkCore = mock<DatadogCore>()
         val mockRumFeatureScope = mock<FeatureScope>()
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        val proxy = _InternalProxy(mockSdkCore, mockSdkCore)
+        val proxy = _InternalProxy(mockSdkCore)
 
         // When
         proxy._telemetry.error(message, throwable)
@@ -117,7 +117,7 @@ internal class InternalProxyTest {
         val mockCoreFeature = mock<CoreFeature>()
         whenever(mockCoreFeature.packageVersionProvider) doReturn mockAppVersionProvider
         whenever(mockSdkCore.coreFeature) doReturn mockCoreFeature
-        val proxy = _InternalProxy(mockSdkCore, mockSdkCore)
+        val proxy = _InternalProxy(mockSdkCore)
 
         // When
         proxy.setCustomAppVersion(version)

@@ -23,7 +23,6 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -53,7 +52,6 @@ import java.util.UUID
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class RumMonitorBuilderTest {
 
     private lateinit var testedBuilder: RumMonitor.Builder
@@ -191,7 +189,20 @@ internal class RumMonitorBuilderTest {
     fun `𝕄 builds nothing 𝕎 build() and SDK instance doesn't implement InternalSdkCore`() {
         // Given
         val wrongSdkCore = mock<SdkCore>()
-        Datadog::class.java.setStaticValue("globalSdkCore", wrongSdkCore)
+        val registryField = Datadog::class.java.getDeclaredField("registry").apply {
+            isAccessible = true
+        }
+        val registryClearMethod = registryField.type.getMethod(
+            "clear"
+        )
+        val registryRegisterMethod = registryField.type.getMethod(
+            "register",
+            String::class.java,
+            SdkCore::class.java
+        )
+        val registry = registryField.get(null)
+        registryClearMethod.invoke(registry)
+        registryRegisterMethod.invoke(registry, null, wrongSdkCore)
         whenever(wrongSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
 
         // When

@@ -27,6 +27,7 @@ import com.datadog.android.trace.TracingFeature
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.internal.domain.event.SpanEventMapper
 import com.datadog.android.trace.model.SpanEvent
+import com.datadog.android.v2.api.context.UserInfo
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import io.opentracing.util.GlobalTracer
 import org.junit.Rule
@@ -347,6 +348,7 @@ class SpanConfigE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor()
      * apiMethodSignature: com.datadog.android.Datadog#fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
     fun trace_config_set_user_info() {
@@ -364,11 +366,13 @@ class SpanConfigE2ETests {
         )
 
         measure(testMethodName) {
-            Datadog.setUserInfo(
-                id = userId,
-                name = userName,
-                email = userEmail,
-                extraInfo = userExtraInfo
+            Datadog.getInstance()?.setUserInfo(
+                UserInfo(
+                    userId,
+                    userName,
+                    userEmail,
+                    userExtraInfo
+                )
             )
         }
         GlobalTracer.get()

@@ -8,16 +8,13 @@ package com.datadog.android.utils.forge
 
 import android.content.Context
 import androidx.work.Data
-import androidx.work.ForegroundUpdater
 import androidx.work.ListenableWorker
-import androidx.work.ProgressUpdater
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import androidx.work.impl.utils.SerialExecutor
 import androidx.work.impl.utils.taskexecutor.TaskExecutor
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
-import java.util.UUID
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
@@ -28,7 +25,7 @@ class WorkerParametersForgeryFactory : ForgeryFactory<WorkerParameters> {
     override fun getForgery(forge: Forge): WorkerParameters {
         val threadExecutor = Executors.newSingleThreadExecutor()
         return WorkerParameters(
-            forge.getForgery<UUID>(),
+            forge.getForgery(),
             Data.EMPTY,
             forge.aList { anAlphabeticalString() },
             WorkerParameters.RuntimeExtras(),
@@ -58,8 +55,8 @@ class WorkerParametersForgeryFactory : ForgeryFactory<WorkerParameters> {
                     return null
                 }
             },
-            ProgressUpdater { _, _, _ -> forge.getForgery() },
-            ForegroundUpdater { _, _, _ -> forge.getForgery() }
+            { _, _, _ -> forge.getForgery() },
+            { _, _, _ -> forge.getForgery() }
         )
     }
 

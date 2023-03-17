@@ -9,7 +9,6 @@ package com.datadog.android.nightly.trace
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.Datadog
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measureSdkInitialize
@@ -39,7 +38,7 @@ class GdprSpanE2ETests {
     @Test
     fun span_config_consent_pending() {
         val testMethodName = "span_config_consent_pending"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -59,7 +58,7 @@ class GdprSpanE2ETests {
     @Test
     fun span_config_consent_granted() {
         val testMethodName = "span_config_consent_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -79,7 +78,7 @@ class GdprSpanE2ETests {
     @Test
     fun span_config_consent_not_granted() {
         val testMethodName = "span_config_consent_not_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -99,7 +98,7 @@ class GdprSpanE2ETests {
     @Test
     fun span_config_consent_pending_to_granted() {
         val testMethodName = "span_config_consent_pending_to_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -111,7 +110,7 @@ class GdprSpanE2ETests {
             .start()
             .finish()
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.GRANTED)
+            sdkCore.setTrackingConsent(TrackingConsent.GRANTED)
         }
     }
 
@@ -122,7 +121,7 @@ class GdprSpanE2ETests {
     @Test
     fun span_config_consent_pending_to_not_granted() {
         val testMethodName = "span_config_consent_pending_to_not_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -134,7 +133,7 @@ class GdprSpanE2ETests {
             .start()
             .finish()
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.NOT_GRANTED)
+            sdkCore.setTrackingConsent(TrackingConsent.NOT_GRANTED)
         }
     }
 
@@ -145,7 +144,7 @@ class GdprSpanE2ETests {
     @Test
     fun span_config_consent_granted_to_not_granted() {
         val testMethodName = "span_config_consent_granted_to_not_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -153,7 +152,7 @@ class GdprSpanE2ETests {
             )
         }
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.NOT_GRANTED)
+            sdkCore.setTrackingConsent(TrackingConsent.NOT_GRANTED)
         }
         GlobalTracer.get()
             .buildSpan(testMethodName)
@@ -168,7 +167,7 @@ class GdprSpanE2ETests {
     @Test
     fun span_config_consent_not_granted_to_granted() {
         val testMethodName = "span_config_consent_not_granted_to_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -176,7 +175,7 @@ class GdprSpanE2ETests {
             )
         }
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.GRANTED)
+            sdkCore.setTrackingConsent(TrackingConsent.GRANTED)
         }
         GlobalTracer.get()
             .buildSpan(testMethodName)
@@ -191,7 +190,7 @@ class GdprSpanE2ETests {
     @Test
     fun span_config_consent_not_granted_to_pending() {
         val testMethodName = "span_config_consent_not_granted_to_pending"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -199,7 +198,7 @@ class GdprSpanE2ETests {
             )
         }
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.PENDING)
+            sdkCore.setTrackingConsent(TrackingConsent.PENDING)
         }
         GlobalTracer.get()
             .buildSpan(testMethodName)
@@ -214,7 +213,7 @@ class GdprSpanE2ETests {
     @Test
     fun span_config_consent_granted_to_pending() {
         val testMethodName = "span_config_consent_granted_to_pending"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -222,7 +221,7 @@ class GdprSpanE2ETests {
             )
         }
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.PENDING)
+            sdkCore.setTrackingConsent(TrackingConsent.PENDING)
         }
         GlobalTracer.get()
             .buildSpan(testMethodName)

@@ -298,11 +298,11 @@ interface RumMonitor {
          */
         @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
         fun build(): RumMonitor {
-            val datadogCore = Datadog.globalSdkCore as? InternalSdkCore
-            val rumFeature = datadogCore
+            val sdkCore = Datadog.getInstance() as? InternalSdkCore
+            val rumFeature = sdkCore
                 ?.getFeature(Feature.RUM_FEATURE_NAME)
                 ?.unwrap<RumFeature>()
-            return if (datadogCore == null) {
+            return if (sdkCore == null) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
@@ -326,18 +326,18 @@ interface RumMonitor {
             } else {
                 DatadogRumMonitor(
                     applicationId = rumFeature.applicationId,
-                    sdkCore = datadogCore,
+                    sdkCore = sdkCore,
                     samplingRate = samplingRate ?: rumFeature.samplingRate,
                     writer = rumFeature.dataWriter,
                     handler = Handler(Looper.getMainLooper()),
                     telemetryEventHandler = TelemetryEventHandler(
-                        sdkCore = datadogCore,
+                        sdkCore = sdkCore,
                         eventSampler = RateBasedSampler(rumFeature.telemetrySamplingRate.percent()),
                         configurationExtraSampler = RateBasedSampler(
                             rumFeature.telemetryConfigurationSamplingRate.percent()
                         )
                     ),
-                    firstPartyHostHeaderTypeResolver = datadogCore.firstPartyHostResolver,
+                    firstPartyHostHeaderTypeResolver = sdkCore.firstPartyHostResolver,
                     cpuVitalMonitor = rumFeature.cpuVitalMonitor,
                     memoryVitalMonitor = rumFeature.memoryVitalMonitor,
                     frameRateVitalMonitor = rumFeature.frameRateVitalMonitor,

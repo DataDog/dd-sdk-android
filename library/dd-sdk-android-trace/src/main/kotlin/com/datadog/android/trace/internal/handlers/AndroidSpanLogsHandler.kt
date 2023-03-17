@@ -19,7 +19,7 @@ import io.opentracing.log.Fields
 import java.util.concurrent.TimeUnit
 
 internal class AndroidSpanLogsHandler(
-    val sdkCore: SdkCore
+    private val sdkCore: SdkCore?
 ) : LogHandler {
 
     // region Span
@@ -65,7 +65,7 @@ internal class AndroidSpanLogsHandler(
         fields: MutableMap<String, Any?>,
         timestampMicroseconds: Long? = null
     ) {
-        val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
+        val logsFeature = sdkCore?.getFeature(Feature.LOGS_FEATURE_NAME)
         if (logsFeature != null) {
             val message = fields.remove(Fields.MESSAGE)?.toString() ?: DEFAULT_EVENT_MESSAGE
             fields[LogAttributes.DD_TRACE_ID] = span.traceId.toString()

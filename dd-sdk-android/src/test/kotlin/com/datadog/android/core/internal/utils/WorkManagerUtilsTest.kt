@@ -10,12 +10,8 @@ import android.app.Application
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
-import com.datadog.android.Datadog
-import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.UploadWorker
-import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -30,7 +26,6 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -58,21 +53,8 @@ internal class WorkManagerUtilsTest {
     lateinit var mockWorkManager: WorkManagerImpl
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
+    fun `set up`() {
         CoreFeature.disableKronosBackgroundSync = true
-
-        Datadog.initialize(
-            appContext.mockInstance,
-            Credentials(
-                forge.anHexadecimalString(),
-                forge.anAlphabeticalString(),
-                Credentials.NO_VARIANT
-            ),
-            Configuration.Builder(
-                crashReportsEnabled = true
-            ).build(),
-            TrackingConsent.GRANTED
-        )
 
         whenever(mockWorkManager.cancelAllWorkByTag(anyString())) doReturn mock()
         whenever(
@@ -86,7 +68,6 @@ internal class WorkManagerUtilsTest {
 
     @AfterEach
     fun `tear down`() {
-        Datadog.stop()
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", null)
     }
 

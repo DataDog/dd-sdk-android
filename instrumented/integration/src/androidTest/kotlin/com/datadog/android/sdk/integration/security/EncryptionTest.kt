@@ -6,6 +6,7 @@
 
 package com.datadog.android.sdk.integration.security
 
+import android.util.Log
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
@@ -40,7 +41,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.experimental.inv
 
 @MediumTest
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class EncryptionTest {
 
     @get:Rule
@@ -59,25 +59,25 @@ internal class EncryptionTest {
         val configuration = createSdkConfiguration()
         val credentials = createCredentials()
 
-        Datadog.initialize(targetContext, credentials, configuration, TrackingConsent.PENDING)
+        val sdkCore = Datadog.initialize(targetContext, credentials, configuration, TrackingConsent.PENDING)
+        checkNotNull(sdkCore)
+        sdkCore.setVerbosity(Log.VERBOSE)
         val features = mutableListOf(
             RumFeature.Builder(applicationId = forge.anAlphaNumericalString()).build(),
             LogsFeature.Builder().build(),
             TracingFeature.Builder().build(),
             SessionReplayFeature(SessionReplayConfiguration.Builder().build())
         )
-
         features.shuffled(Random(forge.seed)).forEach {
-            Datadog.registerFeature(it)
+            sdkCore.registerFeature(it)
         }
-
         val rumMonitor = RumMonitor.Builder().build()
         GlobalRum.registerIfAbsent(rumMonitor)
 
         val tracer = AndroidTracer.Builder().setBundleWithRumEnabled(true).build()
         GlobalTracer.registerIfAbsent(tracer)
 
-        val logger = Logger.Builder(Datadog.globalSdkCore)
+        val logger = Logger.Builder(sdkCore)
             .setBundleWithRumEnabled(true)
             .setBundleWithTraceEnabled(true)
             .build()
@@ -204,7 +204,7 @@ internal class EncryptionTest {
     }
 
     private fun stopSdk() {
-        invokeDatadogMethod("stop")
+        Datadog.stopInstance()
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
         val isRumRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
         isRumRegistered.set(false)
@@ -214,12 +214,12 @@ internal class EncryptionTest {
         invokeDatadogMethod("flushAndShutdownExecutors")
     }
 
-    private fun invokeDatadogMethod(method: String) {
+    private fun invokeDatadogMethod(method: String, vararg arguments: Any?) {
         val instance = Datadog.javaClass.getDeclaredField("INSTANCE")
         instance.isAccessible = true
         val callMethod = Datadog.javaClass.declaredMethods.first { it.name.startsWith(method) }
         callMethod.isAccessible = true
-        callMethod.invoke(instance.get(null))
+        callMethod.invoke(instance.get(null), *arguments)
     }
 
     // endregion

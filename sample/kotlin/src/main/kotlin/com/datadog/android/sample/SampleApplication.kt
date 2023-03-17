@@ -11,7 +11,6 @@ import android.os.Build
 import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
-import com.datadog.android.Datadog.setUserInfo
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
@@ -44,6 +43,7 @@ import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingFeature
+import com.datadog.android.v2.api.context.UserInfo
 import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
@@ -107,16 +107,16 @@ class SampleApplication : Application() {
     private fun initializeDatadog() {
         val preferences = Preferences.defaultPreferences(this)
 
-        Datadog.initialize(
+        val sdkCore = Datadog.initialize(
             this,
             createDatadogCredentials(),
             createDatadogConfiguration(),
             preferences.getTrackingConsent()
-        )
-        Datadog.setVerbosity(Log.VERBOSE)
+        ) ?: return
+        sdkCore.setVerbosity(Log.VERBOSE)
 
         val rumFeature = createRumFeature()
-        Datadog.registerFeature(rumFeature)
+        sdkCore.registerFeature(rumFeature)
         rumFeature.enableRumDebugging(true)
 
         val sessionReplayConfig = SessionReplayConfiguration.Builder()
@@ -128,32 +128,34 @@ class SampleApplication : Application() {
             .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
             .build()
         val sessionReplayFeature = SessionReplayFeature(sessionReplayConfig)
-        Datadog.registerFeature(sessionReplayFeature)
+        sdkCore.registerFeature(sessionReplayFeature)
 
         val logsFeature = LogsFeature.Builder().apply {
             if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
                 useCustomEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
             }
         }.build()
-        Datadog.registerFeature(logsFeature)
+        sdkCore.registerFeature(logsFeature)
 
         val tracingFeature = TracingFeature.Builder().apply {
             if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
                 useCustomEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
             }
         }.build()
-        Datadog.registerFeature(tracingFeature)
+        sdkCore.registerFeature(tracingFeature)
 
         val ndkCrashReportsFeature = NdkCrashReportsFeature()
-        Datadog.registerFeature(ndkCrashReportsFeature)
+        sdkCore.registerFeature(ndkCrashReportsFeature)
 
-        setUserInfo(
-            preferences.getUserId(),
-            preferences.getUserName(),
-            preferences.getUserEmail(),
-            mapOf(
-                UserFragment.GENDER_KEY to preferences.getUserGender(),
-                UserFragment.AGE_KEY to preferences.getUserAge()
+        sdkCore.setUserInfo(
+            UserInfo(
+                preferences.getUserId(),
+                preferences.getUserName(),
+                preferences.getUserEmail(),
+                mapOf(
+                    UserFragment.GENDER_KEY to preferences.getUserGender(),
+                    UserFragment.AGE_KEY to preferences.getUserAge()
+                )
             )
         )
 
@@ -243,9 +245,11 @@ class SampleApplication : Application() {
         return configBuilder.build()
     }
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "CheckInternal")
     private fun initializeTimber() {
-        val logger = Logger.Builder(Datadog.globalSdkCore)
+        val sdkCore = Datadog.getInstance()
+        checkNotNull(sdkCore)
+        val logger = Logger.Builder(sdkCore)
             .setLoggerName("timber")
             .setNetworkInfoEnabled(true)
             .build()

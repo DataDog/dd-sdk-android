@@ -6,8 +6,6 @@
 
 package com.datadog.android.core.constraints
 
-import android.util.Log
-import com.datadog.android.Datadog
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.times
@@ -41,14 +39,12 @@ import java.util.Locale
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class DatadogDataConstraintsTest {
 
     lateinit var testedConstraints: DataConstraints
 
     @BeforeEach
     fun `set up`() {
-        Datadog.setVerbosity(Log.VERBOSE)
         testedConstraints = DatadogDataConstraints()
     }
 

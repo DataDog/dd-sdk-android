@@ -47,8 +47,8 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
 
     private val androidXLifecycleCallbacks: FragmentLifecycleCallbacks<FragmentActivity>
         by lazy {
-            val rumFeature = Datadog.globalSdkCore
-                .getFeature(Feature.RUM_FEATURE_NAME)
+            val rumFeature = Datadog.getInstance()
+                ?.getFeature(Feature.RUM_FEATURE_NAME)
                 ?.unwrap<RumFeature>()
             if (rumFeature != null) {
                 AndroidXFragmentLifecycleCallbacks(
@@ -67,8 +67,8 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
         }
     private val oreoLifecycleCallbacks: FragmentLifecycleCallbacks<Activity>
         by lazy {
-            val rumFeature = Datadog.globalSdkCore
-                .getFeature(Feature.RUM_FEATURE_NAME)
+            val rumFeature = Datadog.getInstance()
+                ?.getFeature(Feature.RUM_FEATURE_NAME)
                 ?.unwrap<RumFeature>()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && rumFeature != null) {
                 OreoFragmentLifecycleCallbacks(

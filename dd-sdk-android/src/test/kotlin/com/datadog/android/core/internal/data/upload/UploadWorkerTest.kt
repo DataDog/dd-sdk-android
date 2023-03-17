@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.data.upload
 
 import android.content.Context
+import androidx.work.Data
 import androidx.work.ListenableWorker
 import androidx.work.Worker
 import androidx.work.WorkerParameters
@@ -17,10 +18,8 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.NoOpSdkCore
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.net.DataUploader
 import com.datadog.android.v2.core.internal.storage.BatchConfirmation
@@ -36,7 +35,6 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -68,13 +66,12 @@ import java.util.concurrent.Executors
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class UploadWorkerTest {
 
     private lateinit var testedWorker: Worker
 
     @Mock
-    lateinit var mockGlobalSdkCore: DatadogCore
+    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockContextProvider: ContextProvider
@@ -106,19 +103,23 @@ internal class UploadWorkerTest {
     @Forgery
     lateinit var fakeWorkerParameters: WorkerParameters
 
+    @StringForgery
+    lateinit var fakeInstanceName: String
+
     @Forgery
     lateinit var fakeContext: DatadogContext
 
     @BeforeEach
     fun `set up`() {
-        Datadog.initialized.set(true)
-        Datadog.globalSdkCore = mockGlobalSdkCore
-
-        whenever(mockGlobalSdkCore.contextProvider) doReturn mockContextProvider
-        whenever(mockContextProvider.context) doReturn fakeContext
+        whenever(mockSdkCore.getDatadogContext()) doReturn fakeContext
+        Datadog.registry.register(fakeInstanceName, mockSdkCore)
+        val fakeData = Data.Builder()
+            .putString(UploadWorker.DATADOG_INSTANCE_NAME, fakeInstanceName)
+            .build()
+        fakeWorkerParameters = fakeWorkerParameters.copyWith(fakeData)
 
         stubFeatures(
-            mockGlobalSdkCore,
+            mockSdkCore,
             listOf(mockFeatureA, mockFeatureB),
             listOf(mockStorageA, mockStorageB),
             listOf(mockUploaderA, mockUploaderB)
@@ -132,8 +133,7 @@ internal class UploadWorkerTest {
 
     @AfterEach
     fun `tear down`() {
-        Datadog.globalSdkCore = NoOpSdkCore()
-        Datadog.initialized.set(false)
+        Datadog.registry.clear()
     }
 
     // region doWork
@@ -531,33 +531,12 @@ internal class UploadWorkerTest {
             .isEqualTo(ListenableWorker.Result.success())
     }
 
-    @Test
-    fun `𝕄 log error 𝕎 doWork() { SDK is not initialized }`() {
-        // Given
-        Datadog.initialized.set(false)
-
-        // When
-        val result = testedWorker.doWork()
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Datadog.MESSAGE_NOT_INITIALIZED
-        )
-        verifyZeroInteractions(mockFeatureA, mockBatchReaderA, mockUploaderA)
-        verifyZeroInteractions(mockFeatureB, mockBatchReaderB, mockUploaderB)
-
-        assertThat(result)
-            .isEqualTo(ListenableWorker.Result.success())
-    }
-
     // endregion
 
     // region private
 
     private fun stubFeatures(
-        core: DatadogCore,
+        core: InternalSdkCore,
         features: List<SdkFeature>,
         storages: List<Storage>,
         uploaders: List<DataUploader>
@@ -657,6 +636,23 @@ internal class UploadWorkerTest {
         override fun dropAll() {
             fail("we don't expect this one to be called")
         }
+    }
+
+    private fun WorkerParameters.copyWith(
+        inputData: Data
+    ): WorkerParameters {
+        return WorkerParameters(
+            id,
+            inputData,
+            tags,
+            runtimeExtras,
+            runAttemptCount,
+            backgroundExecutor,
+            taskExecutor,
+            workerFactory,
+            progressUpdater,
+            foregroundUpdater
+        )
     }
 
     // endregion

@@ -17,9 +17,9 @@ import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getTrackingConsent
 
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
 
+    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -29,10 +29,11 @@ internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
         val config = RuntimeConfig.configBuilder().build()
         val trackingConsent = intent.getTrackingConsent()
 
-        Datadog.initialize(this, credentials, config, trackingConsent)
-        Datadog.setVerbosity(Log.VERBOSE)
+        val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
+        checkNotNull(sdkCore)
+        sdkCore.setVerbosity(Log.VERBOSE)
 
-        Datadog.registerFeature(
+        sdkCore.registerFeature(
             RuntimeConfig.rumFeatureBuilder()
                 .trackInteractions()
                 .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
