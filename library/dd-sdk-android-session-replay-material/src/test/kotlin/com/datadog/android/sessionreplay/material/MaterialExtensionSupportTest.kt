@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.material
 
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.google.android.material.slider.Slider
+import com.google.android.material.tabs.TabLayout.TabView
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -40,7 +41,7 @@ class MaterialExtensionSupportTest {
     }
 
     @Test
-    fun `M return a SliderMapper W getCustomViewMappers() { for MASK_ALL privacy option }`() {
+    fun `M return a MaskAllSliderMapper W getCustomViewMappers() { for MASK_ALL privacy option }`() {
         // When
         val customMappers = testeMaterialExtensionSupport.getCustomViewMappers()
 
@@ -48,5 +49,27 @@ class MaterialExtensionSupportTest {
         assertThat(customMappers.entries.size).isEqualTo(2)
         assertThat(customMappers[SessionReplayPrivacy.MASK_ALL]?.get(Slider::class.java))
             .isInstanceOf(MaskAllSliderWireframeMapper::class.java)
+    }
+
+    @Test
+    fun `M return a TabMapper W getCustomViewMappers() { for ALLOW_ALL privacy option }`() {
+        // When
+        val customMappers = testeMaterialExtensionSupport.getCustomViewMappers()
+
+        // Then
+        assertThat(customMappers.entries.size).isEqualTo(2)
+        assertThat(customMappers[SessionReplayPrivacy.ALLOW_ALL]?.get(TabView::class.java))
+            .isInstanceOf(TabWireframeMapper::class.java)
+    }
+
+    @Test
+    fun `M return a MaskAllTabMapper W getCustomViewMappers() { for MASK_ALL privacy option }`() {
+        // When
+        val customMappers = testeMaterialExtensionSupport.getCustomViewMappers()
+
+        // Then
+        assertThat(customMappers.entries.size).isEqualTo(2)
+        assertThat(customMappers[SessionReplayPrivacy.MASK_ALL]?.get(TabView::class.java))
+            .isInstanceOf(MaskAllTabWireframeMapper::class.java)
     }
 }

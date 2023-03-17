@@ -33,14 +33,15 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
     }
 
     /**
-     * Takes color and the alpha value and returns a html formatted color.
+     * Takes color and the alpha value and returns a string formatted color in RGBA format
+     * (e.g. #000000FF).
      */
     protected fun colorAndAlphaAsStringHexa(color: Int, alphaAsHexa: Int): String {
         return stringUtils.formatColorAndAlphaAsHexa(color, alphaAsHexa)
     }
 
     /**
-     * Resolves the [View] bounds.These dimensions are already normalized according with
+     * Resolves the [View] bounds. These dimensions are already normalized according with
      * the provided [pixelsDensity]. By Global we mean that the View position will not be relative
      * to its parent but to the Device screen.
      */

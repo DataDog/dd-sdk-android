@@ -11,6 +11,7 @@ import com.datadog.android.sessionreplay.ExtensionSupport
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.google.android.material.slider.Slider
+import com.google.android.material.tabs.TabLayout
 
 /**
  * Android Material extension support implementation to be used in the Session Replay
@@ -22,9 +23,17 @@ class MaterialExtensionSupport : ExtensionSupport {
         Map<SessionReplayPrivacy, Map<Class<*>, WireframeMapper<View, *>>> {
         val maskAllSliderMapper = MaskAllSliderWireframeMapper() as WireframeMapper<View, *>
         val allowAllSliderMapper = SliderWireframeMapper() as WireframeMapper<View, *>
+        val maskAllTabWireframeMapper = MaskAllTabWireframeMapper() as WireframeMapper<View, *>
+        val allowAllTabWireframeMapper = TabWireframeMapper() as WireframeMapper<View, *>
         return mapOf(
-            SessionReplayPrivacy.ALLOW_ALL to mapOf(Slider::class.java to allowAllSliderMapper),
-            SessionReplayPrivacy.MASK_ALL to mapOf(Slider::class.java to maskAllSliderMapper)
+            SessionReplayPrivacy.ALLOW_ALL to mapOf(
+                Slider::class.java to allowAllSliderMapper,
+                TabLayout.TabView::class.java to allowAllTabWireframeMapper
+            ),
+            SessionReplayPrivacy.MASK_ALL to mapOf(
+                Slider::class.java to maskAllSliderMapper,
+                TabLayout.TabView::class.java to maskAllTabWireframeMapper
+            )
         )
     }
 }

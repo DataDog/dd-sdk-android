@@ -26,13 +26,13 @@ internal class TreeViewTraversal(
         view: View,
         systemInformation: SystemInformation
     ): TraversedTreeView {
-        if (viewUtilsInternal.checkIfNotVisible(view) ||
-            viewUtilsInternal.checkIfSystemNoise(view)
+        if (viewUtilsInternal.isNotVisible(view) ||
+            viewUtilsInternal.isSystemNoise(view)
         ) {
             return TraversedTreeView(emptyList(), TraversalStrategy.STOP_AND_DROP_NODE)
         }
 
-        if (viewUtilsInternal.checkIsToolbar(view)) {
+        if (viewUtilsInternal.isToolbar(view)) {
             // skip adding the children and just take a screenshot of the toolbar.
             // It is too complex to de - structure this in multiple wireframes
             // and we cannot actually get all the details here.
@@ -52,7 +52,7 @@ internal class TreeViewTraversal(
         if (exhaustiveTypeMapper != null) {
             traversalStrategy = TraversalStrategy.STOP_AND_RETURN_NODE
             resolvedWireframes = exhaustiveTypeMapper.map(view, systemInformation)
-        } else if (checkIsDecorView(view)) {
+        } else if (isDecorView(view)) {
             traversalStrategy = TraversalStrategy.TRAVERSE_ALL_CHILDREN
             resolvedWireframes = decorViewMapper.map(view, systemInformation)
         } else {
@@ -63,7 +63,7 @@ internal class TreeViewTraversal(
         return TraversedTreeView(resolvedWireframes, traversalStrategy)
     }
 
-    private fun checkIsDecorView(view: View): Boolean {
+    private fun isDecorView(view: View): Boolean {
         val viewParent = view.parent
         return viewParent == null || !View::class.java.isAssignableFrom(viewParent::class.java)
     }

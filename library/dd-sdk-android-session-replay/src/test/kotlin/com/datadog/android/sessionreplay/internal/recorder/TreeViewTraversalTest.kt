@@ -61,8 +61,8 @@ internal class TreeViewTraversalTest {
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockViewUtilsInternal.checkIfNotVisible(any())).thenReturn(false)
-        whenever(mockViewUtilsInternal.checkIfSystemNoise(any())).thenReturn(false)
+        whenever(mockViewUtilsInternal.isNotVisible(any())).thenReturn(false)
+        whenever(mockViewUtilsInternal.isSystemNoise(any())).thenReturn(false)
         testedTreeViewTraversal = TreeViewTraversal(
             emptyList(),
             mockViewMapper,
@@ -211,7 +211,7 @@ internal class TreeViewTraversalTest {
     fun `M return STOP_AND_DROP_NODE W traverse(){ any view is not visible }`(forge: Forge) {
         // Given
         val fakeRoot = forge.aMockView<View>().apply {
-            whenever(mockViewUtilsInternal.checkIfNotVisible(this)).thenReturn(true)
+            whenever(mockViewUtilsInternal.isNotVisible(this)).thenReturn(true)
         }
 
         // When
@@ -231,7 +231,7 @@ internal class TreeViewTraversalTest {
     fun `M return STOP_AND_DROP_NODE W traverse(){ any view is system noise }`(forge: Forge) {
         // Given
         val fakeRoot = forge.aMockView<View>().apply {
-            whenever(mockViewUtilsInternal.checkIfSystemNoise(this)).thenReturn(true)
+            whenever(mockViewUtilsInternal.isSystemNoise(this)).thenReturn(true)
         }
 
         // When
@@ -253,7 +253,7 @@ internal class TreeViewTraversalTest {
     ) {
         // Given
         val mockToolBar: View = forge.aMockView<View>().apply {
-            whenever(mockViewUtilsInternal.checkIsToolbar(this)).thenReturn(true)
+            whenever(mockViewUtilsInternal.isToolbar(this)).thenReturn(true)
         }
         val fakeScreenShotWireframes: List<MobileSegment.Wireframe> = forge.aList { getForgery() }
         val mockScreenshotWireframeMapper: WireframeMapper<View, *> = mock {
