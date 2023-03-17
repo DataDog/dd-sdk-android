@@ -7,9 +7,11 @@
 package com.datadog.android.core.internal.data.upload
 
 import android.content.Context
+import androidx.work.Data
 import androidx.work.ListenableWorker
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import com.datadog.android.Datadog
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -40,6 +42,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -100,12 +103,20 @@ internal class UploadWorkerTest {
     @Forgery
     lateinit var fakeWorkerParameters: WorkerParameters
 
+    @StringForgery
+    lateinit var fakeInstanceName: String
+
     @Forgery
     lateinit var fakeContext: DatadogContext
 
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.getDatadogContext()) doReturn fakeContext
+        Datadog.registry.register(fakeInstanceName, mockSdkCore)
+        val fakeData = Data.Builder()
+            .putString(UploadWorker.DATADOG_INSTANCE_NAME, fakeInstanceName)
+            .build()
+        fakeWorkerParameters = fakeWorkerParameters.copyWith(fakeData)
 
         stubFeatures(
             mockSdkCore,
@@ -115,10 +126,14 @@ internal class UploadWorkerTest {
         )
 
         testedWorker = UploadWorker(
-            mockSdkCore,
             appContext.mockInstance,
             fakeWorkerParameters
         )
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        Datadog.registry.clear()
     }
 
     // region doWork
@@ -621,6 +636,23 @@ internal class UploadWorkerTest {
         override fun dropAll() {
             fail("we don't expect this one to be called")
         }
+    }
+
+    private fun WorkerParameters.copyWith(
+        inputData: Data
+    ): WorkerParameters {
+        return WorkerParameters(
+            id,
+            inputData,
+            tags,
+            runtimeExtras,
+            runAttemptCount,
+            backgroundExecutor,
+            taskExecutor,
+            workerFactory,
+            progressUpdater,
+            foregroundUpdater
+        )
     }
 
     // endregion

@@ -10,8 +10,11 @@ import android.content.Context
 import androidx.annotation.WorkerThread
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import com.datadog.android.Datadog
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.net.UploadStatus
+import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.internal.net.DataUploader
@@ -21,7 +24,6 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 internal class UploadWorker(
-    private val sdkCore: InternalSdkCore,
     appContext: Context,
     workerParams: WorkerParameters
 ) : Worker(appContext, workerParams) {
@@ -37,6 +39,17 @@ internal class UploadWorker(
         // 2. we introduce FIFO queue also to avoid the bottleneck: if some feature batch cannot
         // be uploaded we put retry task to the end of queue, so that batches of other features
         // have a chance to go.
+        val instanceName = inputData.getString(DATADOG_INSTANCE_NAME)
+        val sdkCore = Datadog.getInstance(instanceName) as? InternalSdkCore
+        if (sdkCore == null) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                MESSAGE_NOT_INITIALIZED
+            )
+            return Result.success()
+        }
+
         val features = sdkCore.getAllFeatures().mapNotNull { it as? SdkFeature }.shuffled()
 
         val tasksQueue = LinkedList<UploadNextBatchTask>()
@@ -112,5 +125,9 @@ internal class UploadWorker(
 
     companion object {
         const val LOCK_AWAIT_SECONDS = 30L
+
+        const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized."
+
+        const val DATADOG_INSTANCE_NAME = "_dd.sdk.instanceName"
     }
 }

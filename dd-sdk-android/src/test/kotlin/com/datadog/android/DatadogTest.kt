@@ -84,7 +84,7 @@ internal class DatadogTest {
     @AfterEach
     fun `tear down`() {
         Datadog.hashGenerator = Sha256HashGenerator()
-        Datadog.stop()
+        Datadog.stopInstance()
         Datadog.registry.clear()
     }
 
@@ -439,7 +439,7 @@ internal class DatadogTest {
     @Test
     fun `𝕄 do nothing 𝕎 stop() without initialize`() {
         // When
-        Datadog.stop()
+        Datadog.stopInstance()
 
         // Then
         verifyZeroInteractions(appContext.mockInstance)

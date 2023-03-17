@@ -227,7 +227,6 @@ class AndroidTracer internal constructor(
             val propagationStyles = tracingHeaderTypes.joinToString(",")
             properties.setProperty(Config.PROPAGATION_STYLE_EXTRACT, propagationStyles)
             properties.setProperty(Config.PROPAGATION_STYLE_INJECT, propagationStyles)
-            properties.setProperty(Config.PRIORITY_SAMPLING, "false")
 
             return properties
         }

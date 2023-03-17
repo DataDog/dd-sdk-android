@@ -145,11 +145,6 @@ object Datadog {
 
     // region Global methods
 
-    // Stop all Datadog work (for test purposes).
-    internal fun stop() {
-        stopInstance(null)
-    }
-
     // Executes all the pending queues in the upload/persistence executors.
     // Tries to send all the granted data for each feature and then clears the folders and shuts
     // down the persistence and the upload executors.

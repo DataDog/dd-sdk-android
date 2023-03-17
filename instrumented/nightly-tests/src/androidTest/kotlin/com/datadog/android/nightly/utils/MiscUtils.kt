@@ -76,12 +76,7 @@ fun sendRandomActionOutcomeEvent(forge: Forge) {
 }
 
 fun stopSdk() {
-    // Call Datadog.stop()
-    val instance = Datadog.javaClass.getDeclaredField("INSTANCE")
-    instance.isAccessible = true
-    val method = Datadog.javaClass.declaredMethods.first { it.name.contains("stop") }
-    method.isAccessible = true
-    method.invoke(instance.get(null))
+    Datadog.stopInstance()
 
     // Reset Global states
     GlobalTracer::class.java.setStaticValue("isRegistered", false)

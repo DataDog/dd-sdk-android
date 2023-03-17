@@ -102,13 +102,6 @@ internal open class MockServerActivityTestRule<T : Activity>(
     override fun afterActivityFinished() {
         mockWebServer.shutdown()
 
-        val instance = Datadog.javaClass.getDeclaredField("INSTANCE")
-        instance.isAccessible = true
-
-        val method = Datadog.javaClass.declaredMethods.first { it.name.contains("stop") }
-        method.isAccessible = true
-        method.invoke(instance.get(null))
-
         InstrumentationRegistry
             .getInstrumentation()
             .targetContext
@@ -145,13 +138,13 @@ internal open class MockServerActivityTestRule<T : Activity>(
     // region MockServerRule
 
     fun getRequests(): List<HandledRequest> {
-//        Log.i(TAG, "Caught ${requests.size} requests")
+        Log.i(TAG, "Caught ${requests.size} requests")
         return requests.toList()
     }
 
     fun getRequests(endpoint: String): List<HandledRequest> {
         val filteredRequests = requests.filter { it.url?.startsWith(endpoint) ?: false }.toList()
-//        Log.i(TAG, "Caught ${filteredRequests.size} requests for endpoint: $endpoint")
+        Log.i(TAG, "Caught ${filteredRequests.size} requests for endpoint: $endpoint")
         return filteredRequests
     }
 

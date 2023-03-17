@@ -122,7 +122,7 @@ internal class DatadogExceptionHandlerTest {
     fun `tear down`() {
         Thread.setDefaultUncaughtExceptionHandler(originalHandler)
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", null)
-        Datadog.stop()
+        Datadog.stopInstance()
     }
 
     // region Forward to Logs

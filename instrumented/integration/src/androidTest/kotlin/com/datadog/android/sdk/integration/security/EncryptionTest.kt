@@ -204,7 +204,7 @@ internal class EncryptionTest {
     }
 
     private fun stopSdk() {
-        invokeDatadogMethod("stop")
+        Datadog.stopInstance()
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
         val isRumRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
         isRumRegistered.set(false)
@@ -214,12 +214,12 @@ internal class EncryptionTest {
         invokeDatadogMethod("flushAndShutdownExecutors")
     }
 
-    private fun invokeDatadogMethod(method: String) {
+    private fun invokeDatadogMethod(method: String, vararg arguments: Any?) {
         val instance = Datadog.javaClass.getDeclaredField("INSTANCE")
         instance.isAccessible = true
         val callMethod = Datadog.javaClass.declaredMethods.first { it.name.startsWith(method) }
         callMethod.isAccessible = true
-        callMethod.invoke(instance.get(null))
+        callMethod.invoke(instance.get(null), *arguments)
     }
 
     // endregion
