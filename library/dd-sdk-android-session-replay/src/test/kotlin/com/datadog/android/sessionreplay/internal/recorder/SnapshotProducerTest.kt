@@ -8,14 +8,11 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.widget.Toolbar
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.mapper.AllowAllWireframeMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewScreenshotWireframeMapper
-import com.datadog.android.sessionreplay.internal.utils.copy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -46,124 +43,155 @@ internal class SnapshotProducerTest {
     lateinit var fakeSystemInformation: SystemInformation
 
     @Mock
-    lateinit var mockViewScreenshotWireframeMapper: ViewScreenshotWireframeMapper
-
-    @Mock
-    lateinit var mockGenericWireframeMapper: AllowAllWireframeMapper
+    lateinit var mockTreeViewTraversal: TreeViewTraversal
 
     @Forgery
     lateinit var fakeViewWireframes: List<MobileSegment.Wireframe>
 
-    @Forgery
-    lateinit var fakeShapeScreenShotWireframes: List<MobileSegment.Wireframe.ShapeWireframe>
-
-    @Mock
-    lateinit var mockViewUtilsInternal: ViewUtilsInternal
-
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        // making sure the root has shapeStyle
-        fakeViewWireframes = forge.aList {
-            getForgery<MobileSegment.Wireframe>().copy(shapeStyle = getForgery())
-        }
-        fakeShapeScreenShotWireframes = forge.aList {
-            getForgery<MobileSegment.Wireframe.ShapeWireframe>()
-                .copy(shapeStyle = getForgery())
-        }
-        whenever(mockViewScreenshotWireframeMapper.map(any(), eq(fakeSystemInformation)))
-            .thenReturn(fakeShapeScreenShotWireframes)
-        whenever(mockGenericWireframeMapper.map(any(), eq(fakeSystemInformation)))
-            .thenReturn(fakeViewWireframes)
-        whenever(mockGenericWireframeMapper.imageMapper)
-            .thenReturn(mockViewScreenshotWireframeMapper)
-        whenever(mockViewUtilsInternal.checkIfNotVisible(any())).thenReturn(false)
-        whenever(mockViewUtilsInternal.checkIfSystemNoise(any())).thenReturn(false)
-        testedSnapshotProducer = SnapshotProducer(
-            mockGenericWireframeMapper,
-            mockViewUtilsInternal
+    fun `set up`() {
+        testedSnapshotProducer = SnapshotProducer(mockTreeViewTraversal)
+    }
+
+    @Test
+    fun `M produce a null Node W produce(){ STOP_AND_DROP strategy }`() {
+        // Given
+        val mockRoot: View = mock()
+        val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
+            fakeViewWireframes,
+            TreeViewTraversal.TraversalStrategy.STOP_AND_DROP_NODE
         )
-    }
-
-    // region Default Tests
-
-    @Test
-    fun `M produce a tree of Nodes W produce() { single view }`(forge: Forge) {
-        // Given
-        val fakeRoot = forge.aMockView<View>()
+        whenever(mockTreeViewTraversal.traverse(mockRoot, fakeSystemInformation))
+            .thenReturn(fakeTraversedTreeView)
 
         // When
-        val snapshot = testedSnapshotProducer.produce(fakeRoot, fakeSystemInformation)
+        val snapshot = testedSnapshotProducer.produce(mockRoot, fakeSystemInformation)
 
         // Then
-        val expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
-        assertThat(snapshot).isEqualTo(expectedSnapshot).usingRecursiveComparison()
+        assertThat(snapshot).isNull()
     }
 
     @Test
-    fun `M produce a tree of Nodes W produce() { view tree }`(forge: Forge) {
-        // Given
-        val fakeRoot = forge.aMockViewWithChildren(2, 0, 2)
-
-        // When
-        val snapshot = testedSnapshotProducer.produce(fakeRoot, fakeSystemInformation)
-
-        // Then
-        val expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
-        assertThat(snapshot).isEqualTo(expectedSnapshot).usingRecursiveComparison()
-    }
-
-    // endregion
-
-    // region visibility tests
-
-    @Test
-    fun `M return null W produce() { any view is not visible }`(forge: Forge) {
-        // Given
-        val fakeRoot = forge
-            .aMockViewWithChildren(2, 0, 2)
-            .apply { whenever(mockViewUtilsInternal.checkIfNotVisible(this)).thenReturn(true) }
-
-        // Then
-        assertThat(testedSnapshotProducer.produce(fakeRoot, fakeSystemInformation)).isNull()
-    }
-
-    // endregion
-
-    // region System Noise
-
-    @Test
-    fun `M return null W produce() { any view is system noise }`(forge: Forge) {
-        // Given
-        val fakeRoot = forge
-            .aMockViewWithChildren(2, 0, 2)
-            .apply { whenever(mockViewUtilsInternal.checkIfSystemNoise(this)).thenReturn(true) }
-
-        // Then
-        assertThat(testedSnapshotProducer.produce(fakeRoot, fakeSystemInformation)).isNull()
-    }
-
-    // endregion
-
-    // region Toolbar
-
-    @Test
-    fun `M resolve a Node with screenshot with border W produce() { view is Toolbar }`(
+    fun `M produce a single Node W produce() { leaf view, STOP_AND_RETURN strategy }`(
         forge: Forge
     ) {
         // Given
-        val mockToolBar: Toolbar = forge.aMockView<Toolbar>().apply {
-            whenever(mockViewUtilsInternal.checkIsToolbar(this)).thenReturn(true)
-        }
+        val fakeRoot = forge.aMockView<View>()
+        val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
+            fakeViewWireframes,
+            TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE
+        )
+        whenever(mockTreeViewTraversal.traverse(fakeRoot, fakeSystemInformation))
+            .thenReturn(fakeTraversedTreeView)
+        val expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
 
         // When
-        val snapshot = testedSnapshotProducer.produce(mockToolBar, fakeSystemInformation)
+        val snapshot = testedSnapshotProducer.produce(fakeRoot, fakeSystemInformation)
 
         // Then
-        val shapeWireframes = snapshot?.wireframes
-        assertThat(shapeWireframes).isEqualTo(fakeShapeScreenShotWireframes)
+        assertThat(snapshot).isEqualTo(expectedSnapshot)
     }
 
-    // endregion
+    @Test
+    fun `M produce a single Node W produce() { tree view, STOP_AND_RETURN strategy }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeRoot = forge.aMockViewWithChildren(2, 0, 2)
+        val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
+            fakeViewWireframes,
+            TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE
+        )
+        whenever(mockTreeViewTraversal.traverse(fakeRoot, fakeSystemInformation))
+            .thenReturn(fakeTraversedTreeView)
+        val expectedSnapshot = Node(wireframes = fakeViewWireframes)
+
+        // When
+        val snapshot = testedSnapshotProducer.produce(fakeRoot, fakeSystemInformation)
+
+        // Then
+        assertThat(snapshot).isEqualTo(expectedSnapshot)
+    }
+
+    @Test
+    fun `M produce a tree of Nodes W produce(){ tree view, TRAVERSE_ALL_CHILDREN strategy  }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeRoot = forge.aMockViewWithChildren(2, 0, 2)
+        val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
+            fakeViewWireframes,
+            TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
+        )
+        whenever(mockTreeViewTraversal.traverse(any(), eq(fakeSystemInformation)))
+            .thenReturn(fakeTraversedTreeView)
+        val expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
+
+        // When
+        val snapshot = testedSnapshotProducer.produce(fakeRoot, fakeSystemInformation)
+
+        // Then
+        assertThat(snapshot).isEqualTo(expectedSnapshot)
+    }
+
+    @Test
+    fun `M produce a tree of Nodes W produce(){ tree view, TRAVERSE_ALL and STOP strategies  }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeRoot = forge.aMockViewWithChildren(2, 0, 2)
+        val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
+            fakeViewWireframes,
+            TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
+        )
+        whenever(mockTreeViewTraversal.traverse(any(), eq(fakeSystemInformation)))
+            .thenReturn(fakeTraversedTreeView)
+            .thenReturn(
+                fakeTraversedTreeView.copy(
+                    nextActionStrategy =
+                    TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE
+                )
+            )
+        var expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
+        expectedSnapshot = expectedSnapshot.copy(
+            children = expectedSnapshot.children.map {
+                it.copy(children = emptyList())
+            }
+        )
+
+        // When
+        val snapshot = testedSnapshotProducer.produce(fakeRoot, fakeSystemInformation)
+
+        // Then
+        assertThat(snapshot).isEqualTo(expectedSnapshot)
+    }
+
+    @Test
+    fun `M produce a tree of Nodes W produce(){ tree view, TRAVERSE_ALL and DROP strategies  }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeRoot = forge.aMockViewWithChildren(2, 0, 2)
+        val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
+            fakeViewWireframes,
+            TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
+        )
+        whenever(mockTreeViewTraversal.traverse(any(), eq(fakeSystemInformation)))
+            .thenReturn(fakeTraversedTreeView)
+            .thenReturn(
+                fakeTraversedTreeView.copy(
+                    nextActionStrategy =
+                    TreeViewTraversal.TraversalStrategy.STOP_AND_DROP_NODE
+                )
+            )
+        val expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
+            .copy(children = emptyList())
+        // When
+        val snapshot = testedSnapshotProducer.produce(fakeRoot, fakeSystemInformation)
+
+        // Then
+        assertThat(snapshot).isEqualTo(expectedSnapshot)
+    }
 
     // region Internals
 

@@ -1,0 +1,279 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.sessionreplay.internal.recorder
+
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.CheckedTextView
+import android.widget.CompoundButton
+import android.widget.ImageView
+import android.widget.RadioButton
+import android.widget.TextView
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.model.MobileSegment
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
+
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(ForgeConfigurator::class)
+internal class TreeViewTraversalTest {
+
+    lateinit var testedTreeViewTraversal: TreeViewTraversal
+
+    @Forgery
+    lateinit var fakeSystemInformation: SystemInformation
+
+    @Mock
+    lateinit var mockViewMapper: ViewWireframeMapper
+
+    @Mock
+    lateinit var mockDecorViewMapper: DecorViewMapper
+
+    @Mock
+    lateinit var mockViewUtilsInternal: ViewUtilsInternal
+
+    @BeforeEach
+    fun `set up`() {
+        whenever(mockViewUtilsInternal.checkIfNotVisible(any())).thenReturn(false)
+        whenever(mockViewUtilsInternal.checkIfSystemNoise(any())).thenReturn(false)
+        testedTreeViewTraversal = TreeViewTraversal(
+            emptyList(),
+            mockViewMapper,
+            mockDecorViewMapper,
+            mockViewUtilsInternal
+        )
+    }
+
+    // region traverse and mapper
+
+    @Test
+    fun `M stop traversing W traverse { mapper for view type provided }`(forge: Forge) {
+        // Given
+        val fakeViewMappedWireframes: List<MobileSegment.Wireframe> = forge.aList { getForgery() }
+        val mockViews: List<View> = listOf(
+            forge.aMockView<RadioButton>(),
+            forge.aMockView<CheckedTextView>(),
+            forge.aMockView<Button>(),
+            forge.aMockView<CompoundButton>(),
+            forge.aMockView<TextView>()
+        )
+        val fakeTypes: List<Class<*>> = mockViews.map { it::class.java }
+        val fakeTypeToMapperMap: Map<Class<*>, WireframeMapper<View, *>> = fakeTypes
+            .associateWith { mock() }
+        val fakeTypeMapperWrappers = fakeTypes.map {
+            val mapper = fakeTypeToMapperMap[it]!!
+            MapperTypeWrapper(it, mapper)
+        }
+        val mockView = forge.anElementFrom(mockViews)
+        whenever(fakeTypeToMapperMap[mockView::class.java]!!.map(mockView, fakeSystemInformation))
+            .thenReturn(fakeViewMappedWireframes)
+        testedTreeViewTraversal = TreeViewTraversal(
+            fakeTypeMapperWrappers,
+            mockViewMapper,
+            mockDecorViewMapper,
+            mockViewUtilsInternal
+        )
+
+        // When
+        val traversedTreeView = testedTreeViewTraversal.traverse(mockView, fakeSystemInformation)
+
+        // Then
+        assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
+        assertThat(traversedTreeView.nextActionStrategy)
+            .isEqualTo(TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE)
+    }
+
+    @Test
+    fun `M default to view mapper and continue W traverse { mapper for view type not provided }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewMappedWireframes: List<MobileSegment.Wireframe.ShapeWireframe> =
+            forge.aList { getForgery() }
+        val mockViews: List<View> = listOf(
+            forge.aMockView<RadioButton>(),
+            forge.aMockView<CheckedTextView>(),
+            forge.aMockView<Button>(),
+            forge.aMockView<CompoundButton>(),
+            forge.aMockView<TextView>()
+        )
+        val mockView = forge.anElementFrom(mockViews).apply {
+            whenever(this.parent)
+                .thenReturn(mock<ViewGroup>())
+        }
+        whenever(mockViewMapper.map(mockView, fakeSystemInformation))
+            .thenReturn(fakeViewMappedWireframes)
+        testedTreeViewTraversal = TreeViewTraversal(
+            emptyList(),
+            mockViewMapper,
+            mockDecorViewMapper,
+            mockViewUtilsInternal
+        )
+
+        // When
+        val traversedTreeView = testedTreeViewTraversal.traverse(mockView, fakeSystemInformation)
+
+        // Then
+        assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
+        assertThat(traversedTreeView.nextActionStrategy)
+            .isEqualTo(TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN)
+    }
+
+    @Test
+    fun `M use the decor view mapper and continue W traverse { view with no View type parent }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewMappedWireframes: List<MobileSegment.Wireframe.ShapeWireframe> =
+            forge.aList { getForgery() }
+        val mockView = forge.aMockView<View>().apply {
+            whenever(this.parent).thenReturn(mock())
+        }
+        whenever(mockDecorViewMapper.map(mockView, fakeSystemInformation))
+            .thenReturn(fakeViewMappedWireframes)
+        testedTreeViewTraversal = TreeViewTraversal(
+            emptyList(),
+            mockViewMapper,
+            mockDecorViewMapper,
+            mockViewUtilsInternal
+        )
+
+        // When
+        val traversedTreeView = testedTreeViewTraversal.traverse(mockView, fakeSystemInformation)
+
+        // Then
+        assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
+        assertThat(traversedTreeView.nextActionStrategy)
+            .isEqualTo(TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN)
+    }
+
+    @Test
+    fun `M use the decor view mapper and continue W traverse { view has no parent }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewMappedWireframes: List<MobileSegment.Wireframe.ShapeWireframe> =
+            forge.aList { getForgery() }
+        val mockView = forge.aMockView<View>().apply {
+            whenever(this.parent).thenReturn(null)
+        }
+
+        whenever(mockDecorViewMapper.map(mockView, fakeSystemInformation))
+            .thenReturn(fakeViewMappedWireframes)
+        testedTreeViewTraversal = TreeViewTraversal(
+            emptyList(),
+            mockViewMapper,
+            mockDecorViewMapper,
+            mockViewUtilsInternal
+        )
+
+        // When
+        val traversedTreeView = testedTreeViewTraversal.traverse(mockView, fakeSystemInformation)
+
+        // Then
+        assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
+        assertThat(traversedTreeView.nextActionStrategy)
+            .isEqualTo(TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN)
+    }
+
+    // endregion
+
+    // region visibility tests
+
+    @Test
+    fun `M return STOP_AND_DROP_NODE W traverse(){ any view is not visible }`(forge: Forge) {
+        // Given
+        val fakeRoot = forge.aMockView<View>().apply {
+            whenever(mockViewUtilsInternal.checkIfNotVisible(this)).thenReturn(true)
+        }
+
+        // When
+        val traversedTreeView = testedTreeViewTraversal.traverse(fakeRoot, fakeSystemInformation)
+
+        // Then
+        assertThat(traversedTreeView.mappedWireframes).isEmpty()
+        assertThat(traversedTreeView.nextActionStrategy)
+            .isEqualTo(TreeViewTraversal.TraversalStrategy.STOP_AND_DROP_NODE)
+    }
+
+    // endregion
+
+    // region System Noise
+
+    @Test
+    fun `M return STOP_AND_DROP_NODE W traverse(){ any view is system noise }`(forge: Forge) {
+        // Given
+        val fakeRoot = forge.aMockView<View>().apply {
+            whenever(mockViewUtilsInternal.checkIfSystemNoise(this)).thenReturn(true)
+        }
+
+        // When
+        val traversedTreeView = testedTreeViewTraversal.traverse(fakeRoot, fakeSystemInformation)
+
+        // Then
+        assertThat(traversedTreeView.mappedWireframes).isEmpty()
+        assertThat(traversedTreeView.nextActionStrategy)
+            .isEqualTo(TreeViewTraversal.TraversalStrategy.STOP_AND_DROP_NODE)
+    }
+
+    // endregion
+
+    // region Toolbar
+
+    @Test
+    fun `M resolve a Node with screenshot with border W traverse() { view is Toolbar }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockToolBar: View = forge.aMockView<View>().apply {
+            whenever(mockViewUtilsInternal.checkIsToolbar(this)).thenReturn(true)
+        }
+        val fakeScreenShotWireframes: List<MobileSegment.Wireframe> = forge.aList { getForgery() }
+        val mockScreenshotWireframeMapper: WireframeMapper<View, *> = mock {
+            whenever(it.map(mockToolBar, fakeSystemInformation)).thenReturn(fakeScreenShotWireframes)
+        }
+        val fakeMappers =
+            listOf(MapperTypeWrapper(ImageView::class.java, mockScreenshotWireframeMapper))
+        testedTreeViewTraversal = TreeViewTraversal(
+            fakeMappers,
+            mockViewMapper,
+            mockDecorViewMapper,
+            mockViewUtilsInternal
+        )
+
+        // When
+        val traversedTreeView = testedTreeViewTraversal.traverse(mockToolBar, fakeSystemInformation)
+
+        // Then
+        assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeScreenShotWireframes)
+        assertThat(traversedTreeView.nextActionStrategy)
+            .isEqualTo(TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE)
+    }
+}
