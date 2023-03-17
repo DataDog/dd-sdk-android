@@ -15,7 +15,6 @@ import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.google.gson.JsonArray
@@ -26,6 +25,8 @@ import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.firstValue
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.ArgumentCaptor
 import org.mockito.Captor
@@ -50,6 +52,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.io.File
 import java.util.Locale
+import java.util.Random
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 
@@ -104,9 +107,6 @@ internal class DatadogNdkCrashHandlerTest {
     @TempDir
     lateinit var tempDir: File
 
-    @Forgery
-    lateinit var fakeDatadogContext: DatadogContext
-
     @BeforeEach
     fun `set up`() {
         fakeNdkCacheDir = File(tempDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME)
@@ -140,110 +140,148 @@ internal class DatadogNdkCrashHandlerTest {
         )
     }
 
+    // region prepareData
+
     @Test
     fun `𝕄 read crash data 𝕎 prepareData()`(
-        @StringForgery crashData: String
+        @StringForgery crashDataStr: String,
+        @Forgery fakeCrashData: NdkCrashLog
     ) {
         // Given
         fakeNdkCacheDir.mkdirs()
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.CRASH_DATA_FILE_NAME).writeText(crashData)
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.CRASH_DATA_FILE_NAME).writeText(crashDataStr)
+        whenever(mockNdkCrashLogDeserializer.deserialize(crashDataStr)) doReturn fakeCrashData
 
         // When
         testedHandler.prepareData()
 
         // Then
-        assertThat(testedHandler.lastSerializedNdkCrashLog).isNull()
+        assertThat(testedHandler.lastNdkCrashLog).isNull()
         verify(mockExecutorService).submit(captureRunnable.capture())
         captureRunnable.firstValue.run()
-        assertThat(testedHandler.lastSerializedNdkCrashLog)
-            .isEqualTo(crashData)
+        assertThat(testedHandler.lastNdkCrashLog)
+            .isEqualTo(fakeCrashData)
     }
 
     @Test
     fun `𝕄 read last RUM View event 𝕎 prepareData()`(
-        @StringForgery viewEvent: String
+        @StringForgery viewEventStr: String,
+        forge: Forge
     ) {
         // Given
         fakeNdkCacheDir.mkdirs()
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(viewEvent)
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(viewEventStr)
+        val fakeViewEvent = forge.aFakeViewEvent()
+        whenever(mockRumEventDeserializer.deserialize(viewEventStr)) doReturn fakeViewEvent.toJson()
 
         // When
         testedHandler.prepareData()
 
         // Then
-        assertThat(testedHandler.lastSerializedRumViewEvent).isNull()
+        assertThat(testedHandler.lastRumViewEvent).isNull()
         verify(mockExecutorService).submit(captureRunnable.capture())
         captureRunnable.firstValue.run()
-        assertThat(testedHandler.lastSerializedRumViewEvent)
-            .isEqualTo(viewEvent)
+        assertThat(testedHandler.lastRumViewEvent)
+            .isEqualTo(fakeViewEvent.toJson())
     }
 
     @Test
     fun `𝕄 read network info 𝕎 prepareData()`(
-        @StringForgery networkInfo: String
+        @StringForgery networkInfoStr: String,
+        @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
         fakeNdkCacheDir.mkdirs()
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME).writeText(networkInfo)
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME)
+            .writeText(networkInfoStr)
+        whenever(mockNetworkInfoDeserializer.deserialize(networkInfoStr)) doReturn fakeNetworkInfo
 
         // When
         testedHandler.prepareData()
 
         // Then
-        assertThat(testedHandler.lastSerializedNetworkInformation).isNull()
+        assertThat(testedHandler.lastNetworkInfo).isNull()
         verify(mockExecutorService).submit(captureRunnable.capture())
         captureRunnable.firstValue.run()
-        assertThat(testedHandler.lastSerializedNetworkInformation)
-            .isEqualTo(networkInfo)
+        assertThat(testedHandler.lastNetworkInfo)
+            .isEqualTo(fakeNetworkInfo)
     }
 
     @Test
     fun `𝕄 read user info 𝕎 prepareData()`(
-        @StringForgery userInfo: String
+        @StringForgery userInfoStr: String,
+        @Forgery fakeUserInfo: UserInfo
     ) {
         // Given
         fakeNdkCacheDir.mkdirs()
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfo)
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfoStr)
+        whenever(mockUserInfoDeserializer.deserialize(userInfoStr)) doReturn fakeUserInfo
 
         // When
         testedHandler.prepareData()
 
         // Then
-        assertThat(testedHandler.lastSerializedUserInformation).isNull()
+        assertThat(testedHandler.lastUserInfo).isNull()
         verify(mockExecutorService).submit(captureRunnable.capture())
         captureRunnable.firstValue.run()
-        assertThat(testedHandler.lastSerializedUserInformation)
-            .isEqualTo(userInfo)
+        assertThat(testedHandler.lastUserInfo)
+            .isEqualTo(fakeUserInfo)
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 prepareData {directory does not exist}`() {
+    fun `𝕄 do nothing 𝕎 prepareData() {directory does not exist}`() {
         // When
         testedHandler.prepareData()
+        whenever(mockRumEventDeserializer.deserialize(any())) doReturn mock()
+        whenever(mockNdkCrashLogDeserializer.deserialize(any())) doReturn mock()
+        whenever(mockUserInfoDeserializer.deserialize(any())) doReturn mock()
+        whenever(mockNetworkInfoDeserializer.deserialize(any())) doReturn mock()
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
         captureRunnable.firstValue.run()
-        assertThat(testedHandler.lastSerializedRumViewEvent).isNull()
-        assertThat(testedHandler.lastSerializedNdkCrashLog).isNull()
-        assertThat(testedHandler.lastSerializedUserInformation).isNull()
-        assertThat(testedHandler.lastSerializedNetworkInformation).isNull()
+        assertThat(testedHandler.lastRumViewEvent).isNull()
+        assertThat(testedHandler.lastNdkCrashLog).isNull()
+        assertThat(testedHandler.lastUserInfo).isNull()
+        assertThat(testedHandler.lastNetworkInfo).isNull()
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleNdkCrash() {no crash data}`(
+    fun `𝕄 clear crash data 𝕎 prepareData()`(
+        @StringForgery crashData: String,
         @StringForgery viewEvent: String,
         @StringForgery networkInfo: String,
         @StringForgery userInfo: String
     ) {
         // Given
         fakeNdkCacheDir.mkdirs()
+
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.CRASH_DATA_FILE_NAME).writeText(crashData)
         File(fakeNdkCacheDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(viewEvent)
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME).writeText(networkInfo)
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME)
+            .writeText(networkInfo)
         File(fakeNdkCacheDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfo)
 
         // When
-        testedHandler.handleNdkCrash(mockSdkCore)
+        testedHandler.prepareData()
+
+        // Then
+        verify(mockExecutorService).submit(captureRunnable.capture())
+        captureRunnable.firstValue.run()
+        assertThat(fakeNdkCacheDir).isEmptyDirectory
+    }
+
+    // endregion
+
+    // region handleNdkCrash
+
+    @EnumSource(NdkCrashHandler.ReportTarget::class)
+    @ParameterizedTest
+    fun `𝕄 do nothing 𝕎 handleNdkCrash() {no crash data}`(
+        reportTarget: NdkCrashHandler.ReportTarget
+    ) {
+        // When
+        testedHandler.handleNdkCrash(mockSdkCore, reportTarget)
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
@@ -252,41 +290,15 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleNdkCrash() {crash data can't be deserialized}`(
-        @StringForgery crashData: String,
-        @StringForgery viewEvent: String,
-        @StringForgery networkInfo: String,
-        @StringForgery userInfo: String
-    ) {
-        // Given
-        fakeNdkCacheDir.mkdirs()
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(viewEvent)
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME).writeText(networkInfo)
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfo)
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.CRASH_DATA_FILE_NAME).writeText(crashData)
-        whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn null
-
-        // When
-        testedHandler.handleNdkCrash(mockSdkCore)
-
-        // Then
-        verify(mockExecutorService).submit(captureRunnable.capture())
-        captureRunnable.firstValue.run()
-        verifyZeroInteractions(mockSdkCore, mockInternalLogger)
-    }
-
-    @Test
     fun `𝕄 not send log 𝕎 handleNdkCrash() {logs feature is not registered}`(
-        @StringForgery crashData: String,
         @Forgery ndkCrashLog: NdkCrashLog
     ) {
         // Given
-        testedHandler.lastSerializedNdkCrashLog = crashData
-        whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
+        testedHandler.lastNdkCrashLog = ndkCrashLog
         whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
 
         // When
-        testedHandler.handleNdkCrash(mockSdkCore)
+        testedHandler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.LOGS)
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
@@ -303,17 +315,15 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 send log 𝕎 handleNdkCrash() {missing RUM last view, no info}`(
-        @StringForgery crashData: String,
+    fun `𝕄 send log 𝕎 handleNdkCrash() {missing RUM last view, no user and network info}`(
         @Forgery ndkCrashLog: NdkCrashLog
     ) {
         // Given
-        testedHandler.lastSerializedNdkCrashLog = crashData
-        whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
+        testedHandler.lastNdkCrashLog = ndkCrashLog
         val expectedLogEvent = createLogEvent(ndkCrashLog, null, null, null)
 
         // When
-        testedHandler.handleNdkCrash(mockSdkCore)
+        testedHandler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.LOGS)
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
@@ -324,52 +334,19 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 send log 𝕎 handleNdkCrash() {missing RUM last view, with info}`(
-        @StringForgery crashData: String,
-        @StringForgery networkInfoStr: String,
-        @StringForgery userInfoStr: String,
+    fun `𝕄 send log 𝕎 handleNdkCrash() {missing RUM last view, with user and network info}`(
         @Forgery ndkCrashLog: NdkCrashLog,
         @Forgery networkInfo: NetworkInfo,
         @Forgery userInfo: UserInfo
     ) {
         // Given
-        testedHandler.lastSerializedNdkCrashLog = crashData
-        testedHandler.lastSerializedNetworkInformation = networkInfoStr
-        testedHandler.lastSerializedUserInformation = userInfoStr
-        whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
-        whenever(mockNetworkInfoDeserializer.deserialize(networkInfoStr)) doReturn networkInfo
-        whenever(mockUserInfoDeserializer.deserialize(userInfoStr)) doReturn userInfo
+        testedHandler.lastNdkCrashLog = ndkCrashLog
+        testedHandler.lastNetworkInfo = networkInfo
+        testedHandler.lastUserInfo = userInfo
         val expectedLogEvent = createLogEvent(ndkCrashLog, networkInfo, userInfo, null)
 
         // When
-        testedHandler.handleNdkCrash(mockSdkCore)
-
-        // Then
-        verify(mockExecutorService).submit(captureRunnable.capture())
-        verifyZeroInteractions(mockSdkCore)
-        captureRunnable.firstValue.run()
-        verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
-        verifyZeroInteractions(mockInternalLogger)
-    }
-
-    @Test
-    fun `𝕄 send log 𝕎 handleNdkCrash() {missing RUM last view, corrupted info}`(
-        @StringForgery crashData: String,
-        @StringForgery networkInfoStr: String,
-        @StringForgery userInfoStr: String,
-        @Forgery ndkCrashLog: NdkCrashLog
-    ) {
-        // Given
-        testedHandler.lastSerializedNdkCrashLog = crashData
-        testedHandler.lastSerializedNetworkInformation = networkInfoStr
-        testedHandler.lastSerializedUserInformation = userInfoStr
-        whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
-        whenever(mockNetworkInfoDeserializer.deserialize(networkInfoStr)) doReturn null
-        whenever(mockUserInfoDeserializer.deserialize(userInfoStr)) doReturn null
-        val expectedLogEvent = createLogEvent(ndkCrashLog, null, null, null)
-
-        // When
-        testedHandler.handleNdkCrash(mockSdkCore)
+        testedHandler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.LOGS)
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
@@ -381,23 +358,17 @@ internal class DatadogNdkCrashHandlerTest {
 
     @Test
     fun `𝕄 send log + RUM view+error 𝕎 handleNdkCrash() {with RUM last view}`(
-        @StringForgery crashData: String,
-        @StringForgery viewEventStr: String,
         @Forgery ndkCrashLog: NdkCrashLog,
         forge: Forge
     ) {
         // Given
         val fakeViewEvent = forge.aFakeViewEvent()
-        testedHandler.lastSerializedNdkCrashLog = crashData
-        testedHandler.lastSerializedRumViewEvent = viewEventStr
-        whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
-
-        whenever(mockRumEventDeserializer.deserialize(viewEventStr))
-            .doReturn(fakeViewEvent.toJson())
+        testedHandler.lastNdkCrashLog = ndkCrashLog
+        testedHandler.lastRumViewEvent = fakeViewEvent.toJson()
         val expectedLogEvent = createLogEvent(ndkCrashLog, null, null, fakeViewEvent)
 
         // When
-        testedHandler.handleNdkCrash(mockSdkCore)
+        testedHandler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.LOGS)
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
@@ -417,17 +388,13 @@ internal class DatadogNdkCrashHandlerTest {
     )
     fun `𝕄 send log + RUM view+error 𝕎 handleNdkCrash() {with corrupted RUM last view}`(
         corruptionType: String,
-        @StringForgery crashData: String,
-        @StringForgery viewEventStr: String,
         @Forgery ndkCrashLog: NdkCrashLog,
         forge: Forge
     ) {
         // Given
-        val fakeViewEvent = forge.aFakeViewEvent()
-        testedHandler.lastSerializedNdkCrashLog = crashData
-        testedHandler.lastSerializedRumViewEvent = viewEventStr
-        whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
-        val fakeViewJson = fakeViewEvent.toJson()
+        val fakeViewJson = forge.aFakeViewEvent().toJson()
+        testedHandler.lastNdkCrashLog = ndkCrashLog
+        testedHandler.lastRumViewEvent = fakeViewJson
 
         val corruptedProperty = forge.anElementFrom("application", "session", "view")
         when (corruptionType) {
@@ -446,13 +413,10 @@ internal class DatadogNdkCrashHandlerTest {
                 )
         }
 
-        whenever(mockRumEventDeserializer.deserialize(viewEventStr))
-            .doReturn(fakeViewJson)
-
         val expectedLogEvent = createLogEvent(ndkCrashLog, null, null, null)
 
         // When
-        testedHandler.handleNdkCrash(mockSdkCore)
+        testedHandler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.LOGS)
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
@@ -470,22 +434,17 @@ internal class DatadogNdkCrashHandlerTest {
 
     @Test
     fun `𝕄 not send RUM event 𝕎 handleNdkCrash() { RUM feature is not registered }`(
-        @StringForgery crashData: String,
-        @StringForgery viewEventStr: String,
         @Forgery ndkCrashLog: NdkCrashLog,
         forge: Forge
     ) {
         // Given
         val fakeViewEvent = forge.aFakeViewEvent()
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
-        testedHandler.lastSerializedNdkCrashLog = crashData
-        testedHandler.lastSerializedRumViewEvent = viewEventStr
-        whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
-        whenever(mockRumEventDeserializer.deserialize(viewEventStr))
-            .doReturn(fakeViewEvent.toJson())
+        testedHandler.lastNdkCrashLog = ndkCrashLog
+        testedHandler.lastRumViewEvent = fakeViewEvent.toJson()
 
         // When
-        testedHandler.handleNdkCrash(mockSdkCore)
+        testedHandler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.RUM)
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
@@ -497,6 +456,93 @@ internal class DatadogNdkCrashHandlerTest {
             DatadogNdkCrashHandler.INFO_RUM_FEATURE_NOT_REGISTERED
         )
     }
+
+    @Test
+    fun `𝕄 not send RUM event 𝕎 handleNdkCrash() { missing last RUM view event }`(
+        @Forgery ndkCrashLog: NdkCrashLog
+    ) {
+        // Given
+        testedHandler.lastNdkCrashLog = ndkCrashLog
+
+        // When
+        testedHandler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.RUM)
+
+        // Then
+        verify(mockExecutorService).submit(captureRunnable.capture())
+        verifyZeroInteractions(mockSdkCore)
+        captureRunnable.firstValue.run()
+        verifyZeroInteractions(mockInternalLogger, mockRumFeatureScope)
+    }
+
+    @Test
+    fun `𝕄 send RUM event 𝕎 handleNdkCrash()`(
+        @Forgery ndkCrashLog: NdkCrashLog,
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewEvent = forge.aFakeViewEvent()
+        testedHandler.lastNdkCrashLog = ndkCrashLog
+        testedHandler.lastRumViewEvent = fakeViewEvent.toJson()
+
+        // When
+        testedHandler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.RUM)
+
+        // Then
+        verify(mockExecutorService).submit(captureRunnable.capture())
+        verifyZeroInteractions(mockSdkCore)
+        captureRunnable.firstValue.run()
+        verify(mockRumFeatureScope).sendEvent(
+            mapOf(
+                "type" to "ndk_crash",
+                "timestamp" to ndkCrashLog.timestamp,
+                "signalName" to ndkCrashLog.signalName,
+                "stacktrace" to ndkCrashLog.stacktrace,
+                "message" to DatadogNdkCrashHandler.LOG_CRASH_MSG
+                    .format(Locale.US, ndkCrashLog.signalName),
+                "lastViewEvent" to fakeViewEvent.toJson()
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 clear the references 𝕎 handleNdkCrash() { both Logs and RUM are handled }`(
+        @Forgery ndkCrashLog: NdkCrashLog,
+        @Forgery fakeUserInfo: UserInfo,
+        @Forgery fakeNetworkInfo: NetworkInfo,
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewEvent = forge.aFakeViewEvent()
+        testedHandler.lastNdkCrashLog = ndkCrashLog
+        testedHandler.lastRumViewEvent = fakeViewEvent.toJson()
+        testedHandler.lastUserInfo = fakeUserInfo
+        testedHandler.lastNetworkInfo = fakeNetworkInfo
+
+        // When
+        listOf(
+            NdkCrashHandler.ReportTarget.RUM,
+            NdkCrashHandler.ReportTarget.LOGS
+        )
+            .shuffled(Random(forge.seed))
+            .forEach {
+                testedHandler.handleNdkCrash(mockSdkCore, it)
+            }
+
+        // Then
+        verify(mockExecutorService, times(2)).submit(captureRunnable.capture())
+        verifyZeroInteractions(mockSdkCore)
+        captureRunnable.allValues.forEach { it.run() }
+
+        assertThat(testedHandler.lastNdkCrashLog).isNull()
+        assertThat(testedHandler.lastRumViewEvent).isNull()
+        assertThat(testedHandler.lastUserInfo).isNull()
+        assertThat(testedHandler.lastNetworkInfo).isNull()
+
+        assertThat(testedHandler.processedForRum).isTrue
+        assertThat(testedHandler.processedForLogs).isTrue
+    }
+
+    // endregion
 
     // region Internal
 

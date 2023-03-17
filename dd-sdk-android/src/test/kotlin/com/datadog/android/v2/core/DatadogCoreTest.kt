@@ -18,11 +18,13 @@ import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.ndk.DatadogNdkCrashHandler
+import com.datadog.android.ndk.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.NetworkInfo
@@ -56,6 +58,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -117,6 +120,56 @@ internal class DatadogCoreTest {
 
         // Then
         verify(mockConsentProvider).setConsent(fakeConsent)
+    }
+
+    @Test
+    fun `𝕄 register feature 𝕎 registerFeature()`(
+        @Mock mockFeature: Feature,
+        @StringForgery fakeFeatureName: String
+    ) {
+        // Given
+        whenever(mockFeature.name) doReturn fakeFeatureName
+
+        // When
+        testedCore.registerFeature(mockFeature)
+
+        // Then
+        assertThat(testedCore.features).containsKey(fakeFeatureName)
+        verify(mockFeature).onInitialize(testedCore, appContext.mockInstance)
+    }
+
+    @Test
+    fun `𝕄 handle NDK crash for RUM 𝕎 registerFeature() {RUM feature}`(
+        @Mock mockFeature: Feature
+    ) {
+        // Given
+        val mockNdkCrashHandler = mock<NdkCrashHandler>()
+        testedCore.coreFeature.ndkCrashHandler = mockNdkCrashHandler
+        whenever(mockFeature.name) doReturn Feature.RUM_FEATURE_NAME
+
+        // When
+        testedCore.registerFeature(mockFeature)
+
+        // Then
+        verify(testedCore.coreFeature.ndkCrashHandler)
+            .handleNdkCrash(testedCore, NdkCrashHandler.ReportTarget.RUM)
+    }
+
+    @Test
+    fun `𝕄 handle NDK crash for Logs 𝕎 registerFeature() {Logs feature}`(
+        @Mock mockFeature: Feature
+    ) {
+        // Given
+        val mockNdkCrashHandler = mock<NdkCrashHandler>()
+        testedCore.coreFeature.ndkCrashHandler = mockNdkCrashHandler
+        whenever(mockFeature.name) doReturn Feature.LOGS_FEATURE_NAME
+
+        // When
+        testedCore.registerFeature(mockFeature)
+
+        // Then
+        verify(testedCore.coreFeature.ndkCrashHandler)
+            .handleNdkCrash(testedCore, NdkCrashHandler.ReportTarget.LOGS)
     }
 
     @Test

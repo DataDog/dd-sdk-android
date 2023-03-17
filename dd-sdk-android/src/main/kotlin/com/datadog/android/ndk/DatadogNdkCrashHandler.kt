@@ -41,10 +41,13 @@ internal class DatadogNdkCrashHandler(
 
     internal val ndkCrashDataDirectory: File = getNdkGrantedDir(storageDir)
 
-    internal var lastSerializedRumViewEvent: String? = null
-    internal var lastSerializedUserInformation: String? = null
-    internal var lastSerializedNdkCrashLog: String? = null
-    internal var lastSerializedNetworkInformation: String? = null
+    internal var lastRumViewEvent: JsonObject? = null
+    internal var lastUserInfo: UserInfo? = null
+    internal var lastNetworkInfo: NetworkInfo? = null
+    internal var lastNdkCrashLog: NdkCrashLog? = null
+
+    internal var processedForLogs = false
+    internal var processedForRum = false
 
     // region NdkCrashHandler
 
@@ -65,12 +68,12 @@ internal class DatadogNdkCrashHandler(
         }
     }
 
-    override fun handleNdkCrash(sdkCore: SdkCore) {
+    override fun handleNdkCrash(sdkCore: SdkCore, reportTarget: NdkCrashHandler.ReportTarget) {
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             dataPersistenceExecutorService.submit {
                 @Suppress("ThreadSafety")
-                checkAndHandleNdkCrashReport(sdkCore)
+                checkAndHandleNdkCrashReport(sdkCore, reportTarget)
             }
         } catch (e: RejectedExecutionException) {
             internalLogger.log(
@@ -86,25 +89,37 @@ internal class DatadogNdkCrashHandler(
 
     // region Internal
 
+    @Suppress("NestedBlockDepth")
     @WorkerThread
     private fun readCrashData() {
         if (!ndkCrashDataDirectory.existsSafe()) {
             return
         }
         try {
-            ndkCrashDataDirectory.listFilesSafe()?.forEach {
-                when (it.name) {
+            ndkCrashDataDirectory.listFilesSafe()?.forEach { file ->
+                when (file.name) {
                     // TODO RUMM-1944 Data from NDK should be also encrypted
-                    CRASH_DATA_FILE_NAME -> lastSerializedNdkCrashLog = it.readTextSafe()
+                    CRASH_DATA_FILE_NAME -> lastNdkCrashLog = file.readTextSafe()?.let {
+                        ndkCrashLogDeserializer.deserialize(it)
+                    }
                     RUM_VIEW_EVENT_FILE_NAME ->
-                        lastSerializedRumViewEvent =
-                            readRumFileContent(it, rumFileReader)
+                        lastRumViewEvent =
+                            readRumFileContent(
+                                file,
+                                rumFileReader
+                            )?.let { rumEventDeserializer.deserialize(it) }
                     USER_INFO_FILE_NAME ->
-                        lastSerializedUserInformation =
-                            readFileContent(it, envFileReader)
+                        lastUserInfo =
+                            readFileContent(
+                                file,
+                                envFileReader
+                            )?.let { userInfoDeserializer.deserialize(it) }
                     NETWORK_INFO_FILE_NAME ->
-                        lastSerializedNetworkInformation =
-                            readFileContent(it, envFileReader)
+                        lastNetworkInfo =
+                            readFileContent(
+                                file,
+                                envFileReader
+                            )?.let { networkInfoDeserializer.deserialize(it) }
                 }
             }
         } catch (e: SecurityException) {
@@ -140,38 +155,36 @@ internal class DatadogNdkCrashHandler(
     }
 
     @WorkerThread
-    private fun checkAndHandleNdkCrashReport(sdkCore: SdkCore) {
-        val lastSerializedRumViewEvent = lastSerializedRumViewEvent
-        val lastSerializedUserInformation: String? = lastSerializedUserInformation
-        val lastSerializedNdkCrashLog: String? = lastSerializedNdkCrashLog
-        val lastSerializedNetworkInformation: String? = lastSerializedNetworkInformation
-        if (lastSerializedNdkCrashLog != null) {
-            val lastNdkCrashLog = ndkCrashLogDeserializer.deserialize(lastSerializedNdkCrashLog)
-            val lastRumViewEvent = lastSerializedRumViewEvent?.let {
-                rumEventDeserializer.deserialize(it)
-            }
-            val lastUserInfo = lastSerializedUserInformation?.let {
-                userInfoDeserializer.deserialize(it)
-            }
-            val lastNetworkInfo = lastSerializedNetworkInformation?.let {
-                networkInfoDeserializer.deserialize(it)
-            }
+    private fun checkAndHandleNdkCrashReport(
+        sdkCore: SdkCore,
+        reportTarget: NdkCrashHandler.ReportTarget
+    ) {
+        if (lastNdkCrashLog != null) {
             handleNdkCrashLog(
                 sdkCore,
                 lastNdkCrashLog,
                 lastRumViewEvent,
                 lastUserInfo,
-                lastNetworkInfo
+                lastNetworkInfo,
+                reportTarget
             )
         }
-        clearAllReferences()
+
+        when (reportTarget) {
+            NdkCrashHandler.ReportTarget.RUM -> processedForRum = true
+            NdkCrashHandler.ReportTarget.LOGS -> processedForLogs = true
+        }
+
+        if (processedForRum && processedForLogs) {
+            clearAllReferences()
+        }
     }
 
     private fun clearAllReferences() {
-        lastSerializedNdkCrashLog = null
-        lastSerializedNetworkInformation = null
-        lastSerializedRumViewEvent = null
-        lastSerializedUserInformation = null
+        lastRumViewEvent = null
+        lastNetworkInfo = null
+        lastUserInfo = null
+        lastNdkCrashLog = null
     }
 
     @WorkerThread
@@ -180,17 +193,46 @@ internal class DatadogNdkCrashHandler(
         ndkCrashLog: NdkCrashLog?,
         lastViewEvent: JsonObject?,
         lastUserInfo: UserInfo?,
-        lastNetworkInfo: NetworkInfo?
+        lastNetworkInfo: NetworkInfo?,
+        reportTarget: NdkCrashHandler.ReportTarget
     ) {
         if (ndkCrashLog == null) {
             return
         }
         val errorLogMessage = LOG_CRASH_MSG.format(Locale.US, ndkCrashLog.signalName)
-        val logAttributes: Map<String, String>
-        if (lastViewEvent != null) {
+
+        when (reportTarget) {
+            NdkCrashHandler.ReportTarget.RUM -> {
+                if (lastViewEvent != null) {
+                    sendCrashRumEvent(
+                        sdkCore,
+                        errorLogMessage,
+                        ndkCrashLog,
+                        lastViewEvent
+                    )
+                }
+            }
+            NdkCrashHandler.ReportTarget.LOGS -> {
+                sendCrashLogEvent(
+                    sdkCore,
+                    errorLogMessage,
+                    generateLogAttributes(lastViewEvent, ndkCrashLog),
+                    ndkCrashLog,
+                    lastNetworkInfo,
+                    lastUserInfo
+                )
+            }
+        }
+    }
+
+    private fun generateLogAttributes(
+        lastRumViewEvent: JsonObject?,
+        ndkCrashLog: NdkCrashLog
+    ): Map<String, String> {
+        val logAttributes = if (lastRumViewEvent != null) {
             val (applicationId, sessionId, viewId) = try {
                 val extractId = { property: String ->
-                    lastViewEvent.getAsJsonObject(property)
+                    lastRumViewEvent.getAsJsonObject(property)
                         .getAsJsonPrimitive("id")
                         .asString
                 }
@@ -207,7 +249,7 @@ internal class DatadogNdkCrashHandler(
                 )
                 Triple(null, null, null)
             }
-            logAttributes = if (applicationId != null && sessionId != null && viewId != null) {
+            if (applicationId != null && sessionId != null && viewId != null) {
                 mapOf(
                     LogAttributes.RUM_SESSION_ID to sessionId,
                     LogAttributes.RUM_APPLICATION_ID to applicationId,
@@ -219,31 +261,17 @@ internal class DatadogNdkCrashHandler(
                     LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace
                 )
             }
-            updateViewEventAndSendError(
-                sdkCore,
-                errorLogMessage,
-                ndkCrashLog,
-                lastViewEvent
-            )
         } else {
-            logAttributes = mapOf(
+            mapOf(
                 LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace
             )
         }
-
-        sendCrashLogEvent(
-            sdkCore,
-            errorLogMessage,
-            logAttributes,
-            ndkCrashLog,
-            lastNetworkInfo,
-            lastUserInfo
-        )
+        return logAttributes
     }
 
     @Suppress("StringLiteralDuplication")
     @WorkerThread
-    private fun updateViewEventAndSendError(
+    private fun sendCrashRumEvent(
         sdkCore: SdkCore,
         errorLogMessage: String,
         ndkCrashLog: NdkCrashLog,
