@@ -1014,7 +1014,17 @@ internal open class RumViewScope(
                     null
                 } else {
                     navControllerActivityField.isAccessible = true
-                    navControllerActivityField.get(key.controller) as? Activity
+                    try {
+                        navControllerActivityField.get(key.controller) as? Activity
+                    } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+                        internalLogger.log(
+                            InternalLogger.Level.WARN,
+                            InternalLogger.Target.TELEMETRY,
+                            "Unable to retrieve the activity value from the navigationController",
+                            t
+                        )
+                        null
+                    }
                 }
             }
             else -> null
