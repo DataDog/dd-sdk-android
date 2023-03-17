@@ -18,6 +18,8 @@ internal object StringUtils {
         // expressions under the hood, this approach is at least 2 times faster.
         val colorAndAlphaAsHexa = (0xffffffff and colorAndAlpha).toString(16)
         var requiredLength = 9
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // argument is not negative
         val sb = StringBuilder(requiredLength)
         sb.append("#")
         requiredLength--

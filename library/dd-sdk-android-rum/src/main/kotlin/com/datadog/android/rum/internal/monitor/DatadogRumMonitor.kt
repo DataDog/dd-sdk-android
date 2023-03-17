@@ -425,7 +425,7 @@ internal class DatadogRumMonitor(
                     internalLogger.log(
                         InternalLogger.Level.ERROR,
                         InternalLogger.Target.USER,
-                        "Unable to handle a RUM event, the ",
+                        "Unable to handle a RUM event, task was rejected",
                         e
                     )
                 }
@@ -440,10 +440,21 @@ internal class DatadogRumMonitor(
     @Suppress("unused")
     private fun waitForPendingEvents() {
         if (!executorService.isShutdown) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // constructor argument is valid
             val latch = CountDownLatch(1)
             // Submit an empty task, and wait for it to complete
-            executorService.submit {
-                latch.countDown()
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            try {
+                executorService.submit {
+                    latch.countDown()
+                }
+            } catch (e: RejectedExecutionException) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    "Rejected waiting for the pending events",
+                    e
+                )
             }
             try {
                 latch.await(1, TimeUnit.SECONDS)
