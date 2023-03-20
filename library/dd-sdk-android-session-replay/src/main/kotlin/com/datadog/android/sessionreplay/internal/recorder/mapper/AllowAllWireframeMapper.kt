@@ -6,6 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.view.View
+
 internal open class AllowAllWireframeMapper(
     viewWireframeMapper: ViewWireframeMapper = ViewWireframeMapper(),
     imageMapper: ViewScreenshotWireframeMapper = ViewScreenshotWireframeMapper(viewWireframeMapper),
@@ -16,7 +18,10 @@ internal open class AllowAllWireframeMapper(
         CheckedTextViewMapper(textMapper),
     decorViewMapper: DecorViewMapper =
         DecorViewMapper(viewWireframeMapper),
-    checkBoxMapper: CheckBoxMapper = CheckBoxMapper(textMapper)
+    checkBoxMapper: CheckBoxMapper = CheckBoxMapper(textMapper),
+    radioButtonMapper: RadioButtonMapper = RadioButtonMapper(textMapper),
+    switchCompatMapper: SwitchCompatMapper = SwitchCompatMapper(textMapper),
+    customMappers: Map<Class<*>, WireframeMapper<View, *>> = emptyMap()
 ) : GenericWireframeMapper(
     viewWireframeMapper,
     imageMapper,
@@ -25,5 +30,8 @@ internal open class AllowAllWireframeMapper(
     editTextViewMapper,
     checkedTextViewMapper,
     decorViewMapper,
-    checkBoxMapper
+    checkBoxMapper,
+    radioButtonMapper,
+    switchCompatMapper,
+    customMappers
 )

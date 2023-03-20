@@ -14,6 +14,7 @@ import android.util.TypedValue
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.sessionreplay.utils.StringUtils
 
 internal object MiscUtils {
 

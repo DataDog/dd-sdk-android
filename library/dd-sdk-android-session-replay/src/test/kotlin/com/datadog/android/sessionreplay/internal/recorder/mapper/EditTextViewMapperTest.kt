@@ -11,9 +11,10 @@ import android.os.Build
 import android.widget.EditText
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
-import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
-import com.datadog.android.sessionreplay.internal.utils.StringUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.sessionreplay.utils.ViewUtils
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.whenever
@@ -44,7 +45,7 @@ internal class EditTextViewMapperTest : BaseWireframeMapperTest() {
     private lateinit var testedEditTextViewMapper: EditTextViewMapper
 
     @Mock
-    lateinit var mockUniqueIdentifierResolver: UniqueIdentifierResolver
+    lateinit var mockuniqueIdentifierGenerator: UniqueIdentifierGenerator
 
     @Mock
     lateinit var mockTextWireframeMapper: TextWireframeMapper
@@ -74,7 +75,7 @@ internal class EditTextViewMapperTest : BaseWireframeMapperTest() {
     fun `set up`() {
         whenever(mockBackgroundTintList.defaultColor).thenReturn(fakeBackgroundTintColor)
         whenever(
-            mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
+            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
                 mockEditText,
                 EditTextViewMapper.UNDERLINE_KEY_NAME
             )
@@ -91,7 +92,7 @@ internal class EditTextViewMapperTest : BaseWireframeMapperTest() {
             .thenReturn(fakeViewGlobalBounds)
         testedEditTextViewMapper = EditTextViewMapper(
             mockTextWireframeMapper,
-            mockUniqueIdentifierResolver,
+            mockuniqueIdentifierGenerator,
             mockViewUtils
         )
     }
@@ -131,7 +132,7 @@ internal class EditTextViewMapperTest : BaseWireframeMapperTest() {
     fun `M ignore the underline W map() { unique id could not be generated }`() {
         // Given
         whenever(
-            mockUniqueIdentifierResolver.resolveChildUniqueIdentifier(
+            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
                 mockEditText,
                 EditTextViewMapper.UNDERLINE_KEY_NAME
             )

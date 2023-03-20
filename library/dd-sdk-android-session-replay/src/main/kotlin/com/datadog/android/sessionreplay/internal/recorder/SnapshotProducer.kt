@@ -14,7 +14,7 @@ import java.util.LinkedList
 
 internal class SnapshotProducer(
     private val wireframeMapper: GenericWireframeMapper,
-    private val viewUtils: ViewUtils = ViewUtils()
+    private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal()
 ) {
 
     fun produce(
@@ -30,15 +30,15 @@ internal class SnapshotProducer(
         systemInformation: SystemInformation,
         parents: LinkedList<MobileSegment.Wireframe>
     ): Node? {
-        if (viewUtils.checkIfNotVisible(view)) {
+        if (viewUtilsInternal.checkIfNotVisible(view)) {
             return null
         }
 
-        if (viewUtils.checkIfSystemNoise(view)) {
+        if (viewUtilsInternal.checkIfSystemNoise(view)) {
             return null
         }
 
-        if (viewUtils.checkIsToolbar(view)) {
+        if (viewUtilsInternal.checkIsToolbar(view)) {
             // skip adding the children and just take a screenshot of the toolbar.
             // It is too complex to de - structure this in multiple wireframes
             // and we cannot actually get all the details here.

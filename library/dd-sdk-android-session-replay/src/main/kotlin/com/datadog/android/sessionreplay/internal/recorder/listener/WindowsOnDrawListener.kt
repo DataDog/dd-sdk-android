@@ -7,8 +7,8 @@
 package com.datadog.android.sessionreplay.internal.recorder.listener
 
 import android.app.Activity
+import android.view.View
 import android.view.ViewTreeObserver
-import android.view.Window
 import com.datadog.android.sessionreplay.internal.processor.Processor
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
@@ -17,7 +17,7 @@ import java.lang.ref.WeakReference
 
 internal class WindowsOnDrawListener(
     ownerActivity: Activity,
-    zOrderedWindows: List<Window>,
+    zOrderedDecorViews: List<View>,
     private val processor: Processor,
     private val snapshotProducer: SnapshotProducer,
     private val debouncer: Debouncer = Debouncer(),
@@ -25,10 +25,10 @@ internal class WindowsOnDrawListener(
 ) : ViewTreeObserver.OnDrawListener {
 
     internal val ownerActivityReference: WeakReference<Activity> = WeakReference(ownerActivity)
-    internal val weakReferencedWindows: List<WeakReference<Window>>
+    internal val weakReferencedDecorViews: List<WeakReference<View>>
 
     init {
-        weakReferencedWindows = zOrderedWindows.map { WeakReference(it) }
+        weakReferencedDecorViews = zOrderedDecorViews.map { WeakReference(it) }
     }
 
     override fun onDraw() {
@@ -36,18 +36,17 @@ internal class WindowsOnDrawListener(
     }
 
     private fun resolveTakeSnapshotRunnable(): Runnable = Runnable {
-        if (weakReferencedWindows.isEmpty()) {
+        if (weakReferencedDecorViews.isEmpty()) {
             return@Runnable
         }
         val ownerActivity = ownerActivityReference.get() ?: return@Runnable
 
         // is is very important to have the windows sorted by their z-order
         val systemInformation = miscUtils.resolveSystemInformation(ownerActivity)
-        val nodes = weakReferencedWindows
+        val nodes = weakReferencedDecorViews
             .mapNotNull { it.get() }
             .mapNotNull {
-                val windowDecorView = it.decorView
-                snapshotProducer.produce(windowDecorView, systemInformation)
+                snapshotProducer.produce(it, systemInformation)
             }
         if (nodes.isNotEmpty()) {
             processor.processScreenSnapshots(

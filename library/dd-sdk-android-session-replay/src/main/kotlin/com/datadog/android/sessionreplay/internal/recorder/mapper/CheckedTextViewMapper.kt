@@ -9,30 +9,26 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.os.Build
 import android.widget.CheckedTextView
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
-import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.internal.utils.StringUtils
-import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.sessionreplay.utils.ViewUtils
 
 internal open class CheckedTextViewMapper(
-    private val textWireframeMapper: TextWireframeMapper,
+    textWireframeMapper: TextWireframeMapper,
     private val stringUtils: StringUtils = StringUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierResolver =
-        UniqueIdentifierResolver,
-    viewUtils: ViewUtils = ViewUtils()
-) : CheckableWireframeMapper<CheckedTextView>(uniqueIdentifierGenerator, viewUtils) {
+    uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
+    viewUtils: ViewUtils = ViewUtils
+) : CheckableTextViewMapper<CheckedTextView>(
+    textWireframeMapper,
+    stringUtils,
+    uniqueIdentifierGenerator,
+    viewUtils
+) {
 
-    override fun map(view: CheckedTextView, systemInformation: SystemInformation):
-        List<MobileSegment.Wireframe> {
-        val mainWireframeList = textWireframeMapper.map(view, systemInformation)
-        resolveCheckableWireframe(view, systemInformation.screenDensity)?.let { wireframe ->
-            return mainWireframeList + wireframe
-        }
-        return mainWireframeList
-    }
+    // region CheckableTextViewMapper
 
-    override fun resolveCheckBoxColor(view: CheckedTextView): String {
+    override fun resolveCheckableColor(view: CheckedTextView): String {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             view.checkMarkTintList?.let {
                 return stringUtils.formatColorAndAlphaAsHexa(
@@ -44,7 +40,7 @@ internal open class CheckedTextViewMapper(
         return stringUtils.formatColorAndAlphaAsHexa(view.currentTextColor, OPAQUE_ALPHA_VALUE)
     }
 
-    override fun resolveCheckBoxBounds(view: CheckedTextView, pixelsDensity: Float): GlobalBounds {
+    override fun resolveCheckableBounds(view: CheckedTextView, pixelsDensity: Float): GlobalBounds {
         val viewGlobalBounds = resolveViewGlobalBounds(view, pixelsDensity)
         val textViewPaddingRight =
             view.totalPaddingRight.toLong().densityNormalized(pixelsDensity)
@@ -69,4 +65,6 @@ internal open class CheckedTextViewMapper(
 
         )
     }
+
+    // endregion
 }

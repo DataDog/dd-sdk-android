@@ -9,10 +9,11 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.view.View
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 
 internal class DecorViewMapper(
     private val viewWireframeMapper: ViewWireframeMapper,
-    private val uniqueIdentifierGenerator: UniqueIdentifierResolver = UniqueIdentifierResolver
+    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator
 ) : BaseWireframeMapper<View, MobileSegment.Wireframe.ShapeWireframe>() {
 
     override fun map(view: View, systemInformation: SystemInformation):

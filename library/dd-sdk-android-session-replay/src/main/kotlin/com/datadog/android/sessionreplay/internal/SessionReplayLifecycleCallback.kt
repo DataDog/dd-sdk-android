@@ -9,13 +9,15 @@ package com.datadog.android.sessionreplay.internal
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import android.view.View
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
-import com.datadog.android.sessionreplay.internal.recorder.Recorder
-import com.datadog.android.sessionreplay.internal.recorder.ScreenRecorder
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
+import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
+import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.callback.RecorderFragmentLifecycleCallback
+import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import java.util.concurrent.LinkedBlockingDeque
@@ -30,7 +32,8 @@ internal class SessionReplayLifecycleCallback(
     privacy: SessionReplayPrivacy,
     recordWriter: RecordWriter,
     timeProvider: TimeProvider,
-    recordCallback: RecordCallback = NoOpRecordCallback()
+    recordCallback: RecordCallback = NoOpRecordCallback(),
+    customMappers: Map<Class<*>, WireframeMapper<View, *>> = emptyMap()
 ) : LifecycleCallback {
 
     @Suppress("UnsafeThirdPartyFunctionCall") // workQueue can't be null
@@ -41,17 +44,20 @@ internal class SessionReplayLifecycleCallback(
         TimeUnit.MILLISECONDS,
         LinkedBlockingDeque()
     )
-    internal var recorder: Recorder = ScreenRecorder(
-        RecordedDataProcessor(
-            rumContextProvider,
-            timeProvider,
-            processorExecutorService,
-            recordWriter,
-            recordCallback
-        ),
-        SnapshotProducer(privacy.mapper()),
-        timeProvider
+    internal val processor = RecordedDataProcessor(
+        rumContextProvider,
+        timeProvider,
+        processorExecutorService,
+        recordWriter,
+        recordCallback
     )
+    internal var viewOnDrawInterceptor = ViewOnDrawInterceptor(
+        processor,
+        SnapshotProducer(privacy.mapper(customMappers))
+    )
+
+    internal var windowCallbackInterceptor =
+        WindowCallbackInterceptor(processor, viewOnDrawInterceptor, timeProvider)
 
     // region callback
 
@@ -59,7 +65,7 @@ internal class SessionReplayLifecycleCallback(
         // No Op
         if (activity is FragmentActivity) {
             activity.supportFragmentManager.registerFragmentLifecycleCallbacks(
-                RecorderFragmentLifecycleCallback(recorder),
+                RecorderFragmentLifecycleCallback(windowCallbackInterceptor),
                 true
             )
         }
@@ -71,13 +77,15 @@ internal class SessionReplayLifecycleCallback(
 
     override fun onActivityResumed(activity: Activity) {
         activity.window?.let {
-            recorder.startRecording(listOf(it), activity)
+            viewOnDrawInterceptor.intercept(listOf(it.decorView), activity)
+            windowCallbackInterceptor.intercept(listOf(it), activity)
         }
     }
 
     override fun onActivityPaused(activity: Activity) {
         activity.window?.let {
-            recorder.stopRecording(listOf(it))
+            viewOnDrawInterceptor.stopIntercepting(listOf(it.decorView))
+            windowCallbackInterceptor.stopIntercepting(listOf(it))
         }
     }
 
@@ -103,7 +111,8 @@ internal class SessionReplayLifecycleCallback(
 
     override fun unregisterAndStopRecorders(appContext: Application) {
         appContext.unregisterActivityLifecycleCallbacks(this)
-        recorder.stopRecording()
+        viewOnDrawInterceptor.stopIntercepting()
+        windowCallbackInterceptor.stopIntercepting()
     }
 
     // endregion

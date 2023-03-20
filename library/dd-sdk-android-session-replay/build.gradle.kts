@@ -73,8 +73,8 @@ android {
 }
 
 dependencies {
-    implementation(project(":dd-sdk-android"))
-    implementation(project(":library:dd-sdk-android-rum"))
+    api(project(":dd-sdk-android"))
+    api(project(":library:dd-sdk-android-rum"))
     implementation(libs.okHttp)
     implementation(libs.kotlin)
     implementation(libs.gson)

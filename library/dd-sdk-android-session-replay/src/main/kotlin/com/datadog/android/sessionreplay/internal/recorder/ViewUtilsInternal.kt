@@ -12,7 +12,7 @@ import android.view.ViewStub
 import androidx.appcompat.widget.ActionBarContextView
 import androidx.appcompat.widget.Toolbar
 
-internal class ViewUtils {
+internal class ViewUtilsInternal {
 
     private val systemViewIds by lazy {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -42,17 +42,5 @@ internal class ViewUtils {
                     android.widget.Toolbar::class.java
                         .isAssignableFrom(view::class.java)
                 )
-    }
-
-    internal fun resolveViewGlobalBounds(view: View, pixelsDensity: Float): GlobalBounds {
-        val coordinates = IntArray(2)
-        // this will always have size >= 2
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        view.getLocationOnScreen(coordinates)
-        val x = coordinates[0].densityNormalized(pixelsDensity).toLong()
-        val y = coordinates[1].densityNormalized(pixelsDensity).toLong()
-        val height = view.height.densityNormalized(pixelsDensity).toLong()
-        val width = view.width.densityNormalized(pixelsDensity).toLong()
-        return GlobalBounds(x = x, y = y, height = height, width = width)
     }
 }

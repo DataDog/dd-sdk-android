@@ -6,9 +6,11 @@
 
 package com.datadog.android.sessionreplay
 
+import android.view.View
 import com.datadog.android.sessionreplay.internal.recorder.mapper.AllowAllWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.GenericWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 
 /**
  * Defines the Session Replay privacy policy when recording the sessions.
@@ -27,10 +29,10 @@ enum class SessionReplayPrivacy {
      **/
     MASK_ALL;
 
-    internal fun mapper(): GenericWireframeMapper {
+    internal fun mapper(customMappers: Map<Class<*>, WireframeMapper<View, *>>): GenericWireframeMapper {
         return when (this) {
-            ALLOW_ALL -> AllowAllWireframeMapper()
-            MASK_ALL -> MaskAllWireframeMapper()
+            ALLOW_ALL -> AllowAllWireframeMapper(customMappers = customMappers)
+            MASK_ALL -> MaskAllWireframeMapper(customMappers = customMappers)
         }
     }
 }

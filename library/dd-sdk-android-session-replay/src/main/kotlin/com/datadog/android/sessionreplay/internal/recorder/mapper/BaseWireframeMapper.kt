@@ -13,13 +13,13 @@ import android.graphics.drawable.RippleDrawable
 import android.os.Build
 import android.view.View
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
-import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
-import com.datadog.android.sessionreplay.internal.utils.StringUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.ViewUtils
 
 internal abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
     private val stringUtils: StringUtils = StringUtils,
-    private val viewUtils: ViewUtils = ViewUtils()
+    private val viewUtils: ViewUtils = ViewUtils
 ) : WireframeMapper<T, S> {
 
     protected fun resolveViewId(view: View): Long {
@@ -34,6 +34,9 @@ internal abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wirefram
 
     protected fun resolveViewGlobalBounds(view: View, pixelsDensity: Float):
         GlobalBounds {
+        // RUMM-0000 return an array of primitives here instead of creating an object.
+        // This method is being called too often every time we take a screen snapshot
+        // and we might want to avoid creating too many instances.
         return viewUtils.resolveViewGlobalBounds(view, pixelsDensity)
     }
 

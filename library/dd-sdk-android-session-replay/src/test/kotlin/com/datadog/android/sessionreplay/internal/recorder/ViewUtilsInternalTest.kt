@@ -15,7 +15,6 @@ import androidx.appcompat.widget.Toolbar
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -37,13 +36,13 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class ViewUtilsTest {
+internal class ViewUtilsInternalTest {
 
-    lateinit var testViewUtils: ViewUtils
+    lateinit var testViewUtilsInternal: ViewUtilsInternal
 
     @BeforeEach
     fun `set up`() {
-        testViewUtils = ViewUtils()
+        testViewUtilsInternal = ViewUtilsInternal()
     }
 
     // region Visibility
@@ -56,7 +55,7 @@ internal class ViewUtilsTest {
         }
 
         // When
-        assertThat(testViewUtils.checkIfNotVisible(mockView)).isTrue
+        assertThat(testViewUtilsInternal.checkIfNotVisible(mockView)).isTrue
     }
 
     @Test
@@ -67,7 +66,7 @@ internal class ViewUtilsTest {
         }
 
         // When
-        assertThat(testViewUtils.checkIfNotVisible(mockView)).isTrue
+        assertThat(testViewUtilsInternal.checkIfNotVisible(mockView)).isTrue
     }
 
     @Test
@@ -78,7 +77,7 @@ internal class ViewUtilsTest {
         }
 
         // When
-        assertThat(testViewUtils.checkIfNotVisible(mockView)).isTrue
+        assertThat(testViewUtilsInternal.checkIfNotVisible(mockView)).isTrue
     }
 
     @Test
@@ -89,7 +88,7 @@ internal class ViewUtilsTest {
         }
 
         // When
-        assertThat(testViewUtils.checkIfNotVisible(mockView)).isFalse
+        assertThat(testViewUtilsInternal.checkIfNotVisible(mockView)).isFalse
     }
 
     // endregion
@@ -108,7 +107,7 @@ internal class ViewUtilsTest {
             }
 
         // Then
-        assertThat(testViewUtils.checkIfSystemNoise(mockView)).isTrue
+        assertThat(testViewUtilsInternal.checkIfSystemNoise(mockView)).isTrue
     }
 
     @Test
@@ -123,7 +122,7 @@ internal class ViewUtilsTest {
             }
 
         // Then
-        assertThat(testViewUtils.checkIfSystemNoise(mockView)).isTrue
+        assertThat(testViewUtilsInternal.checkIfSystemNoise(mockView)).isTrue
     }
 
     @Test
@@ -132,7 +131,7 @@ internal class ViewUtilsTest {
         val mockView: ViewStub = mock()
 
         // Then
-        assertThat(testViewUtils.checkIfSystemNoise(mockView)).isTrue
+        assertThat(testViewUtilsInternal.checkIfSystemNoise(mockView)).isTrue
     }
 
     @Test
@@ -141,7 +140,7 @@ internal class ViewUtilsTest {
         val mockView: ActionBarContextView = mock()
 
         // Then
-        assertThat(testViewUtils.checkIfSystemNoise(mockView)).isTrue
+        assertThat(testViewUtilsInternal.checkIfSystemNoise(mockView)).isTrue
     }
 
     @Test
@@ -150,7 +149,7 @@ internal class ViewUtilsTest {
         val mockView = forge.aMockView<View>()
 
         // Then
-        assertThat(testViewUtils.checkIfSystemNoise(mockView)).isFalse
+        assertThat(testViewUtilsInternal.checkIfSystemNoise(mockView)).isFalse
     }
 
     // endregion
@@ -167,7 +166,7 @@ internal class ViewUtilsTest {
         }
 
         // Then
-        assertThat(testViewUtils.checkIsToolbar(mockToolBar)).isTrue
+        assertThat(testViewUtilsInternal.checkIsToolbar(mockToolBar)).isTrue
     }
 
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -180,7 +179,7 @@ internal class ViewUtilsTest {
         val mockToolBar: android.widget.Toolbar = forge.aMockView()
 
         // Then
-        assertThat(testViewUtils.checkIsToolbar(mockToolBar)).isTrue
+        assertThat(testViewUtilsInternal.checkIsToolbar(mockToolBar)).isTrue
     }
 
     @Test
@@ -189,44 +188,7 @@ internal class ViewUtilsTest {
         val mockView = forge.aMockView<View>()
 
         // Then
-        assertThat(testViewUtils.checkIsToolbar(mockView)).isFalse
-    }
-
-    // endregion
-
-    // region View bounds
-
-    @Test
-    fun `M correctly resolve the View global bounds W resolveViewGlobalBounds`(forge: Forge) {
-        // Given
-        val fakeGlobalX = forge.anInt()
-        val fakeGlobalY = forge.anInt()
-        val fakeWidth = forge.aPositiveInt()
-        val fakeHeight = forge.aPositiveInt()
-        val mockView: View = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer {
-                val coords = it.arguments[0] as IntArray
-                coords[0] = fakeGlobalX
-                coords[1] = fakeGlobalY
-                null
-            }
-            whenever(it.width).thenReturn(fakeWidth)
-            whenever(it.height).thenReturn(fakeHeight)
-        }
-        val fakePixelDensity = forge.aPositiveFloat()
-
-        // When
-        val globalBounds = testViewUtils.resolveViewGlobalBounds(mockView, fakePixelDensity)
-
-        // Then
-        assertThat(globalBounds.x)
-            .isEqualTo(fakeGlobalX.densityNormalized(fakePixelDensity).toLong())
-        assertThat(globalBounds.y)
-            .isEqualTo(fakeGlobalY.densityNormalized(fakePixelDensity).toLong())
-        assertThat(globalBounds.width)
-            .isEqualTo(fakeWidth.densityNormalized(fakePixelDensity).toLong())
-        assertThat(globalBounds.height)
-            .isEqualTo(fakeHeight.densityNormalized(fakePixelDensity).toLong())
+        assertThat(testViewUtilsInternal.checkIsToolbar(mockView)).isFalse
     }
 
     // endregion
