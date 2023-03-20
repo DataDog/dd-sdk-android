@@ -19,6 +19,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
@@ -105,6 +106,9 @@ internal class DatadogInterceptorWithoutTracesTest {
     @Mock
     lateinit var mockTraceSampler: Sampler
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
     // endregion
 
     // region Fakes
@@ -147,14 +151,15 @@ internal class DatadogInterceptorWithoutTracesTest {
         fakeMediaType = MediaType.parse(mediaType)
         fakeRequest = forgeRequest(forge)
         testedInterceptor = DatadogInterceptor(
+            sdkCore = mockSdkCore,
             tracedHosts = emptyMap(),
             tracedRequestListener = mockRequestListener,
             firstPartyHostResolver = mockResolver,
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler
         ) { mockLocalTracer }
-        whenever(datadogCore.mockInstance.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
-        whenever(datadogCore.mockInstance.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
 
         fakeResourceAttributes = forge.exhaustiveAttributes()
 

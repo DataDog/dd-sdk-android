@@ -14,6 +14,7 @@ import com.datadog.android.okhttp.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -111,6 +112,9 @@ internal open class TracingInterceptorNotSendingSpanTest {
     @Mock
     lateinit var mockTraceSampler: Sampler
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
     // endregion
 
     // region Fakes
@@ -170,7 +174,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         }
         fakeUrl = forgeUrl(forge)
         fakeRequest = forgeRequest(forge)
-        whenever(datadogCore.mockInstance.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         doAnswer { false }.whenever(mockResolver).isFirstPartyUrl(any<HttpUrl>())
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(HttpUrl.get(fakeUrl))
 
@@ -189,6 +193,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
     ): TracingInterceptor {
         return object :
             TracingInterceptor(
+                mockSdkCore,
                 tracedHosts,
                 mockRequestListener,
                 mockResolver,
@@ -992,7 +997,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        whenever(datadogCore.mockInstance.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
         stubChain(mockChain, statusCode)
 
         testedInterceptor.intercept(mockChain)
