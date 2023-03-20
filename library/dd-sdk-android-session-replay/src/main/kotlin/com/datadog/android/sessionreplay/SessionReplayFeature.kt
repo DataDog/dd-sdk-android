@@ -47,11 +47,12 @@ class SessionReplayFeature internal constructor(
         configuration,
         { sdkCore, recordWriter ->
             SessionReplayLifecycleCallback(
-                SessionReplayRumContextProvider(sdkCore),
-                configuration.privacy,
-                recordWriter,
-                SessionReplayTimeProvider(sdkCore),
-                SessionReplayRecordCallback(sdkCore)
+                rumContextProvider = SessionReplayRumContextProvider(sdkCore),
+                privacy = configuration.privacy,
+                recordWriter = recordWriter,
+                timeProvider = SessionReplayTimeProvider(sdkCore),
+                recordCallback = SessionReplayRecordCallback(sdkCore),
+                customMappers = configuration.customMappers()
             )
         }
     )

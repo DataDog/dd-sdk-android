@@ -12,55 +12,100 @@ import android.widget.CheckBox
 import android.widget.CheckedTextView
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.RadioButton
 import android.widget.TextView
+import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
+import java.util.LinkedList
+
+typealias MapperCondition = (View) -> Boolean
 
 internal abstract class GenericWireframeMapper(
-    private val viewWireframeMapper: ViewWireframeMapper,
+    viewWireframeMapper: ViewWireframeMapper,
     internal val imageMapper: ViewScreenshotWireframeMapper,
-    private val textMapper: TextWireframeMapper,
-    private val buttonMapper: ButtonMapper,
-    private val editTextViewMapper: EditTextViewMapper,
-    private val checkedTextViewMapper: CheckedTextViewMapper,
-    private val decorViewMapper: DecorViewMapper,
-    private val checkBoxMapper: CheckBoxMapper
+    textMapper: TextWireframeMapper,
+    buttonMapper: ButtonMapper,
+    editTextViewMapper: EditTextViewMapper,
+    checkedTextViewMapper: CheckedTextViewMapper,
+    decorViewMapper: DecorViewMapper,
+    checkBoxMapper: CheckBoxMapper,
+    radioButtonMapper: RadioButtonMapper,
+    switchCompatMapper: SwitchCompatMapper,
+    customMappers: Map<Class<*>, WireframeMapper<View, *>>
 ) : WireframeMapper<View, MobileSegment.Wireframe> {
+
+    private val mappers: LinkedList<Pair<MapperCondition, WireframeMapper<View, *>>> = LinkedList()
+
+    init {
+        // Make sure you add the custom mappers first in the list. The order matters !!!
+
+        customMappers.entries.forEach {
+            mappers.add(defaultTypeCheckCondition(it.key) to it.value)
+        }
+        mappers.add(
+            defaultTypeCheckCondition(SwitchCompat::class.java) to
+                switchCompatMapper.toGenericMapper()
+        )
+        mappers.add(
+            defaultTypeCheckCondition(RadioButton::class.java) to
+                radioButtonMapper.toGenericMapper()
+        )
+        mappers.add(
+            defaultTypeCheckCondition(CheckBox::class.java) to
+                checkBoxMapper.toGenericMapper()
+        )
+        mappers.add(
+            defaultTypeCheckCondition(CheckedTextView::class.java) to
+                checkedTextViewMapper.toGenericMapper()
+        )
+        mappers.add(
+            defaultTypeCheckCondition(Button::class.java) to
+                buttonMapper.toGenericMapper()
+        )
+        mappers.add(
+            defaultTypeCheckCondition(EditText::class.java) to
+                editTextViewMapper.toGenericMapper()
+        )
+        mappers.add(
+            defaultTypeCheckCondition(TextView::class.java) to
+                textMapper.toGenericMapper()
+        )
+        mappers.add(
+            defaultTypeCheckCondition(ImageView::class.java) to
+                imageMapper.toGenericMapper()
+        )
+        mappers.add(
+            decorViewCheckCondition() to
+                decorViewMapper.toGenericMapper()
+        )
+        mappers.add(
+            { _: View -> true } to
+                viewWireframeMapper.toGenericMapper()
+        )
+    }
 
     override fun map(view: View, systemInformation: SystemInformation):
         List<MobileSegment.Wireframe> {
-        return when {
-            CheckBox::class.java.isAssignableFrom(view::class.java) -> {
-                checkBoxMapper.map(view as CheckBox, systemInformation)
-            }
-            CheckedTextView::class.java.isAssignableFrom(view::class.java) -> {
-                checkedTextViewMapper.map(
-                    view as CheckedTextView,
-                    systemInformation
-                )
-            }
-            Button::class.java.isAssignableFrom(view::class.java) -> {
-                buttonMapper.map(view as Button, systemInformation)
-            }
-            EditText::class.java.isAssignableFrom(view::class.java) -> {
-                editTextViewMapper.map(view as EditText, systemInformation)
-            }
-            TextView::class.java.isAssignableFrom(view::class.java) -> {
-                textMapper.map(view as TextView, systemInformation)
-            }
-            ImageView::class.java.isAssignableFrom(view::class.java) -> {
-                imageMapper.map(view as ImageView, systemInformation)
-            }
-            else -> {
-                val viewParent = view.parent
-                if (viewParent == null ||
-                    !View::class.java.isAssignableFrom(viewParent::class.java)
-                ) {
-                    decorViewMapper.map(view, systemInformation)
-                } else {
-                    viewWireframeMapper.map(view, systemInformation)
-                }
-            }
+        return mappers.firstOrNull {
+            it.first(view)
+        }?.second?.map(view, systemInformation) ?: emptyList()
+    }
+
+    private fun defaultTypeCheckCondition(type: Class<*>): MapperCondition {
+        return {
+            type.isAssignableFrom(it::class.java)
         }
+    }
+    private fun decorViewCheckCondition(): MapperCondition {
+        return {
+            val viewParent = it.parent
+            viewParent == null || !View::class.java.isAssignableFrom(viewParent::class.java)
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun WireframeMapper<*, *>.toGenericMapper(): WireframeMapper<View, *> {
+        return this as WireframeMapper<View, *>
     }
 }

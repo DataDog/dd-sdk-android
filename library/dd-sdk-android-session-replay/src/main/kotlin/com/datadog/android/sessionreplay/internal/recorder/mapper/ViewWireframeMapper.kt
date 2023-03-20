@@ -16,7 +16,8 @@ internal class ViewWireframeMapper :
     override fun map(view: View, systemInformation: SystemInformation):
         List<MobileSegment.Wireframe.ShapeWireframe> {
         val viewGlobalBounds = resolveViewGlobalBounds(view, systemInformation.screenDensity)
-        val styleBorderPair = view.background?.resolveShapeStyleAndBorder(view.alpha)
+        val (shapeStyle, border) = view.background?.resolveShapeStyleAndBorder(view.alpha)
+            ?: (null to null)
         return listOf(
             MobileSegment.Wireframe.ShapeWireframe(
                 resolveViewId(view),
@@ -24,8 +25,8 @@ internal class ViewWireframeMapper :
                 viewGlobalBounds.y,
                 viewGlobalBounds.width,
                 viewGlobalBounds.height,
-                shapeStyle = styleBorderPair?.first,
-                border = styleBorderPair?.second
+                shapeStyle = shapeStyle,
+                border = border
             )
         )
     }

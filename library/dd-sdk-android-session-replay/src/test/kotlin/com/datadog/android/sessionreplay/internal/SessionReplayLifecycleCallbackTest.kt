@@ -8,12 +8,14 @@ package com.datadog.android.sessionreplay.internal
 
 import android.app.Activity
 import android.app.Application
+import android.view.View
 import android.view.Window
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.internal.recorder.Recorder
+import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
+import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.callback.RecorderFragmentLifecycleCallback
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
@@ -45,7 +47,10 @@ internal class SessionReplayLifecycleCallbackTest {
     lateinit var testedCallback: SessionReplayLifecycleCallback
 
     @Mock
-    private lateinit var mockRecoder: Recorder
+    private lateinit var mockWindowCallbackInterceptor: WindowCallbackInterceptor
+
+    @Mock
+    private lateinit var mockViewOnDrawInterceptor: ViewOnDrawInterceptor
 
     @Mock
     private lateinit var mockRumContextProvider: RumContextProvider
@@ -68,9 +73,13 @@ internal class SessionReplayLifecycleCallbackTest {
     @Mock
     private lateinit var mockWindow: Window
 
+    @Mock
+    private lateinit var mockDecorView: View
+
     @BeforeEach
     fun `set up`() {
         whenever(mockActivity.window).thenReturn(mockWindow)
+        whenever(mockWindow.decorView).thenReturn(mockDecorView)
         testedCallback = SessionReplayLifecycleCallback(
             mockRumContextProvider,
             fakePrivacy,
@@ -78,7 +87,8 @@ internal class SessionReplayLifecycleCallbackTest {
             mockTimeProvider,
             mockRecordCallback
         )
-        testedCallback.recorder = mockRecoder
+        testedCallback.viewOnDrawInterceptor = mockViewOnDrawInterceptor
+        testedCallback.windowCallbackInterceptor = mockWindowCallbackInterceptor
     }
 
     @Test
@@ -112,16 +122,25 @@ internal class SessionReplayLifecycleCallbackTest {
     }
 
     @Test
-    fun `M start recording activity W onActivityResumed()`() {
+    fun `M intercept activity window callback W onActivityResumed()`() {
         // When
         testedCallback.onActivityResumed(mockActivity)
 
         // Then
-        verify(mockRecoder).startRecording(listOf(mockWindow), mockActivity)
+        verify(mockWindowCallbackInterceptor).intercept(listOf(mockWindow), mockActivity)
     }
 
     @Test
-    fun `M stop recording activity W onActivityPaused() { activity previously resumed }`() {
+    fun `M intercept activity decorView onDraw W onActivityResumed()`() {
+        // When
+        testedCallback.onActivityResumed(mockActivity)
+
+        // Then
+        verify(mockViewOnDrawInterceptor).intercept(listOf(mockDecorView), mockActivity)
+    }
+
+    @Test
+    fun `M stop intercepting window callback W onActivityPaused() {activity previously resumed}`() {
         // Given
         testedCallback.onActivityResumed(mockActivity)
 
@@ -129,16 +148,37 @@ internal class SessionReplayLifecycleCallbackTest {
         testedCallback.onActivityPaused(mockActivity)
 
         // Then
-        verify(mockRecoder).stopRecording(listOf(mockWindow))
+        verify(mockWindowCallbackInterceptor).stopIntercepting(listOf(mockWindow))
     }
 
     @Test
-    fun `M stop recording activity W onActivityPaused() { activity not previously resumed }`() {
+    fun `M stop intercepting window callback W onActivityPaused() {not previously resumed}`() {
         // When
         testedCallback.onActivityPaused(mockActivity)
 
         // Then
-        verify(mockRecoder).stopRecording(listOf(mockWindow))
+        verify(mockWindowCallbackInterceptor).stopIntercepting(listOf(mockWindow))
+    }
+
+    @Test
+    fun `M stop intercepting decorView onDraw W onActivityPaused(){activity previously resumed}`() {
+        // Given
+        testedCallback.onActivityResumed(mockActivity)
+
+        // When
+        testedCallback.onActivityPaused(mockActivity)
+
+        // Then
+        verify(mockViewOnDrawInterceptor).stopIntercepting(listOf(mockDecorView))
+    }
+
+    @Test
+    fun `M stop intercepting decorView onDraw W onActivityPaused() {not previously resumed}`() {
+        // When
+        testedCallback.onActivityPaused(mockActivity)
+
+        // Then
+        verify(mockViewOnDrawInterceptor).stopIntercepting(listOf(mockDecorView))
     }
 
     @Test
@@ -184,6 +224,7 @@ internal class SessionReplayLifecycleCallbackTest {
         testedCallback.unregisterAndStopRecorders(mockApplication)
 
         // Then
-        verify(mockRecoder).stopRecording()
+        verify(mockWindowCallbackInterceptor).stopIntercepting()
+        verify(mockViewOnDrawInterceptor).stopIntercepting()
     }
 }

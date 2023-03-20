@@ -73,7 +73,7 @@ internal class WindowsOnDrawListenerTest {
     var fakeDecorHeight: Int = 0
     var fakeOrientation: Int = Configuration.ORIENTATION_UNDEFINED
 
-    lateinit var fakeMockedWindows: List<Window>
+    lateinit var fakeMockedDecorViews: List<View>
     lateinit var fakeWindowsSnapshots: List<Node>
 
     @Mock
@@ -89,11 +89,11 @@ internal class WindowsOnDrawListenerTest {
     fun `set up`(forge: Forge) {
         whenever(mockMiscUtils.resolveSystemInformation(mockActivity))
             .thenReturn(fakeSystemInformation)
-        fakeMockedWindows = forge.aMockedWindowsList()
-        fakeWindowsSnapshots = fakeMockedWindows.map { forge.getForgery() }
+        fakeMockedDecorViews = forge.aMockedDecorViewList()
+        fakeWindowsSnapshots = fakeMockedDecorViews.map { forge.getForgery() }
         whenever(mockActivity.theme).thenReturn(mockTheme)
-        fakeMockedWindows.forEachIndexed { index, window ->
-            whenever(mockSnapshotProducer.produce(window.decorView, fakeSystemInformation))
+        fakeMockedDecorViews.forEachIndexed { index, decorView ->
+            whenever(mockSnapshotProducer.produce(decorView, fakeSystemInformation))
                 .thenReturn(fakeWindowsSnapshots[index])
         }
         whenever(mockDecorView.width).thenReturn(fakeDecorWidth)
@@ -115,7 +115,7 @@ internal class WindowsOnDrawListenerTest {
         whenever(mockActivity.resources).thenReturn(mockResources)
         testedListener = WindowsOnDrawListener(
             mockActivity,
-            fakeMockedWindows,
+            fakeMockedDecorViews,
             mockProcessor,
             mockSnapshotProducer,
             mockDebouncer,
@@ -161,7 +161,7 @@ internal class WindowsOnDrawListenerTest {
     @Test
     fun `M do nothing W onDraw(){ windows lost the strong reference }`() {
         // Given
-        testedListener.weakReferencedWindows.forEach { it.clear() }
+        testedListener.weakReferencedDecorViews.forEach { it.clear() }
         stubDebouncer()
 
         // When
@@ -192,13 +192,10 @@ internal class WindowsOnDrawListenerTest {
         whenever(mockDebouncer.debounce(any())).then { (it.arguments[0] as Runnable).run() }
     }
 
-    private fun Forge.aMockedWindowsList(): List<Window> {
+    private fun Forge.aMockedDecorViewList(): List<View> {
         return aList {
             mock {
-                val mockDecorView: View = mock()
-                whenever(mockDecorView.viewTreeObserver).thenReturn(mock())
-                whenever(it.decorView).thenReturn(mockDecorView)
-                whenever(it.callback).thenReturn(mock())
+                whenever(it.viewTreeObserver).thenReturn(mock())
             }
         }
     }

@@ -39,4 +39,33 @@
         android:textColor="@android:color/holo_orange_light"
         android:text="@string/material_checkbox"/>
 
+    <RadioButton
+        app:layout_constraintTop_toBottomOf="@+id/material_checkbox"
+        app:layout_constraintStart_toStartOf="parent"
+        android:id="@+id/radio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/datadog_violet"
+        android:text="@string/default_radio" />
+
+    <androidx.appcompat.widget.AppCompatRadioButton
+        app:layout_constraintTop_toBottomOf="@+id/radio"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/app_compat_radio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/holo_red_dark"
+        android:text="@string/app_compat_radio" />
+
+    <com.google.android.material.radiobutton.MaterialRadioButton
+        app:layout_constraintTop_toBottomOf="@+id/app_compat_radio"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/material_radio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/holo_orange_light"
+        android:text="@string/material_radio"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

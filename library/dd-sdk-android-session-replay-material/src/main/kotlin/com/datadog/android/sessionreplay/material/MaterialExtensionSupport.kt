@@ -1,0 +1,30 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.sessionreplay.material
+
+import android.view.View
+import com.datadog.android.sessionreplay.ExtensionSupport
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
+import com.google.android.material.slider.Slider
+
+/**
+ * Android Material extension support implementation to be used in the Session Replay
+ * configuration.
+ */
+class MaterialExtensionSupport : ExtensionSupport {
+    @Suppress("UNCHECKED_CAST")
+    override fun getCustomViewMappers():
+        Map<SessionReplayPrivacy, Map<Class<*>, WireframeMapper<View, *>>> {
+        val maskAllSliderMapper = MaskAllSliderWireframeMapper() as WireframeMapper<View, *>
+        val allowAllSliderMapper = SliderWireframeMapper() as WireframeMapper<View, *>
+        return mapOf(
+            SessionReplayPrivacy.ALLOW_ALL to mapOf(Slider::class.java to allowAllSliderMapper),
+            SessionReplayPrivacy.MASK_ALL to mapOf(Slider::class.java to maskAllSliderMapper)
+        )
+    }
+}

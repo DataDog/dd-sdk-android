@@ -12,7 +12,9 @@ import android.widget.CheckBox
 import android.widget.CheckedTextView
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.RadioButton
 import android.widget.TextView
+import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.nhaarman.mockitokotlin2.mock
@@ -36,7 +38,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
+internal class MaskAllWireframeMapperTest : BaseGenericWireframeMapperTest() {
 
     @Mock
     lateinit var mockViewWireframeMapper: ViewWireframeMapper
@@ -62,6 +64,12 @@ internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
     @Mock
     lateinit var mockCheckBoxWireframeMapper: MaskAllCheckBoxMapper
 
+    @Mock
+    lateinit var mockRadioButtonMapper: MaskAllRadioButtonMapper
+
+    @Mock
+    lateinit var mockSwitchCompatMapper: MaskAllSwitchCompatMapper
+
     lateinit var mockShapeWireframes: List<MobileSegment.Wireframe.ShapeWireframe>
 
     lateinit var mockImageWireframes: List<MobileSegment.Wireframe.ShapeWireframe>
@@ -78,10 +86,15 @@ internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
 
     lateinit var mockCheckBoxWireframes: List<MobileSegment.Wireframe>
 
+    lateinit var mockRadioButtonWireframes: List<MobileSegment.Wireframe>
+
+    lateinit var mockSwitchCompatWireframes: List<MobileSegment.Wireframe>
+
     lateinit var testedMaskAllWireframeMapper: MaskAllWireframeMapper
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
+    override fun `set up`(forge: Forge) {
+        super.`set up`(forge)
         mockShapeWireframes = forge.aList { mock() }
         mockImageWireframes = forge.aList { mock() }
         mockButtonWireframes = forge.aList { mock() }
@@ -91,6 +104,8 @@ internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
         mockCheckedTextWireframes = forge.aList { mock() }
         mockDecorViewWireframes = forge.aList { mock() }
         mockCheckBoxWireframes = forge.aList { mock() }
+        mockRadioButtonWireframes = forge.aList { mock() }
+        mockSwitchCompatWireframes = forge.aList { mock() }
         testedMaskAllWireframeMapper = MaskAllWireframeMapper(
             mockViewWireframeMapper,
             mockImageWireframeMapper,
@@ -99,8 +114,41 @@ internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
             mockEditTextViewMapper,
             mockCheckedTextViewWireframeMapper,
             mockDecorViewMapper,
-            mockCheckBoxWireframeMapper
+            mockCheckBoxWireframeMapper,
+            mockRadioButtonMapper,
+            mockSwitchCompatMapper,
+            mockCustomMappers
         )
+    }
+
+    @Test
+    fun `M resolve first from customMappers W map { customMappers provided }`(forge: Forge) {
+        // Given
+        mockCustomMappers = mockCustomMappedToData.associate {
+            val mockWireframeMapper = mock<WireframeMapper<View, *>>()
+            whenever(mockWireframeMapper.map(it.first, fakeSystemInformation)).thenReturn(it.second)
+            it.first::class.java to mockWireframeMapper
+        }
+        val fakeCustomMappedIndex = forge.anInt(min = 0, max = mockCustomMappedToData.size)
+        val mockCustomMappedView = mockCustomMappedToData[fakeCustomMappedIndex].first
+        val expectedWireframeData = mockCustomMappedToData[fakeCustomMappedIndex].second
+        testedMaskAllWireframeMapper = MaskAllWireframeMapper(
+            mockViewWireframeMapper,
+            mockImageWireframeMapper,
+            mockMaskAllTextViewMapper,
+            mockButtonMapper,
+            mockEditTextViewMapper,
+            mockCheckedTextViewWireframeMapper,
+            mockDecorViewMapper,
+            mockCheckBoxWireframeMapper,
+            mockRadioButtonMapper,
+            mockSwitchCompatMapper,
+            mockCustomMappers
+        )
+
+        // Then
+        assertThat(testedMaskAllWireframeMapper.map(mockCustomMappedView, fakeSystemInformation))
+            .isEqualTo(expectedWireframeData)
     }
 
     @Test
@@ -199,6 +247,34 @@ internal class MaskAllWireframeMapperTest : BaseWireframeMapperTest() {
 
         // Then
         assertThat(wireframes).isEqualTo(mockCheckBoxWireframes)
+    }
+
+    @Test
+    fun `M delegate to RadioButtonWireframeMapper W map { RadioButton }`() {
+        // Given
+        val mockView: RadioButton = mock()
+        whenever(mockRadioButtonMapper.map(mockView, fakeSystemInformation))
+            .thenReturn(mockRadioButtonWireframes)
+
+        // When
+        val wireframes = testedMaskAllWireframeMapper.map(mockView, fakeSystemInformation)
+
+        // Then
+        assertThat(wireframes).isEqualTo(mockRadioButtonWireframes)
+    }
+
+    @Test
+    fun `M delegate to SwitchCompatWireframeMapper W map { SwitchCompat }`() {
+        // Given
+        val mockView: SwitchCompat = mock()
+        whenever(mockSwitchCompatMapper.map(mockView, fakeSystemInformation))
+            .thenReturn(mockSwitchCompatWireframes)
+
+        // When
+        val wireframes = testedMaskAllWireframeMapper.map(mockView, fakeSystemInformation)
+
+        // Then
+        assertThat(wireframes).isEqualTo(mockSwitchCompatWireframes)
     }
 
     @Test

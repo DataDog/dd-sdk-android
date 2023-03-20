@@ -8,7 +8,14 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.content.res.Configuration
 
-internal data class SystemInformation(
+/**
+ * Provides information about the current system.
+ * @param screenBounds as screen bounds in Global coordinates
+ * @param screenOrientation as current screen orientation
+ * @param screenDensity current screen density
+ * @param themeColor application theme color
+ */
+data class SystemInformation(
     val screenBounds: GlobalBounds,
     val screenOrientation: Int = Configuration.ORIENTATION_UNDEFINED,
     val screenDensity: Float,

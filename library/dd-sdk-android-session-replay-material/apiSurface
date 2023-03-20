@@ -1,0 +1,2 @@
+class com.datadog.android.sessionreplay.material.MaterialExtensionSupport : com.datadog.android.sessionreplay.ExtensionSupport
+  override fun getCustomViewMappers(): Map<com.datadog.android.sessionreplay.SessionReplayPrivacy, Map<Class<*>, com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper<android.view.View, *>>>

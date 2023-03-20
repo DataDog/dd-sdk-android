@@ -11,13 +11,14 @@ import android.os.Build
 import android.view.View
 import android.widget.EditText
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
-import com.datadog.android.sessionreplay.internal.recorder.ViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.sessionreplay.utils.ViewUtils
 
 internal open class EditTextViewMapper(
     private val textWireframeMapper: TextWireframeMapper,
-    private val uniqueIdentifierGenerator: UniqueIdentifierResolver = UniqueIdentifierResolver,
-    viewUtils: ViewUtils = ViewUtils()
+    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
+    viewUtils: ViewUtils = ViewUtils
 ) : BaseWireframeMapper<EditText, MobileSegment.Wireframe>(viewUtils = viewUtils) {
 
     override fun map(view: EditText, systemInformation: SystemInformation):

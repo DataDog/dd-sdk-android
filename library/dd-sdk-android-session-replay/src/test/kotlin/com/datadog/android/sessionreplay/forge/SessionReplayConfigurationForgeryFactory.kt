@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.forge
 
+import com.datadog.android.sessionreplay.NoOpExtensionSupport
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import fr.xgouchet.elmyr.Forge
@@ -16,7 +17,8 @@ internal class SessionReplayConfigurationForgeryFactory :
     override fun getForgery(forge: Forge): SessionReplayConfiguration {
         return SessionReplayConfiguration(
             customEndpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
-            privacy = forge.aValueFrom(SessionReplayPrivacy::class.java)
+            privacy = forge.aValueFrom(SessionReplayPrivacy::class.java),
+            extensionSupport = NoOpExtensionSupport()
         )
     }
 }
