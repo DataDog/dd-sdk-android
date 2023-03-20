@@ -6,6 +6,7 @@
 
 package com.datadog.android.nightly.activities
 
+import com.datadog.android.Datadog
 import com.datadog.android.nightly.SPECIAL_INT_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_NULL_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_STRING_ATTRIBUTE_NAME
@@ -18,9 +19,12 @@ import okhttp3.Response
 internal class ResourceTrackingCustomAttributesActivity : ResourceTrackingActivity() {
 
     override val okHttpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .addInterceptor(
+        val sdkCore = Datadog.getInstance()
+        val builder = OkHttpClient.Builder()
+        if (sdkCore != null) {
+            builder.addInterceptor(
                 RumInterceptor(
+                    sdkCore,
                     rumResourceAttributesProvider = object :
                         RumResourceAttributesProvider {
                         override fun onProvideAttributes(
@@ -38,6 +42,7 @@ internal class ResourceTrackingCustomAttributesActivity : ResourceTrackingActivi
                     traceSamplingRate = HUNDRED_PERCENT
                 )
             )
-            .build()
+        }
+        builder.build()
     }
 }

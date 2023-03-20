@@ -6,6 +6,7 @@
 
 package com.datadog.android.nightly.activities
 
+import com.datadog.android.Datadog
 import com.datadog.android.nightly.server.LocalServer
 import com.datadog.android.okhttp.rum.RumInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptor
@@ -16,18 +17,21 @@ internal class ResourceTrackingNetworkInterceptorActivity : ResourceTrackingActi
     private val localServer: LocalServer by lazy { LocalServer() }
 
     override val okHttpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .addInterceptor(RumInterceptor(traceSamplingRate = HUNDRED_PERCENT))
-            .addNetworkInterceptor(
+        val sdkCore = Datadog.getInstance()
+        val builder = OkHttpClient.Builder()
+        if (sdkCore != null) {
+            builder.addInterceptor(
+                RumInterceptor(sdkCore, traceSamplingRate = HUNDRED_PERCENT)
+            )
+            builder.addNetworkInterceptor(
                 TracingInterceptor(
-                    listOf(
-                        HOST,
-                        LocalServer.HOST
-                    ),
+                    sdkCore,
+                    listOf(HOST, LocalServer.HOST),
                     traceSamplingRate = HUNDRED_PERCENT
                 )
             )
-            .build()
+        }
+        builder.build()
     }
 
     override val randomUrl: String by lazy {

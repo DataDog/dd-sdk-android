@@ -7,7 +7,6 @@
 package com.datadog.android.sdk.integration
 
 import android.os.Build
-import com.datadog.android.Datadog
 import com.datadog.android._InternalProxy
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
@@ -18,6 +17,7 @@ import com.datadog.android.rum.RumFeature
 import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingFeature
+import com.datadog.android.v2.api.SdkCore
 import java.util.UUID
 
 internal object RuntimeConfig {
@@ -37,10 +37,8 @@ internal object RuntimeConfig {
 
     val LONG_TASK_LARGE_THRESHOLD = Long.MAX_VALUE
 
-    fun logger(): Logger {
+    fun logger(sdkCore: SdkCore): Logger {
         // Initialise Logger
-        val sdkCore = Datadog.getInstance()
-        checkNotNull(sdkCore)
         val logger = Logger.Builder(sdkCore)
             .setNetworkInfoEnabled(true)
             .build()
@@ -56,8 +54,8 @@ internal object RuntimeConfig {
         return logger
     }
 
-    fun tracer(): AndroidTracer {
-        return AndroidTracer.Builder().build()
+    fun tracer(sdkCore: SdkCore): AndroidTracer {
+        return AndroidTracer.Builder(sdkCore).build()
     }
 
     fun credentials(): Credentials {

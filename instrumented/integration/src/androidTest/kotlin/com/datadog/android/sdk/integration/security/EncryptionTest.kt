@@ -73,7 +73,7 @@ internal class EncryptionTest {
         val rumMonitor = RumMonitor.Builder(sdkCore).build()
         GlobalRum.registerIfAbsent(rumMonitor)
 
-        val tracer = AndroidTracer.Builder().setBundleWithRumEnabled(true).build()
+        val tracer = AndroidTracer.Builder(sdkCore).setBundleWithRumEnabled(true).build()
         GlobalTracer.registerIfAbsent(tracer)
 
         val logger = Logger.Builder(sdkCore)

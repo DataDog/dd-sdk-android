@@ -23,7 +23,6 @@ import com.datadog.android.rum.RumFeature
 import com.datadog.android.trace.TracingFeature
 import com.datadog.android.v2.api.SdkCore
 
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal open class JvmCrashService : CrashService() {
 
     // region Service

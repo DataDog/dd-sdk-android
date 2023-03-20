@@ -42,7 +42,7 @@ class RumMonitorBackgroundE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
-     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.v2.api.SdkCore?
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
      * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#constructor(String)
