@@ -99,9 +99,11 @@ interface com.datadog.android.rum.RumMonitor
   fun addFeatureFlagEvaluation(String, Any)
   fun _getInternal(): _RumInternalProxy?
   class Builder
+    constructor(com.datadog.android.v2.api.SdkCore)
     fun sampleRumSessions(Float): Builder
     fun setSessionListener(RumSessionListener): Builder
     fun build(): RumMonitor
+    companion object 
 enum com.datadog.android.rum.RumPerformanceMetric
   - FLUTTER_BUILD_TIME
   - FLUTTER_RASTER_TIME
