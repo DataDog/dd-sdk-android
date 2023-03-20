@@ -37,7 +37,6 @@ import com.datadog.android.sample.picture.CoilImageLoader
 import com.datadog.android.sample.picture.FrescoImageLoader
 import com.datadog.android.sample.picture.PicassoImageLoader
 import com.datadog.android.sample.user.UserFragment
-import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
@@ -120,7 +119,7 @@ class SampleApplication : Application() {
         sdkCore.registerFeature(rumFeature)
         rumFeature.enableRumDebugging(true)
 
-        val sessionReplayConfig = SessionReplayConfiguration.Builder()
+        val sessionReplayFeature = SessionReplayFeature.Builder()
             .apply {
                 if (BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL.isNotBlank()) {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
@@ -129,7 +128,6 @@ class SampleApplication : Application() {
             .addExtensionSupport(MaterialExtensionSupport())
             .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
             .build()
-        val sessionReplayFeature = SessionReplayFeature(sessionReplayConfig)
         sdkCore.registerFeature(sessionReplayFeature)
 
         val logsFeature = LogsFeature.Builder().apply {

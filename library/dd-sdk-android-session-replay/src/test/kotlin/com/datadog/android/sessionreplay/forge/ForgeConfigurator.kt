@@ -38,7 +38,6 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(PointerInteractionDataForgeryFactory())
         forge.addFactory(ShapeStyleForgeryFactory())
         forge.addFactory(ShapeBorderForgeryFactory())
-        forge.addFactory(SessionReplayConfigurationForgeryFactory())
         forge.addFactory(MobileSegmentForgeryFactory())
         forge.addFactory(GlobalBoundsForgeryFactory())
         forge.addFactory(SystemInformationForgeryFactory())

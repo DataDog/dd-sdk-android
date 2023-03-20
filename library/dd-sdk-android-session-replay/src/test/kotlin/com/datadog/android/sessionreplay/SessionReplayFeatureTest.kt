@@ -28,6 +28,7 @@ import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -54,8 +55,11 @@ internal class SessionReplayFeatureTest {
 
     private lateinit var testedFeature: SessionReplayFeature
 
+    @StringForgery(regex = "https://[a-z]+\\.com")
+    lateinit var sessionReplayEndpointUrl: String
+
     @Forgery
-    lateinit var fakeConfigurationFeature: SessionReplayConfiguration
+    lateinit var fakePrivacy: SessionReplayPrivacy
 
     @Mock
     lateinit var mockSessionReplayLifecycleCallback: SessionReplayLifecycleCallback
@@ -64,9 +68,10 @@ internal class SessionReplayFeatureTest {
     lateinit var mockSdkCore: SdkCore
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
         testedFeature = SessionReplayFeature(
-            fakeConfigurationFeature
+            customEndpointUrl = forge.aNullable { sessionReplayEndpointUrl },
+            privacy = fakePrivacy
         ) { _, _ -> mockSessionReplayLifecycleCallback }
     }
 
@@ -81,10 +86,14 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 initialize session replay callback 𝕎 initialize()`() {
+    fun `𝕄 initialize session replay callback 𝕎 initialize()`(
+        forge: Forge
+    ) {
         // Given
         testedFeature = SessionReplayFeature(
-            fakeConfigurationFeature
+            customEndpointUrl = forge.aNullable { sessionReplayEndpointUrl },
+            privacy = fakePrivacy,
+            customMappers = emptyMap()
         )
 
         // When
@@ -96,10 +105,14 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 set the feature event receiver 𝕎 initialize()`() {
+    fun `𝕄 set the feature event receiver 𝕎 initialize()`(
+        forge: Forge
+    ) {
         // Given
         testedFeature = SessionReplayFeature(
-            fakeConfigurationFeature
+            customEndpointUrl = forge.aNullable { sessionReplayEndpointUrl },
+            privacy = fakePrivacy,
+            customMappers = emptyMap()
         )
 
         // When

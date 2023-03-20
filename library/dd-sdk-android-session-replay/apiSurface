@@ -1,13 +1,6 @@
 interface com.datadog.android.sessionreplay.ExtensionSupport
   fun getCustomViewMappers(): Map<SessionReplayPrivacy, Map<Class<*>, com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper<android.view.View, *>>>
-data class com.datadog.android.sessionreplay.SessionReplayConfiguration
-  class Builder
-    fun addExtensionSupport(ExtensionSupport): Builder
-    fun useCustomEndpoint(String): Builder
-    fun setPrivacy(SessionReplayPrivacy): Builder
-    fun build(): SessionReplayConfiguration
 class com.datadog.android.sessionreplay.SessionReplayFeature : com.datadog.android.v2.api.StorageBackedFeature, com.datadog.android.v2.api.FeatureEventReceiver
-  constructor(SessionReplayConfiguration)
   override val name: String
   override fun onInitialize(com.datadog.android.v2.api.SdkCore, android.content.Context)
   override val requestFactory: com.datadog.android.v2.api.RequestFactory
@@ -16,6 +9,11 @@ class com.datadog.android.sessionreplay.SessionReplayFeature : com.datadog.andro
   fun stopRecording()
   fun startRecording()
   override fun onReceive(Any)
+  class Builder
+    fun addExtensionSupport(ExtensionSupport): Builder
+    fun useCustomEndpoint(String): Builder
+    fun setPrivacy(SessionReplayPrivacy): Builder
+    fun build(): SessionReplayFeature
 enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - ALLOW_ALL
   - MASK_ALL
