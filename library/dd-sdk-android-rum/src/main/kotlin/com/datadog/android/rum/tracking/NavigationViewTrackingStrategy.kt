@@ -118,7 +118,6 @@ class NavigationViewTrackingStrategy(
      *
      * If activity is stopped, the function will return immediately without starting tracking.
      */
-    @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
     fun startTracking() {
         val activity = startedActivity ?: return
         val rumFeature = Datadog.getInstance()

@@ -6,7 +6,6 @@
 
 package com.datadog.android.trace
 
-import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.data.NoOpWriter
@@ -82,10 +81,12 @@ class AndroidTracer internal constructor(
 
     /**
      * Builds a [AndroidTracer] instance.
-     *
      */
     class Builder
-    internal constructor(private val logsHandler: LogHandler) {
+    internal constructor(
+        private val sdkCore: SdkCore,
+        private val logsHandler: LogHandler
+    ) {
 
         private var tracingHeaderTypes: Set<TracingHeaderType> = setOf(TracingHeaderType.DATADOG)
         private var bundleWithRumEnabled: Boolean = true
@@ -94,15 +95,15 @@ class AndroidTracer internal constructor(
         private var serviceName: String = ""
             get() {
                 return field.ifEmpty {
-                    val service = Datadog.getInstance()?.service
-                    if (service.isNullOrEmpty()) {
+                    val service = sdkCore.service
+                    if (service.isEmpty()) {
                         internalLogger.log(
                             InternalLogger.Level.ERROR,
                             InternalLogger.Target.USER,
                             DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
                         )
                     }
-                    service.orEmpty()
+                    service
                 }
             }
         private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
@@ -110,9 +111,12 @@ class AndroidTracer internal constructor(
 
         private val globalTags: MutableMap<String, String> = mutableMapOf()
 
-        constructor() : this(
-            // TODO RUMM-3105 add sdk core instance in builder
-            AndroidSpanLogsHandler(Datadog.getInstance())
+        /**
+         * @param sdkCore SDK instance to bind to.
+         */
+        constructor(sdkCore: SdkCore) : this(
+            sdkCore,
+            AndroidSpanLogsHandler(sdkCore)
         )
 
         // region Public API
@@ -121,11 +125,9 @@ class AndroidTracer internal constructor(
          * Builds a [AndroidTracer] based on the current state of this Builder.
          */
         fun build(): AndroidTracer {
-            @Suppress("UnsafeCallOnNullableType") // TODO RUMM-3105 add sdk core instance in builder
-            val datadogCore = Datadog.getInstance()!!
-            val tracingFeature = datadogCore.getFeature(Feature.TRACING_FEATURE_NAME)
+            val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
                 ?.unwrap<TracingFeature>()
-            val rumFeature = datadogCore.getFeature(Feature.RUM_FEATURE_NAME)
+            val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
 
             if (tracingFeature == null) {
                 internalLogger.log(
@@ -144,7 +146,7 @@ class AndroidTracer internal constructor(
                 bundleWithRumEnabled = false
             }
             return AndroidTracer(
-                datadogCore,
+                sdkCore,
                 config(),
                 tracingFeature?.dataWriter ?: NoOpWriter(),
                 random,
