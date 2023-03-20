@@ -16,11 +16,15 @@ import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.load.model.ModelLoaderFactory
 import com.bumptech.glide.module.AppGlideModule
 import com.datadog.android.okhttp.DatadogInterceptor
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.assertj.containsInstanceOf
 import com.datadog.tools.unit.getFieldValue
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.OkHttpClient
@@ -61,18 +65,26 @@ internal class DatadogGlideModuleTest {
     @Mock
     lateinit var mockRegistry: Registry
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
     @StringForgery(regex = "[a-z]+\\.[a-z]{3}")
     lateinit var fakeHost: String
 
     @BeforeEach
     fun `set up`() {
-        testedModule = DatadogGlideModule(listOf(fakeHost))
+        testedModule = DatadogGlideModule({ mockSdkCore }, listOf(fakeHost))
     }
 
     @Test
     fun `registers a custom OkHttpLoader`() {
+        // Given
+        whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
+
+        // When
         testedModule.registerComponents(mockContext, mockGlide, mockRegistry)
 
+        // Then
         argumentCaptor<ModelLoaderFactory<GlideUrl, InputStream>> {
             verify(mockRegistry).replace(
                 eq(GlideUrl::class.java),
