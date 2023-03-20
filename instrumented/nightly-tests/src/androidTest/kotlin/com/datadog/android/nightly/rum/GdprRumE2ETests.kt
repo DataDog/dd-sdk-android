@@ -36,7 +36,7 @@ class GdprRumE2ETests {
     @Test
     fun rum_config_consent_pending() {
         val testMethodName = "rum_config_consent_pending"
-        val sdkCore = measureSdkInitialize {
+        measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -52,7 +52,7 @@ class GdprRumE2ETests {
     @Test
     fun rum_config_consent_granted() {
         val testMethodName = "rum_config_consent_granted"
-        val sdkCore = measureSdkInitialize {
+        measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -68,7 +68,7 @@ class GdprRumE2ETests {
     @Test
     fun rum_config_consent_not_granted() {
         val testMethodName = "rum_config_consent_not_granted"
-        val sdkCore = measureSdkInitialize {
+        measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
