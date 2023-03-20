@@ -40,7 +40,7 @@ internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
                 .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                 .build()
         )
-        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+        GlobalRum.registerIfAbsent(RumMonitor.Builder(sdkCore).build())
         setContentView(R.layout.fragment_tracking_layout)
     }
 }

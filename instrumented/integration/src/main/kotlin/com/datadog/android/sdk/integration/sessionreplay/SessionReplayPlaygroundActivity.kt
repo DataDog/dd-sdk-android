@@ -60,7 +60,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
             .forEach {
                 sdkCore.registerFeature(it)
             }
-        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+        GlobalRum.registerIfAbsent(RumMonitor.Builder(sdkCore).build())
         setContentView(R.layout.session_replay_layout)
         titleTextView = findViewById(R.id.title)
         clickMeButton = findViewById(R.id.button)

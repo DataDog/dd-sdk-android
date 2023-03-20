@@ -46,7 +46,7 @@ class LogsConfigE2ETests {
     @Test
     fun logs_config_feature_enabled() {
         val testMethodName = "logs_config_feature_enabled"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -57,7 +57,7 @@ class LogsConfigE2ETests {
             )
         }
         measureLoggerInitialize {
-            logger = initializeLogger()
+            logger = initializeLogger(sdkCore)
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -68,7 +68,7 @@ class LogsConfigE2ETests {
     @Test
     fun logs_config_custom_batch_size() {
         val testMethodName = "logs_config_custom_batch_size"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -79,7 +79,7 @@ class LogsConfigE2ETests {
             )
         }
         measureLoggerInitialize {
-            logger = initializeLogger()
+            logger = initializeLogger(sdkCore)
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -90,7 +90,7 @@ class LogsConfigE2ETests {
     @Test
     fun logs_config_logs_feature_disabled() {
         val testMethodName = "logs_config_feature_disabled"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -102,7 +102,7 @@ class LogsConfigE2ETests {
             )
         }
         measureLoggerInitialize {
-            logger = initializeLogger()
+            logger = initializeLogger(sdkCore)
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -113,7 +113,7 @@ class LogsConfigE2ETests {
     @Test
     fun logs_config_set_event_mapper() {
         val testMethodName = "logs_config_set_event_mapper"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -136,7 +136,7 @@ class LogsConfigE2ETests {
             )
         }
         measureLoggerInitialize {
-            logger = initializeLogger()
+            logger = initializeLogger(sdkCore)
         }
         measure(testMethodName) {
             logger.sendRandomLog(testMethodName, forge)
@@ -149,7 +149,7 @@ class LogsConfigE2ETests {
     @Test
     fun logs_config_set_event_mapper_with_drop_event() {
         val testMethodName = "logs_config_set_event_mapper_with_drop_event"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -171,7 +171,7 @@ class LogsConfigE2ETests {
             )
         }
         measureLoggerInitialize {
-            logger = initializeLogger()
+            logger = initializeLogger(sdkCore)
         }
         measure(testMethodName) {
             logger.sendRandomLog(testMethodName, forge)
@@ -186,7 +186,7 @@ class LogsConfigE2ETests {
     @Test
     fun logs_config_set_security_config_with_encryption() {
         val testMethodName = "logs_config_set_security_config_with_encryption"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -200,7 +200,7 @@ class LogsConfigE2ETests {
             )
         }
         measureLoggerInitialize {
-            logger = initializeLogger()
+            logger = initializeLogger(sdkCore)
         }
         logger.sendRandomLog(testMethodName, forge)
     }

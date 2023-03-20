@@ -30,6 +30,7 @@ class RumMonitorBuilderE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore)
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun sampleRumSessions(Float): Builder
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
      * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun registerIfAbsent(java.util.concurrent.Callable<RumMonitor>): Boolean
@@ -41,9 +42,9 @@ class RumMonitorBuilderE2ETests {
         initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
             forgeSeed = forge.seed,
-            rumMonitorProvider = {
+            rumMonitorProvider = { sdkCore ->
                 measureRumMonitorInitialize {
-                    RumMonitor.Builder().build()
+                    RumMonitor.Builder(sdkCore).build()
                 }
             }
         )
@@ -52,6 +53,7 @@ class RumMonitorBuilderE2ETests {
     }
 
     /**
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore)
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun sampleRumSessions(Float): Builder
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
      */
@@ -61,9 +63,9 @@ class RumMonitorBuilderE2ETests {
         initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
             forgeSeed = forge.seed,
-            rumMonitorProvider = {
+            rumMonitorProvider = { sdkCore ->
                 measureRumMonitorInitialize {
-                    RumMonitor.Builder().sampleRumSessions(0f).build()
+                    RumMonitor.Builder(sdkCore).sampleRumSessions(0f).build()
                 }
             }
         )
@@ -71,6 +73,7 @@ class RumMonitorBuilderE2ETests {
     }
 
     /**
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore)
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun sampleRumSessions(Float): Builder
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
      */
@@ -81,9 +84,9 @@ class RumMonitorBuilderE2ETests {
         initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
             forgeSeed = forge.seed,
-            rumMonitorProvider = {
+            rumMonitorProvider = { sdkCore ->
                 measureRumMonitorInitialize {
-                    RumMonitor.Builder().sampleRumSessions(75f).build()
+                    RumMonitor.Builder(sdkCore).sampleRumSessions(75f).build()
                 }
             }
         )

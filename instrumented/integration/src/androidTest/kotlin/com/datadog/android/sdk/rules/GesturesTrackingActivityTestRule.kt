@@ -26,13 +26,14 @@ internal class GesturesTrackingActivityTestRule<T : Activity>(
         val config = RuntimeConfig.configBuilder()
             .build()
 
-        Datadog.initialize(
+        val sdkCore = Datadog.initialize(
             InstrumentationRegistry.getInstrumentation().targetContext.applicationContext,
             RuntimeConfig.credentials(),
             config,
             trackingConsent
         )
-        Datadog.getInstance()?.registerFeature( // attach the gestures tracker
+        checkNotNull(sdkCore)
+        sdkCore.registerFeature( // attach the gestures tracker
             // we will use a large long task threshold to make sure we will not have LongTask events
             // noise in our integration tests.
             RuntimeConfig.rumFeatureBuilder()
@@ -41,6 +42,6 @@ internal class GesturesTrackingActivityTestRule<T : Activity>(
                 .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
                 .build()
         )
-        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+        GlobalRum.registerIfAbsent(RumMonitor.Builder(sdkCore).build())
     }
 }

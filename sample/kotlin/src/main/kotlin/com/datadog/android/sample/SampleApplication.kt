@@ -164,7 +164,7 @@ class SampleApplication : Application() {
                 .setServiceName(BuildConfig.APPLICATION_ID)
                 .build()
         )
-        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+        GlobalRum.registerIfAbsent(RumMonitor.Builder(sdkCore).build())
         TracingRxJava3Utils.enableTracing(GlobalTracer.get())
     }
 
