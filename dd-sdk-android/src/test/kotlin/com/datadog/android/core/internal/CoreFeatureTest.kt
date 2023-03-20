@@ -644,7 +644,7 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.isMainProcess).isTrue()
-        assertThat(CoreFeature.processImportance).isEqualTo(processImportance)
+        assertThat(testedFeature.processImportance).isEqualTo(processImportance)
     }
 
     @Test
@@ -677,7 +677,7 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.isMainProcess).isFalse()
-        assertThat(CoreFeature.processImportance).isEqualTo(processImportance)
+        assertThat(testedFeature.processImportance).isEqualTo(processImportance)
     }
 
     @Test
@@ -709,7 +709,7 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.isMainProcess).isTrue()
-        assertThat(CoreFeature.processImportance)
+        assertThat(testedFeature.processImportance)
             .isEqualTo(ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
     }
 

@@ -37,11 +37,6 @@ interface InternalSdkCore : SdkCore {
     val rootStorageDir: File
 
     /**
-     * One of [ActivityManager.RunningAppProcessInfo] taken at the moment when SDK class was loaded.
-     */
-    val processImportance: Int
-
-    /**
      * Writes current RUM view event to the dedicated file for the needs of NDK crash reporting.
      *
      * @param data Serialized RUM view event.

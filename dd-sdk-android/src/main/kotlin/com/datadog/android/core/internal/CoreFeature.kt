@@ -119,6 +119,8 @@ internal class CoreFeature {
     internal var uploadFrequency: UploadFrequency = UploadFrequency.AVERAGE
     internal var ndkCrashHandler: NdkCrashHandler = NoOpNdkCrashHandler()
     internal var site: DatadogSite = DatadogSite.US1
+    internal var processImportance: Int =
+        ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: ExecutorService
@@ -510,8 +512,6 @@ internal class CoreFeature {
     // endregion
 
     companion object {
-        internal var processImportance: Int =
-            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
 
         // region Constants
 

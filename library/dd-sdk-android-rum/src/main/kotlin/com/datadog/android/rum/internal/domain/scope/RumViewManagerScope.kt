@@ -42,7 +42,8 @@ internal class RumViewManagerScope(
     @WorkerThread
     override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope {
         if (!applicationDisplayed) {
-            val isForegroundProcess = sdkCore.processImportance ==
+            val processImportance = sdkCore.getDatadogContext()?.processInfo?.processImportance
+            val isForegroundProcess = processImportance ==
                 ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
             if (isForegroundProcess) {
                 startApplicationLaunchView(event, writer)
@@ -114,7 +115,7 @@ internal class RumViewManagerScope(
 
     @WorkerThread
     private fun handleOrphanEvent(event: RumRawEvent, writer: DataWriter<Any>) {
-        val processFlag = sdkCore.processImportance
+        val processFlag = sdkCore.getDatadogContext()?.processInfo?.processImportance
         val importanceForeground = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         val isForegroundProcess = processFlag == importanceForeground
 

@@ -40,7 +40,7 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
                 },
                 processInfo = ProcessInfo(
                     isMainProcess = coreFeature.isMainProcess,
-                    processImportance = CoreFeature.processImportance
+                    processImportance = coreFeature.processImportance
                 ),
                 networkInfo = coreFeature.networkInfoProvider.getLatestNetworkInfo(),
                 deviceInfo = with(coreFeature.androidInfoProvider) {

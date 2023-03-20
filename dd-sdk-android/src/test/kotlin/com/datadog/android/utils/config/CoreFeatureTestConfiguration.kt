@@ -6,7 +6,6 @@
 
 package com.datadog.android.utils.config
 
-import android.app.ActivityManager
 import android.content.Context
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.BatchSize
@@ -82,7 +81,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
 
     override fun tearDown(forge: Forge) {
         fakeStorageDir.deleteRecursively()
-        CoreFeature.processImportance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
     }
 
     // endregion
@@ -141,7 +139,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.uploadFrequency) doReturn fakeUploadFrequency
         whenever(mockInstance.site) doReturn fakeSite
         whenever(mockInstance.featuresContext) doReturn fakeFeaturesContext
-        CoreFeature.processImportance = fakeProcessImportance
+        whenever(mockInstance.processImportance) doReturn fakeProcessImportance
 
         whenever(mockInstance.persistenceExecutorService) doReturn mockPersistenceExecutor
         whenever(mockInstance.uploadExecutorService) doReturn mockUploadExecutor

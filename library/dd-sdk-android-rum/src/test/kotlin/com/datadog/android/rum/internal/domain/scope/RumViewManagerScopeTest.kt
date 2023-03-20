@@ -24,6 +24,7 @@ import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.api.context.ProcessInfo
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
@@ -334,7 +335,7 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockSdkCore.processImportance) doReturn forge.anElementFrom(
+        val fakeProcessImportance = forge.anElementFrom(
             RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
             RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
             @Suppress("DEPRECATION")
@@ -346,6 +347,9 @@ internal class RumViewManagerScopeTest {
             RunningAppProcessInfo.IMPORTANCE_SERVICE,
             RunningAppProcessInfo.IMPORTANCE_CACHED,
             RunningAppProcessInfo.IMPORTANCE_GONE
+        )
+        whenever(mockSdkCore.getDatadogContext()) doReturn fakeDatadogContext.copy(
+            processInfo = ProcessInfo(true, fakeProcessImportance)
         )
         testedScope.applicationDisplayed = false
         val fakeEvent = forge.validBackgroundEvent()
@@ -497,7 +501,9 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockSdkCore.processImportance) doReturn RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        whenever(mockSdkCore.getDatadogContext()) doReturn fakeDatadogContext.copy(
+            processInfo = ProcessInfo(true, RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
+        )
         testedScope.applicationDisplayed = false
         val fakeEvent = forge.anyRumEvent()
         val appStartTimeNs = forge.aLong(min = 0, max = fakeEvent.eventTime.nanoTime)
@@ -533,7 +539,7 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockSdkCore.processImportance) doReturn forge.anElementFrom(
+        val fakeProcessImportance = forge.anElementFrom(
             RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
             RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
             @Suppress("DEPRECATION")
@@ -545,6 +551,9 @@ internal class RumViewManagerScopeTest {
             RunningAppProcessInfo.IMPORTANCE_SERVICE,
             RunningAppProcessInfo.IMPORTANCE_CACHED,
             RunningAppProcessInfo.IMPORTANCE_GONE
+        )
+        whenever(mockSdkCore.getDatadogContext()) doReturn fakeDatadogContext.copy(
+            processInfo = ProcessInfo(true, fakeProcessImportance)
         )
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
@@ -634,7 +643,9 @@ internal class RumViewManagerScopeTest {
 
         val appStartTimeNs = forge.aLong(min = 0, max = fakeEvent.eventTime.nanoTime)
         whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn appStartTimeNs
-        whenever(mockSdkCore.processImportance) doReturn RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        whenever(mockSdkCore.getDatadogContext()) doReturn fakeDatadogContext.copy(
+            processInfo = ProcessInfo(true, RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
+        )
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
@@ -680,7 +691,7 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockSdkCore.processImportance) doReturn forge.anElementFrom(
+        val fakeProcessImportance = forge.anElementFrom(
             RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
             RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
             @Suppress("DEPRECATION")
@@ -692,6 +703,9 @@ internal class RumViewManagerScopeTest {
             RunningAppProcessInfo.IMPORTANCE_SERVICE,
             RunningAppProcessInfo.IMPORTANCE_CACHED,
             RunningAppProcessInfo.IMPORTANCE_GONE
+        )
+        whenever(mockSdkCore.getDatadogContext()) doReturn fakeDatadogContext.copy(
+            processInfo = ProcessInfo(true, fakeProcessImportance)
         )
         testedScope.applicationDisplayed = false
         val childView: RumViewScope = mock()
