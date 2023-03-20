@@ -21,7 +21,6 @@ import com.datadog.android.rum.RumFeature
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.security.Encryption
-import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingFeature
@@ -66,7 +65,7 @@ internal class EncryptionTest {
             RumFeature.Builder(applicationId = forge.anAlphaNumericalString()).build(),
             LogsFeature.Builder().build(),
             TracingFeature.Builder().build(),
-            SessionReplayFeature(SessionReplayConfiguration.Builder().build())
+            SessionReplayFeature.Builder().build()
         )
         features.shuffled(Random(forge.seed)).forEach {
             sdkCore.registerFeature(it)

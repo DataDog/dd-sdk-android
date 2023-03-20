@@ -20,8 +20,10 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.core.sampling.RateBasedSampler#constructor(Double)
  * apiMethodSignature: com.datadog.android.core.sampling.RateBasedSampler#constructor(Float)
  * apiMethodSignature: com.datadog.android.event.MapperSerializer<T#constructor(EventMapper<T>, com.datadog.android.core.persistence.Serializer<T>)
- * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun setPrivacy(com.datadog.android.sessionreplay.SessionReplayPrivacy): Builder
- * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun useCustomEndpoint(String): Builder
+ * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayFeature$Builder#fun setPrivacy(SessionReplayPrivacy): Builder
+ * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayFeature$Builder#fun useCustomEndpoint(String): Builder
+ * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayFeature$Builder#fun addExtensionSupport(ExtensionSupport): Builder
+ * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayFeature$Builder#fun build(): SessionReplayFeature
  * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun setSessionListener(RumSessionListener): Builder
  * apiMethodSignature: com.datadog.android.log.Logger#fun log(Int, String, Throwable? = null, Map<String, Any?> = emptyMap())
  * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setLogcatLogsEnabled(Boolean): Builder

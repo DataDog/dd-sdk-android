@@ -24,7 +24,6 @@ import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
-import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.Random
@@ -50,11 +49,9 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
                 .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
                 .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                 .build(),
-            SessionReplayFeature(
-                RuntimeConfig.sessionReplayConfigBuilder()
-                    .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
-                    .build()
-            )
+            RuntimeConfig.sessionReplayFeatureBuilder()
+                .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
+                .build()
         )
         features.shuffled(Random(intent.getForgeSeed()))
             .forEach {

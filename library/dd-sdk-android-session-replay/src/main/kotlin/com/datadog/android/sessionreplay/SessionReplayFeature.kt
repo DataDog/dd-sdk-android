@@ -8,6 +8,8 @@ package com.datadog.android.sessionreplay
 
 import android.app.Application
 import android.content.Context
+import android.view.View
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
 import com.datadog.android.sessionreplay.internal.NoOpLifecycleCallback
@@ -16,6 +18,7 @@ import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayRecordCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
+import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
@@ -33,26 +36,26 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Session Replay feature class, which needs to be registered with Datadog SDK instance.
  */
 class SessionReplayFeature internal constructor(
-    configuration: SessionReplayConfiguration,
+    customEndpointUrl: String?,
+    internal val privacy: SessionReplayPrivacy,
     private val sessionReplayCallbackProvider: (SdkCore, RecordWriter) -> LifecycleCallback
 ) : StorageBackedFeature, FeatureEventReceiver {
 
-    /**
-     * Creates Session Replay feature.
-     *
-     * @param configuration Session Replay configuration, which can be created
-     * using [SessionReplayConfiguration.Builder].
-     */
-    constructor(configuration: SessionReplayConfiguration) : this(
-        configuration,
+    internal constructor(
+        customEndpointUrl: String?,
+        privacy: SessionReplayPrivacy,
+        customMappers: Map<Class<*>, WireframeMapper<View, *>>
+    ) : this(
+        customEndpointUrl,
+        privacy,
         { sdkCore, recordWriter ->
             SessionReplayLifecycleCallback(
                 rumContextProvider = SessionReplayRumContextProvider(sdkCore),
-                privacy = configuration.privacy,
+                privacy = privacy,
                 recordWriter = recordWriter,
                 timeProvider = SessionReplayTimeProvider(sdkCore),
                 recordCallback = SessionReplayRecordCallback(sdkCore),
-                customMappers = configuration.customMappers()
+                customMappers = customMappers
             )
         }
     )
@@ -84,7 +87,7 @@ class SessionReplayFeature internal constructor(
     }
 
     override val requestFactory: RequestFactory =
-        SessionReplayRequestFactory(configuration.customEndpointUrl)
+        SessionReplayRequestFactory(customEndpointUrl)
 
     override val storageConfiguration: FeatureStorageConfiguration =
         FeatureStorageConfiguration.DEFAULT
@@ -196,6 +199,65 @@ class SessionReplayFeature internal constructor(
     }
 
     // endregion
+
+    /**
+     * A Builder class for a [SessionReplayFeature].
+     */
+    class Builder {
+        private var customEndpointUrl: String? = null
+        private var privacy = SessionReplayPrivacy.MASK_ALL
+        private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
+
+        /**
+         * Adds an extension support implementation. This is mostly used when you want to provide
+         * different behaviour of the Session Replay when using other Android UI frameworks
+         * than the default ones.
+         * @see [ExtensionSupport.getCustomViewMappers]
+         */
+        fun addExtensionSupport(extensionSupport: ExtensionSupport): Builder {
+            this.extensionSupport = extensionSupport
+            return this
+        }
+
+        /**
+         * Let the Session Replay target a custom server.
+         */
+        fun useCustomEndpoint(endpoint: String): Builder {
+            customEndpointUrl = endpoint
+            return this
+        }
+
+        /**
+         * Sets the privacy rule for the Session Replay feature.
+         * If not specified all the elements will be masked by default (MASK_ALL).
+         * @see SessionReplayPrivacy.ALLOW_ALL
+         * @see SessionReplayPrivacy.MASK_ALL
+         */
+        fun setPrivacy(privacy: SessionReplayPrivacy): Builder {
+            this.privacy = privacy
+            return this
+        }
+
+        internal fun customMappers(): Map<Class<*>, WireframeMapper<View, *>> {
+            extensionSupport.getCustomViewMappers().entries.forEach {
+                if (it.key.name == privacy.name) {
+                    return it.value
+                }
+            }
+            return emptyMap()
+        }
+
+        /**
+         * Builds a [Configuration] based on the current state of this Builder.
+         */
+        fun build(): SessionReplayFeature {
+            return SessionReplayFeature(
+                customEndpointUrl = customEndpointUrl,
+                privacy = privacy,
+                customMappers = customMappers()
+            )
+        }
+    }
 
     internal companion object {
         internal const val UNSUPPORTED_EVENT_TYPE =

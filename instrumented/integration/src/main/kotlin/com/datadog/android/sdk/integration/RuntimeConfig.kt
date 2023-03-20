@@ -15,7 +15,7 @@ import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.log.Logger
 import com.datadog.android.log.LogsFeature
 import com.datadog.android.rum.RumFeature
-import com.datadog.android.sessionreplay.SessionReplayConfiguration
+import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingFeature
 import java.util.UUID
@@ -83,8 +83,8 @@ internal object RuntimeConfig {
             .useCustomEndpoint(rumEndpointUrl)
     }
 
-    fun sessionReplayConfigBuilder(): SessionReplayConfiguration.Builder {
-        return SessionReplayConfiguration.Builder()
+    fun sessionReplayFeatureBuilder(): SessionReplayFeature.Builder {
+        return SessionReplayFeature.Builder()
             .useCustomEndpoint(sessionReplayEndpointUrl)
     }
 

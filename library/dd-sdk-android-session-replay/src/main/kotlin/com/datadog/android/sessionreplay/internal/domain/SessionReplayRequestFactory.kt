@@ -18,7 +18,7 @@ import java.util.Locale
 import java.util.UUID
 
 internal class SessionReplayRequestFactory(
-    private val customEndpointUrl: String?,
+    internal val customEndpointUrl: String?,
     private val batchToSegmentsMapper: BatchesToSegmentsMapper = BatchesToSegmentsMapper(),
     private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory()
 ) : RequestFactory {

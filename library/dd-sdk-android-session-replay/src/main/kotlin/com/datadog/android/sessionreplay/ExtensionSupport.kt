@@ -13,7 +13,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMappe
  * In case you need to provide different configuration for a specific Android UI framework that
  * is not supported by our SR instrumentation layer (e.g Material elements)
  * you can implement this class.
- * @see [SessionReplayConfiguration.Builder.addExtensionSupport]
+ * @see [SessionReplayFeature.Builder.addExtensionSupport]
  */
 interface ExtensionSupport {
     /**
