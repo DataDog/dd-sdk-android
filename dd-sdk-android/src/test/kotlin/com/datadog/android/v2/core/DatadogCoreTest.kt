@@ -91,6 +91,9 @@ internal class DatadogCoreTest {
     @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
     lateinit var fakeInstanceId: String
 
+    @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
+    lateinit var fakeInstanceName: String
+
     @BeforeEach
     fun `set up`() {
         CoreFeature.disableKronosBackgroundSync = true
@@ -99,7 +102,8 @@ internal class DatadogCoreTest {
             appContext.mockInstance,
             fakeCredentials,
             fakeConfiguration,
-            fakeInstanceId
+            fakeInstanceId,
+            fakeInstanceName
         )
     }
 
@@ -356,6 +360,12 @@ internal class DatadogCoreTest {
 
         // Then
         verify(mockEventReceiverRef).set(null)
+    }
+
+    @Test
+    fun `𝕄 provide name 𝕎 name(){}`() {
+        // When+Then
+        assertThat(testedCore.name).isEqualTo(fakeInstanceName)
     }
 
     @Test

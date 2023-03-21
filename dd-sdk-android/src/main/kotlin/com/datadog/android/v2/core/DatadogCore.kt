@@ -52,13 +52,15 @@ import java.util.concurrent.TimeUnit
  * @param credentials the Datadog credentials for this instance
  * @param configuration the Datadog configuration for this instance
  * @param instanceId the unique identifier for this instance
+ * @param name the name of this instance
  */
 @Suppress("TooManyFunctions")
 internal class DatadogCore(
     internal val context: Context,
     internal val credentials: Credentials,
     configuration: Configuration,
-    internal val instanceId: String
+    internal val instanceId: String,
+    override val name: String
 ) : InternalSdkCore {
 
     internal var libraryVerbosity = Int.MAX_VALUE

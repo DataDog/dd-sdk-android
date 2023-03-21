@@ -79,7 +79,13 @@ object Datadog {
                 return null
             }
 
-            val sdkCore = DatadogCore(context, credentials, configuration, sdkInstanceId)
+            val sdkCore = DatadogCore(
+                context,
+                credentials,
+                configuration,
+                sdkInstanceId,
+                instanceName ?: SdkCoreRegistry.DEFAULT_INSTANCE_NAME
+            )
             sdkCore.setTrackingConsent(trackingConsent)
             registry.register(instanceName, sdkCore)
 

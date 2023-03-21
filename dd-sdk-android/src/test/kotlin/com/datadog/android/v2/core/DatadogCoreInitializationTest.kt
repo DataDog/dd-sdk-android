@@ -70,6 +70,9 @@ internal class DatadogCoreInitializationTest {
     @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
     lateinit var fakeInstanceId: String
 
+    @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
+    lateinit var fakeInstanceName: String
+
     @BeforeEach
     fun `set up`() {
         CoreFeature.disableKronosBackgroundSync = true
@@ -93,7 +96,13 @@ internal class DatadogCoreInitializationTest {
 
         // When
         testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+            DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                configuration,
+                fakeInstanceId,
+                fakeInstanceName
+            )
 
         // Then
         assertThat(testedCore.coreFeature.initialized.get()).isTrue()
@@ -128,7 +137,8 @@ internal class DatadogCoreInitializationTest {
                     appContext.mockInstance,
                     fakeCredentials,
                     configuration,
-                    fakeInstanceId
+                    fakeInstanceId,
+                    fakeInstanceName
                 )
         }
     }
@@ -153,7 +163,8 @@ internal class DatadogCoreInitializationTest {
                     appContext.mockInstance,
                     fakeCredentials,
                     configuration,
-                    fakeInstanceId
+                    fakeInstanceId,
+                    fakeInstanceName
                 )
         } catch (e: Exception) {
             caughtException = e
@@ -174,7 +185,13 @@ internal class DatadogCoreInitializationTest {
 
         // When
         testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+            DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                configuration,
+                fakeInstanceId,
+                fakeInstanceName
+            )
 
         // Then
         assertThat(testedCore.coreFeature.trackingConsentProvider.getConsent())
@@ -195,7 +212,13 @@ internal class DatadogCoreInitializationTest {
 
         // When
         testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+            DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                configuration,
+                fakeInstanceId,
+                fakeInstanceName
+            )
 
         // Then
         assertThat(testedCore.libraryVerbosity)
@@ -216,7 +239,13 @@ internal class DatadogCoreInitializationTest {
 
         // When
         testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+            DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                configuration,
+                fakeInstanceId,
+                fakeInstanceName
+            )
 
         // Then
         assertThat(testedCore.libraryVerbosity)
@@ -250,7 +279,13 @@ internal class DatadogCoreInitializationTest {
 
         // When
         testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+            DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                configuration,
+                fakeInstanceId,
+                fakeInstanceName
+            )
 
         // Then
         val mockRumFeature = mock<SdkFeature>()
@@ -291,7 +326,13 @@ internal class DatadogCoreInitializationTest {
 
         // When
         testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+            DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                configuration,
+                fakeInstanceId,
+                fakeInstanceName
+            )
 
         // Then
         assertThat(testedCore.coreFeature.sourceName).isEqualTo(source)
@@ -310,7 +351,13 @@ internal class DatadogCoreInitializationTest {
 
         // When
         testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+            DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                configuration,
+                fakeInstanceId,
+                fakeInstanceName
+            )
 
         // Then
         assertThat(testedCore.coreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
@@ -329,7 +376,13 @@ internal class DatadogCoreInitializationTest {
 
         // When
         testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+            DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                configuration,
+                fakeInstanceId,
+                fakeInstanceName
+            )
 
         // Then
         assertThat(testedCore.coreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
@@ -348,7 +401,13 @@ internal class DatadogCoreInitializationTest {
 
         // When
         testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+            DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                configuration,
+                fakeInstanceId,
+                fakeInstanceName
+            )
 
         // Then
         assertThat(testedCore.coreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
@@ -367,7 +426,13 @@ internal class DatadogCoreInitializationTest {
 
         // When
         testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+            DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                configuration,
+                fakeInstanceId,
+                fakeInstanceName
+            )
 
         // Then
         assertThat(testedCore.coreFeature.sdkVersion).isEqualTo(sdkVersion)
@@ -388,7 +453,13 @@ internal class DatadogCoreInitializationTest {
 
         // When
         testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+            DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                configuration,
+                fakeInstanceId,
+                fakeInstanceName
+            )
 
         // Then
         assertThat(testedCore.coreFeature.sdkVersion).isEqualTo(CoreFeature.DEFAULT_SDK_VERSION)
@@ -407,7 +478,13 @@ internal class DatadogCoreInitializationTest {
 
         // When
         testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+            DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                configuration,
+                fakeInstanceId,
+                fakeInstanceName
+            )
 
         // Then
         assertThat(testedCore.coreFeature.sdkVersion).isEqualTo(CoreFeature.DEFAULT_SDK_VERSION)
@@ -426,7 +503,13 @@ internal class DatadogCoreInitializationTest {
 
         // When
         testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+            DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                configuration,
+                fakeInstanceId,
+                fakeInstanceName
+            )
 
         // Then
         assertThat(testedCore.coreFeature.sdkVersion).isEqualTo(CoreFeature.DEFAULT_SDK_VERSION)
@@ -445,7 +528,13 @@ internal class DatadogCoreInitializationTest {
 
         // When
         testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+            DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                configuration,
+                fakeInstanceId,
+                fakeInstanceName
+            )
 
         // Then
         assertThat(testedCore.coreFeature.packageVersionProvider.version).isEqualTo(appVersion)
@@ -466,7 +555,13 @@ internal class DatadogCoreInitializationTest {
 
         // When
         testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+            DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                configuration,
+                fakeInstanceId,
+                fakeInstanceName
+            )
 
         // Then
         assertThat(testedCore.coreFeature.packageVersionProvider.version).isEqualTo(
@@ -487,7 +582,13 @@ internal class DatadogCoreInitializationTest {
 
         // When
         testedCore =
-            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+            DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                configuration,
+                fakeInstanceId,
+                fakeInstanceName
+            )
 
         // Then
         assertThat(testedCore.coreFeature.packageVersionProvider.version).isEqualTo(

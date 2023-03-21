@@ -18,6 +18,11 @@ import com.datadog.android.v2.api.context.UserInfo
 interface SdkCore {
 
     /**
+     * Name of the current SDK instance.
+     */
+    val name: String
+
+    /**
      * The current time (both device and server).
      */
     val time: TimeInfo

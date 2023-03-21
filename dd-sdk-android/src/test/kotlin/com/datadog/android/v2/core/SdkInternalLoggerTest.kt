@@ -21,6 +21,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions
@@ -49,10 +50,15 @@ internal class SdkInternalLoggerTest {
     @Mock
     lateinit var mockSdkCore: SdkCore
 
+    @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
+    lateinit var fakeInstanceName: String
+
     private lateinit var testedInternalLogger: SdkInternalLogger
 
     @BeforeEach
     fun `set up`() {
+        whenever(mockSdkCore.name) doReturn fakeInstanceName
+
         testedInternalLogger = SdkInternalLogger(
             devLogHandlerFactory = { mockDevLogHandler },
             sdkLogHandlerFactory = { mockSdkLogHandler }
@@ -86,7 +92,7 @@ internal class SdkInternalLoggerTest {
         verify(mockDevLogHandler)
             .log(
                 fakeLevel.toLogLevel(),
-                fakeMessage,
+                "@$fakeInstanceName: $fakeMessage",
                 fakeThrowable
             )
     }
@@ -135,7 +141,7 @@ internal class SdkInternalLoggerTest {
         verify(mockSdkLogHandler)
             .log(
                 fakeLevel.toLogLevel(),
-                fakeMessage,
+                "@$fakeInstanceName: $fakeMessage",
                 fakeThrowable
             )
     }

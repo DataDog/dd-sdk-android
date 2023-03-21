@@ -77,7 +77,7 @@ internal class SdkInternalLogger(
     ) {
         devLogger.log(
             level.toLogLevel(),
-            message,
+            "@${Datadog.getInstance()?.name}: $message",
             error
         )
     }
@@ -89,7 +89,7 @@ internal class SdkInternalLogger(
     ) {
         sdkLogger?.log(
             level.toLogLevel(),
-            message,
+            "@${Datadog.getInstance()?.name}: $message",
             error
         )
     }
