@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.forge
 
-import android.app.ActivityManager
 import com.datadog.android.DatadogSite
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.context.DatadogContext
@@ -41,18 +40,7 @@ internal class DatadogContextForgeryFactory : ForgeryFactory<DatadogContext> {
                 serverTimeOffsetMs = forge.aLong()
             ),
             processInfo = ProcessInfo(
-                isMainProcess = forge.aBool(),
-                processImportance = forge.anElementFrom(
-                    ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND,
-                    ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
-                    ActivityManager.RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
-                    ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE,
-                    ActivityManager.RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE,
-                    ActivityManager.RunningAppProcessInfo.IMPORTANCE_CANT_SAVE_STATE,
-                    ActivityManager.RunningAppProcessInfo.IMPORTANCE_SERVICE,
-                    ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED,
-                    ActivityManager.RunningAppProcessInfo.IMPORTANCE_GONE
-                )
+                isMainProcess = forge.aBool()
             ),
             networkInfo = NetworkInfo(),
             deviceInfo = DeviceInfo(

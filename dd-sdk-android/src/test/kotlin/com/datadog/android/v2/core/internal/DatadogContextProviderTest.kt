@@ -117,8 +117,6 @@ internal class DatadogContextProviderTest {
         // process info
         assertThat(context.processInfo.isMainProcess)
             .isEqualTo(coreFeature.mockInstance.isMainProcess)
-        assertThat(context.processInfo.processImportance)
-            .isEqualTo(coreFeature.mockInstance.processImportance)
 
         // network info
         assertThat(context.networkInfo.connectivity.name)

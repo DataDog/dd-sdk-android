@@ -49,7 +49,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var fakeStorageDir: File
     lateinit var fakeUploadFrequency: UploadFrequency
     lateinit var fakeSite: DatadogSite
-    var fakeProcessImportance: Int = 0
     lateinit var fakeFeaturesContext: MutableMap<String, Map<String, Any?>>
     lateinit var fakeFilePersistenceConfig: FilePersistenceConfig
     lateinit var fakeBatchSize: BatchSize
@@ -96,7 +95,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         fakeStorageDir = Files.createTempDirectory(forge.anHexadecimalString()).toFile()
         fakeUploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
         fakeSite = forge.aValueFrom(DatadogSite::class.java)
-        fakeProcessImportance = forge.anInt()
         // building nested maps with default size slows down tests quite a lot, so will use
         // an explicit small size
         fakeFeaturesContext = forge.aMap(size = 2) {
@@ -139,7 +137,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.uploadFrequency) doReturn fakeUploadFrequency
         whenever(mockInstance.site) doReturn fakeSite
         whenever(mockInstance.featuresContext) doReturn fakeFeaturesContext
-        whenever(mockInstance.processImportance) doReturn fakeProcessImportance
 
         whenever(mockInstance.persistenceExecutorService) doReturn mockPersistenceExecutor
         whenever(mockInstance.uploadExecutorService) doReturn mockUploadExecutor

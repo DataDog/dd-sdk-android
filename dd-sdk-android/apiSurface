@@ -316,7 +316,7 @@ data class com.datadog.android.v2.api.context.NetworkInfo
     - NETWORK_CELLULAR
     - NETWORK_OTHER
 data class com.datadog.android.v2.api.context.ProcessInfo
-  constructor(Boolean, Int)
+  constructor(Boolean)
 data class com.datadog.android.v2.api.context.TimeInfo
   constructor(Long, Long, Long, Long)
 data class com.datadog.android.v2.api.context.UserInfo
