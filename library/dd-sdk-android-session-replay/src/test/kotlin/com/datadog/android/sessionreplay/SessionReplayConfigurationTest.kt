@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay
 
 import android.view.View
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
@@ -37,18 +38,23 @@ internal class SessionReplayConfigurationTest {
 
     @StringForgery
     lateinit var fakeEndpoint: String
-    lateinit var fakePrivacy: SessionReplayPrivacy
 
     @Mock
     lateinit var mockExtensionSupport: ExtensionSupport
     lateinit var fakeCustomMappers: Map<SessionReplayPrivacy, Map<Class<*>, WireframeMapper<View, *>>>
+    lateinit var fakeExpectedAllowAllCustomMappers: List<MapperTypeWrapper>
+    lateinit var fakeExpectedMaskAllCustomMappers: List<MapperTypeWrapper>
     lateinit var fakeAllowAllCustomMappers: Map<Class<*>, WireframeMapper<View, *>>
     lateinit var fakeMaskAllCustomMappers: Map<Class<*>, WireframeMapper<View, *>>
 
     @BeforeEach
     fun `set up`() {
-        fakeAllowAllCustomMappers = mapOf(Any::class.java to mock())
-        fakeMaskAllCustomMappers = mapOf(Any::class.java to mock())
+        fakeExpectedAllowAllCustomMappers = listOf(MapperTypeWrapper(Any::class.java, mock()))
+        fakeExpectedMaskAllCustomMappers = listOf(MapperTypeWrapper(Any::class.java, mock()))
+        fakeAllowAllCustomMappers = fakeExpectedAllowAllCustomMappers.associate {
+            it.type to it.mapper
+        }
+        fakeMaskAllCustomMappers = fakeExpectedMaskAllCustomMappers.associate { it.type to it.mapper }
         fakeCustomMappers = mapOf(
             SessionReplayPrivacy.ALLOW_ALL to fakeAllowAllCustomMappers,
             SessionReplayPrivacy.MASK_ALL to fakeMaskAllCustomMappers
@@ -67,7 +73,7 @@ internal class SessionReplayConfigurationTest {
 
         // Then
         assertThat(testSessionReplayConfiguration.customMappers())
-            .isEqualTo(fakeAllowAllCustomMappers)
+            .isEqualTo(fakeExpectedAllowAllCustomMappers)
     }
 
     @Test
@@ -81,7 +87,7 @@ internal class SessionReplayConfigurationTest {
 
         // Then
         assertThat(testSessionReplayConfiguration.customMappers())
-            .isEqualTo(fakeMaskAllCustomMappers)
+            .isEqualTo(fakeExpectedMaskAllCustomMappers)
     }
 
     @Test

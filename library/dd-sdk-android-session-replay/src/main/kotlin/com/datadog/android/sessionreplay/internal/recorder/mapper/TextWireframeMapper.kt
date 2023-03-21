@@ -13,7 +13,10 @@ import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 
-internal open class TextWireframeMapper :
+/**
+ * A [WireframeMapper] implementation to map a [TextView] component.
+ */
+open class TextWireframeMapper :
     BaseWireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe>() {
 
     override fun map(view: TextView, systemInformation: SystemInformation):
@@ -37,6 +40,10 @@ internal open class TextWireframeMapper :
         )
     }
 
+    /**
+     * Resolves the [TextView] text value.
+     * @param textView as [TextView]
+     */
     protected open fun resolveTextValue(textView: TextView): String {
         return if (textView.text.isNullOrEmpty()) {
             textView.hint?.toString() ?: ""

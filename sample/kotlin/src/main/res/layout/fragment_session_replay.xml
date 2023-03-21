@@ -62,7 +62,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
-            android:text="@string/dropdowns_and_switchers_components"
+            android:text="@string/sliders_and_steppers_components"
             android:drawableStart="@drawable/baseline_reorder_24"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"

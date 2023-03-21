@@ -55,7 +55,7 @@ internal class ViewUtilsInternalTest {
         }
 
         // When
-        assertThat(testViewUtilsInternal.checkIfNotVisible(mockView)).isTrue
+        assertThat(testViewUtilsInternal.isNotVisible(mockView)).isTrue
     }
 
     @Test
@@ -66,7 +66,7 @@ internal class ViewUtilsInternalTest {
         }
 
         // When
-        assertThat(testViewUtilsInternal.checkIfNotVisible(mockView)).isTrue
+        assertThat(testViewUtilsInternal.isNotVisible(mockView)).isTrue
     }
 
     @Test
@@ -77,7 +77,7 @@ internal class ViewUtilsInternalTest {
         }
 
         // When
-        assertThat(testViewUtilsInternal.checkIfNotVisible(mockView)).isTrue
+        assertThat(testViewUtilsInternal.isNotVisible(mockView)).isTrue
     }
 
     @Test
@@ -88,7 +88,7 @@ internal class ViewUtilsInternalTest {
         }
 
         // When
-        assertThat(testViewUtilsInternal.checkIfNotVisible(mockView)).isFalse
+        assertThat(testViewUtilsInternal.isNotVisible(mockView)).isFalse
     }
 
     // endregion
@@ -107,7 +107,7 @@ internal class ViewUtilsInternalTest {
             }
 
         // Then
-        assertThat(testViewUtilsInternal.checkIfSystemNoise(mockView)).isTrue
+        assertThat(testViewUtilsInternal.isSystemNoise(mockView)).isTrue
     }
 
     @Test
@@ -122,7 +122,7 @@ internal class ViewUtilsInternalTest {
             }
 
         // Then
-        assertThat(testViewUtilsInternal.checkIfSystemNoise(mockView)).isTrue
+        assertThat(testViewUtilsInternal.isSystemNoise(mockView)).isTrue
     }
 
     @Test
@@ -131,7 +131,7 @@ internal class ViewUtilsInternalTest {
         val mockView: ViewStub = mock()
 
         // Then
-        assertThat(testViewUtilsInternal.checkIfSystemNoise(mockView)).isTrue
+        assertThat(testViewUtilsInternal.isSystemNoise(mockView)).isTrue
     }
 
     @Test
@@ -140,7 +140,7 @@ internal class ViewUtilsInternalTest {
         val mockView: ActionBarContextView = mock()
 
         // Then
-        assertThat(testViewUtilsInternal.checkIfSystemNoise(mockView)).isTrue
+        assertThat(testViewUtilsInternal.isSystemNoise(mockView)).isTrue
     }
 
     @Test
@@ -149,7 +149,7 @@ internal class ViewUtilsInternalTest {
         val mockView = forge.aMockView<View>()
 
         // Then
-        assertThat(testViewUtilsInternal.checkIfSystemNoise(mockView)).isFalse
+        assertThat(testViewUtilsInternal.isSystemNoise(mockView)).isFalse
     }
 
     // endregion
@@ -166,7 +166,7 @@ internal class ViewUtilsInternalTest {
         }
 
         // Then
-        assertThat(testViewUtilsInternal.checkIsToolbar(mockToolBar)).isTrue
+        assertThat(testViewUtilsInternal.isToolbar(mockToolBar)).isTrue
     }
 
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -179,7 +179,7 @@ internal class ViewUtilsInternalTest {
         val mockToolBar: android.widget.Toolbar = forge.aMockView()
 
         // Then
-        assertThat(testViewUtilsInternal.checkIsToolbar(mockToolBar)).isTrue
+        assertThat(testViewUtilsInternal.isToolbar(mockToolBar)).isTrue
     }
 
     @Test
@@ -188,7 +188,7 @@ internal class ViewUtilsInternalTest {
         val mockView = forge.aMockView<View>()
 
         // Then
-        assertThat(testViewUtilsInternal.checkIsToolbar(mockView)).isFalse
+        assertThat(testViewUtilsInternal.isToolbar(mockView)).isFalse
     }
 
     // endregion

@@ -8,13 +8,11 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.ViewGroup
-import com.datadog.android.sessionreplay.internal.recorder.mapper.GenericWireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.LinkedList
 
 internal class SnapshotProducer(
-    private val wireframeMapper: GenericWireframeMapper,
-    private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal()
+    private val treeViewTraversal: TreeViewTraversal
 ) {
 
     fun produce(
@@ -30,27 +28,22 @@ internal class SnapshotProducer(
         systemInformation: SystemInformation,
         parents: LinkedList<MobileSegment.Wireframe>
     ): Node? {
-        if (viewUtilsInternal.checkIfNotVisible(view)) {
+        val traversedTreeView = treeViewTraversal.traverse(view, systemInformation)
+        val nextTraversalStrategy = traversedTreeView.nextActionStrategy
+        val resolvedWireframes = traversedTreeView.mappedWireframes
+        if (nextTraversalStrategy == TreeViewTraversal.TraversalStrategy.STOP_AND_DROP_NODE) {
             return null
         }
-
-        if (viewUtilsInternal.checkIfSystemNoise(view)) {
-            return null
-        }
-
-        if (viewUtilsInternal.checkIsToolbar(view)) {
-            // skip adding the children and just take a screenshot of the toolbar.
-            // It is too complex to de - structure this in multiple wireframes
-            // and we cannot actually get all the details here.
-            return Node(
-                wireframes = wireframeMapper.imageMapper.map(view, systemInformation)
-            )
+        if (nextTraversalStrategy == TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE) {
+            return Node(wireframes = resolvedWireframes, parents = parents)
         }
 
         val childNodes = LinkedList<Node>()
-        val wireframes = wireframeMapper.map(view, systemInformation)
-        if (view is ViewGroup && view.childCount > 0) {
-            val parentsCopy = LinkedList(parents).apply { addAll(wireframes) }
+        if (view is ViewGroup &&
+            view.childCount > 0 &&
+            nextTraversalStrategy == TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
+        ) {
+            val parentsCopy = LinkedList(parents).apply { addAll(resolvedWireframes) }
             for (i in 0 until view.childCount) {
                 val viewChild = view.getChildAt(i) ?: continue
                 convertViewToNode(viewChild, systemInformation, parentsCopy)?.let {
@@ -58,10 +51,9 @@ internal class SnapshotProducer(
                 }
             }
         }
-
         return Node(
             children = childNodes,
-            wireframes = wireframes,
+            wireframes = resolvedWireframes,
             parents = parents
         )
     }

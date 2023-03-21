@@ -6,11 +6,10 @@
 
 package com.datadog.android.sessionreplay
 
-import android.view.View
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 
 /**
  * An object describing the configuration of the Session Replay.
@@ -82,13 +81,16 @@ internal constructor(
 
     // region Internal
 
-    internal fun customMappers(): Map<Class<*>, WireframeMapper<View, *>> {
+    internal fun customMappers(): List<MapperTypeWrapper> {
         extensionSupport.getCustomViewMappers().entries.forEach {
             if (it.key.name == privacy.name) {
                 return it.value
+                    .map { typeMapperPair ->
+                        MapperTypeWrapper(typeMapperPair.key, typeMapperPair.value)
+                    }
             }
         }
-        return emptyMap()
+        return emptyList()
     }
 
     // endregion

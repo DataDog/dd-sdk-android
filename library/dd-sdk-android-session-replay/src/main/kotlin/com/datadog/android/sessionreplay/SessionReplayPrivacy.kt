@@ -7,9 +7,29 @@
 package com.datadog.android.sessionreplay
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.recorder.mapper.AllowAllWireframeMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.GenericWireframeMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllWireframeMapper
+import android.widget.Button
+import android.widget.CheckBox
+import android.widget.CheckedTextView
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.RadioButton
+import android.widget.TextView
+import androidx.appcompat.widget.SwitchCompat
+import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckedTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.EditTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckBoxMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckedTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllRadioButtonMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllSwitchCompatMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.RadioButtonMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.TextWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewScreenshotWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 
 /**
@@ -29,10 +49,53 @@ enum class SessionReplayPrivacy {
      **/
     MASK_ALL;
 
-    internal fun mapper(customMappers: Map<Class<*>, WireframeMapper<View, *>>): GenericWireframeMapper {
-        return when (this) {
-            ALLOW_ALL -> AllowAllWireframeMapper(customMappers = customMappers)
-            MASK_ALL -> MaskAllWireframeMapper(customMappers = customMappers)
+    internal fun mappers(): List<MapperTypeWrapper> {
+        val viewWireframeMapper = ViewWireframeMapper()
+        val imageMapper: ViewScreenshotWireframeMapper
+        val textMapper: TextWireframeMapper
+        val buttonMapper: ButtonMapper
+        val editTextViewMapper: EditTextViewMapper
+        val checkedTextViewMapper: CheckedTextViewMapper
+        val checkBoxMapper: CheckBoxMapper
+        val radioButtonMapper: RadioButtonMapper
+        val switchCompatMapper: SwitchCompatMapper
+        when (this) {
+            ALLOW_ALL -> {
+                imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
+                textMapper = TextWireframeMapper()
+                buttonMapper = ButtonMapper(textMapper)
+                editTextViewMapper = EditTextViewMapper(textMapper)
+                checkedTextViewMapper = CheckedTextViewMapper(textMapper)
+                checkBoxMapper = CheckBoxMapper(textMapper)
+                radioButtonMapper = RadioButtonMapper(textMapper)
+                switchCompatMapper = SwitchCompatMapper(textMapper)
+            }
+            MASK_ALL -> {
+                imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
+                textMapper = MaskAllTextViewMapper()
+                buttonMapper = ButtonMapper(textMapper)
+                editTextViewMapper = EditTextViewMapper(textMapper)
+                checkedTextViewMapper = MaskAllCheckedTextViewMapper(textMapper)
+                checkBoxMapper = MaskAllCheckBoxMapper(textMapper)
+                radioButtonMapper = MaskAllRadioButtonMapper(textMapper)
+                switchCompatMapper = MaskAllSwitchCompatMapper(textMapper)
+            }
         }
+
+        return listOf(
+            MapperTypeWrapper(SwitchCompat::class.java, switchCompatMapper.toGenericMapper()),
+            MapperTypeWrapper(RadioButton::class.java, radioButtonMapper.toGenericMapper()),
+            MapperTypeWrapper(CheckBox::class.java, checkBoxMapper.toGenericMapper()),
+            MapperTypeWrapper(CheckedTextView::class.java, checkedTextViewMapper.toGenericMapper()),
+            MapperTypeWrapper(Button::class.java, buttonMapper.toGenericMapper()),
+            MapperTypeWrapper(EditText::class.java, editTextViewMapper.toGenericMapper()),
+            MapperTypeWrapper(TextView::class.java, textMapper.toGenericMapper()),
+            MapperTypeWrapper(ImageView::class.java, imageMapper.toGenericMapper())
+        )
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun WireframeMapper<*, *>.toGenericMapper(): WireframeMapper<View, *> {
+        return this as WireframeMapper<View, *>
     }
 }
