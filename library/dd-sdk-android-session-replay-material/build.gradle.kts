@@ -59,6 +59,16 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
+    packagingOptions {
+        resources {
+            excludes += listOf(
+                "META-INF/jvm.kotlin_module",
+                "META-INF/LICENSE.md",
+                "META-INF/LICENSE-notice.md"
+            )
+        }
+    }
+
     lint {
         warningsAsErrors = true
         abortOnError = true

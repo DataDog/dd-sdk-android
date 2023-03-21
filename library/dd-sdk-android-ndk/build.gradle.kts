@@ -88,6 +88,7 @@ android {
     packagingOptions {
         resources {
             excludes += listOf(
+                "META-INF/jvm.kotlin_module",
                 "META-INF/LICENSE.md",
                 "META-INF/LICENSE-notice.md"
             )
