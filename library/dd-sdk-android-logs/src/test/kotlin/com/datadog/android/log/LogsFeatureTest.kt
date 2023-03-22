@@ -87,7 +87,7 @@ internal class LogsFeatureTest {
 
     @Mock
     lateinit var mockApplicationContext: Context
-    
+
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
