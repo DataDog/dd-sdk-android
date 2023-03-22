@@ -7,7 +7,6 @@
 package com.datadog.android.v2.core
 
 import android.util.Log
-import com.datadog.android.Datadog
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
@@ -25,7 +24,6 @@ import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -60,15 +58,10 @@ internal class SdkInternalLoggerTest {
         whenever(mockSdkCore.name) doReturn fakeInstanceName
 
         testedInternalLogger = SdkInternalLogger(
+            sdkCore = mockSdkCore,
             devLogHandlerFactory = { mockDevLogHandler },
             sdkLogHandlerFactory = { mockSdkLogHandler }
         )
-        Datadog.registry.register(null, mockSdkCore)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        Datadog.registry.clear()
     }
 
     @Test
@@ -106,6 +99,7 @@ internal class SdkInternalLoggerTest {
 
         // When
         testedInternalLogger = SdkInternalLogger(
+            sdkCore = mockSdkCore,
             sdkLogHandlerFactory = { mockSdkLogHandler }
         )
 

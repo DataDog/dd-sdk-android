@@ -38,6 +38,10 @@ interface SdkCore {
      */
     val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver
 
+    // TODO RUMM-3118 Shouldn't be exposed to the customers directly.
+    @Suppress("PropertyName", "UndocumentedPublicProperty", "VariableNaming")
+    val _internalLogger: InternalLogger
+
     /**
      * Registers a feature to this instance of the Datadog SDK.
      *

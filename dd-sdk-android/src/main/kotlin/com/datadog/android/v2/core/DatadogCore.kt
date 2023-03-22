@@ -130,6 +130,9 @@ internal class DatadogCore(
         get() = coreFeature.firstPartyHostHeaderTypeResolver
 
     /** @inheritDoc */
+    override val _internalLogger: InternalLogger = SdkInternalLogger(this)
+
+    /** @inheritDoc */
     override fun registerFeature(feature: Feature) {
         val sdkFeature = SdkFeature(
             coreFeature,

@@ -13,7 +13,7 @@ import java.util.Locale
 // TODO RUMM-2948 Temporary thing, we probably shouldn't expose it in such way to modules,
 //  at least as var
 @Suppress("UndocumentedPublicProperty")
-var internalLogger: InternalLogger = SdkInternalLogger()
+var internalLogger: InternalLogger = SdkInternalLogger.UNBOUND
 
 /**
  * Warns the user that they're using a deprecated feature.

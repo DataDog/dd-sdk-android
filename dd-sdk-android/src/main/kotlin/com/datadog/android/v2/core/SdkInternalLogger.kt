@@ -8,14 +8,15 @@ package com.datadog.android.v2.core
 
 import android.util.Log
 import com.datadog.android.BuildConfig
-import com.datadog.android.Datadog
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 
 internal class SdkInternalLogger(
+    private val sdkCore: SdkCore?,
     devLogHandlerFactory: () -> LogcatLogHandler = {
         LogcatLogHandler(DEV_LOG_TAG) { level ->
-            level >= (Datadog.getInstance()?.getVerbosity() ?: Log.WARN)
+            level >= (sdkCore?.getVerbosity() ?: Log.VERBOSE)
         }
     },
     sdkLogHandlerFactory: () -> LogcatLogHandler? = {
@@ -77,7 +78,7 @@ internal class SdkInternalLogger(
     ) {
         devLogger.log(
             level.toLogLevel(),
-            "@${Datadog.getInstance()?.name}: $message",
+            message.withSdkName(),
             error
         )
     }
@@ -89,7 +90,7 @@ internal class SdkInternalLogger(
     ) {
         sdkLogger?.log(
             level.toLogLevel(),
-            "@${Datadog.getInstance()?.name}: $message",
+            message.withSdkName(),
             error
         )
     }
@@ -99,7 +100,7 @@ internal class SdkInternalLogger(
         message: String,
         error: Throwable?
     ) {
-        val rumFeature = Datadog.getInstance()?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
+        val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
         val telemetryEvent = if (
             level == InternalLogger.Level.ERROR ||
             level == InternalLogger.Level.WARN ||
@@ -129,9 +130,24 @@ internal class SdkInternalLogger(
         }
     }
 
+    private fun String.withSdkName(): String {
+        val instanceName = sdkCore?.name
+        return if (instanceName != null) {
+            "@$instanceName: $this"
+        } else {
+            this
+        }
+    }
+
     companion object {
         internal const val SDK_LOG_TAG = "DD_LOG"
         internal const val DEV_LOG_TAG = "Datadog"
+
+        /**
+         * Logger for the cases when SDK instance is not yet available. Try to use the logger
+         * provided by [SdkCore._internalLogger] instead if possible.
+         */
+        val UNBOUND = SdkInternalLogger(null)
     }
 
     // endregion

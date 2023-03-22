@@ -22,7 +22,6 @@ import com.datadog.android.v2.core.internal.Sha256HashGenerator
 /**
  * This class initializes the Datadog SDK, and sets up communication with the server.
  */
-@SuppressWarnings("TooManyFunctions")
 object Datadog {
 
     internal val registry = SdkCoreRegistry(internalLogger)
@@ -181,7 +180,7 @@ object Datadog {
      *
      * @see _InternalProxy
      */
-    @Suppress("FunctionNaming")
+    @Suppress("FunctionNaming", "FunctionName")
     fun _internalProxy(instanceName: String? = null): _InternalProxy? {
         val sdkCore = getInstance(instanceName)
         return if (sdkCore == null) {
