@@ -14,16 +14,13 @@ import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.storage.DataWriter
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -64,6 +61,9 @@ internal class LoggerBuilderTest {
     @Mock
     lateinit var mockDataWriter: DataWriter<LogEvent>
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @StringForgery
     lateinit var fakeServiceName: String
 
@@ -75,6 +75,7 @@ internal class LoggerBuilderTest {
         whenever(mockLogsFeature.packageName) doReturn fakePackageName
         whenever(mockLogsFeature.dataWriter) doReturn mockDataWriter
         whenever(mockSdkCore.service) doReturn fakeServiceName
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
 
         whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn mockLogsFeatureScope
         whenever(mockLogsFeatureScope.unwrap<LogsFeature>()) doReturn mockLogsFeature
@@ -92,7 +93,7 @@ internal class LoggerBuilderTest {
         val handler = testedLogger.handler
 
         assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             Logger.SDK_NOT_INITIALIZED_WARNING_MESSAGE
@@ -236,15 +237,5 @@ internal class LoggerBuilderTest {
         val sampler = handler.sampler
         assertThat(sampler).isInstanceOf(RateBasedSampler::class.java)
         assertThat((sampler as RateBasedSampler).getSamplingRate()).isEqualTo(expectedSampleRate)
-    }
-
-    companion object {
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
     }
 }

@@ -84,6 +84,7 @@ interface com.datadog.android.core.constraints.DataConstraints
   fun validateTags(List<String>): List<String>
   fun validateTimings(Map<String, Long>): MutableMap<String, Long>
 class com.datadog.android.core.constraints.DatadogDataConstraints : DataConstraints
+  constructor(com.datadog.android.v2.api.InternalLogger)
   override fun validateTags(List<String>): List<String>
   override fun <T: Any?> validateAttributes(Map<String, T>, String?, String?, Set<String>): MutableMap<String, T>
   override fun validateTimings(Map<String, Long>): MutableMap<String, Long>

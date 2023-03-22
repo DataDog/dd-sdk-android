@@ -16,7 +16,7 @@ internal typealias StringTransform = (String) -> String?
 /**
  * Data constraints validator per Datadog requirements.
  */
-class DatadogDataConstraints : DataConstraints {
+class DatadogDataConstraints(val internalLogger: InternalLogger) : DataConstraints {
 
     // region DataConstraints
 

@@ -8,7 +8,6 @@ package com.datadog.android.log
 
 import androidx.annotation.FloatRange
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler
@@ -336,7 +335,7 @@ internal constructor(internal var handler: LogHandler) {
             logsFeature: LogsFeature?
         ): LogHandler {
             if (logsFeature == null) {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     SDK_NOT_INITIALIZED_WARNING_MESSAGE

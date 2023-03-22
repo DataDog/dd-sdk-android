@@ -13,7 +13,6 @@ import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.internal.net.LogsRequestFactory
 import com.datadog.android.log.internal.storage.LogsDataWriter
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
@@ -26,9 +25,7 @@ import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.storage.DataWriter
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.nhaarman.mockitokotlin2.any
@@ -90,6 +87,9 @@ internal class LogsFeatureTest {
 
     @Mock
     lateinit var mockApplicationContext: Context
+    
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
@@ -130,6 +130,8 @@ internal class LogsFeatureTest {
         val now = System.currentTimeMillis()
         fakeServerTimeOffset = forge.aLong(min = -now, max = Long.MAX_VALUE - now)
 
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+
         whenever(mockApplicationContext.packageName) doReturn fakePackageName
         whenever(
             mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
@@ -166,7 +168,9 @@ internal class LogsFeatureTest {
             }
         )
 
-        testedFeature = LogsFeature(fakeEndpointUrl, mockEventMapper)
+        testedFeature = LogsFeature(fakeEndpointUrl, mockEventMapper).apply {
+            sdkCore = mockSdkCore
+        }
     }
 
     @Test
@@ -234,7 +238,7 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(Any())
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -245,8 +249,6 @@ internal class LogsFeatureTest {
             )
 
         verifyZeroInteractions(
-            logger.mockInternalLogger,
-            mockSdkCore,
             mockDataWriter
         )
     }
@@ -265,7 +267,7 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -273,7 +275,6 @@ internal class LogsFeatureTest {
             )
 
         verifyZeroInteractions(
-            mockSdkCore,
             mockDataWriter
         )
     }
@@ -319,7 +320,7 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -327,7 +328,6 @@ internal class LogsFeatureTest {
             )
 
         verifyZeroInteractions(
-            mockSdkCore,
             mockDataWriter
         )
     }
@@ -539,7 +539,7 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -547,7 +547,6 @@ internal class LogsFeatureTest {
             )
 
         verifyZeroInteractions(
-            mockSdkCore,
             mockDataWriter
         )
     }
@@ -740,7 +739,7 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -748,7 +747,6 @@ internal class LogsFeatureTest {
             )
 
         verifyZeroInteractions(
-            mockSdkCore,
             mockDataWriter
         )
     }
@@ -824,15 +822,5 @@ internal class LogsFeatureTest {
         val field = enclosingClass.getDeclaredField(fieldName)
         field.isAccessible = true
         return field.get(this) as T
-    }
-
-    companion object {
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
     }
 }

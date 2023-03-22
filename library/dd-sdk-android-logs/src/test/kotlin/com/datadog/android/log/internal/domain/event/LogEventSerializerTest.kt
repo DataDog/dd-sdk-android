@@ -9,6 +9,7 @@ package com.datadog.android.log.internal.domain.event
 import com.datadog.android.log.assertj.containsExtraAttributes
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.assertj.JsonObjectAssert
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonParser
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -35,9 +37,12 @@ internal class LogEventSerializerTest {
 
     lateinit var testedSerializer: LogEventSerializer
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`() {
-        testedSerializer = LogEventSerializer()
+        testedSerializer = LogEventSerializer(mockInternalLogger)
     }
 
     @RepeatedTest(4)
