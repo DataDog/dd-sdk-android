@@ -7,6 +7,7 @@
 package com.datadog.android.sdk.integration.rum
 
 import android.app.Activity
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.sdk.assertj.HeadersAssert
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.HandledRequest
@@ -20,11 +21,13 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
 
     protected abstract fun runInstrumentationScenario(mockServerRule: T): List<ExpectedEvent>
 
+    @Suppress("NestedBlockDepth")
     protected fun verifyExpectedEvents(
         handledRequests: List<HandledRequest>,
         expectedEvents: List<ExpectedEvent>
     ) {
         val sentGestureEvents = mutableListOf<JsonObject>()
+        val sentLaunchEvents = mutableListOf<JsonObject>()
         handledRequests
             .filter { it.url?.isRumUrl() ?: false }
             .forEach { request ->
@@ -36,10 +39,26 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
                         it.has("type") &&
                             it.getAsJsonPrimitive("type").asString == "telemetry"
                     }
-                    sentGestureEvents += rumPayload
+                    rumPayload.forEach {
+                        if (it.has("view") &&
+                            it.getAsJsonObject("view")["name"].asString == "ApplicationLaunch"
+                        ) {
+                            sentLaunchEvents += it
+                        } else {
+                            sentGestureEvents += it
+                        }
+                    }
                 }
             }
-        sentGestureEvents.verifyEventMatches(expectedEvents)
+        // Because launch events can be weirdly order dependent, consider them separately
+        val launchEventPredicate = { event: ExpectedEvent ->
+            event is ExpectedApplicationLaunchViewEvent || event is ExpectedApplicationStartActionEvent
+        }
+        val expectedLaunchEvents = expectedEvents.filter(launchEventPredicate)
+        sentLaunchEvents.verifyEventMatches(expectedLaunchEvents)
+
+        val otherExpectedEvents = expectedEvents.filterNot(launchEventPredicate)
+        sentGestureEvents.verifyEventMatches(otherExpectedEvents)
     }
 
     protected fun verifyNoRumPayloadSent(
@@ -48,6 +67,13 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
         val rumPayloads = handledRequests
             .filter { it.url?.isRumUrl() ?: false }
         assertThat(rumPayloads).isEmpty()
+    }
+
+    protected fun waitForPendingRUMEvents() {
+        val rum = GlobalRum.get()
+        val callMethod = rum.javaClass.declaredMethods.first { it.name.startsWith("waitForPendingEvents") }
+        callMethod.isAccessible = true
+        callMethod.invoke(rum)
     }
 
     companion object {

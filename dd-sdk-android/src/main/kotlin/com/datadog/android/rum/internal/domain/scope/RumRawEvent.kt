@@ -188,6 +188,12 @@ internal sealed class RumRawEvent {
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
+    internal data class AddFeatureFlagEvaluation(
+        val name: String,
+        val value: Any,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
     internal data class UpdatePerformanceMetric(
         val metric: RumPerformanceMetric,
         val value: Double,

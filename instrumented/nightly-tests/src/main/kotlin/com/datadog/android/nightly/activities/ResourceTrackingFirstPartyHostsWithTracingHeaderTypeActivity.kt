@@ -13,6 +13,6 @@ internal open class ResourceTrackingFirstPartyHostsWithTracingHeaderTypeActivity
     companion object {
         internal const val HOST = "random-data-api.com"
         internal const val RANDOM_URL_FIRST_PARTY_HOSTS =
-            "https://$HOST/api/users/random_user_tracecontext"
+            "https://$HOST/api/v2/users"
     }
 }

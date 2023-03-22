@@ -181,6 +181,23 @@ class RumMonitorE2ETests {
     }
 
     /**
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addFeatureFlagEvaluation(String, Any)
+     */
+    @Test
+    fun rum_rummonitor_addFeatureFlagEvaluation() {
+        val testMethodName = "rum_rummonitor_addFeatureFlagEvaluation"
+        val viewKey = forge.aViewKey()
+        val viewName = forge.aViewName()
+        val flagName = forge.anAlphaNumericalString()
+        val flagValue = forge.anAlphaNumericalString()
+        executeInsideView(viewKey, viewName, testMethodName) {
+            measure(testMethodName) {
+                GlobalRum.get().addFeatureFlagEvaluation(flagName, flagValue)
+            }
+        }
+    }
+
+    /**
      * apiMethodSignature: com.datadog.android.rum._RumInternalProxy#fun updatePerformanceMetric(RumPerformanceMetric, Double)
      */
     @Test

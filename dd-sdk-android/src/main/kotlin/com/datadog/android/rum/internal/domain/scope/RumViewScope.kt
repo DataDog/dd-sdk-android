@@ -106,6 +106,7 @@ internal open class RumViewScope(
     private var loadingTime: Long? = null
     private var loadingType: ViewEvent.LoadingType? = null
     private val customTimings: MutableMap<String, Long> = mutableMapOf()
+    internal val featureFlags: MutableMap<String, Any?> = mutableMapOf()
 
     internal var stopped: Boolean = false
 
@@ -180,6 +181,7 @@ internal open class RumViewScope(
             is RumRawEvent.StartResource -> onStartResource(event, writer)
             is RumRawEvent.AddError -> onAddError(event, writer)
             is RumRawEvent.AddLongTask -> onAddLongTask(event, writer)
+            is RumRawEvent.AddFeatureFlagEvaluation -> onAddFeatureFlagEvaluation(event, writer)
 
             is RumRawEvent.ApplicationStarted -> onApplicationStarted(event, writer)
             is RumRawEvent.UpdateViewLoadingTime -> onUpdateViewLoadingTime(event, writer)
@@ -389,6 +391,7 @@ internal open class RumViewScope(
 
                 val errorEvent = ErrorEvent(
                     date = event.eventTime.timestamp + serverTimeOffsetInMs,
+                    featureFlags = ErrorEvent.Context(featureFlags),
                     error = ErrorEvent.Error(
                         message = message,
                         source = event.source.toSchemaSource(),
@@ -688,12 +691,12 @@ internal open class RumViewScope(
 
         sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
-
                 val user = datadogContext.userInfo
                 val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext)
 
                 val viewEvent = ViewEvent(
                     date = eventTimestamp,
+                    featureFlags = ViewEvent.Context(additionalProperties = featureFlags),
                     view = ViewEvent.View(
                         id = rumContext.viewId.orEmpty(),
                         name = rumContext.viewName,
@@ -710,7 +713,11 @@ internal open class RumViewScope(
                         customTimings = timings,
                         isActive = !viewComplete,
                         cpuTicksCount = eventCpuTicks,
-                        cpuTicksPerSecond = eventCpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs },
+                        cpuTicksPerSecond = if (updatedDurationNs >= ONE_SECOND_NS) {
+                            eventCpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs }
+                        } else {
+                            null
+                        },
                         memoryAverage = memoryInfo?.meanValue,
                         memoryMax = memoryInfo?.maxValue,
                         refreshRateAverage = refreshRateInfo?.meanValue?.let { it * eventRefreshRateScale },
@@ -837,7 +844,7 @@ internal open class RumViewScope(
                         crash = ActionEvent.Crash(0),
                         longTask = ActionEvent.LongTask(0),
                         resource = ActionEvent.Resource(0),
-                        loadingTime = getStartupTime(event)
+                        loadingTime = event.applicationStartupNanos
                     ),
                     view = ActionEvent.View(
                         id = rumContext.viewId.orEmpty(),
@@ -885,12 +892,6 @@ internal open class RumViewScope(
                 @Suppress("ThreadSafety") // called in a worker thread context
                 writer.write(eventBatchWriter, actionEvent)
             }
-    }
-
-    private fun getStartupTime(event: RumRawEvent.ApplicationStarted): Long {
-        val now = event.eventTime.nanoTime
-        val startupTime = event.applicationStartupNanos
-        return max(now - startupTime, 1L)
     }
 
     @Suppress("LongMethod")
@@ -968,6 +969,14 @@ internal open class RumViewScope(
 
         pendingLongTaskCount++
         if (isFrozenFrame) pendingFrozenFrameCount++
+    }
+
+    private fun onAddFeatureFlagEvaluation(
+        event: RumRawEvent.AddFeatureFlagEvaluation,
+        writer: DataWriter<Any>
+    ) {
+        featureFlags[event.name] = event.value
+        sendViewUpdate(event, writer)
     }
 
     private fun isViewComplete(): Boolean {

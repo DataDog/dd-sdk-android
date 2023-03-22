@@ -10,15 +10,12 @@ import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.util.stream.Stream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -28,77 +25,38 @@ import java.util.stream.Stream
 @ForgeConfiguration(Configurator::class)
 internal class DatadogSiteTest {
 
-    @ParameterizedTest
-    @MethodSource("provideSiteWithLogsEndpoint")
-    fun `𝕄 return logs endpoint 𝕎 logsEndpoint()`(
-        site: DatadogSite,
-        expectedEndpoint: String
-    ) {
-        // When
-        val logsEndpoint = site.logsEndpoint()
-
-        // Then
-        assertThat(logsEndpoint).isEqualTo(expectedEndpoint)
+    @Test
+    fun `𝕄 return intake endpoint 𝕎 intakeEndpoint {US1}`() {
+        assertThat(DatadogSite.US1.intakeEndpoint).isEqualTo("https://browser-intake-datadoghq.com")
     }
 
-    @ParameterizedTest
-    @MethodSource("provideSiteWithTracesEndpoint")
-    fun `𝕄 return traces endpoint 𝕎 tracesEndpoint()`(
-        site: DatadogSite,
-        expectedEndpoint: String
-    ) {
-        // When
-        val tracesEndpoint = site.tracesEndpoint()
-
-        // Then
-        assertThat(tracesEndpoint).isEqualTo(expectedEndpoint)
+    @Test
+    fun `𝕄 return intake endpoint 𝕎 intakeEndpoint {US3}`() {
+        assertThat(DatadogSite.US3.intakeEndpoint).isEqualTo("https://browser-intake-us3-datadoghq.com")
     }
 
-    @ParameterizedTest
-    @MethodSource("provideSiteWithRumEndpoint")
-    fun `𝕄 return rum endpoint 𝕎 rumEndpoint()`(
-        site: DatadogSite,
-        expectedEndpoint: String
-    ) {
-        // When
-        val rumEndpoint = site.rumEndpoint()
-
-        // Then
-        assertThat(rumEndpoint).isEqualTo(expectedEndpoint)
+    @Test
+    fun `𝕄 return intake endpoint 𝕎 intakeEndpoint {US5}`() {
+        assertThat(DatadogSite.US5.intakeEndpoint).isEqualTo("https://browser-intake-us5-datadoghq.com")
     }
 
-    companion object {
-        @JvmStatic
-        fun provideSiteWithLogsEndpoint(): Stream<Arguments?>? {
-            return Stream.of(
-                Arguments.of(DatadogSite.US1, DatadogEndpoint.LOGS_US1),
-                Arguments.of(DatadogSite.US3, DatadogEndpoint.LOGS_US3),
-                Arguments.of(DatadogSite.US5, DatadogEndpoint.LOGS_US5),
-                Arguments.of(DatadogSite.US1_FED, DatadogEndpoint.LOGS_US1_FED),
-                Arguments.of(DatadogSite.EU1, DatadogEndpoint.LOGS_EU1)
-            )
-        }
+    @Test
+    fun `𝕄 return intake endpoint 𝕎 intakeEndpoint {US1-FED}`() {
+        assertThat(DatadogSite.US1_FED.intakeEndpoint).isEqualTo("https://browser-intake-ddog-gov.com")
+    }
 
-        @JvmStatic
-        fun provideSiteWithTracesEndpoint(): Stream<Arguments?>? {
-            return Stream.of(
-                Arguments.of(DatadogSite.US1, DatadogEndpoint.TRACES_US1),
-                Arguments.of(DatadogSite.US3, DatadogEndpoint.TRACES_US3),
-                Arguments.of(DatadogSite.US5, DatadogEndpoint.TRACES_US5),
-                Arguments.of(DatadogSite.US1_FED, DatadogEndpoint.TRACES_US1_FED),
-                Arguments.of(DatadogSite.EU1, DatadogEndpoint.TRACES_EU1)
-            )
-        }
+    @Test
+    fun `𝕄 return intake endpoint 𝕎 intakeEndpoint {EU1}`() {
+        assertThat(DatadogSite.EU1.intakeEndpoint).isEqualTo("https://browser-intake-datadoghq.eu")
+    }
 
-        @JvmStatic
-        fun provideSiteWithRumEndpoint(): Stream<Arguments?>? {
-            return Stream.of(
-                Arguments.of(DatadogSite.US1, DatadogEndpoint.RUM_US1),
-                Arguments.of(DatadogSite.US3, DatadogEndpoint.RUM_US3),
-                Arguments.of(DatadogSite.US5, DatadogEndpoint.RUM_US5),
-                Arguments.of(DatadogSite.US1_FED, DatadogEndpoint.RUM_US1_FED),
-                Arguments.of(DatadogSite.EU1, DatadogEndpoint.RUM_EU1)
-            )
-        }
+    @Test
+    fun `𝕄 return intake endpoint 𝕎 intakeEndpoint {AP1}`() {
+        assertThat(DatadogSite.AP1.intakeEndpoint).isEqualTo("https://browser-intake-ap1-datadoghq.com")
+    }
+
+    @Test
+    fun `𝕄 return intake endpoint 𝕎 intakeEndpoint {STAGING}`() {
+        assertThat(DatadogSite.STAGING.intakeEndpoint).isEqualTo("https://browser-intake-datad0g.com")
     }
 }

@@ -2273,8 +2273,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val eventTime = Time()
-        val startedNanos = eventTime.nanoTime - duration
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         GlobalRum.globalAttributes.putAll(attributes)
 
@@ -2670,8 +2669,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope.stopped = true
         val eventTime = Time()
-        val startedNanos = eventTime.nanoTime - duration
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         val fakeActionSent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount)
 
         // When
@@ -2727,8 +2725,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope.stopped = true
         val eventTime = Time()
-        val startedNanos = eventTime.nanoTime - duration
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         val fakeActionSent = RumRawEvent.ActionDropped(testedScope.viewId)
 
         // When
@@ -3242,8 +3239,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val eventTime = Time()
-        val startedNanos = eventTime.nanoTime - duration
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         testedScope.activeActionScope = null
         testedScope.pendingActionCount = 0
 
@@ -5608,6 +5604,77 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `𝕄 send View update 𝕎 onVitalUpdate()+handleEvent(KeepAlive) {CPU short timespan}`(
+        @DoubleForgery(1024.0, 65536.0) cpuTicks: Double
+    ) {
+        // Given
+        // cpu ticks should be received in ascending order
+        val listenerCaptor = argumentCaptor<VitalListener> {
+            verify(mockCpuVitalMonitor).register(capture())
+        }
+        val listener = listenerCaptor.firstValue
+
+        // When
+        listener.onVitalUpdate(VitalInfo(1, 0.0, 0.0, 0.0))
+        listener.onVitalUpdate(VitalInfo(1, 0.0, cpuTicks, cpuTicks / 2.0))
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(fakeEventTime),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasFrustrationCount(0)
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(cpuTicks)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    isSlowRendered(false)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
     fun `𝕄 send View update 𝕎 onVitalUpdate()+handleEvent(KeepAlive) {Memory}`(
         forge: Forge
     ) {
@@ -6752,6 +6819,97 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region Feature Flags
+
+    @Test
+    fun `M send event W handleEvent(AddFeatureFlagEvaluation) on active view`(
+        @StringForgery flagName: String,
+        @StringForgery flagValue: String
+    ) {
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name = flagName,
+                value = flagValue
+            ),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).hasFeatureFlag(flagName, flagValue)
+        }
+    }
+
+    @Test
+    fun `M modify flag W handleEvent(AddFeatureFlagEvaluation) on active view { existing feature flag }`(
+        @StringForgery flagName: String,
+        @BoolForgery oldFlagValue: Boolean,
+        @StringForgery flagValue: String
+    ) {
+        // GIVEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name = flagName,
+                value = oldFlagValue
+            ),
+            mockWriter
+        )
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name = flagName,
+                value = flagValue
+            ),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).hasFeatureFlag(flagName, flagValue)
+        }
+    }
+
+    @Test
+    fun `M send flags on ErrorEvent W handleEvent(AddError) on active view { existing feature flags }`(
+        forge: Forge,
+        @StringForgery flagName: String,
+        @StringForgery flagValue: String
+    ) {
+        // GIVEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name = flagName,
+                value = flagValue
+            ),
+            mockWriter
+        )
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddError(
+                forge.anAlphabeticalString(),
+                forge.aValueFrom(RumErrorSource::class.java),
+                null,
+                null,
+                false,
+                mapOf()
+            ),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).hasFeatureFlag(flagName, flagValue)
+        }
+    }
+
+    // endregion
+
     // region ViewUpdatePredicate
 
     @Test
@@ -6761,8 +6919,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val eventTime = Time()
-        val startedNanos = eventTime.nanoTime - duration
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         GlobalRum.globalAttributes.putAll(attributes)
         whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(false)
