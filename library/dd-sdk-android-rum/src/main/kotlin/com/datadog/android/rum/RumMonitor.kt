@@ -349,7 +349,7 @@ interface RumMonitor {
             }
         }
 
-        companion object {
+        internal companion object {
             internal const val UNEXPECTED_SDK_CORE_TYPE =
                 "SDK instance provided doesn't implement InternalSdkCore."
             internal const val RUM_NOT_ENABLED_ERROR_MESSAGE =
