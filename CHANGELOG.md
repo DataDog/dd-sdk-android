@@ -1,3 +1,24 @@
+# 1.18.0 / 2023-03-21
+
+* [FEATURE] RUM: Add `addFeatureFlagEvaluation` function for RUM. See [#1265](https://github.com/DataDog/dd-sdk-android/pull/1265)
+* [FEATURE] RUM: Implement webview proxy for cross platform. See [#1290](https://github.com/DataDog/dd-sdk-android/pull/1290)
+* [IMPROVEMENT] RUM: Add support to `AP1`. See [#1268](https://github.com/DataDog/dd-sdk-android/pull/1268)
+* [IMPROVEMENT] RUM `ApplicationLaunch` logic changes. See [#1278](https://github.com/DataDog/dd-sdk-android/pull/1278)
+* [IMPROVEMENT] RUM: Add internal telemetry configuration sampling rate. See [#1310](https://github.com/DataDog/dd-sdk-android/pull/1310)
+* [BUGFIX] RUM: Prevent reporting invalid cpu ticks per seconds. See [#1308](https://github.com/DataDog/dd-sdk-android/pull/1308)
+* [BUGFIX] RUM: Fix timing of `ApplicationLaunch` view and `application_start` events. See [#1305](https://github.com/DataDog/dd-sdk-android/pull/1305)
+* [BUGFIX] RUM: Fix telemetry sampling internal configuration for Flutter. See [#1326](https://github.com/DataDog/dd-sdk-android/pull/1326)
+* [MAINTENANCE] Make tests more accurate with url case sensitivity. See [#1263](https://github.com/DataDog/dd-sdk-android/pull/1263)
+* [MAINTENANCE] Update E2E tests with valid resource (as to not get 404). See [#1266](https://github.com/DataDog/dd-sdk-android/pull/1266)
+* [MAINTENANCE] Update RUM Telemetry event schema to latest. See [#1319](https://github.com/DataDog/dd-sdk-android/pull/1319)
+* [MAINTENANCE] Stabilize integration tests. See [#1329](https://github.com/DataDog/dd-sdk-android/pull/1329)
+* [MAINTENANCE] Update static analysis dependency. See [#1342](https://github.com/DataDog/dd-sdk-android/pull/1342)
+* [DOCS] Fix numbering in Android tracing instructions markdown. See [#1227](https://github.com/DataDog/dd-sdk-android/pull/1227)
+* [DOCS] Updated privacy controls in application setup. See [#1281](https://github.com/DataDog/dd-sdk-android/pull/1281)
+* [DOCS] Add app variant definition in docs. See [#1296](https://github.com/DataDog/dd-sdk-android/pull/1296)
+* [DOCS] Add link explaining how to stop collecting geolocation data. See [#1327](https://github.com/DataDog/dd-sdk-android/pull/1327)
+* [DOCS] Note about how to stop collecting geolocation data. See [#1328](https://github.com/DataDog/dd-sdk-android/pull/1328)
+
 # 1.17.2 / 2023-03-06
 
 * [BUGFIX] Global: Handle devices not reported properly their power source. See [#1315](https://github.com/DataDog/dd-sdk-android/pull/1315)
