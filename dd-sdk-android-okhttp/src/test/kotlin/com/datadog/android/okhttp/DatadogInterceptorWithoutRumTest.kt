@@ -54,6 +54,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         factory: (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return DatadogInterceptor(
+            sdkCore = mockSdkCore,
             tracedHosts = tracedHosts,
             tracedRequestListener = mockRequestListener,
             firstPartyHostResolver = mockResolver,

@@ -54,7 +54,7 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
                 sdkCore.registerFeature(it)
             }
 
-        tracer = RuntimeConfig.tracer()
+        tracer = RuntimeConfig.tracer(sdkCore)
         setContentView(R.layout.main_activity_layout)
     }
 

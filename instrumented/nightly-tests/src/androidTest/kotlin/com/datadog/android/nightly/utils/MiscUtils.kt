@@ -88,7 +88,6 @@ fun flushAndShutdownExecutors() {
     Datadog.invokeMethod("flushAndShutdownExecutors")
 }
 
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 fun initializeSdk(
     targetContext: Context,
     forgeSeed: Long,
@@ -99,7 +98,7 @@ fun initializeSdk(
     rumFeatureProvider: (RumFeature.Builder) -> RumFeature? = {
         it.build()
     },
-    tracerProvider: () -> Tracer = { createDefaultAndroidTracer() },
+    tracerProvider: (SdkCore) -> Tracer = { createDefaultAndroidTracer(it) },
     rumMonitorProvider: (SdkCore) -> RumMonitor = { createDefaultRumMonitor(it) }
 ): SdkCore {
     val sdkCore = Datadog.initialize(
@@ -123,7 +122,7 @@ fun initializeSdk(
         .forEach {
             sdkCore.registerFeature(it)
         }
-    GlobalTracer.registerIfAbsent(tracerProvider.invoke())
+    GlobalTracer.registerIfAbsent(tracerProvider.invoke(sdkCore))
     GlobalRum.registerIfAbsent(rumMonitorProvider.invoke(sdkCore))
     return sdkCore
 }
@@ -162,6 +161,7 @@ private fun createDatadogDefaultConfiguration(): Configuration {
     return defaultConfigurationBuilder().build()
 }
 
-private fun createDefaultAndroidTracer(): Tracer = AndroidTracer.Builder().build()
+private fun createDefaultAndroidTracer(sdkCore: SdkCore): Tracer =
+    AndroidTracer.Builder(sdkCore).build()
 
 private fun createDefaultRumMonitor(sdkCore: SdkCore) = RumMonitor.Builder(sdkCore).build()

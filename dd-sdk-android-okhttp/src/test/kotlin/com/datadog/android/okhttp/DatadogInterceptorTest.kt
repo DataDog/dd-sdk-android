@@ -78,9 +78,10 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         tracedHosts: Map<String, Set<TracingHeaderType>>,
         factory: (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
-        whenever(datadogCore.mockInstance.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
-        whenever(datadogCore.mockInstance.firstPartyHostResolver) doReturn mock()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
+        whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
         return DatadogInterceptor(
+            sdkCore = mockSdkCore,
             tracedHosts = tracedHosts,
             tracedRequestListener = mockRequestListener,
             firstPartyHostResolver = mockResolver,
@@ -121,7 +122,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     @Test
     fun `M instantiate with default values W init() { no tracing hosts specified }`() {
         // When
-        val interceptor = DatadogInterceptor()
+        val interceptor = DatadogInterceptor(mockSdkCore)
 
         // Then
         assertThat(interceptor.tracedHosts).isEmpty()
@@ -142,7 +143,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @StringForgery(regex = "[a-z]+\\.[a-z]{3}") hosts: List<String>
     ) {
         // When
-        val interceptor = DatadogInterceptor(hosts)
+        val interceptor = DatadogInterceptor(mockSdkCore, hosts)
 
         // Then
         assertThat(interceptor.tracedHosts.keys).containsAll(hosts)

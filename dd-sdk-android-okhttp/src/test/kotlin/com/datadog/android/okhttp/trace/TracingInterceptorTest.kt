@@ -15,6 +15,7 @@ import com.datadog.android.okhttp.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -112,6 +113,9 @@ internal open class TracingInterceptorTest {
     @Mock
     lateinit var mockTraceSampler: Sampler
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
     // endregion
 
     // region Fakes
@@ -162,7 +166,7 @@ internal open class TracingInterceptorTest {
         fakeMediaType = MediaType.parse(mediaType)
         fakeUrl = forgeUrlWithQueryParams(forge)
         fakeRequest = forgeRequest(forge)
-        whenever(datadogCore.mockInstance.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) {
             mockLocalTracer
         }
@@ -175,6 +179,7 @@ internal open class TracingInterceptorTest {
         factory: (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return TracingInterceptor(
+            mockSdkCore,
             tracedHosts,
             mockRequestListener,
             mockResolver,
@@ -196,10 +201,10 @@ internal open class TracingInterceptorTest {
     @Test
     fun `M instantiate with default values W init()`() {
         // Given
-        whenever(datadogCore.mockInstance.firstPartyHostResolver) doReturn mock()
+        whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
 
         // When
-        val interceptor = TracingInterceptor()
+        val interceptor = TracingInterceptor(mockSdkCore)
 
         // Then
         assertThat(interceptor.tracedHosts).isEmpty()
@@ -218,10 +223,10 @@ internal open class TracingInterceptorTest {
         @StringForgery(regex = "[a-z]+\\.[a-z]{3}") hosts: List<String>
     ) {
         // Given
-        whenever(datadogCore.mockInstance.firstPartyHostResolver) doReturn mock()
+        whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
 
         // When
-        val interceptor = TracingInterceptor(hosts)
+        val interceptor = TracingInterceptor(mockSdkCore, hosts)
 
         // Then
         assertThat(interceptor.tracedHosts.keys).containsAll(hosts)
@@ -1160,7 +1165,7 @@ internal open class TracingInterceptorTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        whenever(datadogCore.mockInstance.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 

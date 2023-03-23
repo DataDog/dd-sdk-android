@@ -7,14 +7,10 @@
 package com.datadog.android.trace.internal.utils
 
 import com.datadog.android.trace.AndroidTracer
-import com.datadog.android.utils.config.DatadogSingletonTestConfiguration
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.scopemanager.ScopeTestHelper
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -24,14 +20,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -39,9 +35,12 @@ internal class TracerExtensionsTest {
 
     lateinit var tracer: AndroidTracer
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
     @BeforeEach
     fun `set up`(forge: Forge) {
-        tracer = AndroidTracer.Builder()
+        tracer = AndroidTracer.Builder(mockSdkCore)
             .setServiceName(forge.anAlphaNumericalString())
             .build()
     }
@@ -74,16 +73,5 @@ internal class TracerExtensionsTest {
         // Then
         assertThat(tracer.traceId()).isNull()
         assertThat(tracer.spanId()).isNull()
-    }
-
-    companion object {
-        val logger = InternalLoggerTestConfiguration()
-        val datadogCore = DatadogSingletonTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, datadogCore)
-        }
     }
 }

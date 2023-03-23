@@ -48,7 +48,7 @@ internal class ActivityLifecycleLogs : AppCompatActivity() {
             sdkCore.registerFeature(it)
         }
 
-        logger = RuntimeConfig.logger()
+        logger = RuntimeConfig.logger(sdkCore)
         setContentView(R.layout.main_activity_layout)
 
         log(Log.INFO, "ActivityLifecycleLogs: onCreate ${System.nanoTime()}")

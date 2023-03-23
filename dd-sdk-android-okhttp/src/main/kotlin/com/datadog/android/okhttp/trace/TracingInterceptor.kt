@@ -7,7 +7,6 @@
 package com.datadog.android.okhttp.trace
 
 import androidx.annotation.FloatRange
-import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
@@ -21,6 +20,7 @@ import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDTracer
 import com.datadog.trace.api.DDTags
 import com.datadog.trace.api.interceptor.MutableSpan
@@ -67,6 +67,7 @@ import java.util.concurrent.atomic.AtomicReference
 @Suppress("TooManyFunctions", "StringLiteralDuplication")
 open class TracingInterceptor
 internal constructor(
+    internal val sdkCore: SdkCore,
     internal val tracedHosts: Map<String, Set<TracingHeaderType>>,
     internal val tracedRequestListener: TracedRequestListener,
     internal val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver,
@@ -98,6 +99,7 @@ internal constructor(
     /**
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
      *
+     * @param sdkCore SDK instance to bind to.
      * @param tracedHosts a list of all the hosts that you want to be automatically tracked
      * by this interceptor with Datadog style headers. If no host is provided (via this argument or global
      * configuration [Configuration.Builder.setFirstPartyHosts]) the interceptor won't trace any OkHttp [Request],
@@ -109,21 +111,24 @@ internal constructor(
      */
     @JvmOverloads
     constructor(
+        sdkCore: SdkCore,
         tracedHosts: List<String>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
+        sdkCore,
         tracedHosts.associateWith { setOf(TracingHeaderType.DATADOG) },
         tracedRequestListener,
-        getGlobalFirstPartyHostResolver(),
+        sdkCore.firstPartyHostResolver,
         null,
         RateBasedSampler(traceSamplingRate.percent()),
-        { AndroidTracer.Builder().setTracingHeaderTypes(it).build() }
+        { AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(it).build() }
     )
 
     /**
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
      *
+     * @param sdkCore SDK instance to bind to.
      * @param tracedHostsWithHeaderType a list of all the hosts and header types that you want to be automatically tracked
      * by this interceptor. If registering a GlobalTracer, the tracer must be configured with
      * [AndroidTracer.Builder.setTracingHeaderTypes] containing all the necessary header types configured for OkHttp tracking.
@@ -137,21 +142,24 @@ internal constructor(
      */
     @JvmOverloads
     constructor(
+        sdkCore: SdkCore,
         tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
+        sdkCore,
         tracedHostsWithHeaderType,
         tracedRequestListener,
-        getGlobalFirstPartyHostResolver(),
+        sdkCore.firstPartyHostResolver,
         null,
         RateBasedSampler(traceSamplingRate.percent()),
-        { AndroidTracer.Builder().setTracingHeaderTypes(it).build() }
+        { AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(it).build() }
     )
 
     /**
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
      *
+     * @param sdkCore SDK instance to bind to.
      * @param tracedRequestListener a listener for automatically created [Span]s
      * @param traceSamplingRate the sampling rate for APM traces created for auto-instrumented
      * requests. It must be a value between `0.0` and `100.0`. A value of `0.0` means no trace will
@@ -159,15 +167,17 @@ internal constructor(
      */
     @JvmOverloads
     constructor(
+        sdkCore: SdkCore,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
+        sdkCore,
         emptyMap(),
         tracedRequestListener,
-        getGlobalFirstPartyHostResolver(),
+        sdkCore.firstPartyHostResolver,
         null,
         RateBasedSampler(traceSamplingRate.percent()),
-        { AndroidTracer.Builder().setTracingHeaderTypes(it).build() }
+        { AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(it).build() }
     )
 
     // region Interceptor
@@ -273,7 +283,7 @@ internal constructor(
 
     @Synchronized
     private fun resolveTracer(): Tracer? {
-        val tracingFeature = Datadog.getInstance()?.getFeature(Feature.TRACING_FEATURE_NAME)
+        val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         return if (tracingFeature == null) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -567,15 +577,6 @@ internal constructor(
             "You added a TracingInterceptor to your OkHttpClient, " +
                 "but you didn't register any Tracer. " +
                 "We automatically created a local tracer for you."
-
-        /**
-         * Temporary helper method for now, it'll be removed eventually.
-         */
-        @Suppress("FunctionMaxLength")
-        internal fun getGlobalFirstPartyHostResolver(): FirstPartyHostHeaderTypeResolver {
-            return Datadog.getInstance()?.firstPartyHostResolver
-                ?: DefaultFirstPartyHostHeaderTypeResolver(emptyMap())
-        }
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
         internal const val DEFAULT_TRACE_SAMPLING_RATE: Float = 20f

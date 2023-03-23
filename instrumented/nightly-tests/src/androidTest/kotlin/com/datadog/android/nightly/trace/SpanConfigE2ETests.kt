@@ -34,7 +34,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class SpanConfigE2ETests {
@@ -61,10 +60,7 @@ class SpanConfigE2ETests {
                 ).build()
             )
         }
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
     }
 
     /**
@@ -83,10 +79,7 @@ class SpanConfigE2ETests {
                 ).setBatchSize(forge.aValueFrom(BatchSize::class.java)).build()
             )
         }
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
     }
 
     /**
@@ -106,10 +99,7 @@ class SpanConfigE2ETests {
                 tracingFeatureProvider = { null }
             )
         }
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
     }
 
     /**
@@ -128,25 +118,19 @@ class SpanConfigE2ETests {
                     crashReportsEnabled = true
                 ).build(),
                 tracingFeatureProvider = {
-                    TracingFeature.Builder()
-                        .setSpanEventMapper(
-                            object : SpanEventMapper {
-                                override fun map(event: SpanEvent): SpanEvent {
-                                    if (event.resource == fakeResourceName) {
-                                        event.name = testMethodName
-                                        event.resource = testMethodName
-                                    }
-                                    return event
-                                }
+                    TracingFeature.Builder().setSpanEventMapper(object : SpanEventMapper {
+                        override fun map(event: SpanEvent): SpanEvent {
+                            if (event.resource == fakeResourceName) {
+                                event.name = testMethodName
+                                event.resource = testMethodName
                             }
-                        ).build()
+                            return event
+                        }
+                    }).build()
                 }
             )
         }
-        GlobalTracer.get()
-            .buildSpan(fakeResourceName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(fakeResourceName).start().finish()
     }
 
     /**
@@ -161,7 +145,9 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                tracerProvider = { AndroidTracer.Builder().setBundleWithRumEnabled(true).build() }
+                tracerProvider = { sdkCore ->
+                    AndroidTracer.Builder(sdkCore).setBundleWithRumEnabled(true).build()
+                }
             )
         }
         val viewKey = "some-view-key"
@@ -174,10 +160,7 @@ class SpanConfigE2ETests {
 
         // we need to wait a bit until RUM Context is updated
         Thread.sleep(2000)
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
 
         rumMonitor.stopUserAction(RumActionType.TAP, actionName)
         rumMonitor.stopView(viewKey)
@@ -195,7 +178,9 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                tracerProvider = { AndroidTracer.Builder().setBundleWithRumEnabled(false).build() }
+                tracerProvider = { sdkCore ->
+                    AndroidTracer.Builder(sdkCore).setBundleWithRumEnabled(false).build()
+                }
             )
         }
 
@@ -206,10 +191,7 @@ class SpanConfigE2ETests {
 
         // we need to wait a bit until RUM Context is updated
         Thread.sleep(2000)
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
 
         rumMonitor.stopView(viewKey)
     }
@@ -226,8 +208,10 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                tracerProvider = {
-                    AndroidTracer.Builder().setPartialFlushThreshold(partialFlushThreshold).build()
+                tracerProvider = { sdkCore ->
+                    AndroidTracer.Builder(sdkCore)
+                        .setPartialFlushThreshold(partialFlushThreshold)
+                        .build()
                 }
             )
         }
@@ -254,8 +238,10 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                tracerProvider = {
-                    AndroidTracer.Builder().setPartialFlushThreshold(partialFlushThreshold).build()
+                tracerProvider = { sdkCore ->
+                    AndroidTracer.Builder(sdkCore)
+                        .setPartialFlushThreshold(partialFlushThreshold)
+                        .build()
                 }
             )
         }
@@ -281,20 +267,15 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                tracerProvider = {
-                    AndroidTracer.Builder()
-                        .addGlobalTag(
-                            SPECIAL_STRING_TAG_NAME,
-                            "str${forge.anAlphaNumericalString()}"
-                        )
-                        .build()
+                tracerProvider = { sdkCore ->
+                    AndroidTracer.Builder(sdkCore).addGlobalTag(
+                        SPECIAL_STRING_TAG_NAME,
+                        "str${forge.anAlphaNumericalString()}"
+                    ).build()
                 }
             )
         }
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
     }
 
     /**
@@ -308,17 +289,12 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                tracerProvider = {
-                    AndroidTracer.Builder()
-                        .setServiceName("service-$testMethodName")
-                        .build()
+                tracerProvider = { sdkCore ->
+                    AndroidTracer.Builder(sdkCore).setServiceName("service-$testMethodName").build()
                 }
             )
         }
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
     }
 
     /**
@@ -332,17 +308,13 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                tracerProvider = {
-                    AndroidTracer.Builder()
-                        .setTracingHeaderTypes(setOf(TracingHeaderType.TRACECONTEXT))
-                        .build()
+                tracerProvider = { sdkCore ->
+                    AndroidTracer.Builder(sdkCore)
+                        .setTracingHeaderTypes(setOf(TracingHeaderType.TRACECONTEXT)).build()
                 }
             )
         }
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
     }
 
     /**
@@ -354,7 +326,10 @@ class SpanConfigE2ETests {
     fun trace_config_set_user_info() {
         val testMethodName = "trace_config_set_user_info"
         measureSdkInitialize {
-            initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext, forgeSeed = forge.seed)
+            initializeSdk(
+                InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed
+            )
         }
 
         val userId = "some-id-${forge.anAlphaNumericalString()}"
@@ -375,10 +350,7 @@ class SpanConfigE2ETests {
                 )
             )
         }
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
     }
 
     /**
@@ -393,17 +365,11 @@ class SpanConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                config = Configuration
-                    .Builder(
-                        crashReportsEnabled = true
-                    )
-                    .setEncryption(TestEncryption())
-                    .build()
+                config = Configuration.Builder(
+                    crashReportsEnabled = true
+                ).setEncryption(TestEncryption()).build()
             )
         }
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
     }
 }

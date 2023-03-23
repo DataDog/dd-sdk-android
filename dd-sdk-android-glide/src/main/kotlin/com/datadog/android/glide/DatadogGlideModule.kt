@@ -15,8 +15,10 @@ import com.bumptech.glide.load.engine.executor.GlideExecutor.newDiskCacheBuilder
 import com.bumptech.glide.load.engine.executor.GlideExecutor.newSourceBuilder
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.module.AppGlideModule
+import com.datadog.android.Datadog
 import com.datadog.android.okhttp.DatadogEventListener
 import com.datadog.android.okhttp.DatadogInterceptor
+import com.datadog.android.v2.api.SdkCore
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.InputStream
@@ -27,6 +29,8 @@ import java.io.InputStream
  *
  * This sets up an OkHttp based downloader that will send Traces and RUM Resource events.
  * Also any Glide related error (Disk cache, source transformation, …) will be sent as RUM Errors.
+ *
+ * @param sdkCoreProvider a provider for the SDK instance to use.
  * @param firstPartyHosts the list of first party hosts.
  * Requests made to a URL with any one of these hosts (or any subdomain) will:
  * - be considered a first party RUM Resource and categorised as such in your RUM dashboard;
@@ -39,6 +43,7 @@ import java.io.InputStream
  */
 open class DatadogGlideModule
 @JvmOverloads constructor(
+    private val sdkCoreProvider: () -> SdkCore? = { Datadog.getInstance() },
     private val firstPartyHosts: List<String> = emptyList(),
     private val samplingRate: Float = DEFAULT_SAMPLING_RATE
 ) : AppGlideModule() {
@@ -80,9 +85,20 @@ open class DatadogGlideModule
      */
     @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
     open fun getClientBuilder(): OkHttpClient.Builder {
-        return OkHttpClient.Builder()
-            .addInterceptor(DatadogInterceptor(firstPartyHosts, traceSamplingRate = samplingRate))
+        val builder = OkHttpClient.Builder()
             .eventListenerFactory(DatadogEventListener.Factory())
+
+        val sdkCore = sdkCoreProvider.invoke()
+        if (sdkCore != null) {
+            builder.addInterceptor(
+                DatadogInterceptor(
+                    sdkCore,
+                    firstPartyHosts,
+                    traceSamplingRate = samplingRate
+                )
+            )
+        }
+        return builder
     }
 
     // endregion

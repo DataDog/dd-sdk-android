@@ -14,7 +14,7 @@ import com.bumptech.glide.load.engine.cache.LruResourceCache
 import com.datadog.android.glide.DatadogGlideModule
 
 @GlideModule
-internal class SampleGlideModule : DatadogGlideModule(listOf("shopist.io")) {
+internal class SampleGlideModule : DatadogGlideModule(firstPartyHosts = listOf("shopist.io")) {
     override fun applyOptions(context: Context, builder: GlideBuilder) {
         super.applyOptions(context, builder)
 

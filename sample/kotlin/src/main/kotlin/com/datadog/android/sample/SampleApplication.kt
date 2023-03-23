@@ -43,6 +43,7 @@ import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingFeature
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.UserInfo
 import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
@@ -62,6 +63,8 @@ import timber.log.Timber
 @Suppress("MagicNumber")
 class SampleApplication : Application() {
 
+    private lateinit var sdkCore: SdkCore
+
     private val tracedHosts = listOf(
         "datadoghq.com",
         "127.0.0.1"
@@ -71,8 +74,8 @@ class SampleApplication : Application() {
     //  not available yet at the interceptor construction time
     private val okHttpClient by lazy {
         OkHttpClient.Builder()
-            .addInterceptor(RumInterceptor(traceSamplingRate = 100f))
-            .addNetworkInterceptor(TracingInterceptor(traceSamplingRate = 100f))
+            .addInterceptor(RumInterceptor(sdkCore, traceSamplingRate = 100f))
+            .addNetworkInterceptor(TracingInterceptor(sdkCore, traceSamplingRate = 100f))
             .eventListenerFactory(DatadogEventListener.Factory())
             .build()
     }
@@ -107,7 +110,7 @@ class SampleApplication : Application() {
     private fun initializeDatadog() {
         val preferences = Preferences.defaultPreferences(this)
 
-        val sdkCore = Datadog.initialize(
+        sdkCore = Datadog.initialize(
             this,
             createDatadogCredentials(),
             createDatadogConfiguration(),
@@ -160,7 +163,7 @@ class SampleApplication : Application() {
         )
 
         GlobalTracer.registerIfAbsent(
-            AndroidTracer.Builder()
+            AndroidTracer.Builder(sdkCore)
                 .setServiceName(BuildConfig.APPLICATION_ID)
                 .build()
         )

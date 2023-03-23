@@ -6,6 +6,7 @@
 
 package com.datadog.android.nightly.activities
 
+import com.datadog.android.Datadog
 import com.datadog.android.okhttp.rum.RumInterceptor
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
@@ -16,10 +17,18 @@ import okhttp3.Response
 
 internal class ResourceTrackingCustomSpanAttributesActivity : ResourceTrackingActivity() {
     override val okHttpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .addInterceptor(RumInterceptor(traceSamplingRate = HUNDRED_PERCENT))
-            .addNetworkInterceptor(
+        val sdkCore = Datadog.getInstance()
+        val builder = OkHttpClient.Builder()
+        if (sdkCore != null) {
+            builder.addInterceptor(
+                RumInterceptor(
+                    sdkCore,
+                    traceSamplingRate = HUNDRED_PERCENT
+                )
+            )
+            builder.addNetworkInterceptor(
                 TracingInterceptor(
+                    sdkCore,
                     listOf(HOST),
                     tracedRequestListener = object : TracedRequestListener {
                         override fun onRequestIntercepted(
@@ -34,7 +43,8 @@ internal class ResourceTrackingCustomSpanAttributesActivity : ResourceTrackingAc
                     traceSamplingRate = HUNDRED_PERCENT
                 )
             )
-            .build()
+        }
+        builder.build()
     }
 
     override val randomUrl: String = RANDOM_RESOURCE_WITH_CUSTOM_SPAN
