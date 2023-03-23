@@ -8,11 +8,13 @@ package com.datadog.android.rum.utils.forge
 
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.jvm.useJvmFactories
 
 internal class Configurator : BaseConfigurator() {
 
     override fun configure(forge: Forge) {
         super.configure(forge)
+        forge.useJvmFactories()
 
         // Core
         forge.addFactory(DatadogContextForgeryFactory())

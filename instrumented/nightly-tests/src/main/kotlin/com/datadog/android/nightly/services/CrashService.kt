@@ -12,11 +12,12 @@ import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.nightly.BuildConfig
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.v2.api.SdkCore
 
 internal abstract class CrashService : Service() {
 
-    protected fun initRum(extras: Bundle?) {
-        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+    protected fun initRum(sdkCore: SdkCore, extras: Bundle?) {
+        GlobalRum.registerIfAbsent(RumMonitor.Builder(sdkCore).build())
         extras?.let { bundle ->
             bundle.keySet().forEach {
                 // TODO RUMM-2717 Bundle#get is deprecated, but there is no replacement for it.

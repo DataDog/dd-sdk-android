@@ -100,7 +100,7 @@ fun initializeSdk(
         it.build()
     },
     tracerProvider: () -> Tracer = { createDefaultAndroidTracer() },
-    rumMonitorProvider: () -> RumMonitor = { createDefaultRumMonitor() }
+    rumMonitorProvider: (SdkCore) -> RumMonitor = { createDefaultRumMonitor(it) }
 ): SdkCore {
     val sdkCore = Datadog.initialize(
         targetContext,
@@ -124,7 +124,7 @@ fun initializeSdk(
             sdkCore.registerFeature(it)
         }
     GlobalTracer.registerIfAbsent(tracerProvider.invoke())
-    GlobalRum.registerIfAbsent(rumMonitorProvider.invoke())
+    GlobalRum.registerIfAbsent(rumMonitorProvider.invoke(sdkCore))
     return sdkCore
 }
 
@@ -164,4 +164,4 @@ private fun createDatadogDefaultConfiguration(): Configuration {
 
 private fun createDefaultAndroidTracer(): Tracer = AndroidTracer.Builder().build()
 
-private fun createDefaultRumMonitor() = RumMonitor.Builder().build()
+private fun createDefaultRumMonitor(sdkCore: SdkCore) = RumMonitor.Builder(sdkCore).build()

@@ -11,7 +11,6 @@ import android.os.Handler
 import android.os.Looper
 import androidx.annotation.FloatRange
 import androidx.fragment.app.Fragment
-import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
@@ -19,6 +18,7 @@ import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -267,8 +267,10 @@ interface RumMonitor {
 
     /**
      * A Builder class for a [RumMonitor].
+     *
+     * @param sdkCore SDK instance to bind to.
      */
-    class Builder {
+    class Builder(private val sdkCore: SdkCore) {
 
         private var samplingRate: Float? = null
         private var sessionListener: RumSessionListener? = null
@@ -296,20 +298,19 @@ interface RumMonitor {
         /**
          * Builds a [RumMonitor] based on the current state of this Builder.
          */
-        @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
         fun build(): RumMonitor {
-            val sdkCore = Datadog.getInstance() as? InternalSdkCore
-            val rumFeature = sdkCore
-                ?.getFeature(Feature.RUM_FEATURE_NAME)
-                ?.unwrap<RumFeature>()
-            return if (sdkCore == null) {
+            if (sdkCore !is InternalSdkCore) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     UNEXPECTED_SDK_CORE_TYPE
                 )
-                NoOpRumMonitor()
-            } else if (rumFeature == null) {
+                return NoOpRumMonitor()
+            }
+
+            val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+                ?.unwrap<RumFeature>()
+            return if (rumFeature == null) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,

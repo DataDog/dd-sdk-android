@@ -6,14 +6,8 @@
 
 package com.datadog.android.v2.api.context
 
-import android.app.ActivityManager.RunningAppProcessInfo
-
 /**
  * Holds information about the current process.
  * @property isMainProcess whether this is the main or a secondary process for the app
- * @property processImportance one of [RunningAppProcessInfo] IMPORTANCE level
  */
-data class ProcessInfo(
-    val isMainProcess: Boolean,
-    val processImportance: Int
-)
+data class ProcessInfo(val isMainProcess: Boolean)

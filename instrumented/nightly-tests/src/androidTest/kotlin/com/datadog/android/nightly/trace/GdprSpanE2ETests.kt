@@ -38,7 +38,7 @@ class GdprSpanE2ETests {
     @Test
     fun span_config_consent_pending() {
         val testMethodName = "span_config_consent_pending"
-        val sdkCore = measureSdkInitialize {
+        measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -58,7 +58,7 @@ class GdprSpanE2ETests {
     @Test
     fun span_config_consent_granted() {
         val testMethodName = "span_config_consent_granted"
-        val sdkCore = measureSdkInitialize {
+        measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -78,7 +78,7 @@ class GdprSpanE2ETests {
     @Test
     fun span_config_consent_not_granted() {
         val testMethodName = "span_config_consent_not_granted"
-        val sdkCore = measureSdkInitialize {
+        measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,

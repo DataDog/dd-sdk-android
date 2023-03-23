@@ -34,7 +34,7 @@ internal class NoOpContextProvider : ContextProvider {
                 serverTimeOffsetMs = 0L,
                 serverTimeOffsetNs = 0L
             ),
-            processInfo = ProcessInfo(isMainProcess = true, processImportance = 0),
+            processInfo = ProcessInfo(isMainProcess = true),
             networkInfo = NetworkInfo(
                 connectivity = NetworkInfo.Connectivity.NETWORK_OTHER,
                 carrierName = null,

@@ -7,7 +7,6 @@
 package com.datadog.android.rum
 
 import android.os.Looper
-import com.datadog.android.Datadog
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
@@ -20,6 +19,7 @@ import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -62,6 +62,9 @@ internal class RumMonitorBuilderTest {
     @Mock
     lateinit var mockRumFeature: RumFeature
 
+    @Mock
+    lateinit var mockSdkCore: InternalSdkCore
+
     @BeforeEach
     fun `set up`(
         forge: Forge
@@ -78,12 +81,10 @@ internal class RumMonitorBuilderTest {
 
         val mockRumFeatureScope = mock<FeatureScope>()
         whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
-        whenever(
-            datadog.mockInstance.getFeature(Feature.RUM_FEATURE_NAME)
-        ) doReturn mockRumFeatureScope
-        whenever(datadog.mockInstance.firstPartyHostResolver) doReturn mock()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
 
-        testedBuilder = RumMonitor.Builder()
+        testedBuilder = RumMonitor.Builder(mockSdkCore)
     }
 
     @Test
@@ -114,7 +115,7 @@ internal class RumMonitorBuilderTest {
         assertThat(monitor.samplingRate).isEqualTo(fakeSamplingRate)
         assertThat(monitor.backgroundTrackingEnabled).isEqualTo(fakeBackgroundEventTracking)
 
-        assertThat(monitor.telemetryEventHandler.sdkCore).isSameAs(datadog.mockInstance)
+        assertThat(monitor.telemetryEventHandler.sdkCore).isSameAs(mockSdkCore)
 
         val telemetrySampler = monitor.telemetryEventHandler.eventSampler
         check(telemetrySampler is RateBasedSampler)
@@ -189,24 +190,9 @@ internal class RumMonitorBuilderTest {
     fun `𝕄 builds nothing 𝕎 build() and SDK instance doesn't implement InternalSdkCore`() {
         // Given
         val wrongSdkCore = mock<SdkCore>()
-        val registryField = Datadog::class.java.getDeclaredField("registry").apply {
-            isAccessible = true
-        }
-        val registryClearMethod = registryField.type.getMethod(
-            "clear"
-        )
-        val registryRegisterMethod = registryField.type.getMethod(
-            "register",
-            String::class.java,
-            SdkCore::class.java
-        )
-        val registry = registryField.get(null)
-        registryClearMethod.invoke(registry)
-        registryRegisterMethod.invoke(registry, null, wrongSdkCore)
-        whenever(wrongSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
 
         // When
-        val monitor = testedBuilder.build()
+        val monitor = RumMonitor.Builder(wrongSdkCore).build()
 
         // Then
         verify(logger.mockInternalLogger).log(
@@ -220,7 +206,7 @@ internal class RumMonitorBuilderTest {
     @Test
     fun `𝕄 builds nothing 𝕎 build() and RumFeature is not initialized`() {
         // Given
-        whenever(datadog.mockInstance.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
 
         // When
         val monitor = testedBuilder.build()

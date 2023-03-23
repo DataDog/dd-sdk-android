@@ -1,3 +1,10 @@
+class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProvider
+  override fun onCreate(): Boolean
+  override fun query(android.net.Uri, Array<String>?, String?, Array<String>?, String?): android.database.Cursor?
+  override fun getType(android.net.Uri): String?
+  override fun insert(android.net.Uri, android.content.ContentValues?): android.net.Uri?
+  override fun delete(android.net.Uri, String?, Array<String>?): Int
+  override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
 object com.datadog.android.rum.GlobalRum
   fun isRegistered(): Boolean
   fun registerIfAbsent(RumMonitor): Boolean
@@ -99,6 +106,7 @@ interface com.datadog.android.rum.RumMonitor
   fun addFeatureFlagEvaluation(String, Any)
   fun _getInternal(): _RumInternalProxy?
   class Builder
+    constructor(com.datadog.android.v2.api.SdkCore)
     fun sampleRumSessions(Float): Builder
     fun setSessionListener(RumSessionListener): Builder
     fun build(): RumMonitor

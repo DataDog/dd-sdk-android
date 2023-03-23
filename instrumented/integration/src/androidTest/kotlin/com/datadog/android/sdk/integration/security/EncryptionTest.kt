@@ -70,7 +70,7 @@ internal class EncryptionTest {
         features.shuffled(Random(forge.seed)).forEach {
             sdkCore.registerFeature(it)
         }
-        val rumMonitor = RumMonitor.Builder().build()
+        val rumMonitor = RumMonitor.Builder(sdkCore).build()
         GlobalRum.registerIfAbsent(rumMonitor)
 
         val tracer = AndroidTracer.Builder().setBundleWithRumEnabled(true).build()

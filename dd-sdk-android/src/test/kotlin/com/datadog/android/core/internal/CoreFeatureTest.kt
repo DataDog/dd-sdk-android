@@ -55,7 +55,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -612,8 +611,7 @@ internal class CoreFeatureTest {
 
     @Test
     fun `𝕄 detect current process 𝕎 initialize() {main process}`(
-        @StringForgery otherProcessName: String,
-        @IntForgery processImportance: Int
+        @StringForgery otherProcessName: String
     ) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
@@ -622,13 +620,11 @@ internal class CoreFeatureTest {
         )
         val myProcess = forgeAppProcessInfo(
             Process.myPid(),
-            appContext.fakePackageName,
-            processImportance
+            appContext.fakePackageName
         )
         val otherProcess = forgeAppProcessInfo(
             Process.myPid() + 1,
-            otherProcessName,
-            processImportance + 1
+            otherProcessName
         )
         whenever(mockActivityManager.runningAppProcesses)
             .thenReturn(listOf(myProcess, otherProcess))
@@ -644,24 +640,21 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.isMainProcess).isTrue()
-        assertThat(CoreFeature.processImportance).isEqualTo(processImportance)
     }
 
     @Test
     fun `𝕄 detect current process 𝕎 initialize() {secondary process}`(
-        @StringForgery otherProcessName: String,
-        @IntForgery processImportance: Int
+        @StringForgery otherProcessName: String
     ) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
         whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
         )
-        val myProcess = forgeAppProcessInfo(Process.myPid(), otherProcessName, processImportance)
+        val myProcess = forgeAppProcessInfo(Process.myPid(), otherProcessName)
         val otherProcess = forgeAppProcessInfo(
             Process.myPid() + 1,
-            appContext.fakePackageName,
-            processImportance
+            appContext.fakePackageName
         )
         whenever(mockActivityManager.runningAppProcesses)
             .thenReturn(listOf(myProcess, otherProcess))
@@ -677,13 +670,11 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.isMainProcess).isFalse()
-        assertThat(CoreFeature.processImportance).isEqualTo(processImportance)
     }
 
     @Test
     fun `𝕄 detect current process 𝕎 initialize() {unknown process}`(
-        @StringForgery otherProcessName: String,
-        @IntForgery otherProcessImportance: Int
+        @StringForgery otherProcessName: String
     ) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
@@ -692,8 +683,7 @@ internal class CoreFeatureTest {
         )
         val otherProcess = forgeAppProcessInfo(
             Process.myPid() + 1,
-            otherProcessName,
-            otherProcessImportance
+            otherProcessName
         )
         whenever(mockActivityManager.runningAppProcesses)
             .thenReturn(listOf(otherProcess))
@@ -709,8 +699,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.isMainProcess).isTrue()
-        assertThat(CoreFeature.processImportance)
-            .isEqualTo(ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
     }
 
     @Test
@@ -743,8 +731,7 @@ internal class CoreFeatureTest {
     @Test
     fun `𝕄 initialize the NdkCrashHandler data 𝕎 initialize() {main process}`(
         @TempDir tempDir: File,
-        @StringForgery otherProcessName: String,
-        @IntForgery processImportance: Int
+        @StringForgery otherProcessName: String
     ) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
@@ -753,13 +740,11 @@ internal class CoreFeatureTest {
         )
         val myProcess = forgeAppProcessInfo(
             Process.myPid(),
-            appContext.fakePackageName,
-            processImportance
+            appContext.fakePackageName
         )
         val otherProcess = forgeAppProcessInfo(
             Process.myPid() + 1,
-            otherProcessName,
-            processImportance + 1
+            otherProcessName
         )
         whenever(mockActivityManager.runningAppProcesses)
             .thenReturn(listOf(myProcess, otherProcess))
@@ -788,15 +773,14 @@ internal class CoreFeatureTest {
 
     @Test
     fun `𝕄 not initialize the NdkCrashHandler data 𝕎 initialize() {not main process}`(
-        @StringForgery otherProcessName: String,
-        @IntForgery processImportance: Int
+        @StringForgery otherProcessName: String
     ) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
         whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
         )
-        val myProcess = forgeAppProcessInfo(Process.myPid(), otherProcessName, processImportance)
+        val myProcess = forgeAppProcessInfo(Process.myPid(), otherProcessName)
         whenever(mockActivityManager.runningAppProcesses)
             .thenReturn(listOf(myProcess))
 
@@ -1089,13 +1073,11 @@ internal class CoreFeatureTest {
 
     private fun forgeAppProcessInfo(
         processId: Int,
-        processName: String,
-        importance: Int
+        processName: String
     ): ActivityManager.RunningAppProcessInfo {
         return ActivityManager.RunningAppProcessInfo().apply {
             this.processName = processName
             this.pid = processId
-            this.importance = importance
         }
     }
 

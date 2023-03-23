@@ -269,9 +269,6 @@ internal class DatadogCore(
     override val rootStorageDir: File
         get() = coreFeature.storageDir
 
-    override val processImportance: Int
-        get() = CoreFeature.processImportance
-
     @WorkerThread
     override fun writeLastViewEvent(data: ByteArray) {
         // directory structure may not exist: currently it is a file which is located in NDK reports

@@ -21,6 +21,7 @@ import com.datadog.android.nightly.exceptions.RumEnabledException
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.RumFeature
 import com.datadog.android.trace.TracingFeature
+import com.datadog.android.v2.api.SdkCore
 
 @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal open class JvmCrashService : CrashService() {
@@ -34,8 +35,8 @@ internal open class JvmCrashService : CrashService() {
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         when (intent.action) {
             CRASH_HANDLER_DISABLED_SCENARIO -> {
-                startSdk(crashReportsEnabled = false)
-                initRum(intent.extras)
+                val sdkCore = startSdk(crashReportsEnabled = false)
+                initRum(sdkCore, intent.extras)
                 scheduleJvmCrash(RumEnabledException())
             }
             RUM_DISABLED_SCENARIO -> {
@@ -43,8 +44,8 @@ internal open class JvmCrashService : CrashService() {
                 scheduleJvmCrash(RumDisabledException())
             }
             else -> {
-                startSdk()
-                initRum(intent.extras)
+                val sdkCore = startSdk()
+                initRum(sdkCore, intent.extras)
                 scheduleJvmCrash(RumEnabledException())
             }
         }
@@ -65,7 +66,7 @@ internal open class JvmCrashService : CrashService() {
     private fun startSdk(
         crashReportsEnabled: Boolean = true,
         rumEnabled: Boolean = true
-    ) {
+    ): SdkCore {
         val configBuilder = Configuration.Builder(
             crashReportsEnabled = crashReportsEnabled
         )
@@ -86,6 +87,7 @@ internal open class JvmCrashService : CrashService() {
         }
         sdkCore.registerFeature(LogsFeature.Builder().build())
         sdkCore.registerFeature(TracingFeature.Builder().build())
+        return sdkCore
     }
 
     // endregion

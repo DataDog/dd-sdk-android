@@ -455,10 +455,8 @@ internal class CoreFeature {
         }
         if (currentProcess == null) {
             isMainProcess = true
-            processImportance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         } else {
             isMainProcess = appContext.packageName == currentProcess.processName
-            processImportance = currentProcess.importance
         }
     }
 
@@ -510,8 +508,6 @@ internal class CoreFeature {
     // endregion
 
     companion object {
-        internal var processImportance: Int =
-            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
 
         // region Constants
 

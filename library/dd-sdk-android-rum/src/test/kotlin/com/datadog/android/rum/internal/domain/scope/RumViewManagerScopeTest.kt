@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.scope
 
 import android.app.ActivityManager.RunningAppProcessInfo
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
@@ -334,7 +335,7 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockSdkCore.processImportance) doReturn forge.anElementFrom(
+        DdRumContentProvider.processImportance = forge.anElementFrom(
             RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
             RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
             @Suppress("DEPRECATION")
@@ -347,6 +348,7 @@ internal class RumViewManagerScopeTest {
             RunningAppProcessInfo.IMPORTANCE_CACHED,
             RunningAppProcessInfo.IMPORTANCE_GONE
         )
+
         testedScope.applicationDisplayed = false
         val fakeEvent = forge.validBackgroundEvent()
 
@@ -497,7 +499,7 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockSdkCore.processImportance) doReturn RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        DdRumContentProvider.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         testedScope.applicationDisplayed = false
         val fakeEvent = forge.anyRumEvent()
         val appStartTimeNs = forge.aLong(min = 0, max = fakeEvent.eventTime.nanoTime)
@@ -507,12 +509,9 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        val timestampNs = (
-            TimeUnit.MILLISECONDS.toNanos(fakeEvent.eventTime.timestamp) -
-                fakeEvent.eventTime.nanoTime
-            ) +
-            appStartTimeNs
-        val timestampMs = TimeUnit.NANOSECONDS.toMillis((timestampNs))
+        val eventTimeNanos = TimeUnit.MILLISECONDS.toNanos(fakeEvent.eventTime.timestamp)
+        val timestampNs = (eventTimeNanos - fakeEvent.eventTime.nanoTime) + appStartTimeNs
+        val timestampMs = TimeUnit.NANOSECONDS.toMillis(timestampNs)
         val scopeCount = if (fakeEvent is RumRawEvent.StartView) 2 else 1
         assertThat(testedScope.childrenScopes).hasSize(scopeCount)
         assertThat(testedScope.childrenScopes[0])
@@ -533,7 +532,7 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockSdkCore.processImportance) doReturn forge.anElementFrom(
+        DdRumContentProvider.processImportance = forge.anElementFrom(
             RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
             RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
             @Suppress("DEPRECATION")
@@ -634,24 +633,20 @@ internal class RumViewManagerScopeTest {
 
         val appStartTimeNs = forge.aLong(min = 0, max = fakeEvent.eventTime.nanoTime)
         whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn appStartTimeNs
-        whenever(mockSdkCore.processImportance) doReturn RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        DdRumContentProvider.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        val appStartTimestamp = TimeUnit.NANOSECONDS.toMillis(
-            (
-                TimeUnit.MILLISECONDS.toNanos(fakeEvent.eventTime.timestamp) -
-                    fakeEvent.eventTime.nanoTime
-                ) +
-                appStartTimeNs
-        )
+        val eventTimeNanos = TimeUnit.MILLISECONDS.toNanos(fakeEvent.eventTime.timestamp)
+        val timestampNs = (eventTimeNanos - fakeEvent.eventTime.nanoTime) + appStartTimeNs
+        val timestampMs = TimeUnit.NANOSECONDS.toMillis((timestampNs))
         argumentCaptor<ActionEvent> {
             verify(mockWriter, atLeastOnce()).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue.action.type).isEqualTo(ActionEvent.ActionEventActionType.APPLICATION_START)
             // Application start event occurse at the start time
-            assertThat(firstValue.date).isEqualTo(resolveExpectedTimestamp(appStartTimestamp))
+            assertThat(firstValue.date).isEqualTo(resolveExpectedTimestamp(timestampMs))
 
             // Duration lasts until the first event is sent to RUM (whatever that is)
             val loadingTime = fakeEvent.eventTime.nanoTime - appStartTimeNs
@@ -680,7 +675,7 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockSdkCore.processImportance) doReturn forge.anElementFrom(
+        DdRumContentProvider.processImportance = forge.anElementFrom(
             RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
             RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
             @Suppress("DEPRECATION")

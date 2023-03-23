@@ -7,7 +7,6 @@
 package com.datadog.android.v2.core.internal
 
 import android.app.Application
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -118,8 +117,6 @@ internal class DatadogContextProviderTest {
         // process info
         assertThat(context.processInfo.isMainProcess)
             .isEqualTo(coreFeature.mockInstance.isMainProcess)
-        assertThat(context.processInfo.processImportance)
-            .isEqualTo(CoreFeature.processImportance)
 
         // network info
         assertThat(context.networkInfo.connectivity.name)

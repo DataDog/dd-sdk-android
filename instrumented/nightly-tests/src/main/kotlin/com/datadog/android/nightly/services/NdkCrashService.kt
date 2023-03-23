@@ -21,6 +21,7 @@ import com.datadog.android.nightly.utils.NeverUseThatEncryption
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.RumFeature
 import com.datadog.android.trace.TracingFeature
+import com.datadog.android.v2.api.SdkCore
 
 @Suppress("DEPRECATION") // TODO RUMM-3103 remove deprecated references
 internal open class NdkCrashService : CrashService() {
@@ -34,8 +35,8 @@ internal open class NdkCrashService : CrashService() {
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         when (intent.action) {
             CRASH_HANDLER_DISABLED_SCENARIO -> {
-                startSdk(ndkCrashReportsEnabled = false)
-                initRum(intent.extras)
+                val sdkCore = startSdk(ndkCrashReportsEnabled = false)
+                initRum(sdkCore, intent.extras)
                 scheduleNdkCrash()
             }
             RUM_DISABLED_SCENARIO -> {
@@ -44,13 +45,13 @@ internal open class NdkCrashService : CrashService() {
                 // in the monitors
             }
             ENCRYPTION_ENABLED_SCENARIO -> {
-                startSdk(encryptionEnabled = true)
-                initRum(intent.extras)
+                val sdkCore = startSdk(encryptionEnabled = true)
+                initRum(sdkCore, intent.extras)
                 scheduleNdkCrash()
             }
             else -> {
-                startSdk()
-                initRum(intent.extras)
+                val sdkCore = startSdk()
+                initRum(sdkCore, intent.extras)
                 scheduleNdkCrash()
             }
         }
@@ -71,7 +72,7 @@ internal open class NdkCrashService : CrashService() {
         ndkCrashReportsEnabled: Boolean = true,
         encryptionEnabled: Boolean = false,
         rumEnabled: Boolean = true
-    ) {
+    ): SdkCore {
         val configBuilder = Configuration.Builder(
             crashReportsEnabled = true
         )
@@ -99,6 +100,7 @@ internal open class NdkCrashService : CrashService() {
             val ndkCrashReportsFeature = NdkCrashReportsFeature()
             sdkCore.registerFeature(ndkCrashReportsFeature)
         }
+        return sdkCore
     }
 
     // endregion
