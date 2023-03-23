@@ -7,7 +7,6 @@
 package com.datadog.android.trace
 
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
@@ -16,9 +15,6 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
 import com.datadog.opentracing.scopemanager.ScopeTestHelper
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.trace.api.Config
 import com.datadog.trace.common.writer.Writer
 import com.nhaarman.mockitokotlin2.any
@@ -59,8 +55,7 @@ import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -86,6 +81,9 @@ internal class AndroidTracerTest {
 
     @Mock
     lateinit var mockSdkCore: SdkCore
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     private var fakeRumApplicationId: String? = null
     private var fakeRumSessionId: String? = null
@@ -115,6 +113,7 @@ internal class AndroidTracerTest {
         whenever(mockTracingFeatureScope.unwrap<TracingFeature>()) doReturn mockTracingFeature
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
         whenever(mockSdkCore.service) doReturn fakeServiceName
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
 
         whenever(mockTracingFeature.dataWriter) doReturn mockTraceWriter
 
@@ -145,7 +144,7 @@ internal class AndroidTracerTest {
         testedTracerBuilder.build()
 
         // THEN
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             AndroidTracer.TRACING_NOT_ENABLED_ERROR_MESSAGE
@@ -161,7 +160,7 @@ internal class AndroidTracerTest {
         testedTracerBuilder.build()
 
         // THEN
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             AndroidTracer.RUM_NOT_ENABLED_ERROR_MESSAGE
@@ -177,7 +176,7 @@ internal class AndroidTracerTest {
         testedTracerBuilder.build()
 
         // THEN
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             AndroidTracer.DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
@@ -722,14 +721,4 @@ internal class AndroidTracerTest {
     @Suppress("UNCHECKED_CAST")
     private fun Map<String, Any?>.activeContext(threadName: String) =
         this["context@$threadName"] as? Map<String, String>
-
-    companion object {
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
-    }
 }

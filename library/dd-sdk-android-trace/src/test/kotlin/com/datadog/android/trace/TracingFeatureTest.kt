@@ -13,8 +13,11 @@ import com.datadog.android.trace.internal.net.TracesRequestFactory
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureStorageConfiguration
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -42,6 +45,9 @@ internal class TracingFeatureTest {
     lateinit var mockSdkCore: SdkCore
 
     @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
     lateinit var mockSpanEventMapper: SpanEventMapper
 
     @StringForgery(regex = "https://[a-z]+\\.com")
@@ -49,6 +55,8 @@ internal class TracingFeatureTest {
 
     @BeforeEach
     fun `set up`() {
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+
         testedFeature = TracingFeature(fakeEndpointUrl, mockSpanEventMapper)
     }
 

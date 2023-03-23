@@ -7,7 +7,6 @@
 package com.datadog.android.trace
 
 import android.content.Context
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.trace.internal.data.NoOpWriter
 import com.datadog.android.trace.internal.data.TraceWriter
 import com.datadog.android.trace.internal.domain.event.DdSpanToSpanEventMapper
@@ -61,11 +60,12 @@ class TracingFeature internal constructor(
     private fun createDataWriter(
         sdkCore: SdkCore
     ): Writer {
+        val internalLogger = sdkCore._internalLogger
         return TraceWriter(
             sdkCore,
             legacyMapper = DdSpanToSpanEventMapper(),
-            eventMapper = SpanEventMapperWrapper(spanEventMapper),
-            serializer = SpanEventSerializer(),
+            eventMapper = SpanEventMapperWrapper(spanEventMapper, internalLogger),
+            serializer = SpanEventSerializer(internalLogger),
             internalLogger = internalLogger
         )
     }
@@ -86,9 +86,9 @@ class TracingFeature internal constructor(
         }
 
         /**
-         * Sets the [SpanEventMapper] for the Trace [com.datadog.android.tracing.model.SpanEvent].
+         * Sets the [SpanEventMapper] for the Trace [com.datadog.android.trace.model.SpanEvent].
          * You can use this interface implementation to modify the
-         * [com.datadog.android.tracing.model.SpanEvent] attributes before serialisation.
+         * [com.datadog.android.trace.model.SpanEvent] attributes before serialisation.
          *
          * @param eventMapper the [SpanEventMapper] implementation.
          */

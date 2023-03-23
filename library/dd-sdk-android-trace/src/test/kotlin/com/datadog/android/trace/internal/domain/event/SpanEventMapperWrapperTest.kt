@@ -7,12 +7,8 @@
 package com.datadog.android.trace.internal.domain.event
 
 import com.datadog.android.trace.model.SpanEvent
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -31,8 +27,7 @@ import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 @ForgeConfiguration(Configurator::class)
@@ -46,9 +41,12 @@ internal class SpanEventMapperWrapperTest {
     @Mock
     lateinit var mockSpanEvent: SpanEvent
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`() {
-        testedEventMapper = SpanEventMapperWrapper(mockWrappedEventMapper)
+        testedEventMapper = SpanEventMapperWrapper(mockWrappedEventMapper, mockInternalLogger)
     }
 
     @Test
@@ -86,7 +84,7 @@ internal class SpanEventMapperWrapperTest {
         testedEventMapper.map(mockSpanEvent)
 
         // THEN
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             SpanEventMapperWrapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(
@@ -94,15 +92,5 @@ internal class SpanEventMapperWrapperTest {
                 mockSpanEvent.toString()
             )
         )
-    }
-
-    companion object {
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
     }
 }

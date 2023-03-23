@@ -6,7 +6,6 @@
 
 package com.datadog.android.trace.internal.handlers
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.v2.api.Feature
@@ -81,7 +80,7 @@ internal class AndroidSpanLogsHandler(
                 )
             )
         } else {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 MISSING_LOG_FEATURE_INFO

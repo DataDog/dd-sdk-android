@@ -11,6 +11,7 @@ import com.datadog.android.core.constraints.DatadogDataConstraints
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -18,7 +19,8 @@ import com.google.gson.JsonPrimitive
 import java.util.Date
 
 internal class SpanEventSerializer(
-    private val dataConstraints: DataConstraints = DatadogDataConstraints()
+    internalLogger: InternalLogger,
+    private val dataConstraints: DataConstraints = DatadogDataConstraints(internalLogger)
 ) : ContextAwareSerializer<SpanEvent> {
 
     // region Serializer
