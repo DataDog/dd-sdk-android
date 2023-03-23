@@ -6,10 +6,12 @@
 
 package com.datadog.android.sdk.integration.rum
 
+import android.app.ActivityManager
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
+import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -40,6 +42,13 @@ internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
                 .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                 .build()
         )
+
+        DdRumContentProvider::class.java.declaredMethods.firstOrNull() {
+            it.name == "overrideProcessImportance"
+        }?.apply {
+            isAccessible = true
+            invoke(null, ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
+        }
         GlobalRum.registerIfAbsent(RumMonitor.Builder(sdkCore).build())
         setContentView(R.layout.fragment_tracking_layout)
     }

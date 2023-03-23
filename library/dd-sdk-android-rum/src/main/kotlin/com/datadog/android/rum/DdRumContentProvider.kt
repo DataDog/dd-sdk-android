@@ -13,6 +13,7 @@ import android.content.Context
 import android.database.Cursor
 import android.net.Uri
 import android.os.Process
+import android.util.Log
 
 /**
  * A Content provider used to monitor the Application startup time efficiently.
@@ -27,6 +28,7 @@ class DdRumContentProvider : ContentProvider() {
                 it.pid == currentProcessId
             }
             processImportance = currentProcess?.importance ?: DEFAULT_IMPORTANCE
+            Log.w("DdRumContentProvider", "processImportance:$processImportance")
         }
         return true
     }
@@ -66,5 +68,15 @@ class DdRumContentProvider : ContentProvider() {
         internal const val DEFAULT_IMPORTANCE: Int =
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         internal var processImportance = 0
+
+        @Suppress("unused") // Used for instrumented tests
+        @JvmStatic
+        private fun overrideProcessImportance(importance: Int) {
+            Log.w(
+                "DdRumContentProvider",
+                "override processImportance: $processImportance -> $importance"
+            )
+            processImportance = importance
+        }
     }
 }
