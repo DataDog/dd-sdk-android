@@ -192,6 +192,14 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasSessionActive(expected: Boolean): ViewEventAssert {
+        assertThat(actual.session.isActive)
+            .overridingErrorMessage(
+                "Expected context to have session.isActive $expected but was ${actual.session.isActive}"
+            ).isEqualTo(expected)
+        return this
+    }
+
     fun hasLoadingTime(
         expected: Long?
     ): ViewEventAssert {

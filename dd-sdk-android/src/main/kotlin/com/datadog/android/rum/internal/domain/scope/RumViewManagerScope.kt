@@ -34,17 +34,18 @@ internal class RumViewManagerScope(
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
     private val appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider(),
-    private val contextProvider: ContextProvider
+    private val contextProvider: ContextProvider,
+    internal var applicationDisplayed: Boolean
 ) : RumScope {
 
     internal val childrenScopes = mutableListOf<RumScope>()
-    internal var applicationDisplayed = false
+    internal var stopped = false
 
     // region RumScope
 
     @WorkerThread
-    override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope {
-        if (!applicationDisplayed) {
+    override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope? {
+        if (!applicationDisplayed && event !is RumRawEvent.StopSession) {
             val isForegroundProcess = CoreFeature.processImportance ==
                 ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
             if (isForegroundProcess) {
@@ -56,11 +57,17 @@ internal class RumViewManagerScope(
 
         if (event is RumRawEvent.StartView) {
             startForegroundView(event)
+        } else if (event is RumRawEvent.StopSession) {
+            stopped = true
         } else if (childrenScopes.count { it.isActive() } == 0) {
             handleOrphanEvent(event, writer)
         }
 
-        return this
+        return if (isViewManagerComplete()) {
+            null
+        } else {
+            this
+        }
     }
 
     override fun getRumContext(): RumContext {
@@ -68,12 +75,16 @@ internal class RumViewManagerScope(
     }
 
     override fun isActive(): Boolean {
-        return true
+        return !stopped
     }
 
     // endregion
 
     // region Internal
+
+    fun isViewManagerComplete(): Boolean {
+        return stopped && childrenScopes.isEmpty()
+    }
 
     @WorkerThread
     private fun startApplicationLaunchView(event: RumRawEvent, writer: DataWriter<Any>) {

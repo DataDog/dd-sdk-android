@@ -188,6 +188,8 @@ internal open class RumViewScope(
             is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, writer)
             is RumRawEvent.KeepAlive -> onKeepAlive(event, writer)
 
+            is RumRawEvent.StopSession -> onStopSession(event, writer)
+
             is RumRawEvent.UpdatePerformanceMetric -> onUpdatePerformanceMetric(event)
 
             else -> delegateEventToChildren(event, writer)
@@ -491,6 +493,13 @@ internal open class RumViewScope(
     }
 
     @WorkerThread
+    private fun onStopSession(event: RumRawEvent.StopSession, writer: DataWriter<Any>) {
+        stopped = true
+
+        sendViewUpdate(event, writer)
+    }
+
+    @WorkerThread
     private fun onKeepAlive(
         event: RumRawEvent.KeepAlive,
         writer: DataWriter<Any>
@@ -742,7 +751,8 @@ internal open class RumViewScope(
                     session = ViewEvent.ViewEventSession(
                         id = rumContext.sessionId,
                         type = ViewEvent.ViewEventSessionType.USER,
-                        hasReplay = hasReplay
+                        hasReplay = hasReplay,
+                        isActive = rumContext.isSessionActive
                     ),
                     source = ViewEvent.Source.tryFromSource(datadogContext.source),
                     os = ViewEvent.Os(

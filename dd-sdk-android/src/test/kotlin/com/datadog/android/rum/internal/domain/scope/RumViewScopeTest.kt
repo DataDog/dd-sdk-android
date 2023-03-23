@@ -7090,6 +7090,34 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region Stopping Sessions
+
+    @Test
+    fun `M set view to inactive and send update W handleEvent { StopSession }`() {
+        // Given
+        whenever(mockParentScope.getRumContext())
+            .doReturn(fakeParentContext.copy(isSessionActive = false))
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(),
+            mockWriter
+        )
+
+        // Then
+        assertThat(testedScope.isActive()).isFalse()
+
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasSessionActive(false)
+                }
+        }
+    }
+
+    // endregion
+
     // region Misc
 
     @ParameterizedTest

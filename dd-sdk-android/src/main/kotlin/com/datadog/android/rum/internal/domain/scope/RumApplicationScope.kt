@@ -18,32 +18,41 @@ import com.datadog.android.v2.core.internal.storage.DataWriter
 @Suppress("LongParameterList")
 internal class RumApplicationScope(
     applicationId: String,
-    sdkCore: SdkCore,
+    private val sdkCore: SdkCore,
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
-    firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
-    cpuVitalMonitor: VitalMonitor,
-    memoryVitalMonitor: VitalMonitor,
-    frameRateVitalMonitor: VitalMonitor,
-    sessionListener: RumSessionListener?,
-    contextProvider: ContextProvider
+    private val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
+    private val cpuVitalMonitor: VitalMonitor,
+    private val memoryVitalMonitor: VitalMonitor,
+    private val frameRateVitalMonitor: VitalMonitor,
+    private val sessionListener: RumSessionListener?,
+    private val contextProvider: ContextProvider
 ) : RumScope {
 
     private val rumContext = RumContext(applicationId = applicationId)
-    internal val childScope: RumScope = RumSessionScope(
-        this,
-        sdkCore,
-        samplingRate,
-        backgroundTrackingEnabled,
-        trackFrustrations,
-        firstPartyHostHeaderTypeResolver,
-        cpuVitalMonitor,
-        memoryVitalMonitor,
-        frameRateVitalMonitor,
-        sessionListener,
-        contextProvider
+    internal val childScopes: MutableList<RumScope> = mutableListOf(
+        RumSessionScope(
+            this,
+            sdkCore,
+            samplingRate,
+            backgroundTrackingEnabled,
+            trackFrustrations,
+            firstPartyHostHeaderTypeResolver,
+            cpuVitalMonitor,
+            memoryVitalMonitor,
+            frameRateVitalMonitor,
+            sessionListener,
+            contextProvider,
+            false
+        )
     )
+
+    val activeSession: RumScope?
+        get() {
+            return childScopes.find { it.isActive() }
+        }
+    var lastActiveViewScope: RumViewScope? = null
 
     // region RumScope
 
@@ -52,7 +61,16 @@ internal class RumApplicationScope(
         event: RumRawEvent,
         writer: DataWriter<Any>
     ): RumScope {
-        childScope.handleEvent(event, writer)
+        val isInteraction = (event is RumRawEvent.StartView) || (event is RumRawEvent.StartAction)
+        if (activeSession == null && isInteraction) {
+            startNewSession(event, writer)
+        } else if (event is RumRawEvent.StopSession) {
+            // Grab the last active view before the session shuts down
+            lastActiveViewScope = (activeSession as? RumSessionScope)?.lastActiveViewScope
+        }
+
+        delegateToChildren(event, writer)
+
         return this
     }
 
@@ -65,4 +83,52 @@ internal class RumApplicationScope(
     }
 
     // endregion
+
+    @WorkerThread
+    private fun delegateToChildren(
+        event: RumRawEvent,
+        writer: DataWriter<Any>
+    ) {
+        val iterator = childScopes.iterator()
+        @Suppress("UnsafeThirdPartyFunctionCall") // next/remove can't fail: we checked hasNext
+        while (iterator.hasNext()) {
+            val result = iterator.next().handleEvent(event, writer)
+            if (result == null) {
+                iterator.remove()
+            }
+        }
+    }
+
+    @WorkerThread
+    private fun startNewSession(event: RumRawEvent, writer: DataWriter<Any>) {
+        val newSession = RumSessionScope(
+            this,
+            sdkCore,
+            samplingRate,
+            backgroundTrackingEnabled,
+            trackFrustrations,
+            firstPartyHostHeaderTypeResolver,
+            cpuVitalMonitor,
+            memoryVitalMonitor,
+            frameRateVitalMonitor,
+            sessionListener,
+            contextProvider,
+            true
+        )
+        childScopes.add(newSession)
+        if (event !is RumRawEvent.StartView) {
+            lastActiveViewScope?.let {
+                if (it.keyRef.get() != null) {
+                    // Restart the last active view
+                    val startViewEvent = RumRawEvent.StartView(
+                        key = it.keyRef.get()!!,
+                        name = it.name,
+                        attributes = it.attributes
+                    )
+                    newSession.handleEvent(startViewEvent, writer)
+                }
+            }
+        }
+        lastActiveViewScope = null
+    }
 }

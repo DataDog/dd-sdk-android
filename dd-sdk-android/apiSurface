@@ -313,6 +313,7 @@ interface com.datadog.android.rum.RumMonitor
   fun addErrorWithStacktrace(String, RumErrorSource, String?, Map<String, Any?>)
   fun addTiming(String)
   fun addFeatureFlagEvaluation(String, Any)
+  fun stopSession()
   fun _getInternal(): _RumInternalProxy?
   class Builder
     fun sampleRumSessions(Float): Builder
@@ -667,7 +668,7 @@ data class com.datadog.android.rum.model.ActionEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class ActionEventSession
-    constructor(kotlin.String, ActionEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.String, ActionEventSessionType, kotlin.Boolean? = null, kotlin.Boolean? = true)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ActionEventSession
@@ -907,7 +908,7 @@ data class com.datadog.android.rum.model.ErrorEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class ErrorEventSession
-    constructor(kotlin.String, ErrorEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.String, ErrorEventSessionType, kotlin.Boolean? = null, kotlin.Boolean? = true)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ErrorEventSession
@@ -1156,7 +1157,7 @@ data class com.datadog.android.rum.model.LongTaskEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class LongTaskEventSession
-    constructor(kotlin.String, LongTaskEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.String, LongTaskEventSessionType, kotlin.Boolean? = null, kotlin.Boolean? = true)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): LongTaskEventSession
@@ -1326,7 +1327,7 @@ data class com.datadog.android.rum.model.ResourceEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class ResourceEventSession
-    constructor(kotlin.String, ResourceEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.String, ResourceEventSessionType, kotlin.Boolean? = null, kotlin.Boolean? = true)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ResourceEventSession
@@ -1590,7 +1591,7 @@ data class com.datadog.android.rum.model.ViewEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class ViewEventSession
-    constructor(kotlin.String, ViewEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.String, ViewEventSessionType, kotlin.Boolean? = null, kotlin.Boolean? = true)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ViewEventSession
