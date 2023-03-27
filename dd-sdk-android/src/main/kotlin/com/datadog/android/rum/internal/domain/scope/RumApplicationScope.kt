@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.v2.api.SdkCore
@@ -67,6 +68,9 @@ internal class RumApplicationScope(
         } else if (event is RumRawEvent.StopSession) {
             // Grab the last active view before the session shuts down
             lastActiveViewScope = (activeSession as? RumSessionScope)?.lastActiveViewScope
+            sdkCore.updateFeatureContext(RumFeature.RUM_FEATURE_NAME) {
+                it.putAll(getRumContext().toMap())
+            }
         }
 
         delegateToChildren(event, writer)

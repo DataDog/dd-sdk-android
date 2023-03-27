@@ -1,0 +1,29 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.sdk.integration.rum
+
+import android.os.Bundle
+import android.widget.Button
+import androidx.appcompat.app.AppCompatActivity
+import com.datadog.android.sdk.integration.R
+
+class KioskTrackedPlaygroundActivity : AppCompatActivity() {
+
+    lateinit var button: Button
+    lateinit var backButton: Button
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.kiosk_tracked_layout)
+
+        button = findViewById(R.id.kiosk_button)
+        backButton = findViewById(R.id.kiosk_back_button)
+        backButton.setOnClickListener {
+            finish()
+        }
+    }
+}

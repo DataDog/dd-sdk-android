@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
@@ -19,7 +20,10 @@ import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.atLeastOnce
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -261,5 +265,81 @@ internal class RumApplicationScopeTest {
         assertThat(viewScope.keyRef.get()).isEqualTo(viewKey)
         assertThat(viewScope.name).isEqualTo(viewName)
         assertThat(viewScope.attributes).isEqualTo(mockAttributes)
+    }
+
+    @Test
+    fun `M update feature context with no session W handleEvent { stop session }`(
+        forge: Forge
+    ) {
+        // Given - Make sure a session has already started
+        testedScope.handleEvent(
+            RumRawEvent.StartView(
+                key = forge.aString(),
+                name = forge.aString(),
+                attributes = mapOf()
+            ),
+            mockWriter
+        )
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+
+        // Then
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            // Feature context can be updated as many times as needed, we just want to verify it ends
+            // in the right state.
+            verify(mockSdkCore, atLeastOnce()).updateFeatureContext(eq(RumFeature.RUM_FEATURE_NAME), capture())
+
+            val rumContext = mutableMapOf<String, Any?>()
+            lastValue.invoke(rumContext)
+
+            assertThat(rumContext["application_id"]).isEqualTo(fakeApplicationId)
+            assertThat(rumContext["session_id"]).isEqualTo(RumContext.NULL_UUID)
+            assertThat(rumContext["view_id"]).isNull()
+        }
+    }
+
+    @Test
+    fun `M update feature context with new session W startView { stopped session }`(
+        forge: Forge
+    ) {
+        // Given - Make sure a session has already started
+        testedScope.handleEvent(
+            RumRawEvent.StartView(
+                key = forge.aString(),
+                name = forge.aString(),
+                attributes = mapOf()
+            ),
+            mockWriter
+        )
+        val oldSession = (testedScope.activeSession as RumSessionScope).sessionId
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StartView(
+                key = forge.aString(),
+                name = forge.aString(),
+                attributes = mapOf()
+            ),
+            mockWriter
+        )
+
+        // Then
+        val newSessionId = (testedScope.activeSession as RumSessionScope).sessionId
+        assertThat(newSessionId).isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(newSessionId).isNotEqualTo(oldSession)
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            // Feature context can be updated as many times as needed, we just want to verify it ends
+            // in the right state.
+            verify(mockSdkCore, atLeastOnce()).updateFeatureContext(eq(RumFeature.RUM_FEATURE_NAME), capture())
+
+            val rumContext = mutableMapOf<String, Any?>()
+            lastValue.invoke(rumContext)
+
+            assertThat(rumContext["application_id"]).isEqualTo(fakeApplicationId)
+            assertThat(rumContext["session_id"]).isEqualTo(newSessionId)
+            assertThat(rumContext["view_id"]).isNotNull
+        }
     }
 }
