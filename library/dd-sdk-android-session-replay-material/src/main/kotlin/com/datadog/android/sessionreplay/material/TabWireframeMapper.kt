@@ -30,7 +30,7 @@ internal open class TabWireframeMapper(
     ): List<MobileSegment.Wireframe> {
         val labelWireframes = findAndResolveLabelWireframes(view, systemInformation)
         if (view.isSelected) {
-            val selectedTabIndicatorWireframe = resolveSelectedTabIndicatorWireframe(
+            val selectedTabIndicatorWireframe = resolveTabIndicatorWireframe(
                 view,
                 systemInformation,
                 labelWireframes.firstOrNull()
@@ -42,7 +42,7 @@ internal open class TabWireframeMapper(
         return labelWireframes
     }
 
-    protected open fun resolveSelectedTabIndicatorWireframe(
+    protected open fun resolveTabIndicatorWireframe(
         view: TabView,
         systemInformation: SystemInformation,
         textWireframe: MobileSegment.Wireframe.TextWireframe?

@@ -4,16 +4,18 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.material
+package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.content.res.ColorStateList
+import android.graphics.Rect
+import android.graphics.drawable.Drawable
+import android.widget.SeekBar
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
-import com.datadog.android.sessionreplay.material.internal.densityNormalized
+import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
-import com.google.android.material.slider.Slider
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -27,7 +29,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
 
-internal abstract class BaseSliderWireframeMapperTest {
+internal abstract class BaseSeekBarWireframeMapperTest {
 
     // misc
     @Forgery
@@ -53,46 +55,37 @@ internal abstract class BaseSliderWireframeMapperTest {
     var fakeSliderYPos: Long = 0
 
     @IntForgery(min = 0, max = 10)
-    var fakeTrackSidePadding: Int = 0
+    var fakeSeekBarStartPadding: Int = 0
 
     @IntForgery(min = 0, max = 10)
-    var fakeSliderStartPadding: Int = 0
-
-    @IntForgery(min = 0, max = 10)
-    var fakeSliderTopPadding: Int = 0
+    var fakeSeekBarTopPadding: Int = 0
 
     @LongForgery(min = 10, max = 200)
-    var fakeSliderHeight: Long = 0
+    var fakeSeekBarHeight: Long = 0
 
     @LongForgery(min = 10, max = 200)
-    var fakeSliderWidth: Long = 0
+    var fakeSeekBarWidth: Long = 0
 
     // fake track bounds
     @IntForgery(min = 1, max = 200)
     var fakeTrackWidth: Int = 0
 
-    @IntForgery(min = 1, max = 200)
-    var fakeTrackHeight: Int = 0
-
     // fake thumb bounds
     @IntForgery(min = 1, max = 200)
-    var fakeThumbRadius: Int = 0
+    var fakeThumbHeight: Int = 0
 
-    // fake slider values
-    var fakeSliderValue: Float = 0f
+    // fake progress values
+    var fakeProgressValue: Int = 0
 
-    @FloatForgery(min = 0f, max = 100f / 2)
-    var fakeSliderFromValue: Float = 0f
+    @IntForgery(min = 0, max = 100 / 2)
+    var fakeProgressMinValue: Int = 0
 
-    @FloatForgery(min = 100f / 2, max = 100f)
-    var fakeSliderToValue: Float = 0f
+    @IntForgery(min = 100 / 2, max = 100)
+    var fakeProgressMaxValue: Int = 0
 
     // fake track colors
     @IntForgery
-    var fakeTrackActiveColor: Int = 0
-
-    @IntForgery
-    var fakeTrackNotActiveColor: Int = 0
+    var fakeTrackColor: Int = 0
 
     // fake thumb colors
     @IntForgery
@@ -134,9 +127,6 @@ internal abstract class BaseSliderWireframeMapperTest {
     lateinit var mockTrackActiveTintColors: ColorStateList
 
     @Mock
-    lateinit var mockTrackNotActiveTintColors: ColorStateList
-
-    @Mock
     lateinit var mockViewUtils: ViewUtils
 
     @Mock
@@ -145,32 +135,30 @@ internal abstract class BaseSliderWireframeMapperTest {
     @Mock
     lateinit var mockUniqueIdentifierGenerator: UniqueIdentifierGenerator
 
-    lateinit var testedSliderWireframeMapper: SliderWireframeMapper
+    lateinit var testedSeekBarWireframeMapper: SeekBarWireframeMapper
 
-    lateinit var mockSlider: Slider
+    lateinit var mockSeekBar: SeekBar
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeViewGlobalBounds = GlobalBounds(
             fakeSliderXPos,
             fakeSliderYPos,
-            fakeSliderWidth,
-            fakeSliderHeight
+            fakeSeekBarWidth,
+            fakeSeekBarHeight
         )
-        fakeSliderValue = forge.aFloat(min = fakeSliderFromValue, max = fakeSliderToValue)
+        fakeProgressValue = forge.anInt(min = fakeProgressMinValue, max = fakeProgressMaxValue)
         val normalizedSliderYPos = fakeSliderYPos
         val normalizedSliderXPos = fakeSliderXPos
-        val normalizedSliderTopPadding = fakeSliderTopPadding.toLong()
+        val normalizedSliderTopPadding = fakeSeekBarTopPadding.toLong()
             .densityNormalized(fakeSystemInformation.screenDensity)
-        val normalizedSliderStartPadding = fakeSliderStartPadding.toLong()
+        val normalizedSliderStartPadding = fakeSeekBarStartPadding.toLong()
             .densityNormalized(fakeSystemInformation.screenDensity)
-        val normalizedTrackSidePadding = fakeTrackSidePadding.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
-        val normalizedSliderHeight = fakeSliderHeight
-        val normalizedSliderValue = (fakeSliderValue - fakeSliderFromValue) /
-            (fakeSliderToValue - fakeSliderFromValue)
+        val normalizedSliderHeight = fakeSeekBarHeight
+        val normalizedSliderValue = (fakeProgressValue.toFloat() - fakeProgressMinValue.toFloat()) /
+            (fakeProgressMaxValue.toFloat() - fakeProgressMinValue.toFloat())
 
-        fakeExpectedInactiveTrackHeight = fakeTrackHeight.toLong()
+        fakeExpectedInactiveTrackHeight = SeekBarWireframeMapper.TRACK_HEIGHT_IN_PX
             .densityNormalized(fakeSystemInformation.screenDensity)
         fakeExpectedActiveTrackHeight = fakeExpectedInactiveTrackHeight
 
@@ -178,10 +166,9 @@ internal abstract class BaseSliderWireframeMapperTest {
             .densityNormalized(fakeSystemInformation.screenDensity)
         fakeExpectedActiveTrackWidth = (fakeExpectedInactiveTrackWidth * normalizedSliderValue)
             .toLong()
-        fakeExpectedThumbHeight = fakeThumbRadius.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity) * 2
-        fakeExpectedInactiveTrackXPos = normalizedSliderXPos + normalizedSliderStartPadding +
-            normalizedTrackSidePadding
+        fakeExpectedThumbHeight = fakeThumbHeight.toLong()
+            .densityNormalized(fakeSystemInformation.screenDensity)
+        fakeExpectedInactiveTrackXPos = normalizedSliderXPos + normalizedSliderStartPadding
         fakeExpectedInactiveTrackYPos = normalizedSliderYPos + normalizedSliderTopPadding +
             (normalizedSliderHeight - fakeExpectedActiveTrackHeight) / 2
         fakeExpectedActiveTrackYPos = fakeExpectedInactiveTrackYPos
@@ -194,69 +181,69 @@ internal abstract class BaseSliderWireframeMapperTest {
         whenever(
             mockStringUtils.formatColorAndAlphaAsHexa(
                 fakeThumbColor,
-                SliderWireframeMapper.OPAQUE_ALPHA_VALUE
+                SeekBarWireframeMapper.OPAQUE_ALPHA_VALUE
             )
         )
             .thenReturn(fakeExpectedThumbHtmlColor)
 
         whenever(
             mockStringUtils.formatColorAndAlphaAsHexa(
-                fakeTrackActiveColor,
-                SliderWireframeMapper.OPAQUE_ALPHA_VALUE
+                fakeTrackColor,
+                SeekBarWireframeMapper.OPAQUE_ALPHA_VALUE
             )
         )
             .thenReturn(fakeExpectedTrackActiveHtmlColor)
         whenever(
             mockStringUtils.formatColorAndAlphaAsHexa(
-                fakeTrackNotActiveColor,
-                SliderWireframeMapper.PARTIALLY_OPAQUE_ALPHA_VALUE
+                fakeTrackColor,
+                SeekBarWireframeMapper.PARTIALLY_OPAQUE_ALPHA_VALUE
             )
         )
             .thenReturn(fakeExpectedTrackInactiveHtmlColor)
 
-        mockSlider = generateMockedSlider(forge)
+        mockSeekBar = generateMockedSeekBar(forge)
         whenever(
             mockViewUtils.resolveViewGlobalBounds(
-                mockSlider,
+                mockSeekBar,
                 fakeSystemInformation.screenDensity
             )
         )
             .thenReturn(fakeViewGlobalBounds)
         whenever(
             mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
-                mockSlider,
-                SliderWireframeMapper.TRACK_ACTIVE_KEY_NAME
+                mockSeekBar,
+                SeekBarWireframeMapper.TRACK_ACTIVE_KEY_NAME
             )
         ).thenReturn(fakeActiveTrackId)
         whenever(
             mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
-                mockSlider,
-                SliderWireframeMapper.TRACK_NON_ACTIVE_KEY_NAME
+                mockSeekBar,
+                SeekBarWireframeMapper.TRACK_NON_ACTIVE_KEY_NAME
             )
         ).thenReturn(fakeInactiveTrackId)
         whenever(
             mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
-                mockSlider,
-                SliderWireframeMapper.THUMB_KEY_NAME
+                mockSeekBar,
+                SeekBarWireframeMapper.THUMB_KEY_NAME
             )
         ).thenReturn(fakeThumbId)
-        testedSliderWireframeMapper = provideTestInstance()
+        testedSeekBarWireframeMapper = provideTestInstance()
     }
 
-    abstract fun provideTestInstance(): SliderWireframeMapper
+    abstract fun provideTestInstance(): SeekBarWireframeMapper
 
     @Test
     fun `M return empty list W map { could not generate thumb id`() {
         // Given
         whenever(
             mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
-                mockSlider,
-                SliderWireframeMapper.THUMB_KEY_NAME
+                mockSeekBar,
+                SeekBarWireframeMapper.THUMB_KEY_NAME
             )
         ).thenReturn(null)
 
         // Then
-        assertThat(testedSliderWireframeMapper.map(mockSlider, fakeSystemInformation)).isEmpty()
+        assertThat(testedSeekBarWireframeMapper.map(mockSeekBar, fakeSystemInformation)).isEmpty()
     }
 
     @Test
@@ -264,13 +251,13 @@ internal abstract class BaseSliderWireframeMapperTest {
         // Given
         whenever(
             mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
-                mockSlider,
-                SliderWireframeMapper.TRACK_ACTIVE_KEY_NAME
+                mockSeekBar,
+                SeekBarWireframeMapper.TRACK_ACTIVE_KEY_NAME
             )
         ).thenReturn(null)
 
         // Then
-        assertThat(testedSliderWireframeMapper.map(mockSlider, fakeSystemInformation)).isEmpty()
+        assertThat(testedSeekBarWireframeMapper.map(mockSeekBar, fakeSystemInformation)).isEmpty()
     }
 
     @Test
@@ -278,44 +265,50 @@ internal abstract class BaseSliderWireframeMapperTest {
         // Given
         whenever(
             mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
-                mockSlider,
-                SliderWireframeMapper.TRACK_NON_ACTIVE_KEY_NAME
+                mockSeekBar,
+                SeekBarWireframeMapper.TRACK_NON_ACTIVE_KEY_NAME
             )
         ).thenReturn(null)
 
         // Then
-        assertThat(testedSliderWireframeMapper.map(mockSlider, fakeSystemInformation)).isEmpty()
+        assertThat(testedSeekBarWireframeMapper.map(mockSeekBar, fakeSystemInformation)).isEmpty()
     }
 
-    private fun generateMockedSlider(forge: Forge): Slider {
+    private fun generateMockedSeekBar(forge: Forge): SeekBar {
         return mock {
+            val fakeTrackBounds: Rect = mock { rect ->
+                whenever(rect.width()).thenReturn(fakeTrackWidth)
+            }
+            val fakeThumbBounds: Rect = mock { rect ->
+                whenever(rect.height()).thenReturn(fakeThumbHeight)
+            }
+            val mockProgressDrawable: Drawable = mock { drawable ->
+                whenever(drawable.bounds).thenReturn(fakeTrackBounds)
+            }
+            val mockThumbDrawable: Drawable = mock { drawable ->
+                whenever(drawable.bounds).thenReturn(fakeThumbBounds)
+            }
             val fakeDrawableState = forge.aList { anInt() }.toIntArray()
             val defaultColor = forge.aPositiveInt()
             whenever(it.drawableState).thenReturn(fakeDrawableState)
             whenever(it.alpha).thenReturn(fakeViewAlpha)
-            whenever(it.paddingTop).thenReturn(fakeSliderTopPadding)
-            whenever(it.paddingStart).thenReturn(fakeSliderStartPadding)
-            whenever(it.trackSidePadding).thenReturn(fakeTrackSidePadding)
+            whenever(it.paddingTop).thenReturn(fakeSeekBarTopPadding)
+            whenever(it.paddingStart).thenReturn(fakeSeekBarStartPadding)
             whenever(it.width).thenReturn(forge.aPositiveInt(strict = true))
             whenever(it.height).thenReturn(forge.aPositiveInt(strict = true))
-            whenever(it.trackWidth).thenReturn(fakeTrackWidth)
-            whenever(it.trackHeight).thenReturn(fakeTrackHeight)
-            whenever(it.thumbRadius).thenReturn(fakeThumbRadius)
-            whenever(it.valueFrom).thenReturn(fakeSliderFromValue)
-            whenever(it.valueTo).thenReturn(fakeSliderToValue)
-            whenever(it.value).thenReturn(fakeSliderValue)
-            whenever(it.trackActiveTintList).thenReturn(mockTrackActiveTintColors)
-            whenever(it.trackInactiveTintList).thenReturn(mockTrackNotActiveTintColors)
+            whenever(it.progressDrawable).thenReturn(mockProgressDrawable)
+            whenever(it.thumb).thenReturn(mockThumbDrawable)
+            whenever(it.min).thenReturn(fakeProgressMinValue)
+            whenever(it.max).thenReturn(fakeProgressMaxValue)
+            whenever(it.progress).thenReturn(fakeProgressValue)
+            whenever(it.progressTintList).thenReturn(mockTrackActiveTintColors)
             whenever(it.thumbTintList).thenReturn(mockThumbTintColors)
             whenever(mockThumbTintColors.defaultColor).thenReturn(defaultColor)
             whenever(mockTrackActiveTintColors.defaultColor).thenReturn(defaultColor)
-            whenever(mockTrackNotActiveTintColors.defaultColor).thenReturn(defaultColor)
             whenever(mockThumbTintColors.getColorForState(fakeDrawableState, defaultColor))
                 .thenReturn(fakeThumbColor)
             whenever(mockTrackActiveTintColors.getColorForState(fakeDrawableState, defaultColor))
-                .thenReturn(fakeTrackActiveColor)
-            whenever(mockTrackNotActiveTintColors.getColorForState(fakeDrawableState, defaultColor))
-                .thenReturn(fakeTrackNotActiveColor)
+                .thenReturn(fakeTrackColor)
         }
     }
 }

@@ -73,7 +73,7 @@ internal class SliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
         )
 
         // When
-        val mappedWireframes = testeSliderWireframeMapper.map(mockSlider, fakeSystemInformation)
+        val mappedWireframes = testedSliderWireframeMapper.map(mockSlider, fakeSystemInformation)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(
