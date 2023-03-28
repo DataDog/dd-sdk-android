@@ -122,10 +122,9 @@ internal class RumApplicationScope(
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {
             lastActiveViewScope?.let {
-                if (it.keyRef.get() != null) {
-                    // Restart the last active view
+                it.keyRef.get()?.let { key ->
                     val startViewEvent = RumRawEvent.StartView(
-                        key = it.keyRef.get()!!,
+                        key = key,
                         name = it.name,
                         attributes = it.attributes
                     )
