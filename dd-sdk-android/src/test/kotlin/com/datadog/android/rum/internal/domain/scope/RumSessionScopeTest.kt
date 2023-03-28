@@ -262,26 +262,6 @@ internal class RumSessionScopeTest {
         assertThat(secondResult).isNull()
     }
 
-//
-//    @Test
-//    fun `M update feature context W handleEvent { StopSession }`() {
-//        // When
-//        val initialContext = testedScope.getRumContext()
-//        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
-//
-//        // Then
-//        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-//            verify(mockSdkCore, times(2)).updateFeatureContext(eq(RumFeature.RUM_FEATURE_NAME), capture())
-//
-//            val rumContext = mutableMapOf<String, Any?>()
-//            lastValue.invoke(rumContext)
-//
-//            assertThat(rumContext["application_id"]).isEqualTo(initialContext.applicationId)
-//            assertThat(rumContext["session_id"]).isEqualTo(RumContext.NULL_UUID)
-//            assertThat(rumContext["session_state"]).isEqualTo(RumSessionScope.State.NOT_TRACKED)
-//        }
-//    }
-
     // endregion
 
     // region getRumContext()

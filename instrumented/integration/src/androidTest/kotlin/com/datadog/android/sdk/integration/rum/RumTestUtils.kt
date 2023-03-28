@@ -123,12 +123,10 @@ private fun JsonObject.verifyEventMatches(event: ExpectedViewEvent) {
     if (viewArguments.isNotEmpty()) {
         assertThat(this.getAsJsonObject(CONTEXT_KEY)).containsAttributes(viewArguments)
     }
-    if (event.sessionIsActive != null) {
-        assertThat(this)
-            .hasField("session") {
-                hasField("is_active", event.sessionIsActive)
-            }
-    }
+    assertThat(this)
+        .hasField("session") {
+            hasField("is_active", event.sessionIsActive)
+        }
 }
 
 private fun JsonObject.verifyEventMatches(event: ExpectedResourceEvent) {

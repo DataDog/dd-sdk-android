@@ -53,7 +53,7 @@ internal class RumApplicationScope(
         get() {
             return childScopes.find { it.isActive() }
         }
-    var lastActiveViewScope: RumViewScope? = null
+    private var lastActiveViewScope: RumViewScope? = null
 
     // region RumScope
 

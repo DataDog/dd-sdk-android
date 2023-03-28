@@ -19,10 +19,6 @@ import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 
 internal class KioskSplashPlaygroundActivity : AppCompatActivity() {
-
-    lateinit var endSessionButton: Button
-    lateinit var startKioskButton: Button
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -46,12 +42,12 @@ internal class KioskSplashPlaygroundActivity : AppCompatActivity() {
 
         setContentView(R.layout.kiosk_splash_layout)
 
-        endSessionButton = findViewById(R.id.end_session)
+        val endSessionButton: Button = findViewById(R.id.end_session)
         endSessionButton.setOnClickListener {
             GlobalRum.get().stopSession()
         }
 
-        startKioskButton = findViewById(R.id.start_kiosk)
+        val startKioskButton: Button = findViewById(R.id.start_kiosk)
         startKioskButton.setOnClickListener {
             startMainActivity()
         }

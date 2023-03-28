@@ -36,7 +36,7 @@ internal data class ExpectedViewEvent(
     val extraAttributes: Map<String, Any?> = mapOf(),
     val extraViewAttributes: Map<String, Any?> = mapOf(),
     val extraViewAttributesWithPredicate: Map<String, (JsonElement) -> Boolean> = mapOf(),
-    val sessionIsActive: Boolean? = null,
+    val sessionIsActive: Boolean = true,
     override val rumContext: ExpectedRumContext = resolvedRumContext()
 ) : ExpectedEvent
 
