@@ -18,9 +18,12 @@ import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
 import java.util.concurrent.TimeUnit
 
-internal class NoOpSdkCore : SdkCore {
+/**
+ * A no-op implementation of [SdkCore].
+ */
+class NoOpSdkCore : SdkCore {
 
-    override val name = "no-op"
+    override val name: String = "no-op"
 
     override val time: TimeInfo = with(System.currentTimeMillis()) {
         TimeInfo(

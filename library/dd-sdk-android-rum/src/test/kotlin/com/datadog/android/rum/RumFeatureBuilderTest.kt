@@ -394,6 +394,10 @@ internal class RumFeatureBuilderTest {
             .build()
 
         // Then
+//        val expectedRumEventMapper = RumEventMapper(
+//            sdkCore = RumFeature.DEFAULT_NOOP_SDK_CORE,
+//            longTaskEventMapper = eventMapper
+//        )
         assertThat(rumFeature.configuration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 longTaskEventMapper = eventMapper

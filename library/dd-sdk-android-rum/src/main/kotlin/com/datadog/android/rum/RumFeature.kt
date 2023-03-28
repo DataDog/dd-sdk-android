@@ -62,7 +62,7 @@ import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
-import com.datadog.android.rum.utils.telemetry
+import com.datadog.android.telemetry.internal.Telemetry
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.v2.api.Feature
@@ -73,6 +73,7 @@ import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.core.InternalSdkCore
+import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import java.util.Locale
 import java.util.concurrent.ExecutorService
@@ -119,6 +120,7 @@ class RumFeature internal constructor(
     internal lateinit var anrDetectorHandler: Handler
     internal lateinit var appContext: Context
     internal lateinit var sdkCore: SdkCore
+    internal lateinit var telemetry: Telemetry
 
     private val ndkCrashEventHandler by lazy { ndkCrashEventHandlerFactory(sdkCore._internalLogger) }
 
@@ -132,6 +134,7 @@ class RumFeature internal constructor(
     ) {
         this.sdkCore = sdkCore
         this.appContext = appContext
+        this.telemetry = Telemetry(sdkCore)
 
         dataWriter = createDataWriter(
             configuration,
@@ -236,13 +239,13 @@ class RumFeature internal constructor(
             "logger_error" -> addLoggerError(event)
             "logger_error_with_stacktrace" -> addLoggerErrorWithStacktrace(event)
             "web_view_ingested_notification" -> {
-                GlobalRum.notifyIngestedWebViewEvent()
+                (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)?.sendWebViewEvent()
             }
             "telemetry_error" -> logTelemetryError(event)
             "telemetry_debug" -> logTelemetryDebug(event)
             "telemetry_configuration" -> logTelemetryConfiguration(event)
             "flush_and_stop_monitor" -> {
-                (GlobalRum.get() as? DatadogRumMonitor)?.let {
+                (GlobalRum.get(sdkCore) as? DatadogRumMonitor)?.let {
                     it.stopKeepAliveCallback()
                     it.drainExecutorService()
                 }
@@ -280,7 +283,7 @@ class RumFeature internal constructor(
     private fun enableDebugging() {
         val context = appContext
         if (context is Application) {
-            debugActivityLifecycleListener = UiRumDebugListener(sdkCore._internalLogger)
+            debugActivityLifecycleListener = UiRumDebugListener(sdkCore)
             context.registerActivityLifecycleCallbacks(debugActivityLifecycleListener)
         }
     }
@@ -378,7 +381,7 @@ class RumFeature internal constructor(
 
     private fun initializeANRDetector() {
         anrDetectorHandler = Handler(Looper.getMainLooper())
-        anrDetectorRunnable = ANRDetectorRunnable(anrDetectorHandler)
+        anrDetectorRunnable = ANRDetectorRunnable(sdkCore, anrDetectorHandler)
         anrDetectorExecutorService = Executors.newSingleThreadExecutor()
         anrDetectorExecutorService.executeSafe(
             "ANR detection",
@@ -400,7 +403,7 @@ class RumFeature internal constructor(
             return
         }
 
-        (GlobalRum.get() as? AdvancedRumMonitor)?.addCrash(
+        (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)?.addCrash(
             message,
             RumErrorSource.SOURCE,
             throwable
@@ -423,7 +426,7 @@ class RumFeature internal constructor(
             return
         }
 
-        (GlobalRum.get() as? AdvancedRumMonitor)?.addError(
+        (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)?.addError(
             message,
             RumErrorSource.LOGGER,
             throwable,
@@ -447,7 +450,7 @@ class RumFeature internal constructor(
             return
         }
 
-        (GlobalRum.get() as? AdvancedRumMonitor)?.addErrorWithStacktrace(
+        (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)?.addErrorWithStacktrace(
             message,
             RumErrorSource.LOGGER,
             stacktrace,
@@ -491,7 +494,7 @@ class RumFeature internal constructor(
 
     private fun logTelemetryConfiguration(event: Map<*, *>) {
         TelemetryCoreConfiguration.fromEvent(event, sdkCore._internalLogger)?.let {
-            (GlobalRum.get() as? AdvancedRumMonitor)
+            (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)
                 ?.sendConfigurationTelemetryEvent(it)
         }
     }
@@ -767,6 +770,8 @@ class RumFeature internal constructor(
         internal const val DEFAULT_LONG_TASK_THRESHOLD_MS = 100L
         internal const val DD_TELEMETRY_CONFIG_SAMPLE_RATE_TAG =
             "_dd.telemetry.configuration_sample_rate"
+
+        internal val DEFAULT_NOOP_SDK_CORE = NoOpSdkCore()
 
         internal val DEFAULT_RUM_CONFIG = Configuration(
             customEndpointUrl = null,

@@ -21,6 +21,7 @@ import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 import java.util.LinkedList
@@ -28,6 +29,7 @@ import kotlin.math.abs
 
 @Suppress("TooManyFunctions")
 internal class GesturesListener(
+    private val sdkCore: SdkCore,
     private val windowReference: WeakReference<Window>,
     private val attributesProviders: Array<ViewAttributesProvider> = emptyArray(),
     private val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate(),
@@ -84,7 +86,7 @@ internal class GesturesListener(
         distanceX: Float,
         distanceY: Float
     ): Boolean {
-        val rumMonitor = GlobalRum.get()
+        val rumMonitor = GlobalRum.get(sdkCore)
         val decorView = windowReference.get()?.decorView ?: return false
 
         // we only start the user action once
@@ -122,7 +124,7 @@ internal class GesturesListener(
     private fun closeScrollOrSwipeEventIfAny(decorView: View?, onUpEvent: MotionEvent) {
         val type = scrollEventType ?: return
 
-        val registeredRumMonitor = GlobalRum.get()
+        val registeredRumMonitor = GlobalRum.get(sdkCore)
         val scrollTarget = scrollTargetReference.get()
         if (decorView == null ||
             scrollTarget == null
@@ -178,7 +180,7 @@ internal class GesturesListener(
                 attributesProviders.forEach {
                     it.extractAttributes(target, attributes)
                 }
-                GlobalRum.get().addUserAction(
+                GlobalRum.get(sdkCore).addUserAction(
                     RumActionType.TAP,
                     resolveTargetName(interactionPredicate, target),
                     attributes

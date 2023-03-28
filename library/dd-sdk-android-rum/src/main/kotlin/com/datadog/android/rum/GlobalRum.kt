@@ -8,11 +8,9 @@ package com.datadog.android.rum
 
 import com.datadog.android.rum.GlobalRum.get
 import com.datadog.android.rum.GlobalRum.registerIfAbsent
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 import java.util.concurrent.Callable
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * A global [RumMonitor] holder, ensuring that all RUM events are registered
@@ -26,27 +24,27 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 object GlobalRum {
 
-    internal val globalAttributes: MutableMap<String, Any?> = ConcurrentHashMap()
-
-    internal val isRegistered = AtomicBoolean(false)
-    internal var monitor: RumMonitor = NoOpRumMonitor()
+    internal val registeredMonitors: MutableMap<SdkCore, RumMonitor> = mutableMapOf()
 
     /**
-     * Identify whether a [RumMonitor] has previously been registered.
+     * Identify whether a [RumMonitor] has previously been registered for the given SDK instance.
      *
      * This check is useful in scenarios where more than one component may be responsible
      * for registering a monitor.
      *
+     * @param sdkCore the [SdkCore] instance to check against
      * @return whether a monitor has been registered
      * @see [registerIfAbsent]
      */
     @JvmStatic
-    fun isRegistered(): Boolean {
-        return isRegistered.get()
+    fun isRegistered(sdkCore: SdkCore): Boolean {
+        return synchronized(registeredMonitors) {
+            registeredMonitors.containsKey(sdkCore)
+        }
     }
 
     /**
-     * Register a [RumMonitor] to back the behaviour of the [get].
+     * Register a [RumMonitor] with an [SdkCore] to back the behaviour of the [get] function.
      *
      * Registration is a one-time operation. Once a monitor has been registered, all attempts at re-registering
      * will return `false`.
@@ -54,12 +52,13 @@ object GlobalRum {
      * Every application intending to use the global monitor is responsible for registering it once
      * during its initialization.
      *
+     * @param sdkCore the instance to register the given monitor with
      * @param monitor the monitor to use as global monitor.
      * @return `true` if the provided monitor was registered as a result of this call, `false` otherwise.
      */
     @JvmStatic
-    fun registerIfAbsent(monitor: RumMonitor): Boolean {
-        return registerIfAbsent { monitor }
+    fun registerIfAbsent(sdkCore: SdkCore, monitor: RumMonitor): Boolean {
+        return registerIfAbsent(sdkCore) { monitor }
     }
 
     /**
@@ -72,31 +71,26 @@ object GlobalRum {
      * Every application intending to use the global monitor is responsible for registering it once
      * during its initialization.
      *
+     * @param sdkCore the instance to register the given monitor with
      * @param provider Provider for the monitor to use as global monitor.
      * @return `true` if the provided monitor was registered as a result of this call, `false` otherwise.
      */
     @JvmStatic
-    fun registerIfAbsent(provider: Callable<RumMonitor>): Boolean {
-        return if (isRegistered.get()) {
-            // TODO RUMM-0000 associate with SDK instance?
-            InternalLogger.UNBOUND.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                "RumMonitor has already been registered"
-            )
-            false
-        } else if (isRegistered.compareAndSet(false, true)) {
-            @Suppress("UnsafeThirdPartyFunctionCall") // User provided callable, let it throw
-            monitor = provider.call()
-            true
-        } else {
-            // TODO RUMM-0000 associate with SDK instance?
-            InternalLogger.UNBOUND.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                "Unable to register the RumMonitor"
-            )
-            false
+    fun registerIfAbsent(sdkCore: SdkCore, provider: Callable<RumMonitor>): Boolean {
+        return synchronized(registeredMonitors) {
+            if (registeredMonitors.containsKey(sdkCore)) {
+                InternalLogger.UNBOUND.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    "A RumMonitor has already been registered for this SDK instance"
+                )
+                false
+            } else {
+                @Suppress("UnsafeThirdPartyFunctionCall") // User provided callable, let it throw
+                val monitor = provider.call()
+                registeredMonitors[sdkCore] = monitor
+                true
+            }
         }
     }
 
@@ -106,50 +100,29 @@ object GlobalRum {
      * Until a monitor is explicitly configured with [registerIfAbsent],
      * a no-op implementation is returned.
      *
-     * @return The global monitor instance.
+     * @return The monitor associated with the instance given instance, or a no-op monitor.
      * @see [registerIfAbsent]
      */
     @JvmStatic
-    fun get(): RumMonitor {
-        return monitor
-    }
-
-    /**
-     * Adds a global attribute to all future RUM events.
-     * @param key the attribute key (non null)
-     * @param value the attribute value (or null)
-     */
-    @JvmStatic
-    fun addAttribute(key: String, value: Any?) {
-        if (value == null) {
-            globalAttributes.remove(key)
-        } else {
-            globalAttributes[key] = value
+    fun get(sdkCore: SdkCore): RumMonitor {
+        return synchronized(registeredMonitors) {
+            registeredMonitors[sdkCore] ?: NoOpRumMonitor()
         }
-    }
-
-    /**
-     * Removes a global attribute from all future RUM events.
-     * @param key the attribute key (non null)
-     */
-    @JvmStatic
-    fun removeAttribute(key: String) {
-        globalAttributes.remove(key)
     }
 
     // region Internal
 
-    internal fun notifyIngestedWebViewEvent() {
-        (monitor as? AdvancedRumMonitor)?.sendWebViewEvent()
+    internal fun clear() {
+        synchronized(registeredMonitors) {
+            registeredMonitors.clear()
+        }
     }
 
     // This method is mainly for test purposes.
     @Suppress("unused")
     @JvmStatic
     private fun reset() {
-        globalAttributes.clear()
-        monitor = NoOpRumMonitor()
-        isRegistered.set(false)
+        clear()
     }
 
     // endregion

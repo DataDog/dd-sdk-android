@@ -61,7 +61,7 @@ internal class DatadogDatabaseErrorHandlerTest {
 
     @BeforeEach
     fun `set up`() {
-        testedHandler = DatadogDatabaseErrorHandler(mockDefaultHandler)
+        testedHandler = DatadogDatabaseErrorHandler({ rumMonitor.mockSdkCore }, mockDefaultHandler)
         whenever(mockSqliteDatabase.path).thenReturn(fakeDbPath)
         whenever(mockSqliteDatabase.version).thenReturn(fakeDbVersion)
     }
@@ -106,7 +106,7 @@ internal class DatadogDatabaseErrorHandlerTest {
     @Test
     fun `M intialise with DefaultDatabaseHandler instance W none provided`() {
         // WHEN
-        testedHandler = DatadogDatabaseErrorHandler()
+        testedHandler = DatadogDatabaseErrorHandler({ rumMonitor.mockSdkCore })
 
         // THEN
         assertThat(testedHandler.defaultErrorHandler)

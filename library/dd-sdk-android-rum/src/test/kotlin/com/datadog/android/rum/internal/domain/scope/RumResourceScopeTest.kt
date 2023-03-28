@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -29,7 +28,6 @@ import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
-import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -91,9 +89,6 @@ internal class RumResourceScopeTest {
 
     @Mock
     lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
-
-    @Mock
-    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -169,8 +164,8 @@ internal class RumResourceScopeTest {
         fakeMethod = forge.anElementFrom("PUT", "POST", "GET", "DELETE")
         mockEvent = mockEvent()
 
-        whenever(mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitor.mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
+        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         doAnswer { false }.whenever(mockResolver).isFirstPartyUrl(any<String>())
         whenever(
@@ -179,7 +174,7 @@ internal class RumResourceScopeTest {
                 fakeParentContext.viewId.orEmpty()
             )
         ).thenReturn(fakeHasReplay)
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
@@ -187,7 +182,7 @@ internal class RumResourceScopeTest {
 
         testedScope = RumResourceScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             fakeUrl,
             fakeMethod,
             fakeKey,
@@ -366,7 +361,7 @@ internal class RumResourceScopeTest {
         val brokenUrl = forge.aStringMatching("[a-z]+.com/[a-z]+")
         testedScope = RumResourceScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             brokenUrl,
             fakeMethod,
             fakeKey,
@@ -736,10 +731,10 @@ internal class RumResourceScopeTest {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(fakeGlobalAttributes)
-        GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
         testedScope = RumResourceScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             fakeUrl,
             fakeMethod,
             fakeKey,
@@ -749,7 +744,7 @@ internal class RumResourceScopeTest {
             mockResolver,
             mockFeaturesContextResolver
         )
-        fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
@@ -817,7 +812,7 @@ internal class RumResourceScopeTest {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(fakeGlobalAttributes)
-        GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
@@ -1161,7 +1156,7 @@ internal class RumResourceScopeTest {
         val brokenUrl = forge.aStringMatching("[a-z]+.com/[a-z]+")
         testedScope = RumResourceScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             brokenUrl,
             fakeMethod,
             fakeKey,
@@ -1247,7 +1242,7 @@ internal class RumResourceScopeTest {
         val brokenUrl = forge.aStringMatching("[a-z]+.com/[a-z]+")
         testedScope = RumResourceScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             brokenUrl,
             fakeMethod,
             fakeKey,
@@ -1632,7 +1627,7 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(attributes)
         expectedAttributes.putAll(errorAttributes)
 
-        GlobalRum.globalAttributes.putAll(attributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn attributes
         mockEvent = RumRawEvent.StopResourceWithError(
             fakeKey,
             statusCode,
@@ -1710,8 +1705,7 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
         expectedAttributes.putAll(errorAttributes)
-
-        GlobalRum.globalAttributes.putAll(attributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn attributes
         mockEvent = RumRawEvent.StopResourceWithStackTrace(
             fakeKey,
             statusCode,

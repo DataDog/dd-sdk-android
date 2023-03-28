@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain
 
 import com.datadog.android.core.persistence.Serializer
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -17,7 +18,6 @@ import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -65,9 +65,6 @@ internal class RumDataWriterTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
-    @Mock
-    lateinit var mockSdkCore: InternalSdkCore
-
     @StringForgery
     lateinit var fakeSerializedEvent: String
     lateinit var fakeSerializedData: ByteArray
@@ -77,11 +74,11 @@ internal class RumDataWriterTest {
         fakeSerializedData = fakeSerializedEvent.toByteArray(Charsets.UTF_8)
 
         whenever(mockEventBatchWriter.write(fakeSerializedData, null)) doReturn true
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
 
         testedWriter = RumDataWriter(
             mockSerializer,
-            mockSdkCore
+            rumMonitor.mockSdkCore
         )
     }
 
@@ -179,8 +176,7 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(viewEvent, fakeSerializedData)
 
         // Then
-        verify(mockSdkCore)
-            .writeLastViewEvent(fakeSerializedData)
+        verify(rumMonitor.mockSdkCore).writeLastViewEvent(fakeSerializedData)
         verifyZeroInteractions(mockInternalLogger)
     }
 
@@ -192,11 +188,11 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(actionEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance).eventSent(
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor).eventSent(
             actionEvent.view.id,
             StorageEvent.Action(frustrationCount = actionEvent.action.frustration?.type?.size ?: 0)
         )
-        verifyZeroInteractions(mockSdkCore)
+        verifyZeroInteractions(rumMonitor.mockSdkCore)
     }
 
     @Test
@@ -207,8 +203,11 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(resourceEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance).eventSent(resourceEvent.view.id, StorageEvent.Resource)
-        verifyZeroInteractions(mockSdkCore)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor).eventSent(
+            resourceEvent.view.id,
+            StorageEvent.Resource
+        )
+        verifyZeroInteractions(rumMonitor.mockSdkCore)
     }
 
     @Test
@@ -222,8 +221,11 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(errorEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance).eventSent(fakeEvent.view.id, StorageEvent.Error)
-        verifyZeroInteractions(mockSdkCore)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor).eventSent(
+            fakeEvent.view.id,
+            StorageEvent.Error
+        )
+        verifyZeroInteractions(rumMonitor.mockSdkCore)
     }
 
     @Test
@@ -237,8 +239,11 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(errorEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance, never()).eventSent(eq(fakeEvent.view.id), any())
-        verifyZeroInteractions(mockSdkCore)
+        verify(
+            rumMonitor.mockInstance as AdvancedRumMonitor,
+            never()
+        ).eventSent(eq(fakeEvent.view.id), any())
+        verifyZeroInteractions(rumMonitor.mockSdkCore)
     }
 
     @Test
@@ -258,8 +263,11 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(longTaskEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance).eventSent(longTaskEvent.view.id, StorageEvent.LongTask)
-        verifyZeroInteractions(mockSdkCore)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor).eventSent(
+            longTaskEvent.view.id,
+            StorageEvent.LongTask
+        )
+        verifyZeroInteractions(rumMonitor.mockSdkCore)
     }
 
     @Test
@@ -279,11 +287,11 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(frozenFrameEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance).eventSent(
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor).eventSent(
             frozenFrameEvent.view.id,
             StorageEvent.FrozenFrame
         )
-        verifyZeroInteractions(mockSdkCore)
+        verifyZeroInteractions(rumMonitor.mockSdkCore)
     }
 
     // endregion

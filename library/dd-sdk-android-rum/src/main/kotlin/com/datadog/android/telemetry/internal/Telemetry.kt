@@ -9,23 +9,27 @@ package com.datadog.android.telemetry.internal
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
+import com.datadog.android.v2.api.SdkCore
 
-internal class Telemetry {
-
+internal class Telemetry(
+    private val sdkCore: SdkCore
+) {
     internal val rumMonitor: AdvancedRumMonitor
         get() {
-            return GlobalRum.get() as? AdvancedRumMonitor ?: NoOpAdvancedRumMonitor()
+            return GlobalRum.get(sdkCore) as? AdvancedRumMonitor ?: NoOpAdvancedRumMonitor()
         }
-
     fun error(message: String, throwable: Throwable? = null) {
-        rumMonitor.sendErrorTelemetryEvent(message, throwable)
+        (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)
+            ?.sendErrorTelemetryEvent(message, throwable)
     }
 
     fun error(message: String, stack: String?, kind: String?) {
-        rumMonitor.sendErrorTelemetryEvent(message, stack, kind)
+        (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)
+            ?.sendErrorTelemetryEvent(message, stack, kind)
     }
 
     fun debug(message: String) {
-        rumMonitor.sendDebugTelemetryEvent(message)
+        (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)
+            ?.sendDebugTelemetryEvent(message)
     }
 }

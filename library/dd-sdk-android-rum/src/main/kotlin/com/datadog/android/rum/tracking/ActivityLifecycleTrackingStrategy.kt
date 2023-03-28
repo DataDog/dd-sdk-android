@@ -13,6 +13,7 @@ import android.content.Intent
 import android.os.Bundle
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.NoOpSdkCore
 
 /**
  * The ActivityLifecycleTrackingStrategy as an [Application.ActivityLifecycleCallbacks]
@@ -22,13 +23,16 @@ abstract class ActivityLifecycleTrackingStrategy :
     Application.ActivityLifecycleCallbacks,
     TrackingStrategy {
 
-    internal lateinit var internalLogger: InternalLogger
+    /**
+     * The [SdkCore] instance this tracking strategy is bound with.
+     */
+    protected var sdkCore: SdkCore = NoOpSdkCore()
 
     // region TrackingStrategy
 
     override fun register(sdkCore: SdkCore, context: Context) {
-        internalLogger = sdkCore._internalLogger
         if (context is Application) {
+            this.sdkCore = sdkCore
             context.registerActivityLifecycleCallbacks(this)
         } else {
             sdkCore._internalLogger.log(
@@ -43,6 +47,7 @@ abstract class ActivityLifecycleTrackingStrategy :
     override fun unregister(context: Context?) {
         if (context is Application) {
             context.unregisterActivityLifecycleCallbacks(this)
+            this.sdkCore = NoOpSdkCore()
         }
     }
 

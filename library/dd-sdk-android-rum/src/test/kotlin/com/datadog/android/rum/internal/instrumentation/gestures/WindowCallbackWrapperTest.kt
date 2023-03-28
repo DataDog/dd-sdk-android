@@ -87,6 +87,7 @@ internal class WindowCallbackWrapperTest {
     fun `set up`() {
         testedWrapper = WindowCallbackWrapper(
             mockWindow,
+            rumMonitor.mockSdkCore,
             mockCallback,
             mockGestureDetector,
             copyEvent = { mockCopiedMotionEvent },
@@ -171,6 +172,7 @@ internal class WindowCallbackWrapperTest {
         }
         testedWrapper = WindowCallbackWrapper(
             mockWindow,
+            rumMonitor.mockSdkCore,
             mockCallback,
             mockGestureDetector,
             mockInteractionPredicate,
@@ -214,6 +216,7 @@ internal class WindowCallbackWrapperTest {
         }
         testedWrapper = WindowCallbackWrapper(
             mockWindow,
+            rumMonitor.mockSdkCore,
             mockCallback,
             mockGestureDetector,
             mockInteractionPredicate,
@@ -257,6 +260,7 @@ internal class WindowCallbackWrapperTest {
         }
         testedWrapper = WindowCallbackWrapper(
             mockWindow,
+            rumMonitor.mockSdkCore,
             mockCallback,
             mockGestureDetector,
             mockInteractionPredicate,
@@ -399,6 +403,7 @@ internal class WindowCallbackWrapperTest {
 
         testedWrapper = WindowCallbackWrapper(
             mockWindow,
+            rumMonitor.mockSdkCore,
             mockCallback,
             mockGestureDetector,
             mockInteractionPredicate,
@@ -426,6 +431,7 @@ internal class WindowCallbackWrapperTest {
 
         testedWrapper = WindowCallbackWrapper(
             mockWindow,
+            rumMonitor.mockSdkCore,
             mockCallback,
             mockGestureDetector,
             mockInteractionPredicate,
@@ -454,6 +460,7 @@ internal class WindowCallbackWrapperTest {
         }
         testedWrapper = WindowCallbackWrapper(
             mockWindow,
+            rumMonitor.mockSdkCore,
             mockCallback,
             mockGestureDetector,
             mockInteractionPredicate,
@@ -558,6 +565,7 @@ internal class WindowCallbackWrapperTest {
         }
         testedWrapper = WindowCallbackWrapper(
             mockWindow,
+            rumMonitor.mockSdkCore,
             mockCallback,
             mockGestureDetector,
             mockInteractionPredicate,
@@ -635,6 +643,7 @@ internal class WindowCallbackWrapperTest {
         // When
         testedWrapper = WindowCallbackWrapper(
             mockWindow,
+            rumMonitor.mockSdkCore,
             mockCallback,
             mockGestureDetector,
             copyEvent = { mockCopiedMotionEvent },

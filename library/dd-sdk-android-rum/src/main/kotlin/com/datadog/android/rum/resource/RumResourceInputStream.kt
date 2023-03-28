@@ -11,6 +11,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.v2.api.SdkCore
 import java.io.InputStream
 
 /**
@@ -18,11 +19,13 @@ import java.io.InputStream
  *
  * @param delegate the actual [InputStream] to wrap
  * @param url the URL associated with the underlying resource, as you want it displayed in Datadog
+ * @param sdkCore the [SdkCore] instance to report resources to
  */
 @Suppress("ThrowingInternalException", "TooGenericExceptionCaught")
 class RumResourceInputStream(
     val delegate: InputStream,
-    val url: String
+    val url: String,
+    val sdkCore: SdkCore
 ) : InputStream() {
 
     internal val key: String = delegate.javaClass.simpleName +
@@ -36,7 +39,7 @@ class RumResourceInputStream(
     private var lastByte: Long = 0L
 
     init {
-        val rumMonitor = GlobalRum.get()
+        val rumMonitor = GlobalRum.get(sdkCore)
         rumMonitor.startResource(key, METHOD, url, emptyMap())
         callStart = System.nanoTime()
         if (rumMonitor is AdvancedRumMonitor) {
@@ -125,7 +128,7 @@ class RumResourceInputStream(
         return callWithErrorTracking(ERROR_CLOSE) {
             @Suppress("UnsafeThirdPartyFunctionCall") // caller should handle the exception
             close()
-            val monitor = GlobalRum.get()
+            val monitor = GlobalRum.get(sdkCore)
             (monitor as? AdvancedRumMonitor)?.addResourceTiming(
                 key,
                 ResourceTiming(
@@ -156,7 +159,7 @@ class RumResourceInputStream(
         } catch (e: Throwable) {
             if (!failed) {
                 failed = true
-                GlobalRum.get().stopResourceWithError(
+                GlobalRum.get(sdkCore).stopResourceWithError(
                     key,
                     null,
                     errorMessage,

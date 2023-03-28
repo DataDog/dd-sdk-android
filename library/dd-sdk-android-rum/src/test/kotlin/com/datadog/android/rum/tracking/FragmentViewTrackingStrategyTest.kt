@@ -16,14 +16,12 @@ import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import com.datadog.android.rum.RumFeature
 import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
-import com.datadog.android.rum.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.resolveViewUrl
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.ObjectTest
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -82,9 +80,6 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     lateinit var mockAppContext: Application
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
-
-    @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
@@ -102,9 +97,9 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         val mockRumFeatureScope = mock<FeatureScope>()
         whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mock()
         whenever(
-            datadog.mockInstance.getFeature(Feature.RUM_FEATURE_NAME)
+            rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         ) doReturn mockRumFeatureScope
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
 
         testedStrategy = FragmentViewTrackingStrategy(true)
     }
@@ -112,7 +107,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     @Test
     fun `when register it will register as lifecycle callback`() {
         // When
-        testedStrategy.register(mockSdkCore, mockAppContext)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
 
         // verify
         verify(mockAppContext).registerActivityLifecycleCallbacks(testedStrategy)
@@ -130,7 +125,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     @Test
     fun `when register called with non application context will do nothing`() {
         // When
-        testedStrategy.register(mockSdkCore, mockBadContext)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockBadContext)
 
         // verify
         verifyZeroInteractions(mockBadContext)
@@ -150,7 +145,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         forge: Forge
     ) {
         // Given
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val mockFragment: Fragment = mockFragmentWithArguments(forge)
         val expectedAttrs = mockFragment.arguments!!.toRumAttributes()
         val argumentCaptor = argumentCaptor<FragmentManager.FragmentLifecycleCallbacks>()
@@ -202,7 +197,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
                 }
             }
         )
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
 
         // When
         testedStrategy.onActivityStarted(mockAndroidxActivity)
@@ -229,10 +224,11 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     ) {
         // Given
         testedStrategy = FragmentViewTrackingStrategy(false)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val mockFragment: Fragment = mockFragmentWithArguments(forge)
         val expectedAttrs = emptyMap<String, Any?>()
         val argumentCaptor = argumentCaptor<FragmentManager.FragmentLifecycleCallbacks>()
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityStarted(mockAndroidxActivity)
@@ -264,8 +260,11 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
 
     @Test
     fun `when FragmentActivity started it will reuse same callback`() {
+        // Given
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
+
         // When
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
         testedStrategy.onActivityStarted(mockAndroidxActivity)
         testedStrategy.onActivityStarted(mockAndroidxActivity)
 
@@ -282,7 +281,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     @Test
     fun `when FragmentActivity stopped will unregister the right callback`() {
         // Given
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         testedStrategy.onActivityStarted(mockAndroidxActivity)
         val argumentCaptor = argumentCaptor<FragmentManager.FragmentLifecycleCallbacks>()
         verify(mockAndroidxFragmentManager)
@@ -303,8 +302,11 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `when base activity started will register the right callback`() {
+        // Given
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
+
         // When
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
         testedStrategy.onActivityStarted(mockActivity)
 
         // Then
@@ -317,7 +319,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `when base activity started will register the same callback`() {
         // Given
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
 
         // When
         testedStrategy.onActivityStarted(mockActivity)
@@ -339,7 +341,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         forge: Forge
     ) {
         // Given
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val mockFragment: android.app.Fragment = mockDeprecatedFragmentWithArguments(forge)
         val expectedAttrs = mockFragment.arguments.toRumAttributes()
         val argumentCaptor =
@@ -392,7 +394,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
                 }
             }
         )
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val argumentCaptor =
             argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks>()
 
@@ -422,11 +424,12 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     ) {
         // Given
         testedStrategy = FragmentViewTrackingStrategy(false)
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
         val expectedAttrs = emptyMap<String, Any?>()
         val mockFragment: android.app.Fragment = mockDeprecatedFragmentWithArguments(forge)
         val argumentCaptor =
             argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks>()
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
 
         // When
         testedStrategy.onActivityStarted(mockActivity)
@@ -460,7 +463,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `when base activity stopped will unregister the right callback`() {
         // Given
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         testedStrategy.onActivityStarted(mockActivity)
         val argumentCaptor =
             argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks>()
@@ -505,11 +508,13 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `it will handle well a FragmentActivity and a base Activity resumed in the same time`() {
         // Given
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val androidXArgumentCaptor = argumentCaptor<FragmentManager.FragmentLifecycleCallbacks>()
         val baseArgumentCaptor =
             argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks>()
+
         // When
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
         testedStrategy.onActivityStarted(mockAndroidxActivity)
         testedStrategy.onActivityStarted(mockActivity)
         testedStrategy.onActivityStopped(mockAndroidxActivity)
@@ -619,12 +624,11 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val datadog = DatadogSingletonTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor, datadog)
+            return listOf(rumMonitor)
         }
     }
 }

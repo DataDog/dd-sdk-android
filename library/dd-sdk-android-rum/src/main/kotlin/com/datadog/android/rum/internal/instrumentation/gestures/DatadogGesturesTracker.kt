@@ -11,6 +11,7 @@ import android.view.Window
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 import java.lang.ref.WeakReference
 
 internal class DatadogGesturesTracker(
@@ -21,21 +22,26 @@ internal class DatadogGesturesTracker(
 
     // region GesturesTracker
 
-    override fun startTracking(window: Window?, context: Context) {
+    override fun startTracking(
+        window: Window?,
+        context: Context,
+        sdkCore: SdkCore
+    ) {
         if (window == null) {
             return
         }
 
         val toWrap = window.callback ?: NoOpWindowCallback()
-        val gesturesDetector = generateGestureDetector(context, window)
+        val gesturesDetector = generateGestureDetector(context, window, sdkCore)
 
         window.callback = WindowCallbackWrapper(
             window,
+            sdkCore,
             toWrap,
             gesturesDetector,
             interactionPredicate,
             targetAttributesProviders = targetAttributesProviders,
-            internalLogger = internalLogger
+            internalLogger = sdkCore._internalLogger
         )
     }
 
@@ -89,16 +95,18 @@ internal class DatadogGesturesTracker(
 
     internal fun generateGestureDetector(
         context: Context,
-        window: Window
+        window: Window,
+        sdkCore: SdkCore
     ): GesturesDetectorWrapper {
         return GesturesDetectorWrapper(
             context,
             GesturesListener(
+                sdkCore,
                 WeakReference(window),
                 targetAttributesProviders,
                 interactionPredicate,
                 WeakReference(context),
-                internalLogger
+                sdkCore._internalLogger
             )
         )
     }

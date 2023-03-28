@@ -6,21 +6,19 @@
 
 package com.datadog.android.telemetry.internal
 
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -37,7 +35,12 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class TelemetryTest {
 
-    private val testedTelemetry: Telemetry = Telemetry()
+    private lateinit var testedTelemetry: Telemetry
+
+    @BeforeEach
+    fun `set up`() {
+        testedTelemetry = Telemetry(rumMonitor.mockSdkCore)
+    }
 
     @Test
     fun `𝕄 report error event 𝕎 error()`(
@@ -51,7 +54,8 @@ internal class TelemetryTest {
         testedTelemetry.error(message, throwable)
 
         // Then
-        verify(rumMonitor.mockInstance).sendErrorTelemetryEvent(message, throwable)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .sendErrorTelemetryEvent(message, throwable)
     }
 
     @Test
@@ -62,19 +66,8 @@ internal class TelemetryTest {
         testedTelemetry.debug(message)
 
         // Then
-        verify(rumMonitor.mockInstance).sendDebugTelemetryEvent(message)
-    }
-
-    @Test
-    fun `𝕄 return NoOpAdvancedRumMonitor 𝕎 rumMonitor() { RUM monitor != AdvancedRumMonitor }`() {
-        // Given
-        GlobalRum.monitor = mock()
-
-        // When
-        val monitor = testedTelemetry.rumMonitor
-
-        // Then
-        assertThat(monitor).isInstanceOf(NoOpAdvancedRumMonitor::class.java)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .sendDebugTelemetryEvent(message)
     }
 
     companion object {

@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.event.EventMapper
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -88,6 +89,7 @@ internal class RumEventMapperTest {
             telemetryConfigurationMapper = mockTelemetryConfigurationMapper,
             internalLogger = mockInternalLogger
         )
+        testedRumEventMapper.sdkCore = rumMonitor.mockSdkCore
     }
 
     @Test
@@ -574,7 +576,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
             .eventDropped(
                 fakeRumEvent.view.id,
                 StorageEvent.Action(
@@ -595,7 +597,8 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance).eventDropped(fakeRumEvent.view.id, StorageEvent.Resource)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(fakeRumEvent.view.id, StorageEvent.Resource)
     }
 
     @Test
@@ -613,7 +616,8 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance).eventDropped(fakeNoCrashEvent.view.id, StorageEvent.Error)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(fakeNoCrashEvent.view.id, StorageEvent.Error)
     }
 
     @Test
@@ -634,7 +638,8 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance).eventDropped(longTaskEvent.view.id, StorageEvent.LongTask)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(longTaskEvent.view.id, StorageEvent.LongTask)
     }
 
     @Test
@@ -655,7 +660,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance).eventDropped(
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor).eventDropped(
             longTaskEvent.view.id,
             StorageEvent.FrozenFrame
         )

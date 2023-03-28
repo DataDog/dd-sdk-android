@@ -10,7 +10,6 @@ import android.app.Activity
 import android.os.Build
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -34,7 +33,6 @@ import com.datadog.android.v2.api.Feature
  * @param defaultFragmentComponentPredicate to accept the default Android Fragments
  * that will be taken into account as valid RUM View events.
  */
-@Suppress("DEPRECATION")
 class FragmentViewTrackingStrategy @JvmOverloads constructor(
     internal val trackArguments: Boolean,
     internal val supportFragmentComponentPredicate: ComponentPredicate<Fragment> =
@@ -47,20 +45,20 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
 
     private val androidXLifecycleCallbacks: FragmentLifecycleCallbacks<FragmentActivity>
         by lazy {
-            val rumFeature = Datadog.getInstance()
-                ?.getFeature(Feature.RUM_FEATURE_NAME)
+            val rumFeature = sdkCore
+                .getFeature(Feature.RUM_FEATURE_NAME)
                 ?.unwrap<RumFeature>()
+            val rumMonitor = GlobalRum.get(sdkCore)
             if (rumFeature != null) {
                 AndroidXFragmentLifecycleCallbacks(
                     argumentsProvider = {
                         if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
                     },
                     componentPredicate = supportFragmentComponentPredicate,
-                    rumMonitor = GlobalRum.get(),
-                    advancedRumMonitor = GlobalRum.get() as? AdvancedRumMonitor
+                    rumMonitor = rumMonitor,
+                    advancedRumMonitor = rumMonitor as? AdvancedRumMonitor
                         ?: NoOpAdvancedRumMonitor(),
-                    rumFeature = rumFeature,
-                    internalLogger = internalLogger
+                    rumFeature = rumFeature
                 )
             } else {
                 NoOpFragmentLifecycleCallbacks()
@@ -68,20 +66,20 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
         }
     private val oreoLifecycleCallbacks: FragmentLifecycleCallbacks<Activity>
         by lazy {
-            val rumFeature = Datadog.getInstance()
-                ?.getFeature(Feature.RUM_FEATURE_NAME)
+            val rumFeature = sdkCore
+                .getFeature(Feature.RUM_FEATURE_NAME)
                 ?.unwrap<RumFeature>()
+            val rumMonitor = GlobalRum.get(sdkCore)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && rumFeature != null) {
                 OreoFragmentLifecycleCallbacks(
                     argumentsProvider = {
                         if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
                     },
                     componentPredicate = defaultFragmentComponentPredicate,
-                    rumMonitor = GlobalRum.get(),
-                    advancedRumMonitor = GlobalRum.get() as? AdvancedRumMonitor
+                    rumMonitor = rumMonitor,
+                    advancedRumMonitor = rumMonitor as? AdvancedRumMonitor
                         ?: NoOpAdvancedRumMonitor(),
-                    rumFeature = rumFeature,
-                    internalLogger = internalLogger
+                    rumFeature = rumFeature
                 )
             } else {
                 NoOpFragmentLifecycleCallbacks()
@@ -93,10 +91,10 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
     override fun onActivityStarted(activity: Activity) {
         super.onActivityStarted(activity)
         if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
-            androidXLifecycleCallbacks.register(activity as FragmentActivity)
+            androidXLifecycleCallbacks.register(activity as FragmentActivity, sdkCore)
         } else {
             // old deprecated way
-            oreoLifecycleCallbacks.register(activity)
+            oreoLifecycleCallbacks.register(activity, sdkCore)
         }
     }
 

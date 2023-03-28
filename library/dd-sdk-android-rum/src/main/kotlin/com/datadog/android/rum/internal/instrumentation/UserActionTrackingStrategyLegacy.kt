@@ -29,7 +29,7 @@ internal class UserActionTrackingStrategyLegacy(
 
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
-        gesturesTracker.startTracking(activity.window, activity)
+        gesturesTracker.startTracking(activity.window, activity, sdkCore)
     }
 
     override fun onActivityPaused(activity: Activity) {

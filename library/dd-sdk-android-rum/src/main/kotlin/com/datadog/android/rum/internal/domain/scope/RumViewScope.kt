@@ -70,9 +70,7 @@ internal open class RumViewScope(
     internal val url = key.resolveViewUrl().replace('.', '/')
 
     internal val keyRef: Reference<Any> = WeakReference(key)
-    internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap().apply {
-        putAll(GlobalRum.globalAttributes)
-    }
+    internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
 
     private var sessionId: String = parentScope.getRumContext().sessionId
     internal var viewId: String = UUID.randomUUID().toString()
@@ -148,7 +146,7 @@ internal open class RumViewScope(
             it.putAll(getRumContext().toMap())
             it[RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY] = serverTimeOffsetInMs
         }
-        attributes.putAll(GlobalRum.globalAttributes)
+        attributes.putAll(GlobalRum.get(sdkCore).getAttributes())
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
         frameRateVitalMonitor.register(frameRateVitalListener)
@@ -658,7 +656,7 @@ internal open class RumViewScope(
         if (!viewUpdatePredicate.canUpdateView(viewComplete, event)) {
             return
         }
-        attributes.putAll(GlobalRum.globalAttributes)
+        attributes.putAll(GlobalRum.get(sdkCore).getAttributes())
         version++
 
         // make a local copy, so that closure captures the state as of now
@@ -811,7 +809,7 @@ internal open class RumViewScope(
         attributes: Map<String, Any?>
     ): MutableMap<String, Any?> {
         return attributes.toMutableMap()
-            .apply { putAll(GlobalRum.globalAttributes) }
+            .apply { putAll(GlobalRum.get(sdkCore).getAttributes()) }
     }
 
     @WorkerThread
@@ -837,7 +835,7 @@ internal open class RumViewScope(
         pendingActionCount++
         val rumContext = getRumContext()
 
-        val attributes = GlobalRum.globalAttributes
+        val globalAttributes = GlobalRum.get(sdkCore).getAttributes().toMutableMap()
 
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
@@ -892,7 +890,7 @@ internal open class RumViewScope(
                         architecture = datadogContext.deviceInfo.architecture
                     ),
                     context = ActionEvent.Context(
-                        additionalProperties = attributes
+                        additionalProperties = globalAttributes
                     ),
                     dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1)),
                     connectivity = datadogContext.networkInfo.toActionConnectivity(),

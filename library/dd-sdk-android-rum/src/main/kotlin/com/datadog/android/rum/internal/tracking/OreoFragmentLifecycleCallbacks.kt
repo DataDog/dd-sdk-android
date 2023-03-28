@@ -19,7 +19,8 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
-import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.NoOpSdkCore
 
 @Suppress("DEPRECATION")
 @RequiresApi(Build.VERSION_CODES.O)
@@ -30,13 +31,15 @@ internal class OreoFragmentLifecycleCallbacks(
     private val rumFeature: RumFeature,
     private val rumMonitor: RumMonitor,
     private val advancedRumMonitor: AdvancedRumMonitor,
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
-    private val internalLogger: InternalLogger
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
 ) : FragmentLifecycleCallbacks<Activity>, FragmentManager.FragmentLifecycleCallbacks() {
+
+    private var sdkCore: SdkCore = NoOpSdkCore()
 
     // region FragmentLifecycleCallbacks
 
-    override fun register(activity: Activity) {
+    override fun register(activity: Activity, sdkCore: SdkCore) {
+        this.sdkCore = sdkCore
         if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.O) {
             activity.fragmentManager.registerFragmentLifecycleCallbacks(this, true)
         }
@@ -64,7 +67,7 @@ internal class OreoFragmentLifecycleCallbacks(
         if (f is DialogFragment && context != null) {
             val window = f.dialog?.window
             val gesturesTracker = rumFeature.actionTrackingStrategy.getGesturesTracker()
-            gesturesTracker.startTracking(window, context)
+            gesturesTracker.startTracking(window, context, sdkCore)
         }
     }
 
@@ -72,7 +75,7 @@ internal class OreoFragmentLifecycleCallbacks(
         super.onFragmentAttached(fm, f, context)
         if (isNotAViewFragment(f)) return
 
-        componentPredicate.runIfValid(f, internalLogger) {
+        componentPredicate.runIfValid(f, sdkCore._internalLogger) {
             viewLoadingTimer.onCreated(it)
         }
     }
@@ -81,7 +84,7 @@ internal class OreoFragmentLifecycleCallbacks(
         super.onFragmentStarted(fm, f)
         if (isNotAViewFragment(f)) return
 
-        componentPredicate.runIfValid(f, internalLogger) {
+        componentPredicate.runIfValid(f, sdkCore._internalLogger) {
             viewLoadingTimer.onStartLoading(it)
         }
     }
@@ -90,7 +93,7 @@ internal class OreoFragmentLifecycleCallbacks(
         super.onFragmentResumed(fm, f)
         if (isNotAViewFragment(f)) return
 
-        componentPredicate.runIfValid(f, internalLogger) {
+        componentPredicate.runIfValid(f, sdkCore._internalLogger) {
             val viewName = componentPredicate.resolveViewName(f)
             viewLoadingTimer.onFinishedLoading(f)
             @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
@@ -110,7 +113,7 @@ internal class OreoFragmentLifecycleCallbacks(
         super.onFragmentPaused(fm, f)
         if (isNotAViewFragment(f)) return
 
-        componentPredicate.runIfValid(f, internalLogger) {
+        componentPredicate.runIfValid(f, sdkCore._internalLogger) {
             rumMonitor.stopView(it)
             viewLoadingTimer.onPaused(it)
         }
@@ -120,7 +123,7 @@ internal class OreoFragmentLifecycleCallbacks(
         super.onFragmentDestroyed(fm, f)
         if (isNotAViewFragment(f)) return
 
-        componentPredicate.runIfValid(f, internalLogger) {
+        componentPredicate.runIfValid(f, sdkCore._internalLogger) {
             viewLoadingTimer.onDestroyed(it)
         }
     }

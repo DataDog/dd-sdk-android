@@ -12,6 +12,7 @@ import android.database.sqlite.SQLiteDatabase
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.v2.api.SdkCore
 import java.util.Locale
 
 /**
@@ -22,13 +23,14 @@ import java.util.Locale
  * For more information [https://www.sqlite.org/howtocorrupt.html]
  */
 class DatadogDatabaseErrorHandler(
+    internal val sdkCoreProvider: () -> SdkCore,
     internal val defaultErrorHandler: DatabaseErrorHandler = DefaultDatabaseErrorHandler()
 ) : DatabaseErrorHandler {
 
     /** @inheritDoc */
     override fun onCorruption(dbObj: SQLiteDatabase) {
         defaultErrorHandler.onCorruption(dbObj)
-        GlobalRum.get()
+        GlobalRum.get(sdkCoreProvider.invoke())
             .addError(
                 String.format(Locale.US, DATABASE_CORRUPTION_ERROR_MESSAGE, dbObj.path),
                 RumErrorSource.SOURCE,

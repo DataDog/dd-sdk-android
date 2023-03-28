@@ -9,6 +9,7 @@ package com.datadog.android.rum.resource
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -71,7 +72,7 @@ internal class RumResourceInputStreamTest {
 
     @BeforeEach
     fun `set up`() {
-        testedInputStream = RumResourceInputStream(mockInputStream, fakeUrl)
+        testedInputStream = RumResourceInputStream(mockInputStream, fakeUrl, rumMonitor.mockSdkCore)
 
         // 𝕄 start resource 𝕎 init
         verify(rumMonitor.mockInstance).startResource(
@@ -80,7 +81,8 @@ internal class RumResourceInputStreamTest {
             fakeUrl,
             emptyMap()
         )
-        verify(rumMonitor.mockInstance).waitForResourceTiming(testedInputStream.key)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .waitForResourceTiming(testedInputStream.key)
     }
 
     // region Atomic Methods
@@ -226,7 +228,7 @@ internal class RumResourceInputStreamTest {
         testedInputStream.close()
 
         // Then
-        verify(rumMonitor.mockInstance).addResourceTiming(
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor).addResourceTiming(
             eq(testedInputStream.key),
             any()
         )
@@ -479,7 +481,7 @@ internal class RumResourceInputStreamTest {
         // Given
         val contentBytes = content.toByteArray()
         val inputStream = contentBytes.inputStream()
-        testedInputStream = RumResourceInputStream(inputStream, fakeUrl)
+        testedInputStream = RumResourceInputStream(inputStream, fakeUrl, rumMonitor.mockSdkCore)
 
         // When
         val result = testedInputStream.bufferedReader().use(BufferedReader::readText)
@@ -493,8 +495,10 @@ internal class RumResourceInputStreamTest {
                 fakeUrl,
                 emptyMap()
             )
-            verify(rumMonitor.mockInstance).waitForResourceTiming(testedInputStream.key)
-            verify(rumMonitor.mockInstance).addResourceTiming(eq(testedInputStream.key), any())
+            verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+                .waitForResourceTiming(testedInputStream.key)
+            verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+                .addResourceTiming(eq(testedInputStream.key), any())
             verify(rumMonitor.mockInstance).stopResource(
                 testedInputStream.key,
                 null,
@@ -513,7 +517,7 @@ internal class RumResourceInputStreamTest {
         // Given
         val contentBytes = content.toByteArray()
         val inputStream = contentBytes.inputStream()
-        testedInputStream = RumResourceInputStream(inputStream, fakeUrl)
+        testedInputStream = RumResourceInputStream(inputStream, fakeUrl, rumMonitor.mockSdkCore)
 
         // When
         val result = testedInputStream.use {
@@ -539,8 +543,10 @@ internal class RumResourceInputStreamTest {
                 fakeUrl,
                 emptyMap()
             )
-            verify(rumMonitor.mockInstance).waitForResourceTiming(testedInputStream.key)
-            verify(rumMonitor.mockInstance).addResourceTiming(eq(testedInputStream.key), any())
+            verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+                .waitForResourceTiming(testedInputStream.key)
+            verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+                .addResourceTiming(eq(testedInputStream.key), any())
             verify(rumMonitor.mockInstance).stopResource(
                 testedInputStream.key,
                 null,
@@ -560,7 +566,7 @@ internal class RumResourceInputStreamTest {
         val content = forge.anAlphabeticalString(size = forge.anInt(16, 1024))
         val contentBytes = content.toByteArray()
         val inputStream = contentBytes.inputStream()
-        testedInputStream = RumResourceInputStream(inputStream, fakeUrl)
+        testedInputStream = RumResourceInputStream(inputStream, fakeUrl, rumMonitor.mockSdkCore)
         val mark = contentBytes.size / 3
         val len1 = mark
         val len2 = contentBytes.size - (len1 + mark)
@@ -588,8 +594,10 @@ internal class RumResourceInputStreamTest {
                 fakeUrl,
                 emptyMap()
             )
-            verify(rumMonitor.mockInstance).waitForResourceTiming(testedInputStream.key)
-            verify(rumMonitor.mockInstance).addResourceTiming(eq(testedInputStream.key), any())
+            verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+                .waitForResourceTiming(testedInputStream.key)
+            verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+                .addResourceTiming(eq(testedInputStream.key), any())
             verify(rumMonitor.mockInstance).stopResource(
                 testedInputStream.key,
                 null,
@@ -609,7 +617,7 @@ internal class RumResourceInputStreamTest {
         val content = forge.anAlphabeticalString(size = forge.anInt(16, 1024))
         val contentBytes = content.toByteArray()
         val inputStream = contentBytes.inputStream()
-        testedInputStream = RumResourceInputStream(inputStream, fakeUrl)
+        testedInputStream = RumResourceInputStream(inputStream, fakeUrl, rumMonitor.mockSdkCore)
         val skipped = contentBytes.size / 3
         val len1 = skipped
         val len2 = contentBytes.size - (len1 + skipped)
@@ -633,8 +641,10 @@ internal class RumResourceInputStreamTest {
                 fakeUrl,
                 emptyMap()
             )
-            verify(rumMonitor.mockInstance).waitForResourceTiming(testedInputStream.key)
-            verify(rumMonitor.mockInstance).addResourceTiming(eq(testedInputStream.key), any())
+            verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+                .waitForResourceTiming(testedInputStream.key)
+            verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+                .addResourceTiming(eq(testedInputStream.key), any())
             verify(rumMonitor.mockInstance).stopResource(
                 testedInputStream.key,
                 null,
@@ -653,7 +663,7 @@ internal class RumResourceInputStreamTest {
         // Given
         val contentBytes = content.toByteArray()
         val inputStream = contentBytes.inputStream()
-        testedInputStream = RumResourceInputStream(inputStream, fakeUrl)
+        testedInputStream = RumResourceInputStream(inputStream, fakeUrl, rumMonitor.mockSdkCore)
         Thread.sleep(500)
         var download: Long
 
@@ -676,9 +686,10 @@ internal class RumResourceInputStreamTest {
                 fakeUrl,
                 emptyMap()
             )
-            verify(rumMonitor.mockInstance).waitForResourceTiming(testedInputStream.key)
+            verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+                .waitForResourceTiming(testedInputStream.key)
             argumentCaptor<ResourceTiming> {
-                verify(rumMonitor.mockInstance).addResourceTiming(
+                verify(rumMonitor.mockInstance as AdvancedRumMonitor).addResourceTiming(
                     eq(testedInputStream.key),
                     capture()
                 )

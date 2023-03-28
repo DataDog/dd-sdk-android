@@ -43,10 +43,14 @@ internal class UserActionTrackingStrategyLegacyTest :
 
     @Test
     fun `when activity resumed it will start tracking gestures`() {
+        // Given
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
+
         // When
         testedStrategy.onActivityResumed(mockActivity)
+
         // Then
-        verify(mockGesturesTracker).startTracking(mockWindow, mockActivity)
+        verify(mockGesturesTracker).startTracking(mockWindow, mockActivity, rumMonitor.mockSdkCore)
     }
 
     @Test

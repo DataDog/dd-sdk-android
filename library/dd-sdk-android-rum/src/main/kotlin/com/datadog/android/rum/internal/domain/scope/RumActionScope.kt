@@ -49,7 +49,7 @@ internal class RumActionScope(
     private val networkInfo = sdkCore.networkInfo
 
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap().apply {
-        putAll(GlobalRum.globalAttributes)
+        putAll(GlobalRum.get(sdkCore).getAttributes())
     }
 
     private val ongoingResourceKeys = mutableListOf<WeakReference<Any>>()
@@ -191,7 +191,7 @@ internal class RumActionScope(
         if (sent) return
 
         val actualType = type
-        attributes.putAll(GlobalRum.globalAttributes)
+        attributes.putAll(GlobalRum.get(sdkCore).getAttributes())
         val rumContext = getRumContext()
 
         // make a copy so that closure captures at the state as of now

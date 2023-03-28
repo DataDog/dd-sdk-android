@@ -17,12 +17,14 @@ import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 import java.lang.ref.WeakReference
 import kotlin.Exception
 
 @Suppress("TooGenericExceptionCaught")
 internal class WindowCallbackWrapper(
     window: Window,
+    val sdkCore: SdkCore,
     val wrappedCallback: Window.Callback,
     val gesturesDetector: GesturesDetectorWrapper,
     val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate(),
@@ -86,7 +88,7 @@ internal class WindowCallbackWrapper(
             RumAttributes.ACTION_TARGET_RESOURCE_ID to resourceId,
             RumAttributes.ACTION_TARGET_TITLE to item.title
         )
-        GlobalRum.get().addUserAction(
+        GlobalRum.get(sdkCore).addUserAction(
             RumActionType.TAP,
             resolveTargetName(interactionPredicate, item),
             attributes
@@ -149,7 +151,7 @@ internal class WindowCallbackWrapper(
                 provider.extractAttributes(it, attributes)
             }
             val targetName = resolveTargetName(interactionPredicate, it)
-            GlobalRum.get().addUserAction(RumActionType.CLICK, targetName, attributes)
+            GlobalRum.get(sdkCore).addUserAction(RumActionType.CLICK, targetName, attributes)
         }
     }
 
@@ -163,7 +165,7 @@ internal class WindowCallbackWrapper(
         } else {
             customTargetName
         }
-        GlobalRum.get().addUserAction(RumActionType.BACK, targetName, emptyMap())
+        GlobalRum.get(sdkCore).addUserAction(RumActionType.BACK, targetName, emptyMap())
     }
 
     // endregion

@@ -13,6 +13,7 @@ import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.ObjectTest
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -56,11 +57,15 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
     @Mock
     lateinit var mockGestureDetector: GesturesDetectorWrapper
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
     @BeforeEach
     fun `set up`() {
         testedTracker =
             DatadogGesturesTracker(emptyArray(), mockInteractionPredicate, mockInternalLogger)
         whenever(mockActivity.window).thenReturn(mockWindow)
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
     }
 
     override fun createInstance(forge: Forge): DatadogGesturesTracker {
@@ -105,8 +110,8 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
         val spyTest = spy(testedTracker)
         doReturn(mockGestureDetector)
             .whenever(spyTest)
-            .generateGestureDetector(mockActivity, mockWindow)
-        spyTest.startTracking(mockWindow, mockActivity)
+            .generateGestureDetector(mockActivity, mockWindow, mockSdkCore)
+        spyTest.startTracking(mockWindow, mockActivity, mockSdkCore)
 
         // Then
         val argumentCaptor = argumentCaptor<Window.Callback>()
@@ -122,6 +127,7 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
             .thenReturn(
                 WindowCallbackWrapper(
                     mockWindow,
+                    mockSdkCore,
                     NoOpWindowCallback(),
                     mockGestureDetector,
                     internalLogger = mockInternalLogger
@@ -143,6 +149,7 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
             .thenReturn(
                 WindowCallbackWrapper(
                     mockWindow,
+                    mockSdkCore,
                     previousCallback,
                     mockGestureDetector,
                     internalLogger = mockInternalLogger

@@ -27,10 +27,11 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 import java.util.Locale
 import kotlin.math.pow
 
-internal class UiRumDebugListener(private val internalLogger: InternalLogger) :
+internal class UiRumDebugListener(private val sdkCore: SdkCore) :
     Application.ActivityLifecycleCallbacks, RumDebugListener {
 
     internal var rumViewsContainer: LinearLayout? = null
@@ -38,9 +39,9 @@ internal class UiRumDebugListener(private val internalLogger: InternalLogger) :
     private val viewsSnapshot = mutableListOf<String>()
 
     private val advancedRumMonitor by lazy {
-        val monitor = GlobalRum.get() as? AdvancedRumMonitor
+        val monitor = GlobalRum.get(sdkCore) as? AdvancedRumMonitor
         if (monitor == null) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 MISSING_RUM_MONITOR_TYPE.format(
@@ -71,7 +72,7 @@ internal class UiRumDebugListener(private val internalLogger: InternalLogger) :
 
         val contentView = findContentView(activity)
         if (contentView == null) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 CANNOT_FIND_CONTENT_VIEW_MESSAGE
