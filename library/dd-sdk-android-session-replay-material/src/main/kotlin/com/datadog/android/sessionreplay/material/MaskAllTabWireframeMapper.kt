@@ -21,7 +21,7 @@ internal class MaskAllTabWireframeMapper(
         MaskAllTabLabelMapper()
 ) : TabWireframeMapper(viewUtils, uniqueIdentifierGenerator, textViewMapper) {
 
-    override fun resolveSelectedTabIndicatorWireframe(
+    override fun resolveTabIndicatorWireframe(
         view: TabLayout.TabView,
         systemInformation: SystemInformation,
         textWireframe: MobileSegment.Wireframe.TextWireframe?

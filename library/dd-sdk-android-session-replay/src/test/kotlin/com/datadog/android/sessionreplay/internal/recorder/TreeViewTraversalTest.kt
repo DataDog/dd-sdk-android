@@ -79,9 +79,9 @@ internal class TreeViewTraversalTest {
         val fakeViewMappedWireframes: List<MobileSegment.Wireframe> = forge.aList { getForgery() }
         val mockViews: List<View> = listOf(
             forge.aMockView<RadioButton>(),
+            forge.aMockView<CompoundButton>(),
             forge.aMockView<CheckedTextView>(),
             forge.aMockView<Button>(),
-            forge.aMockView<CompoundButton>(),
             forge.aMockView<TextView>()
         )
         val fakeTypes: List<Class<*>> = mockViews.map { it::class.java }

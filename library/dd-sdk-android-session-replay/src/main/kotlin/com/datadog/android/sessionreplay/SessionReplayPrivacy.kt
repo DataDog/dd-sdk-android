@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay
 
+import android.os.Build
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
@@ -13,6 +14,7 @@ import android.widget.CheckedTextView
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.RadioButton
+import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
@@ -23,9 +25,11 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrap
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckedTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllRadioButtonMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllSeekBarWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllSwitchCompatMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.RadioButtonMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewScreenshotWireframeMapper
@@ -59,6 +63,7 @@ enum class SessionReplayPrivacy {
         val checkBoxMapper: CheckBoxMapper
         val radioButtonMapper: RadioButtonMapper
         val switchCompatMapper: SwitchCompatMapper
+        val seekBarMapper: SeekBarWireframeMapper?
         when (this) {
             ALLOW_ALL -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
@@ -69,6 +74,7 @@ enum class SessionReplayPrivacy {
                 checkBoxMapper = CheckBoxMapper(textMapper)
                 radioButtonMapper = RadioButtonMapper(textMapper)
                 switchCompatMapper = SwitchCompatMapper(textMapper)
+                seekBarMapper = getSeekBarMapper()
             }
             MASK_ALL -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
@@ -79,19 +85,42 @@ enum class SessionReplayPrivacy {
                 checkBoxMapper = MaskAllCheckBoxMapper(textMapper)
                 radioButtonMapper = MaskAllRadioButtonMapper(textMapper)
                 switchCompatMapper = MaskAllSwitchCompatMapper(textMapper)
+                seekBarMapper = getMaskAllSeekBarMapper()
             }
         }
-
-        return listOf(
+        val mappersList = mutableListOf(
             MapperTypeWrapper(SwitchCompat::class.java, switchCompatMapper.toGenericMapper()),
             MapperTypeWrapper(RadioButton::class.java, radioButtonMapper.toGenericMapper()),
             MapperTypeWrapper(CheckBox::class.java, checkBoxMapper.toGenericMapper()),
-            MapperTypeWrapper(CheckedTextView::class.java, checkedTextViewMapper.toGenericMapper()),
+            MapperTypeWrapper(
+                CheckedTextView::class.java,
+                checkedTextViewMapper.toGenericMapper()
+            ),
             MapperTypeWrapper(Button::class.java, buttonMapper.toGenericMapper()),
             MapperTypeWrapper(EditText::class.java, editTextViewMapper.toGenericMapper()),
             MapperTypeWrapper(TextView::class.java, textMapper.toGenericMapper()),
             MapperTypeWrapper(ImageView::class.java, imageMapper.toGenericMapper())
         )
+        seekBarMapper?.let {
+            mappersList.add(0, MapperTypeWrapper(SeekBar::class.java, it.toGenericMapper()))
+        }
+        return mappersList
+    }
+
+    private fun getMaskAllSeekBarMapper(): MaskAllSeekBarWireframeMapper? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            MaskAllSeekBarWireframeMapper()
+        } else {
+            null
+        }
+    }
+
+    private fun getSeekBarMapper(): SeekBarWireframeMapper? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            SeekBarWireframeMapper()
+        } else {
+            null
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
