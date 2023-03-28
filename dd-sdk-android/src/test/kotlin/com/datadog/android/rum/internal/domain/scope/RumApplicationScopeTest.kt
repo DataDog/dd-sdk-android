@@ -131,7 +131,7 @@ internal class RumApplicationScopeTest {
     fun `create child session scope with sampling rate`() {
         val childScopes = testedScope.childScopes
 
-        assertThat(childScopes.count()).isEqualTo(1)
+        assertThat(childScopes).hasSize(1)
         val childScope = childScopes.firstOrNull()
         check(childScope is RumSessionScope)
         assertThat(childScope.samplingRate).isEqualTo(fakeSamplingRate)
@@ -165,10 +165,10 @@ internal class RumApplicationScopeTest {
     }
 
     @Test
-    fun `M have return active session W activeSession`() {
+    fun `M return active session W activeSession`() {
         // Then
         val activeSession = testedScope.activeSession
-        check(activeSession is RumSessionScope)
+        assertThat(activeSession).isInstanceOf(RumSessionScope::class.java)
     }
 
     @Test

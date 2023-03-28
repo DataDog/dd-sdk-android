@@ -13,15 +13,12 @@ import com.datadog.android.sdk.integration.R
 
 class KioskTrackedPlaygroundActivity : AppCompatActivity() {
 
-    lateinit var button: Button
-    lateinit var backButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.kiosk_tracked_layout)
-
-        button = findViewById(R.id.kiosk_button)
-        backButton = findViewById(R.id.kiosk_back_button)
+        
+        val backButton = findViewById(R.id.kiosk_back_button)
         backButton.setOnClickListener {
             finish()
         }

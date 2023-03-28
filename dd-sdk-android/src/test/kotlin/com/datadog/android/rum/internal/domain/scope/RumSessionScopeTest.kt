@@ -209,7 +209,7 @@ internal class RumSessionScopeTest {
     // region Stopping Sessions
 
     @Test
-    fun `M set session active to false W hanldeEvent { StopSession }`() {
+    fun `M set session active to false W handleEvent { StopSession }`() {
         // Given
         whenever(mockChildScope.handleEvent(any(), any())) doReturn null
 
