@@ -10,7 +10,6 @@ import android.view.KeyEvent
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.Window
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -31,7 +30,8 @@ internal class WindowCallbackWrapper(
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         MotionEvent.obtain(it)
     },
-    val targetAttributesProviders: Array<ViewAttributesProvider> = emptyArray()
+    val targetAttributesProviders: Array<ViewAttributesProvider> = emptyArray(),
+    val internalLogger: InternalLogger
 ) : Window.Callback by wrappedCallback {
 
     internal val windowReference = WeakReference(window)

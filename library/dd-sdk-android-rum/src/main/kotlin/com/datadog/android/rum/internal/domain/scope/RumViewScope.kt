@@ -17,7 +17,6 @@ import androidx.navigation.NavController
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
@@ -273,7 +272,7 @@ internal open class RumViewScope(
                     currentRumContext.clear()
                     currentRumContext.putAll(newRumContext.toMap())
                 } else {
-                    internalLogger.log(
+                    sdkCore._internalLogger.log(
                         InternalLogger.Level.DEBUG,
                         targets = listOf(
                             InternalLogger.Target.MAINTAINER,
@@ -314,7 +313,7 @@ internal open class RumViewScope(
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
                 return
             } else {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     ACTION_DROPPED_WARNING.format(Locale.US, event.type, event.name)
@@ -426,7 +425,10 @@ internal open class RumViewScope(
                         type = ErrorEvent.ErrorEventSessionType.USER,
                         hasReplay = hasReplay
                     ),
-                    source = ErrorEvent.ErrorEventSource.tryFromSource(datadogContext.source),
+                    source = ErrorEvent.ErrorEventSource.tryFromSource(
+                        datadogContext.source,
+                        sdkCore._internalLogger
+                    ),
                     os = ErrorEvent.Os(
                         name = datadogContext.deviceInfo.osName,
                         version = datadogContext.deviceInfo.osVersion,
@@ -542,7 +544,7 @@ internal open class RumViewScope(
                 currentRumContext.clear()
                 currentRumContext.putAll(newRumContext.toMap())
             } else {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.DEBUG,
                     targets = listOf(
                         InternalLogger.Target.MAINTAINER,
@@ -747,7 +749,10 @@ internal open class RumViewScope(
                         type = ViewEvent.ViewEventSessionType.USER,
                         hasReplay = hasReplay
                     ),
-                    source = ViewEvent.Source.tryFromSource(datadogContext.source),
+                    source = ViewEvent.Source.tryFromSource(
+                        datadogContext.source,
+                        sdkCore._internalLogger
+                    ),
                     os = ViewEvent.Os(
                         name = datadogContext.deviceInfo.osName,
                         version = datadogContext.deviceInfo.osVersion,
@@ -778,7 +783,7 @@ internal open class RumViewScope(
     private fun resolveViewDuration(event: RumRawEvent): Long {
         val duration = event.eventTime.nanoTime - startedNanos
         return if (duration <= 0) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, name)
@@ -870,7 +875,10 @@ internal open class RumViewScope(
                         type = ActionEvent.ActionEventSessionType.USER,
                         hasReplay = false
                     ),
-                    source = ActionEvent.Source.tryFromSource(datadogContext.source),
+                    source = ActionEvent.Source.tryFromSource(
+                        datadogContext.source,
+                        sdkCore._internalLogger
+                    ),
                     os = ActionEvent.Os(
                         name = datadogContext.deviceInfo.osName,
                         version = datadogContext.deviceInfo.osVersion,
@@ -945,7 +953,10 @@ internal open class RumViewScope(
                         type = LongTaskEvent.LongTaskEventSessionType.USER,
                         hasReplay = hasReplay
                     ),
-                    source = LongTaskEvent.Source.tryFromSource(datadogContext.source),
+                    source = LongTaskEvent.Source.tryFromSource(
+                        datadogContext.source,
+                        sdkCore._internalLogger
+                    ),
                     os = LongTaskEvent.Os(
                         name = datadogContext.deviceInfo.osName,
                         version = datadogContext.deviceInfo.osVersion,
@@ -1006,7 +1017,7 @@ internal open class RumViewScope(
             is android.app.Fragment -> key.activity
             is NavigationViewTrackingStrategy.NavigationKey -> {
                 if (navControllerActivityField == null) {
-                    internalLogger.log(
+                    sdkCore._internalLogger.log(
                         InternalLogger.Level.WARN,
                         InternalLogger.Target.TELEMETRY,
                         "Unable to retrieve the activity field from the navigationController"
@@ -1017,7 +1028,7 @@ internal open class RumViewScope(
                     try {
                         navControllerActivityField.get(key.controller) as? Activity
                     } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-                        internalLogger.log(
+                        sdkCore._internalLogger.log(
                             InternalLogger.Level.WARN,
                             InternalLogger.Target.TELEMETRY,
                             "Unable to retrieve the activity value from the navigationController",
@@ -1031,7 +1042,7 @@ internal open class RumViewScope(
         }
 
         if (activity == null) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.TELEMETRY,
                 "Unable to retrieve the activity from $key, " +

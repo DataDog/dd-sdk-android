@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.GlobalRum.get
 import com.datadog.android.rum.GlobalRum.registerIfAbsent
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -79,7 +78,8 @@ object GlobalRum {
     @JvmStatic
     fun registerIfAbsent(provider: Callable<RumMonitor>): Boolean {
         return if (isRegistered.get()) {
-            internalLogger.log(
+            // TODO RUMM-0000 associate with SDK instance?
+            InternalLogger.UNBOUND.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 "RumMonitor has already been registered"
@@ -90,7 +90,8 @@ object GlobalRum {
             monitor = provider.call()
             true
         } else {
-            internalLogger.log(
+            // TODO RUMM-0000 associate with SDK instance?
+            InternalLogger.UNBOUND.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 "Unable to register the RumMonitor"

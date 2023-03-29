@@ -14,8 +14,8 @@ import android.view.View
 import android.view.Window
 import com.datadog.android.Datadog
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -58,6 +58,9 @@ internal abstract class AbstractGesturesListenerTest {
 
     @Mock
     lateinit var mockWindow: Window
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     // region Tests
 
@@ -145,12 +148,11 @@ internal abstract class AbstractGesturesListenerTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, rumMonitor)
+            return listOf(rumMonitor)
         }
     }
 }

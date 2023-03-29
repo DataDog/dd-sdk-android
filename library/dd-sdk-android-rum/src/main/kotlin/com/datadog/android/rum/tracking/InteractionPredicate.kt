@@ -6,12 +6,9 @@
 
 package com.datadog.android.rum.tracking
 
-import com.datadog.tools.annotation.NoOpImplementation
-
 /**
  * Provides custom attributes for the events produced by the user action tracking strategy.
  */
-@NoOpImplementation
 interface InteractionPredicate {
     /**
      * Sets a custom name for the intercepted touch target.

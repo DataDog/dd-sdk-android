@@ -7,6 +7,7 @@
 package com.datadog.android.rum.tracking
 
 import android.content.Context
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -16,10 +17,11 @@ import com.datadog.tools.annotation.NoOpImplementation
 interface TrackingStrategy {
 
     /**
-     * This method will register the tracking strategy to the current Context.
+     * This method will register the tracking strategy to the current Context and SDK instance.
+     * @param sdkCore as [SdkCore]
      * @param context as [Context]
      */
-    fun register(context: Context)
+    fun register(sdkCore: SdkCore, context: Context)
 
     /**
      * This method will unregister the tracking strategy from the current Context.

@@ -12,6 +12,7 @@ import android.view.Window
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.ObjectTest
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -50,19 +51,23 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
     lateinit var mockInteractionPredicate: InteractionPredicate
 
     @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
     lateinit var mockGestureDetector: GesturesDetectorWrapper
 
     @BeforeEach
     fun `set up`() {
         testedTracker =
-            DatadogGesturesTracker(emptyArray(), mockInteractionPredicate)
+            DatadogGesturesTracker(emptyArray(), mockInteractionPredicate, mockInternalLogger)
         whenever(mockActivity.window).thenReturn(mockWindow)
     }
 
     override fun createInstance(forge: Forge): DatadogGesturesTracker {
         return DatadogGesturesTracker(
             forge.aList { StubViewAttributesProvider(anAlphabeticalString()) }.toTypedArray(),
-            NoOpInteractionPredicate()
+            NoOpInteractionPredicate(),
+            mockInternalLogger
         )
     }
 
@@ -75,7 +80,8 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
                 check(it is StubViewAttributesProvider)
                 StubViewAttributesProvider(it.name)
             }.toTypedArray(),
-            NoOpInteractionPredicate()
+            NoOpInteractionPredicate(),
+            mockInternalLogger
         )
     }
 
@@ -88,7 +94,8 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
                 check(it is StubViewAttributesProvider)
                 StubViewAttributesProvider(it.name + forge.aNumericalString())
             }.toTypedArray(),
-            StubInteractionPredicate()
+            StubInteractionPredicate(),
+            mockInternalLogger
         )
     }
 
@@ -116,7 +123,8 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
                 WindowCallbackWrapper(
                     mockWindow,
                     NoOpWindowCallback(),
-                    mockGestureDetector
+                    mockGestureDetector,
+                    internalLogger = mockInternalLogger
                 )
             )
 
@@ -136,7 +144,8 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
                 WindowCallbackWrapper(
                     mockWindow,
                     previousCallback,
-                    mockGestureDetector
+                    mockGestureDetector,
+                    internalLogger = mockInternalLogger
                 )
             )
 

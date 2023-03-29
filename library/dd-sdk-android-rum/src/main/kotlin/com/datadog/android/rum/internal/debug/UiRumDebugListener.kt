@@ -23,7 +23,6 @@ import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import androidx.core.view.setPadding
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
@@ -31,7 +30,7 @@ import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 import kotlin.math.pow
 
-internal class UiRumDebugListener :
+internal class UiRumDebugListener(private val internalLogger: InternalLogger) :
     Application.ActivityLifecycleCallbacks, RumDebugListener {
 
     internal var rumViewsContainer: LinearLayout? = null

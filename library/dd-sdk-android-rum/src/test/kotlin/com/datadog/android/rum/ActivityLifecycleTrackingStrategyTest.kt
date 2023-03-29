@@ -14,10 +14,13 @@ import android.view.Window
 import com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.ObjectTest
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -58,18 +61,22 @@ internal abstract class ActivityLifecycleTrackingStrategyTest<T> : ObjectTest<T>
     lateinit var mockAppContext: Application
 
     @Mock
+    lateinit var mockSdkCore: SdkCore
+
+    @Mock
     lateinit var mockBadContext: Context
 
     @BeforeEach
     open fun `set up`(forge: Forge) {
         whenever(mockActivity.intent).thenReturn(mockIntent)
         whenever(mockActivity.window).thenReturn(mockWindow)
+        whenever(mockSdkCore._internalLogger) doReturn mock()
     }
 
     @Test
     fun `when register it will register as lifecycle callback`() {
         // When
-        testedStrategy.register(mockAppContext)
+        testedStrategy.register(mockSdkCore, mockAppContext)
 
         // verify
         verify(mockAppContext).registerActivityLifecycleCallbacks(testedStrategy)
@@ -87,7 +94,7 @@ internal abstract class ActivityLifecycleTrackingStrategyTest<T> : ObjectTest<T>
     @Test
     fun `when register called with non application context will do nothing`() {
         // When
-        testedStrategy.register(mockBadContext)
+        testedStrategy.register(mockSdkCore, mockBadContext)
 
         // verify
         verifyZeroInteractions(mockBadContext)

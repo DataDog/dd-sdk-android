@@ -6,6 +6,7 @@
 
 package com.datadog.android.telemetry.internal
 
+import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -42,7 +43,7 @@ internal class TelemetryCoreConfigurationTest {
         )
 
         // When
-        val coreConfig = TelemetryCoreConfiguration.fromEvent(event)
+        val coreConfig = TelemetryCoreConfiguration.fromEvent(event, internalLogger = mock())
 
         // Then
         assertThat(coreConfig).isNotNull
@@ -61,7 +62,7 @@ internal class TelemetryCoreConfigurationTest {
         ) fakeEvent: Map<String, String>
     ) {
         // When
-        val coreConfig = TelemetryCoreConfiguration.fromEvent(fakeEvent)
+        val coreConfig = TelemetryCoreConfiguration.fromEvent(fakeEvent, internalLogger = mock())
 
         // Then
         assertThat(coreConfig).isNull()

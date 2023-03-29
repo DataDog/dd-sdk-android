@@ -19,6 +19,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
+import com.datadog.android.v2.api.InternalLogger
 
 internal open class AndroidXFragmentLifecycleCallbacks(
     internal val argumentsProvider: (Fragment) -> Map<String, Any?>,
@@ -26,7 +27,8 @@ internal open class AndroidXFragmentLifecycleCallbacks(
     internal var viewLoadingTimer: ViewLoadingTimer = ViewLoadingTimer(),
     private val rumFeature: RumFeature,
     private val rumMonitor: RumMonitor,
-    private val advancedRumMonitor: AdvancedRumMonitor
+    private val advancedRumMonitor: AdvancedRumMonitor,
+    private val internalLogger: InternalLogger
 ) : FragmentLifecycleCallbacks<FragmentActivity>, FragmentManager.FragmentLifecycleCallbacks() {
 
     // region FragmentLifecycleCallbacks
@@ -45,14 +47,14 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 
     override fun onFragmentAttached(fm: FragmentManager, f: Fragment, context: Context) {
         super.onFragmentAttached(fm, f, context)
-        componentPredicate.runIfValid(f) {
+        componentPredicate.runIfValid(f, internalLogger) {
             viewLoadingTimer.onCreated(resolveKey(it))
         }
     }
 
     override fun onFragmentStarted(fm: FragmentManager, f: Fragment) {
         super.onFragmentStarted(fm, f)
-        componentPredicate.runIfValid(f) {
+        componentPredicate.runIfValid(f, internalLogger) {
             viewLoadingTimer.onStartLoading(resolveKey(it))
         }
     }
@@ -77,7 +79,7 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
-        componentPredicate.runIfValid(f) {
+        componentPredicate.runIfValid(f, internalLogger) {
             val key = resolveKey(it)
             viewLoadingTimer.onFinishedLoading(key)
             val viewName = componentPredicate.resolveViewName(f)
@@ -96,7 +98,7 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 
     override fun onFragmentPaused(fm: FragmentManager, f: Fragment) {
         super.onFragmentPaused(fm, f)
-        componentPredicate.runIfValid(f) {
+        componentPredicate.runIfValid(f, internalLogger) {
             val key = resolveKey(it)
             rumMonitor.stopView(key)
             viewLoadingTimer.onPaused(key)
@@ -105,7 +107,7 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 
     override fun onFragmentDestroyed(fm: FragmentManager, f: Fragment) {
         super.onFragmentDestroyed(fm, f)
-        componentPredicate.runIfValid(f) {
+        componentPredicate.runIfValid(f, internalLogger) {
             viewLoadingTimer.onDestroyed(resolveKey(it))
         }
     }

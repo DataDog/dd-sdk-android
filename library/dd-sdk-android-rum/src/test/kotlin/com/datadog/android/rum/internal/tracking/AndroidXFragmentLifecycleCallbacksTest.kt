@@ -101,7 +101,8 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
             viewLoadingTimer = mockViewLoadingTimer,
             rumMonitor = mockRumMonitor,
             advancedRumMonitor = mockAdvancedRumMonitor,
-            rumFeature = mockRumFeature
+            rumFeature = mockRumFeature,
+            internalLogger = mock()
         )
     }
 

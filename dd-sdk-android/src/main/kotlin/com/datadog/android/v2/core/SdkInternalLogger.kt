@@ -142,12 +142,6 @@ internal class SdkInternalLogger(
     companion object {
         internal const val SDK_LOG_TAG = "DD_LOG"
         internal const val DEV_LOG_TAG = "Datadog"
-
-        /**
-         * Logger for the cases when SDK instance is not yet available. Try to use the logger
-         * provided by [SdkCore._internalLogger] instead if possible.
-         */
-        val UNBOUND = SdkInternalLogger(null)
     }
 
     // endregion

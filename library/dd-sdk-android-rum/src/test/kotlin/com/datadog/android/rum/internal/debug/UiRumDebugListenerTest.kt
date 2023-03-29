@@ -19,7 +19,6 @@ import android.widget.TextView
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -70,11 +69,14 @@ internal class UiRumDebugListenerTest {
     @Mock
     lateinit var mockContentView: FrameLayout
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     private lateinit var testedListener: UiRumDebugListener
 
     @BeforeEach
     fun setUp() {
-        testedListener = UiRumDebugListener()
+        testedListener = UiRumDebugListener(mockInternalLogger)
 
         whenever(mockDecorView.findViewById<View>(android.R.id.content)) doReturn mockContentView
         whenever(mockWindow.decorView) doReturn mockDecorView
@@ -92,7 +94,7 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityResumed(mockActivity)
 
         // THEN
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
@@ -110,7 +112,7 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityResumed(mockActivity)
 
         // THEN
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
@@ -128,7 +130,7 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityResumed(mockActivity)
 
         // THEN
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
@@ -141,13 +143,13 @@ internal class UiRumDebugListenerTest {
     fun `M log a warning W onActivityResumed() { RUM monitor is not AdvancedRumMonitor }`() {
         // GIVEN
         GlobalRum.monitor = mock()
-        testedListener = UiRumDebugListener()
+        testedListener = UiRumDebugListener(mockInternalLogger)
 
         // WHEN
         testedListener.onActivityResumed(mockActivity)
 
         // THEN
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             UiRumDebugListener.MISSING_RUM_MONITOR_TYPE.format(
@@ -169,7 +171,7 @@ internal class UiRumDebugListenerTest {
 
         assertThat(testedListener.rumViewsContainer).isNotNull
 
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -179,7 +181,7 @@ internal class UiRumDebugListenerTest {
 
         // THEN
         verify(rumMonitor.mockInstance).setDebugListener(testedListener)
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -214,7 +216,7 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityStopped(mockActivity)
 
         // THEN
-        verifyZeroInteractions(mockActivity, logger.mockInternalLogger, rumMonitor.mockInstance)
+        verifyZeroInteractions(mockActivity, mockInternalLogger, rumMonitor.mockInstance)
     }
 
     // endregion
@@ -339,12 +341,11 @@ internal class UiRumDebugListenerTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, rumMonitor)
+            return listOf(rumMonitor)
         }
     }
 }

@@ -6,7 +6,6 @@
 
 package com.datadog.android.telemetry.internal
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.InternalLogger
 
 internal data class TelemetryCoreConfiguration(
@@ -19,7 +18,7 @@ internal data class TelemetryCoreConfiguration(
     val useLocalEncryption: Boolean
 ) {
     companion object {
-        fun fromEvent(event: Map<*, *>): TelemetryCoreConfiguration? {
+        fun fromEvent(event: Map<*, *>, internalLogger: InternalLogger): TelemetryCoreConfiguration? {
             val trackErrors = event["track_errors"] as? Boolean
             val batchSize = event["batch_size"] as? Long
             val batchUploadFrequency = event["batch_upload_frequency"] as? Long

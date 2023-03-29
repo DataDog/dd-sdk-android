@@ -59,7 +59,8 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
                     rumMonitor = GlobalRum.get(),
                     advancedRumMonitor = GlobalRum.get() as? AdvancedRumMonitor
                         ?: NoOpAdvancedRumMonitor(),
-                    rumFeature = rumFeature
+                    rumFeature = rumFeature,
+                    internalLogger = internalLogger
                 )
             } else {
                 NoOpFragmentLifecycleCallbacks()
@@ -79,7 +80,8 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
                     rumMonitor = GlobalRum.get(),
                     advancedRumMonitor = GlobalRum.get() as? AdvancedRumMonitor
                         ?: NoOpAdvancedRumMonitor(),
-                    rumFeature = rumFeature
+                    rumFeature = rumFeature,
+                    internalLogger = internalLogger
                 )
             } else {
                 NoOpFragmentLifecycleCallbacks()

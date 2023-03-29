@@ -244,7 +244,10 @@ internal class RumActionScope(
                         type = ActionEvent.ActionEventSessionType.USER,
                         hasReplay = hasReplay
                     ),
-                    source = ActionEvent.Source.tryFromSource(datadogContext.source),
+                    source = ActionEvent.Source.tryFromSource(
+                        datadogContext.source,
+                        sdkCore._internalLogger
+                    ),
                     usr = if (user.hasUserData()) {
                         ActionEvent.Usr(
                             id = user.id,

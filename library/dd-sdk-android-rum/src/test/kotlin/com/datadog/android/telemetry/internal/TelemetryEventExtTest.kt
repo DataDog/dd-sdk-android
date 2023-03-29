@@ -6,18 +6,15 @@
 
 package com.datadog.android.telemetry.internal
 
-import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.forge.aStringNotMatchingSet
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -30,8 +27,7 @@ import org.junit.jupiter.api.extension.Extensions
 import java.util.Locale
 
 @Extensions(
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 internal class TelemetryEventExtTest {
@@ -58,7 +54,7 @@ internal class TelemetryEventExtTest {
     @Test
     fun `M resolve the TelemetryDebugEvent source W telemetryDebugEventSource`() {
         assertThat(
-            TelemetryDebugEvent.Source.tryFromSource(fakeValidTelemetrySource)
+            TelemetryDebugEvent.Source.tryFromSource(fakeValidTelemetrySource, mock())
                 ?.toJson()?.asString
         )
             .isEqualTo(fakeValidTelemetrySource)
@@ -66,16 +62,17 @@ internal class TelemetryEventExtTest {
 
     @Test
     fun `M return null W telemetryDebugEventSource { unknown source }`() {
-        assertThat(TelemetryDebugEvent.Source.tryFromSource(fakeInvalidSource)).isNull()
+        assertThat(TelemetryDebugEvent.Source.tryFromSource(fakeInvalidSource, mock())).isNull()
     }
 
     @Test
     fun `M send an error dev log W telemetryDebugEventSource { unknown source }`() {
         // When
-        TelemetryDebugEvent.Source.tryFromSource(fakeInvalidSource)
+        val mockInternalLogger = mock<InternalLogger>()
+        TelemetryDebugEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.USER),
             eq(
@@ -93,7 +90,7 @@ internal class TelemetryEventExtTest {
     @Test
     fun `M resolve the TelemetryErrorEvent source W telemetryErrorEventSource`() {
         assertThat(
-            TelemetryErrorEvent.Source.tryFromSource(fakeValidTelemetrySource)
+            TelemetryErrorEvent.Source.tryFromSource(fakeValidTelemetrySource, mock())
                 ?.toJson()?.asString
         )
             .isEqualTo(fakeValidTelemetrySource)
@@ -101,16 +98,17 @@ internal class TelemetryEventExtTest {
 
     @Test
     fun `M return null W telemetryErrorEventSource { unknown source }`() {
-        assertThat(TelemetryErrorEvent.Source.tryFromSource(fakeInvalidSource)).isNull()
+        assertThat(TelemetryErrorEvent.Source.tryFromSource(fakeInvalidSource, mock())).isNull()
     }
 
     @Test
     fun `M send an error dev log W telemetryErrorEventSource { unknown source }`() {
         // When
-        TelemetryErrorEvent.Source.tryFromSource(fakeInvalidSource)
+        val mockInternalLogger = mock<InternalLogger>()
+        TelemetryErrorEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.USER),
             eq(
@@ -128,7 +126,7 @@ internal class TelemetryEventExtTest {
     @Test
     fun `M resolve the TelemetryConfigurationEvent source W telemetryConfigurationEventSource`() {
         assertThat(
-            TelemetryConfigurationEvent.Source.tryFromSource(fakeValidTelemetrySource)
+            TelemetryConfigurationEvent.Source.tryFromSource(fakeValidTelemetrySource, mock())
                 ?.toJson()?.asString
         )
             .isEqualTo(fakeValidTelemetrySource)
@@ -136,16 +134,19 @@ internal class TelemetryEventExtTest {
 
     @Test
     fun `M return null W telemetryConfigurationEventSource { unknown source }`() {
-        assertThat(TelemetryConfigurationEvent.Source.tryFromSource(fakeInvalidSource)).isNull()
+        assertThat(
+            TelemetryConfigurationEvent.Source.tryFromSource(fakeInvalidSource, mock())
+        ).isNull()
     }
 
     @Test
     fun `M send an error dev log W telemetryConfigurationEventSource { unknown source }`() {
         // When
-        TelemetryConfigurationEvent.Source.tryFromSource(fakeInvalidSource)
+        val mockInternalLogger = mock<InternalLogger>()
+        TelemetryConfigurationEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.USER),
             eq(
@@ -157,14 +158,4 @@ internal class TelemetryEventExtTest {
     }
 
     // endregion
-
-    companion object {
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
-    }
 }

@@ -14,7 +14,6 @@ import android.view.ViewGroup
 import android.view.Window
 import android.widget.AbsListView
 import androidx.core.view.ScrollingView
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -32,7 +31,8 @@ internal class GesturesListener(
     private val windowReference: WeakReference<Window>,
     private val attributesProviders: Array<ViewAttributesProvider> = emptyArray(),
     private val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate(),
-    private val contextRef: Reference<Context>
+    private val contextRef: Reference<Context>,
+    private val internalLogger: InternalLogger
 ) : GestureDetector.OnGestureListener {
 
     private val coordinatesContainer = IntArray(2)

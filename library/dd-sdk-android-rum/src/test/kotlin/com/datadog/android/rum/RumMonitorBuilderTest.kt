@@ -13,7 +13,6 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.utils.config.DatadogSingletonTestConfiguration
-import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
@@ -65,6 +64,9 @@ internal class RumMonitorBuilderTest {
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`(
         forge: Forge
@@ -83,6 +85,7 @@ internal class RumMonitorBuilderTest {
         whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
 
         testedBuilder = RumMonitor.Builder(mockSdkCore)
     }
@@ -190,12 +193,13 @@ internal class RumMonitorBuilderTest {
     fun `𝕄 builds nothing 𝕎 build() and SDK instance doesn't implement InternalSdkCore`() {
         // Given
         val wrongSdkCore = mock<SdkCore>()
+        whenever(wrongSdkCore._internalLogger) doReturn mockInternalLogger
 
         // When
         val monitor = RumMonitor.Builder(wrongSdkCore).build()
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             RumMonitor.Builder.UNEXPECTED_SDK_CORE_TYPE
@@ -212,7 +216,7 @@ internal class RumMonitorBuilderTest {
         val monitor = testedBuilder.build()
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             RumMonitor.Builder.RUM_NOT_ENABLED_ERROR_MESSAGE
@@ -231,7 +235,7 @@ internal class RumMonitorBuilderTest {
         val monitor = testedBuilder.build()
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             RumMonitor.Builder.INVALID_APPLICATION_ID_ERROR_MESSAGE
@@ -240,13 +244,12 @@ internal class RumMonitorBuilderTest {
     }
 
     companion object {
-        val logger = InternalLoggerTestConfiguration()
         val datadog = DatadogSingletonTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, datadog)
+            return listOf(datadog)
         }
     }
 }

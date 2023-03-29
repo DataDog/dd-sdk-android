@@ -20,6 +20,7 @@ import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.core.InternalSdkCore
@@ -77,6 +78,9 @@ internal class RumActionScopeTest {
 
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockRumFeatureScope: FeatureScope
@@ -142,6 +146,7 @@ internal class RumActionScopeTest {
         fakeKey = forge.anAsciiString().toByteArray()
 
         whenever(mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {

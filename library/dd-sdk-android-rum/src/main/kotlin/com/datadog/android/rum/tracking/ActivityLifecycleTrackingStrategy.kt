@@ -11,8 +11,8 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 
 /**
  * The ActivityLifecycleTrackingStrategy as an [Application.ActivityLifecycleCallbacks]
@@ -22,13 +22,16 @@ abstract class ActivityLifecycleTrackingStrategy :
     Application.ActivityLifecycleCallbacks,
     TrackingStrategy {
 
+    internal lateinit var internalLogger: InternalLogger
+
     // region TrackingStrategy
 
-    override fun register(context: Context) {
+    override fun register(sdkCore: SdkCore, context: Context) {
+        internalLogger = sdkCore._internalLogger
         if (context is Application) {
             context.registerActivityLifecycleCallbacks(this)
         } else {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
                 "In order to use the RUM automatic tracking feature you will have" +

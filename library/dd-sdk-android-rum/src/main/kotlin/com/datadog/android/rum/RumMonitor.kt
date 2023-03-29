@@ -11,7 +11,6 @@ import android.os.Handler
 import android.os.Looper
 import androidx.annotation.FloatRange
 import androidx.fragment.app.Fragment
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
@@ -300,7 +299,7 @@ interface RumMonitor {
          */
         fun build(): RumMonitor {
             if (sdkCore !is InternalSdkCore) {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     UNEXPECTED_SDK_CORE_TYPE
@@ -311,14 +310,14 @@ interface RumMonitor {
             val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
                 ?.unwrap<RumFeature>()
             return if (rumFeature == null) {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     RUM_NOT_ENABLED_ERROR_MESSAGE
                 )
                 NoOpRumMonitor()
             } else if (rumFeature.applicationId.isBlank()) {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     INVALID_APPLICATION_ID_ERROR_MESSAGE

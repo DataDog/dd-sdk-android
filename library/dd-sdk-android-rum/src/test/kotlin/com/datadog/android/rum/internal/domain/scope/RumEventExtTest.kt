@@ -18,6 +18,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.context.DeviceType
 import com.datadog.android.v2.api.context.NetworkInfo
+import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -45,7 +46,7 @@ internal class RumEventExtTest {
         val name = method.name
 
         // When
-        val result = name.toMethod()
+        val result = name.toMethod(internalLogger = mock())
 
         // Then
         assertThat(result).isEqualTo(method)
@@ -56,7 +57,7 @@ internal class RumEventExtTest {
         @StringForgery(type = StringForgeryType.NUMERICAL) name: String
     ) {
         // When
-        val result = name.toMethod()
+        val result = name.toMethod(internalLogger = mock())
 
         // Then
         assertThat(result).isEqualTo(ResourceEvent.Method.GET)
@@ -71,7 +72,7 @@ internal class RumEventExtTest {
         val name = method.name
 
         // When
-        val result = name.toErrorMethod()
+        val result = name.toErrorMethod(internalLogger = mock())
 
         // Then
         assertThat(result).isEqualTo(method)
@@ -82,7 +83,7 @@ internal class RumEventExtTest {
         @StringForgery(type = StringForgeryType.NUMERICAL) name: String
     ) {
         // When
-        val result = name.toErrorMethod()
+        val result = name.toErrorMethod(internalLogger = mock())
 
         // Then
         assertThat(result).isEqualTo(ErrorEvent.Method.GET)

@@ -10,17 +10,18 @@ import android.content.Context
 import android.view.Window
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
+import com.datadog.android.v2.api.InternalLogger
 import java.lang.ref.WeakReference
 
 internal class DatadogGesturesTracker(
     internal val targetAttributesProviders: Array<ViewAttributesProvider>,
-    internal val interactionPredicate: InteractionPredicate
+    internal val interactionPredicate: InteractionPredicate,
+    private val internalLogger: InternalLogger
 ) : GesturesTracker {
 
     // region GesturesTracker
 
     override fun startTracking(window: Window?, context: Context) {
-        @Suppress("SENSELESS_COMPARISON")
         if (window == null) {
             return
         }
@@ -33,7 +34,8 @@ internal class DatadogGesturesTracker(
             toWrap,
             gesturesDetector,
             interactionPredicate,
-            targetAttributesProviders = targetAttributesProviders
+            targetAttributesProviders = targetAttributesProviders,
+            internalLogger = internalLogger
         )
     }
 
@@ -95,7 +97,8 @@ internal class DatadogGesturesTracker(
                 WeakReference(window),
                 targetAttributesProviders,
                 interactionPredicate,
-                WeakReference(context)
+                WeakReference(context),
+                internalLogger
             )
         )
     }

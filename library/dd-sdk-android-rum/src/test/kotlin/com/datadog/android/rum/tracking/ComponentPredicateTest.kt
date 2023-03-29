@@ -11,6 +11,7 @@ import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.resolveViewUrl
 import com.datadog.android.rum.utils.runIfValid
+import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -44,6 +45,9 @@ class ComponentPredicateTest {
     @Mock
     lateinit var mockBlankActivity: Activity
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @StringForgery
     lateinit var fakeValidName: String
 
@@ -71,7 +75,7 @@ class ComponentPredicateTest {
     fun `M not execute operation W runIfValid() {invalid}`() {
         var operationExecuted = false
 
-        testedPredicate.runIfValid(mockInvalidActivity) {
+        testedPredicate.runIfValid(mockInvalidActivity, mockInternalLogger) {
             operationExecuted = true
         }
 
@@ -81,7 +85,7 @@ class ComponentPredicateTest {
     @Test
     fun `M execute operation W runIfValid() {valid}`() {
         var operationExecuted = false
-        testedPredicate.runIfValid(mockValidActivity) {
+        testedPredicate.runIfValid(mockValidActivity, mockInternalLogger) {
             operationExecuted = true
         }
         assertThat(operationExecuted).isTrue()

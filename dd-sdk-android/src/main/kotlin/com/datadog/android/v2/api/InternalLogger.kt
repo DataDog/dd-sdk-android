@@ -6,6 +6,7 @@
 
 package com.datadog.android.v2.api
 
+import com.datadog.android.v2.core.SdkInternalLogger
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -61,4 +62,13 @@ interface InternalLogger {
         message: String,
         throwable: Throwable? = null
     )
+
+    companion object {
+
+        /**
+         * Logger for the cases when SDK instance is not yet available. Try to use the logger
+         * provided by [SdkCore._internalLogger] instead if possible.
+         */
+        val UNBOUND: InternalLogger = SdkInternalLogger(null)
+    }
 }
