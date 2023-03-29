@@ -7,7 +7,6 @@
 package com.datadog.android.webview.internal
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
@@ -18,7 +17,8 @@ import java.util.Locale.US
 
 internal class MixedWebViewEventConsumer(
     internal val rumEventConsumer: WebViewEventConsumer<JsonObject>,
-    internal val logsEventConsumer: WebViewEventConsumer<Pair<JsonObject, String>>
+    internal val logsEventConsumer: WebViewEventConsumer<Pair<JsonObject, String>>,
+    private val internalLogger: InternalLogger
 ) : WebViewEventConsumer<String> {
 
     @WorkerThread

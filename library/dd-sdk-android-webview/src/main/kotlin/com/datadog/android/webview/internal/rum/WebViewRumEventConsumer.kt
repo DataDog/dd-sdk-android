@@ -7,7 +7,6 @@
 package com.datadog.android.webview.internal.rum
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
@@ -24,7 +23,8 @@ internal class WebViewRumEventConsumer(
     private val sdkCore: SdkCore,
     internal val dataWriter: DataWriter<JsonObject>,
     private val webViewRumEventMapper: WebViewRumEventMapper = WebViewRumEventMapper(),
-    private val contextProvider: WebViewRumEventContextProvider = WebViewRumEventContextProvider()
+    private val contextProvider: WebViewRumEventContextProvider =
+        WebViewRumEventContextProvider(sdkCore._internalLogger)
 ) : WebViewEventConsumer<JsonObject> {
 
     internal val offsets: LinkedHashMap<String, Long> = LinkedHashMap()
@@ -56,28 +56,28 @@ internal class WebViewRumEventConsumer(
                 ?.asString?.let { getOffset(it, datadogContext) } ?: 0L
             return webViewRumEventMapper.mapEvent(event, rumContext, timeOffset)
         } catch (e: ClassCastException) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 JSON_PARSING_ERROR_MESSAGE,
                 e
             )
         } catch (e: NumberFormatException) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 JSON_PARSING_ERROR_MESSAGE,
                 e
             )
         } catch (e: IllegalStateException) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 JSON_PARSING_ERROR_MESSAGE,
                 e
             )
         } catch (e: UnsupportedOperationException) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 JSON_PARSING_ERROR_MESSAGE,
@@ -106,7 +106,7 @@ internal class WebViewRumEventConsumer(
                 }
             } catch (e: NoSuchElementException) {
                 // it should not happen but just in case.
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.ERROR,
                     targets = listOf(
                         InternalLogger.Target.MAINTAINER,

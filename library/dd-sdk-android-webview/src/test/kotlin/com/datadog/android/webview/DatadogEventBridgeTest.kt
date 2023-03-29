@@ -8,7 +8,6 @@ package com.datadog.android.webview
 
 import android.webkit.WebSettings
 import android.webkit.WebView
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
@@ -24,9 +23,6 @@ import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.android.webview.internal.storage.NoOpDataWriter
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
@@ -57,8 +53,7 @@ import java.net.URL
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -71,6 +66,9 @@ internal class DatadogEventBridgeTest {
 
     @Mock
     lateinit var mockCore: SdkCore
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockRumFeatureScope: FeatureScope
@@ -105,6 +103,7 @@ internal class DatadogEventBridgeTest {
         whenever(
             mockLogsFeatureScope.unwrap<StorageBackedFeature>()
         ) doReturn mockLogsFeature
+        whenever(mockCore._internalLogger) doReturn mockInternalLogger
 
         whenever(mockRumFeature.requestFactory) doReturn mockRumRequestFactory
         whenever(mockLogsFeature.requestFactory) doReturn mockLogsRequestFactory
@@ -188,7 +187,7 @@ internal class DatadogEventBridgeTest {
                 .isSameAs(mockLogsRequestFactory)
         }
 
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
@@ -233,7 +232,7 @@ internal class DatadogEventBridgeTest {
                 .isSameAs(mockRumRequestFactory)
         }
 
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
@@ -346,7 +345,7 @@ internal class DatadogEventBridgeTest {
             argThat { this is DatadogEventBridge },
             eq(DatadogEventBridge.DATADOG_EVENT_BRIDGE_NAME)
         )
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             DatadogEventBridge.JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE
@@ -407,15 +406,5 @@ internal class DatadogEventBridgeTest {
             fakeWebEvent.addProperty(MixedWebViewEventConsumer.EVENT_TYPE_KEY, it)
         }
         return fakeWebEvent
-    }
-
-    companion object {
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
     }
 }

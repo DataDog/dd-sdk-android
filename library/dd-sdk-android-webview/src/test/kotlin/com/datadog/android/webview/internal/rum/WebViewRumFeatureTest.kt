@@ -13,7 +13,9 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.webview.internal.storage.NoOpDataWriter
 import com.datadog.android.webview.internal.storage.WebViewDataWriter
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -46,6 +48,7 @@ internal class WebViewRumFeatureTest {
     @BeforeEach
     fun `set up`() {
         testedFeature = WebViewRumFeature(mockRequestFactory)
+        whenever(mockSdkCore._internalLogger) doReturn mock()
     }
 
     @Test

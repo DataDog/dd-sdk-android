@@ -10,7 +10,6 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.annotation.MainThread
 import com.datadog.android.core.configuration.HostsSanitizer
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
@@ -136,7 +135,7 @@ internal constructor(
         @MainThread
         fun setup(sdkCore: SdkCore, webView: WebView, allowedHosts: List<String>) {
             if (!webView.settings.javaScriptEnabled) {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE
@@ -158,7 +157,7 @@ internal constructor(
                 WebViewRumFeature(rumFeature.requestFactory)
                     .apply { sdkCore.registerFeature(this) }
             } else {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
                     RUM_FEATURE_MISSING_INFO
@@ -170,7 +169,7 @@ internal constructor(
                 WebViewLogsFeature(logsFeature.requestFactory)
                     .apply { sdkCore.registerFeature(this) }
             } else {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
                     LOGS_FEATURE_MISSING_INFO
@@ -178,7 +177,7 @@ internal constructor(
                 null
             }
 
-            val contextProvider = WebViewRumEventContextProvider()
+            val contextProvider = WebViewRumEventContextProvider(sdkCore._internalLogger)
 
             if (webViewLogsFeature == null && webViewRumFeature == null) {
                 return NoOpWebViewEventConsumer()
@@ -193,7 +192,8 @@ internal constructor(
                         sdkCore = sdkCore,
                         userLogsWriter = webViewLogsFeature?.dataWriter ?: NoOpDataWriter(),
                         rumContextProvider = contextProvider
-                    )
+                    ),
+                    sdkCore._internalLogger
                 )
             }
         }
