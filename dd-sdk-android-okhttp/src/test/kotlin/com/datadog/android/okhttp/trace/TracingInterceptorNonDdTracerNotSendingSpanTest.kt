@@ -10,7 +10,6 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
-import com.datadog.android.okhttp.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
@@ -118,6 +117,9 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     @Mock
     lateinit var mockSdkCore: SdkCore
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     // endregion
 
     // region Fakes
@@ -178,6 +180,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         fakeUrl = forgeUrl(forge)
         fakeRequest = forgeRequest(forge)
         whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
         doAnswer { false }.whenever(mockResolver).isFirstPartyUrl(any<HttpUrl>())
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(HttpUrl.get(fakeUrl))
 
@@ -948,7 +951,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
         verifyZeroInteractions(mockLocalTracer)
         verifyZeroInteractions(mockTracer)
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -979,7 +982,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         verify(localSpan).setTag("http.status_code", statusCode)
         verify(localSpan, never()).finish()
         assertThat(response).isSameAs(fakeResponse)
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -1020,7 +1023,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         verify(mockSpan, never()).finish()
         assertThat(response1).isSameAs(expectedResponse1)
         assertThat(response2).isSameAs(expectedResponse2)
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -1166,7 +1169,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         testedInterceptor = instantiateTestedInterceptor(emptyMap()) { mockLocalTracer }
 
         verifyZeroInteractions(mockTracer, mockLocalTracer)
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -1285,13 +1288,12 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
             "(([0-9]|[1-9][0-9]|1[0-9]){2}\\.|(2[0-4][0-9]|25[0-5])\\.){3}" +
                 "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
 
-        val logger = InternalLoggerTestConfiguration()
         val datadogCore = DatadogSingletonTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, datadogCore)
+            return listOf(datadogCore)
         }
     }
 }

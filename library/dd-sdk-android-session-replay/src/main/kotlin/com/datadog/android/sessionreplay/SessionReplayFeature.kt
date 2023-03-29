@@ -10,7 +10,6 @@ import android.app.Application
 import android.content.Context
 import android.view.View
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
 import com.datadog.android.sessionreplay.internal.NoOpLifecycleCallback
 import com.datadog.android.sessionreplay.internal.RecordWriter
@@ -127,7 +126,7 @@ class SessionReplayFeature internal constructor(
      */
     fun startRecording() {
         if (!initialized.get()) {
-            internalLogger.log(
+            InternalLogger.UNBOUND.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 CANNOT_START_RECORDING_NOT_INITIALIZED
@@ -145,7 +144,7 @@ class SessionReplayFeature internal constructor(
 
     override fun onReceive(event: Any) {
         if (event !is Map<*, *>) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName)
@@ -157,7 +156,7 @@ class SessionReplayFeature internal constructor(
             val keepSession = event[RUM_KEEP_SESSION_BUS_MESSAGE_KEY] as? Boolean
 
             if (keepSession == null) {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     EVENT_MISSING_MANDATORY_FIELDS
@@ -171,7 +170,7 @@ class SessionReplayFeature internal constructor(
                 stopRecording()
             }
         } else {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(

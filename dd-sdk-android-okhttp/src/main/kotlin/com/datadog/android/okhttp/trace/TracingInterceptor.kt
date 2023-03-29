@@ -11,7 +11,6 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
@@ -88,7 +87,7 @@ internal constructor(
 
     init {
         if (localFirstPartyHostHeaderTypeResolver.isEmpty() && firstPartyHostResolver.isEmpty()) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 WARNING_TRACING_NO_HOSTS
@@ -247,7 +246,7 @@ internal constructor(
         val updatedRequest = try {
             updateRequest(request, tracer, span, isSampled).build()
         } catch (e: IllegalStateException) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 "Failed to update intercepted OkHttp request",
@@ -285,7 +284,7 @@ internal constructor(
     private fun resolveTracer(): Tracer? {
         val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         return if (tracingFeature == null) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 WARNING_TRACING_DISABLED
@@ -309,7 +308,7 @@ internal constructor(
             val globalHeaderTypes = firstPartyHostResolver.getAllHeaderTypes()
             val allHeaders = localHeaderTypes.plus(globalHeaderTypes)
             localTracerReference.compareAndSet(null, localTracerFactory(allHeaders))
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 WARNING_DEFAULT_TRACER

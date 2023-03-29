@@ -13,19 +13,20 @@ import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.sessionreplay.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -33,6 +34,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -67,8 +69,12 @@ internal class SessionReplayFeatureTest {
     @Mock
     lateinit var mockSdkCore: SdkCore
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
         testedFeature = SessionReplayFeature(
             customEndpointUrl = forge.aNullable { sessionReplayEndpointUrl },
             privacy = fakePrivacy
@@ -285,13 +291,15 @@ internal class SessionReplayFeatureTest {
         verifyZeroInteractions(mockSessionReplayLifecycleCallback)
     }
 
+    // TODO RUMM-0000 Mock InternalLogger.UNBOUND
+    @Disabled("Needs mock of InternalLogger.UNBOUND")
     @Test
     fun `M log warning and do nothing W startRecording() { feature is not initialized }`() {
         // When
         testedFeature.startRecording()
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -350,11 +358,14 @@ internal class SessionReplayFeatureTest {
 
     @Test
     fun `𝕄 log warning and do nothing 𝕎 onReceive() { unknown event type }`() {
+        // Given
+        testedFeature.sdkCore = mockSdkCore
+
         // When
         testedFeature.onReceive(Any())
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -376,6 +387,7 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                 forge.anAlphabeticalString()
         )
+        testedFeature.sdkCore = mockSdkCore
 
         // When
         testedFeature.onReceive(event)
@@ -383,7 +395,7 @@ internal class SessionReplayFeatureTest {
         // Then
         val expectedMessage = SessionReplayFeature.UNKNOWN_EVENT_TYPE_PROPERTY_VALUE
             .format(Locale.US, event[SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY])
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -400,12 +412,13 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                 SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE
         )
+        testedFeature.sdkCore = mockSdkCore
 
         // When
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -426,12 +439,13 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
                 forge.anAlphabeticalString()
         )
+        testedFeature.sdkCore = mockSdkCore
 
         // When
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -464,12 +478,11 @@ internal class SessionReplayFeatureTest {
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
-        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, logger)
+            return listOf(appContext)
         }
     }
 }

@@ -13,12 +13,12 @@ import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorTest
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.okhttp.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDSpanContext
@@ -109,6 +109,9 @@ internal class DatadogInterceptorWithoutTracesTest {
     @Mock
     lateinit var mockSdkCore: SdkCore
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     // endregion
 
     // region Fakes
@@ -160,6 +163,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         ) { mockLocalTracer }
         whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
 
         fakeResourceAttributes = forge.exhaustiveAttributes()
 
@@ -357,13 +361,12 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val logger = InternalLoggerTestConfiguration()
         val datadogCore = DatadogSingletonTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, rumMonitor, datadogCore)
+            return listOf(rumMonitor, datadogCore)
         }
     }
 }
