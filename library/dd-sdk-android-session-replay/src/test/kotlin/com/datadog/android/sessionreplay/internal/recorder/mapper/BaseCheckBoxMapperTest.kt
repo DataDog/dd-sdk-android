@@ -283,9 +283,8 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
 
     private fun resolveCheckBoxSize(checkBoxSize: Long): Long {
         val density = fakeSystemInformation.screenDensity
-        val textSize = fakeTextSize.toLong()
         val size = checkBoxSize - 2 * CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
-        return (size * (textSize - 1) / textSize).densityNormalized(density)
+        return size.densityNormalized(density)
     }
 
     // endregion
