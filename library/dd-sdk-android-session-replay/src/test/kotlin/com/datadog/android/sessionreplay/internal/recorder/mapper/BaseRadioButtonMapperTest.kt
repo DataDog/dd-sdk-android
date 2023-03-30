@@ -292,9 +292,8 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
 
     private fun resolveRadioBoxSize(radioSize: Long): Long {
         val density = fakeSystemInformation.screenDensity
-        val textSize = fakeTextSize.toLong()
         val size = radioSize - 2 * CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
-        return (size * (textSize - 1) / textSize).densityNormalized(density)
+        return size.densityNormalized(density)
     }
 
     // endregion

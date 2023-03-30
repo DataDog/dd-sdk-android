@@ -358,8 +358,7 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
 
     private fun resolveCheckBoxSize(): Long {
         val size = fakeCheckMarkHeight - fakePaddingBottom - fakePaddingTop
-        return (size * (fakeTextSize - 1) / fakeTextSize).toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+        return size.toLong().densityNormalized(fakeSystemInformation.screenDensity)
     }
 
     // endregion
