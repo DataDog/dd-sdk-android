@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.utils
 
 import com.datadog.android.v2.core.SdkInternalLogger
+import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -18,7 +19,9 @@ internal class InternalLoggerReleaseTest {
     @Suppress("FunctionNaming", "FunctionMaxLength")
     fun `M not build sdkLogger W init()`() {
         // When
-        val logger = SdkInternalLogger()
+        val logger = SdkInternalLogger(
+            sdkCore = mock()
+        )
 
         // Then
         assertThat(logger.sdkLogger).isNull()
