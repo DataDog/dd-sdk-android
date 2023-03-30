@@ -75,7 +75,7 @@ internal abstract class BaseWireframeMapperTest {
                 width = width.toLong().densityNormalized(fakeSystemInformation.screenDensity),
                 height = height.toLong().densityNormalized(fakeSystemInformation.screenDensity),
                 textStyle = MobileSegment.TextStyle(
-                    "sans-serif",
+                    TextWireframeMapper.SANS_SERIF_FAMILY_NAME,
                     textSize.toLong().densityNormalized(fakeSystemInformation.screenDensity),
                     textColor
                 ),

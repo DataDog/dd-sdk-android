@@ -107,7 +107,7 @@ internal class MaskAllTextViewWireframeMapperTest : BaseTextViewWireframeMapperT
                 it.copy(
                     text = fakeMaskedHintText,
                     textStyle = MobileSegment.TextStyle(
-                        "sans-serif",
+                        TextWireframeMapper.SANS_SERIF_FAMILY_NAME,
                         mockTextView.textSize.toLong()
                             .densityNormalized(fakeSystemInformation.screenDensity),
                         StringUtils.formatColorAndAlphaAsHexa(
@@ -147,7 +147,7 @@ internal class MaskAllTextViewWireframeMapperTest : BaseTextViewWireframeMapperT
                 it.copy(
                     text = fakeMaskedHintText,
                     textStyle = MobileSegment.TextStyle(
-                        "sans-serif",
+                        TextWireframeMapper.SANS_SERIF_FAMILY_NAME,
                         mockTextView.textSize.toLong()
                             .densityNormalized(fakeSystemInformation.screenDensity),
                         StringUtils.formatColorAndAlphaAsHexa(
