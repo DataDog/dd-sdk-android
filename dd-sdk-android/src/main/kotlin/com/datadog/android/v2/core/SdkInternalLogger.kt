@@ -133,7 +133,7 @@ internal class SdkInternalLogger(
     private fun String.withSdkName(): String {
         val instanceName = sdkCore?.name
         return if (instanceName != null) {
-            "@$instanceName: $this"
+            "[$instanceName]: $this"
         } else {
             this
         }

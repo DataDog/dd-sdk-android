@@ -85,7 +85,7 @@ internal class SdkInternalLoggerTest {
         verify(mockDevLogHandler)
             .log(
                 fakeLevel.toLogLevel(),
-                "@$fakeInstanceName: $fakeMessage",
+                "[$fakeInstanceName]: $fakeMessage",
                 fakeThrowable
             )
     }
@@ -135,7 +135,7 @@ internal class SdkInternalLoggerTest {
         verify(mockSdkLogHandler)
             .log(
                 fakeLevel.toLogLevel(),
-                "@$fakeInstanceName: $fakeMessage",
+                "[$fakeInstanceName]: $fakeMessage",
                 fakeThrowable
             )
     }
