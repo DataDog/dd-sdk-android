@@ -13,6 +13,7 @@ import android.widget.CheckBox
 import android.widget.CheckedTextView
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.NumberPicker
 import android.widget.RadioButton
 import android.widget.SeekBar
 import android.widget.TextView
@@ -24,10 +25,12 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.EditTextViewMa
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckedTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllNumberPickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllRadioButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllSeekBarWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllSwitchCompatMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.NumberPickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.RadioButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMapper
@@ -53,6 +56,7 @@ enum class SessionReplayPrivacy {
      **/
     MASK_ALL;
 
+    @Suppress("LongMethod")
     internal fun mappers(): List<MapperTypeWrapper> {
         val viewWireframeMapper = ViewWireframeMapper()
         val imageMapper: ViewScreenshotWireframeMapper
@@ -64,6 +68,7 @@ enum class SessionReplayPrivacy {
         val radioButtonMapper: RadioButtonMapper
         val switchCompatMapper: SwitchCompatMapper
         val seekBarMapper: SeekBarWireframeMapper?
+        val numberPickerMapper: NumberPickerMapper?
         when (this) {
             ALLOW_ALL -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
@@ -75,6 +80,7 @@ enum class SessionReplayPrivacy {
                 radioButtonMapper = RadioButtonMapper(textMapper)
                 switchCompatMapper = SwitchCompatMapper(textMapper)
                 seekBarMapper = getSeekBarMapper()
+                numberPickerMapper = getNumberPickerMapper()
             }
             MASK_ALL -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
@@ -86,6 +92,7 @@ enum class SessionReplayPrivacy {
                 radioButtonMapper = MaskAllRadioButtonMapper(textMapper)
                 switchCompatMapper = MaskAllSwitchCompatMapper(textMapper)
                 seekBarMapper = getMaskAllSeekBarMapper()
+                numberPickerMapper = getMaskAllNumberPickerMapper()
             }
         }
         val mappersList = mutableListOf(
@@ -104,6 +111,15 @@ enum class SessionReplayPrivacy {
         seekBarMapper?.let {
             mappersList.add(0, MapperTypeWrapper(SeekBar::class.java, it.toGenericMapper()))
         }
+        numberPickerMapper?.let {
+            mappersList.add(
+                0,
+                MapperTypeWrapper(
+                    NumberPicker::class.java,
+                    it.toGenericMapper()
+                )
+            )
+        }
         return mappersList
     }
 
@@ -118,6 +134,22 @@ enum class SessionReplayPrivacy {
     private fun getSeekBarMapper(): SeekBarWireframeMapper? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             SeekBarWireframeMapper()
+        } else {
+            null
+        }
+    }
+
+    private fun getNumberPickerMapper(): NumberPickerMapper? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            NumberPickerMapper()
+        } else {
+            null
+        }
+    }
+
+    private fun getMaskAllNumberPickerMapper(): NumberPickerMapper? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MaskAllNumberPickerMapper()
         } else {
             null
         }
