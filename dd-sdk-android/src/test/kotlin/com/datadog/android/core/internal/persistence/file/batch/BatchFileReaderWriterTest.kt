@@ -7,12 +7,8 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import com.datadog.android.security.Encryption
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -27,8 +23,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -62,16 +57,6 @@ internal class BatchFileReaderWriterTest {
         (readerWriter as EncryptedBatchReaderWriter).let {
             assertThat(it.delegate).isInstanceOf(PlainBatchFileReaderWriter::class.java)
             assertThat(it.encryption).isEqualTo(mockEncryption)
-        }
-    }
-
-    companion object {
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
         }
     }
 }

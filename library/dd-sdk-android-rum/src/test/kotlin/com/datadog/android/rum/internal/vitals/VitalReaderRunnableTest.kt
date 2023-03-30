@@ -7,14 +7,10 @@
 package com.datadog.android.rum.internal.vitals
 
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
-import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
@@ -43,8 +39,7 @@ import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -64,6 +59,9 @@ internal class VitalReaderRunnableTest {
     @Mock
     lateinit var mockSdkCore: SdkCore
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @DoubleForgery
     var fakeValue: Double = 0.0
 
@@ -73,6 +71,7 @@ internal class VitalReaderRunnableTest {
             "view_type" to RumViewScope.RumViewType.FOREGROUND
         )
         whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn rumContext
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
         testedRunnable = VitalReaderRunnable(
             mockSdkCore,
             mockReader,
@@ -163,7 +162,7 @@ internal class VitalReaderRunnableTest {
         testedRunnable.run()
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             "Unable to schedule Vitals monitoring task on the executor",
@@ -173,13 +172,5 @@ internal class VitalReaderRunnableTest {
 
     companion object {
         private const val TEST_PERIOD_MS = 50L
-
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
     }
 }

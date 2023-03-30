@@ -9,10 +9,8 @@ package com.datadog.android.core.internal.utils
 import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 
-// TODO RUMM-2948 Temporary thing, we probably shouldn't expose it in such way to modules,
-//  at least as var
-@Suppress("UndocumentedPublicProperty")
-var internalLogger: InternalLogger = InternalLogger.UNBOUND
+// Use it only when there is no way to access the SDK-specific logger.
+internal var unboundInternalLogger: InternalLogger = InternalLogger.UNBOUND
 
 /**
  * Warns the user that they're using a deprecated feature.
@@ -28,7 +26,7 @@ internal fun warnDeprecated(
     alternative: String? = null
 ) {
     if (alternative == null) {
-        internalLogger.log(
+        unboundInternalLogger.log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             WARN_DEPRECATED.format(
@@ -39,7 +37,7 @@ internal fun warnDeprecated(
             )
         )
     } else {
-        internalLogger.log(
+        unboundInternalLogger.log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             WARN_DEPRECATED_WITH_ALT.format(

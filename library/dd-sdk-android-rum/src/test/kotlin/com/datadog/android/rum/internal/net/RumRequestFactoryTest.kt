@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.net
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
 import fr.xgouchet.elmyr.Forge
@@ -41,7 +42,8 @@ internal class RumRequestFactoryTest {
     @BeforeEach
     fun `set up`() {
         testedFactory = RumRequestFactory(
-            customEndpointUrl = null
+            customEndpointUrl = null,
+            internalLogger = InternalLogger.UNBOUND
         )
     }
 
@@ -74,7 +76,8 @@ internal class RumRequestFactoryTest {
         assertThat(request.description).isEqualTo("RUM Request")
         assertThat(request.body).isEqualTo(
             batchData.join(
-                separator = "\n".toByteArray()
+                separator = "\n".toByteArray(),
+                internalLogger = InternalLogger.UNBOUND
             )
         )
     }
@@ -88,7 +91,10 @@ internal class RumRequestFactoryTest {
         forge: Forge
     ) {
         // Given
-        testedFactory = RumRequestFactory(customEndpointUrl = fakeEndpoint)
+        testedFactory = RumRequestFactory(
+            customEndpointUrl = fakeEndpoint,
+            internalLogger = InternalLogger.UNBOUND
+        )
         val batchData = batchData.map { it.toByteArray() }
         val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
 
@@ -110,7 +116,8 @@ internal class RumRequestFactoryTest {
         assertThat(request.description).isEqualTo("RUM Request")
         assertThat(request.body).isEqualTo(
             batchData.join(
-                separator = "\n".toByteArray()
+                separator = "\n".toByteArray(),
+                internalLogger = InternalLogger.UNBOUND
             )
         )
     }

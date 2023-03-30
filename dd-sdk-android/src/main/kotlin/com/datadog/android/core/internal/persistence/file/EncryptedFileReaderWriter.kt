@@ -7,14 +7,14 @@
 package com.datadog.android.core.internal.persistence.file
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.security.Encryption
 import com.datadog.android.v2.api.InternalLogger
 import java.io.File
 
 internal class EncryptedFileReaderWriter(
     internal val encryption: Encryption,
-    internal val delegate: FileReaderWriter
+    internal val delegate: FileReaderWriter,
+    private val internalLogger: InternalLogger
 ) : FileReaderWriter by delegate {
 
     @Suppress("ReturnCount")

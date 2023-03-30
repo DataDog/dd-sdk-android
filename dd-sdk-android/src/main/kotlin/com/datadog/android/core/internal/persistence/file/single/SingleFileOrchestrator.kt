@@ -9,10 +9,12 @@ package com.datadog.android.core.internal.persistence.file.single
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.mkdirsSafe
+import com.datadog.android.v2.api.InternalLogger
 import java.io.File
 
 internal class SingleFileOrchestrator(
-    private val file: File
+    private val file: File,
+    private val internalLogger: InternalLogger
 ) : FileOrchestrator {
 
     // region FileOrchestrator
@@ -23,13 +25,13 @@ internal class SingleFileOrchestrator(
      */
     @WorkerThread
     override fun getWritableFile(forceNewFile: Boolean): File? {
-        file.parentFile?.mkdirsSafe()
+        file.parentFile?.mkdirsSafe(internalLogger)
         return file
     }
 
     @WorkerThread
     override fun getReadableFile(excludeFiles: Set<File>): File? {
-        file.parentFile?.mkdirsSafe()
+        file.parentFile?.mkdirsSafe(internalLogger)
         return if (file in excludeFiles) {
             null
         } else {
@@ -39,7 +41,7 @@ internal class SingleFileOrchestrator(
 
     @WorkerThread
     override fun getAllFiles(): List<File> {
-        file.parentFile?.mkdirsSafe()
+        file.parentFile?.mkdirsSafe(internalLogger)
         return listOf(file)
     }
 

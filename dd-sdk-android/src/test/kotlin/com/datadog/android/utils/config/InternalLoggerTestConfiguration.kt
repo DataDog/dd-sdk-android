@@ -6,7 +6,7 @@
 
 package com.datadog.android.utils.config
 
-import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.mock
@@ -21,12 +21,12 @@ internal class InternalLoggerTestConfiguration : TestConfiguration {
     override fun setUp(forge: Forge) {
         mockInternalLogger = mock()
 
-        originalInternalLogger = internalLogger
+        originalInternalLogger = unboundInternalLogger
 
-        internalLogger = mockInternalLogger
+        unboundInternalLogger = mockInternalLogger
     }
 
     override fun tearDown(forge: Forge) {
-        internalLogger = originalInternalLogger
+        unboundInternalLogger = originalInternalLogger
     }
 }

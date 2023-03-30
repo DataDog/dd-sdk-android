@@ -13,6 +13,7 @@ import com.datadog.android.v2.api.InternalLogger
  * Executes the provided operation if the predicate verifies the argument.
  * @param T the type of component
  * @param component to be verified
+ * @param internalLogger logger to use
  * @param operation to be executed
  */
 @Suppress("TooGenericExceptionCaught")

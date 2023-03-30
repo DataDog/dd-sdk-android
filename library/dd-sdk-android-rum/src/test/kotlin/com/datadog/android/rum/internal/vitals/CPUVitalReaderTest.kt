@@ -100,13 +100,13 @@ internal class CPUVitalReaderTest {
     fun `set up`() {
         fakeFile = File(tempDir, "stat")
         fakeStatContent = generateFakeContent()
-        testedReader = CPUVitalReader(fakeFile)
+        testedReader = CPUVitalReader(fakeFile, internalLogger = mock())
     }
 
     @Test
     fun `𝕄 read unix stats file 𝕎 init()`() {
         // When
-        val testedReader = CPUVitalReader()
+        val testedReader = CPUVitalReader(internalLogger = mock())
 
         // Then
         assertThat(testedReader.statFile).isEqualTo(CPUVitalReader.STAT_FILE)

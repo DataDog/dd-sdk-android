@@ -108,7 +108,7 @@ internal class ConsentAwareStorage(
 
             @WorkerThread
             override fun currentMetadata(): ByteArray? {
-                if (metaFile == null || !metaFile.existsSafe()) return null
+                if (metaFile == null || !metaFile.existsSafe(internalLogger)) return null
 
                 return batchMetadataReaderWriter.readData(metaFile)
             }
@@ -167,7 +167,7 @@ internal class ConsentAwareStorage(
     @WorkerThread
     private fun deleteBatch(batchFile: File, metaFile: File?) {
         deleteBatchFile(batchFile)
-        if (metaFile?.existsSafe() == true) {
+        if (metaFile?.existsSafe(internalLogger) == true) {
             deleteBatchMetadataFile(metaFile)
         }
     }

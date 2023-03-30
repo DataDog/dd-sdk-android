@@ -120,7 +120,7 @@ internal class PlainFileReaderWriter(
 
     private fun moveFile(file: File, destDir: File): Boolean {
         val destFile = File(destDir, file.name)
-        return file.renameToSafe(destFile)
+        return file.renameToSafe(destFile, internalLogger)
     }
 
     // endregion

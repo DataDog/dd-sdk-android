@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.thread
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.InternalLogger
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutionException
@@ -17,7 +16,7 @@ import java.util.concurrent.Future
  * @return whether the thread was interrupted during the sleep
  */
 @Suppress("ReturnCount")
-internal fun sleepSafe(durationMs: Long): Boolean {
+internal fun sleepSafe(durationMs: Long, internalLogger: InternalLogger): Boolean {
     try {
         Thread.sleep(durationMs)
         return false

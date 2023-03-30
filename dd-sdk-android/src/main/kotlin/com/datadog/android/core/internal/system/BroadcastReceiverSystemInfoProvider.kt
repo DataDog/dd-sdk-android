@@ -14,12 +14,12 @@ import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.InternalLogger
 import kotlin.math.roundToInt
 
 internal class BroadcastReceiverSystemInfoProvider(
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
+    private val internalLogger: InternalLogger
 ) :
     ThreadSafeReceiver(), SystemInfoProvider {
 

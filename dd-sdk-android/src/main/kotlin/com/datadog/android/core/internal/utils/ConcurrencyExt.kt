@@ -21,9 +21,14 @@ internal const val ERROR_TASK_REJECTED = "Unable to schedule %s task on the exec
  * for execution.
  *
  * @param operationName Name of the task.
+ * @param internalLogger Internal logger.
  * @param runnable Task to run.
  */
-fun Executor.executeSafe(operationName: String, runnable: Runnable) {
+fun Executor.executeSafe(
+    operationName: String,
+    internalLogger: InternalLogger,
+    runnable: Runnable
+) {
     try {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         execute(runnable)
@@ -44,12 +49,14 @@ fun Executor.executeSafe(operationName: String, runnable: Runnable) {
  * @param operationName Name of the task.
  * @param delay Task scheduling delay.
  * @param unit Delay unit.
+ * @param internalLogger Internal logger.
  * @param runnable Task to run.
  */
 fun ScheduledExecutorService.scheduleSafe(
     operationName: String,
     delay: Long,
     unit: TimeUnit,
+    internalLogger: InternalLogger,
     runnable: Runnable
 ): ScheduledFuture<*>? {
     return try {

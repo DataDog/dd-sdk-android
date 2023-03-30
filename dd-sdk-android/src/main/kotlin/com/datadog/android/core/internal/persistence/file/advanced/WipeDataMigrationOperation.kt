@@ -31,7 +31,7 @@ internal class WipeDataMigrationOperation(
                 WARN_NULL_DIR
             )
         } else {
-            retryWithDelay(MAX_RETRY, RETRY_DELAY_NS) {
+            retryWithDelay(MAX_RETRY, RETRY_DELAY_NS, internalLogger) {
                 fileMover.delete(targetDir)
             }
         }

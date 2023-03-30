@@ -34,6 +34,7 @@ import com.datadog.android.ndk.NoOpNdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.internal.DatadogContextProvider
 import com.datadog.android.v2.core.internal.NoOpContextProvider
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -100,6 +101,9 @@ internal class CoreFeatureTest {
     @Mock
     lateinit var mockConnectivityMgr: ConnectivityManager
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Forgery
     lateinit var fakeCredentials: Credentials
 
@@ -115,7 +119,7 @@ internal class CoreFeatureTest {
     @BeforeEach
     fun `set up`() {
         CoreFeature.disableKronosBackgroundSync = true
-        testedFeature = CoreFeature()
+        testedFeature = CoreFeature(mockInternalLogger)
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
     }

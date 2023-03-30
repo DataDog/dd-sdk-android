@@ -167,7 +167,10 @@ class RumFeature internal constructor(
         initialized.set(true)
     }
 
-    override val requestFactory: RequestFactory = RumRequestFactory(configuration.customEndpointUrl)
+    override val requestFactory: RequestFactory by lazy {
+        RumRequestFactory(configuration.customEndpointUrl, sdkCore._internalLogger)
+    }
+
     override val storageConfiguration: FeatureStorageConfiguration =
         FeatureStorageConfiguration.DEFAULT
 
@@ -316,8 +319,16 @@ class RumFeature internal constructor(
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
         vitalExecutorService = LoggingScheduledThreadPoolExecutor(1, sdkCore._internalLogger)
 
-        initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor, periodInMs)
-        initializeVitalMonitor(MemoryVitalReader(), memoryVitalMonitor, periodInMs)
+        initializeVitalMonitor(
+            CPUVitalReader(internalLogger = sdkCore._internalLogger),
+            cpuVitalMonitor,
+            periodInMs
+        )
+        initializeVitalMonitor(
+            MemoryVitalReader(internalLogger = sdkCore._internalLogger),
+            memoryVitalMonitor,
+            periodInMs
+        )
 
         val vitalFrameCallback = VitalFrameCallback(
             frameRateVitalMonitor,
@@ -360,6 +371,7 @@ class RumFeature internal constructor(
             "Vitals monitoring",
             periodInMs,
             TimeUnit.MILLISECONDS,
+            sdkCore._internalLogger,
             readerRunnable
         )
     }
@@ -368,7 +380,11 @@ class RumFeature internal constructor(
         anrDetectorHandler = Handler(Looper.getMainLooper())
         anrDetectorRunnable = ANRDetectorRunnable(anrDetectorHandler)
         anrDetectorExecutorService = Executors.newSingleThreadExecutor()
-        anrDetectorExecutorService.executeSafe("ANR detection", anrDetectorRunnable)
+        anrDetectorExecutorService.executeSafe(
+            "ANR detection",
+            sdkCore._internalLogger,
+            anrDetectorRunnable
+        )
     }
 
     private fun addJvmCrash(crashEvent: Map<*, *>) {

@@ -28,7 +28,7 @@ internal class BatchFileOrchestrator(
     private val internalLogger: InternalLogger
 ) : FileOrchestrator {
 
-    private val fileFilter = BatchFileFilter()
+    private val fileFilter = BatchFileFilter(internalLogger)
 
     // Offset the recent threshold for read and write to avoid conflicts
     // Arbitrary offset as ±5% of the threshold
@@ -130,9 +130,9 @@ internal class BatchFileOrchestrator(
 
     @Suppress("LiftReturnOrAssignment", "ReturnCount")
     private fun isRootDirValid(): Boolean {
-        if (rootDir.existsSafe()) {
+        if (rootDir.existsSafe(internalLogger)) {
             if (rootDir.isDirectory) {
-                if (rootDir.canWriteSafe()) {
+                if (rootDir.canWriteSafe(internalLogger)) {
                     return true
                 } else {
                     internalLogger.log(
@@ -160,11 +160,11 @@ internal class BatchFileOrchestrator(
             synchronized(rootDir) {
                 // double check if directory was already created by some other thread
                 // entered this branch
-                if (rootDir.existsSafe()) {
+                if (rootDir.existsSafe(internalLogger)) {
                     return true
                 }
 
-                if (rootDir.mkdirsSafe()) {
+                if (rootDir.mkdirsSafe(internalLogger)) {
                     return true
                 } else {
                     internalLogger.log(
@@ -206,7 +206,7 @@ internal class BatchFileOrchestrator(
         }
 
         val isRecentEnough = isFileRecent(lastFile, recentWriteDelayMs)
-        val hasRoomForMore = lastFile.lengthSafe() < config.maxBatchSize
+        val hasRoomForMore = lastFile.lengthSafe(internalLogger) < config.maxBatchSize
         val hasSlotForMore = (lastKnownFileItemCount < config.maxItemsPerBatch)
 
         return if (isRecentEnough && hasRoomForMore && hasSlotForMore) {
@@ -230,16 +230,16 @@ internal class BatchFileOrchestrator(
             .asSequence()
             .filter { (it.name.toLongOrNull() ?: 0) < threshold }
             .forEach {
-                it.deleteSafe()
-                if (it.metadata.existsSafe()) {
-                    it.metadata.deleteSafe()
+                it.deleteSafe(internalLogger)
+                if (it.metadata.existsSafe(internalLogger)) {
+                    it.metadata.deleteSafe(internalLogger)
                 }
             }
     }
 
     private fun freeSpaceIfNeeded() {
         val files = listSortedBatchFiles()
-        val sizeOnDisk = files.sumOf { it.lengthSafe() }
+        val sizeOnDisk = files.sumOf { it.lengthSafe(internalLogger) }
         val maxDiskSpace = config.maxDiskSpace
         val sizeToFree = sizeOnDisk - maxDiskSpace
         if (sizeToFree > 0) {
@@ -261,10 +261,10 @@ internal class BatchFileOrchestrator(
     }
 
     private fun deleteFile(file: File): Long {
-        if (!file.existsSafe()) return 0
+        if (!file.existsSafe(internalLogger)) return 0
 
-        val size = file.lengthSafe()
-        return if (file.deleteSafe()) {
+        val size = file.lengthSafe(internalLogger)
+        return if (file.deleteSafe(internalLogger)) {
             size
         } else {
             0
@@ -272,7 +272,7 @@ internal class BatchFileOrchestrator(
     }
 
     private fun listSortedBatchFiles(): List<File> {
-        return rootDir.listFilesSafe(fileFilter).orEmpty().sorted()
+        return rootDir.listFilesSafe(fileFilter, internalLogger).orEmpty().sorted()
     }
 
     private val File.metadata: File
@@ -282,10 +282,10 @@ internal class BatchFileOrchestrator(
 
     // region FileFilter
 
-    internal class BatchFileFilter : FileFilter {
+    internal class BatchFileFilter(private val internalLogger: InternalLogger) : FileFilter {
         override fun accept(file: File?): Boolean {
             return file != null &&
-                file.isFileSafe() &&
+                file.isFileSafe(internalLogger) &&
                 file.name.matches(batchFileNameRegex)
         }
     }

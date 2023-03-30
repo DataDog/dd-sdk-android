@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.vitals
 import com.datadog.android.core.internal.persistence.file.canReadSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
+import com.datadog.android.v2.api.InternalLogger
 import java.io.File
 
 /**
@@ -16,16 +17,17 @@ import java.io.File
  * cf. documentation https://man7.org/linux/man-pages/man5/procfs.5.html
  */
 internal class CPUVitalReader(
-    internal val statFile: File = STAT_FILE
+    internal val statFile: File = STAT_FILE,
+    internal val internalLogger: InternalLogger
 ) : VitalReader {
 
     @Suppress("ReturnCount")
     override fun readVitalData(): Double? {
-        if (!(statFile.existsSafe() && statFile.canReadSafe())) {
+        if (!(statFile.existsSafe(internalLogger) && statFile.canReadSafe(internalLogger))) {
             return null
         }
 
-        val stat = statFile.readTextSafe() ?: return null
+        val stat = statFile.readTextSafe(internalLogger = internalLogger) ?: return null
         val tokens = stat.split(' ')
         return if (tokens.size > UTIME_IDX) {
             tokens[UTIME_IDX].toDoubleOrNull()

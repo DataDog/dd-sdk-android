@@ -8,6 +8,7 @@ package com.datadog.android.log.internal.net
 
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
 import fr.xgouchet.elmyr.Forge
@@ -40,7 +41,8 @@ internal class LogsRequestFactoryTest {
     @BeforeEach
     fun `set up`() {
         testedFactory = LogsRequestFactory(
-            customEndpointUrl = null
+            customEndpointUrl = null,
+            internalLogger = InternalLogger.UNBOUND
         )
     }
 
@@ -78,7 +80,8 @@ internal class LogsRequestFactoryTest {
             batchData.join(
                 separator = ",".toByteArray(),
                 prefix = "[".toByteArray(),
-                suffix = "]".toByteArray()
+                suffix = "]".toByteArray(),
+                internalLogger = InternalLogger.UNBOUND
             )
         )
     }
@@ -93,7 +96,8 @@ internal class LogsRequestFactoryTest {
     ) {
         // Given
         testedFactory = LogsRequestFactory(
-            customEndpointUrl = fakeEndpoint
+            customEndpointUrl = fakeEndpoint,
+            internalLogger = InternalLogger.UNBOUND
         )
         val batchData = batchData.map { it.toByteArray() }
         val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
@@ -121,7 +125,8 @@ internal class LogsRequestFactoryTest {
             batchData.join(
                 separator = ",".toByteArray(),
                 prefix = "[".toByteArray(),
-                suffix = "]".toByteArray()
+                suffix = "]".toByteArray(),
+                internalLogger = InternalLogger.UNBOUND
             )
         )
     }

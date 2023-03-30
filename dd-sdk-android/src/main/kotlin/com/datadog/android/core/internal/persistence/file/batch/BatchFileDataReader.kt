@@ -40,7 +40,8 @@ internal class BatchFileDataReader(
             .join(
                 separator = decoration.separatorBytes,
                 prefix = decoration.prefixBytes,
-                suffix = decoration.suffixBytes
+                suffix = decoration.suffixBytes,
+                internalLogger
             )
 
         return Batch(file.name, data)
@@ -67,7 +68,7 @@ internal class BatchFileDataReader(
         fileOrchestrator.getAllFiles().forEach {
             val metaFile = fileOrchestrator.getMetadataFile(it)
             deleteFile(it)
-            if (metaFile?.existsSafe() == true) {
+            if (metaFile?.existsSafe(internalLogger) == true) {
                 deleteFile(metaFile)
             }
         }
@@ -115,7 +116,7 @@ internal class BatchFileDataReader(
         if (delete) {
             val metaFile = fileOrchestrator.getMetadataFile(file)
             deleteFile(file)
-            if (metaFile?.existsSafe() == true) {
+            if (metaFile?.existsSafe(internalLogger) == true) {
                 deleteFile(metaFile)
             }
         }

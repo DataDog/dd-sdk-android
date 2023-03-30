@@ -22,7 +22,6 @@ import com.datadog.android.ndk.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
@@ -82,6 +81,9 @@ internal class DatadogCoreTest {
 
     lateinit var testedCore: DatadogCore
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Forgery
     lateinit var fakeCredentials: Credentials
 
@@ -101,10 +103,12 @@ internal class DatadogCoreTest {
         testedCore = DatadogCore(
             appContext.mockInstance,
             fakeCredentials,
-            fakeConfiguration,
             fakeInstanceId,
-            fakeInstanceName
-        )
+            fakeInstanceName,
+            internalLoggerProvider = { mockInternalLogger }
+        ).apply {
+            initialize(fakeConfiguration)
+        }
     }
 
     @AfterEach
@@ -313,7 +317,7 @@ internal class DatadogCoreTest {
         testedCore.setEventReceiver(feature, fakeReceiver)
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             DatadogCore.MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, feature)
@@ -337,7 +341,7 @@ internal class DatadogCoreTest {
         testedCore.setEventReceiver(feature, fakeReceiver)
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             DatadogCore.EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, feature)
@@ -548,7 +552,7 @@ internal class DatadogCoreTest {
 
         // Then
         assertThat(ndkReportsFolder).doesNotExist()
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.MAINTAINER,
             DatadogCore.LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(
@@ -634,12 +638,11 @@ internal class DatadogCoreTest {
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
-        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext)
+            return listOf(appContext)
         }
     }
 }

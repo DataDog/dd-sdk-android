@@ -9,7 +9,7 @@ package com.datadog.android
 import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
-import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
@@ -24,7 +24,7 @@ import com.datadog.android.v2.core.internal.Sha256HashGenerator
  */
 object Datadog {
 
-    internal val registry = SdkCoreRegistry(internalLogger)
+    internal val registry = SdkCoreRegistry(unboundInternalLogger)
 
     internal var hashGenerator: HashGenerator = Sha256HashGenerator()
 
@@ -57,7 +57,7 @@ object Datadog {
         synchronized(registry) {
             val existing = registry.getInstance(instanceName)
             if (existing != null) {
-                internalLogger.log(
+                unboundInternalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     MESSAGE_ALREADY_INITIALIZED
@@ -70,7 +70,7 @@ object Datadog {
             )
 
             if (sdkInstanceId == null) {
-                internalLogger.log(
+                unboundInternalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     CANNOT_CREATE_SDK_INSTANCE_ID_ERROR
@@ -81,10 +81,11 @@ object Datadog {
             val sdkCore = DatadogCore(
                 context,
                 credentials,
-                configuration,
                 sdkInstanceId,
                 instanceName ?: SdkCoreRegistry.DEFAULT_INSTANCE_NAME
-            )
+            ).apply {
+                initialize(configuration)
+            }
             sdkCore.setTrackingConsent(trackingConsent)
             registry.register(instanceName, sdkCore)
 

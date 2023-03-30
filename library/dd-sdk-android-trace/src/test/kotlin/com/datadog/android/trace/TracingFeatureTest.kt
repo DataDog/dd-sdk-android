@@ -91,6 +91,9 @@ internal class TracingFeatureTest {
 
     @Test
     fun `𝕄 provide tracing request factory 𝕎 requestFactory()`() {
+        // Given
+        testedFeature.onInitialize(mockSdkCore, mock())
+
         // When+Then
         assertThat(testedFeature.requestFactory)
             .isInstanceOf(TracesRequestFactory::class.java)

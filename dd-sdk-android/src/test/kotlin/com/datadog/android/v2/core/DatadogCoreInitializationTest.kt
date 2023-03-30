@@ -95,14 +95,14 @@ internal class DatadogCoreInitializationTest {
         ).build()
 
         // When
-        testedCore =
-            DatadogCore(
-                appContext.mockInstance,
-                fakeCredentials,
-                configuration,
-                fakeInstanceId,
-                fakeInstanceName
-            )
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
 
         // Then
         assertThat(testedCore.coreFeature.initialized.get()).isTrue()
@@ -125,22 +125,21 @@ internal class DatadogCoreInitializationTest {
         // Given
         appContext.fakeAppInfo.flags = fakeFlags and ApplicationInfo.FLAG_DEBUGGABLE.inv()
         fakeCredentials = fakeCredentials.copy(envName = invalidEnvName)
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        ).build()
+
+        // When
+        val exception = assertThrows<IllegalArgumentException> {
+            // When
+            testedCore = DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                fakeInstanceId,
+                fakeInstanceName
+            )
+        }
 
         // Then
-        assertThrows<IllegalArgumentException>(DatadogCore.MESSAGE_ENV_NAME_NOT_VALID) {
-            // When
-            testedCore =
-                DatadogCore(
-                    appContext.mockInstance,
-                    fakeCredentials,
-                    configuration,
-                    fakeInstanceId,
-                    fakeInstanceName
-                )
-        }
+        assertThat(exception)
+            .hasMessage(DatadogCore.MESSAGE_ENV_NAME_NOT_VALID)
     }
 
     @Test
@@ -151,28 +150,19 @@ internal class DatadogCoreInitializationTest {
         // Given
         appContext.fakeAppInfo.flags = fakeFlags or ApplicationInfo.FLAG_DEBUGGABLE
         fakeCredentials = fakeCredentials.copy(envName = invalidEnvName)
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        ).build()
 
         // When
-        var caughtException: Exception? = null
-        try {
-            testedCore =
-                DatadogCore(
-                    appContext.mockInstance,
-                    fakeCredentials,
-                    configuration,
-                    fakeInstanceId,
-                    fakeInstanceName
-                )
-        } catch (e: Exception) {
-            caughtException = e
+        val exception = assertThrows<IllegalArgumentException> {
+            testedCore = DatadogCore(
+                appContext.mockInstance,
+                fakeCredentials,
+                fakeInstanceId,
+                fakeInstanceName
+            )
         }
 
         // Then
-        assertThat(caughtException)
-            .isInstanceOf(IllegalArgumentException::class.java)
+        assertThat(exception)
             .hasMessage(DatadogCore.MESSAGE_ENV_NAME_NOT_VALID)
     }
 
@@ -184,14 +174,14 @@ internal class DatadogCoreInitializationTest {
         ).build()
 
         // When
-        testedCore =
-            DatadogCore(
-                appContext.mockInstance,
-                fakeCredentials,
-                configuration,
-                fakeInstanceId,
-                fakeInstanceName
-            )
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
 
         // Then
         assertThat(testedCore.coreFeature.trackingConsentProvider.getConsent())
@@ -211,14 +201,14 @@ internal class DatadogCoreInitializationTest {
             .build()
 
         // When
-        testedCore =
-            DatadogCore(
-                appContext.mockInstance,
-                fakeCredentials,
-                configuration,
-                fakeInstanceId,
-                fakeInstanceName
-            )
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
 
         // Then
         assertThat(testedCore.libraryVerbosity)
@@ -238,14 +228,14 @@ internal class DatadogCoreInitializationTest {
             .build()
 
         // When
-        testedCore =
-            DatadogCore(
-                appContext.mockInstance,
-                fakeCredentials,
-                configuration,
-                fakeInstanceId,
-                fakeInstanceName
-            )
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
 
         // Then
         assertThat(testedCore.libraryVerbosity)
@@ -278,14 +268,14 @@ internal class DatadogCoreInitializationTest {
             .build()
 
         // When
-        testedCore =
-            DatadogCore(
-                appContext.mockInstance,
-                fakeCredentials,
-                configuration,
-                fakeInstanceId,
-                fakeInstanceName
-            )
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
 
         // Then
         val mockRumFeature = mock<SdkFeature>()
@@ -325,14 +315,14 @@ internal class DatadogCoreInitializationTest {
             .build()
 
         // When
-        testedCore =
-            DatadogCore(
-                appContext.mockInstance,
-                fakeCredentials,
-                configuration,
-                fakeInstanceId,
-                fakeInstanceName
-            )
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
 
         // Then
         assertThat(testedCore.coreFeature.sourceName).isEqualTo(source)
@@ -350,14 +340,14 @@ internal class DatadogCoreInitializationTest {
             .build()
 
         // When
-        testedCore =
-            DatadogCore(
-                appContext.mockInstance,
-                fakeCredentials,
-                configuration,
-                fakeInstanceId,
-                fakeInstanceName
-            )
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
 
         // Then
         assertThat(testedCore.coreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
@@ -375,14 +365,14 @@ internal class DatadogCoreInitializationTest {
             .build()
 
         // When
-        testedCore =
-            DatadogCore(
-                appContext.mockInstance,
-                fakeCredentials,
-                configuration,
-                fakeInstanceId,
-                fakeInstanceName
-            )
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
 
         // Then
         assertThat(testedCore.coreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
@@ -400,14 +390,14 @@ internal class DatadogCoreInitializationTest {
             .build()
 
         // When
-        testedCore =
-            DatadogCore(
-                appContext.mockInstance,
-                fakeCredentials,
-                configuration,
-                fakeInstanceId,
-                fakeInstanceName
-            )
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
 
         // Then
         assertThat(testedCore.coreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
@@ -425,14 +415,14 @@ internal class DatadogCoreInitializationTest {
             .build()
 
         // When
-        testedCore =
-            DatadogCore(
-                appContext.mockInstance,
-                fakeCredentials,
-                configuration,
-                fakeInstanceId,
-                fakeInstanceName
-            )
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
 
         // Then
         assertThat(testedCore.coreFeature.sdkVersion).isEqualTo(sdkVersion)
@@ -452,14 +442,14 @@ internal class DatadogCoreInitializationTest {
             .build()
 
         // When
-        testedCore =
-            DatadogCore(
-                appContext.mockInstance,
-                fakeCredentials,
-                configuration,
-                fakeInstanceId,
-                fakeInstanceName
-            )
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
 
         // Then
         assertThat(testedCore.coreFeature.sdkVersion).isEqualTo(CoreFeature.DEFAULT_SDK_VERSION)
@@ -477,14 +467,14 @@ internal class DatadogCoreInitializationTest {
             .build()
 
         // When
-        testedCore =
-            DatadogCore(
-                appContext.mockInstance,
-                fakeCredentials,
-                configuration,
-                fakeInstanceId,
-                fakeInstanceName
-            )
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
 
         // Then
         assertThat(testedCore.coreFeature.sdkVersion).isEqualTo(CoreFeature.DEFAULT_SDK_VERSION)
@@ -502,14 +492,14 @@ internal class DatadogCoreInitializationTest {
             .build()
 
         // When
-        testedCore =
-            DatadogCore(
-                appContext.mockInstance,
-                fakeCredentials,
-                configuration,
-                fakeInstanceId,
-                fakeInstanceName
-            )
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
 
         // Then
         assertThat(testedCore.coreFeature.sdkVersion).isEqualTo(CoreFeature.DEFAULT_SDK_VERSION)
@@ -527,14 +517,14 @@ internal class DatadogCoreInitializationTest {
             .build()
 
         // When
-        testedCore =
-            DatadogCore(
-                appContext.mockInstance,
-                fakeCredentials,
-                configuration,
-                fakeInstanceId,
-                fakeInstanceName
-            )
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
 
         // Then
         assertThat(testedCore.coreFeature.packageVersionProvider.version).isEqualTo(appVersion)
@@ -554,14 +544,14 @@ internal class DatadogCoreInitializationTest {
             .build()
 
         // When
-        testedCore =
-            DatadogCore(
-                appContext.mockInstance,
-                fakeCredentials,
-                configuration,
-                fakeInstanceId,
-                fakeInstanceName
-            )
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
 
         // Then
         assertThat(testedCore.coreFeature.packageVersionProvider.version).isEqualTo(
@@ -581,14 +571,14 @@ internal class DatadogCoreInitializationTest {
             .build()
 
         // When
-        testedCore =
-            DatadogCore(
-                appContext.mockInstance,
-                fakeCredentials,
-                configuration,
-                fakeInstanceId,
-                fakeInstanceName
-            )
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
 
         // Then
         assertThat(testedCore.coreFeature.packageVersionProvider.version).isEqualTo(

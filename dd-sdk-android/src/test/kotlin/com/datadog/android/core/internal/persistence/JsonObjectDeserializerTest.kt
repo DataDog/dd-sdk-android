@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence
 
 import com.datadog.android.utils.forge.Configurator
 import com.google.gson.JsonObject
+import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -28,7 +29,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class JsonObjectDeserializerTest {
 
-    private val testedDeserializer = JsonObjectDeserializer()
+    private val testedDeserializer = JsonObjectDeserializer(internalLogger = mock())
 
     @Test
     fun `𝕄 deserialize a serialized JsonObject 𝕎 deserialize()`(

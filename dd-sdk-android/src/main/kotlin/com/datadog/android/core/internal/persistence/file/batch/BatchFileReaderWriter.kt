@@ -21,7 +21,11 @@ internal interface BatchFileReaderWriter : FileWriter, BatchFileReader {
             return if (encryption == null) {
                 PlainBatchFileReaderWriter(internalLogger)
             } else {
-                EncryptedBatchReaderWriter(encryption, PlainBatchFileReaderWriter(internalLogger))
+                EncryptedBatchReaderWriter(
+                    encryption,
+                    PlainBatchFileReaderWriter(internalLogger),
+                    internalLogger
+                )
             }
         }
     }

@@ -65,7 +65,13 @@ class LogsFeature internal constructor(
         initialized.set(true)
     }
 
-    override val requestFactory: RequestFactory = LogsRequestFactory(customEndpointUrl)
+    override val requestFactory: RequestFactory by lazy {
+        LogsRequestFactory(
+            customEndpointUrl,
+            sdkCore._internalLogger
+        )
+    }
+
     override val storageConfiguration: FeatureStorageConfiguration =
         FeatureStorageConfiguration.DEFAULT
 

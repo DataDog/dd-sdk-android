@@ -106,10 +106,10 @@ interface com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
   fun isEmpty(): Boolean
 interface com.datadog.android.core.internal.persistence.Deserializer<P: Any, R: Any>
   fun deserialize(P): R?
-fun java.io.File.canReadSafe(): Boolean
-fun java.io.File.existsSafe(): Boolean
-fun java.io.File.readTextSafe(java.nio.charset.Charset = Charsets.UTF_8): String?
-fun java.io.File.readLinesSafe(java.nio.charset.Charset = Charsets.UTF_8): List<String>?
+fun java.io.File.canReadSafe(com.datadog.android.v2.api.InternalLogger): Boolean
+fun java.io.File.existsSafe(com.datadog.android.v2.api.InternalLogger): Boolean
+fun java.io.File.readTextSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.v2.api.InternalLogger): String?
+fun java.io.File.readLinesSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.v2.api.InternalLogger): List<String>?
 interface com.datadog.android.core.internal.system.BuildSdkVersionProvider
   fun version(): Int
 class com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider : BuildSdkVersionProvider
@@ -117,16 +117,15 @@ class com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider : 
 class com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor : java.util.concurrent.ScheduledThreadPoolExecutor
   constructor(Int, com.datadog.android.v2.api.InternalLogger)
   override fun afterExecute(Runnable?, Throwable?)
-fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0)): ByteArray
-fun java.util.concurrent.Executor.executeSafe(String, Runnable)
-fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, Runnable): java.util.concurrent.ScheduledFuture<*>?
+fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.v2.api.InternalLogger): ByteArray
+fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.v2.api.InternalLogger, Runnable)
+fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.v2.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
 val NULL_MAP_VALUE: Object
 fun Any?.toJsonElement(): com.google.gson.JsonElement
 fun Int.toHexString(): String
 fun Long.toHexString(): String
 fun java.math.BigInteger.toHexString(): String
 fun Float.percent(): Double
-var internalLogger: com.datadog.android.v2.api.InternalLogger
 fun Throwable.loggableStackTrace(): String
 interface com.datadog.android.core.persistence.Serializer<T: Any>
   fun serialize(T): String?

@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.file.advanced
 
 import com.datadog.android.core.internal.persistence.file.single.SingleFileOrchestrator
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -33,6 +35,9 @@ internal class SingleFileOrchestratorTest {
 
     lateinit var testedOrchestrator: SingleFileOrchestrator
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @TempDir
     lateinit var tempDir: File
 
@@ -47,7 +52,7 @@ internal class SingleFileOrchestratorTest {
     @BeforeEach
     fun `set up`() {
         fakeFile = File(File(tempDir, fakeParentDirName), fakeFileName)
-        testedOrchestrator = SingleFileOrchestrator(fakeFile)
+        testedOrchestrator = SingleFileOrchestrator(fakeFile, mockInternalLogger)
     }
 
     // region getWritableFile

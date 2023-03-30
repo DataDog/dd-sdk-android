@@ -7,7 +7,6 @@
 
 package com.datadog.android.core.internal.persistence.file
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.InternalLogger
 import java.io.File
 import java.io.FileFilter
@@ -30,6 +29,7 @@ import java.nio.charset.Charset
 @Suppress("TooGenericExceptionCaught")
 private fun <T> File.safeCall(
     default: T,
+    internalLogger: InternalLogger,
     lambda: File.() -> T
 ): T {
     return try {
@@ -53,8 +53,8 @@ private fun <T> File.safeCall(
     }
 }
 
-internal fun File.canWriteSafe(): Boolean {
-    return safeCall(default = false) {
+internal fun File.canWriteSafe(internalLogger: InternalLogger): Boolean {
+    return safeCall(default = false, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         canWrite()
     }
@@ -63,15 +63,15 @@ internal fun File.canWriteSafe(): Boolean {
 /**
  * Non-throwing version of [File.canRead]. If exception happens, false is returned.
  */
-fun File.canReadSafe(): Boolean {
-    return safeCall(default = false) {
+fun File.canReadSafe(internalLogger: InternalLogger): Boolean {
+    return safeCall(default = false, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         canRead()
     }
 }
 
-internal fun File.deleteSafe(): Boolean {
-    return safeCall(default = false) {
+internal fun File.deleteSafe(internalLogger: InternalLogger): Boolean {
+    return safeCall(default = false, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         delete()
     }
@@ -80,57 +80,57 @@ internal fun File.deleteSafe(): Boolean {
 /**
  * Non-throwing version of [File.exists]. If exception happens, false is returned.
  */
-fun File.existsSafe(): Boolean {
-    return safeCall(default = false) {
+fun File.existsSafe(internalLogger: InternalLogger): Boolean {
+    return safeCall(default = false, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         exists()
     }
 }
 
-internal fun File.isFileSafe(): Boolean {
-    return safeCall(default = false) {
+internal fun File.isFileSafe(internalLogger: InternalLogger): Boolean {
+    return safeCall(default = false, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         isFile()
     }
 }
 
-internal fun File.isDirectorySafe(): Boolean {
-    return safeCall(default = false) {
+internal fun File.isDirectorySafe(internalLogger: InternalLogger): Boolean {
+    return safeCall(default = false, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         isDirectory()
     }
 }
 
-internal fun File.listFilesSafe(): Array<File>? {
-    return safeCall(default = null) {
+internal fun File.listFilesSafe(internalLogger: InternalLogger): Array<File>? {
+    return safeCall(default = null, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         listFiles()
     }
 }
 
-internal fun File.listFilesSafe(filter: FileFilter): Array<File>? {
-    return safeCall(default = null) {
+internal fun File.listFilesSafe(filter: FileFilter, internalLogger: InternalLogger): Array<File>? {
+    return safeCall(default = null, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         listFiles(filter)
     }
 }
 
-internal fun File.lengthSafe(): Long {
-    return safeCall(default = 0L) {
+internal fun File.lengthSafe(internalLogger: InternalLogger): Long {
+    return safeCall(default = 0L, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         length()
     }
 }
 
-internal fun File.mkdirsSafe(): Boolean {
-    return safeCall(default = false) {
+internal fun File.mkdirsSafe(internalLogger: InternalLogger): Boolean {
+    return safeCall(default = false, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         mkdirs()
     }
 }
 
-internal fun File.renameToSafe(dest: File): Boolean {
-    return safeCall(default = false) {
+internal fun File.renameToSafe(dest: File, internalLogger: InternalLogger): Boolean {
+    return safeCall(default = false, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         renameTo(dest)
     }
@@ -139,9 +139,9 @@ internal fun File.renameToSafe(dest: File): Boolean {
 /**
  * Non-throwing version of [File.readText]. If exception happens, null is returned.
  */
-fun File.readTextSafe(charset: Charset = Charsets.UTF_8): String? {
-    return if (existsSafe() && canReadSafe()) {
-        safeCall(default = null) {
+fun File.readTextSafe(charset: Charset = Charsets.UTF_8, internalLogger: InternalLogger): String? {
+    return if (existsSafe(internalLogger) && canReadSafe(internalLogger)) {
+        safeCall(default = null, internalLogger) {
             @Suppress("UnsafeThirdPartyFunctionCall")
             readText(charset)
         }
@@ -150,9 +150,9 @@ fun File.readTextSafe(charset: Charset = Charsets.UTF_8): String? {
     }
 }
 
-internal fun File.readBytesSafe(): ByteArray? {
-    return if (existsSafe() && canReadSafe()) {
-        safeCall(default = null) {
+internal fun File.readBytesSafe(internalLogger: InternalLogger): ByteArray? {
+    return if (existsSafe(internalLogger) && canReadSafe(internalLogger)) {
+        safeCall(default = null, internalLogger) {
             @Suppress("UnsafeThirdPartyFunctionCall")
             readBytes()
         }
@@ -164,9 +164,9 @@ internal fun File.readBytesSafe(): ByteArray? {
 /**
  * Non-throwing version of [File.readLines]. If exception happens, null is returned.
  */
-fun File.readLinesSafe(charset: Charset = Charsets.UTF_8): List<String>? {
-    return if (existsSafe() && canReadSafe()) {
-        safeCall(default = null) {
+fun File.readLinesSafe(charset: Charset = Charsets.UTF_8, internalLogger: InternalLogger): List<String>? {
+    return if (existsSafe(internalLogger) && canReadSafe(internalLogger)) {
+        safeCall(default = null, internalLogger) {
             @Suppress("UnsafeThirdPartyFunctionCall")
             readLines(charset)
         }

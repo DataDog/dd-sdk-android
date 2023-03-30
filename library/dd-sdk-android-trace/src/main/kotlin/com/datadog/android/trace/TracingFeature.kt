@@ -38,15 +38,24 @@ class TracingFeature internal constructor(
 
     override val name: String = Feature.TRACING_FEATURE_NAME
 
+    private lateinit var sdkCore: SdkCore
+
     override fun onInitialize(
         sdkCore: SdkCore,
         appContext: Context
     ) {
+        this.sdkCore = sdkCore
         dataWriter = createDataWriter(sdkCore)
         initialized.set(true)
     }
 
-    override val requestFactory: RequestFactory = TracesRequestFactory(customEndpointUrl)
+    override val requestFactory: RequestFactory by lazy {
+        TracesRequestFactory(
+            customEndpointUrl,
+            sdkCore._internalLogger
+        )
+    }
+
     override val storageConfiguration: FeatureStorageConfiguration =
         FeatureStorageConfiguration.DEFAULT
 

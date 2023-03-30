@@ -19,16 +19,18 @@ import java.util.Date
 internal fun retryWithDelay(
     times: Int,
     retryDelayNs: Long,
+    internalLogger: InternalLogger,
     block: () -> Boolean
 ): Boolean {
-    return retryWithDelay(block, times, retryDelayNs)
+    return retryWithDelay(block, times, retryDelayNs, internalLogger)
 }
 
 @Suppress("TooGenericExceptionCaught")
 internal inline fun retryWithDelay(
     block: () -> Boolean,
     times: Int,
-    loopsDelayInNanos: Long
+    loopsDelayInNanos: Long,
+    internalLogger: InternalLogger
 ): Boolean {
     var retryCounter = 1
     var wasSuccessful = false

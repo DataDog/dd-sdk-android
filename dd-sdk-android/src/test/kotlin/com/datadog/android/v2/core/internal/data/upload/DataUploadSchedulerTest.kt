@@ -49,7 +49,8 @@ internal class DataUploadSchedulerTest {
             mock(),
             mock(),
             fakeUploadFrequency,
-            mockExecutor
+            mockExecutor,
+            mock()
         )
     }
 

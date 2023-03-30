@@ -7,14 +7,14 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.security.Encryption
 import com.datadog.android.v2.api.InternalLogger
 import java.io.File
 
 internal class EncryptedBatchReaderWriter(
     internal val encryption: Encryption,
-    internal val delegate: BatchFileReaderWriter
+    internal val delegate: BatchFileReaderWriter,
+    private val internalLogger: InternalLogger
 ) : BatchFileReaderWriter by delegate {
 
     @WorkerThread

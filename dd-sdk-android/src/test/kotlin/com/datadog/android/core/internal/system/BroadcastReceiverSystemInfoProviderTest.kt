@@ -13,6 +13,7 @@ import android.os.Build
 import android.os.PowerManager
 import com.datadog.android.utils.assertj.SystemInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
@@ -65,6 +66,9 @@ internal class BroadcastReceiverSystemInfoProviderTest {
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @IntForgery
     var fakePluggedStatus: Int = 0
 
@@ -73,7 +77,8 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         whenever(mockContext.getSystemService(Context.POWER_SERVICE)) doReturn mockPowerMgr
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
 
-        testedProvider = BroadcastReceiverSystemInfoProvider(mockBuildSdkVersionProvider)
+        testedProvider =
+            BroadcastReceiverSystemInfoProvider(mockBuildSdkVersionProvider, mockInternalLogger)
     }
 
     @Test

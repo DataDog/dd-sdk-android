@@ -57,7 +57,6 @@ import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.core.internal.user.UserInfoDeserializer
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.ndk.DatadogNdkCrashHandler
 import com.datadog.android.ndk.NdkCrashHandler
 import com.datadog.android.ndk.NdkCrashLogDeserializer
@@ -89,7 +88,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("TooManyFunctions")
-internal class CoreFeature {
+internal class CoreFeature(private val internalLogger: InternalLogger) {
 
     internal val initialized = AtomicBoolean(false)
     internal var contextRef: WeakReference<Context?> = WeakReference(null)
@@ -239,7 +238,7 @@ internal class CoreFeature {
                 storageDir,
                 persistenceExecutorService,
                 NdkCrashLogDeserializer(internalLogger),
-                rumEventDeserializer = JsonObjectDeserializer(),
+                rumEventDeserializer = JsonObjectDeserializer(internalLogger),
                 NetworkInfoDeserializer(internalLogger),
                 UserInfoDeserializer(internalLogger),
                 internalLogger,
@@ -266,7 +265,7 @@ internal class CoreFeature {
             ),
             cacheExpirationMs = TimeUnit.MINUTES.toMillis(NTP_CACHE_EXPIRATION_MINUTES),
             minWaitTimeBetweenSyncMs = TimeUnit.MINUTES.toMillis(NTP_DELAY_BETWEEN_SYNCS_MINUTES),
-            syncListener = LoggingSyncListener()
+            syncListener = LoggingSyncListener(internalLogger)
         ).apply {
             if (!disableKronosBackgroundSync) {
                 try {
@@ -347,7 +346,7 @@ internal class CoreFeature {
         trackingConsentProvider = TrackingConsentProvider(consent)
 
         // System Info Provider
-        systemInfoProvider = BroadcastReceiverSystemInfoProvider()
+        systemInfoProvider = BroadcastReceiverSystemInfoProvider(internalLogger = internalLogger)
         systemInfoProvider.register(appContext)
 
         // Network Info Provider
@@ -389,7 +388,7 @@ internal class CoreFeature {
             internalLogger
         )
         networkInfoProvider = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            CallbackNetworkInfoProvider(networkInfoWriter)
+            CallbackNetworkInfoProvider(networkInfoWriter, internalLogger = internalLogger)
         } else {
             BroadcastReceiverNetworkInfoProvider(networkInfoWriter)
         }
@@ -418,7 +417,7 @@ internal class CoreFeature {
             builder.addNetworkInterceptor(CurlInterceptor())
         } else {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            builder.addInterceptor(GzipRequestInterceptor())
+            builder.addInterceptor(GzipRequestInterceptor(internalLogger))
         }
 
         if (configuration.proxy != null) {

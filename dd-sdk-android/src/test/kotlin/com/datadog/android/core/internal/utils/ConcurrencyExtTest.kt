@@ -6,12 +6,8 @@
 
 package com.datadog.android.core.internal.utils
 
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.doNothing
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
@@ -27,6 +23,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -38,12 +35,14 @@ import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class ConcurrencyExtTest {
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @Test
     fun `M execute task W executeSafe()`(
@@ -55,7 +54,7 @@ internal class ConcurrencyExtTest {
         doNothing().whenever(service).execute(runnable)
 
         // When
-        service.executeSafe(name, runnable)
+        service.executeSafe(name, mockInternalLogger, runnable)
 
         // Then
         verify(service).execute(runnable)
@@ -73,11 +72,11 @@ internal class ConcurrencyExtTest {
         doThrow(exception).whenever(service).execute(runnable)
 
         // When
-        service.executeSafe(name, runnable)
+        service.executeSafe(name, mockInternalLogger, runnable)
 
         // Then
         verify(service).execute(runnable)
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             "Unable to schedule $name task on the executor",
@@ -98,7 +97,7 @@ internal class ConcurrencyExtTest {
         whenever(service.schedule(runnable, delay, unit)) doReturn future
 
         // When
-        val result: Any? = service.scheduleSafe(name, delay, unit, runnable)
+        val result: Any? = service.scheduleSafe(name, delay, unit, mockInternalLogger, runnable)
 
         // Then
         assertThat(result).isSameAs(future)
@@ -119,26 +118,16 @@ internal class ConcurrencyExtTest {
         doThrow(exception).whenever(service).schedule(runnable, delay, unit)
 
         // When
-        val result: Any? = service.scheduleSafe(name, delay, unit, runnable)
+        val result: Any? = service.scheduleSafe(name, delay, unit, mockInternalLogger, runnable)
 
         // Then
         assertThat(result).isNull()
         verify(service).schedule(runnable, delay, unit)
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             "Unable to schedule $name task on the executor",
             exception
         )
-    }
-
-    companion object {
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
     }
 }
