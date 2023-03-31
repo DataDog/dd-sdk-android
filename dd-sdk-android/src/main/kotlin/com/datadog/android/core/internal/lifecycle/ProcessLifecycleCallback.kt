@@ -11,13 +11,15 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.utils.cancelUploadWorker
 import com.datadog.android.core.internal.utils.isWorkManagerInitialized
 import com.datadog.android.core.internal.utils.triggerUploadWorker
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.NetworkInfo
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 
 internal class ProcessLifecycleCallback(
     val networkInfoProvider: NetworkInfoProvider,
-    appContext: Context
+    appContext: Context,
+    private val internalLogger: InternalLogger
 ) :
     ProcessLifecycleMonitor.Callback {
 
@@ -26,7 +28,7 @@ internal class ProcessLifecycleCallback(
     override fun onStarted() {
         contextWeakRef.get()?.let {
             if (isWorkManagerInitialized(it)) {
-                cancelUploadWorker(it)
+                cancelUploadWorker(it, internalLogger)
             }
         }
     }
@@ -43,7 +45,7 @@ internal class ProcessLifecycleCallback(
         if (isOffline) {
             contextWeakRef.get()?.let {
                 if (isWorkManagerInitialized(it)) {
-                    triggerUploadWorker(it)
+                    triggerUploadWorker(it, internalLogger)
                 }
             }
         }

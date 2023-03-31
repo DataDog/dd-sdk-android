@@ -12,12 +12,16 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
 import java.util.concurrent.TimeUnit
 
 internal class NoOpSdkCore : SdkCore {
+
+    override val name = "no-op"
+
     override val time: TimeInfo = with(System.currentTimeMillis()) {
         TimeInfo(
             deviceTimeNs = TimeUnit.MILLISECONDS.toNanos(this),
@@ -32,6 +36,9 @@ internal class NoOpSdkCore : SdkCore {
 
     override val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver
         get() = DefaultFirstPartyHostHeaderTypeResolver(emptyMap())
+
+    override val _internalLogger: InternalLogger
+        get() = SdkInternalLogger(this)
 
     override fun registerFeature(feature: Feature) = Unit
 

@@ -7,8 +7,8 @@
 package com.datadog.android.webview.internal.rum
 
 import android.content.Context
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.FeatureStorageConfiguration
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
@@ -34,7 +34,7 @@ internal class WebViewRumFeature(
         sdkCore: SdkCore,
         appContext: Context
     ) {
-        dataWriter = createDataWriter()
+        dataWriter = createDataWriter(sdkCore._internalLogger)
         initialized.set(true)
     }
 
@@ -48,7 +48,7 @@ internal class WebViewRumFeature(
 
     // endregion
 
-    private fun createDataWriter(): DataWriter<JsonObject> {
+    private fun createDataWriter(internalLogger: InternalLogger): DataWriter<JsonObject> {
         return WebViewDataWriter(
             serializer = WebViewEventSerializer(),
             internalLogger = internalLogger

@@ -7,6 +7,8 @@
 package com.datadog.android.core.internal.thread
 
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -35,6 +37,9 @@ internal class ThreadPoolExecutorExtTest {
     @Mock
     lateinit var testedMockExecutor: ThreadPoolExecutor
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Test
     fun `M return false W waitToIdle { timeout reached }`(
         @LongForgery(min = 0, max = 500)
@@ -48,7 +53,7 @@ internal class ThreadPoolExecutorExtTest {
         whenever(testedMockExecutor.completedTaskCount).thenReturn(fakeCompletedCount)
 
         // WHEN
-        val isIdled = testedMockExecutor.waitToIdle(fakeTimeout)
+        val isIdled = testedMockExecutor.waitToIdle(fakeTimeout, mockInternalLogger)
 
         // THEN
         assertThat(isIdled).isFalse()
@@ -68,7 +73,7 @@ internal class ThreadPoolExecutorExtTest {
 
         // WHEN
         val duration = measureTimeMillis {
-            testedMockExecutor.waitToIdle(fakeTimeout)
+            testedMockExecutor.waitToIdle(fakeTimeout, mockInternalLogger)
         }
 
         // THEN
@@ -89,7 +94,7 @@ internal class ThreadPoolExecutorExtTest {
             .thenReturn(fakeTaskCount)
 
         // WHEN
-        val isIdled = testedMockExecutor.waitToIdle(fakeTimeout)
+        val isIdled = testedMockExecutor.waitToIdle(fakeTimeout, mockInternalLogger)
 
         // THEN
         assertThat(isIdled).isTrue()
@@ -112,7 +117,7 @@ internal class ThreadPoolExecutorExtTest {
             .thenReturn(fakeTaskCount / 2).thenReturn(fakeTaskCount)
 
         // WHEN
-        val isIdled = testedMockExecutor.waitToIdle(fakeTimeout)
+        val isIdled = testedMockExecutor.waitToIdle(fakeTimeout, internalLogger = mock())
 
         // THEN
         assertThat(isIdled).isTrue()
@@ -129,7 +134,7 @@ internal class ThreadPoolExecutorExtTest {
         val fakeCompletedCount = forge.aLong(min = 0, max = fakeTaskCount - 1)
         whenever(testedMockExecutor.taskCount).thenReturn(fakeTaskCount)
         whenever(testedMockExecutor.completedTaskCount).thenReturn(fakeCompletedCount)
-        val isIdled = testedMockExecutor.waitToIdle(fakeTimeout)
+        val isIdled = testedMockExecutor.waitToIdle(fakeTimeout, mockInternalLogger)
 
         // THEN
         assertThat(isIdled).isFalse()
@@ -148,7 +153,7 @@ internal class ThreadPoolExecutorExtTest {
             .thenReturn(fakeTaskCount)
 
         // WHEN
-        val isIdled = testedMockExecutor.waitToIdle(fakeTimeout)
+        val isIdled = testedMockExecutor.waitToIdle(fakeTimeout, mockInternalLogger)
 
         // THEN
         assertThat(isIdled).isTrue()
@@ -173,7 +178,7 @@ internal class ThreadPoolExecutorExtTest {
             .thenReturn(fakeTaskCount + 2)
 
         // WHEN
-        val isIdled = testedMockExecutor.waitToIdle(fakeTimeout)
+        val isIdled = testedMockExecutor.waitToIdle(fakeTimeout, mockInternalLogger)
 
         // THEN
         assertThat(isIdled).isTrue()

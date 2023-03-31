@@ -6,14 +6,14 @@
 
 package com.datadog.android.core.internal.persistence
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.InternalLogger
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.util.Locale
 
-internal class JsonObjectDeserializer : Deserializer<String, JsonObject> {
+internal class JsonObjectDeserializer(private val internalLogger: InternalLogger) :
+    Deserializer<String, JsonObject> {
     override fun deserialize(model: String): JsonObject? {
         return try {
             JsonParser.parseString(model).asJsonObject

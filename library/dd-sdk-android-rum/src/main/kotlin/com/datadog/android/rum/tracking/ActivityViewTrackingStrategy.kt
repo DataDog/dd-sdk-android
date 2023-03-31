@@ -37,21 +37,21 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         super.onActivityCreated(activity, savedInstanceState)
-        componentPredicate.runIfValid(activity) {
+        componentPredicate.runIfValid(activity, internalLogger) {
             viewLoadingTimer.onCreated(it)
         }
     }
 
     override fun onActivityStarted(activity: Activity) {
         super.onActivityStarted(activity)
-        componentPredicate.runIfValid(activity) {
+        componentPredicate.runIfValid(activity, internalLogger) {
             viewLoadingTimer.onStartLoading(it)
         }
     }
 
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
-        componentPredicate.runIfValid(activity) {
+        componentPredicate.runIfValid(activity, internalLogger) {
             val viewName = componentPredicate.resolveViewName(activity)
             val attributes = if (trackExtras) {
                 convertToRumAttributes(it.intent)
@@ -74,14 +74,14 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
         // during DD SDK initialization on KitKat with ProGuard enabled, default super is
         // empty anyway
         // this method is only available from API 29 and above
-        componentPredicate.runIfValid(activity) {
+        componentPredicate.runIfValid(activity, internalLogger) {
             viewLoadingTimer.onFinishedLoading(it)
         }
     }
 
     override fun onActivityPaused(activity: Activity) {
         super.onActivityPaused(activity)
-        componentPredicate.runIfValid(activity) {
+        componentPredicate.runIfValid(activity, internalLogger) {
             updateLoadingTime(activity)
             GlobalRum.monitor.stopView(it)
             viewLoadingTimer.onPaused(activity)
@@ -90,7 +90,7 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
 
     override fun onActivityDestroyed(activity: Activity) {
         super.onActivityDestroyed(activity)
-        componentPredicate.runIfValid(activity) {
+        componentPredicate.runIfValid(activity, internalLogger) {
             viewLoadingTimer.onDestroyed(it)
         }
     }

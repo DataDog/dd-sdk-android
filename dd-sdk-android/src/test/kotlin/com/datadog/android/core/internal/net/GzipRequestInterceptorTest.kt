@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.net
 
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -45,6 +46,9 @@ internal class GzipRequestInterceptorTest {
     @Mock
     lateinit var mockChain: Interceptor.Chain
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     lateinit var fakeRequest: Request
     lateinit var fakeResponse: Response
     lateinit var fakeBody: String
@@ -57,7 +61,7 @@ internal class GzipRequestInterceptorTest {
             .url(fakeUrl)
             .post(RequestBody.create(null, fakeBody.toByteArray()))
             .build()
-        testedInterceptor = GzipRequestInterceptor()
+        testedInterceptor = GzipRequestInterceptor(mockInternalLogger)
     }
 
     @Test

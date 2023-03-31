@@ -15,7 +15,6 @@ import android.view.Choreographer
 import androidx.annotation.FloatRange
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.executeSafe
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
@@ -89,7 +88,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 class RumFeature internal constructor(
     internal val applicationId: String,
     internal val configuration: Configuration,
-    private val ndkCrashEventHandler: NdkCrashEventHandler = DatadogNdkCrashEventHandler()
+    private val ndkCrashEventHandlerFactory: (InternalLogger) -> NdkCrashEventHandler = {
+        DatadogNdkCrashEventHandler(it)
+    }
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
@@ -104,7 +105,6 @@ class RumFeature internal constructor(
     internal var viewTrackingStrategy: ViewTrackingStrategy = NoOpViewTrackingStrategy()
     internal var actionTrackingStrategy: UserActionTrackingStrategy =
         NoOpUserActionTrackingStrategy()
-    internal var rumEventMapper: EventMapper<Any> = NoOpEventMapper()
     internal var longTaskTrackingStrategy: TrackingStrategy = NoOpTrackingStrategy()
 
     internal var cpuVitalMonitor: VitalMonitor = NoOpVitalMonitor()
@@ -119,6 +119,8 @@ class RumFeature internal constructor(
     internal lateinit var anrDetectorHandler: Handler
     internal lateinit var appContext: Context
     internal lateinit var sdkCore: SdkCore
+
+    private val ndkCrashEventHandler by lazy { ndkCrashEventHandlerFactory(sdkCore._internalLogger) }
 
     // region Feature
 
@@ -141,10 +143,17 @@ class RumFeature internal constructor(
         telemetryConfigurationSamplingRate = configuration.telemetryConfigurationSamplingRate
         backgroundEventTracking = configuration.backgroundEventTracking
         trackFrustrations = configuration.trackFrustrations
-        rumEventMapper = configuration.rumEventMapper
 
         configuration.viewTrackingStrategy?.let { viewTrackingStrategy = it }
-        configuration.userActionTrackingStrategy?.let { actionTrackingStrategy = it }
+        actionTrackingStrategy = if (configuration.userActionTracking) {
+            provideUserTrackingStrategy(
+                configuration.touchTargetExtraAttributesProviders.toTypedArray(),
+                configuration.interactionPredicate,
+                sdkCore._internalLogger
+            )
+        } else {
+            NoOpUserActionTrackingStrategy()
+        }
         configuration.longTaskTrackingStrategy?.let { longTaskTrackingStrategy = it }
 
         initializeVitalMonitors(configuration.vitalsMonitorUpdateFrequency)
@@ -158,7 +167,10 @@ class RumFeature internal constructor(
         initialized.set(true)
     }
 
-    override val requestFactory: RequestFactory = RumRequestFactory(configuration.customEndpointUrl)
+    override val requestFactory: RequestFactory by lazy {
+        RumRequestFactory(configuration.customEndpointUrl, sdkCore._internalLogger)
+    }
+
     override val storageConfiguration: FeatureStorageConfiguration =
         FeatureStorageConfiguration.DEFAULT
 
@@ -172,7 +184,6 @@ class RumFeature internal constructor(
         viewTrackingStrategy = NoOpViewTrackingStrategy()
         actionTrackingStrategy = NoOpUserActionTrackingStrategy()
         longTaskTrackingStrategy = NoOpTrackingStrategy()
-        rumEventMapper = NoOpEventMapper()
 
         cpuVitalMonitor = NoOpVitalMonitor()
         memoryVitalMonitor = NoOpVitalMonitor()
@@ -192,11 +203,18 @@ class RumFeature internal constructor(
     ): DataWriter<Any> {
         return RumDataWriter(
             serializer = MapperSerializer(
-                configuration.rumEventMapper,
-                RumEventSerializer()
+                RumEventMapper(
+                    viewEventMapper = configuration.viewEventMapper,
+                    errorEventMapper = configuration.errorEventMapper,
+                    resourceEventMapper = configuration.resourceEventMapper,
+                    actionEventMapper = configuration.actionEventMapper,
+                    longTaskEventMapper = configuration.longTaskEventMapper,
+                    telemetryConfigurationMapper = configuration.telemetryConfigurationMapper,
+                    internalLogger = sdkCore._internalLogger
+                ),
+                RumEventSerializer(sdkCore._internalLogger)
             ),
-            sdkCore = sdkCore,
-            internalLogger = internalLogger
+            sdkCore = sdkCore
         )
     }
 
@@ -204,7 +222,7 @@ class RumFeature internal constructor(
 
     override fun onReceive(event: Any) {
         if (event !is Map<*, *>) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName)
@@ -230,7 +248,7 @@ class RumFeature internal constructor(
                 }
             }
             else -> {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"])
@@ -262,7 +280,7 @@ class RumFeature internal constructor(
     private fun enableDebugging() {
         val context = appContext
         if (context is Application) {
-            debugActivityLifecycleListener = UiRumDebugListener()
+            debugActivityLifecycleListener = UiRumDebugListener(sdkCore._internalLogger)
             context.registerActivityLifecycleCallbacks(debugActivityLifecycleListener)
         }
     }
@@ -276,9 +294,9 @@ class RumFeature internal constructor(
     }
 
     private fun registerTrackingStrategies(appContext: Context) {
-        actionTrackingStrategy.register(appContext)
-        viewTrackingStrategy.register(appContext)
-        longTaskTrackingStrategy.register(appContext)
+        actionTrackingStrategy.register(sdkCore, appContext)
+        viewTrackingStrategy.register(sdkCore, appContext)
+        longTaskTrackingStrategy.register(sdkCore, appContext)
     }
 
     private fun unregisterTrackingStrategies(appContext: Context?) {
@@ -299,25 +317,36 @@ class RumFeature internal constructor(
 
     private fun initializeVitalReaders(periodInMs: Long) {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
-        vitalExecutorService = LoggingScheduledThreadPoolExecutor(1, internalLogger)
+        vitalExecutorService = LoggingScheduledThreadPoolExecutor(1, sdkCore._internalLogger)
 
-        initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor, periodInMs)
-        initializeVitalMonitor(MemoryVitalReader(), memoryVitalMonitor, periodInMs)
+        initializeVitalMonitor(
+            CPUVitalReader(internalLogger = sdkCore._internalLogger),
+            cpuVitalMonitor,
+            periodInMs
+        )
+        initializeVitalMonitor(
+            MemoryVitalReader(internalLogger = sdkCore._internalLogger),
+            memoryVitalMonitor,
+            periodInMs
+        )
 
-        val vitalFrameCallback = VitalFrameCallback(frameRateVitalMonitor) {
+        val vitalFrameCallback = VitalFrameCallback(
+            frameRateVitalMonitor,
+            sdkCore._internalLogger
+        ) {
             initialized.get()
         }
         try {
             Choreographer.getInstance().postFrameCallback(vitalFrameCallback)
         } catch (e: IllegalStateException) {
             // This can happen if the SDK is initialized on a Thread with no looper
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
                 "Unable to initialize the Choreographer FrameCallback",
                 e
             )
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 "It seems you initialized the SDK on a thread without a Looper: " +
@@ -342,6 +371,7 @@ class RumFeature internal constructor(
             "Vitals monitoring",
             periodInMs,
             TimeUnit.MILLISECONDS,
+            sdkCore._internalLogger,
             readerRunnable
         )
     }
@@ -350,7 +380,11 @@ class RumFeature internal constructor(
         anrDetectorHandler = Handler(Looper.getMainLooper())
         anrDetectorRunnable = ANRDetectorRunnable(anrDetectorHandler)
         anrDetectorExecutorService = Executors.newSingleThreadExecutor()
-        anrDetectorExecutorService.executeSafe("ANR detection", anrDetectorRunnable)
+        anrDetectorExecutorService.executeSafe(
+            "ANR detection",
+            sdkCore._internalLogger,
+            anrDetectorRunnable
+        )
     }
 
     private fun addJvmCrash(crashEvent: Map<*, *>) {
@@ -358,7 +392,7 @@ class RumFeature internal constructor(
         val message = crashEvent[EVENT_MESSAGE_PROPERTY] as? String
 
         if (throwable == null || message == null) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS
@@ -381,7 +415,7 @@ class RumFeature internal constructor(
         val attributes = loggerErrorEvent[EVENT_ATTRIBUTES_PROPERTY] as? Map<String, Any?>
 
         if (message == null) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS
@@ -405,7 +439,7 @@ class RumFeature internal constructor(
         val attributes = loggerErrorEvent[EVENT_ATTRIBUTES_PROPERTY] as? Map<String, Any?>
 
         if (message == null) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS
@@ -424,7 +458,7 @@ class RumFeature internal constructor(
     private fun logTelemetryError(telemetryEvent: Map<*, *>) {
         val message = telemetryEvent[EVENT_MESSAGE_PROPERTY] as? String
         if (message == null) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 TELEMETRY_MISSING_MESSAGE_FIELD
@@ -445,7 +479,7 @@ class RumFeature internal constructor(
     private fun logTelemetryDebug(telemetryEvent: Map<*, *>) {
         val message = telemetryEvent[EVENT_MESSAGE_PROPERTY] as? String
         if (message == null) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 TELEMETRY_MISSING_MESSAGE_FIELD
@@ -456,7 +490,7 @@ class RumFeature internal constructor(
     }
 
     private fun logTelemetryConfiguration(event: Map<*, *>) {
-        TelemetryCoreConfiguration.fromEvent(event)?.let {
+        TelemetryCoreConfiguration.fromEvent(event, sdkCore._internalLogger)?.let {
             (GlobalRum.get() as? AdvancedRumMonitor)
                 ?.sendConfigurationTelemetryEvent(it)
         }
@@ -511,11 +545,10 @@ class RumFeature internal constructor(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider> = emptyArray(),
             interactionPredicate: InteractionPredicate = NoOpInteractionPredicate()
         ): Builder {
-            val strategy = provideUserTrackingStrategy(
-                touchTargetExtraAttributesProviders,
-                interactionPredicate
+            rumConfig = rumConfig.copy(
+                touchTargetExtraAttributesProviders = touchTargetExtraAttributesProviders.toList(),
+                interactionPredicate = interactionPredicate
             )
-            rumConfig = rumConfig.copy(userActionTrackingStrategy = strategy)
             return this
         }
 
@@ -523,9 +556,7 @@ class RumFeature internal constructor(
          * Disable the user interaction automatic tracker.
          */
         fun disableInteractionTracking(): Builder {
-            rumConfig = rumConfig.copy(
-                userActionTrackingStrategy = NoOpUserActionTrackingStrategy()
-            )
+            rumConfig = rumConfig.copy(userActionTracking = false)
             return this
         }
 
@@ -573,9 +604,7 @@ class RumFeature internal constructor(
          * @param eventMapper the [ViewEventMapper] implementation.
          */
         fun setRumViewEventMapper(eventMapper: ViewEventMapper): Builder {
-            rumConfig = rumConfig.copy(
-                rumEventMapper = getRumEventMapper().copy(viewEventMapper = eventMapper)
-            )
+            rumConfig = rumConfig.copy(viewEventMapper = eventMapper)
             return this
         }
 
@@ -586,9 +615,7 @@ class RumFeature internal constructor(
          * @param eventMapper the [EventMapper] implementation.
          */
         fun setRumResourceEventMapper(eventMapper: EventMapper<ResourceEvent>): Builder {
-            rumConfig = rumConfig.copy(
-                rumEventMapper = getRumEventMapper().copy(resourceEventMapper = eventMapper)
-            )
+            rumConfig = rumConfig.copy(resourceEventMapper = eventMapper)
             return this
         }
 
@@ -599,9 +626,7 @@ class RumFeature internal constructor(
          * @param eventMapper the [EventMapper] implementation.
          */
         fun setRumActionEventMapper(eventMapper: EventMapper<ActionEvent>): Builder {
-            rumConfig = rumConfig.copy(
-                rumEventMapper = getRumEventMapper().copy(actionEventMapper = eventMapper)
-            )
+            rumConfig = rumConfig.copy(actionEventMapper = eventMapper)
             return this
         }
 
@@ -612,9 +637,7 @@ class RumFeature internal constructor(
          * @param eventMapper the [EventMapper] implementation.
          */
         fun setRumErrorEventMapper(eventMapper: EventMapper<ErrorEvent>): Builder {
-            rumConfig = rumConfig.copy(
-                rumEventMapper = getRumEventMapper().copy(errorEventMapper = eventMapper)
-            )
+            rumConfig = rumConfig.copy(errorEventMapper = eventMapper)
             return this
         }
 
@@ -625,9 +648,7 @@ class RumFeature internal constructor(
          * @param eventMapper the [EventMapper] implementation.
          */
         fun setRumLongTaskEventMapper(eventMapper: EventMapper<LongTaskEvent>): Builder {
-            rumConfig = rumConfig.copy(
-                rumEventMapper = getRumEventMapper().copy(longTaskEventMapper = eventMapper)
-            )
+            rumConfig = rumConfig.copy(longTaskEventMapper = eventMapper)
             return this
         }
 
@@ -635,10 +656,7 @@ class RumFeature internal constructor(
         internal fun setTelemetryConfigurationEventMapper(
             eventMapper: EventMapper<TelemetryConfigurationEvent>
         ): Builder {
-            rumConfig = rumConfig.copy(
-                rumEventMapper = getRumEventMapper()
-                    .copy(telemetryConfigurationMapper = eventMapper)
-            )
+            rumConfig = rumConfig.copy(telemetryConfigurationMapper = eventMapper)
             return this
         }
 
@@ -717,15 +735,6 @@ class RumFeature internal constructor(
                 }
             )
         }
-
-        private fun getRumEventMapper(): RumEventMapper {
-            val rumEventMapper = rumConfig.rumEventMapper
-            return if (rumEventMapper is RumEventMapper) {
-                rumEventMapper
-            } else {
-                RumEventMapper()
-            }
-        }
     }
 
     internal data class Configuration(
@@ -733,10 +742,17 @@ class RumFeature internal constructor(
         val samplingRate: Float,
         val telemetrySamplingRate: Float,
         val telemetryConfigurationSamplingRate: Float,
-        val userActionTrackingStrategy: UserActionTrackingStrategy?,
+        val userActionTracking: Boolean,
+        val touchTargetExtraAttributesProviders: List<ViewAttributesProvider>,
+        val interactionPredicate: InteractionPredicate,
         val viewTrackingStrategy: ViewTrackingStrategy?,
         val longTaskTrackingStrategy: TrackingStrategy?,
-        val rumEventMapper: EventMapper<Any>,
+        val viewEventMapper: EventMapper<ViewEvent>,
+        val errorEventMapper: EventMapper<ErrorEvent>,
+        val resourceEventMapper: EventMapper<ResourceEvent>,
+        val actionEventMapper: EventMapper<ActionEvent>,
+        val longTaskEventMapper: EventMapper<LongTaskEvent>,
+        val telemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent>,
         val backgroundEventTracking: Boolean,
         val trackFrustrations: Boolean,
         val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency,
@@ -757,16 +773,19 @@ class RumFeature internal constructor(
             samplingRate = DEFAULT_SAMPLING_RATE,
             telemetrySamplingRate = DEFAULT_TELEMETRY_SAMPLING_RATE,
             telemetryConfigurationSamplingRate = DEFAULT_TELEMETRY_CONFIGURATION_SAMPLING_RATE,
-            userActionTrackingStrategy =
-            provideUserTrackingStrategy(
-                emptyArray(),
-                NoOpInteractionPredicate()
-            ),
+            userActionTracking = true,
+            touchTargetExtraAttributesProviders = emptyList(),
+            interactionPredicate = NoOpInteractionPredicate(),
             viewTrackingStrategy = ActivityViewTrackingStrategy(false),
             longTaskTrackingStrategy = MainLooperLongTaskStrategy(
                 DEFAULT_LONG_TASK_THRESHOLD_MS
             ),
-            rumEventMapper = NoOpEventMapper(),
+            viewEventMapper = NoOpEventMapper(),
+            errorEventMapper = NoOpEventMapper(),
+            resourceEventMapper = NoOpEventMapper(),
+            actionEventMapper = NoOpEventMapper(),
+            longTaskEventMapper = NoOpEventMapper(),
+            telemetryConfigurationMapper = NoOpEventMapper(),
             backgroundEventTracking = false,
             trackFrustrations = true,
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
@@ -800,10 +819,15 @@ class RumFeature internal constructor(
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,
-            interactionPredicate: InteractionPredicate
+            interactionPredicate: InteractionPredicate,
+            internalLogger: InternalLogger
         ): UserActionTrackingStrategy {
             val gesturesTracker =
-                provideGestureTracker(touchTargetExtraAttributesProviders, interactionPredicate)
+                provideGestureTracker(
+                    touchTargetExtraAttributesProviders,
+                    interactionPredicate,
+                    internalLogger
+                )
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 UserActionTrackingStrategyApi29(gesturesTracker)
             } else {
@@ -813,11 +837,12 @@ class RumFeature internal constructor(
 
         private fun provideGestureTracker(
             customProviders: Array<ViewAttributesProvider>,
-            interactionPredicate: InteractionPredicate
+            interactionPredicate: InteractionPredicate,
+            internalLogger: InternalLogger
         ): DatadogGesturesTracker {
             val defaultProviders = arrayOf(JetpackViewAttributesProvider())
             val providers = customProviders + defaultProviders
-            return DatadogGesturesTracker(providers, interactionPredicate)
+            return DatadogGesturesTracker(providers, interactionPredicate, internalLogger)
         }
     }
 }

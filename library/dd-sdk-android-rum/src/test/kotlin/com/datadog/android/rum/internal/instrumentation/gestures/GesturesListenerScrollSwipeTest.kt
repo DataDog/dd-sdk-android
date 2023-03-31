@@ -18,7 +18,6 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
@@ -46,8 +45,7 @@ import java.util.stream.Stream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -103,7 +101,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection)
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -172,7 +171,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection)
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -241,7 +241,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection2)
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -303,7 +304,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -314,7 +316,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
-        verify(logger.mockInternalLogger, times(intermediaryEvents.size))
+        verify(mockInternalLogger, times(intermediaryEvents.size))
             .log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
@@ -350,7 +352,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         }
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -361,7 +364,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyZeroInteractions(mockInternalLogger)
         verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
@@ -411,7 +414,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection)
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -487,7 +491,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection)
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -545,7 +550,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener = GesturesListener(
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -606,7 +612,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener = GesturesListener(
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -667,7 +674,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener = GesturesListener(
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -742,7 +750,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection2)
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -800,7 +809,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
         testedListener.onUp(startDownEvent)
         testedListener.onDown(endUpEvent)

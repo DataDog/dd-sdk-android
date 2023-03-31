@@ -7,6 +7,7 @@
 package com.datadog.android.log.internal.net
 
 import com.datadog.android.core.internal.utils.join
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.Request
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
@@ -16,9 +17,11 @@ import java.util.UUID
 /**
  * Request factory for the Logs feature.
  * @param customEndpointUrl URL of the Logs intake.
+ * @param internalLogger logger to use.
  */
 internal class LogsRequestFactory(
-    internal val customEndpointUrl: String?
+    internal val customEndpointUrl: String?,
+    private val internalLogger: InternalLogger
 ) : RequestFactory {
 
     /** @inheritdoc */
@@ -42,7 +45,8 @@ internal class LogsRequestFactory(
             body = batchData.join(
                 separator = PAYLOAD_SEPARATOR,
                 prefix = PAYLOAD_PREFIX,
-                suffix = PAYLOAD_SUFFIX
+                suffix = PAYLOAD_SUFFIX,
+                internalLogger = internalLogger
             ),
             contentType = RequestFactory.CONTENT_TYPE_JSON
         )

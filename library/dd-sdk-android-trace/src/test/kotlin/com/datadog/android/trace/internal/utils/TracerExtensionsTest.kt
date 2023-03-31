@@ -11,6 +11,9 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.scopemanager.ScopeTestHelper
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -40,6 +43,8 @@ internal class TracerExtensionsTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        whenever(mockSdkCore._internalLogger) doReturn mock()
+
         tracer = AndroidTracer.Builder(mockSdkCore)
             .setServiceName(forge.anAlphaNumericalString())
             .build()

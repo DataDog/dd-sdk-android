@@ -9,7 +9,6 @@ package com.datadog.android.rum.internal.domain.scope
 import android.app.ActivityManager
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
@@ -125,7 +124,7 @@ internal class RumViewManagerScope(
         } else {
             val isSilentOrphanEvent = event.javaClass in silentOrphanEventTypes
             if (!isSilentOrphanEvent) {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     MESSAGE_MISSING_VIEW
@@ -170,7 +169,7 @@ internal class RumViewManagerScope(
             viewScope.handleEvent(event, writer)
             childrenScopes.add(viewScope)
         } else if (!isSilentOrphanEvent) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 MESSAGE_MISSING_VIEW

@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FileReader
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.core.internal.persistence.file.existsSafe
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.net.DataUploader
 
@@ -22,7 +23,8 @@ internal class DataFlusher(
     internal val fileOrchestrator: FileOrchestrator,
     internal val fileReader: BatchFileReader,
     internal val metadataFileReader: FileReader,
-    internal val fileMover: FileMover
+    internal val fileMover: FileMover,
+    private val internalLogger: InternalLogger
 ) : Flusher {
 
     @WorkerThread
@@ -33,14 +35,14 @@ internal class DataFlusher(
         toUploadFiles.forEach {
             val batch = fileReader.readData(it)
             val metaFile = fileOrchestrator.getMetadataFile(it)
-            val meta = if (metaFile != null && metaFile.existsSafe()) {
+            val meta = if (metaFile != null && metaFile.existsSafe(internalLogger)) {
                 metadataFileReader.readData(metaFile)
             } else {
                 null
             }
             uploader.upload(context, batch, meta)
             fileMover.delete(it)
-            if (metaFile?.existsSafe() == true) {
+            if (metaFile?.existsSafe(internalLogger) == true) {
                 fileMover.delete(metaFile)
             }
         }

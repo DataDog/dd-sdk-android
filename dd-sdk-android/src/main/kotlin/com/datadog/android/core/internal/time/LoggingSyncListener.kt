@@ -6,11 +6,10 @@
 
 package com.datadog.android.core.internal.time
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.InternalLogger
 import com.lyft.kronos.SyncListener
 
-internal class LoggingSyncListener : SyncListener {
+internal class LoggingSyncListener(private val internalLogger: InternalLogger) : SyncListener {
     override fun onStartSync(host: String) {
         // no-op
     }

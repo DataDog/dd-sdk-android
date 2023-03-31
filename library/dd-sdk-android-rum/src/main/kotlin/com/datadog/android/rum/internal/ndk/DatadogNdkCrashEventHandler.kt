@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.ndk
 
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.internal.domain.scope.tryFromSource
@@ -22,7 +21,8 @@ import com.google.gson.JsonObject
 import java.util.concurrent.TimeUnit
 
 internal class DatadogNdkCrashEventHandler(
-    private val rumEventDeserializer: Deserializer<JsonObject, Any> = RumEventDeserializer()
+    private val internalLogger: InternalLogger,
+    private val rumEventDeserializer: Deserializer<JsonObject, Any> = RumEventDeserializer(internalLogger)
 ) : NdkCrashEventHandler {
 
     @Suppress("ComplexCondition")
@@ -114,7 +114,8 @@ internal class DatadogNdkCrashEventHandler(
             ),
             source = viewEvent.source?.toJson()?.asString?.let {
                 ErrorEvent.ErrorEventSource.tryFromSource(
-                    it
+                    it,
+                    internalLogger
                 )
             },
             view = ErrorEvent.View(

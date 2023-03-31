@@ -7,17 +7,14 @@
 package com.datadog.android.core.internal.persistence.file
 
 import com.datadog.android.security.Encryption
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -37,8 +34,7 @@ import kotlin.experimental.inv
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -52,6 +48,9 @@ internal class EncryptedFileReaderWriterTest {
 
     @Mock
     lateinit var mockFile: File
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     private lateinit var testedReaderWriter: EncryptedFileReaderWriter
 
@@ -68,8 +67,11 @@ internal class EncryptedFileReaderWriterTest {
             decrypt(bytes)
         }
 
-        testedReaderWriter =
-            EncryptedFileReaderWriter(mockEncryption, mockFileReaderWriterDelegate)
+        testedReaderWriter = EncryptedFileReaderWriter(
+            mockEncryption,
+            mockFileReaderWriterDelegate,
+            mockInternalLogger
+        )
     }
 
     // region EncryptedFileReaderWriter#writeData tests
@@ -95,7 +97,7 @@ internal class EncryptedFileReaderWriterTest {
                 false
             )
 
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -115,12 +117,12 @@ internal class EncryptedFileReaderWriterTest {
         // Then
         assertThat(result).isFalse()
 
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             EncryptedFileReaderWriter.BAD_ENCRYPTION_RESULT_MESSAGE
         )
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyNoMoreInteractions(mockInternalLogger)
         verifyZeroInteractions(mockFileReaderWriterDelegate)
     }
 
@@ -138,12 +140,12 @@ internal class EncryptedFileReaderWriterTest {
         // Then
         assertThat(result).isFalse()
 
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
             EncryptedFileReaderWriter.APPEND_MODE_NOT_SUPPORTED_MESSAGE
         )
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyNoMoreInteractions(mockInternalLogger)
         verifyZeroInteractions(mockFileReaderWriterDelegate)
     }
 
@@ -201,7 +203,7 @@ internal class EncryptedFileReaderWriterTest {
         assertThat(writeResult).isTrue()
         assertThat(readResult).isEqualTo(data.toByteArray())
 
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     // endregion
@@ -218,15 +220,4 @@ internal class EncryptedFileReaderWriterTest {
     }
 
     // endregion
-
-    companion object {
-
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
-    }
 }

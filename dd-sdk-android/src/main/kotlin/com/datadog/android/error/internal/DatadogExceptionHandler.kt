@@ -8,7 +8,6 @@ package com.datadog.android.error.internal
 
 import android.content.Context
 import com.datadog.android.core.internal.thread.waitToIdle
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.isWorkManagerInitialized
 import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.v2.api.Feature
@@ -43,7 +42,7 @@ internal class DatadogExceptionHandler(
                 )
             )
         } else {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 MISSING_LOGS_FEATURE_INFO
@@ -61,7 +60,7 @@ internal class DatadogExceptionHandler(
                 )
             )
         } else {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 MISSING_RUM_FEATURE_INFO
@@ -73,9 +72,9 @@ internal class DatadogExceptionHandler(
         // give some time to the persistence executor service to finish its tasks
         if (sdkCore is InternalSdkCore) {
             val idled = (sdkCore.getPersistenceExecutorService() as? ThreadPoolExecutor)
-                ?.waitToIdle(MAX_WAIT_FOR_IDLE_TIME_IN_MS) ?: true
+                ?.waitToIdle(MAX_WAIT_FOR_IDLE_TIME_IN_MS, sdkCore._internalLogger) ?: true
             if (!idled) {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     EXECUTOR_NOT_IDLED_WARNING_MESSAGE
@@ -86,7 +85,7 @@ internal class DatadogExceptionHandler(
         // trigger a task to send the logs ASAP
         contextRef.get()?.let {
             if (isWorkManagerInitialized(it)) {
-                triggerUploadWorker(it)
+                triggerUploadWorker(it, sdkCore._internalLogger)
             }
         }
 

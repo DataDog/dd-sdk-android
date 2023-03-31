@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
@@ -196,7 +195,7 @@ internal class RumResourceScope(
                         type = kind.toSchemaType(),
                         url = url,
                         duration = duration,
-                        method = method.toMethod(),
+                        method = method.toMethod(sdkCore._internalLogger),
                         statusCode = statusCode,
                         size = size,
                         dns = finalTiming?.dns(),
@@ -229,7 +228,10 @@ internal class RumResourceScope(
                         type = ResourceEvent.ResourceEventSessionType.USER,
                         hasReplay = hasReplay
                     ),
-                    source = ResourceEvent.Source.tryFromSource(datadogContext.source),
+                    source = ResourceEvent.Source.tryFromSource(
+                        datadogContext.source,
+                        sdkCore._internalLogger
+                    ),
                     os = ResourceEvent.Os(
                         name = datadogContext.deviceInfo.osName,
                         version = datadogContext.deviceInfo.osVersion,
@@ -263,7 +265,7 @@ internal class RumResourceScope(
     private fun resolveResourceDuration(eventTime: Time): Long {
         val duration = eventTime.nanoTime - startedNanos
         return if (duration <= 0) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, url)
@@ -314,7 +316,7 @@ internal class RumResourceScope(
                         isCrash = false,
                         resource = ErrorEvent.Resource(
                             url = url,
-                            method = method.toErrorMethod(),
+                            method = method.toErrorMethod(sdkCore._internalLogger),
                             statusCode = statusCode ?: 0,
                             provider = resolveErrorProvider()
                         ),
@@ -344,7 +346,10 @@ internal class RumResourceScope(
                         type = ErrorEvent.ErrorEventSessionType.USER,
                         hasReplay = hasReplay
                     ),
-                    source = ErrorEvent.ErrorEventSource.tryFromSource(datadogContext.source),
+                    source = ErrorEvent.ErrorEventSource.tryFromSource(
+                        datadogContext.source,
+                        sdkCore._internalLogger
+                    ),
                     os = ErrorEvent.Os(
                         name = datadogContext.deviceInfo.osName,
                         version = datadogContext.deviceInfo.osVersion,

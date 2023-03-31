@@ -11,9 +11,11 @@ import com.datadog.android.core.constraints.DatadogDataConstraints
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.model.LogEvent
+import com.datadog.android.v2.api.InternalLogger
 
 internal class LogEventSerializer(
-    private val dataConstraints: DataConstraints = DatadogDataConstraints()
+    internalLogger: InternalLogger,
+    private val dataConstraints: DataConstraints = DatadogDataConstraints(internalLogger)
 ) : Serializer<LogEvent> {
 
     override fun serialize(model: LogEvent): String {

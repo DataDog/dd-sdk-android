@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -13,6 +14,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 
 @Extensions(
@@ -21,6 +23,9 @@ import org.mockito.junit.jupiter.MockitoExtension
 )
 internal class ByteArrayExtTest {
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     // region split
     @Test
     fun `splits a byteArray with 0 separator`(forge: Forge) {
@@ -28,7 +33,7 @@ internal class ByteArrayExtTest {
         val rawString = forge.aNumericalString()
         val byteArray = rawString.toByteArray(Charsets.UTF_8)
 
-        val subs = byteArray.split(separationChar.code.toByte())
+        val subs = byteArray.split(separationChar.code.toByte(), mockInternalLogger)
 
         assertThat(subs).hasSize(1)
         assertThat(subs[0]).isEqualTo(byteArray)
@@ -42,7 +47,7 @@ internal class ByteArrayExtTest {
         val rawString = part0 + separationChar + part1
         val byteArray = rawString.toByteArray(Charsets.UTF_8)
 
-        val subs = byteArray.split(separationChar.code.toByte())
+        val subs = byteArray.split(separationChar.code.toByte(), mockInternalLogger)
 
         assertThat(subs).hasSize(2)
         assertThat(String(subs[0])).isEqualTo(part0)
@@ -56,7 +61,7 @@ internal class ByteArrayExtTest {
         val rawString = part0 + separationChar
         val byteArray = rawString.toByteArray(Charsets.UTF_8)
 
-        val subs = byteArray.split(separationChar.code.toByte())
+        val subs = byteArray.split(separationChar.code.toByte(), mockInternalLogger)
 
         assertThat(subs).hasSize(1)
         assertThat(String(subs[0])).isEqualTo(part0)
@@ -69,7 +74,7 @@ internal class ByteArrayExtTest {
         val rawString = separationChar + part0
         val byteArray = rawString.toByteArray(Charsets.UTF_8)
 
-        val subs = byteArray.split(separationChar.code.toByte())
+        val subs = byteArray.split(separationChar.code.toByte(), mockInternalLogger)
 
         assertThat(subs).hasSize(1)
         assertThat(String(subs[0])).isEqualTo(part0)
@@ -83,7 +88,7 @@ internal class ByteArrayExtTest {
         val rawString = part0 + separationChar + separationChar + part1
         val byteArray = rawString.toByteArray(Charsets.UTF_8)
 
-        val subs = byteArray.split(separationChar.code.toByte())
+        val subs = byteArray.split(separationChar.code.toByte(), mockInternalLogger)
 
         assertThat(subs).hasSize(2)
         assertThat(String(subs[0])).isEqualTo(part0)
@@ -162,7 +167,11 @@ internal class ByteArrayExtTest {
         } + suffixBytes
 
         // When
-        val joined = dataBytes.join(separatorBytes, suffix = suffixBytes)
+        val joined = dataBytes.join(
+            separatorBytes,
+            suffix = suffixBytes,
+            internalLogger = mockInternalLogger
+        )
 
         // Then
         assertThat(joined).isEqualTo(expected)
@@ -187,7 +196,11 @@ internal class ByteArrayExtTest {
         }
 
         // When
-        val joined = dataBytes.join(separatorBytes, prefix = prefixBytes)
+        val joined = dataBytes.join(
+            separatorBytes,
+            prefix = prefixBytes,
+            internalLogger = mockInternalLogger
+        )
 
         // Then
         assertThat(joined).isEqualTo(expected)
@@ -210,7 +223,7 @@ internal class ByteArrayExtTest {
         }
 
         // When
-        val joined = dataBytes.join(separatorBytes)
+        val joined = dataBytes.join(separatorBytes, internalLogger = mockInternalLogger)
 
         // Then
         assertThat(joined).isEqualTo(expected)
@@ -235,8 +248,12 @@ internal class ByteArrayExtTest {
         } + suffixBytes
 
         // When
-        val joined =
-            dataBytes.join(separator = ByteArray(0), prefix = prefixBytes, suffix = suffixBytes)
+        val joined = dataBytes.join(
+            separator = ByteArray(0),
+            prefix = prefixBytes,
+            suffix = suffixBytes,
+            internalLogger = mockInternalLogger
+        )
 
         // Then
         assertThat(joined).isEqualTo(expected)
@@ -264,7 +281,12 @@ internal class ByteArrayExtTest {
 
         // When
         val joined =
-            dataBytes.join(separator = separatorBytes, prefix = prefixBytes, suffix = suffixBytes)
+            dataBytes.join(
+                separator = separatorBytes,
+                prefix = prefixBytes,
+                suffix = suffixBytes,
+                internalLogger = mockInternalLogger
+            )
 
         // Then
         assertThat(joined).isEqualTo(expected)
@@ -287,7 +309,12 @@ internal class ByteArrayExtTest {
 
         // When
         val joined =
-            dataBytes.join(separator = separatorBytes, prefix = prefixBytes, suffix = suffixBytes)
+            dataBytes.join(
+                separator = separatorBytes,
+                prefix = prefixBytes,
+                suffix = suffixBytes,
+                internalLogger = mockInternalLogger
+            )
 
         // Then
         assertThat(joined).isEqualTo(expected)
@@ -311,7 +338,12 @@ internal class ByteArrayExtTest {
 
         // When
         val joined =
-            dataBytes.join(separator = separatorBytes, prefix = prefixBytes, suffix = suffixBytes)
+            dataBytes.join(
+                separator = separatorBytes,
+                prefix = prefixBytes,
+                suffix = suffixBytes,
+                internalLogger = mockInternalLogger
+            )
 
         // Then
         assertThat(joined).isEqualTo(expected)
@@ -325,7 +357,8 @@ internal class ByteArrayExtTest {
         val dataBytes = emptyList<ByteArray>()
 
         // When
-        val joined = dataBytes.join(separator = separator.toByteArray())
+        val joined =
+            dataBytes.join(separator = separator.toByteArray(), internalLogger = mockInternalLogger)
 
         // Then
         assertThat(joined).isEmpty()

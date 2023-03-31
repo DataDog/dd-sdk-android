@@ -61,13 +61,13 @@ internal class MemoryVitalReaderTest {
     fun `set up`() {
         fakeFile = File(tempDir, "stat")
         fakeStatusContent = generateStatusContent(fakeVmRss)
-        testedReader = MemoryVitalReader(fakeFile)
+        testedReader = MemoryVitalReader(fakeFile, internalLogger = mock())
     }
 
     @Test
     fun `𝕄 read unix stats file 𝕎 init()`() {
         // When
-        val testedReader = MemoryVitalReader()
+        val testedReader = MemoryVitalReader(internalLogger = mock())
 
         // Then
         assertThat(testedReader.statusFile).isEqualTo(MemoryVitalReader.STATUS_FILE)

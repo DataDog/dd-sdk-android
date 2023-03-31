@@ -15,7 +15,6 @@ import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
-import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.assertj.TelemetryConfigurationEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.assertj.TelemetryDebugEventAssert.Companion.assertThat
@@ -30,9 +29,6 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.storage.DataWriter
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
@@ -72,8 +68,7 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrack
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -92,6 +87,9 @@ internal class TelemetryEventHandlerTest {
 
     @Mock
     lateinit var mockSdkCore: SdkCore
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockRumFeatureScope: FeatureScope
@@ -139,6 +137,7 @@ internal class TelemetryEventHandlerTest {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
 
         testedTelemetryHandler =
             TelemetryEventHandler(
@@ -475,7 +474,7 @@ internal class TelemetryEventHandlerTest {
         testedTelemetryHandler.handleEvent(anotherEvent, mockWriter)
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.MAINTAINER,
             TelemetryEventHandler.ALREADY_SEEN_EVENT_MESSAGE.format(
@@ -526,7 +525,7 @@ internal class TelemetryEventHandlerTest {
         }
 
         // Then
-        verify(logger.mockInternalLogger, times(extraNumber)).log(
+        verify(mockInternalLogger, times(extraNumber)).log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.MAINTAINER,
             TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE
@@ -596,7 +595,7 @@ internal class TelemetryEventHandlerTest {
         }
 
         // Then
-        verify(logger.mockInternalLogger, times(extraNumber)).log(
+        verify(mockInternalLogger, times(extraNumber)).log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.MAINTAINER,
             TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE
@@ -667,7 +666,7 @@ internal class TelemetryEventHandlerTest {
         // if limit would be counted before the sampler, it will be twice less writes
         verify(mockWriter, times(MAX_EVENTS_PER_SESSION_TEST))
             .write(eq(mockEventBatchWriter), any())
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     // endregion
@@ -776,13 +775,5 @@ internal class TelemetryEventHandlerTest {
     companion object {
 
         private const val MAX_EVENTS_PER_SESSION_TEST = 10
-
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
     }
 }

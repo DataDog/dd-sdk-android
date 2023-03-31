@@ -13,7 +13,6 @@ import com.datadog.android.rum.assertj.ViewEventAssert
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
@@ -23,9 +22,6 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.storage.DataWriter
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -55,8 +51,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -79,6 +74,9 @@ internal class DatadogNdkCrashEventHandlerTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
@@ -91,7 +89,8 @@ internal class DatadogNdkCrashEventHandlerTest {
         }
 
         testedHandler = DatadogNdkCrashEventHandler(
-            rumEventDeserializer = mockRumEventDeserializer
+            rumEventDeserializer = mockRumEventDeserializer,
+            internalLogger = mockInternalLogger
         )
     }
 
@@ -389,7 +388,7 @@ internal class DatadogNdkCrashEventHandlerTest {
 
         // Then
         verifyZeroInteractions(mockRumWriter, mockEventBatchWriter)
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             DatadogNdkCrashEventHandler.INFO_RUM_FEATURE_NOT_REGISTERED
@@ -419,7 +418,7 @@ internal class DatadogNdkCrashEventHandlerTest {
 
         // Then
         verifyZeroInteractions(mockRumWriter, mockEventBatchWriter)
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -459,7 +458,7 @@ internal class DatadogNdkCrashEventHandlerTest {
 
         // Then
         verifyZeroInteractions(mockRumWriter, mockEventBatchWriter)
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -471,15 +470,5 @@ internal class DatadogNdkCrashEventHandlerTest {
         MISSING,
         NULL,
         WRONG_TYPE
-    }
-
-    companion object {
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
     }
 }

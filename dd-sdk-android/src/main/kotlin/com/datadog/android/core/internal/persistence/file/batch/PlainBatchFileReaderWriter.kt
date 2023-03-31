@@ -124,7 +124,7 @@ internal class PlainBatchFileReaderWriter(
     private fun readFileData(
         file: File
     ): List<ByteArray> {
-        val inputLength = file.lengthSafe().toInt()
+        val inputLength = file.lengthSafe(internalLogger).toInt()
 
         val result = mutableListOf<ByteArray>()
 

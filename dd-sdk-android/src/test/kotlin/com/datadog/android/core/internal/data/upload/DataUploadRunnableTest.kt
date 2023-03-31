@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
@@ -70,6 +71,9 @@ internal class DataUploadRunnableTest {
     @Mock
     lateinit var mockSystemInfoProvider: SystemInfoProvider
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Forgery
     lateinit var fakeUploadFrequency: UploadFrequency
 
@@ -99,7 +103,8 @@ internal class DataUploadRunnableTest {
             mockDataUploader,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            fakeUploadFrequency
+            fakeUploadFrequency,
+            mockInternalLogger
         )
     }
 

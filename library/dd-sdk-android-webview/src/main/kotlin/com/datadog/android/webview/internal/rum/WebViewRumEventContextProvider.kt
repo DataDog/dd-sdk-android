@@ -6,13 +6,12 @@
 
 package com.datadog.android.webview.internal.rum
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.webview.internal.rum.domain.RumContext
 
-internal class WebViewRumEventContextProvider {
+internal class WebViewRumEventContextProvider(private val internalLogger: InternalLogger) {
 
     private var rumFeatureDisabled = false
 

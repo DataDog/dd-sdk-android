@@ -18,21 +18,22 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.v2.api.EventBatchWriter
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 
 internal class RumDataWriter(
-    private val serializer: Serializer<Any>,
-    private val sdkCore: InternalSdkCore,
-    private val internalLogger: InternalLogger
+    internal val serializer: Serializer<Any>,
+    private val sdkCore: InternalSdkCore
 ) : DataWriter<Any> {
 
     // region DataWriter
 
     @WorkerThread
     override fun write(writer: EventBatchWriter, element: Any): Boolean {
-        val byteArray = serializer.serializeToByteArray(element, internalLogger) ?: return false
+        val byteArray = serializer.serializeToByteArray(
+            element,
+            sdkCore._internalLogger
+        ) ?: return false
 
         synchronized(this) {
             val result = writer.write(byteArray, null)

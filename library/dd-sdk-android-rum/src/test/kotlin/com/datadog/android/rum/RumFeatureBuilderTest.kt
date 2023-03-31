@@ -6,17 +6,12 @@
 
 package com.datadog.android.rum
 
-import android.os.Build
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.assertj.ConfigurationRumAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
-import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
-import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
-import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
-import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -28,8 +23,6 @@ import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -51,8 +44,7 @@ import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -80,14 +72,16 @@ internal class RumFeatureBuilderTest {
                 samplingRate = RumFeature.DEFAULT_SAMPLING_RATE,
                 telemetrySamplingRate = RumFeature.DEFAULT_TELEMETRY_SAMPLING_RATE,
                 telemetryConfigurationSamplingRate = RumFeature.DEFAULT_TELEMETRY_CONFIGURATION_SAMPLING_RATE,
-                userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
-                    DatadogGesturesTracker(
-                        arrayOf(JetpackViewAttributesProvider()),
-                        NoOpInteractionPredicate()
-                    )
-                ),
+                userActionTracking = true,
+                touchTargetExtraAttributesProviders = emptyList(),
+                interactionPredicate = NoOpInteractionPredicate(),
                 viewTrackingStrategy = ActivityViewTrackingStrategy(false),
-                rumEventMapper = NoOpEventMapper(),
+                viewEventMapper = NoOpEventMapper(),
+                errorEventMapper = NoOpEventMapper(),
+                actionEventMapper = NoOpEventMapper(),
+                resourceEventMapper = NoOpEventMapper(),
+                longTaskEventMapper = NoOpEventMapper(),
+                telemetryConfigurationMapper = NoOpEventMapper(),
                 longTaskTrackingStrategy = MainLooperLongTaskStrategy(100L),
                 backgroundEventTracking = false,
                 trackFrustrations = true,
@@ -122,7 +116,7 @@ internal class RumFeatureBuilderTest {
     }
 
     @Test
-    fun `M set the NoOpUserActionTrackingStrategy W disableInteractionTracking()`() {
+    fun `𝕄 disable user action tracking W disableInteractionTracking()`() {
         // Given
 
         // When
@@ -132,7 +126,7 @@ internal class RumFeatureBuilderTest {
 
         // Then
         ConfigurationRumAssert.assertThat(rumFeature.configuration)
-            .hasNoOpUserActionTrackingStrategy()
+            .hasUserActionTrackingDisabled()
             .hasViewTrackingStrategy(RumFeature.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
             .hasLongTaskTrackingEnabled(RumFeature.DEFAULT_LONG_TASK_THRESHOLD_MS)
     }
@@ -153,23 +147,8 @@ internal class RumFeatureBuilderTest {
 
         // Then
         ConfigurationRumAssert.assertThat(rumFeature.configuration)
-            .hasUserActionTrackingStrategyLegacy()
+            .hasUserActionTrackingEnabled()
             .hasActionTargetAttributeProviders(mockProviders)
-            .hasViewTrackingStrategy(RumFeature.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
-            .hasLongTaskTrackingEnabled(RumFeature.DEFAULT_LONG_TASK_THRESHOLD_MS)
-    }
-
-    @Test
-    fun `𝕄 bundle only the default providers W trackInteractions { providers not provided }`() {
-        // When
-        val rumFeature = testedBuilder
-            .trackInteractions()
-            .build()
-
-        // Then
-        ConfigurationRumAssert.assertThat(rumFeature.configuration)
-            .hasUserActionTrackingStrategyLegacy()
-            .hasDefaultActionTargetAttributeProviders()
             .hasViewTrackingStrategy(RumFeature.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
             .hasLongTaskTrackingEnabled(RumFeature.DEFAULT_LONG_TASK_THRESHOLD_MS)
     }
@@ -186,7 +165,7 @@ internal class RumFeatureBuilderTest {
 
         // Then
         ConfigurationRumAssert.assertThat(rumFeature.configuration)
-            .hasUserActionTrackingStrategyLegacy()
+            .hasUserActionTrackingEnabled()
             .hasInteractionPredicate(mockInteractionPredicate)
             .hasViewTrackingStrategy(RumFeature.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
             .hasLongTaskTrackingEnabled(RumFeature.DEFAULT_LONG_TASK_THRESHOLD_MS)
@@ -201,31 +180,8 @@ internal class RumFeatureBuilderTest {
 
         // Then
         ConfigurationRumAssert.assertThat(rumFeature.configuration)
-            .hasUserActionTrackingStrategyLegacy()
+            .hasUserActionTrackingEnabled()
             .hasInteractionPredicateOfType(NoOpInteractionPredicate::class.java)
-            .hasViewTrackingStrategy(RumFeature.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
-            .hasLongTaskTrackingEnabled(RumFeature.DEFAULT_LONG_TASK_THRESHOLD_MS)
-    }
-
-    @TestTargetApi(Build.VERSION_CODES.Q)
-    @Test
-    fun `𝕄 build config with gestures enabled 𝕎 trackInteractions() and build() {Android Q}`(
-        @IntForgery(0, 10) attributesCount: Int
-    ) {
-        // Given
-        val mockProviders = Array<ViewAttributesProvider>(attributesCount) {
-            mock()
-        }
-
-        // When
-        val rumFeature = testedBuilder
-            .trackInteractions(mockProviders)
-            .build()
-
-        // Then
-        ConfigurationRumAssert.assertThat(rumFeature.configuration)
-            .hasUserActionTrackingStrategyApi29()
-            .hasActionTargetAttributeProviders(mockProviders)
             .hasViewTrackingStrategy(RumFeature.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
             .hasLongTaskTrackingEnabled(RumFeature.DEFAULT_LONG_TASK_THRESHOLD_MS)
     }
@@ -281,12 +237,9 @@ internal class RumFeatureBuilderTest {
         // Then
         assertThat(rumFeature.configuration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
-                userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
-                    DatadogGesturesTracker(
-                        arrayOf(JetpackViewAttributesProvider()),
-                        NoOpInteractionPredicate()
-                    )
-                ),
+                userActionTracking = true,
+                touchTargetExtraAttributesProviders = emptyList(),
+                interactionPredicate = NoOpInteractionPredicate(),
                 viewTrackingStrategy = strategy
             )
         )
@@ -369,10 +322,9 @@ internal class RumFeatureBuilderTest {
             .build()
 
         // Then
-        val expectedRumEventMapper = RumEventMapper(viewEventMapper = eventMapper)
         assertThat(rumFeature.configuration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
-                rumEventMapper = expectedRumEventMapper
+                viewEventMapper = eventMapper
             )
         )
     }
@@ -388,10 +340,9 @@ internal class RumFeatureBuilderTest {
             .build()
 
         // Then
-        val expectedRumEventMapper = RumEventMapper(resourceEventMapper = eventMapper)
         assertThat(rumFeature.configuration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
-                rumEventMapper = expectedRumEventMapper
+                resourceEventMapper = eventMapper
             )
         )
     }
@@ -407,10 +358,9 @@ internal class RumFeatureBuilderTest {
             .build()
 
         // Then
-        val expectedRumEventMapper = RumEventMapper(actionEventMapper = eventMapper)
         assertThat(rumFeature.configuration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
-                rumEventMapper = expectedRumEventMapper
+                actionEventMapper = eventMapper
             )
         )
     }
@@ -426,10 +376,9 @@ internal class RumFeatureBuilderTest {
             .build()
 
         // Then
-        val expectedRumEventMapper = RumEventMapper(errorEventMapper = eventMapper)
         assertThat(rumFeature.configuration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
-                rumEventMapper = expectedRumEventMapper
+                errorEventMapper = eventMapper
             )
         )
     }
@@ -445,10 +394,9 @@ internal class RumFeatureBuilderTest {
             .build()
 
         // Then
-        val expectedRumEventMapper = RumEventMapper(longTaskEventMapper = eventMapper)
         assertThat(rumFeature.configuration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
-                rumEventMapper = expectedRumEventMapper
+                longTaskEventMapper = eventMapper
             )
         )
     }
@@ -509,10 +457,9 @@ internal class RumFeatureBuilderTest {
         val rumFeature = builder.build()
 
         // Then
-        val expectedRumEventMapper = RumEventMapper(telemetryConfigurationMapper = eventMapper)
         assertThat(rumFeature.configuration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
-                rumEventMapper = expectedRumEventMapper
+                telemetryConfigurationMapper = eventMapper
             )
         )
     }

@@ -15,7 +15,6 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
@@ -81,6 +80,9 @@ internal class SdkFeatureTest {
     @Mock
     lateinit var mockSdkCore: SdkCore
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Forgery
     lateinit var fakeConsent: TrackingConsent
 
@@ -99,7 +101,8 @@ internal class SdkFeatureTest {
 
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
-            wrappedFeature = mockWrappedFeature
+            wrappedFeature = mockWrappedFeature,
+            internalLogger = mockInternalLogger
         )
     }
 
@@ -137,7 +140,8 @@ internal class SdkFeatureTest {
         val mockFeature = mock<TrackingConsentFeature>()
         testedFeature = SdkFeature(
             coreFeature.mockInstance,
-            mockFeature
+            mockFeature,
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -156,7 +160,8 @@ internal class SdkFeatureTest {
         }
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
-            wrappedFeature = mockSimpleFeature
+            wrappedFeature = mockSimpleFeature,
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -240,7 +245,8 @@ internal class SdkFeatureTest {
         }
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
-            wrappedFeature = mockFeature
+            wrappedFeature = mockFeature,
+            internalLogger = mockInternalLogger
         )
         testedFeature.initialize(mockSdkCore, appContext.mockInstance)
 
@@ -369,7 +375,7 @@ internal class SdkFeatureTest {
         testedFeature.sendEvent(fakeEvent)
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             SdkFeature.NO_EVENT_RECEIVER.format(Locale.US, fakeFeatureName)
@@ -385,7 +391,8 @@ internal class SdkFeatureTest {
 
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
-            wrappedFeature = fakeFeature
+            wrappedFeature = fakeFeature,
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -404,7 +411,8 @@ internal class SdkFeatureTest {
 
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
-            wrappedFeature = fakeFeature
+            wrappedFeature = fakeFeature,
+            internalLogger = mockInternalLogger
         )
 
         // When + Then
@@ -476,12 +484,11 @@ internal class SdkFeatureTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
-        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, coreFeature, logger)
+            return listOf(appContext, coreFeature)
         }
     }
 }

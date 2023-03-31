@@ -6,20 +6,33 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.core.LogcatLogHandler
 import com.datadog.android.v2.core.SdkInternalLogger
+import com.nhaarman.mockitokotlin2.mock
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
 
+@Extensions(
+    ExtendWith(ForgeExtension::class)
+)
+@ForgeConfiguration(Configurator::class)
 internal class InternalLoggerDebugTest {
 
     // region sdkLogger
 
     @Test
-    @Suppress("FunctionNaming", "FunctionMaxLength")
-    fun `M build LogCat sdkLogger W init()`() {
+    @Suppress("FunctionNaming")
+    fun `M build LogCat sdkLogger W init()`(
+        forge: Forge
+    ) {
         // When
-        val logger = SdkInternalLogger()
+        val logger = SdkInternalLogger(forge.aNullable { mock() })
 
         // Then
         val handler: LogcatLogHandler? = logger.sdkLogger

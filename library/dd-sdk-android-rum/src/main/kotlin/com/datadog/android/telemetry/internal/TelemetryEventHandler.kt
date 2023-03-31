@@ -7,7 +7,6 @@
 package com.datadog.android.telemetry.internal
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
@@ -110,7 +109,7 @@ internal class TelemetryEventHandler(
         val eventIdentity = event.identity
 
         if (seenInCurrentSession.contains(eventIdentity)) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.MAINTAINER,
                 ALREADY_SEEN_EVENT_MESSAGE.format(Locale.US, eventIdentity)
@@ -119,7 +118,7 @@ internal class TelemetryEventHandler(
         }
 
         if (seenInCurrentSession.size >= maxEventCountPerSession) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.MAINTAINER,
                 MAX_EVENT_NUMBER_REACHED_MESSAGE
@@ -140,8 +139,10 @@ internal class TelemetryEventHandler(
         return TelemetryDebugEvent(
             dd = TelemetryDebugEvent.Dd(),
             date = timestamp,
-            source = TelemetryDebugEvent.Source.tryFromSource(datadogContext.source)
-                ?: TelemetryDebugEvent.Source.ANDROID,
+            source = TelemetryDebugEvent.Source.tryFromSource(
+                datadogContext.source,
+                sdkCore._internalLogger
+            ) ?: TelemetryDebugEvent.Source.ANDROID,
             service = TELEMETRY_SERVICE_NAME,
             version = datadogContext.sdkVersion,
             application = TelemetryDebugEvent.Application(rumContext.applicationId),
@@ -167,8 +168,10 @@ internal class TelemetryEventHandler(
         return TelemetryErrorEvent(
             dd = TelemetryErrorEvent.Dd(),
             date = timestamp,
-            source = TelemetryErrorEvent.Source.tryFromSource(datadogContext.source)
-                ?: TelemetryErrorEvent.Source.ANDROID,
+            source = TelemetryErrorEvent.Source.tryFromSource(
+                datadogContext.source,
+                sdkCore._internalLogger
+            ) ?: TelemetryErrorEvent.Source.ANDROID,
             service = TELEMETRY_SERVICE_NAME,
             version = datadogContext.sdkVersion,
             application = TelemetryErrorEvent.Application(rumContext.applicationId),
@@ -212,8 +215,10 @@ internal class TelemetryEventHandler(
             dd = TelemetryConfigurationEvent.Dd(),
             date = timestamp,
             service = TELEMETRY_SERVICE_NAME,
-            source = TelemetryConfigurationEvent.Source.tryFromSource(datadogContext.source)
-                ?: TelemetryConfigurationEvent.Source.ANDROID,
+            source = TelemetryConfigurationEvent.Source.tryFromSource(
+                datadogContext.source,
+                sdkCore._internalLogger
+            ) ?: TelemetryConfigurationEvent.Source.ANDROID,
             version = datadogContext.sdkVersion,
             application = TelemetryConfigurationEvent.Application(rumContext.applicationId),
             session = TelemetryConfigurationEvent.Session(rumContext.sessionId),
@@ -229,7 +234,7 @@ internal class TelemetryEventHandler(
                     useLocalEncryption = coreConfiguration.useLocalEncryption,
                     viewTrackingStrategy = viewTrackingStrategy,
                     trackBackgroundEvents = rumConfig?.backgroundEventTracking,
-                    trackInteractions = rumConfig?.userActionTrackingStrategy != null,
+                    trackInteractions = rumConfig?.userActionTracking != null,
                     trackErrors = coreConfiguration.trackErrors,
                     trackNativeLongTasks = rumConfig?.longTaskTrackingStrategy != null,
                     batchSize = coreConfiguration.batchSize,
@@ -254,7 +259,7 @@ internal class TelemetryEventHandler(
                 globalTracerClass.getMethod("isRegistered")
                     .invoke(null) as Boolean
             } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.TELEMETRY,
                     "GlobalTracer class exists in the runtime classpath, but" +

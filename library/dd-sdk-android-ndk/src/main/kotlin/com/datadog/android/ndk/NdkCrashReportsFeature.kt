@@ -7,7 +7,6 @@
 package com.datadog.android.ndk
 
 import android.content.Context
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.v2.api.Feature
@@ -31,7 +30,7 @@ class NdkCrashReportsFeature : Feature, TrackingConsentProviderCallback {
         sdkCore: SdkCore,
         appContext: Context
     ) {
-        loadNativeLibrary()
+        loadNativeLibrary(sdkCore._internalLogger)
         if (!nativeLibraryLoaded) {
             return
         }
@@ -43,7 +42,7 @@ class NdkCrashReportsFeature : Feature, TrackingConsentProviderCallback {
         try {
             ndkCrashesDirs.mkdirs()
         } catch (e: SecurityException) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
                 "Unable to create NDK Crash Report folder $ndkCrashesDirs",
@@ -87,7 +86,7 @@ class NdkCrashReportsFeature : Feature, TrackingConsentProviderCallback {
 
     // region NDK
 
-    private fun loadNativeLibrary() {
+    private fun loadNativeLibrary(internalLogger: InternalLogger) {
         var exception: Throwable? = null
         try {
             System.loadLibrary("datadog-native-lib")

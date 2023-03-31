@@ -18,6 +18,11 @@ import com.datadog.android.v2.api.context.UserInfo
 interface SdkCore {
 
     /**
+     * Name of the current SDK instance.
+     */
+    val name: String
+
+    /**
      * The current time (both device and server).
      */
     val time: TimeInfo
@@ -32,6 +37,10 @@ interface SdkCore {
      * SDK instance.
      */
     val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver
+
+    // TODO RUMM-3118 Shouldn't be exposed to the customers directly.
+    @Suppress("PropertyName", "UndocumentedPublicProperty", "VariableNaming")
+    val _internalLogger: InternalLogger
 
     /**
      * Registers a feature to this instance of the Datadog SDK.

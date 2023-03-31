@@ -18,7 +18,6 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -81,13 +80,17 @@ internal class WindowCallbackWrapperTest {
     @Mock
     lateinit var mockWindow: Window
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`() {
         testedWrapper = WindowCallbackWrapper(
             mockWindow,
             mockCallback,
             mockGestureDetector,
-            copyEvent = { mockCopiedMotionEvent }
+            copyEvent = { mockCopiedMotionEvent },
+            internalLogger = mockInternalLogger
         )
         whenever(mockAppContext.resources).thenReturn(mockResources)
         whenever(mockWindow.context).thenReturn(mockAppContext)
@@ -170,7 +173,8 @@ internal class WindowCallbackWrapperTest {
             mockWindow,
             mockCallback,
             mockGestureDetector,
-            mockInteractionPredicate
+            mockInteractionPredicate,
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -212,7 +216,8 @@ internal class WindowCallbackWrapperTest {
             mockWindow,
             mockCallback,
             mockGestureDetector,
-            mockInteractionPredicate
+            mockInteractionPredicate,
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -254,7 +259,8 @@ internal class WindowCallbackWrapperTest {
             mockWindow,
             mockCallback,
             mockGestureDetector,
-            mockInteractionPredicate
+            mockInteractionPredicate,
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -370,7 +376,7 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.dispatchKeyEvent(null)
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.ERROR,
                 targets = listOf(
@@ -395,7 +401,8 @@ internal class WindowCallbackWrapperTest {
             mockWindow,
             mockCallback,
             mockGestureDetector,
-            mockInteractionPredicate
+            mockInteractionPredicate,
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -421,7 +428,8 @@ internal class WindowCallbackWrapperTest {
             mockWindow,
             mockCallback,
             mockGestureDetector,
-            mockInteractionPredicate
+            mockInteractionPredicate,
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -448,7 +456,8 @@ internal class WindowCallbackWrapperTest {
             mockWindow,
             mockCallback,
             mockGestureDetector,
-            mockInteractionPredicate
+            mockInteractionPredicate,
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -551,7 +560,8 @@ internal class WindowCallbackWrapperTest {
             mockWindow,
             mockCallback,
             mockGestureDetector,
-            mockInteractionPredicate
+            mockInteractionPredicate,
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -628,7 +638,8 @@ internal class WindowCallbackWrapperTest {
             mockCallback,
             mockGestureDetector,
             copyEvent = { mockCopiedMotionEvent },
-            targetAttributesProviders = mockAttributesProviders
+            targetAttributesProviders = mockAttributesProviders,
+            internalLogger = mockInternalLogger
         )
         testedWrapper.dispatchKeyEvent(mockKeyEvent)
 
@@ -659,12 +670,11 @@ internal class WindowCallbackWrapperTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor, logger)
+            return listOf(rumMonitor)
         }
     }
 }

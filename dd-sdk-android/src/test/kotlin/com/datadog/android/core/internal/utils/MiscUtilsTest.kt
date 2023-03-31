@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.utils
 
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -27,6 +28,7 @@ import org.json.JSONObject
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -42,6 +44,9 @@ import kotlin.system.measureNanoTime
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 internal class MiscUtilsTest {
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     // region UnitTests
 
     @Test
@@ -53,7 +58,7 @@ internal class MiscUtilsTest {
         whenever(mockedBlock.invoke()).thenReturn(false)
 
         // WHEN
-        val wasSuccessful = retryWithDelay(mockedBlock, fakeTimes, fakeDelay)
+        val wasSuccessful = retryWithDelay(mockedBlock, fakeTimes, fakeDelay, mockInternalLogger)
 
         // THEN
         assertThat(wasSuccessful).isFalse()
@@ -69,7 +74,7 @@ internal class MiscUtilsTest {
         whenever(mockedBlock.invoke()).thenReturn(false)
 
         // WHEN
-        val executionTime = measureNanoTime { retryWithDelay(mockedBlock, fakeTimes, fakeDelay) }
+        val executionTime = measureNanoTime { retryWithDelay(mockedBlock, fakeTimes, fakeDelay, mockInternalLogger) }
 
         // THEN
         assertThat(executionTime).isCloseTo(
@@ -85,7 +90,7 @@ internal class MiscUtilsTest {
         val mockedBlock: () -> Boolean = mock()
 
         // WHEN
-        retryWithDelay(mockedBlock, forge.anInt(Int.MIN_VALUE, 1), fakeDelay)
+        retryWithDelay(mockedBlock, forge.anInt(Int.MIN_VALUE, 1), fakeDelay, mockInternalLogger)
 
         // THEN
         verifyZeroInteractions(mockedBlock)
@@ -99,7 +104,7 @@ internal class MiscUtilsTest {
         whenever(mockedBlock.invoke()).thenReturn(false).thenReturn(true)
 
         // WHEN
-        val wasSuccessful = retryWithDelay(mockedBlock, 3, fakeDelay)
+        val wasSuccessful = retryWithDelay(mockedBlock, 3, fakeDelay, mockInternalLogger)
 
         // THEN
         assertThat(wasSuccessful).isTrue()

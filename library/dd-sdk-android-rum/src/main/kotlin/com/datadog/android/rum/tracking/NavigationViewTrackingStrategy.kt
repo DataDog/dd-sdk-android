@@ -26,6 +26,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.InternalLogger
 import java.lang.IllegalStateException
 import java.util.WeakHashMap
 
@@ -96,7 +97,7 @@ class NavigationViewTrackingStrategy(
         destination: NavDestination,
         arguments: Bundle?
     ) {
-        componentPredicate.runIfValid(destination) {
+        componentPredicate.runIfValid(destination, internalLogger) {
             val attributes = if (trackArguments) convertToRumAttributes(arguments) else emptyMap()
             val viewName = componentPredicate.resolveViewName(destination)
             GlobalRum.get().startView(NavigationKey(controller, destination), viewName, attributes)
@@ -129,7 +130,8 @@ class NavigationViewTrackingStrategy(
                     it,
                     argumentsProvider = { emptyMap() },
                     componentPredicate = predicate,
-                    rumFeature = rumFeature
+                    rumFeature = rumFeature,
+                    internalLogger = internalLogger
                 )
                 navControllerFragmentCallbacks.register(startedActivity as FragmentActivity)
                 lifecycleCallbackRefs[startedActivity] = navControllerFragmentCallbacks
@@ -185,7 +187,8 @@ class NavigationViewTrackingStrategy(
         private val navController: NavController,
         argumentsProvider: (Fragment) -> Map<String, Any?>,
         componentPredicate: ComponentPredicate<Fragment>,
-        rumFeature: RumFeature
+        rumFeature: RumFeature,
+        internalLogger: InternalLogger
     ) : AndroidXFragmentLifecycleCallbacks(
         argumentsProvider,
         componentPredicate,
@@ -193,7 +196,8 @@ class NavigationViewTrackingStrategy(
         advancedRumMonitor = AdvancedMonitorDecorator(
             GlobalRum.get() as? AdvancedRumMonitor ?: NoOpAdvancedRumMonitor()
         ),
-        rumFeature = rumFeature
+        rumFeature = rumFeature,
+        internalLogger = internalLogger
     ) {
         override fun resolveKey(fragment: Fragment): Any {
             return navController.currentDestination ?: NO_DESTINATION_FOUND

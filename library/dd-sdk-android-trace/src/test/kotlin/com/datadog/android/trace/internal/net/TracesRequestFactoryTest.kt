@@ -8,6 +8,7 @@ package com.datadog.android.trace.internal.net
 
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
 import fr.xgouchet.elmyr.Forge
@@ -40,7 +41,8 @@ internal class TracesRequestFactoryTest {
     @BeforeEach
     fun `set up`() {
         testedFactory = TracesRequestFactory(
-            customEndpointUrl = null
+            customEndpointUrl = null,
+            internalLogger = InternalLogger.UNBOUND
         )
     }
 
@@ -73,7 +75,8 @@ internal class TracesRequestFactoryTest {
         assertThat(request.description).isEqualTo("Traces Request")
         assertThat(request.body).isEqualTo(
             batchData.join(
-                separator = "\n".toByteArray()
+                separator = "\n".toByteArray(),
+                internalLogger = InternalLogger.UNBOUND
             )
         )
     }
@@ -87,7 +90,7 @@ internal class TracesRequestFactoryTest {
         forge: Forge
     ) {
         // Given
-        testedFactory = TracesRequestFactory(customEndpointUrl = fakeEndpoint)
+        testedFactory = TracesRequestFactory(customEndpointUrl = fakeEndpoint, internalLogger = InternalLogger.UNBOUND)
         val batchData = batchData.map { it.toByteArray() }
         val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
 
@@ -109,7 +112,8 @@ internal class TracesRequestFactoryTest {
         assertThat(request.description).isEqualTo("Traces Request")
         assertThat(request.body).isEqualTo(
             batchData.join(
-                separator = "\n".toByteArray()
+                separator = "\n".toByteArray(),
+                internalLogger = InternalLogger.UNBOUND
             )
         )
     }

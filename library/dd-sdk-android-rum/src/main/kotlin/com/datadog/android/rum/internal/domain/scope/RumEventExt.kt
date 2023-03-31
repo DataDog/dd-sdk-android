@@ -7,7 +7,6 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -23,7 +22,7 @@ import com.datadog.android.v2.api.context.DeviceType
 import com.datadog.android.v2.api.context.NetworkInfo
 import java.util.Locale
 
-internal fun String.toMethod(): ResourceEvent.Method {
+internal fun String.toMethod(internalLogger: InternalLogger): ResourceEvent.Method {
     return try {
         ResourceEvent.Method.valueOf(this.uppercase(Locale.US))
     } catch (e: IllegalArgumentException) {
@@ -37,7 +36,7 @@ internal fun String.toMethod(): ResourceEvent.Method {
     }
 }
 
-internal fun String.toErrorMethod(): ErrorEvent.Method {
+internal fun String.toErrorMethod(internalLogger: InternalLogger): ErrorEvent.Method {
     return try {
         ErrorEvent.Method.valueOf(this.uppercase(Locale.US))
     } catch (e: IllegalArgumentException) {
@@ -383,8 +382,10 @@ internal fun DeviceType.toErrorSchemaType(): ErrorEvent.DeviceType {
 
 // region Source
 
-internal fun ViewEvent.Source.Companion.tryFromSource(source: String):
-    ViewEvent.Source? {
+internal fun ViewEvent.Source.Companion.tryFromSource(
+    source: String,
+    internalLogger: InternalLogger
+): ViewEvent.Source? {
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
@@ -398,8 +399,10 @@ internal fun ViewEvent.Source.Companion.tryFromSource(source: String):
     }
 }
 
-internal fun LongTaskEvent.Source.Companion.tryFromSource(source: String):
-    LongTaskEvent.Source? {
+internal fun LongTaskEvent.Source.Companion.tryFromSource(
+    source: String,
+    internalLogger: InternalLogger
+): LongTaskEvent.Source? {
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
@@ -413,8 +416,10 @@ internal fun LongTaskEvent.Source.Companion.tryFromSource(source: String):
     }
 }
 
-internal fun ErrorEvent.ErrorEventSource.Companion.tryFromSource(source: String):
-    ErrorEvent.ErrorEventSource? {
+internal fun ErrorEvent.ErrorEventSource.Companion.tryFromSource(
+    source: String,
+    internalLogger: InternalLogger
+): ErrorEvent.ErrorEventSource? {
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
@@ -428,8 +433,10 @@ internal fun ErrorEvent.ErrorEventSource.Companion.tryFromSource(source: String)
     }
 }
 
-internal fun ActionEvent.Source.Companion.tryFromSource(source: String):
-    ActionEvent.Source? {
+internal fun ActionEvent.Source.Companion.tryFromSource(
+    source: String,
+    internalLogger: InternalLogger
+): ActionEvent.Source? {
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
@@ -443,8 +450,10 @@ internal fun ActionEvent.Source.Companion.tryFromSource(source: String):
     }
 }
 
-internal fun ResourceEvent.Source.Companion.tryFromSource(source: String):
-    ResourceEvent.Source? {
+internal fun ResourceEvent.Source.Companion.tryFromSource(
+    source: String,
+    internalLogger: InternalLogger
+): ResourceEvent.Source? {
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {

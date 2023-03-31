@@ -25,7 +25,7 @@ internal const val TAG_DATADOG_UPLOAD = "DatadogBackgroundUpload"
 
 internal const val DELAY_MS: Long = 5000
 
-internal fun cancelUploadWorker(context: Context) {
+internal fun cancelUploadWorker(context: Context, internalLogger: InternalLogger) {
     try {
         val workManager = WorkManager.getInstance(context)
         workManager.cancelAllWorkByTag(TAG_DATADOG_UPLOAD)
@@ -40,7 +40,7 @@ internal fun cancelUploadWorker(context: Context) {
 }
 
 @Suppress("TooGenericExceptionCaught")
-internal fun triggerUploadWorker(context: Context) {
+internal fun triggerUploadWorker(context: Context, internalLogger: InternalLogger) {
     try {
         val workManager = WorkManager.getInstance(context)
         val constraints = Constraints.Builder()

@@ -30,6 +30,12 @@ internal class VitalReaderRunnable(
                 observer.onNewSample(data)
             }
         }
-        executor.scheduleSafe("Vitals monitoring", periodMs, TimeUnit.MILLISECONDS, this)
+        executor.scheduleSafe(
+            "Vitals monitoring",
+            periodMs,
+            TimeUnit.MILLISECONDS,
+            sdkCore._internalLogger,
+            this
+        )
     }
 }

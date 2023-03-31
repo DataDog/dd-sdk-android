@@ -11,6 +11,7 @@ import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -45,7 +46,7 @@ internal class VitalFrameCallbackTest {
 
     @BeforeEach
     fun `set up`() {
-        testedFrameCallback = VitalFrameCallback(mockObserver) { true }
+        testedFrameCallback = VitalFrameCallback(mockObserver, internalLogger = mock()) { true }
 
         mockChoreographerInstance(mockChoreographer)
     }
@@ -157,7 +158,7 @@ internal class VitalFrameCallbackTest {
         @LongForgery timestampNs: Long
     ) {
         // Given
-        testedFrameCallback = VitalFrameCallback(mockObserver) { false }
+        testedFrameCallback = VitalFrameCallback(mockObserver, mock()) { false }
 
         // When
         testedFrameCallback.doFrame(timestampNs)

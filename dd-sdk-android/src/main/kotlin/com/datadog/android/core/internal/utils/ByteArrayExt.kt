@@ -12,8 +12,9 @@ import com.datadog.android.v2.api.InternalLogger
  * Splits this [ByteArray] to a list of [ByteArray] around occurrences of the specified [delimiter].
  *
  * @param delimiter a byte to be used as delimiter.
+ * @param internalLogger logger to use.
  */
-internal fun ByteArray.split(delimiter: Byte): List<ByteArray> {
+internal fun ByteArray.split(delimiter: Byte, internalLogger: InternalLogger): List<ByteArray> {
     val result = mutableListOf<ByteArray>()
 
     var offset = 0
@@ -24,7 +25,7 @@ internal fun ByteArray.split(delimiter: Byte): List<ByteArray> {
         val length = if (nextIndex >= 0) nextIndex - offset else size - offset
         if (length > 0) {
             val subArray = ByteArray(length)
-            this.copyTo(offset, subArray, 0, length)
+            this.copyTo(offset, subArray, 0, length, internalLogger)
             result.add(subArray)
         }
         offset = nextIndex + 1
@@ -40,11 +41,13 @@ internal fun ByteArray.split(delimiter: Byte): List<ByteArray> {
  * @param separator Separator to use between the parts joined.
  * @param prefix Optional prefix to add to the result.
  * @param suffix Optional suffix to add to the result.
+ * @param internalLogger logger to use.
  */
 fun Collection<ByteArray>.join(
     separator: ByteArray,
     prefix: ByteArray = ByteArray(0),
-    suffix: ByteArray = ByteArray(0)
+    suffix: ByteArray = ByteArray(0),
+    internalLogger: InternalLogger
 ): ByteArray {
     val dataSize = this.sumOf { it.size }
     val separatorsSize = if (this.isNotEmpty()) separator.size * (this.size - 1) else 0
@@ -54,19 +57,19 @@ fun Collection<ByteArray>.join(
 
     var offset = 0
 
-    prefix.copyTo(0, result, 0, prefix.size)
+    prefix.copyTo(0, result, 0, prefix.size, internalLogger)
     offset += prefix.size
 
     for (item in this.withIndex()) {
-        item.value.copyTo(0, result, offset, item.value.size)
+        item.value.copyTo(0, result, offset, item.value.size, internalLogger)
         offset += item.value.size
         if (item.index != this.size - 1) {
-            separator.copyTo(0, result, offset, separator.size)
+            separator.copyTo(0, result, offset, separator.size, internalLogger)
             offset += separator.size
         }
     }
 
-    suffix.copyTo(0, result, offset, suffix.size)
+    suffix.copyTo(0, result, offset, suffix.size, internalLogger)
 
     return result
 }
@@ -95,7 +98,13 @@ internal fun ByteArray.indexOf(b: Byte, startIndex: Int = 0): Int {
  *
  * @return true if the copy was successful.
  */
-internal fun ByteArray.copyTo(srcPos: Int, dest: ByteArray, destPos: Int, length: Int): Boolean {
+internal fun ByteArray.copyTo(
+    srcPos: Int,
+    dest: ByteArray,
+    destPos: Int,
+    length: Int,
+    internalLogger: InternalLogger
+): Boolean {
     return if (destPos + length > dest.size) {
         internalLogger.log(
             InternalLogger.Level.WARN,

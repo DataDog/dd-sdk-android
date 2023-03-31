@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FileReader
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.net.DataUploader
@@ -60,6 +61,9 @@ internal class DataFlusherTest {
     @Mock
     lateinit var mockContextProvider: ContextProvider
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Forgery
     lateinit var fakeContext: DatadogContext
 
@@ -72,7 +76,8 @@ internal class DataFlusherTest {
             mockFileOrchestrator,
             mockFileReader,
             mockMetaFileReader,
-            mockFileMover
+            mockFileMover,
+            mockInternalLogger
         )
     }
 

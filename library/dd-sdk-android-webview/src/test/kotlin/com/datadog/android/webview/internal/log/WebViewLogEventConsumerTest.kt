@@ -7,7 +7,6 @@
 package com.datadog.android.webview.internal.log
 
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureScope
@@ -18,10 +17,7 @@ import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
 import com.datadog.android.webview.internal.rum.domain.RumContext
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
@@ -52,8 +48,7 @@ import java.util.stream.Stream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -69,6 +64,9 @@ internal class WebViewLogEventConsumerTest {
 
     @Mock
     lateinit var mockSdkCore: SdkCore
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockWebViewLogsFeatureScope: FeatureScope
@@ -98,6 +96,7 @@ internal class WebViewLogEventConsumerTest {
         whenever(
             mockSdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
         ) doReturn mockWebViewLogsFeatureScope
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
 
         whenever(mockWebViewLogsFeatureScope.withWriteContext(any(), any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
@@ -241,7 +240,7 @@ internal class WebViewLogEventConsumerTest {
         )
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
             targets = eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
             eq(WebViewLogEventConsumer.JSON_PARSING_ERROR_MESSAGE),
@@ -296,13 +295,6 @@ internal class WebViewLogEventConsumerTest {
     // endregion
 
     companion object {
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
 
         @Suppress("unused")
         @JvmStatic

@@ -32,10 +32,12 @@ internal class NdkNetworkInfoDataWriter(
     ConsentAwareFileOrchestrator(
         consentProvider = consentProvider,
         pendingOrchestrator = SingleFileOrchestrator(
-            DatadogNdkCrashHandler.getPendingNetworkInfoFile(storageDir)
+            DatadogNdkCrashHandler.getPendingNetworkInfoFile(storageDir),
+            internalLogger
         ),
         grantedOrchestrator = SingleFileOrchestrator(
-            DatadogNdkCrashHandler.getGrantedNetworkInfoFile(storageDir)
+            DatadogNdkCrashHandler.getGrantedNetworkInfoFile(storageDir),
+            internalLogger
         ),
         dataMigrator = ConsentAwareFileMigrator(
             fileMover,

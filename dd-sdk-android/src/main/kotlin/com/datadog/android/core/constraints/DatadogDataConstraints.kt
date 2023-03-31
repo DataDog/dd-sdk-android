@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.constraints
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.toMutableMap
 import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
@@ -15,8 +14,10 @@ internal typealias StringTransform = (String) -> String?
 
 /**
  * Data constraints validator per Datadog requirements.
+ *
+ * @param internalLogger Internal logger.
  */
-class DatadogDataConstraints : DataConstraints {
+class DatadogDataConstraints(val internalLogger: InternalLogger) : DataConstraints {
 
     // region DataConstraints
 

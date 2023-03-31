@@ -18,10 +18,12 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.v2.api.InternalLogger
 import com.google.gson.JsonObject
 
 internal class RumEventSerializer(
-    private val dataConstraints: DataConstraints = DatadogDataConstraints()
+    internalLogger: InternalLogger,
+    private val dataConstraints: DataConstraints = DatadogDataConstraints(internalLogger)
 ) : Serializer<Any> {
 
     // region Serializer

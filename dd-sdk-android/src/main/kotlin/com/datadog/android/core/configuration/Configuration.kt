@@ -8,7 +8,7 @@ package com.datadog.android.core.configuration
 
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
-import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.security.Encryption
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.InternalLogger
@@ -233,7 +233,7 @@ internal constructor(
                 @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
                 block()
             } else {
-                internalLogger.log(
+                unboundInternalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     ERROR_FEATURE_DISABLED.format(Locale.US, feature.featureName, method)

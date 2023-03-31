@@ -6,15 +6,16 @@
 
 package com.datadog.android.telemetry.internal
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 
-internal fun TelemetryDebugEvent.Source.Companion.tryFromSource(source: String):
-    TelemetryDebugEvent.Source? {
+internal fun TelemetryDebugEvent.Source.Companion.tryFromSource(
+    source: String,
+    internalLogger: InternalLogger
+): TelemetryDebugEvent.Source? {
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
@@ -28,8 +29,10 @@ internal fun TelemetryDebugEvent.Source.Companion.tryFromSource(source: String):
     }
 }
 
-internal fun TelemetryErrorEvent.Source.Companion.tryFromSource(source: String):
-    TelemetryErrorEvent.Source? {
+internal fun TelemetryErrorEvent.Source.Companion.tryFromSource(
+    source: String,
+    internalLogger: InternalLogger
+): TelemetryErrorEvent.Source? {
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
@@ -43,8 +46,10 @@ internal fun TelemetryErrorEvent.Source.Companion.tryFromSource(source: String):
     }
 }
 
-internal fun TelemetryConfigurationEvent.Source.Companion.tryFromSource(source: String):
-    TelemetryConfigurationEvent.Source? {
+internal fun TelemetryConfigurationEvent.Source.Companion.tryFromSource(
+    source: String,
+    internalLogger: InternalLogger
+): TelemetryConfigurationEvent.Source? {
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {

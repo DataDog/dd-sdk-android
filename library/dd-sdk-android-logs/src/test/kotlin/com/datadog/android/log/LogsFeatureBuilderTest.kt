@@ -6,51 +6,85 @@
 
 package com.datadog.android.log
 
+import android.content.Context
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.log.internal.net.LogsRequestFactory
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 
 @Extensions(
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(MockitoExtension::class)
 )
+@MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class LogsFeatureBuilderTest {
 
     private val testedBuilder: LogsFeature.Builder = LogsFeature.Builder()
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    @BeforeEach
+    fun `set up`() {
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+    }
+
     @Test
-    fun `𝕄 use sensible defaults 𝕎 build()`() {
+    fun `𝕄 use sensible defaults 𝕎 build()`(
+        @StringForgery fakePackageName: String
+    ) {
         // When
-        val config = testedBuilder.build()
+        val logsFeature = testedBuilder.build()
+        logsFeature.onInitialize(
+            mockSdkCore,
+            appContext = mock<Context>().apply { whenever(packageName) doReturn fakePackageName }
+        )
 
         // Then
-        val requestFactory = config.requestFactory
+        val requestFactory = logsFeature.requestFactory
         assertThat(requestFactory).isInstanceOf(LogsRequestFactory::class.java)
         assertThat((requestFactory as LogsRequestFactory).customEndpointUrl)
             .isNull()
 
-        assertThat(config.eventMapper).isInstanceOf(NoOpEventMapper::class.java)
+        assertThat(logsFeature.eventMapper).isInstanceOf(NoOpEventMapper::class.java)
     }
 
     @Test
     fun `𝕄 build feature with custom site 𝕎 useCustomEndpoint() and build()`(
-        @StringForgery(regex = "https://[a-z]+\\.com") logsEndpointUrl: String
+        @StringForgery(regex = "https://[a-z]+\\.com") logsEndpointUrl: String,
+        @StringForgery fakePackageName: String
     ) {
         // When
-        val config = testedBuilder.useCustomEndpoint(logsEndpointUrl).build()
+        val logsFeature = testedBuilder.useCustomEndpoint(logsEndpointUrl).build()
+        logsFeature.onInitialize(
+            mockSdkCore,
+            appContext = mock<Context>().apply { whenever(packageName) doReturn fakePackageName }
+        )
 
         // Then
-        val requestFactory = config.requestFactory
+        val requestFactory = logsFeature.requestFactory
         assertThat(requestFactory).isInstanceOf(LogsRequestFactory::class.java)
         assertThat((requestFactory as LogsRequestFactory).customEndpointUrl)
             .isEqualTo(logsEndpointUrl)
@@ -62,11 +96,11 @@ internal class LogsFeatureBuilderTest {
         val mockEventMapper: EventMapper<LogEvent> = mock()
 
         // When
-        val config = testedBuilder
+        val logsFeature = testedBuilder
             .setLogEventMapper(mockEventMapper)
             .build()
 
         // Then
-        assertThat(config.eventMapper).isEqualTo(mockEventMapper)
+        assertThat(logsFeature.eventMapper).isEqualTo(mockEventMapper)
     }
 }

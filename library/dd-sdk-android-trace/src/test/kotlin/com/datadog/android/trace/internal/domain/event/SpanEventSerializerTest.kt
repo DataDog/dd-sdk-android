@@ -17,6 +17,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -62,7 +63,7 @@ internal class SpanEventSerializerTest {
             it.getArgument(0)
         }
         testedSerializer =
-            SpanEventSerializer(dataConstraints = mockDatadogConstraints)
+            SpanEventSerializer(internalLogger = mock(), dataConstraints = mockDatadogConstraints)
     }
 
     // region tests

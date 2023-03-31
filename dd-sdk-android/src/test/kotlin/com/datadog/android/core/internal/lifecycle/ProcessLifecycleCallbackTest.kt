@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -56,9 +57,12 @@ internal class ProcessLifecycleCallbackTest {
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`() {
-        testedCallback = ProcessLifecycleCallback(mockNetworkInfoProvider, appContext.mockInstance)
+        testedCallback = ProcessLifecycleCallback(mockNetworkInfoProvider, appContext.mockInstance, mockInternalLogger)
     }
 
     @AfterEach

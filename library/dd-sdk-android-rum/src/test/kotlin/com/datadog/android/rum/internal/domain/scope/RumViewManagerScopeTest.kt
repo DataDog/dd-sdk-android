@@ -18,7 +18,6 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ActionEvent
-import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
@@ -28,9 +27,6 @@ import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.atLeastOnce
@@ -60,8 +56,7 @@ import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -96,6 +91,9 @@ internal class RumViewManagerScopeTest {
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Forgery
     lateinit var fakeParentContext: RumContext
 
@@ -116,6 +114,7 @@ internal class RumViewManagerScopeTest {
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         whenever(mockChildScope.isActive()) doReturn true
         whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn fakeTime.deviceTimeNs
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
 
         testedScope = RumViewManagerScope(
             mockParentScope,
@@ -482,7 +481,7 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -608,7 +607,7 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     // endregion
@@ -703,16 +702,5 @@ internal class RumViewManagerScopeTest {
 
     private fun resolveExpectedTimestamp(timestamp: Long): Long {
         return timestamp + fakeTime.serverTimeOffsetMs
-    }
-
-    companion object {
-
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
     }
 }

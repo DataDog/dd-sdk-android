@@ -14,6 +14,7 @@ import com.datadog.android.core.internal.persistence.Batch
 import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.NetworkInfo
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -27,7 +28,8 @@ internal class DataUploadRunnable(
     private val dataUploader: DataUploader,
     private val networkInfoProvider: NetworkInfoProvider,
     private val systemInfoProvider: SystemInfoProvider,
-    uploadFrequency: UploadFrequency
+    uploadFrequency: UploadFrequency,
+    private val internalLogger: InternalLogger
 ) : UploadRunnable {
 
     internal var currentDelayIntervalMs = DEFAULT_DELAY_FACTOR * uploadFrequency.baseStepMs
@@ -76,6 +78,7 @@ internal class DataUploadRunnable(
             "Data upload",
             currentDelayIntervalMs,
             TimeUnit.MILLISECONDS,
+            internalLogger,
             this
         )
     }

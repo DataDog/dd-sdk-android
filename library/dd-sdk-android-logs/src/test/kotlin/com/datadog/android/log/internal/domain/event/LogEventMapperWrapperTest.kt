@@ -8,12 +8,9 @@ package com.datadog.android.log.internal.domain.event
 
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -47,9 +44,12 @@ internal class LogEventMapperWrapperTest {
     @Mock
     lateinit var mockLogEvent: LogEvent
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`() {
-        testedEventMapper = LogEventMapperWrapper(mockWrappedEventMapper)
+        testedEventMapper = LogEventMapperWrapper(mockWrappedEventMapper, mockInternalLogger)
     }
 
     @Test
@@ -87,7 +87,7 @@ internal class LogEventMapperWrapperTest {
         testedEventMapper.map(mockLogEvent)
 
         // THEN
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             LogEventMapperWrapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(
@@ -119,7 +119,7 @@ internal class LogEventMapperWrapperTest {
         testedEventMapper.map(mockLogEvent)
 
         // THEN
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             LogEventMapperWrapper.EVENT_NULL_WARNING_MESSAGE.format(
@@ -127,15 +127,5 @@ internal class LogEventMapperWrapperTest {
                 mockLogEvent.toString()
             )
         )
-    }
-
-    companion object {
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
     }
 }

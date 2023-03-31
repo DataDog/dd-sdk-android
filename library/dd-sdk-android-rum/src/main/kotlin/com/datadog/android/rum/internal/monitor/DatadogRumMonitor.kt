@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -49,7 +48,7 @@ import java.util.concurrent.TimeUnit
 @Suppress("LongParameterList")
 internal class DatadogRumMonitor(
     applicationId: String,
-    sdkCore: InternalSdkCore,
+    private val sdkCore: InternalSdkCore,
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
@@ -422,7 +421,7 @@ internal class DatadogRumMonitor(
                         handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
                     }
                 } catch (e: RejectedExecutionException) {
-                    internalLogger.log(
+                    sdkCore._internalLogger.log(
                         InternalLogger.Level.ERROR,
                         InternalLogger.Target.USER,
                         "Unable to handle a RUM event, task was rejected",
@@ -449,7 +448,7 @@ internal class DatadogRumMonitor(
                     latch.countDown()
                 }
             } catch (e: RejectedExecutionException) {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     "Rejected waiting for the pending events",
@@ -459,7 +458,7 @@ internal class DatadogRumMonitor(
             try {
                 latch.await(1, TimeUnit.SECONDS)
             } catch (_: InterruptedException) {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.MAINTAINER,
                     "Waiting for pending RUM events was interrupted"

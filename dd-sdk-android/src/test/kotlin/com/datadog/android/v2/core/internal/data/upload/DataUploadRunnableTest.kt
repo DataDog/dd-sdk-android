@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.core.internal.ContextProvider
@@ -80,6 +81,9 @@ internal class DataUploadRunnableTest {
     @Mock
     lateinit var mockContextProvider: ContextProvider
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Forgery
     lateinit var fakeContext: DatadogContext
 
@@ -116,7 +120,8 @@ internal class DataUploadRunnableTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             fakeUploadFrequency,
-            TEST_BATCH_UPLOAD_WAIT_TIMEOUT_MS
+            TEST_BATCH_UPLOAD_WAIT_TIMEOUT_MS,
+            mockInternalLogger
         )
     }
 

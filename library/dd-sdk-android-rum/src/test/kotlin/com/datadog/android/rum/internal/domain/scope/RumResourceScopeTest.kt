@@ -22,7 +22,6 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.utils.asTimingsPayload
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
@@ -97,6 +96,9 @@ internal class RumResourceScopeTest {
     lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
     lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock
@@ -168,6 +170,7 @@ internal class RumResourceScopeTest {
         mockEvent = mockEvent()
 
         whenever(mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         doAnswer { false }.whenever(mockResolver).isFirstPartyUrl(any<String>())
         whenever(
@@ -2162,7 +2165,7 @@ internal class RumResourceScopeTest {
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
-        verify(internalLoggerTestConfiguration.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumResourceScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, fakeUrl)
@@ -2226,7 +2229,7 @@ internal class RumResourceScopeTest {
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
-        verify(internalLoggerTestConfiguration.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumResourceScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, fakeUrl)
@@ -2253,12 +2256,11 @@ internal class RumResourceScopeTest {
         private const val RESOURCE_DURATION_MS = 50L
 
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val internalLoggerTestConfiguration = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor, internalLoggerTestConfiguration)
+            return listOf(rumMonitor)
         }
     }
 }

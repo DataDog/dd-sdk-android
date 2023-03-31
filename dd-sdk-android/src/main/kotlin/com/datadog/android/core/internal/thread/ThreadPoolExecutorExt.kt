@@ -6,12 +6,13 @@
 
 package com.datadog.android.core.internal.thread
 
+import com.datadog.android.v2.api.InternalLogger
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 internal const val MAX_SLEEP_DURATION_IN_MS = 10L
 
-internal fun ThreadPoolExecutor.waitToIdle(timeoutInMs: Long): Boolean {
+internal fun ThreadPoolExecutor.waitToIdle(timeoutInMs: Long, internalLogger: InternalLogger): Boolean {
     val startTime = System.nanoTime()
     val timeoutInNs = TimeUnit.MILLISECONDS.toNanos(timeoutInMs)
     val sleepDurationInMs = timeoutInMs.coerceIn(0, MAX_SLEEP_DURATION_IN_MS)
@@ -20,7 +21,7 @@ internal fun ThreadPoolExecutor.waitToIdle(timeoutInMs: Long): Boolean {
         if (isIdle()) {
             return true
         }
-        interrupted = sleepSafe(sleepDurationInMs)
+        interrupted = sleepSafe(sleepDurationInMs, internalLogger)
     } while (((System.nanoTime() - startTime) < timeoutInNs) && !interrupted)
 
     return isIdle()

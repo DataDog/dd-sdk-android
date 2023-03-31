@@ -7,10 +7,14 @@
 package com.datadog.android.rum
 
 import android.app.Application
+import android.os.Build
 import android.view.Choreographer
-import com.datadog.android.event.NoOpEventMapper
+import com.datadog.android.event.EventMapper
+import com.datadog.android.event.MapperSerializer
+import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.domain.RumDataWriter
+import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.ndk.NdkCrashEventHandler
 import com.datadog.android.rum.internal.storage.NoOpDataWriter
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
@@ -19,27 +23,33 @@ import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalFrameCallback
+import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
+import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.rum.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.annotations.TestTargetApi
+import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
+import com.datadog.tools.unit.getFieldValue
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doNothing
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -49,6 +59,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -71,7 +82,8 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(TestConfigurationExtension::class),
+    ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -92,18 +104,22 @@ internal class RumFeatureTest {
     lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
     lateinit var mockNdkCrashEventHandler: NdkCrashEventHandler
 
     @BeforeEach
     fun `set up`() {
         doNothing().whenever(mockChoreographer).postFrameCallback(any())
         mockChoreographerInstance(mockChoreographer)
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
 
         testedFeature =
             RumFeature(
                 fakeApplicationId.toString(),
                 fakeConfiguration,
-                mockNdkCrashEventHandler
+                ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
             )
     }
 
@@ -157,7 +173,7 @@ internal class RumFeatureTest {
         testedFeature = RumFeature(
             fakeApplicationId.toString(),
             fakeConfiguration,
-            mockNdkCrashEventHandler
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
         )
 
         // When
@@ -165,19 +181,147 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.viewTrackingStrategy).isEqualTo(mockViewTrackingStrategy)
-        verify(mockViewTrackingStrategy).register(appContext.mockInstance)
+        verify(mockViewTrackingStrategy).register(mockSdkCore, appContext.mockInstance)
     }
 
     @Test
-    fun `𝕄 store userActionTrackingStrategy 𝕎 initialize()`() {
+    fun `𝕄 set the NoOpUserActionTrackingStrategy W initialize() {userActionTracking = false}`() {
+        // Given
+        fakeConfiguration =
+            fakeConfiguration.copy(userActionTracking = false)
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+        )
+
         // When
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // Then
-        assertThat(testedFeature.actionTrackingStrategy)
-            .isEqualTo(fakeConfiguration.userActionTrackingStrategy)
-        verify(fakeConfiguration.userActionTrackingStrategy!!)
-            .register(appContext.mockInstance)
+        RumFeatureAssert.assertThat(testedFeature)
+            .hasNoOpUserActionTrackingStrategy()
+    }
+
+    @Test
+    fun `𝕄 bundle the custom attributes providers W initialize()`(
+        @IntForgery(0, 10) attributesCount: Int
+    ) {
+        // Given
+        val mockProviders = Array<ViewAttributesProvider>(attributesCount) {
+            mock()
+        }
+        fakeConfiguration = fakeConfiguration.copy(
+            userActionTracking = true,
+            touchTargetExtraAttributesProviders = mockProviders.toList()
+        )
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+        )
+
+        // When
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+
+        // Then
+        RumFeatureAssert.assertThat(testedFeature)
+            .hasUserActionTrackingStrategyLegacy()
+            .hasActionTargetAttributeProviders(mockProviders)
+    }
+
+    @Test
+    fun `𝕄 bundle only the default providers W initialize { providers not provided }`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            userActionTracking = true
+        )
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+        )
+
+        // When
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+
+        // Then
+        RumFeatureAssert.assertThat(testedFeature)
+            .hasUserActionTrackingStrategyLegacy()
+            .hasDefaultActionTargetAttributeProviders()
+    }
+
+    @Test
+    fun `𝕄 use the custom predicate 𝕎 initialize()`() {
+        // Given
+        val mockInteractionPredicate: InteractionPredicate = mock()
+        fakeConfiguration = fakeConfiguration.copy(
+            userActionTracking = true,
+            interactionPredicate = mockInteractionPredicate
+        )
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+        )
+
+        // When
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+
+        // Then
+        RumFeatureAssert.assertThat(testedFeature)
+            .hasUserActionTrackingStrategyLegacy()
+            .hasInteractionPredicate(mockInteractionPredicate)
+    }
+
+    @Test
+    fun `𝕄 use the NoOpInteractionPredicate 𝕎 initialize() { predicate not provided }`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            userActionTracking = true,
+            interactionPredicate = NoOpInteractionPredicate()
+        )
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+        )
+
+        // When
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+
+        // Then
+        RumFeatureAssert.assertThat(testedFeature)
+            .hasUserActionTrackingStrategyLegacy()
+            .hasInteractionPredicateOfType(NoOpInteractionPredicate::class.java)
+    }
+
+    @TestTargetApi(Build.VERSION_CODES.Q)
+    @Test
+    fun `𝕄 build config with gestures enabled 𝕎 initialize() {Android Q}`(
+        @IntForgery(0, 10) attributesCount: Int
+    ) {
+        // Given
+        val mockProviders = Array<ViewAttributesProvider>(attributesCount) {
+            mock()
+        }
+        fakeConfiguration = fakeConfiguration.copy(
+            userActionTracking = true,
+            touchTargetExtraAttributesProviders = mockProviders.toList()
+        )
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+        )
+
+        // When
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+
+        // Then
+        RumFeatureAssert.assertThat(testedFeature)
+            .hasUserActionTrackingStrategyApi29()
+            .hasActionTargetAttributeProviders(mockProviders)
     }
 
     @Test
@@ -189,7 +333,7 @@ internal class RumFeatureTest {
         assertThat(testedFeature.longTaskTrackingStrategy)
             .isEqualTo(fakeConfiguration.longTaskTrackingStrategy)
         verify(fakeConfiguration.longTaskTrackingStrategy!!)
-            .register(appContext.mockInstance)
+            .register(mockSdkCore, appContext.mockInstance)
     }
 
     @Test
@@ -198,7 +342,7 @@ internal class RumFeatureTest {
         testedFeature = RumFeature(
             fakeApplicationId.toString(),
             fakeConfiguration.copy(viewTrackingStrategy = null),
-            mockNdkCrashEventHandler
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
         )
 
         // When
@@ -212,11 +356,11 @@ internal class RumFeatureTest {
     @Test
     fun `𝕄 use noop userActionTrackingStrategy 𝕎 initialize()`() {
         // Given
-        fakeConfiguration = fakeConfiguration.copy(userActionTrackingStrategy = null)
+        fakeConfiguration = fakeConfiguration.copy(userActionTracking = false)
         testedFeature = RumFeature(
             fakeApplicationId.toString(),
             fakeConfiguration,
-            mockNdkCrashEventHandler
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
         )
 
         // When
@@ -234,7 +378,7 @@ internal class RumFeatureTest {
         testedFeature = RumFeature(
             fakeApplicationId.toString(),
             fakeConfiguration,
-            mockNdkCrashEventHandler
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
         )
 
         // When
@@ -251,7 +395,26 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // Then
-        assertThat(testedFeature.rumEventMapper).isSameAs(fakeConfiguration.rumEventMapper)
+        assertThat(testedFeature.dataWriter).isInstanceOf(RumDataWriter::class.java)
+        val serializer = (testedFeature.dataWriter as RumDataWriter).serializer
+        assertThat(serializer).isInstanceOf(MapperSerializer::class.java)
+        val eventMapper = (serializer as MapperSerializer)
+            .getFieldValue<EventMapper<*>, MapperSerializer<*>>("eventMapper")
+        assertThat(eventMapper).isInstanceOf(RumEventMapper::class.java)
+        val rumEventMapper = eventMapper as RumEventMapper
+
+        assertThat(rumEventMapper.actionEventMapper)
+            .isSameAs(fakeConfiguration.actionEventMapper)
+        assertThat(rumEventMapper.errorEventMapper)
+            .isSameAs(fakeConfiguration.errorEventMapper)
+        assertThat(rumEventMapper.resourceEventMapper)
+            .isSameAs(fakeConfiguration.resourceEventMapper)
+        assertThat(rumEventMapper.viewEventMapper)
+            .isSameAs(fakeConfiguration.viewEventMapper)
+        assertThat(rumEventMapper.longTaskEventMapper)
+            .isSameAs(fakeConfiguration.longTaskEventMapper)
+        assertThat(rumEventMapper.telemetryConfigurationMapper)
+            .isSameAs(fakeConfiguration.telemetryConfigurationMapper)
     }
 
     @ParameterizedTest
@@ -264,7 +427,7 @@ internal class RumFeatureTest {
         testedFeature = RumFeature(
             fakeApplicationId.toString(),
             fakeConfiguration,
-            mockNdkCrashEventHandler
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
         )
 
         // When
@@ -292,7 +455,7 @@ internal class RumFeatureTest {
         testedFeature = RumFeature(
             fakeApplicationId.toString(),
             fakeConfiguration,
-            mockNdkCrashEventHandler
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
         )
 
         // When
@@ -321,7 +484,7 @@ internal class RumFeatureTest {
         testedFeature = RumFeature(
             fakeApplicationId.toString(),
             fakeConfiguration,
-            mockNdkCrashEventHandler
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
         )
 
         // When
@@ -346,7 +509,7 @@ internal class RumFeatureTest {
         testedFeature = RumFeature(
             fakeApplicationId.toString(),
             fakeConfiguration,
-            mockNdkCrashEventHandler
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
         )
 
         // When
@@ -403,18 +566,6 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 reset eventMapper 𝕎 onStop()`() {
-        // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
-
-        // When
-        testedFeature.onStop()
-
-        // Then
-        assertThat(testedFeature.rumEventMapper).isInstanceOf(NoOpEventMapper::class.java)
-    }
-
-    @Test
     fun `𝕄 reset data writer 𝕎 onStop()`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
@@ -438,7 +589,7 @@ internal class RumFeatureTest {
         testedFeature = RumFeature(
             fakeApplicationId.toString(),
             fakeConfiguration,
-            mockNdkCrashEventHandler
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
         )
 
         // When
@@ -458,7 +609,7 @@ internal class RumFeatureTest {
         testedFeature = RumFeature(
             fakeApplicationId.toString(),
             fakeConfiguration,
-            mockNdkCrashEventHandler
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
         )
 
         // When
@@ -544,11 +695,14 @@ internal class RumFeatureTest {
 
     @Test
     fun `𝕄 log dev warning and do nothing else 𝕎 onReceive() { unknown type }`() {
+        // Given
+        testedFeature.sdkCore = mockSdkCore
+
         // When
         testedFeature.onReceive(Any())
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -558,10 +712,7 @@ internal class RumFeatureTest {
                 )
             )
 
-        verifyZeroInteractions(
-            mockSdkCore,
-            rumMonitor.mockInstance
-        )
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -572,12 +723,13 @@ internal class RumFeatureTest {
         val event = mapOf(
             "type" to forge.anAlphabeticalString()
         )
+        testedFeature.sdkCore = mockSdkCore
 
         // When
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -587,10 +739,7 @@ internal class RumFeatureTest {
                 )
             )
 
-        verifyZeroInteractions(
-            mockSdkCore,
-            rumMonitor.mockInstance
-        )
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     // endregion
@@ -610,22 +759,20 @@ internal class RumFeatureTest {
         event.remove(
             forge.anElementFrom(event.keys.filterNot { it == "type" })
         )
+        testedFeature.sdkCore = mockSdkCore
 
         // When
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 RumFeature.JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS
             )
 
-        verifyZeroInteractions(
-            mockSdkCore,
-            rumMonitor.mockInstance
-        )
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -655,7 +802,7 @@ internal class RumFeatureTest {
 
         verifyZeroInteractions(
             mockSdkCore,
-            logger.mockInternalLogger
+            mockInternalLogger
         )
     }
 
@@ -693,7 +840,7 @@ internal class RumFeatureTest {
 
         verifyZeroInteractions(
             rumMonitor.mockInstance,
-            logger.mockInternalLogger
+            mockInternalLogger
         )
     }
 
@@ -729,7 +876,7 @@ internal class RumFeatureTest {
 
         verifyZeroInteractions(
             mockSdkCore,
-            logger.mockInternalLogger
+            mockInternalLogger
         )
     }
 
@@ -746,22 +893,20 @@ internal class RumFeatureTest {
             "throwable" to fakeThrowable,
             "attributes" to fakeAttributes
         )
+        testedFeature.sdkCore = mockSdkCore
 
         // When
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 RumFeature.LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS
             )
 
-        verifyZeroInteractions(
-            mockSdkCore,
-            rumMonitor.mockInstance
-        )
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -794,7 +939,7 @@ internal class RumFeatureTest {
 
         verifyZeroInteractions(
             mockSdkCore,
-            logger.mockInternalLogger
+            mockInternalLogger
         )
     }
 
@@ -811,22 +956,20 @@ internal class RumFeatureTest {
             "throwable" to fakeThrowable,
             "attributes" to fakeAttributes
         )
+        testedFeature.sdkCore = mockSdkCore
 
         // When
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 RumFeature.LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS
             )
 
-        verifyZeroInteractions(
-            mockSdkCore,
-            rumMonitor.mockInstance
-        )
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     // endregion
@@ -847,7 +990,7 @@ internal class RumFeatureTest {
 
         verifyZeroInteractions(
             mockSdkCore,
-            logger.mockInternalLogger
+            mockInternalLogger
         )
     }
 
@@ -874,7 +1017,7 @@ internal class RumFeatureTest {
 
         verifyZeroInteractions(
             mockSdkCore,
-            logger.mockInternalLogger
+            mockInternalLogger
         )
     }
 
@@ -884,22 +1027,20 @@ internal class RumFeatureTest {
         val event = mapOf(
             "type" to "telemetry_debug"
         )
+        testedFeature.sdkCore = mockSdkCore
 
         // When
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
             )
 
-        verifyZeroInteractions(
-            rumMonitor.mockInstance,
-            mockSdkCore
-        )
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -926,7 +1067,7 @@ internal class RumFeatureTest {
 
         verifyZeroInteractions(
             mockSdkCore,
-            logger.mockInternalLogger
+            mockInternalLogger
         )
     }
 
@@ -956,7 +1097,7 @@ internal class RumFeatureTest {
 
         verifyZeroInteractions(
             mockSdkCore,
-            logger.mockInternalLogger
+            mockInternalLogger
         )
     }
 
@@ -966,22 +1107,20 @@ internal class RumFeatureTest {
         val event = mapOf(
             "type" to "telemetry_error"
         )
+        testedFeature.sdkCore = mockSdkCore
 
         // When
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
             )
 
-        verifyZeroInteractions(
-            rumMonitor.mockInstance,
-            mockSdkCore
-        )
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -1001,6 +1140,7 @@ internal class RumFeatureTest {
             "use_proxy" to useProxy,
             "use_local_encryption" to useLocalEncryption
         )
+        testedFeature.sdkCore = mockSdkCore
 
         // When
         testedFeature.onReceive(event)
@@ -1017,10 +1157,7 @@ internal class RumFeatureTest {
                 )
             )
 
-        verifyZeroInteractions(
-            logger.mockInternalLogger,
-            mockSdkCore
-        )
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     // endregion
@@ -1028,12 +1165,11 @@ internal class RumFeatureTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, rumMonitor, logger)
+            return listOf(appContext, rumMonitor)
         }
     }
 }

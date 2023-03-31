@@ -64,7 +64,7 @@ internal class RumInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, rumMonitor)
+            return listOf(rumMonitor)
         }
     }
 }

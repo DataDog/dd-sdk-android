@@ -20,7 +20,11 @@ internal interface FileReaderWriter : FileWriter, FileReader {
             return if (encryption == null) {
                 PlainFileReaderWriter(internalLogger)
             } else {
-                EncryptedFileReaderWriter(encryption, PlainFileReaderWriter(internalLogger))
+                EncryptedFileReaderWriter(
+                    encryption,
+                    PlainFileReaderWriter(internalLogger),
+                    internalLogger
+                )
             }
         }
     }

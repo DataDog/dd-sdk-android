@@ -78,7 +78,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         testedInterceptor.intercept(mockChain)
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             DatadogInterceptor.WARN_RUM_DISABLED
@@ -142,7 +142,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, rumMonitor)
+            return listOf(rumMonitor)
         }
     }
 }

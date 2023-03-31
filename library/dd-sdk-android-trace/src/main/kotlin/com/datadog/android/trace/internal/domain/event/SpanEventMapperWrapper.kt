@@ -6,14 +6,14 @@
 
 package com.datadog.android.trace.internal.domain.event
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 
 internal class SpanEventMapperWrapper(
-    internal val wrappedEventMapper: SpanEventMapper
+    internal val wrappedEventMapper: SpanEventMapper,
+    private val internalLogger: InternalLogger
 ) : EventMapper<SpanEvent> {
     override fun map(event: SpanEvent): SpanEvent? {
         val mappedEvent = wrappedEventMapper.map(event)

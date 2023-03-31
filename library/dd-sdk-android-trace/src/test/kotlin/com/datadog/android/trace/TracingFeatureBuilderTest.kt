@@ -10,35 +10,58 @@ import com.datadog.android.trace.internal.domain.event.NoOpSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapper
 import com.datadog.android.trace.internal.net.TracesRequestFactory
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 
 @Extensions(
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(MockitoExtension::class)
 )
+@MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class TracingFeatureBuilderTest {
 
     private val testedBuilder: TracingFeature.Builder = TracingFeature.Builder()
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    @BeforeEach
+    fun `set up`() {
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+    }
+
     @Test
     fun `𝕄 use sensible defaults 𝕎 build()`() {
         // When
-        val config = testedBuilder.build()
+        val tracingFeature = testedBuilder.build()
+        tracingFeature.onInitialize(mockSdkCore, appContext = mock())
 
         // Then
-        val requestFactory = config.requestFactory
+        val requestFactory = tracingFeature.requestFactory
         assertThat(requestFactory).isInstanceOf(TracesRequestFactory::class.java)
         assertThat((requestFactory as TracesRequestFactory).customEndpointUrl)
             .isNull()
 
-        assertThat(config.spanEventMapper).isInstanceOf(NoOpSpanEventMapper::class.java)
+        assertThat(tracingFeature.spanEventMapper).isInstanceOf(NoOpSpanEventMapper::class.java)
     }
 
     @Test
@@ -46,10 +69,11 @@ internal class TracingFeatureBuilderTest {
         @StringForgery(regex = "https://[a-z]+\\.com") tracesEndpointUrl: String
     ) {
         // When
-        val config = testedBuilder.useCustomEndpoint(tracesEndpointUrl).build()
+        val tracingFeature = testedBuilder.useCustomEndpoint(tracesEndpointUrl).build()
+        tracingFeature.onInitialize(mockSdkCore, appContext = mock())
 
         // Then
-        val requestFactory = config.requestFactory
+        val requestFactory = tracingFeature.requestFactory
         assertThat(requestFactory).isInstanceOf(TracesRequestFactory::class.java)
         assertThat((requestFactory as TracesRequestFactory).customEndpointUrl)
             .isEqualTo(tracesEndpointUrl)
@@ -61,11 +85,11 @@ internal class TracingFeatureBuilderTest {
         val mockEventMapper = mock<SpanEventMapper>()
 
         // When
-        val config = testedBuilder
+        val tracingFeature = testedBuilder
             .setSpanEventMapper(mockEventMapper)
             .build()
 
         // Then
-        assertThat(config.spanEventMapper).isEqualTo(mockEventMapper)
+        assertThat(tracingFeature.spanEventMapper).isEqualTo(mockEventMapper)
     }
 }

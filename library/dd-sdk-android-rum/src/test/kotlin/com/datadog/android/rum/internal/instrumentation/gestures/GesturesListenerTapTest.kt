@@ -20,7 +20,6 @@ import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.eq
@@ -41,8 +40,7 @@ import java.lang.ref.WeakReference
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -106,7 +104,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         mockResourcesForTarget(target, expectedResourceName)
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -144,7 +143,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         mockResourcesForTarget(target, expectedResourceName)
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -187,7 +187,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         mockResourcesForTarget(validTarget, expectedResourceName)
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -229,7 +230,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         mockResourcesForTarget(validTarget, expectedResourceName)
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -255,14 +257,15 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         }
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             GesturesListener.MSG_NO_TARGET_TAP
@@ -293,14 +296,15 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         }
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyZeroInteractions(mockInternalLogger)
         verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
@@ -319,7 +323,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         }
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(mockDecorView, expectedResourceName)
@@ -359,7 +364,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         )
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -397,7 +403,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         whenever(mockResources.getResourceEntryName(validTarget.id)).thenReturn(null)
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -417,7 +424,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         val mockEvent: MotionEvent = forge.getForgery()
         testedListener = GesturesListener(
             WeakReference<Window>(null),
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -468,7 +476,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener = GesturesListener(
             WeakReference(mockWindow),
             providers,
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
         // When
         testedListener.onSingleTapUp(mockEvent)
@@ -530,7 +539,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener = GesturesListener(
             WeakReference(mockWindow),
             providers,
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
         // When
         testedListener.onSingleTapUp(mockEvent)
@@ -579,7 +589,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener = GesturesListener(
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -628,7 +639,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener = GesturesListener(
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
-            contextRef = WeakReference(mockAppContext)
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
         )
 
         // When

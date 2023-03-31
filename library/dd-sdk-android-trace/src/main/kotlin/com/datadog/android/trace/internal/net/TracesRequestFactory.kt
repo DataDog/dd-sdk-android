@@ -7,6 +7,7 @@
 package com.datadog.android.trace.internal.net
 
 import com.datadog.android.core.internal.utils.join
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.Request
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
@@ -14,7 +15,8 @@ import java.util.Locale
 import java.util.UUID
 
 internal class TracesRequestFactory(
-    internal val customEndpointUrl: String?
+    internal val customEndpointUrl: String?,
+    private val internalLogger: InternalLogger
 ) : RequestFactory {
 
     override fun create(
@@ -38,7 +40,8 @@ internal class TracesRequestFactory(
                 context.sdkVersion
             ),
             body = batchData.join(
-                separator = PAYLOAD_SEPARATOR
+                separator = PAYLOAD_SEPARATOR,
+                internalLogger = internalLogger
             ),
             contentType = RequestFactory.CONTENT_TYPE_TEXT_UTF8
         )

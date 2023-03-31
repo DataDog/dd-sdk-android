@@ -9,7 +9,6 @@ package com.datadog.android.log
 import android.content.Context
 import android.util.Log
 import androidx.annotation.AnyThread
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
@@ -66,7 +65,13 @@ class LogsFeature internal constructor(
         initialized.set(true)
     }
 
-    override val requestFactory: RequestFactory = LogsRequestFactory(customEndpointUrl)
+    override val requestFactory: RequestFactory by lazy {
+        LogsRequestFactory(
+            customEndpointUrl,
+            sdkCore._internalLogger
+        )
+    }
+
     override val storageConfiguration: FeatureStorageConfiguration =
         FeatureStorageConfiguration.DEFAULT
 
@@ -84,7 +89,7 @@ class LogsFeature internal constructor(
     @AnyThread
     override fun onReceive(event: Any) {
         if (event !is Map<*, *>) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName)
@@ -99,7 +104,7 @@ class LogsFeature internal constructor(
         } else if (event[TYPE_EVENT_KEY] == "span_log") {
             sendSpanLog(event)
         } else {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event[TYPE_EVENT_KEY])
@@ -116,10 +121,10 @@ class LogsFeature internal constructor(
     ): DataWriter<LogEvent> {
         return LogsDataWriter(
             serializer = MapperSerializer(
-                LogEventMapperWrapper(eventMapper),
-                LogEventSerializer()
+                LogEventMapperWrapper(eventMapper, sdkCore._internalLogger),
+                LogEventSerializer(sdkCore._internalLogger)
             ),
-            internalLogger = internalLogger
+            internalLogger = sdkCore._internalLogger
         )
     }
 
@@ -135,7 +140,7 @@ class LogsFeature internal constructor(
         if (threadName == null || throwable == null ||
             timestamp == null || message == null || loggerName == null
         ) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING
@@ -173,7 +178,7 @@ class LogsFeature internal constructor(
         try {
             lock.await(MAX_WRITE_WAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         } catch (e: InterruptedException) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
                 "Log event write operation wait was interrupted.",
@@ -195,7 +200,7 @@ class LogsFeature internal constructor(
 
         @Suppress("ComplexCondition")
         if (loggerName == null || message == null || timestamp == null || attributes == null) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING
@@ -237,7 +242,7 @@ class LogsFeature internal constructor(
 
         @Suppress("ComplexCondition")
         if (loggerName == null || message == null || attributes == null || timestamp == null) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 SPAN_LOG_EVENT_MISSING_MANDATORY_FIELDS_WARNING

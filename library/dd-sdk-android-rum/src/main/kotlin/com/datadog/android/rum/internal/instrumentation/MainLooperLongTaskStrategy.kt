@@ -12,6 +12,7 @@ import android.util.Printer
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.TrackingStrategy
+import com.datadog.android.v2.api.SdkCore
 import java.util.concurrent.TimeUnit
 
 internal class MainLooperLongTaskStrategy(
@@ -24,7 +25,7 @@ internal class MainLooperLongTaskStrategy(
 
     // region TrackingStrategy
 
-    override fun register(context: Context) {
+    override fun register(sdkCore: SdkCore, context: Context) {
         Looper.getMainLooper().setMessageLogging(this)
     }
 

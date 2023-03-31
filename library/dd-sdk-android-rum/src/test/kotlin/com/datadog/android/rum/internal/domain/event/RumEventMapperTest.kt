@@ -14,7 +14,6 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.forge.aRumEvent
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
@@ -73,6 +72,9 @@ internal class RumEventMapperTest {
     @Mock
     lateinit var mockTelemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent>
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`() {
         whenever(mockViewEventMapper.map(any())).thenAnswer { it.arguments[0] }
@@ -83,7 +85,8 @@ internal class RumEventMapperTest {
             resourceEventMapper = mockResourceEventMapper,
             errorEventMapper = mockErrorEventMapper,
             longTaskEventMapper = mockLongTaskEventMapper,
-            telemetryConfigurationMapper = mockTelemetryConfigurationMapper
+            telemetryConfigurationMapper = mockTelemetryConfigurationMapper,
+            internalLogger = mockInternalLogger
         )
     }
 
@@ -160,7 +163,7 @@ internal class RumEventMapperTest {
     @Test
     fun `M return the original event W map { no internal mapper used }`(forge: Forge) {
         // GIVEN
-        testedRumEventMapper = RumEventMapper()
+        testedRumEventMapper = RumEventMapper(internalLogger = mockInternalLogger)
         val fakeRumEvent = forge.aRumEvent()
 
         // WHEN
@@ -174,14 +177,14 @@ internal class RumEventMapperTest {
     @Test
     fun `M return the original event W map { bundled event unknown }`() {
         // GIVEN
-        testedRumEventMapper = RumEventMapper()
+        testedRumEventMapper = RumEventMapper(internalLogger = mockInternalLogger)
         val fakeRumEvent = Any()
 
         // WHEN
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
 
         // THEN
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             RumEventMapper.NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
@@ -198,7 +201,7 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(telemetryDebugEvent)
 
         // THEN
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyZeroInteractions(mockInternalLogger)
         assertThat(mappedRumEvent).isSameAs(telemetryDebugEvent)
     }
 
@@ -210,7 +213,7 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(telemetryErrorEvent)
 
         // THEN
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyZeroInteractions(mockInternalLogger)
         assertThat(mappedRumEvent).isSameAs(telemetryErrorEvent)
     }
 
@@ -226,7 +229,7 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(telemetryConfigurationEvent)
 
         // THEN
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyZeroInteractions(mockInternalLogger)
         verify(mockTelemetryConfigurationMapper).map(telemetryConfigurationEvent)
         assertThat(mappedRumEvent).isSameAs(telemetryConfigurationEvent)
     }
@@ -243,7 +246,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumEventMapper.VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
@@ -262,7 +265,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
@@ -285,7 +288,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeNoCrashEvent)
@@ -324,7 +327,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
@@ -344,7 +347,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
@@ -364,7 +367,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isSameAs(fakeRumEvent)
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumEventMapper.VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
@@ -383,7 +386,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
@@ -408,7 +411,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE
@@ -428,7 +431,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
@@ -448,7 +451,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
@@ -468,7 +471,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isSameAs(fakeRumEvent)
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumEventMapper.VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
@@ -487,7 +490,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
@@ -511,7 +514,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE
@@ -531,7 +534,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
@@ -551,7 +554,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
@@ -660,12 +663,11 @@ internal class RumEventMapperTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, rumMonitor)
+            return listOf(rumMonitor)
         }
     }
 }

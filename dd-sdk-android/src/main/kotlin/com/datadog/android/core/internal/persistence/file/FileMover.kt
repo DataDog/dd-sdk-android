@@ -48,7 +48,7 @@ internal class FileMover(val internalLogger: InternalLogger) {
     @Suppress("ReturnCount")
     @WorkerThread
     fun moveFiles(srcDir: File, destDir: File): Boolean {
-        if (!srcDir.existsSafe()) {
+        if (!srcDir.existsSafe(internalLogger)) {
             internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.MAINTAINER,
@@ -56,7 +56,7 @@ internal class FileMover(val internalLogger: InternalLogger) {
             )
             return true
         }
-        if (!srcDir.isDirectorySafe()) {
+        if (!srcDir.isDirectorySafe(internalLogger)) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
@@ -64,8 +64,8 @@ internal class FileMover(val internalLogger: InternalLogger) {
             )
             return false
         }
-        if (!destDir.existsSafe()) {
-            if (!destDir.mkdirsSafe()) {
+        if (!destDir.existsSafe(internalLogger)) {
+            if (!destDir.mkdirsSafe(internalLogger)) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     targets = listOf(
@@ -76,7 +76,7 @@ internal class FileMover(val internalLogger: InternalLogger) {
                 )
                 return false
             }
-        } else if (!destDir.isDirectorySafe()) {
+        } else if (!destDir.isDirectorySafe(internalLogger)) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
@@ -85,13 +85,13 @@ internal class FileMover(val internalLogger: InternalLogger) {
             return false
         }
 
-        val srcFiles = srcDir.listFilesSafe().orEmpty()
+        val srcFiles = srcDir.listFilesSafe(internalLogger).orEmpty()
         return srcFiles.all { file -> moveFile(file, destDir) }
     }
 
     private fun moveFile(file: File, destDir: File): Boolean {
         val destFile = File(destDir, file.name)
-        return file.renameToSafe(destFile)
+        return file.renameToSafe(destFile, internalLogger)
     }
 
     @Suppress("StringLiteralDuplication")

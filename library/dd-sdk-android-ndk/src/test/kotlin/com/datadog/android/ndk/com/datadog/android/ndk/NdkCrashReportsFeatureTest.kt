@@ -76,6 +76,7 @@ class NdkCrashReportsFeatureTest {
         val mockContext: Context = mock()
         whenever(mockSdkCore.rootStorageDir) doReturn tempDir
         whenever(mockSdkCore.trackingConsent) doReturn trackingConsent
+        whenever(mockSdkCore._internalLogger) doReturn mock()
         testedFeature.setFieldValue("nativeLibraryLoaded", true)
 
         // WHEN
@@ -100,6 +101,7 @@ class NdkCrashReportsFeatureTest {
         val mockContext: Context = mock()
         whenever(mockSdkCore.rootStorageDir) doReturn tempDir
         whenever(mockSdkCore.trackingConsent) doReturn trackingConsent
+        whenever(mockSdkCore._internalLogger) doReturn mock()
 
         // WHEN
         try {

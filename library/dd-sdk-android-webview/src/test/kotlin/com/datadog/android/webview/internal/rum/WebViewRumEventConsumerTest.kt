@@ -11,7 +11,6 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aRumEventAsJson
 import com.datadog.android.v2.api.EventBatchWriter
@@ -23,9 +22,6 @@ import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.domain.RumContext
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
@@ -56,8 +52,7 @@ import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -91,6 +86,9 @@ internal class WebViewRumEventConsumerTest {
 
     @Mock
     lateinit var mockSdkCore: SdkCore
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockWebViewRumFeatureScope: FeatureScope
@@ -135,6 +133,7 @@ internal class WebViewRumEventConsumerTest {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
 
         testedConsumer = WebViewRumEventConsumer(
             mockSdkCore,
@@ -558,7 +557,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeRumEvent)
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             WebViewRumEventConsumer.JSON_PARSING_ERROR_MESSAGE,
@@ -628,7 +627,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeRumEvent)
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
             targets = eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
             eq(WebViewRumEventConsumer.JSON_PARSING_ERROR_MESSAGE),
@@ -864,13 +863,6 @@ internal class WebViewRumEventConsumerTest {
     // endregion
 
     companion object {
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
 
         @JvmStatic
         fun mapperThrowsException(): List<Throwable> {

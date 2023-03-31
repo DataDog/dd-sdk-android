@@ -6,12 +6,9 @@
 
 package com.datadog.android.core.internal.time
 
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -21,12 +18,9 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 
 @Extensions(
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 internal class LoggingSyncListenerTest {
-
-    private val testableListener = LoggingSyncListener()
 
     @Test
     fun `𝕄 log error 𝕎 onError()`(
@@ -34,27 +28,19 @@ internal class LoggingSyncListenerTest {
         forge: Forge
     ) {
         // Given
+        val mockInternalLogger = mock<InternalLogger>()
+        val testableListener = LoggingSyncListener(internalLogger = mockInternalLogger)
         val throwable = forge.aThrowable()
 
         // When
         testableListener.onError(fakeHost, throwable)
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
             "Kronos onError @host:$fakeHost",
             throwable
         )
-    }
-
-    companion object {
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
     }
 }

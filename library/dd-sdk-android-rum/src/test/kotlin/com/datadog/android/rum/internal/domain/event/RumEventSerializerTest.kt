@@ -13,16 +13,13 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.UserInfo
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -41,6 +38,7 @@ import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -48,8 +46,7 @@ import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -57,9 +54,12 @@ internal class RumEventSerializerTest {
 
     lateinit var testedSerializer: RumEventSerializer
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`() {
-        testedSerializer = RumEventSerializer()
+        testedSerializer = RumEventSerializer(internalLogger = mockInternalLogger)
     }
 
     @RepeatedTest(8)
@@ -853,7 +853,7 @@ internal class RumEventSerializerTest {
     ) {
         // GIVEN
         val mockedDataConstrains: DataConstraints = mock()
-        testedSerializer = RumEventSerializer(mockedDataConstrains)
+        testedSerializer = RumEventSerializer(mockInternalLogger, mockedDataConstrains)
 
         // WHEN
         testedSerializer.serialize(fakeEvent)
@@ -875,7 +875,7 @@ internal class RumEventSerializerTest {
     ) {
         // GIVEN
         val mockedDataConstrains: DataConstraints = mock()
-        testedSerializer = RumEventSerializer(mockedDataConstrains)
+        testedSerializer = RumEventSerializer(mockInternalLogger, mockedDataConstrains)
 
         // WHEN
         testedSerializer.serialize(fakeEvent)
@@ -897,7 +897,7 @@ internal class RumEventSerializerTest {
     ) {
         // GIVEN
         val mockedDataConstrains: DataConstraints = mock()
-        testedSerializer = RumEventSerializer(mockedDataConstrains)
+        testedSerializer = RumEventSerializer(mockInternalLogger, mockedDataConstrains)
 
         // WHEN
         testedSerializer.serialize(fakeEvent)
@@ -919,7 +919,7 @@ internal class RumEventSerializerTest {
     ) {
         // GIVEN
         val mockedDataConstrains: DataConstraints = mock()
-        testedSerializer = RumEventSerializer(mockedDataConstrains)
+        testedSerializer = RumEventSerializer(mockInternalLogger, mockedDataConstrains)
 
         // WHEN
         testedSerializer.serialize(fakeEvent)
@@ -941,7 +941,7 @@ internal class RumEventSerializerTest {
     ) {
         // GIVEN
         val mockedDataConstrains: DataConstraints = mock()
-        testedSerializer = RumEventSerializer(mockedDataConstrains)
+        testedSerializer = RumEventSerializer(mockInternalLogger, mockedDataConstrains)
 
         // WHEN
         testedSerializer.serialize(fakeEvent)
@@ -1017,7 +1017,7 @@ internal class RumEventSerializerTest {
             )
         )
         val mockedDataConstrains: DataConstraints = mock()
-        testedSerializer = RumEventSerializer(mockedDataConstrains)
+        testedSerializer = RumEventSerializer(mockInternalLogger, mockedDataConstrains)
 
         // WHEN
         testedSerializer.serialize(fakeEventWithInternalGlobalAttributes)
@@ -1036,7 +1036,7 @@ internal class RumEventSerializerTest {
                 .doesNotContainKey(RumAttributes.INTERNAL_ERROR_SOURCE_TYPE)
                 .doesNotContainKey(RumAttributes.INTERNAL_ERROR_IS_CRASH)
         }
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -1125,14 +1125,4 @@ internal class RumEventSerializerTest {
     }
 
     // endregion
-
-    companion object {
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
-    }
 }

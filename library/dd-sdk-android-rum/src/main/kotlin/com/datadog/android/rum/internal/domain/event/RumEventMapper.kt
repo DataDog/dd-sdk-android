@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.domain.event
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.GlobalRum
@@ -29,7 +28,8 @@ internal data class RumEventMapper(
     val resourceEventMapper: EventMapper<ResourceEvent> = NoOpEventMapper(),
     val actionEventMapper: EventMapper<ActionEvent> = NoOpEventMapper(),
     val longTaskEventMapper: EventMapper<LongTaskEvent> = NoOpEventMapper(),
-    val telemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent> = NoOpEventMapper()
+    val telemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent> = NoOpEventMapper(),
+    private val internalLogger: InternalLogger
 ) : EventMapper<Any> {
 
     override fun map(event: Any): Any? {

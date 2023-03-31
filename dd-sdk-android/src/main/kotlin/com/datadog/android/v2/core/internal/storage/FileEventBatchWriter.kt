@@ -27,7 +27,7 @@ internal class FileEventBatchWriter(
 
     @WorkerThread
     override fun currentMetadata(): ByteArray? {
-        if (metadataFile == null || !metadataFile.existsSafe()) return null
+        if (metadataFile == null || !metadataFile.existsSafe(internalLogger)) return null
 
         return metadataReaderWriter.readData(metadataFile)
     }

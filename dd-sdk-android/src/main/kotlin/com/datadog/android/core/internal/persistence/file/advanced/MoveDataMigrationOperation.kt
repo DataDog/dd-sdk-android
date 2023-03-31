@@ -39,7 +39,7 @@ internal class MoveDataMigrationOperation(
                 WARN_NULL_DEST_DIR
             )
         } else {
-            retryWithDelay(MAX_RETRY, RETRY_DELAY_NS) {
+            retryWithDelay(MAX_RETRY, RETRY_DELAY_NS, internalLogger) {
                 fileMover.moveFiles(fromDir, toDir)
             }
         }

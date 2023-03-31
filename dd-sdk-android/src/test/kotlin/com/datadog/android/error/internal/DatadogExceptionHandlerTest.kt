@@ -17,7 +17,6 @@ import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
@@ -39,8 +38,6 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -82,6 +79,9 @@ internal class DatadogExceptionHandlerTest {
     lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
     lateinit var mockLogsFeatureScope: FeatureScope
 
     @Mock
@@ -93,19 +93,11 @@ internal class DatadogExceptionHandlerTest {
     @Forgery
     lateinit var fakeThrowable: Throwable
 
-    @StringForgery(StringForgeryType.HEXADECIMAL)
-    lateinit var fakeToken: String
-
-    @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
-    lateinit var fakeEnvName: String
-
-    @StringForgery
-    lateinit var fakeVariant: String
-
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn mockLogsFeatureScope
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
 
         CoreFeature.disableKronosBackgroundSync = true
 
@@ -140,7 +132,7 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             DatadogExceptionHandler.MISSING_LOGS_FEATURE_INFO
@@ -347,8 +339,8 @@ internal class DatadogExceptionHandlerTest {
 
         // Then
         verify(mockScheduledThreadExecutor)
-            .waitToIdle(DatadogExceptionHandler.MAX_WAIT_FOR_IDLE_TIME_IN_MS)
-        verify(logger.mockInternalLogger, never()).log(
+            .waitToIdle(DatadogExceptionHandler.MAX_WAIT_FOR_IDLE_TIME_IN_MS, mockInternalLogger)
+        verify(mockInternalLogger, never()).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE
@@ -371,7 +363,7 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE
@@ -424,7 +416,7 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             DatadogExceptionHandler.MISSING_RUM_FEATURE_INFO
@@ -545,12 +537,11 @@ internal class DatadogExceptionHandlerTest {
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext)
+            return listOf(appContext)
         }
     }
 }

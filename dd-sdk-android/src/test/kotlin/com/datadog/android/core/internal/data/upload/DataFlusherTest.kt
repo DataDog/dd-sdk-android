@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -54,6 +55,9 @@ internal class DataFlusherTest {
     @Mock
     lateinit var mockFileMover: FileMover
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @StringForgery
     lateinit var fakePrefix: String
 
@@ -70,7 +74,8 @@ internal class DataFlusherTest {
             mockFileOrchestrator,
             payloadDecoration,
             mockFileReader,
-            mockFileMover
+            mockFileMover,
+            mockInternalLogger
         )
     }
 

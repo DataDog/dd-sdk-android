@@ -14,6 +14,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -52,6 +53,9 @@ internal class WorkManagerUtilsTest {
     @Mock
     lateinit var mockWorkManager: WorkManagerImpl
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`() {
         CoreFeature.disableKronosBackgroundSync = true
@@ -77,7 +81,7 @@ internal class WorkManagerUtilsTest {
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
 
         // When
-        cancelUploadWorker(appContext.mockInstance)
+        cancelUploadWorker(appContext.mockInstance, mockInternalLogger)
 
         // Then
         verify(mockWorkManager).cancelAllWorkByTag(eq(TAG_DATADOG_UPLOAD))
@@ -86,7 +90,7 @@ internal class WorkManagerUtilsTest {
     @Test
     fun `it will handle the cancel exception if WorkManager was not correctly instantiated`() {
         // When
-        cancelUploadWorker(appContext.mockInstance)
+        cancelUploadWorker(appContext.mockInstance, mockInternalLogger)
 
         // Then
         verifyZeroInteractions(mockWorkManager)
@@ -98,7 +102,7 @@ internal class WorkManagerUtilsTest {
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
 
         // When
-        triggerUploadWorker(appContext.mockInstance)
+        triggerUploadWorker(appContext.mockInstance, mockInternalLogger)
 
         // Then
         verify(mockWorkManager).enqueueUniqueWork(
@@ -114,7 +118,7 @@ internal class WorkManagerUtilsTest {
     @Test
     fun `it will handle the trigger exception if WorkManager was not correctly instantiated`() {
         // When
-        triggerUploadWorker(appContext.mockInstance)
+        triggerUploadWorker(appContext.mockInstance, mockInternalLogger)
 
         // Then
         verifyZeroInteractions(mockWorkManager)

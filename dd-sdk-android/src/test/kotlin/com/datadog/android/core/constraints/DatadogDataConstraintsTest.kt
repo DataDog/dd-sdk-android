@@ -6,13 +6,9 @@
 
 package com.datadog.android.core.constraints
 
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.times
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.isNull
@@ -28,14 +24,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)
@@ -43,9 +39,12 @@ internal class DatadogDataConstraintsTest {
 
     lateinit var testedConstraints: DataConstraints
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`() {
-        testedConstraints = DatadogDataConstraints()
+        testedConstraints = DatadogDataConstraints(mockInternalLogger)
     }
 
     // region Tags
@@ -57,7 +56,7 @@ internal class DatadogDataConstraintsTest {
         val result = testedConstraints.validateTags(listOf(tag))
 
         assertThat(result).containsOnly(tag)
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -69,7 +68,7 @@ internal class DatadogDataConstraintsTest {
         val result = testedConstraints.validateTags(listOf(tag))
 
         assertThat(result).isEmpty()
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
@@ -92,7 +91,7 @@ internal class DatadogDataConstraintsTest {
         val expectedCorrectedTag = "$validPart$converted:$value"
         assertThat(result)
             .containsOnly(expectedCorrectedTag)
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
@@ -110,7 +109,7 @@ internal class DatadogDataConstraintsTest {
         val expectedCorrectedTag = "${key.lowercase(Locale.US)}:$value"
         assertThat(result)
             .containsOnly(expectedCorrectedTag)
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
@@ -126,7 +125,7 @@ internal class DatadogDataConstraintsTest {
         val expectedCorrectedTag = tag.substring(0, 200)
         assertThat(result)
             .containsOnly(expectedCorrectedTag)
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
@@ -141,7 +140,7 @@ internal class DatadogDataConstraintsTest {
 
         assertThat(result)
             .containsOnly(expectedCorrectedTag)
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             "tag \"$expectedCorrectedTag:\" was modified to " +
@@ -159,7 +158,7 @@ internal class DatadogDataConstraintsTest {
 
         assertThat(result)
             .isEmpty()
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             "\"$invalidTag\" is an invalid tag, and was ignored."
@@ -176,7 +175,7 @@ internal class DatadogDataConstraintsTest {
 
         assertThat(result)
             .isEmpty()
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             "\"$invalidTag\" is an invalid tag, and was ignored."
@@ -193,7 +192,7 @@ internal class DatadogDataConstraintsTest {
         val discardedCount = tags.size - 100
         assertThat(result)
             .containsExactlyElementsOf(firstTags)
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             "too many tags were added, $discardedCount had to be discarded."
@@ -215,7 +214,7 @@ internal class DatadogDataConstraintsTest {
 
         assertThat(result)
             .containsEntry(key, value)
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -230,7 +229,7 @@ internal class DatadogDataConstraintsTest {
         val expectedKey = topLevels.joinToString(".") + "_" + lowerLevels.joinToString("_")
         assertThat(result)
             .containsEntry(expectedKey, value)
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             "Key \"$key\" was modified to \"$expectedKey\" to match our constraints."
@@ -255,7 +254,7 @@ internal class DatadogDataConstraintsTest {
         val expectedKey = topLevels.joinToString(".") + "_" + lowerLevels.joinToString("_")
         assertThat(result)
             .containsEntry(expectedKey, value)
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             "Key \"$key\" was modified to \"$expectedKey\" to match our constraints."
@@ -273,7 +272,7 @@ internal class DatadogDataConstraintsTest {
         assertThat(result)
             .hasSize(128)
             .containsAllEntriesOf(firstAttributes)
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             "Too many attributes were added, $discardedCount had to be discarded."
@@ -296,7 +295,7 @@ internal class DatadogDataConstraintsTest {
         assertThat(result)
             .hasSize(128)
             .containsAllEntriesOf(firstAttributes)
-        verify(logger.mockInternalLogger).log(
+        verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             "Too many attributes were added for [$fakeAttributesGroup]," +
@@ -364,7 +363,7 @@ internal class DatadogDataConstraintsTest {
 
         val logArgumentCaptor = argumentCaptor<String>()
 
-        verify(logger.mockInternalLogger, times(badToSanitizedKeys.size)).log(
+        verify(mockInternalLogger, times(badToSanitizedKeys.size)).log(
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.USER),
             logArgumentCaptor.capture(),
@@ -383,14 +382,4 @@ internal class DatadogDataConstraintsTest {
     }
 
     // endregion
-
-    companion object {
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
-    }
 }

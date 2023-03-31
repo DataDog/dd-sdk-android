@@ -8,16 +8,12 @@ package com.datadog.android.trace.internal.handlers
 
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDSpan
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.trace.api.DDTags
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -44,8 +40,7 @@ import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -55,6 +50,9 @@ internal class AndroidSpanLogsHandlerTest {
 
     @Mock
     lateinit var mockSdkCore: SdkCore
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockLogsFeatureScope: FeatureScope
@@ -77,9 +75,9 @@ internal class AndroidSpanLogsHandlerTest {
             mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         ) doReturn mockLogsFeatureScope
 
-        testedLogHandler = AndroidSpanLogsHandler(
-            mockSdkCore
-        )
+        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+
+        testedLogHandler = AndroidSpanLogsHandler(mockSdkCore)
     }
 
     @Test
@@ -446,21 +444,11 @@ internal class AndroidSpanLogsHandlerTest {
         testedLogHandler.log(event, mockSpan)
 
         // Then
-        verify(logger.mockInternalLogger)
+        verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 AndroidSpanLogsHandler.MISSING_LOG_FEATURE_INFO
             )
-    }
-
-    companion object {
-        val logger = InternalLoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
     }
 }

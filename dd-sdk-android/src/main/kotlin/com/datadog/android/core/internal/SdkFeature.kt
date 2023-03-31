@@ -15,7 +15,6 @@ import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
@@ -43,7 +42,8 @@ import java.util.concurrent.atomic.AtomicReference
 @Suppress("TooManyFunctions")
 internal class SdkFeature(
     internal val coreFeature: CoreFeature,
-    internal val wrappedFeature: Feature
+    internal val wrappedFeature: Feature,
+    internal val internalLogger: InternalLogger
 ) : FeatureScope {
 
     internal val initialized = AtomicBoolean(false)
@@ -63,14 +63,17 @@ internal class SdkFeature(
 
         if (wrappedFeature is StorageBackedFeature) {
             storage = createStorage(wrappedFeature.name, wrappedFeature.storageConfiguration)
+        }
+
+        wrappedFeature.onInitialize(sdkCore, context)
+
+        if (wrappedFeature is StorageBackedFeature) {
             setupUploader(wrappedFeature.requestFactory)
         }
 
         if (wrappedFeature is TrackingConsentProviderCallback) {
             coreFeature.trackingConsentProvider.registerCallback(wrappedFeature)
         }
-
-        wrappedFeature.onInitialize(sdkCore, context)
 
         initialized.set(true)
     }
@@ -151,7 +154,8 @@ internal class SdkFeature(
                 coreFeature.networkInfoProvider,
                 coreFeature.systemInfoProvider,
                 coreFeature.uploadFrequency,
-                coreFeature.uploadExecutorService
+                coreFeature.uploadExecutorService,
+                internalLogger
             )
         } else {
             NoOpUploadScheduler()
@@ -217,7 +221,8 @@ internal class SdkFeature(
             fileOrchestrator,
             BatchFileReaderWriter.create(internalLogger, coreFeature.localDataEncryption),
             FileReaderWriter.create(internalLogger, coreFeature.localDataEncryption),
-            FileMover(internalLogger)
+            FileMover(internalLogger),
+            internalLogger
         )
         @Suppress("ThreadSafety")
         flusher.flush(uploader)

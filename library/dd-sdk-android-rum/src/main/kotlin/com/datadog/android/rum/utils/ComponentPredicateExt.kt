@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.utils
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.v2.api.InternalLogger
 
@@ -14,11 +13,13 @@ import com.datadog.android.v2.api.InternalLogger
  * Executes the provided operation if the predicate verifies the argument.
  * @param T the type of component
  * @param component to be verified
+ * @param internalLogger logger to use
  * @param operation to be executed
  */
 @Suppress("TooGenericExceptionCaught")
 internal inline fun <reified T : Any> ComponentPredicate<T>.runIfValid(
     component: T,
+    internalLogger: InternalLogger,
     operation: (T) -> Unit
 ) {
     if (accept(component)) {

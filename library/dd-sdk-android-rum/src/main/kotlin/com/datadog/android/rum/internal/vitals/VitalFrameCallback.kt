@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.vitals
 
 import android.view.Choreographer
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.InternalLogger
 import java.util.concurrent.TimeUnit
 
@@ -16,6 +15,7 @@ import java.util.concurrent.TimeUnit
  */
 internal class VitalFrameCallback(
     private val observer: VitalObserver,
+    private val internalLogger: InternalLogger,
     private val keepRunning: () -> Boolean
 ) : Choreographer.FrameCallback {
 

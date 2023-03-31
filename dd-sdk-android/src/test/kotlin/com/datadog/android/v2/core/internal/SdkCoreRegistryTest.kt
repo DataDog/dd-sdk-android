@@ -9,7 +9,6 @@ package com.datadog.android.v2.core.internal
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -27,8 +26,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -150,7 +148,7 @@ internal class SdkCoreRegistryTest {
     }
 
     @Test
-    fun `M clear registerd instances W register+clear+getInstance`(
+    fun `M clear registered instances W register+clear+getInstance`(
         @StringForgery name: String
     ) {
         // When
@@ -163,7 +161,7 @@ internal class SdkCoreRegistryTest {
     }
 
     @Test
-    fun `M clear registerd instances W register+clear+getInstance {default name name}`() {
+    fun `M clear registered instances W register+clear+getInstance {default name name}`() {
         // When
         testedRegistry.register(null, mockSdkCore)
         testedRegistry.clear()

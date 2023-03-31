@@ -101,6 +101,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 notify viewLoadingTimer 𝕎 onActivityCreated()`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn true
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityCreated(mockActivity, null)
@@ -113,6 +114,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 notify viewLoadingTimer 𝕎 onActivityStarted()`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn true
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityStarted(mockActivity)
@@ -125,6 +127,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 notify viewLoadingTimer 𝕎 onActivityResumed()`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn true
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -137,6 +140,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 notify viewLoadingTimer 𝕎 onActivityPostResumed()`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn true
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityPostResumed(mockActivity)
@@ -149,6 +153,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 notify viewLoadingTimer 𝕎 onActivityPaused()`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn true
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityPaused(mockActivity)
@@ -161,6 +166,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 notify viewLoadingTimer 𝕎 onActivityDestroyed()`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn true
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityDestroyed(mockActivity)
@@ -177,6 +183,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 do nothing 𝕎 onActivityCreated() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityCreated(mockActivity, null)
@@ -189,6 +196,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 do nothing 𝕎 onActivityStarted() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityStarted(mockActivity)
@@ -201,6 +209,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 do nothing 𝕎 onActivityResumed() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -213,6 +222,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 do nothing 𝕎 onActivityPostResumed() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityPostResumed(mockActivity)
@@ -225,6 +235,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 do nothing 𝕎 onActivityPaused() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityPaused(mockActivity)
@@ -237,6 +248,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 do nothing 𝕎 onActivityDestroyed() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityDestroyed(mockActivity)
@@ -253,6 +265,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 start a RUM View event 𝕎 onActivityResumed()`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn true
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -286,6 +299,7 @@ internal class ActivityViewTrackingStrategyTest :
             .toMutableMap()
         expectedAttributes["view.intent.action"] = action
         expectedAttributes["view.intent.uri"] = uri
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -312,6 +326,7 @@ internal class ActivityViewTrackingStrategyTest :
         whenever(mockIntent.extras).thenReturn(arguments)
         whenever(mockActivity.intent).thenReturn(mockIntent)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -330,6 +345,7 @@ internal class ActivityViewTrackingStrategyTest :
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn true
         whenever(mockPredicate.getViewName(mockActivity)) doReturn fakeName
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -349,6 +365,7 @@ internal class ActivityViewTrackingStrategyTest :
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn true
         whenever(mockPredicate.getViewName(mockActivity)) doReturn fakeName
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -369,6 +386,7 @@ internal class ActivityViewTrackingStrategyTest :
         whenever(mockPredicate.accept(mockActivity)) doReturn true
         whenever(mockViewLoadingTimer.getLoadingTime(mockActivity)) doReturn loadingTime
         whenever(mockViewLoadingTimer.isFirstTimeLoading(mockActivity)) doReturn true
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityPaused(mockActivity)
@@ -393,6 +411,7 @@ internal class ActivityViewTrackingStrategyTest :
         whenever(mockPredicate.accept(mockActivity)) doReturn true
         whenever(mockViewLoadingTimer.getLoadingTime(mockActivity)) doReturn loadingTime
         whenever(mockViewLoadingTimer.isFirstTimeLoading(mockActivity)) doReturn false
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityPaused(mockActivity)
@@ -417,6 +436,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 start a RUM View event 𝕎 onActivityResumed() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -429,6 +449,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 update RUM View loading time 𝕎 onActivityPaused() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
+        testedStrategy.register(mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityPaused(mockActivity)

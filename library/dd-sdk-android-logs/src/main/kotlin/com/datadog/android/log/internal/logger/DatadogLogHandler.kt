@@ -6,7 +6,6 @@
 
 package com.datadog.android.log.internal.logger
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.log.internal.domain.LogGenerator
@@ -66,7 +65,7 @@ internal class DatadogLogHandler(
                     }
                 }
             } else {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
                     "Requested to write log, but Logs feature is not registered."
@@ -86,7 +85,7 @@ internal class DatadogLogHandler(
                     )
                 )
             } else {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
                     RUM_FEATURE_NOT_REGISTERED_FOR_ERROR_FORWARD_INFO
@@ -133,7 +132,7 @@ internal class DatadogLogHandler(
                     }
                 }
             } else {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
                     LOGS_FEATURE_NOT_REGISTERED_INFO
@@ -153,7 +152,7 @@ internal class DatadogLogHandler(
                     )
                 )
             } else {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
                     RUM_FEATURE_NOT_REGISTERED_FOR_ERROR_FORWARD_INFO

@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -20,7 +19,8 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import java.util.Locale
 
-internal class RumEventDeserializer : Deserializer<JsonObject, Any> {
+internal class RumEventDeserializer(private val internalLogger: InternalLogger) :
+    Deserializer<JsonObject, Any> {
 
     // region Deserializer
 

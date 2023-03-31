@@ -9,7 +9,6 @@ package com.datadog.android.okhttp
 import androidx.annotation.FloatRange
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
@@ -216,7 +215,7 @@ internal constructor(
 
             GlobalRum.get().startResource(requestId, method, url)
         } else {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 WARN_RUM_DISABLED
@@ -311,7 +310,7 @@ internal constructor(
             val contentLength = body.contentLength()
             if (contentLength == 0L) null else contentLength
         } catch (e: IOException) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
                 ERROR_PEEK_BODY,
@@ -319,7 +318,7 @@ internal constructor(
             )
             null
         } catch (e: IllegalStateException) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
                 ERROR_PEEK_BODY,
@@ -327,7 +326,7 @@ internal constructor(
             )
             null
         } catch (e: IllegalArgumentException) {
-            internalLogger.log(
+            sdkCore._internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
                 ERROR_PEEK_BODY,

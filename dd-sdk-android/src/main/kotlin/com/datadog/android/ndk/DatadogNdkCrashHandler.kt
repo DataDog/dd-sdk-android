@@ -92,16 +92,18 @@ internal class DatadogNdkCrashHandler(
     @Suppress("NestedBlockDepth")
     @WorkerThread
     private fun readCrashData() {
-        if (!ndkCrashDataDirectory.existsSafe()) {
+        if (!ndkCrashDataDirectory.existsSafe(internalLogger)) {
             return
         }
         try {
-            ndkCrashDataDirectory.listFilesSafe()?.forEach { file ->
+            ndkCrashDataDirectory.listFilesSafe(internalLogger)?.forEach { file ->
                 when (file.name) {
                     // TODO RUMM-1944 Data from NDK should be also encrypted
-                    CRASH_DATA_FILE_NAME -> lastNdkCrashLog = file.readTextSafe()?.let {
-                        ndkCrashLogDeserializer.deserialize(it)
-                    }
+                    CRASH_DATA_FILE_NAME ->
+                        lastNdkCrashLog =
+                            file.readTextSafe(internalLogger = internalLogger)?.let {
+                                ndkCrashLogDeserializer.deserialize(it)
+                            }
                     RUM_VIEW_EVENT_FILE_NAME ->
                         lastRumViewEvent =
                             readRumFileContent(
@@ -150,7 +152,7 @@ internal class DatadogNdkCrashHandler(
         return if (content.isEmpty()) {
             null
         } else {
-            String(content.join(ByteArray(0)))
+            String(content.join(ByteArray(0), internalLogger = internalLogger))
         }
     }
 
@@ -332,9 +334,10 @@ internal class DatadogNdkCrashHandler(
 
     @SuppressWarnings("TooGenericExceptionCaught")
     private fun clearCrashLog() {
-        if (ndkCrashDataDirectory.existsSafe()) {
+        if (ndkCrashDataDirectory.existsSafe(internalLogger)) {
             try {
-                ndkCrashDataDirectory.listFilesSafe()?.forEach { it.deleteRecursively() }
+                ndkCrashDataDirectory.listFilesSafe(internalLogger)
+                    ?.forEach { it.deleteRecursively() }
             } catch (e: Throwable) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,

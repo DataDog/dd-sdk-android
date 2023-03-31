@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.net
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.InternalLogger
 import okhttp3.Interceptor
 import okhttp3.MediaType
@@ -25,7 +24,7 @@ import kotlin.jvm.Throws
  *
  * This class uses the [GzipSink] to compress the body content.
  */
-internal class GzipRequestInterceptor : Interceptor {
+internal class GzipRequestInterceptor(private val internalLogger: InternalLogger) : Interceptor {
 
     // region Interceptor
 

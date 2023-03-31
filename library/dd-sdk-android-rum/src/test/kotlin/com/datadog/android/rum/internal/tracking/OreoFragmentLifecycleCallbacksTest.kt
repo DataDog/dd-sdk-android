@@ -109,7 +109,8 @@ internal class OreoFragmentLifecycleCallbacksTest {
             rumMonitor = mockRumMonitor,
             advancedRumMonitor = mockAdvancedRumMonitor,
             buildSdkVersionProvider = mockBuildSdkVersionProvider,
-            rumFeature = mockRumFeature
+            rumFeature = mockRumFeature,
+            internalLogger = mock()
         )
     }
 

@@ -6,7 +6,6 @@
 
 package com.datadog.android.trace
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.data.NoOpWriter
 import com.datadog.android.trace.internal.handlers.AndroidSpanLogsHandler
@@ -97,7 +96,7 @@ class AndroidTracer internal constructor(
                 return field.ifEmpty {
                     val service = sdkCore.service
                     if (service.isEmpty()) {
-                        internalLogger.log(
+                        sdkCore._internalLogger.log(
                             InternalLogger.Level.ERROR,
                             InternalLogger.Target.USER,
                             DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
@@ -130,7 +129,7 @@ class AndroidTracer internal constructor(
             val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
 
             if (tracingFeature == null) {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     TRACING_NOT_ENABLED_ERROR_MESSAGE
@@ -138,7 +137,7 @@ class AndroidTracer internal constructor(
             }
 
             if (bundleWithRumEnabled && rumFeature == null) {
-                internalLogger.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     RUM_NOT_ENABLED_ERROR_MESSAGE
