@@ -154,7 +154,7 @@ open class TextWireframeMapper :
     // endregion
 
     companion object {
-        internal const val SANS_SERIF_FAMILY_NAME = "sans-serif"
+        internal const val SANS_SERIF_FAMILY_NAME = "roboto, sans-serif"
         internal const val SERIF_FAMILY_NAME = "serif"
         internal const val MONOSPACE_FAMILY_NAME = "monospace"
     }

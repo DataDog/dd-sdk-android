@@ -109,7 +109,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
             height = titleTextView.height.toLong().densityNormalized(density),
             text = "${titleTextView.text}",
             textStyle = MobileSegment.TextStyle(
-                family = "sans-serif",
+                family = "roboto, sans-serif",
                 size = titleTextView.textSize.toLong().densityNormalized(density),
                 color = StringUtils.formatColorAndAlphaAsHexa(
                     titleTextView.currentTextColor,
@@ -140,7 +140,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
                 )
             ),
             textStyle = MobileSegment.TextStyle(
-                family = "sans-serif",
+                family = "roboto, sans-serif",
                 size = clickMeButton.textSize.toLong().densityNormalized(density),
                 color = StringUtils.formatColorAndAlphaAsHexa(
                     clickMeButton.currentTextColor,
