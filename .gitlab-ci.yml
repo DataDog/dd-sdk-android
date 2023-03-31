@@ -335,9 +335,7 @@ publish:release-session-replay:
 
 publish:release-session-replay-material:
   tags: [ "runner:main" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
