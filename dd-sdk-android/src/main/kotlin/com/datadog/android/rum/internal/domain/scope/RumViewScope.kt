@@ -1030,7 +1030,7 @@ internal open class RumViewScope(
         if (activity == null) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
-                InternalLogger.Target.TELEMETRY,
+                InternalLogger.Target.MAINTAINER,
                 "Unable to retrieve the activity from $key, " +
                     "the frame rate might be reported with the wrong scale"
             )

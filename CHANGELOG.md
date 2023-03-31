@@ -1,3 +1,7 @@
+# 1.18.1 / 2023-03-30
+
+* [IMPROVEMENT] RUM: Remove extra telemetry sent when detecting refresh rate scale. See [#1358](https://github.com/DataDog/dd-sdk-android/pull/1358)
+
 # 1.18.0 / 2023-03-21
 
 * [FEATURE] RUM: Add `addFeatureFlagEvaluation` function for RUM. See [#1265](https://github.com/DataDog/dd-sdk-android/pull/1265)
