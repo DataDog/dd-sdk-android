@@ -95,6 +95,9 @@ internal class RumSessionScopeTest {
     @Mock
     lateinit var mockSdkCore: SdkCore
 
+    @Mock
+    lateinit var mockViewChangedListener: RumViewChangedListener
+
     @Forgery
     lateinit var fakeParentContext: RumContext
 
@@ -1044,6 +1047,7 @@ internal class RumSessionScopeTest {
             samplingRate,
             backgroundTrackingEnabled ?: fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,

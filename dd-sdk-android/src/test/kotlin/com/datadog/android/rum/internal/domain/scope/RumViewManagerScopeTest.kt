@@ -100,6 +100,9 @@ internal class RumViewManagerScopeTest {
     @Mock
     lateinit var mockSdkCore: SdkCore
 
+    @Mock
+    lateinit var mockViewChangedListener: RumViewChangedListener
+
     @Forgery
     lateinit var fakeParentContext: RumContext
 
@@ -127,6 +130,7 @@ internal class RumViewManagerScopeTest {
             mockSdkCore,
             true,
             fakeTrackFrustrations,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -420,6 +424,7 @@ internal class RumViewManagerScopeTest {
             sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
+            viewChangedListener = mockViewChangedListener,
             firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
@@ -447,6 +452,7 @@ internal class RumViewManagerScopeTest {
             sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
+            viewChangedListener = mockViewChangedListener,
             firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
@@ -478,6 +484,7 @@ internal class RumViewManagerScopeTest {
             sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
+            viewChangedListener = mockViewChangedListener,
             firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
@@ -564,6 +571,7 @@ internal class RumViewManagerScopeTest {
             sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
+            viewChangedListener = mockViewChangedListener,
             firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
@@ -592,6 +600,7 @@ internal class RumViewManagerScopeTest {
             sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
+            viewChangedListener = mockViewChangedListener,
             firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,

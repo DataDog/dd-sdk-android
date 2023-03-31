@@ -22,6 +22,7 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.DataWriter
+import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 
 internal class RumViewManagerScope(
@@ -29,6 +30,7 @@ internal class RumViewManagerScope(
     private val sdkCore: SdkCore,
     private val backgroundTrackingEnabled: Boolean,
     private val trackFrustrations: Boolean,
+    private val viewChangedListener: RumViewChangedListener?,
     internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
@@ -152,6 +154,7 @@ internal class RumViewManagerScope(
             this,
             sdkCore,
             event,
+            viewChangedListener,
             firstPartyHostHeaderTypeResolver,
             cpuVitalMonitor,
             memoryVitalMonitor,
@@ -161,6 +164,14 @@ internal class RumViewManagerScope(
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
+        viewChangedListener?.onViewChanged(
+            RumViewInfo(
+                keyRef = WeakReference(event.key),
+                name = event.name,
+                attributes = event.attributes,
+                isActive = true
+            )
+        )
     }
 
     @WorkerThread
@@ -199,6 +210,7 @@ internal class RumViewManagerScope(
             RUM_BACKGROUND_VIEW_NAME,
             event.eventTime,
             emptyMap(),
+            viewChangedListener,
             firstPartyHostHeaderTypeResolver,
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
@@ -217,6 +229,7 @@ internal class RumViewManagerScope(
             RUM_APP_LAUNCH_VIEW_NAME,
             time,
             emptyMap(),
+            viewChangedListener,
             firstPartyHostHeaderTypeResolver,
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),

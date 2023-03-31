@@ -29,7 +29,7 @@ internal class RumApplicationScope(
     private val frameRateVitalMonitor: VitalMonitor,
     private val sessionListener: RumSessionListener?,
     private val contextProvider: ContextProvider
-) : RumScope {
+) : RumScope, RumViewChangedListener {
 
     private val rumContext = RumContext(applicationId = applicationId)
     internal val childScopes: MutableList<RumScope> = mutableListOf(
@@ -39,6 +39,7 @@ internal class RumApplicationScope(
             samplingRate,
             backgroundTrackingEnabled,
             trackFrustrations,
+            this,
             firstPartyHostHeaderTypeResolver,
             cpuVitalMonitor,
             memoryVitalMonitor,
@@ -53,7 +54,8 @@ internal class RumApplicationScope(
         get() {
             return childScopes.find { it.isActive() }
         }
-    private var lastActiveViewScope: RumViewScope? = null
+
+    private var lastActiveViewInfo: RumViewInfo? = null
 
     // region RumScope
 
@@ -66,8 +68,6 @@ internal class RumApplicationScope(
         if (activeSession == null && isInteraction) {
             startNewSession(event, writer)
         } else if (event is RumRawEvent.StopSession) {
-            // Grab the last active view before the session shuts down
-            lastActiveViewScope = (activeSession as? RumSessionScope)?.lastActiveViewScope
             sdkCore.updateFeatureContext(RumFeature.RUM_FEATURE_NAME) {
                 it.putAll(getRumContext().toMap())
             }
@@ -87,6 +87,12 @@ internal class RumApplicationScope(
     }
 
     // endregion
+
+    override fun onViewChanged(viewInfo: RumViewInfo) {
+        if (viewInfo.isActive) {
+            lastActiveViewInfo = viewInfo
+        }
+    }
 
     @WorkerThread
     private fun delegateToChildren(
@@ -111,6 +117,7 @@ internal class RumApplicationScope(
             samplingRate,
             backgroundTrackingEnabled,
             trackFrustrations,
+            this,
             firstPartyHostHeaderTypeResolver,
             cpuVitalMonitor,
             memoryVitalMonitor,
@@ -121,7 +128,7 @@ internal class RumApplicationScope(
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {
-            lastActiveViewScope?.let {
+            lastActiveViewInfo?.let {
                 it.keyRef.get()?.let { key ->
                     val startViewEvent = RumRawEvent.StartView(
                         key = key,
@@ -132,6 +139,5 @@ internal class RumApplicationScope(
                 }
             }
         }
-        lastActiveViewScope = null
     }
 }
