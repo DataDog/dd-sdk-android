@@ -8,13 +8,16 @@ package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.DataWriter
+import java.util.Locale
 
 @Suppress("LongParameterList")
 internal class RumApplicationScope(
@@ -129,15 +132,38 @@ internal class RumApplicationScope(
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {
             lastActiveViewInfo?.let {
-                it.keyRef.get()?.let { key ->
+                val key = it.keyRef.get()
+                if (key != null) {
                     val startViewEvent = RumRawEvent.StartView(
                         key = key,
                         name = it.name,
                         attributes = it.attributes
                     )
                     newSession.handleEvent(startViewEvent, writer)
+                } else {
+                    internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.USER,
+                        LAST_ACTIVE_VIEW_GONE_WARNING_MESSAGE.format(Locale.US, it.name)
+                    )
                 }
             }
         }
+
+        // Confidence telemety, only end up with one active session
+        if (childScopes.filter { it.isActive() }.size > 1) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.TELEMETRY,
+                MULTIPLE_ACTIVE_SESSIONS_ERROR
+            )
+        }
+    }
+
+    companion object {
+        internal const val LAST_ACTIVE_VIEW_GONE_WARNING_MESSAGE = "Attempting to start a new " +
+            "session on the last known view (%s) failed because that view has been disposed. "
+        internal const val MULTIPLE_ACTIVE_SESSIONS_ERROR = "Application has multiple active " +
+            "sessions when starting a new session"
     }
 }

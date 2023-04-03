@@ -199,7 +199,7 @@ internal class RumApplicationScopeTest {
     }
 
     @Test
-    fun `M create a new session W handleEvent { no active sessions, user interaction } `(
+    fun `M create a new session W handleEvent { no active sessions, start view } `(
         @StringForgery viewKey: String,
         @StringForgery viewName: String
     ) {
@@ -216,7 +216,7 @@ internal class RumApplicationScopeTest {
         )
 
         // Then
-        assertThat(testedScope.childScopes.count()).isEqualTo(1)
+        assertThat(testedScope.childScopes).hasSize(1)
         val newSession = testedScope.childScopes.first()
         check(newSession is RumSessionScope)
         assertThat(newSession).isNotSameAs(initialSession)

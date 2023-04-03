@@ -70,12 +70,6 @@ internal class RumSessionScope(
         applicationDisplayed
     )
 
-    internal val lastActiveViewScope: RumViewScope?
-        get() {
-            val viewManagerScope = (childScope as? RumViewManagerScope)
-            return viewManagerScope?.childrenScopes?.firstOrNull { it.isActive() } as? RumViewScope
-        }
-
     init {
         sdkCore.updateFeatureContext(RumFeature.RUM_FEATURE_NAME) {
             it.putAll(getRumContext().toMap())
