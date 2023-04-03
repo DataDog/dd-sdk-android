@@ -12,6 +12,7 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.Datadog#fun isInitialized(): Boolean
  * apiMethodSignature: com.datadog.android.Datadog#fun setVerbosity(Int)
  * apiMethodSignature: com.datadog.android.Datadog#fun addUserExtraInfo(Map<String, Any?> = emptyMap())
+ * apiMethodSignature: com.datadog.android.Datadog#fun stopSession()
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun sampleTelemetry(Float): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setUploadFrequency(UploadFrequency): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder

@@ -1306,7 +1306,7 @@ internal class DatadogRumMonitorTest {
         val otherScopes = forge.aList {
             forge.anElementFrom(mock(), mock<RumActionScope>(), mock<RumResourceScope>())
         }
-        whenever(mockRumApplicationScope.childScope) doReturn mockSessionScope
+        whenever(mockRumApplicationScope.activeSession) doReturn mockSessionScope
         whenever(mockSessionScope.childScope) doReturn mockViewManagerScope
         whenever(mockViewManagerScope.childrenScopes)
             .thenReturn((viewScopes + otherScopes).toMutableList())
@@ -1342,7 +1342,7 @@ internal class DatadogRumMonitorTest {
         val otherScopes = forge.aList {
             forge.anElementFrom(mock(), mock<RumActionScope>(), mock<RumResourceScope>())
         }
-        whenever(mockRumApplicationScope.childScope) doReturn mockSessionScope
+        whenever(mockRumApplicationScope.activeSession) doReturn mockSessionScope
         whenever(mockSessionScope.childScope) doReturn mockViewManagerScope
         whenever(mockViewManagerScope.childrenScopes)
             .thenReturn((viewScopes + otherScopes).toMutableList())
@@ -1365,7 +1365,7 @@ internal class DatadogRumMonitorTest {
         val listener = mock<RumDebugListener>()
         testedMonitor.debugListener = listener
 
-        whenever(mockRumApplicationScope.childScope) doReturn forge.anElementFrom(
+        whenever(mockRumApplicationScope.activeSession) doReturn forge.anElementFrom(
             mock(),
             mock<RumViewScope>(),
             mock<RumActionScope>(),

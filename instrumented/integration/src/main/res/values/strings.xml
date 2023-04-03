@@ -15,7 +15,12 @@
     <string name="rum_gestures_tracking_end_to_end">Rum Gestures (End to End)</string>
     <string name="rum_activity_view_tracking_end_to_end">Rum Activity View (End to End)</string>
     <string name="activity_telemetry_end_to_end">Telemetry (End to End)</string>
+    <string name="activity_kiosk_end_to_end">Kiosk (End to End)</string>
+    <string name="activity_kiosk_session">Kiosk (In Session)</string>
     <string name="fragment_a">Fragment A</string>
     <string name="fragment_b">Fragment B</string>
     <string name="fragment_c">Fragment C</string>
+    <string name="start_kiosk">Start Kiosk</string>
+    <string name="back_text">Back</string>
+    <string name="end_session">End Session</string>
 </resources>

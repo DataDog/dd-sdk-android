@@ -56,6 +56,7 @@ internal open class RumViewScope(
     internal val name: String,
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
+    private val viewChangedListener: RumViewChangedListener?,
     internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     internal val cpuVitalMonitor: VitalMonitor,
     internal val memoryVitalMonitor: VitalMonitor,
@@ -188,6 +189,8 @@ internal open class RumViewScope(
             is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, writer)
             is RumRawEvent.KeepAlive -> onKeepAlive(event, writer)
 
+            is RumRawEvent.StopSession -> onStopSession(event, writer)
+
             is RumRawEvent.UpdatePerformanceMetric -> onUpdatePerformanceMetric(event)
 
             else -> delegateEventToChildren(event, writer)
@@ -237,6 +240,7 @@ internal open class RumViewScope(
             stopped = true
             sendViewUpdate(event, writer)
             delegateEventToChildren(event, writer)
+            sendViewChanged()
         }
     }
 
@@ -283,6 +287,7 @@ internal open class RumViewScope(
             attributes.putAll(event.attributes)
             stopped = true
             sendViewUpdate(event, writer)
+            sendViewChanged()
         }
     }
 
@@ -488,6 +493,13 @@ internal open class RumViewScope(
             max(value, vitalInfo.maxValue),
             meanValue
         )
+    }
+
+    @WorkerThread
+    private fun onStopSession(event: RumRawEvent.StopSession, writer: DataWriter<Any>) {
+        stopped = true
+
+        sendViewUpdate(event, writer)
     }
 
     @WorkerThread
@@ -742,7 +754,8 @@ internal open class RumViewScope(
                     session = ViewEvent.ViewEventSession(
                         id = rumContext.sessionId,
                         type = ViewEvent.ViewEventSessionType.USER,
-                        hasReplay = hasReplay
+                        hasReplay = hasReplay,
+                        isActive = rumContext.isSessionActive
                     ),
                     source = ViewEvent.Source.tryFromSource(datadogContext.source),
                     os = ViewEvent.Os(
@@ -977,6 +990,18 @@ internal open class RumViewScope(
     ) {
         featureFlags[event.name] = event.value
         sendViewUpdate(event, writer)
+        sendViewChanged()
+    }
+
+    private fun sendViewChanged() {
+        viewChangedListener?.onViewChanged(
+            RumViewInfo(
+                keyRef = keyRef,
+                name = name,
+                attributes = attributes,
+                isActive = isActive()
+            )
+        )
     }
 
     private fun isViewComplete(): Boolean {
@@ -1071,6 +1096,7 @@ internal open class RumViewScope(
             parentScope: RumScope,
             sdkCore: SdkCore,
             event: RumRawEvent.StartView,
+            viewChangedListener: RumViewChangedListener?,
             firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
             cpuVitalMonitor: VitalMonitor,
             memoryVitalMonitor: VitalMonitor,
@@ -1085,6 +1111,7 @@ internal open class RumViewScope(
                 event.name,
                 event.eventTime,
                 event.attributes,
+                viewChangedListener,
                 firstPartyHostHeaderTypeResolver,
                 cpuVitalMonitor,
                 memoryVitalMonitor,
