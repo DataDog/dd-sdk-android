@@ -16,7 +16,6 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
-    kotlin("kapt")
 
     // Publish
     `maven-publish`
@@ -79,8 +78,6 @@ dependencies {
     implementation(libs.kotlin)
     implementation(libs.okHttp)
     implementation(libs.bundles.glide)
-
-    kapt(libs.glideCompiler)
 
     testImplementation(project(":tools:unit"))
     testImplementation(libs.bundles.jUnit5)
