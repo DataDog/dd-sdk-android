@@ -16,6 +16,8 @@ import io.reactivex.rxjava3.functions.Consumer
  * to Datadog.
  *
  * It will automatically send RUM error events whenever a RxJava Stream throws any [Exception].
+ *
+ * @param sdkCore the SDK instance to forward the errors to
  */
 class DatadogRumErrorConsumer(
     private val sdkCore: SdkCore

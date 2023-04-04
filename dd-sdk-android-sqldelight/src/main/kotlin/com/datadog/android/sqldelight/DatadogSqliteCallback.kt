@@ -20,6 +20,8 @@ import java.util.Locale
  * automatically send a RUM error event whenever this issue occurs.
  *
  * For more information [https://www.sqlite.org/howtocorrupt.html]
+ * @param schema the SQL database schema
+ * @param sdkCore the SDK instance to forward the errors to
  */
 class DatadogSqliteCallback(
     schema: SqlDriver.Schema,

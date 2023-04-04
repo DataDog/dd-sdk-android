@@ -22,7 +22,7 @@ internal class UserInteractionTrackingActivity : AppCompatActivity() {
         setContentView(R.layout.user_interaction_tracking_strategy_activity)
         val key = UserInteractionTrackingActivity::class.java.simpleName
         findViewById<Button>(R.id.user_interaction_strategy_button).setOnClickListener {
-            val sdkCore = Datadog.getInstance(null)
+            val sdkCore = Datadog.getInstance()
             if (sdkCore != null) {
                 GlobalRum.get(sdkCore).startResource(
                     key,

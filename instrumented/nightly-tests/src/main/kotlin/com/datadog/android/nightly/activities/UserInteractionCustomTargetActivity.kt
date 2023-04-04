@@ -23,7 +23,7 @@ internal class UserInteractionCustomTargetActivity : AppCompatActivity() {
         val key = UserInteractionCustomTargetActivity::class.java.simpleName
 
         findViewById<Button>(R.id.user_interaction_strategy_button).setOnClickListener {
-            val sdkCore = Datadog.getInstance(null)
+            val sdkCore = Datadog.getInstance()
             if (sdkCore != null) {
                 GlobalRum.get(sdkCore).startResource(
                     key,
