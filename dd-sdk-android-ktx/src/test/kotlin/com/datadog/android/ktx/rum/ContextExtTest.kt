@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.res.AssetManager
 import android.content.res.Resources
 import com.datadog.android.rum.resource.RumResourceInputStream
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
@@ -44,6 +45,9 @@ class ContextExtTest {
     lateinit var mockContext: Context
 
     @Mock
+    lateinit var mockSdkCore: SdkCore
+
+    @Mock
     lateinit var mockAssetManager: AssetManager
 
     @Mock
@@ -65,12 +69,13 @@ class ContextExtTest {
         whenever(mockAssetManager.open(fileName, accessMode)) doReturn mockIS
 
         // When
-        val result = mockContext.getAssetAsRumResource(fileName, accessMode)
+        val result = mockContext.getAssetAsRumResource(fileName, mockSdkCore, accessMode)
 
         // Then
         assertThat(result).isInstanceOf(RumResourceInputStream::class.java)
         val rumRIS = result as RumResourceInputStream
         assertThat(rumRIS.delegate).isSameAs(mockIS)
+        assertThat(rumRIS.sdkCore).isSameAs(mockSdkCore)
         assertThat(rumRIS.url).isEqualTo("assets://$fileName")
     }
 
@@ -83,12 +88,13 @@ class ContextExtTest {
         whenever(mockAssetManager.open(fileName, AssetManager.ACCESS_STREAMING)) doReturn mockIS
 
         // When
-        val result = mockContext.getAssetAsRumResource(fileName)
+        val result = mockContext.getAssetAsRumResource(fileName, mockSdkCore)
 
         // Then
         assertThat(result).isInstanceOf(RumResourceInputStream::class.java)
         val rumRIS = result as RumResourceInputStream
         assertThat(rumRIS.delegate).isSameAs(mockIS)
+        assertThat(rumRIS.sdkCore).isSameAs(mockSdkCore)
         assertThat(rumRIS.url).isEqualTo("assets://$fileName")
     }
 
@@ -103,12 +109,13 @@ class ContextExtTest {
         whenever(mockResources.openRawResource(resourceId)) doReturn mockIS
 
         // When
-        val result = mockContext.getRawResAsRumResource(resourceId)
+        val result = mockContext.getRawResAsRumResource(resourceId, mockSdkCore)
 
         // Then
         assertThat(result).isInstanceOf(RumResourceInputStream::class.java)
         val rumRIS = result as RumResourceInputStream
         assertThat(rumRIS.delegate).isSameAs(mockIS)
+        assertThat(rumRIS.sdkCore).isSameAs(mockSdkCore)
         assertThat(rumRIS.url).isEqualTo(resourceName)
     }
 
@@ -122,12 +129,13 @@ class ContextExtTest {
         whenever(mockResources.openRawResource(resourceId)) doReturn mockIS
 
         // When
-        val result = mockContext.getRawResAsRumResource(resourceId)
+        val result = mockContext.getRawResAsRumResource(resourceId, mockSdkCore)
 
         // Then
         assertThat(result).isInstanceOf(RumResourceInputStream::class.java)
         val rumRIS = result as RumResourceInputStream
         assertThat(rumRIS.delegate).isSameAs(mockIS)
+        assertThat(rumRIS.sdkCore).isSameAs(mockSdkCore)
         assertThat(rumRIS.url).isEqualTo("res/0x${resourceId.toString(HEX_RADIX)}")
     }
 }

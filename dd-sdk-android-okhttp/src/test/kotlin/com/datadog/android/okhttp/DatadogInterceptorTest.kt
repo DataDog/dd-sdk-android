@@ -11,7 +11,6 @@ import com.datadog.android.okhttp.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorNotSendingSpanTest
-import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -19,9 +18,7 @@ import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.Feature
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.nhaarman.mockitokotlin2.any
@@ -78,10 +75,10 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         tracedHosts: Map<String, Set<TracingHeaderType>>,
         factory: (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
-        whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
+        whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
+        whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mock()
         return DatadogInterceptor(
-            sdkCore = mockSdkCore,
+            sdkCore = rumMonitor.mockSdkCore,
             tracedHosts = tracedHosts,
             tracedRequestListener = mockRequestListener,
             firstPartyHostResolver = mockResolver,
@@ -122,7 +119,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     @Test
     fun `M instantiate with default values W init() { no tracing hosts specified }`() {
         // When
-        val interceptor = DatadogInterceptor(mockSdkCore)
+        val interceptor = DatadogInterceptor(rumMonitor.mockSdkCore)
 
         // Then
         assertThat(interceptor.tracedHosts).isEmpty()
@@ -143,7 +140,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @StringForgery(regex = "[a-z]+\\.[a-z]{3}") hosts: List<String>
     ) {
         // When
-        val interceptor = DatadogInterceptor(mockSdkCore, hosts)
+        val interceptor = DatadogInterceptor(rumMonitor.mockSdkCore, hosts)
 
         // Then
         assertThat(interceptor.tracedHosts.keys).containsAll(hosts)
@@ -556,16 +553,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 throwable,
                 fakeAttributes
             )
-        }
-    }
-
-    companion object {
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
         }
     }
 }

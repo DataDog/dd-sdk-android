@@ -76,7 +76,7 @@ class SampleApplication : Application() {
         OkHttpClient.Builder()
             .addInterceptor(RumInterceptor(sdkCore, traceSamplingRate = 100f))
             .addNetworkInterceptor(TracingInterceptor(sdkCore, traceSamplingRate = 100f))
-            .eventListenerFactory(DatadogEventListener.Factory())
+            .eventListenerFactory(DatadogEventListener.Factory(sdkCore))
             .build()
     }
 
@@ -167,7 +167,7 @@ class SampleApplication : Application() {
                 .setServiceName(BuildConfig.APPLICATION_ID)
                 .build()
         )
-        GlobalRum.registerIfAbsent(RumMonitor.Builder(sdkCore).build())
+        GlobalRum.registerIfAbsent(sdkCore, RumMonitor.Builder(sdkCore).build())
         TracingRxJava3Utils.enableTracing(GlobalTracer.get())
     }
 

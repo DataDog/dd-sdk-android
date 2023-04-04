@@ -45,7 +45,7 @@ internal class FragmentTrackingPlaygroundActivity : AppCompatActivity() {
                 .useViewTrackingStrategy(FragmentViewTrackingStrategy(true))
                 .build()
         )
-        GlobalRum.registerIfAbsent(RumMonitor.Builder(sdkCore).build())
+        GlobalRum.registerIfAbsent(sdkCore, RumMonitor.Builder(sdkCore).build())
 
         setContentView(R.layout.fragment_tracking_layout)
         viewPager = findViewById(R.id.pager)

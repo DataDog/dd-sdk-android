@@ -14,6 +14,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
@@ -33,12 +34,14 @@ class LogsForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val sdkCore = Datadog.getInstance()
+        val rumMonitor = sdkCore?.let { GlobalRum.get(it) }
         when (intent?.action) {
             STOP_SERVICE_ACTION -> {
                 stopForegroundService()
             }
             SEND_RUM_ERROR -> {
-                GlobalRum.get().addError(
+                rumMonitor?.addError(
                     BACKGROUND_ERROR_KEY,
                     randomErrorSource(),
                     randomThrowable(),
@@ -46,14 +49,14 @@ class LogsForegroundService : Service() {
                 )
             }
             SEND_RUM_ACTION -> {
-                GlobalRum.get().addUserAction(
+                rumMonitor?.addUserAction(
                     RumActionType.CUSTOM,
                     BACKGROUND_ACTION_KEY,
                     emptyMap()
                 )
             }
             START_RUM_RESOURCE -> {
-                GlobalRum.get().startResource(
+                rumMonitor?.startResource(
                     BACKGROUND_RESOURCE_URL,
                     "GET",
                     BACKGROUND_RESOURCE_URL,
@@ -61,7 +64,7 @@ class LogsForegroundService : Service() {
                 )
             }
             STOP_RUM_RESOURCE -> {
-                GlobalRum.get().stopResource(
+                rumMonitor?.stopResource(
                     BACKGROUND_RESOURCE_URL,
                     200,
                     200,

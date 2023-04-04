@@ -10,10 +10,6 @@
 -keepnames class com.datadog.android.Datadog {
     *;
 }
-# Required because we need access to GlobalRum.isRegistered by reflection
--keepnames class com.datadog.android.rum.GlobalRum {
-    private java.util.concurrent.atomic.AtomicBoolean isRegistered;
-}
 
 # Required because we need access to GlobalTracer isRegistered property to reset it through reflection
 -keepnames class io.opentracing.util.GlobalTracer {

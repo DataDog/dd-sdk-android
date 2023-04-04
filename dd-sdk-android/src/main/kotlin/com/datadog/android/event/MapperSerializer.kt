@@ -16,7 +16,7 @@ import com.datadog.android.core.persistence.Serializer
  * @param serializer Serializer to use.
  */
 class MapperSerializer<T : Any>(
-    internal val eventMapper: EventMapper<T>,
+    val eventMapper: EventMapper<T>,
     private val serializer: Serializer<T>
 ) : Serializer<T> {
 

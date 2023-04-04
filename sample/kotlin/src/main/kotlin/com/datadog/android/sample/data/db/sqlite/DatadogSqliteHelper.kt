@@ -10,8 +10,10 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.provider.BaseColumns
+import com.datadog.android.Datadog
 import com.datadog.android.sample.data.db.DatadogDbContract
 import com.datadog.android.sqlite.DatadogDatabaseErrorHandler
+import com.datadog.android.v2.core.NoOpSdkCore
 
 internal class DatadogSqliteHelper(context: Context) :
     SQLiteOpenHelper(
@@ -19,7 +21,7 @@ internal class DatadogSqliteHelper(context: Context) :
         DatadogDbContract.DB_NAME,
         null,
         DatadogDbContract.DB_VERSION,
-        DatadogDatabaseErrorHandler()
+        DatadogDatabaseErrorHandler({ Datadog.getInstance() ?: NoOpSdkCore() })
     ) {
 
     override fun onCreate(db: SQLiteDatabase) {

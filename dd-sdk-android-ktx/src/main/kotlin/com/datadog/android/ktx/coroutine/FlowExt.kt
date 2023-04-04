@@ -8,6 +8,7 @@ package com.datadog.android.ktx.coroutine
 
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.v2.api.SdkCore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
@@ -19,12 +20,12 @@ internal const val ERROR_FLOW: String = "Coroutine Flow error"
  *  Note that the error will also be emitted by the returned [Flow].
  */
 @Suppress("TooGenericExceptionCaught")
-fun <T> Flow<T>.sendErrorToDatadog(): Flow<T> {
+fun <T> Flow<T>.sendErrorToDatadog(sdkCore: SdkCore): Flow<T> {
     return flow {
         try {
             collect { value -> emit(value) }
         } catch (e: Throwable) {
-            GlobalRum.get()
+            GlobalRum.get(sdkCore)
                 .addError(
                     ERROR_FLOW,
                     RumErrorSource.SOURCE,

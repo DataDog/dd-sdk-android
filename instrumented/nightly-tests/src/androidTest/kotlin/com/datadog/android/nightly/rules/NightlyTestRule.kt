@@ -7,7 +7,6 @@
 package com.datadog.android.nightly.rules
 
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.nightly.utils.cleanGlobalAttributes
 import com.datadog.android.nightly.utils.cleanStorageFiles
 import com.datadog.android.nightly.utils.flushAndShutdownExecutors
 import com.datadog.android.nightly.utils.stopSdk
@@ -21,6 +20,5 @@ class NightlyTestRule : ExternalResource() {
         flushAndShutdownExecutors()
         stopSdk()
         cleanStorageFiles()
-        cleanGlobalAttributes()
     }
 }

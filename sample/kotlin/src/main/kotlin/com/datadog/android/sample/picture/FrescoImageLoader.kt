@@ -9,6 +9,7 @@ package com.datadog.android.sample.picture
 import android.content.Context
 import android.net.Uri
 import android.widget.ImageView
+import com.datadog.android.Datadog
 import com.datadog.android.fresco.DatadogFrescoCacheListener
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
@@ -28,12 +29,14 @@ internal class FrescoImageLoader : ImageLoader {
         if (imageView is SimpleDraweeView) {
             imageView.setImageURI(Uri.parse(url))
         } else {
-            GlobalRum.get().addError(
-                "Unable to load Fresco image in non Drawee View",
-                RumErrorSource.SOURCE,
-                null,
-                emptyMap()
-            )
+            Datadog.getInstance()?.let { sdkCore ->
+                GlobalRum.get(sdkCore).addError(
+                    "Unable to load Fresco image in non Drawee View",
+                    RumErrorSource.SOURCE,
+                    null,
+                    emptyMap()
+                )
+            }
         }
     }
 
@@ -44,6 +47,11 @@ internal class FrescoImageLoader : ImageLoader {
         private const val MAX_DISK_CACHE_SIZE = 40L * ByteConstants.MB
 
         fun initialize(context: Context, okHttpClient: OkHttpClient) {
+            val diskConfigBuilder = DiskCacheConfig.newBuilder(context)
+            Datadog.getInstance()?.let {
+                diskConfigBuilder.setCacheEventListener(DatadogFrescoCacheListener(it))
+            }
+            diskConfigBuilder.setMaxCacheSize(MAX_DISK_CACHE_SIZE)
             val config = OkHttpImagePipelineConfigFactory
                 .newBuilder(context, okHttpClient)
                 .setBitmapMemoryCacheParamsSupplier {
@@ -55,12 +63,7 @@ internal class FrescoImageLoader : ImageLoader {
                         Int.MAX_VALUE
                     )
                 }
-                .setMainDiskCacheConfig(
-                    DiskCacheConfig.newBuilder(context)
-                        .setCacheEventListener(DatadogFrescoCacheListener())
-                        .setMaxCacheSize(MAX_DISK_CACHE_SIZE)
-                        .build()
-                )
+                .setMainDiskCacheConfig(diskConfigBuilder.build())
                 .build()
             Fresco.initialize(context, config)
         }

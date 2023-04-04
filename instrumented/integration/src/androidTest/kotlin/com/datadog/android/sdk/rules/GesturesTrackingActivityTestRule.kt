@@ -50,6 +50,6 @@ internal class GesturesTrackingActivityTestRule<T : Activity>(
             isAccessible = true
             invoke(null, ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
         }
-        GlobalRum.registerIfAbsent(RumMonitor.Builder(sdkCore).build())
+        GlobalRum.registerIfAbsent(sdkCore, RumMonitor.Builder(sdkCore).build())
     }
 }

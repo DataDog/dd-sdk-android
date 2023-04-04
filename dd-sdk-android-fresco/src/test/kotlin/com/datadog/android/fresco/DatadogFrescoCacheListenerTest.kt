@@ -9,9 +9,9 @@ package com.datadog.android.fresco
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.forge.aThrowable
-import com.datadog.tools.unit.getStaticValue
 import com.facebook.cache.common.CacheEvent
 import com.facebook.imagepipeline.cache.BitmapMemoryCacheKey
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -35,7 +35,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.io.IOException
-import java.util.concurrent.atomic.AtomicBoolean
 
 @Extensions(
     ExtendWith(
@@ -48,6 +47,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal class DatadogFrescoCacheListenerTest {
 
     private lateinit var underTest: DatadogFrescoCacheListener
+
+    @Mock
+    lateinit var mockSdkCore: SdkCore
 
     @Mock
     lateinit var mockRumMonitor: RumMonitor
@@ -64,7 +66,7 @@ internal class DatadogFrescoCacheListenerTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRum.registerIfAbsent(mockRumMonitor)
+        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
         fakeEventKey =
             BitmapMemoryCacheKey(
                 fakeCacheEventUri,
@@ -76,13 +78,15 @@ internal class DatadogFrescoCacheListenerTest {
                 mock()
             )
         whenever(mockCacheEvent.cacheKey).thenReturn(fakeEventKey)
-        underTest = DatadogFrescoCacheListener()
+        underTest = DatadogFrescoCacheListener(mockSdkCore)
     }
 
     @AfterEach
     fun `tear down`() {
-        val isRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
-        isRegistered.set(false)
+        GlobalRum::class.java.getDeclaredMethod("reset").apply {
+            isAccessible = true
+            invoke(null)
+        }
     }
 
     @Test

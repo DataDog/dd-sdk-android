@@ -47,6 +47,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ComponentPredicate
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.Rule
@@ -71,7 +72,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_rum_feature_enabled() {
         val testMethodName = "rum_config_rum_feature_enabled"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -79,7 +80,7 @@ class RumConfigE2ETests {
                 defaultConfigurationBuilder().build()
             )
         }
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
     }
 
     /**
@@ -88,7 +89,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_custom_batch_size() {
         val testMethodName = "rum_config_custom_batch_size"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -98,7 +99,7 @@ class RumConfigE2ETests {
                     .build()
             )
         }
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
     }
 
     /**
@@ -107,7 +108,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_rum_feature_disabled() {
         val testMethodName = "rum_config_rum_feature_disabled"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -120,7 +121,7 @@ class RumConfigE2ETests {
                 ).build()
             )
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendRandomRumEvent(forge, sdkCore, testMethodName)
     }
 
     // endregion
@@ -133,7 +134,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_set_rum_view_event_mapper() {
         val testMethodName = "rum_config_set_rum_view_event_mapper"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -157,12 +158,12 @@ class RumConfigE2ETests {
 
         val key = forge.aViewKey()
         val name = forge.aViewName()
-        GlobalRum.get().startView(
+        GlobalRum.get(sdkCore).startView(
             key,
             name,
             defaultTestAttributes(testMethodName)
         )
-        GlobalRum.get().stopView(key, defaultTestAttributes(testMethodName))
+        GlobalRum.get(sdkCore).stopView(key, defaultTestAttributes(testMethodName))
     }
 
     /**
@@ -171,7 +172,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_set_rum_view_event_mapper_map_to_copy() {
         val testMethodName = "rum_config_set_rum_view_event_mapper_map_to_copy"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -193,12 +194,12 @@ class RumConfigE2ETests {
 
         val key = forge.aViewKey()
         val name = forge.aViewName()
-        GlobalRum.get().startView(
+        GlobalRum.get(sdkCore).startView(
             key,
             name,
             defaultTestAttributes(testMethodName)
         )
-        GlobalRum.get().stopView(key, defaultTestAttributes(testMethodName))
+        GlobalRum.get(sdkCore).stopView(key, defaultTestAttributes(testMethodName))
     }
 
     // endregion
@@ -211,7 +212,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_set_rum_resource_event_mapper_map_to_null() {
         val testMethodName = "rum_config_set_rum_resource_event_mapper_map_to_null"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -231,7 +232,7 @@ class RumConfigE2ETests {
             )
         }
 
-        sendRandomResource(testMethodName)
+        sendRandomResource(sdkCore, testMethodName)
     }
 
     /**
@@ -240,7 +241,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_set_rum_resource_event_mapper_map_to_copy() {
         val testMethodName = "rum_config_set_rum_resource_event_mapper_map_to_copy"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -260,7 +261,7 @@ class RumConfigE2ETests {
             )
         }
 
-        sendRandomResource(testMethodName)
+        sendRandomResource(sdkCore, testMethodName)
     }
 
     /**
@@ -269,7 +270,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_set_rum_resource_event_mapper() {
         val testMethodName = "rum_config_set_rum_resource_event_mapper"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -290,7 +291,7 @@ class RumConfigE2ETests {
             )
         }
 
-        sendRandomResource(testMethodName)
+        sendRandomResource(sdkCore, testMethodName)
     }
 
     // endregion
@@ -303,7 +304,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_set_rum_action_event_mapper_map_to_null() {
         val testMethodName = "rum_config_set_rum_action_event_mapper_map_to_null"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -323,7 +324,7 @@ class RumConfigE2ETests {
             )
         }
 
-        sendRandomActionEvent(testMethodName)
+        sendRandomActionEvent(sdkCore, testMethodName)
     }
 
     /**
@@ -332,7 +333,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_set_rum_action_event_mapper_map_to_copy() {
         val testMethodName = "rum_config_set_rum_action_event_mapper_map_to_copy"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -352,7 +353,7 @@ class RumConfigE2ETests {
             )
         }
 
-        sendRandomActionEvent(testMethodName)
+        sendRandomActionEvent(sdkCore, testMethodName)
     }
 
     /**
@@ -361,7 +362,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_set_rum_action_event_mapper() {
         val testMethodName = "rum_config_set_rum_action_event_mapper"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -382,7 +383,7 @@ class RumConfigE2ETests {
             )
         }
 
-        sendRandomActionEvent(testMethodName)
+        sendRandomActionEvent(sdkCore, testMethodName)
     }
 
     // endregion
@@ -395,7 +396,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_set_rum_error_event_mapper_map_to_null() {
         val testMethodName = "rum_config_set_rum_error_event_mapper_map_to_null"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -415,7 +416,7 @@ class RumConfigE2ETests {
             )
         }
 
-        sendRandomErrorEvent(testMethodName)
+        sendRandomErrorEvent(sdkCore, testMethodName)
     }
 
     /**
@@ -424,7 +425,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_set_rum_error_event_mapper_map_to_copy() {
         val testMethodName = "rum_config_set_rum_error_event_mapper_map_to_copy"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -444,7 +445,7 @@ class RumConfigE2ETests {
             )
         }
 
-        sendRandomErrorEvent(testMethodName)
+        sendRandomErrorEvent(sdkCore, testMethodName)
     }
 
     /**
@@ -453,7 +454,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_set_rum_error_event_mapper() {
         val testMethodName = "rum_config_set_rum_error_event_mapper"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -474,7 +475,7 @@ class RumConfigE2ETests {
             )
         }
 
-        sendRandomErrorEvent(testMethodName)
+        sendRandomErrorEvent(sdkCore, testMethodName)
     }
 
     // endregion
@@ -488,7 +489,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_set_rum_longtask_event_mapper_map_to_null() {
         val testMethodName = "rum_config_set_rum_longtask_event_mapper_map_to_null"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -508,7 +509,7 @@ class RumConfigE2ETests {
             )
         }
 
-        sendRandomLongTaskEvent(testMethodName)
+        sendRandomLongTaskEvent(sdkCore, testMethodName)
     }
 
     /**
@@ -518,7 +519,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_set_rum_longtask_event_mapper_map_to_copy() {
         val testMethodName = "rum_config_set_rum_longtask_event_mapper_map_to_copy"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -538,7 +539,7 @@ class RumConfigE2ETests {
             )
         }
 
-        sendRandomLongTaskEvent(testMethodName)
+        sendRandomLongTaskEvent(sdkCore, testMethodName)
     }
 
     /**
@@ -548,7 +549,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_set_rum_longtask_event_mapper() {
         val testMethodName = "rum_config_set_rum_longtask_event_mapper"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -569,7 +570,7 @@ class RumConfigE2ETests {
             )
         }
 
-        sendRandomLongTaskEvent(testMethodName)
+        sendRandomLongTaskEvent(sdkCore, testMethodName)
     }
 
     // endregion
@@ -582,7 +583,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_sample_rum_sessions_all_in() {
         val testMethodName = "rum_config_sample_rum_sessions_all_in"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -596,7 +597,7 @@ class RumConfigE2ETests {
             )
         }
 
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
     }
 
     /**
@@ -605,7 +606,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_sample_rum_sessions_all_out() {
         val testMethodName = "rum_config_sample_rum_sessions_all_out"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -619,7 +620,7 @@ class RumConfigE2ETests {
             )
         }
 
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
     }
 
     /**
@@ -629,7 +630,7 @@ class RumConfigE2ETests {
     fun rum_config_sample_rum_sessions_75_percent_in() {
         val testMethodName = "rum_config_sample_rum_sessions_75_percent_in"
         val eventsNumber = 100
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -646,9 +647,9 @@ class RumConfigE2ETests {
         repeat(eventsNumber) {
             // we do not want to add the test method name in the parent View name as
             // this will add extra events to the monitor query value
-            sendRandomRumEvent(forge, testMethodName, parentViewEventName = "")
+            sendRandomRumEvent(forge, sdkCore, testMethodName, parentViewEventName = "")
             // expire the session here
-            GlobalRum.get().invokeMethod("resetSession")
+            GlobalRum.get(sdkCore).invokeMethod("resetSession")
             InstrumentationRegistry.getInstrumentation().waitForIdleSync()
         }
     }
@@ -661,7 +662,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_set_security_config_with_encryption() {
         val testMethodName = "rum_config_set_security_config_with_encryption"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
@@ -672,7 +673,7 @@ class RumConfigE2ETests {
 
             )
         }
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
     }
 
     /**
@@ -777,16 +778,16 @@ class RumConfigE2ETests {
 
     // region Internal
 
-    private fun sendRandomResource(testMethodName: String) {
-        executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName) {
+    private fun sendRandomResource(sdkCore: SdkCore, testMethodName: String) {
+        executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName, sdkCore) {
             val resourceKey = forge.aResourceKey()
-            GlobalRum.get().startResource(
+            GlobalRum.get(sdkCore).startResource(
                 resourceKey,
                 forge.aResourceMethod(),
                 resourceKey,
                 defaultTestAttributes(testMethodName)
             )
-            GlobalRum.get().stopResource(
+            GlobalRum.get(sdkCore).stopResource(
                 resourceKey,
                 forge.anInt(min = 200, max = 500),
                 forge.aLong(min = 1),
@@ -796,21 +797,21 @@ class RumConfigE2ETests {
         }
     }
 
-    private fun sendRandomActionEvent(testMethodName: String) {
-        executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName) {
-            GlobalRum.get().addUserAction(
+    private fun sendRandomActionEvent(sdkCore: SdkCore, testMethodName: String) {
+        executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName, sdkCore) {
+            GlobalRum.get(sdkCore).addUserAction(
                 forge.aValueFrom(RumActionType::class.java),
                 forge.anActionName(),
                 defaultTestAttributes(testMethodName)
             )
-            sendRandomActionOutcomeEvent(forge)
+            sendRandomActionOutcomeEvent(forge, sdkCore)
             Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
         }
     }
 
-    private fun sendRandomErrorEvent(testMethodName: String) {
-        executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName) {
-            GlobalRum.get().addError(
+    private fun sendRandomErrorEvent(sdkCore: SdkCore, testMethodName: String) {
+        executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName, sdkCore) {
+            GlobalRum.get(sdkCore).addError(
                 forge.anErrorMessage(),
                 forge.aValueFrom(RumErrorSource::class.java),
                 forge.aNullable { forge.aThrowable() },
@@ -819,9 +820,9 @@ class RumConfigE2ETests {
         }
     }
 
-    private fun sendRandomLongTaskEvent(testMethodName: String) {
-        executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName) {
-            GlobalRum.addAttribute(TEST_METHOD_NAME_KEY, testMethodName)
+    private fun sendRandomLongTaskEvent(sdkCore: SdkCore, testMethodName: String) {
+        executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName, sdkCore) {
+            GlobalRum.get(sdkCore).addAttribute(TEST_METHOD_NAME_KEY, testMethodName)
             Handler(Looper.getMainLooper()).post {
                 Thread.sleep(100)
             }

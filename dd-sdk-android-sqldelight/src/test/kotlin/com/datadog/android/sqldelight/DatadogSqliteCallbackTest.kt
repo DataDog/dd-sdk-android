@@ -12,7 +12,7 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.sqldelight.DatadogSqliteCallback
-import com.datadog.tools.unit.getStaticValue
+import com.datadog.android.v2.api.SdkCore
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
@@ -32,7 +32,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.util.Locale
-import java.util.concurrent.atomic.AtomicBoolean
 
 @Extensions(
     ExtendWith(
@@ -49,6 +48,9 @@ class DatadogSqliteCallbackTest {
     lateinit var mockRumMonitor: RumMonitor
 
     @Mock
+    lateinit var mockSdkCore: SdkCore
+
+    @Mock
     lateinit var mockSqliteDatabase: SupportSQLiteDatabase
 
     @StringForgery(regex = "[a-z]/[a-z]")
@@ -59,16 +61,18 @@ class DatadogSqliteCallbackTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRum.registerIfAbsent(mockRumMonitor)
-        testedSqliteCallback = DatadogSqliteCallback(mock())
+        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        testedSqliteCallback = DatadogSqliteCallback(mock(), mockSdkCore)
         whenever(mockSqliteDatabase.path).thenReturn(fakeDbPath)
         whenever(mockSqliteDatabase.version).thenReturn(fakeDbVersion)
     }
 
     @AfterEach
     fun `tear down`() {
-        val isRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
-        isRegistered.set(false)
+        GlobalRum::class.java.getDeclaredMethod("reset").apply {
+            isAccessible = true
+            invoke(null)
+        }
     }
 
     @Test

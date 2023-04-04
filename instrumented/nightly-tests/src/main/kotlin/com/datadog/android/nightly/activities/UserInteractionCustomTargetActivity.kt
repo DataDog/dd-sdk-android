@@ -9,6 +9,7 @@ package com.datadog.android.nightly.activities
 import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
+import com.datadog.android.Datadog
 import com.datadog.android.nightly.R
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumResourceKind
@@ -20,19 +21,23 @@ internal class UserInteractionCustomTargetActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.user_interaction_tracking_strategy_activity)
         val key = UserInteractionCustomTargetActivity::class.java.simpleName
+
         findViewById<Button>(R.id.user_interaction_strategy_button).setOnClickListener {
-            GlobalRum.get().startResource(
-                key,
-                "get",
-                key
-            )
-            GlobalRum.get().stopResource(
-                key,
-                HttpURLConnection.HTTP_OK,
-                FAKE_RESOURCE_DOWNLOADED_BYTES,
-                RumResourceKind.IMAGE,
-                emptyMap()
-            )
+            val sdkCore = Datadog.getInstance(null)
+            if (sdkCore != null) {
+                GlobalRum.get(sdkCore).startResource(
+                    key,
+                    "get",
+                    key
+                )
+                GlobalRum.get(sdkCore).stopResource(
+                    key,
+                    HttpURLConnection.HTTP_OK,
+                    FAKE_RESOURCE_DOWNLOADED_BYTES,
+                    RumResourceKind.IMAGE,
+                    emptyMap()
+                )
+            }
         }
     }
 }

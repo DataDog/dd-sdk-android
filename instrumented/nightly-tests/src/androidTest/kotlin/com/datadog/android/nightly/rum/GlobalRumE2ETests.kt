@@ -24,6 +24,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.Before
@@ -40,6 +41,8 @@ class GlobalRumE2ETests {
     @get:Rule
     val nightlyTestRule = NightlyTestRule()
 
+    lateinit var sdkCore: SdkCore
+
     /**
      * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.v2.api.SdkCore?
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
@@ -52,7 +55,10 @@ class GlobalRumE2ETests {
      */
     @Before
     fun setUp() {
-        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext, forgeSeed = forge.seed)
+        sdkCore = initializeSdk(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            forgeSeed = forge.seed
+        )
     }
 
     // region View
@@ -68,12 +74,12 @@ class GlobalRumE2ETests {
         val strAttrValue = forge.anAlphabeticalString()
         val intAttrValue = forge.anInt()
         addAttributesMeasured(strAttrValue, intAttrValue)
-        GlobalRum.get().startView(
+        GlobalRum.get(sdkCore).startView(
             viewKey,
             viewName,
             defaultTestAttributes(testMethodName)
         )
-        GlobalRum.get().stopView(viewKey)
+        GlobalRum.get(sdkCore).stopView(viewKey)
         Thread.sleep(WRITE_DELAY_MS)
         removeAttributes()
     }
@@ -90,12 +96,12 @@ class GlobalRumE2ETests {
         val intAttrValue = forge.anInt()
         addAttributes(strAttrValue, intAttrValue)
         removeAttributesMeasured()
-        GlobalRum.get().startView(
+        GlobalRum.get(sdkCore).startView(
             viewKey,
             viewName,
             defaultTestAttributes(testMethodName)
         )
-        GlobalRum.get().stopView(viewKey)
+        GlobalRum.get(sdkCore).stopView(viewKey)
     }
 
     // endregion
@@ -114,9 +120,9 @@ class GlobalRumE2ETests {
         val strAttrValue = forge.anAlphabeticalString()
         val intAttrValue = forge.anInt()
 
-        executeInsideView(viewKey, viewName, testMethodName) {
+        executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             addAttributesMeasured(strAttrValue, intAttrValue)
-            GlobalRum.get().addUserAction(
+            GlobalRum.get(sdkCore).addUserAction(
                 RumActionType.CUSTOM,
                 actionName,
                 attributes = defaultTestAttributes(testMethodName)
@@ -139,10 +145,10 @@ class GlobalRumE2ETests {
         val strAttrValue = forge.anAlphabeticalString()
         val intAttrValue = forge.anInt()
 
-        executeInsideView(viewKey, viewName, testMethodName) {
+        executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             addAttributes(strAttrValue, intAttrValue)
             removeAttributesMeasured()
-            GlobalRum.get().addUserAction(
+            GlobalRum.get(sdkCore).addUserAction(
                 RumActionType.CUSTOM,
                 actionName,
                 attributes = defaultTestAttributes(testMethodName)
@@ -168,16 +174,16 @@ class GlobalRumE2ETests {
         val strAttrValue = forge.anAlphabeticalString()
         val intAttrValue = forge.anInt()
 
-        executeInsideView(viewKey, viewName, testMethodName) {
+        executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             addAttributesMeasured(strAttrValue, intAttrValue)
-            GlobalRum.get().startResource(
+            GlobalRum.get(sdkCore).startResource(
                 resourceKey,
                 forge.aResourceMethod(),
                 resourceKey,
                 attributes = defaultTestAttributes(testMethodName)
             )
             Thread.sleep(100)
-            GlobalRum.get().stopResource(
+            GlobalRum.get(sdkCore).stopResource(
                 resourceKey,
                 200,
                 forge.aLong(min = 1),
@@ -201,17 +207,17 @@ class GlobalRumE2ETests {
         val strAttrValue = forge.anAlphabeticalString()
         val intAttrValue = forge.anInt()
 
-        executeInsideView(viewKey, viewName, testMethodName) {
+        executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             addAttributes(strAttrValue, intAttrValue)
             removeAttributesMeasured()
-            GlobalRum.get().startResource(
+            GlobalRum.get(sdkCore).startResource(
                 resourceKey,
                 forge.aResourceMethod(),
                 resourceKey,
                 attributes = defaultTestAttributes(testMethodName)
             )
             Thread.sleep(100)
-            GlobalRum.get().stopResource(
+            GlobalRum.get(sdkCore).stopResource(
                 resourceKey,
                 200,
                 forge.aLong(min = 1),
@@ -237,9 +243,9 @@ class GlobalRumE2ETests {
         val strAttrValue = forge.anAlphabeticalString()
         val intAttrValue = forge.anInt()
 
-        executeInsideView(viewKey, viewName, testMethodName) {
+        executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             addAttributesMeasured(strAttrValue, intAttrValue)
-            GlobalRum.get().addError(
+            GlobalRum.get(sdkCore).addError(
                 errorMessage,
                 forge.aValueFrom(RumErrorSource::class.java),
                 forge.aNullable { forge.aThrowable() },
@@ -262,10 +268,10 @@ class GlobalRumE2ETests {
         val strAttrValue = forge.anAlphabeticalString()
         val intAttrValue = forge.anInt()
 
-        executeInsideView(viewKey, viewName, testMethodName) {
+        executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             addAttributes(strAttrValue, intAttrValue)
             removeAttributesMeasured()
-            GlobalRum.get().addError(
+            GlobalRum.get(sdkCore).addError(
                 errorMessage,
                 forge.aValueFrom(RumErrorSource::class.java),
                 forge.aNullable { forge.aThrowable() },
@@ -280,30 +286,30 @@ class GlobalRumE2ETests {
 
     private fun addAttributesMeasured(strAttrValue: String, intAttrValue: Int) {
         measure(MEASURE_TEST_METHOD_ADD) {
-            GlobalRum.addAttribute(RUM_CUSTOM_STR_ATTRIBUTE, strAttrValue)
+            GlobalRum.get(sdkCore).addAttribute(RUM_CUSTOM_STR_ATTRIBUTE, strAttrValue)
         }
         measure(MEASURE_TEST_METHOD_ADD) {
-            GlobalRum.addAttribute(RUM_CUSTOM_INT_ATTRIBUTE, intAttrValue)
+            GlobalRum.get(sdkCore).addAttribute(RUM_CUSTOM_INT_ATTRIBUTE, intAttrValue)
         }
     }
 
     private fun addAttributes(strAttrValue: String, intAttrValue: Int) {
-        GlobalRum.addAttribute(RUM_CUSTOM_STR_ATTRIBUTE, strAttrValue)
-        GlobalRum.addAttribute(RUM_CUSTOM_INT_ATTRIBUTE, intAttrValue)
+        GlobalRum.get(sdkCore).addAttribute(RUM_CUSTOM_STR_ATTRIBUTE, strAttrValue)
+        GlobalRum.get(sdkCore).addAttribute(RUM_CUSTOM_INT_ATTRIBUTE, intAttrValue)
     }
 
     private fun removeAttributesMeasured() {
         measure(MEASURE_TEST_METHOD_REMOVE) {
-            GlobalRum.removeAttribute(RUM_CUSTOM_STR_ATTRIBUTE)
+            GlobalRum.get(sdkCore).removeAttribute(RUM_CUSTOM_STR_ATTRIBUTE)
         }
         measure(MEASURE_TEST_METHOD_REMOVE) {
-            GlobalRum.removeAttribute(RUM_CUSTOM_INT_ATTRIBUTE)
+            GlobalRum.get(sdkCore).removeAttribute(RUM_CUSTOM_INT_ATTRIBUTE)
         }
     }
 
     private fun removeAttributes() {
-        GlobalRum.removeAttribute(RUM_CUSTOM_STR_ATTRIBUTE)
-        GlobalRum.removeAttribute(RUM_CUSTOM_INT_ATTRIBUTE)
+        GlobalRum.get(sdkCore).removeAttribute(RUM_CUSTOM_STR_ATTRIBUTE)
+        GlobalRum.get(sdkCore).removeAttribute(RUM_CUSTOM_INT_ATTRIBUTE)
     }
 
     // endregion

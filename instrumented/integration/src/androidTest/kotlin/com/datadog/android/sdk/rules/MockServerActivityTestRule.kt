@@ -110,7 +110,10 @@ internal open class MockServerActivityTestRule<T : Activity>(
             }
 
         Datadog.stopInstance()
-        GlobalRum::class.java.getDeclaredMethod("reset").invoke(null)
+        GlobalRum::class.java.getDeclaredMethod("reset").apply {
+            isAccessible = true
+            invoke(null)
+        }
 
         super.afterActivityFinished()
     }

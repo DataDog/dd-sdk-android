@@ -7,8 +7,10 @@
 package com.datadog.android.sample.data.db.sqldelight
 
 import android.content.Context
+import com.datadog.android.Datadog
 import com.datadog.android.sample.LogsDatabase
 import com.datadog.android.sqldelight.DatadogSqliteCallback
+import com.datadog.android.v2.core.NoOpSdkCore
 import com.squareup.sqldelight.android.AndroidSqliteDriver
 
 internal object Database {
@@ -22,11 +24,12 @@ internal object Database {
         }
 
     private fun setupDb(context: Context): LogsDatabase {
+        val sdkCore = Datadog.getInstance() ?: NoOpSdkCore()
         return LogsDatabase(
             AndroidSqliteDriver(
                 LogsDatabase.Schema,
                 context,
-                callback = DatadogSqliteCallback(LogsDatabase.Schema)
+                callback = DatadogSqliteCallback(LogsDatabase.Schema, sdkCore)
             )
         )
     }

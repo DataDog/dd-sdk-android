@@ -6,26 +6,32 @@
 
 package com.datadog.android.okhttp.utils.config
 
-import com.datadog.android.okhttp.utils.reset
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
-import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.android.v2.core.InternalSdkCore
+import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 
 // TODO RUMM-2949 Share forgeries/test configurations between modules
-internal class GlobalRumMonitorTestConfiguration : TestConfiguration {
+internal class GlobalRumMonitorTestConfiguration :
+    MockTestConfiguration<FakeRumMonitor>(FakeRumMonitor::class.java) {
 
-    lateinit var mockInstance: FakeRumMonitor
+    lateinit var mockSdkCore: InternalSdkCore
 
     override fun setUp(forge: Forge) {
-        mockInstance = mock()
-        GlobalRum.registerIfAbsent(mockInstance)
+        super.setUp(forge)
+        mockSdkCore = mock()
+        GlobalRum.registerIfAbsent(mockSdkCore, mockInstance)
     }
 
     override fun tearDown(forge: Forge) {
-        GlobalRum.reset()
+        GlobalRum::class.java.getDeclaredMethod("reset").apply {
+            isAccessible = true
+            invoke(null)
+        }
+        super.tearDown(forge)
     }
 }
 

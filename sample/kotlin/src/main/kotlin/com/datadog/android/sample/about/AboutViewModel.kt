@@ -9,12 +9,14 @@ package com.datadog.android.sample.about
 import android.content.Context
 import android.os.AsyncTask
 import androidx.lifecycle.ViewModel
+import com.datadog.android.Datadog
 import com.datadog.android.ktx.rum.getAssetAsRumResource
 import com.datadog.android.ktx.rum.getRawResAsRumResource
 import com.datadog.android.ktx.tracing.withinSpan
 import com.datadog.android.sample.R
 import java.io.BufferedReader
 
+@Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
 internal class AboutViewModel : ViewModel() {
 
     private var asyncAboutTask: AsyncTask<Unit, Unit, String>? = null
@@ -50,11 +52,16 @@ internal class AboutViewModel : ViewModel() {
     ) : AsyncTask<Unit, Unit, String>() {
 
         override fun doInBackground(vararg params: Unit): String {
+            val sdkCore = Datadog.getInstance()
             return withinSpan("LoadResource") {
-                val inputStream = context.getRawResAsRumResource(id)
+                val inputStream = if (sdkCore != null) {
+                    context.getRawResAsRumResource(id, sdkCore)
+                } else {
+                    context.resources.openRawResource(id)
+                }
 
                 inputStream.bufferedReader().use(BufferedReader::readText)
-            }.orEmpty()
+            }
         }
 
         override fun onPostExecute(result: String) {
@@ -71,11 +78,16 @@ internal class AboutViewModel : ViewModel() {
     ) : AsyncTask<Unit, Unit, String>() {
 
         override fun doInBackground(vararg params: Unit): String {
+            val sdkCore = Datadog.getInstance()
             return withinSpan("LoadAsset") {
-                val inputStream = context.getAssetAsRumResource(fileName)
+                val inputStream = if (sdkCore != null) {
+                    context.getAssetAsRumResource(fileName, sdkCore)
+                } else {
+                    context.assets.open(fileName)
+                }
 
                 inputStream.bufferedReader().use(BufferedReader::readText)
-            }.orEmpty()
+            }
         }
 
         override fun onPostExecute(result: String) {

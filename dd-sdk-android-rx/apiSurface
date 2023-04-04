@@ -1,8 +1,9 @@
 class com.datadog.android.rx.DatadogRumErrorConsumer : io.reactivex.rxjava3.functions.Consumer<Throwable>
+  constructor(com.datadog.android.v2.api.SdkCore)
   override fun accept(Throwable)
   companion object 
-fun <T: Any> io.reactivex.rxjava3.core.Observable<T>.sendErrorToDatadog(): io.reactivex.rxjava3.core.Observable<T>
-fun <T: Any> io.reactivex.rxjava3.core.Single<T>.sendErrorToDatadog(): io.reactivex.rxjava3.core.Single<T>
-fun <T: Any> io.reactivex.rxjava3.core.Flowable<T>.sendErrorToDatadog(): io.reactivex.rxjava3.core.Flowable<T>
-fun <T> io.reactivex.rxjava3.core.Maybe<T>.sendErrorToDatadog(): io.reactivex.rxjava3.core.Maybe<T>
-fun io.reactivex.rxjava3.core.Completable.sendErrorToDatadog(): io.reactivex.rxjava3.core.Completable
+fun <T: Any> io.reactivex.rxjava3.core.Observable<T>.sendErrorToDatadog(com.datadog.android.v2.api.SdkCore): io.reactivex.rxjava3.core.Observable<T>
+fun <T: Any> io.reactivex.rxjava3.core.Single<T>.sendErrorToDatadog(com.datadog.android.v2.api.SdkCore): io.reactivex.rxjava3.core.Single<T>
+fun <T: Any> io.reactivex.rxjava3.core.Flowable<T>.sendErrorToDatadog(com.datadog.android.v2.api.SdkCore): io.reactivex.rxjava3.core.Flowable<T>
+fun <T> io.reactivex.rxjava3.core.Maybe<T>.sendErrorToDatadog(com.datadog.android.v2.api.SdkCore): io.reactivex.rxjava3.core.Maybe<T>
+fun io.reactivex.rxjava3.core.Completable.sendErrorToDatadog(com.datadog.android.v2.api.SdkCore): io.reactivex.rxjava3.core.Completable

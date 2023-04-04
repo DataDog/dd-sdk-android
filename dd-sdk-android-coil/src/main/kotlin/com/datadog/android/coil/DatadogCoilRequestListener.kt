@@ -10,6 +10,7 @@ import android.net.Uri
 import coil.request.ImageRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.v2.api.SdkCore
 import okhttp3.HttpUrl
 import java.io.File
 
@@ -20,13 +21,15 @@ import java.io.File
  * It will automatically send RUM error events whenever a Coil [ImageRequest]
  * throws any [Exception].
  */
-class DatadogCoilRequestListener : ImageRequest.Listener {
+class DatadogCoilRequestListener(
+    private val sdkCore: SdkCore
+) : ImageRequest.Listener {
 
     // region Listener
 
     /** @inheritDoc */
     override fun onError(request: ImageRequest, throwable: Throwable) {
-        GlobalRum.get().addError(
+        GlobalRum.get(sdkCore).addError(
             REQUEST_ERROR_MESSAGE,
             RumErrorSource.SOURCE,
             throwable,

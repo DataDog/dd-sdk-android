@@ -149,13 +149,13 @@ internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewMod
         withContextTraced("coroutine flow collect", Dispatchers.Default) {
             try {
                 setTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
-                getFlow()
-                    .sendErrorToDatadog()
-                    .map {
-                        it.replaceFirstChar { c ->
-                            if (c.isLowerCase()) c.titlecase(Locale.US) else c.toString()
-                        }
+                val flow = getFlow()
+                Datadog.getInstance()?.let { flow.sendErrorToDatadog(it) }
+                flow.map {
+                    it.replaceFirstChar { c ->
+                        if (c.isLowerCase()) c.titlecase(Locale.US) else c.toString()
                     }
+                }
                     .filter { it.length > 4 }
                     .collect {
                         if (Random().nextInt(5) == 0) {

@@ -11,6 +11,7 @@ import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+import com.datadog.android.v2.api.SdkCore
 import okhttp3.Call
 import okhttp3.EventListener
 import okhttp3.Handshake
@@ -37,11 +38,15 @@ import java.net.Proxy
  *       .build();
  * ```
  *
+ * @param sdkCore the SDK instance to use.
  * @param key Call identity.
  * @see [Factory]
  */
 class DatadogEventListener
-internal constructor(val key: String) : EventListener() {
+internal constructor(
+    val sdkCore: SdkCore,
+    val key: String
+) : EventListener() {
 
     private var callStart = 0L
 
@@ -159,12 +164,12 @@ internal constructor(val key: String) : EventListener() {
     // region Internal
 
     private fun sendWaitForResourceTimingEvent() {
-        (GlobalRum.get() as? AdvancedNetworkRumMonitor)?.waitForResourceTiming(key)
+        (GlobalRum.get(sdkCore) as? AdvancedNetworkRumMonitor)?.waitForResourceTiming(key)
     }
 
     private fun sendTiming() {
         val timing = buildTiming()
-        (GlobalRum.get() as? AdvancedNetworkRumMonitor)?.addResourceTiming(key, timing)
+        (GlobalRum.get(sdkCore) as? AdvancedNetworkRumMonitor)?.addResourceTiming(key, timing)
     }
 
     private fun buildTiming(): ResourceTiming {
@@ -225,11 +230,13 @@ internal constructor(val key: String) : EventListener() {
      *       .build();
      * ```
      */
-    class Factory : EventListener.Factory {
+    class Factory(
+        private val sdkCore: SdkCore
+    ) : EventListener.Factory {
         /** @inheritdoc */
         override fun create(call: Call): EventListener {
             val key = identifyRequest(call.request())
-            return DatadogEventListener(key)
+            return DatadogEventListener(sdkCore, key)
         }
     }
 }

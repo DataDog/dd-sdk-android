@@ -14,6 +14,7 @@ import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.invokeMethod
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.v2.api.SdkCore
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.Rule
 import org.junit.Test
@@ -29,6 +30,8 @@ class RumMonitorBuilderE2ETests {
     @get:Rule
     val nightlyTestRule = NightlyTestRule()
 
+    lateinit var sdkCore: SdkCore
+
     /**
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore)
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun sampleRumSessions(Float): Builder
@@ -39,7 +42,7 @@ class RumMonitorBuilderE2ETests {
     fun rum_rummonitor_builder_sample_all_in() {
         val testMethodName = "rum_rummonitor_builder_sample_all_in"
 
-        initializeSdk(
+        sdkCore = initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
             forgeSeed = forge.seed,
             rumMonitorProvider = { sdkCore ->
@@ -49,7 +52,7 @@ class RumMonitorBuilderE2ETests {
             }
         )
 
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
     }
 
     /**
@@ -69,7 +72,7 @@ class RumMonitorBuilderE2ETests {
                 }
             }
         )
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
     }
 
     /**
@@ -93,9 +96,9 @@ class RumMonitorBuilderE2ETests {
         repeat(eventsNumber) {
             // we do not want to add the test method name in the parent View name as
             // this will add extra events to the monitor query value
-            sendRandomRumEvent(forge, testMethodName, parentViewEventName = "")
+            sendRandomRumEvent(forge, sdkCore, testMethodName, parentViewEventName = "")
             // expire the session here
-            GlobalRum.get().invokeMethod("resetSession")
+            GlobalRum.get(sdkCore).invokeMethod("resetSession")
             InstrumentationRegistry.getInstrumentation().waitForIdleSync()
         }
     }

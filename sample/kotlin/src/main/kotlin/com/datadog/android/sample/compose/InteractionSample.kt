@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.datadog.android.Datadog
 import com.datadog.android.compose.ExperimentalTrackingApi
 import com.datadog.android.compose.InteractionType
 import com.datadog.android.compose.TrackInteractionEffect
@@ -48,11 +49,14 @@ internal fun InteractionSampleView() {
     val collection = remember { mutableStateListOf<Int>().apply { addAll(1..100) } }
 
     val scrollState = rememberLazyListState().apply {
-        TrackInteractionEffect(
-            targetName = "Items list",
-            interactionSource = interactionSource,
-            interactionType = InteractionType.Scroll(this, Orientation.Vertical)
-        )
+        Datadog.getInstance()?.let { sdkCore ->
+            TrackInteractionEffect(
+                targetName = "Items list",
+                interactionSource = interactionSource,
+                interactionType = InteractionType.Scroll(this, Orientation.Vertical),
+                sdkCore = sdkCore
+            )
+        }
     }
 
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), state = scrollState) {
@@ -84,15 +88,18 @@ internal fun ItemRow(index: Int, onDismissed: () -> Unit) {
         val interactionSource = remember {
             MutableInteractionSource()
         }.apply {
-            TrackInteractionEffect(
-                targetName = "Item row",
-                interactionSource = this,
-                interactionType = InteractionType.Swipe(
-                    swipeableState,
-                    orientation = swipeOrientation
-                ),
-                attributes = mapOf("item" to index)
-            )
+            Datadog.getInstance()?.let { sdkCore ->
+                TrackInteractionEffect(
+                    targetName = "Item row",
+                    interactionSource = this,
+                    interactionType = InteractionType.Swipe(
+                        swipeableState,
+                        orientation = swipeOrientation
+                    ),
+                    attributes = mapOf("item" to index),
+                    sdkCore = sdkCore
+                )
+            }
         }
 
         Box(

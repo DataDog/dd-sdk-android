@@ -24,7 +24,6 @@ import com.datadog.android.security.Encryption
 import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingFeature
-import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import io.opentracing.Tracer
@@ -36,7 +35,6 @@ import org.junit.Rule
 import org.junit.Test
 import java.io.File
 import java.util.Random
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.experimental.inv
 
 @MediumTest
@@ -71,7 +69,7 @@ internal class EncryptionTest {
             sdkCore.registerFeature(it)
         }
         val rumMonitor = RumMonitor.Builder(sdkCore).build()
-        GlobalRum.registerIfAbsent(rumMonitor)
+        GlobalRum.registerIfAbsent(sdkCore, rumMonitor)
 
         val tracer = AndroidTracer.Builder(sdkCore).setBundleWithRumEnabled(true).build()
         GlobalTracer.registerIfAbsent(tracer)
@@ -205,8 +203,10 @@ internal class EncryptionTest {
     private fun stopSdk() {
         Datadog.stopInstance()
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        val isRumRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
-        isRumRegistered.set(false)
+        GlobalRum::class.java.getDeclaredMethod("reset").apply {
+            isAccessible = true
+            invoke(null)
+        }
     }
 
     private fun flushAndShutdownExecutors() {

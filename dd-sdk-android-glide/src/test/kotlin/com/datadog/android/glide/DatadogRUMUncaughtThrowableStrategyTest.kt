@@ -9,7 +9,7 @@ package com.datadog.android.glide
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
-import com.datadog.tools.unit.getStaticValue
+import com.datadog.android.v2.api.SdkCore
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -24,7 +24,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.lang.RuntimeException
-import java.util.concurrent.atomic.AtomicBoolean
 
 @Extensions(
     ExtendWith(
@@ -40,20 +39,25 @@ internal class DatadogRUMUncaughtThrowableStrategyTest {
     @Mock
     lateinit var mockRumMonitor: RumMonitor
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
     @StringForgery
     lateinit var fakeName: String
 
     @BeforeEach
     fun `set up`() {
-        GlobalRum.registerIfAbsent(mockRumMonitor)
+        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
 
-        testedStrategy = DatadogRUMUncaughtThrowableStrategy(fakeName)
+        testedStrategy = DatadogRUMUncaughtThrowableStrategy(fakeName, mockSdkCore)
     }
 
     @AfterEach
     fun `tear down`() {
-        val isRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
-        isRegistered.set(false)
+        GlobalRum::class.java.getDeclaredMethod("reset").apply {
+            isAccessible = true
+            invoke(null)
+        }
     }
 
     @Test

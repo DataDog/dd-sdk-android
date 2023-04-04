@@ -7,12 +7,14 @@
 package com.datadog.android.sample.data.db.realm
 
 import android.content.Context
+import com.datadog.android.Datadog
 import com.datadog.android.ktx.rum.useMonitored
 import com.datadog.android.sample.data.db.DataSource
 import com.datadog.android.sample.data.db.DatadogDbContract
 import com.datadog.android.sample.data.model.Log
 import com.datadog.android.sample.data.model.LogAttributes
 import com.datadog.android.sample.datalist.DataSourceType
+import com.datadog.android.v2.core.NoOpSdkCore
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.realm.Realm
@@ -47,7 +49,8 @@ internal class RealmDataSource(val context: Context) : DataSource {
         // purge data first
         purgeLogs(minTtlRequired)
         // add new data
-        Realm.getDefaultInstance().useMonitored { realm ->
+        val sdkCore = Datadog.getInstance() ?: NoOpSdkCore()
+        Realm.getDefaultInstance().useMonitored(sdkCore) { realm ->
             realm.beginTransaction()
             realm.insertOrUpdate(
                 logs.map {
@@ -63,8 +66,9 @@ internal class RealmDataSource(val context: Context) : DataSource {
         }
     }
 
-    private val fetchLogsCallable = Callable<List<Log>> {
-        Realm.getDefaultInstance().useMonitored { realm ->
+    private val fetchLogsCallable = Callable {
+        val sdkCore = Datadog.getInstance() ?: NoOpSdkCore()
+        Realm.getDefaultInstance().useMonitored(sdkCore) { realm ->
             val minTtlRequired =
                 System.currentTimeMillis() - LOGS_EXPIRING_TTL_IN_MS
             realm.where(LogRealm::class.java)
@@ -83,7 +87,8 @@ internal class RealmDataSource(val context: Context) : DataSource {
     }
 
     private fun purgeLogs(minTtlRequired: Long) {
-        Realm.getDefaultInstance().useMonitored { realm ->
+        val sdkCore = Datadog.getInstance() ?: NoOpSdkCore()
+        Realm.getDefaultInstance().useMonitored(sdkCore) { realm ->
             realm.beginTransaction()
             realm.where(LogRealm::class.java)
                 .lessThan(DatadogDbContract.Logs.COLUMN_NAME_TTL, minTtlRequired)

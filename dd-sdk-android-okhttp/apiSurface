@@ -13,6 +13,7 @@ class com.datadog.android.okhttp.DatadogEventListener : okhttp3.EventListener
   override fun callEnd(okhttp3.Call)
   override fun callFailed(okhttp3.Call, java.io.IOException)
   class Factory : okhttp3.EventListener.Factory
+    constructor(com.datadog.android.v2.api.SdkCore)
     override fun create(okhttp3.Call): okhttp3.EventListener
 open class com.datadog.android.okhttp.DatadogInterceptor : com.datadog.android.okhttp.trace.TracingInterceptor
   constructor(com.datadog.android.v2.api.SdkCore, Map<String, Set<com.datadog.android.trace.TracingHeaderType>>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)

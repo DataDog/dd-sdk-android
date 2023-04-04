@@ -199,7 +199,7 @@ internal constructor(
     )
 
     init {
-        (GlobalRum.get() as? AdvancedNetworkRumMonitor)?.notifyInterceptorInstantiated()
+        (GlobalRum.get(sdkCore) as? AdvancedNetworkRumMonitor)?.notifyInterceptorInstantiated()
     }
 
     // region Interceptor
@@ -213,7 +213,7 @@ internal constructor(
             val method = request.method()
             val requestId = identifyRequest(request)
 
-            GlobalRum.get().startResource(requestId, method, url)
+            GlobalRum.get(sdkCore).startResource(requestId, method, url)
         } else {
             sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -278,7 +278,7 @@ internal constructor(
                 RumAttributes.RULE_PSR to traceSampler.getSamplingRate()
             )
         }
-        GlobalRum.get().stopResource(
+        GlobalRum.get(sdkCore).stopResource(
             requestId,
             statusCode,
             getBodyLength(response),
@@ -294,7 +294,7 @@ internal constructor(
         val requestId = identifyRequest(request)
         val method = request.method()
         val url = request.url().toString()
-        GlobalRum.get().stopResourceWithError(
+        GlobalRum.get(sdkCore).stopResourceWithError(
             requestId,
             null,
             ERROR_MSG_FORMAT.format(Locale.US, method, url),

@@ -6,6 +6,7 @@
 
 package com.datadog.android.rx
 
+import com.datadog.android.v2.api.SdkCore
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Maybe
@@ -17,8 +18,8 @@ import io.reactivex.rxjava3.core.Single
  *  if this [Observable<T>] emits an error.
  *  Note that the error will also be emitted by the returned [Observable<T>]
  */
-fun <T : Any> Observable<T>.sendErrorToDatadog(): Observable<T> {
-    return this.doOnError(DatadogRumErrorConsumer())
+fun <T : Any> Observable<T>.sendErrorToDatadog(sdkCore: SdkCore): Observable<T> {
+    return this.doOnError(DatadogRumErrorConsumer(sdkCore))
 }
 
 /**
@@ -26,8 +27,8 @@ fun <T : Any> Observable<T>.sendErrorToDatadog(): Observable<T> {
  *  if this [Single<T>] emits an error.
  *  Note that the error will also be emitted by the returned [Single<T>]
  */
-fun <T : Any> Single<T>.sendErrorToDatadog(): Single<T> {
-    return this.doOnError(DatadogRumErrorConsumer())
+fun <T : Any> Single<T>.sendErrorToDatadog(sdkCore: SdkCore): Single<T> {
+    return this.doOnError(DatadogRumErrorConsumer(sdkCore))
 }
 
 /**
@@ -35,8 +36,8 @@ fun <T : Any> Single<T>.sendErrorToDatadog(): Single<T> {
  *  if this [Flowable<T>] emits an error.
  *  Note that the error will also be emitted by the returned [Flowable<T>]
  */
-fun <T : Any> Flowable<T>.sendErrorToDatadog(): Flowable<T> {
-    return this.doOnError(DatadogRumErrorConsumer())
+fun <T : Any> Flowable<T>.sendErrorToDatadog(sdkCore: SdkCore): Flowable<T> {
+    return this.doOnError(DatadogRumErrorConsumer(sdkCore))
 }
 
 /**
@@ -44,8 +45,8 @@ fun <T : Any> Flowable<T>.sendErrorToDatadog(): Flowable<T> {
  *  if this [Maybe<T>] emits an error.
  *  Note that the error will also be emitted by the returned [Maybe<T>]
  */
-fun <T> Maybe<T>.sendErrorToDatadog(): Maybe<T> {
-    return this.doOnError(DatadogRumErrorConsumer())
+fun <T> Maybe<T>.sendErrorToDatadog(sdkCore: SdkCore): Maybe<T> {
+    return this.doOnError(DatadogRumErrorConsumer(sdkCore))
 }
 
 /**
@@ -53,6 +54,6 @@ fun <T> Maybe<T>.sendErrorToDatadog(): Maybe<T> {
  *  if this [Completable] emits an error.
  *  Note that the error will also be emitted by the returned [Completable]
  */
-fun Completable.sendErrorToDatadog(): Completable {
-    return this.doOnError(DatadogRumErrorConsumer())
+fun Completable.sendErrorToDatadog(sdkCore: SdkCore): Completable {
+    return this.doOnError(DatadogRumErrorConsumer(sdkCore))
 }

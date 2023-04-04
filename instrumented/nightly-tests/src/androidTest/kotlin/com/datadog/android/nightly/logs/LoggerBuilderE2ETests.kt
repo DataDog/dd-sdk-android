@@ -10,7 +10,6 @@ import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.initializeSdk
@@ -18,6 +17,7 @@ import com.datadog.android.nightly.utils.measureLoggerInitialize
 import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
+import com.datadog.android.v2.api.SdkCore
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import io.opentracing.util.GlobalTracer
 import org.junit.Before
@@ -37,9 +37,11 @@ class LoggerBuilderE2ETests {
 
     lateinit var logger: Logger
 
+    lateinit var sdkCore: SdkCore
+
     @Before
     fun setUp() {
-        initializeSdk(
+        sdkCore = initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
             forgeSeed = forge.seed
         )
@@ -55,7 +57,7 @@ class LoggerBuilderE2ETests {
     fun logs_logger_builder_sample_all_in() {
         val testMethodName = "logs_logger_builder_sample_all_in"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.getInstance()!!).setSampleRate(1f).build()
+            logger = Logger.Builder(sdkCore).setSampleRate(1f).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -70,7 +72,7 @@ class LoggerBuilderE2ETests {
     fun logs_logger_builder_sample_all_out() {
         val testMethodName = "logs_logger_builder_sample_all_out"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.getInstance()!!).setSampleRate(0f).build()
+            logger = Logger.Builder(sdkCore).setSampleRate(0f).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -86,7 +88,7 @@ class LoggerBuilderE2ETests {
         val testMethodName = "logs_logger_builder_sample_in_75_percent"
         val logsNumber = 10
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.getInstance()!!).setSampleRate(0.75f).build()
+            logger = Logger.Builder(sdkCore).setSampleRate(0.75f).build()
         }
         repeat(logsNumber) {
             logger.sendRandomLog(testMethodName, forge)
@@ -103,7 +105,7 @@ class LoggerBuilderE2ETests {
     fun logs_logger_builder_datadog_logs_enabled() {
         val testMethodName = "logs_logger_builder_datadog_logs_enabled"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.getInstance()!!).setDatadogLogsEnabled(true).build()
+            logger = Logger.Builder(sdkCore).setDatadogLogsEnabled(true).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -118,7 +120,7 @@ class LoggerBuilderE2ETests {
     fun logs_logger_builder_datadog_logs_disabled() {
         val testMethodName = "logs_logger_builder_datadog_logs_disabled"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.getInstance()!!).setDatadogLogsEnabled(false).build()
+            logger = Logger.Builder(sdkCore).setDatadogLogsEnabled(false).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -141,7 +143,7 @@ class LoggerBuilderE2ETests {
         )
 
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.getInstance()!!)
+            logger = Logger.Builder(sdkCore)
                 .setDatadogLogsEnabled(true)
                 .setDatadogLogsMinPriority(minLogLevel)
                 .build()
@@ -164,7 +166,7 @@ class LoggerBuilderE2ETests {
     fun logs_logger_builder_network_info_enabled() {
         val testMethodName = "logs_logger_builder_network_info_enabled"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.getInstance()!!).setNetworkInfoEnabled(true).build()
+            logger = Logger.Builder(sdkCore).setNetworkInfoEnabled(true).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -179,7 +181,7 @@ class LoggerBuilderE2ETests {
     fun logs_logger_builder_network_info_disabled() {
         val testMethodName = "logs_logger_builder_network_info_disabled"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.getInstance()!!).setNetworkInfoEnabled(false).build()
+            logger = Logger.Builder(sdkCore).setNetworkInfoEnabled(false).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -194,7 +196,7 @@ class LoggerBuilderE2ETests {
     fun logs_logger_builder_set_service_name() {
         val testMethodName = "logs_logger_builder_set_service_name"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.getInstance()!!).setServiceName(CUSTOM_SERVICE_NAME).build()
+            logger = Logger.Builder(sdkCore).setServiceName(CUSTOM_SERVICE_NAME).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -209,7 +211,7 @@ class LoggerBuilderE2ETests {
     fun logs_logger_builder_set_logger_name() {
         val testMethodName = "logs_logger_builder_set_logger_name"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.getInstance()!!).setLoggerName(CUSTOM_LOGGER_NAME).build()
+            logger = Logger.Builder(sdkCore).setLoggerName(CUSTOM_LOGGER_NAME).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -224,19 +226,19 @@ class LoggerBuilderE2ETests {
     fun logs_logger_builder_bundle_with_rum_enabled() {
         val testMethodName = "logs_logger_builder_bundle_with_rum_enabled"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.getInstance()!!).setBundleWithRumEnabled(true).build()
+            logger = Logger.Builder(sdkCore).setBundleWithRumEnabled(true).build()
         }
         val viewKey = forge.anAlphabeticalString()
         val actionName = forge.anAlphabeticalString()
-        GlobalRum.get().startView(viewKey, forge.anAlphabeticalString())
-        GlobalRum.get().startUserAction(RumActionType.TAP, actionName, emptyMap())
+        GlobalRum.get(sdkCore).startView(viewKey, forge.anAlphabeticalString())
+        GlobalRum.get(sdkCore).startUserAction(RumActionType.TAP, actionName, emptyMap())
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-        sendRandomActionOutcomeEvent(forge)
+        sendRandomActionOutcomeEvent(forge, sdkCore)
         // Give time to the View event to be propagated
         Thread.sleep(200)
         logger.sendRandomLog(testMethodName, forge)
-        GlobalRum.get().stopUserAction(RumActionType.TAP, actionName)
-        GlobalRum.get().stopView(viewKey)
+        GlobalRum.get(sdkCore).stopUserAction(RumActionType.TAP, actionName)
+        GlobalRum.get(sdkCore).stopView(viewKey)
     }
 
     /**
@@ -249,7 +251,7 @@ class LoggerBuilderE2ETests {
     fun logs_logger_builder_bundle_with_trace_enabled() {
         val testMethodName = "logs_logger_builder_bundle_with_trace_enabled"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.getInstance()!!).setBundleWithTraceEnabled(true).build()
+            logger = Logger.Builder(sdkCore).setBundleWithTraceEnabled(true).build()
         }
         val spanName = forge.anAlphabeticalString()
         val span = GlobalTracer.get().buildSpan(spanName).start()
@@ -269,12 +271,12 @@ class LoggerBuilderE2ETests {
     fun logs_logger_builder_bundle_with_rum_disabled() {
         val testMethodName = "logs_logger_builder_bundle_with_rum_disabled"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.getInstance()!!).setBundleWithRumEnabled(false).build()
+            logger = Logger.Builder(sdkCore).setBundleWithRumEnabled(false).build()
         }
         val viewKey = forge.anAlphabeticalString()
-        GlobalRum.get().startView(viewKey, forge.anAlphabeticalString())
+        GlobalRum.get(sdkCore).startView(viewKey, forge.anAlphabeticalString())
         logger.sendRandomLog(testMethodName, forge)
-        GlobalRum.get().stopView(viewKey)
+        GlobalRum.get(sdkCore).stopView(viewKey)
     }
 
     /**
@@ -287,7 +289,7 @@ class LoggerBuilderE2ETests {
     fun logs_logger_builder_bundle_with_trace_disabled() {
         val testMethodName = "logs_logger_builder_bundle_with_trace_disabled"
         measureLoggerInitialize {
-            logger = Logger.Builder(Datadog.getInstance()!!).setBundleWithTraceEnabled(false).build()
+            logger = Logger.Builder(sdkCore).setBundleWithTraceEnabled(false).build()
         }
         val spanName = forge.anAlphabeticalString()
         val span = GlobalTracer.get().buildSpan(spanName).start()

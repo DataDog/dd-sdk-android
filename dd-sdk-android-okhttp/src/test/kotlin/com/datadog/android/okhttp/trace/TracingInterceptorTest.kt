@@ -11,10 +11,10 @@ import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
+import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -113,9 +113,6 @@ internal open class TracingInterceptorTest {
     lateinit var mockTraceSampler: Sampler
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
-
-    @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     // endregion
@@ -168,8 +165,8 @@ internal open class TracingInterceptorTest {
         fakeMediaType = MediaType.parse(mediaType)
         fakeUrl = forgeUrlWithQueryParams(forge)
         fakeRequest = forgeRequest(forge)
-        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
+        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) {
             mockLocalTracer
         }
@@ -182,7 +179,7 @@ internal open class TracingInterceptorTest {
         factory: (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return TracingInterceptor(
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             tracedHosts,
             mockRequestListener,
             mockResolver,
@@ -204,10 +201,10 @@ internal open class TracingInterceptorTest {
     @Test
     fun `M instantiate with default values W init()`() {
         // Given
-        whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
+        whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mock()
 
         // When
-        val interceptor = TracingInterceptor(mockSdkCore)
+        val interceptor = TracingInterceptor(rumMonitor.mockSdkCore)
 
         // Then
         assertThat(interceptor.tracedHosts).isEmpty()
@@ -226,10 +223,10 @@ internal open class TracingInterceptorTest {
         @StringForgery(regex = "[a-z]+\\.[a-z]{3}") hosts: List<String>
     ) {
         // Given
-        whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
+        whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mock()
 
         // When
-        val interceptor = TracingInterceptor(mockSdkCore, hosts)
+        val interceptor = TracingInterceptor(rumMonitor.mockSdkCore, hosts)
 
         // Then
         assertThat(interceptor.tracedHosts.keys).containsAll(hosts)
@@ -1168,7 +1165,7 @@ internal open class TracingInterceptorTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
+        whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
@@ -1518,11 +1515,12 @@ internal open class TracingInterceptorTest {
             "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{1,4}[a-zA-Z0-9]{2,3})\\.)+" +
                 "([A-Za-z]|[A-Za-z][A-Za-z0-9-]{1,2}[A-Za-z0-9])"
         val datadogCore = DatadogSingletonTestConfiguration()
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(datadogCore)
+            return listOf(rumMonitor, datadogCore)
         }
     }
 }

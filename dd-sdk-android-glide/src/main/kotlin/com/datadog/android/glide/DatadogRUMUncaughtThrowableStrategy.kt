@@ -10,6 +10,7 @@ import com.bumptech.glide.load.engine.executor.GlideExecutor
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.v2.api.SdkCore
 
 /**
  * A [GlideExecutor.UncaughtThrowableStrategy] implementation that will forward all errors
@@ -17,9 +18,11 @@ import com.datadog.android.rum.RumMonitor
  *
  * @param name the name of the feature this strategy will be used for
  * (e.g.: "Disk Cache", "Source", …)
+ * @param sdkCore the SDK instance to use.
  */
 class DatadogRUMUncaughtThrowableStrategy(
-    val name: String
+    val name: String,
+    val sdkCore: SdkCore
 ) : GlideExecutor.UncaughtThrowableStrategy {
 
     // region GlideExecutor.UncaughtThrowableStrategy
@@ -27,7 +30,7 @@ class DatadogRUMUncaughtThrowableStrategy(
     /** @inheritdoc */
     override fun handle(t: Throwable?) {
         if (t != null) {
-            GlobalRum.get()
+            GlobalRum.get(sdkCore)
                 .addError("Glide $name error", RumErrorSource.SOURCE, t, emptyMap())
         }
     }

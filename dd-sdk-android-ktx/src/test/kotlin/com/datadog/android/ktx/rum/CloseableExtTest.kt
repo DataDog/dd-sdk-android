@@ -9,8 +9,8 @@ package com.datadog.android.ktx.rum
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.BaseConfigurator
-import com.datadog.tools.unit.getStaticValue
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
@@ -30,7 +30,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.io.Closeable
-import java.util.concurrent.atomic.AtomicBoolean
 
 @Extensions(
     ExtendWith(
@@ -46,6 +45,9 @@ class CloseableExtTest {
     lateinit var mockRumMonitor: RumMonitor
 
     @Mock
+    lateinit var mockSdkCore: SdkCore
+
+    @Mock
     lateinit var mockCloseable: Closeable
 
     @Forgery
@@ -56,13 +58,15 @@ class CloseableExtTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRum.registerIfAbsent(mockRumMonitor)
+        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
     }
 
     @AfterEach
     fun `tear down`() {
-        val isRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
-        isRegistered.set(false)
+        GlobalRum::class.java.getDeclaredMethod("reset").apply {
+            isAccessible = true
+            invoke(null)
+        }
     }
 
     @Test
@@ -72,7 +76,7 @@ class CloseableExtTest {
 
         // WHEN
         try {
-            mockCloseable.useMonitored {
+            mockCloseable.useMonitored(mockSdkCore) {
                 throw fakeException
             }
         } catch (e: Throwable) {
@@ -96,7 +100,7 @@ class CloseableExtTest {
 
         // WHEN
         try {
-            mockCloseable.useMonitored {
+            mockCloseable.useMonitored(mockSdkCore) {
                 throw fakeException
             }
         } catch (e: Throwable) {
@@ -117,7 +121,7 @@ class CloseableExtTest {
 
         // WHEN
         try {
-            mockCloseable.useMonitored {}
+            mockCloseable.useMonitored(mockSdkCore) {}
         } catch (e: Throwable) {
             caughtException = e
         }
@@ -135,7 +139,7 @@ class CloseableExtTest {
     @Test
     fun `M close the closeable instance W no exception in the block`() {
         // WHEN
-        val returnedValue = mockCloseable.useMonitored {
+        val returnedValue = mockCloseable.useMonitored(mockSdkCore) {
             fakeString
         }
 
