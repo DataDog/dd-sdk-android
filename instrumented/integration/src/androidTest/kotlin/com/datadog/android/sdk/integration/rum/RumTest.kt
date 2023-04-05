@@ -71,7 +71,7 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
     }
 
     protected fun waitForPendingRUMEvents() {
-        val sdkCore = Datadog.getInstance() ?: return
+        val sdkCore = Datadog.getInstance()
         val rum = GlobalRum.get(sdkCore)
         val callMethod = rum.javaClass.declaredMethods.first { it.name.startsWith("waitForPendingEvents") }
         callMethod.isAccessible = true

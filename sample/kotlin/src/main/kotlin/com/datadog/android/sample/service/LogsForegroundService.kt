@@ -35,13 +35,13 @@ class LogsForegroundService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val sdkCore = Datadog.getInstance()
-        val rumMonitor = sdkCore?.let { GlobalRum.get(it) }
+        val rumMonitor = GlobalRum.get(sdkCore)
         when (intent?.action) {
             STOP_SERVICE_ACTION -> {
                 stopForegroundService()
             }
             SEND_RUM_ERROR -> {
-                rumMonitor?.addError(
+                rumMonitor.addError(
                     BACKGROUND_ERROR_KEY,
                     randomErrorSource(),
                     randomThrowable(),
@@ -49,14 +49,14 @@ class LogsForegroundService : Service() {
                 )
             }
             SEND_RUM_ACTION -> {
-                rumMonitor?.addUserAction(
+                rumMonitor.addUserAction(
                     RumActionType.CUSTOM,
                     BACKGROUND_ACTION_KEY,
                     emptyMap()
                 )
             }
             START_RUM_RESOURCE -> {
-                rumMonitor?.startResource(
+                rumMonitor.startResource(
                     BACKGROUND_RESOURCE_URL,
                     "GET",
                     BACKGROUND_RESOURCE_URL,
@@ -64,7 +64,7 @@ class LogsForegroundService : Service() {
                 )
             }
             STOP_RUM_RESOURCE -> {
-                rumMonitor?.stopResource(
+                rumMonitor.stopResource(
                     BACKGROUND_RESOURCE_URL,
                     200,
                     200,

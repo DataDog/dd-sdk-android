@@ -341,7 +341,7 @@ class SpanConfigE2ETests {
         )
 
         measure(testMethodName) {
-            Datadog.getInstance()?.setUserInfo(
+            Datadog.getInstance().setUserInfo(
                 UserInfo(
                     userId,
                     userName,

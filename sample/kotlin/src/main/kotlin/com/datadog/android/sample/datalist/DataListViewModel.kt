@@ -27,7 +27,7 @@ internal class DataListViewModel(val repository: DataRepository) : ViewModel() {
                 when (request) {
                     is UIRequest.FetchData -> {
                         val flowable = repository.getLogs("source:android")
-                        Datadog.getInstance()?.let { flowable.sendErrorToDatadog(it) }
+                        flowable.sendErrorToDatadog(Datadog.getInstance())
                         flowable.toObservable()
                             .map<UIResponse> {
                                 UIResponse.Success(it)

@@ -55,7 +55,6 @@ internal class ActivityViewTrackingStrategyTest :
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        val monitor = rumMonitor.mockInstance
         testedStrategy = ActivityViewTrackingStrategy(true, mockPredicate)
         testedStrategy.viewLoadingTimer = mockViewLoadingTimer
     }

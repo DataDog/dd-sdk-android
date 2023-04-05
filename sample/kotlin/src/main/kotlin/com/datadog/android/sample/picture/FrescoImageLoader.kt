@@ -29,14 +29,12 @@ internal class FrescoImageLoader : ImageLoader {
         if (imageView is SimpleDraweeView) {
             imageView.setImageURI(Uri.parse(url))
         } else {
-            Datadog.getInstance()?.let { sdkCore ->
-                GlobalRum.get(sdkCore).addError(
-                    "Unable to load Fresco image in non Drawee View",
-                    RumErrorSource.SOURCE,
-                    null,
-                    emptyMap()
-                )
-            }
+            GlobalRum.get(Datadog.getInstance()).addError(
+                "Unable to load Fresco image in non Drawee View",
+                RumErrorSource.SOURCE,
+                null,
+                emptyMap()
+            )
         }
     }
 
@@ -48,10 +46,8 @@ internal class FrescoImageLoader : ImageLoader {
 
         fun initialize(context: Context, okHttpClient: OkHttpClient) {
             val diskConfigBuilder = DiskCacheConfig.newBuilder(context)
-            Datadog.getInstance()?.let {
-                diskConfigBuilder.setCacheEventListener(DatadogFrescoCacheListener(it))
-            }
-            diskConfigBuilder.setMaxCacheSize(MAX_DISK_CACHE_SIZE)
+                .setCacheEventListener(DatadogFrescoCacheListener(Datadog.getInstance()))
+                .setMaxCacheSize(MAX_DISK_CACHE_SIZE)
             val config = OkHttpImagePipelineConfigFactory
                 .newBuilder(context, okHttpClient)
                 .setBitmapMemoryCacheParamsSupplier {

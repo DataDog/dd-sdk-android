@@ -251,7 +251,6 @@ class SampleApplication : Application() {
     @Suppress("TooGenericExceptionCaught", "CheckInternal")
     private fun initializeTimber() {
         val sdkCore = Datadog.getInstance()
-        checkNotNull(sdkCore)
         val logger = Logger.Builder(sdkCore)
             .setLoggerName("timber")
             .setNetworkInfoEnabled(true)

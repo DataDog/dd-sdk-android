@@ -38,7 +38,6 @@ internal class WebViewTrackingActivity : AppCompatActivity() {
     @Suppress("CheckInternal")
     private fun setupWebView(webView: WebView) {
         val sdkCore = Datadog.getInstance()
-        checkNotNull(sdkCore)
         val datadogEventBridge = DatadogEventBridge(sdkCore, listOf("datadoghq.dev"))
         measure(TEST_METHOD_NAME) {
             webView.addJavascriptInterface(datadogEventBridge, "DatadogEventBridge")

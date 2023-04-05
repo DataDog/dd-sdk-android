@@ -56,9 +56,7 @@ internal class DataListFragment : Fragment() {
                 when (it) {
                     is DataListViewModel.UIResponse.Success -> {
                         if (!firstDataWasLoaded) {
-                            Datadog.getInstance()?.let { sdkCore ->
-                                GlobalRum.get(sdkCore).addTiming("logs_data_loaded")
-                            }
+                            GlobalRum.get(Datadog.getInstance()).addTiming("logs_data_loaded")
                             firstDataWasLoaded = true
                         }
                         adapter.updateData(it.data)

@@ -52,7 +52,7 @@ internal class ResourceTrackingTest {
         okHttpClient = OkHttpClient.Builder()
             .addInterceptor(
                 RumInterceptor(
-                    Datadog.getInstance()!!,
+                    Datadog.getInstance(),
                     rumResourceAttributesProvider = object : RumResourceAttributesProvider {
                         override fun onProvideAttributes(
                             request: Request,

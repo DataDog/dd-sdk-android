@@ -13,7 +13,6 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.NoOpSdkCore
 import java.util.concurrent.TimeUnit
 
 internal class MainLooperLongTaskStrategy(
@@ -23,7 +22,7 @@ internal class MainLooperLongTaskStrategy(
     private val thresholdNS = TimeUnit.MILLISECONDS.toNanos(thresholdMs)
     private var startUptimeNs: Long = 0L
     private var target: String = ""
-    private var sdkCore: SdkCore = NoOpSdkCore()
+    private lateinit var sdkCore: SdkCore
 
     // region TrackingStrategy
 
@@ -81,7 +80,7 @@ internal class MainLooperLongTaskStrategy(
             startUptimeNs = now
         } else if (message.startsWith(PREFIX_END)) {
             val durationNs = now - startUptimeNs
-            if (durationNs > thresholdNS) {
+            if (durationNs > thresholdNS && this::sdkCore.isInitialized) {
                 (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)?.addLongTask(durationNs, target)
             }
         }

@@ -81,6 +81,7 @@ internal class RumEventMapperTest {
         whenever(mockViewEventMapper.map(any())).thenAnswer { it.arguments[0] }
 
         testedRumEventMapper = RumEventMapper(
+            sdkCore = rumMonitor.mockSdkCore,
             actionEventMapper = mockActionEventMapper,
             viewEventMapper = mockViewEventMapper,
             resourceEventMapper = mockResourceEventMapper,
@@ -165,7 +166,10 @@ internal class RumEventMapperTest {
     @Test
     fun `M return the original event W map { no internal mapper used }`(forge: Forge) {
         // GIVEN
-        testedRumEventMapper = RumEventMapper(internalLogger = mockInternalLogger)
+        testedRumEventMapper = RumEventMapper(
+            sdkCore = rumMonitor.mockSdkCore,
+            internalLogger = mockInternalLogger
+        )
         val fakeRumEvent = forge.aRumEvent()
 
         // WHEN
@@ -179,7 +183,10 @@ internal class RumEventMapperTest {
     @Test
     fun `M return the original event W map { bundled event unknown }`() {
         // GIVEN
-        testedRumEventMapper = RumEventMapper(internalLogger = mockInternalLogger)
+        testedRumEventMapper = RumEventMapper(
+            sdkCore = rumMonitor.mockSdkCore,
+            internalLogger = mockInternalLogger
+        )
         val fakeRumEvent = Any()
 
         // WHEN

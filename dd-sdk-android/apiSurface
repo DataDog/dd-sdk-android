@@ -1,9 +1,9 @@
 object com.datadog.android.Datadog
   fun initialize(String?, android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.v2.api.SdkCore?
   fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.v2.api.SdkCore?
-  fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
+  fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore
   fun stopInstance(String? = null)
-  fun _internalProxy(String? = null): _InternalProxy?
+  fun _internalProxy(String? = null): _InternalProxy
 object com.datadog.android.DatadogEndpoint
   DEPRECATED const val LOGS_US1: String
   DEPRECATED const val LOGS_US3: String
@@ -333,26 +333,6 @@ interface com.datadog.android.v2.core.InternalSdkCore : com.datadog.android.v2.a
   fun getPersistenceExecutorService(): java.util.concurrent.ExecutorService
   fun getAllFeatures(): List<com.datadog.android.v2.api.FeatureScope>
   fun getDatadogContext(): com.datadog.android.v2.api.context.DatadogContext?
-class com.datadog.android.v2.core.NoOpSdkCore : com.datadog.android.v2.api.SdkCore
-  override val name: String
-  override val time: com.datadog.android.v2.api.context.TimeInfo
-  override val service: String
-  override val firstPartyHostResolver: com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-  override val _internalLogger: com.datadog.android.v2.api.InternalLogger
-  override fun registerFeature(com.datadog.android.v2.api.Feature)
-  override fun getFeature(String): com.datadog.android.v2.api.FeatureScope?
-  override fun setVerbosity(Int)
-  override fun getVerbosity(): Int
-  override fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
-  override fun setUserInfo(com.datadog.android.v2.api.context.UserInfo)
-  override fun addUserProperties(Map<String, Any?>)
-  override fun stop()
-  override fun clearAllData()
-  override fun flushStoredData()
-  override fun updateFeatureContext(String, Function1<MutableMap<String, Any?>, Unit>)
-  override fun getFeatureContext(String): Map<String, Any?>
-  override fun setEventReceiver(String, com.datadog.android.v2.api.FeatureEventReceiver)
-  override fun removeEventReceiver(String)
 interface com.datadog.android.v2.core.storage.DataWriter<T>
   fun write(com.datadog.android.v2.api.EventBatchWriter, T): Boolean
 class com.datadog.tools.annotation.NoOpImplementation

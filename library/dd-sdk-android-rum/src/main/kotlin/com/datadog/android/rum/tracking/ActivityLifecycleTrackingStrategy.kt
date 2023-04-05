@@ -13,7 +13,6 @@ import android.content.Intent
 import android.os.Bundle
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.NoOpSdkCore
 
 /**
  * The ActivityLifecycleTrackingStrategy as an [Application.ActivityLifecycleCallbacks]
@@ -23,10 +22,14 @@ abstract class ActivityLifecycleTrackingStrategy :
     Application.ActivityLifecycleCallbacks,
     TrackingStrategy {
 
-    /**
-     * The [SdkCore] instance this tracking strategy is bound with.
-     */
-    protected var sdkCore: SdkCore = NoOpSdkCore()
+    private lateinit var sdkCore: SdkCore
+
+    internal val internalLogger: InternalLogger
+        get() = if (this::sdkCore.isInitialized) {
+            sdkCore._internalLogger
+        } else {
+            InternalLogger.UNBOUND
+        }
 
     // region TrackingStrategy
 
@@ -47,7 +50,6 @@ abstract class ActivityLifecycleTrackingStrategy :
     override fun unregister(context: Context?) {
         if (context is Application) {
             context.unregisterActivityLifecycleCallbacks(this)
-            this.sdkCore = NoOpSdkCore()
         }
     }
 
@@ -135,6 +137,22 @@ abstract class ActivityLifecycleTrackingStrategy :
     }
 
     // endregion
+
+    // region Helper
+
+    /**
+     * Runs a block if this tracking strategy is bound with an [SdkCore] instance.
+     * @param T the return type for the block
+     * @param block the block to run accepting the current SDK instance
+     * @return the result of the block, or null if no SDK instance is available yet
+     */
+    protected fun <T> withSdkCore(block: (SdkCore) -> T): T? {
+        return if (this::sdkCore.isInitialized) {
+            block(sdkCore)
+        } else {
+            null
+        }
+    }
 
     internal companion object {
         internal const val ARGUMENT_TAG = "view.arguments"

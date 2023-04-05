@@ -146,7 +146,7 @@ apply(from = "clone_telemetry_schema.gradle.kts")
 apply(from = "generate_rum_models.gradle.kts")
 apply(from = "generate_telemetry_models.gradle.kts")
 
-kotlinConfig(false)
+kotlinConfig()
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()

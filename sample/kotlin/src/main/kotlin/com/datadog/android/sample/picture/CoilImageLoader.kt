@@ -16,7 +16,7 @@ import okhttp3.OkHttpClient
 
 internal class CoilImageLoader : ImageLoader {
 
-    private val listener = Datadog.getInstance()?.let { DatadogCoilRequestListener(it) }
+    private val listener = DatadogCoilRequestListener(Datadog.getInstance())
 
     override val type: ImageLoaderType = ImageLoaderType.COIL
 

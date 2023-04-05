@@ -31,19 +31,16 @@ internal class ResourceTrackingTraceSamplingActivity : AppCompatActivity() {
     private val forge = Forge()
 
     private val okHttpClient: OkHttpClient by lazy {
-        val sdkCore = Datadog.getInstance()
-        val builder = OkHttpClient.Builder()
-        if (sdkCore != null) {
-            builder.addInterceptor(
+        OkHttpClient.Builder()
+            .addInterceptor(
                 RumInterceptor(
-                    sdkCore,
+                    Datadog.getInstance(),
                     listOf(LocalServer.HOST),
                     // 75% of the RUM resources sent should have traces included
                     traceSamplingRate = 75f
                 )
             )
-        }
-        builder.build()
+            .build()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

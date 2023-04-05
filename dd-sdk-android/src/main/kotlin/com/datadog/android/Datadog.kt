@@ -15,6 +15,7 @@ import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.android.v2.core.internal.HashGenerator
 import com.datadog.android.v2.core.internal.SdkCoreRegistry
 import com.datadog.android.v2.core.internal.Sha256HashGenerator
@@ -127,9 +128,9 @@ object Datadog {
      */
     @JvmStatic
     @JvmOverloads
-    fun getInstance(instanceName: String? = null): SdkCore? {
+    fun getInstance(instanceName: String? = null): SdkCore {
         return synchronized(registry) {
-            registry.getInstance(instanceName)
+            registry.getInstance(instanceName) ?: NoOpSdkCore()
         }
     }
 
@@ -183,13 +184,8 @@ object Datadog {
      * @see _InternalProxy
      */
     @Suppress("FunctionNaming", "FunctionName")
-    fun _internalProxy(instanceName: String? = null): _InternalProxy? {
-        val sdkCore = getInstance(instanceName)
-        return if (sdkCore == null) {
-            null
-        } else {
-            _InternalProxy(sdkCore)
-        }
+    fun _internalProxy(instanceName: String? = null): _InternalProxy {
+        return _InternalProxy(getInstance(instanceName))
     }
 
     // endregion

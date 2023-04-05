@@ -19,8 +19,8 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.NoOpSdkCore
 
 internal open class AndroidXFragmentLifecycleCallbacks(
     internal val argumentsProvider: (Fragment) -> Map<String, Any?>,
@@ -31,7 +31,14 @@ internal open class AndroidXFragmentLifecycleCallbacks(
     private val advancedRumMonitor: AdvancedRumMonitor
 ) : FragmentLifecycleCallbacks<FragmentActivity>, FragmentManager.FragmentLifecycleCallbacks() {
 
-    protected var sdkCore: SdkCore = NoOpSdkCore()
+    protected lateinit var sdkCore: SdkCore
+
+    private val internalLogger: InternalLogger
+        get() = if (this::sdkCore.isInitialized) {
+            sdkCore._internalLogger
+        } else {
+            InternalLogger.UNBOUND
+        }
 
     // region FragmentLifecycleCallbacks
 
@@ -50,14 +57,14 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 
     override fun onFragmentAttached(fm: FragmentManager, f: Fragment, context: Context) {
         super.onFragmentAttached(fm, f, context)
-        componentPredicate.runIfValid(f, sdkCore._internalLogger) {
+        componentPredicate.runIfValid(f, internalLogger) {
             viewLoadingTimer.onCreated(resolveKey(it))
         }
     }
 
     override fun onFragmentStarted(fm: FragmentManager, f: Fragment) {
         super.onFragmentStarted(fm, f)
-        componentPredicate.runIfValid(f, sdkCore._internalLogger) {
+        componentPredicate.runIfValid(f, internalLogger) {
             viewLoadingTimer.onStartLoading(resolveKey(it))
         }
     }
@@ -73,7 +80,7 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 
         val context = f.context
 
-        if (f is DialogFragment && context != null) {
+        if (f is DialogFragment && context != null && this::sdkCore.isInitialized) {
             val window = f.dialog?.window
             val gesturesTracker = rumFeature.actionTrackingStrategy.getGesturesTracker()
             gesturesTracker.startTracking(window, context, sdkCore)
@@ -82,7 +89,7 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
-        componentPredicate.runIfValid(f, sdkCore._internalLogger) {
+        componentPredicate.runIfValid(f, internalLogger) {
             val key = resolveKey(it)
             viewLoadingTimer.onFinishedLoading(key)
             val viewName = componentPredicate.resolveViewName(f)
@@ -101,7 +108,7 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 
     override fun onFragmentPaused(fm: FragmentManager, f: Fragment) {
         super.onFragmentPaused(fm, f)
-        componentPredicate.runIfValid(f, sdkCore._internalLogger) {
+        componentPredicate.runIfValid(f, internalLogger) {
             val key = resolveKey(it)
             rumMonitor.stopView(key)
             viewLoadingTimer.onPaused(key)
@@ -110,7 +117,7 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 
     override fun onFragmentDestroyed(fm: FragmentManager, f: Fragment) {
         super.onFragmentDestroyed(fm, f)
-        componentPredicate.runIfValid(f, sdkCore._internalLogger) {
+        componentPredicate.runIfValid(f, internalLogger) {
             viewLoadingTimer.onDestroyed(resolveKey(it))
         }
     }

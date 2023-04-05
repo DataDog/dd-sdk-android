@@ -38,28 +38,28 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         super.onActivityCreated(activity, savedInstanceState)
-        componentPredicate.runIfValid(activity, sdkCore._internalLogger) {
+        componentPredicate.runIfValid(activity, internalLogger) {
             viewLoadingTimer.onCreated(it)
         }
     }
 
     override fun onActivityStarted(activity: Activity) {
         super.onActivityStarted(activity)
-        componentPredicate.runIfValid(activity, sdkCore._internalLogger) {
+        componentPredicate.runIfValid(activity, internalLogger) {
             viewLoadingTimer.onStartLoading(it)
         }
     }
 
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
-        componentPredicate.runIfValid(activity, sdkCore._internalLogger) {
+        componentPredicate.runIfValid(activity, internalLogger) {
             val viewName = componentPredicate.resolveViewName(activity)
             val attributes = if (trackExtras) {
                 convertToRumAttributes(it.intent)
             } else {
                 emptyMap()
             }
-            getRumMonitor().startView(it, viewName, attributes)
+            getRumMonitor()?.startView(it, viewName, attributes)
             // we still need to call onFinishedLoading here for API bellow 29 as the
             // onPostResumed is not available on these devices.
             viewLoadingTimer.onFinishedLoading(it)
@@ -71,23 +71,23 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
         // during DD SDK initialization on KitKat with ProGuard enabled, default super is
         // empty anyway
         // this method is only available from API 29 and above
-        componentPredicate.runIfValid(activity, sdkCore._internalLogger) {
+        componentPredicate.runIfValid(activity, internalLogger) {
             viewLoadingTimer.onFinishedLoading(it)
         }
     }
 
     override fun onActivityPaused(activity: Activity) {
         super.onActivityPaused(activity)
-        componentPredicate.runIfValid(activity, sdkCore._internalLogger) {
+        componentPredicate.runIfValid(activity, internalLogger) {
             updateLoadingTime(activity)
-            getRumMonitor().stopView(it)
+            getRumMonitor()?.stopView(it)
             viewLoadingTimer.onPaused(activity)
         }
     }
 
     override fun onActivityDestroyed(activity: Activity) {
         super.onActivityDestroyed(activity)
-        componentPredicate.runIfValid(activity, sdkCore._internalLogger) {
+        componentPredicate.runIfValid(activity, internalLogger) {
             viewLoadingTimer.onDestroyed(it)
         }
     }
@@ -118,8 +118,8 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
 
     // region Internal
 
-    private fun getRumMonitor(): RumMonitor {
-        return GlobalRum.get(sdkCore)
+    private fun getRumMonitor(): RumMonitor? {
+        return withSdkCore { GlobalRum.get(it) }
     }
 
     private fun getAdvancedRumMonitor(): AdvancedRumMonitor? {

@@ -28,7 +28,9 @@ internal class UserActionTrackingStrategyApi29(
     // region ActivityLifecycleTrackingStrategy
 
     override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
-        gesturesTracker.startTracking(activity.window, activity, sdkCore)
+        withSdkCore {
+            gesturesTracker.startTracking(activity.window, activity, it)
+        }
         super.onActivityPreCreated(activity, savedInstanceState)
     }
 

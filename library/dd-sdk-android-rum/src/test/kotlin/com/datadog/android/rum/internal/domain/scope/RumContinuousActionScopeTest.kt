@@ -629,6 +629,7 @@ internal class RumContinuousActionScopeTest {
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)
         fakeEvent = mockEvent()
+        @Suppress("UNUSED_VALUE")
         key = null
         System.gc()
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)

@@ -36,7 +36,7 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
                 val hasRumContext = widgetId != 0 && widgetName != null
                 val sdkCore = Datadog.getInstance()
 
-                if (hasRumContext && sdkCore != null) {
+                if (hasRumContext) {
                     GlobalRum.get(sdkCore)
                         .startView(widgetId, widgetName ?: "DatadogWidget", emptyMap())
                     val clickedTargetName = intent.getStringExtra(WIDGET_CLICKED_TARGET_NAME)
@@ -48,7 +48,7 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
 
                 performRequest()
 
-                if (hasRumContext && sdkCore != null) {
+                if (hasRumContext) {
                     GlobalRum.get(sdkCore).stopView(widgetId)
                 }
             }

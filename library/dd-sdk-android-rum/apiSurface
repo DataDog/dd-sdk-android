@@ -187,7 +187,6 @@ open class com.datadog.android.rum.tracking.AcceptAllSupportFragments : Componen
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
 abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy : android.app.Application.ActivityLifecycleCallbacks, TrackingStrategy
-  protected var sdkCore: com.datadog.android.v2.api.SdkCore
   override fun register(com.datadog.android.v2.api.SdkCore, android.content.Context)
   override fun unregister(android.content.Context?)
   override fun onActivityPaused(android.app.Activity)
@@ -199,6 +198,7 @@ abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrateg
   override fun onActivityResumed(android.app.Activity)
   protected fun convertToRumAttributes(android.content.Intent?): Map<String, Any?>
   protected fun convertToRumAttributes(android.os.Bundle?): Map<String, Any?>
+  protected fun <T> withSdkCore((com.datadog.android.v2.api.SdkCore) -> T): T?
 class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
   constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)

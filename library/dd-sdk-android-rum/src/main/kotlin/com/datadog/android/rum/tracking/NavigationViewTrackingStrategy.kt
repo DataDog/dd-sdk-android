@@ -81,9 +81,9 @@ class NavigationViewTrackingStrategy(
 
     override fun onActivityPaused(activity: Activity) {
         super.onActivityPaused(activity)
-        val rumMonitor = GlobalRum.get(sdkCore)
+        val rumMonitor = withSdkCore { GlobalRum.get(it) }
         activity.findNavControllerOrNull(navigationViewId)?.currentDestination?.let {
-            rumMonitor.stopView(it)
+            rumMonitor?.stopView(it)
         }
     }
 
@@ -96,11 +96,11 @@ class NavigationViewTrackingStrategy(
         destination: NavDestination,
         arguments: Bundle?
     ) {
-        val rumMonitor = GlobalRum.get(sdkCore)
-        componentPredicate.runIfValid(destination, sdkCore._internalLogger) {
+        val rumMonitor = withSdkCore { GlobalRum.get(it) }
+        componentPredicate.runIfValid(destination, internalLogger) {
             val attributes = if (trackArguments) convertToRumAttributes(arguments) else emptyMap()
             val viewName = componentPredicate.resolveViewName(destination)
-            rumMonitor.startView(NavigationKey(controller, destination), viewName, attributes)
+            rumMonitor?.startView(NavigationKey(controller, destination), viewName, attributes)
         }
     }
 
@@ -121,12 +121,15 @@ class NavigationViewTrackingStrategy(
      */
     fun startTracking() {
         val activity = startedActivity ?: return
-        val rumFeature = sdkCore
-            .getFeature(Feature.RUM_FEATURE_NAME)
-            ?.unwrap<RumFeature>() ?: return
-        val rumMonitor = GlobalRum.get(sdkCore) as? AdvancedRumMonitor
-        activity.findNavControllerOrNull(navigationViewId)?.let { navController ->
-            if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
+
+        withSdkCore { sdkCore ->
+            val rumFeature = sdkCore
+                .getFeature(Feature.RUM_FEATURE_NAME)
+                ?.unwrap<RumFeature>()
+            val rumMonitor = GlobalRum.get(sdkCore) as? AdvancedRumMonitor
+            val fragmentActivity = activity as? FragmentActivity
+            val navController = activity.findNavControllerOrNull(navigationViewId)
+            if (fragmentActivity != null && navController != null && rumFeature != null) {
                 val navControllerFragmentCallbacks = NavControllerFragmentLifecycleCallbacks(
                     navController,
                     argumentsProvider = { emptyMap() },
@@ -139,8 +142,8 @@ class NavigationViewTrackingStrategy(
                     sdkCore
                 )
                 lifecycleCallbackRefs[startedActivity] = navControllerFragmentCallbacks
+                navController.addOnDestinationChangedListener(this)
             }
-            navController.addOnDestinationChangedListener(this)
         }
     }
 

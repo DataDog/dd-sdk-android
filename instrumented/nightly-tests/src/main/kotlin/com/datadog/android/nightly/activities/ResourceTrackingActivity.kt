@@ -23,12 +23,14 @@ import java.util.concurrent.TimeUnit
 internal open class ResourceTrackingActivity : AppCompatActivity() {
 
     open val okHttpClient: OkHttpClient by lazy {
-        val sdkCore = Datadog.getInstance()
-        val builder = OkHttpClient.Builder()
-        if (sdkCore != null) {
-            builder.addInterceptor(RumInterceptor(sdkCore, traceSamplingRate = HUNDRED_PERCENT))
-        }
-        builder.build()
+        OkHttpClient.Builder()
+            .addInterceptor(
+                RumInterceptor(
+                    Datadog.getInstance(),
+                    traceSamplingRate = HUNDRED_PERCENT
+                )
+            )
+            .build()
     }
     open val randomUrl: String = RANDOM_URL
     private val countDownLatch = CountDownLatch(1)

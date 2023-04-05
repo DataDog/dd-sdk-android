@@ -73,7 +73,6 @@ import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.core.InternalSdkCore
-import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import java.util.Locale
 import java.util.concurrent.ExecutorService
@@ -207,6 +206,7 @@ class RumFeature internal constructor(
         return RumDataWriter(
             serializer = MapperSerializer(
                 RumEventMapper(
+                    sdkCore,
                     viewEventMapper = configuration.viewEventMapper,
                     errorEventMapper = configuration.errorEventMapper,
                     resourceEventMapper = configuration.resourceEventMapper,
@@ -770,8 +770,6 @@ class RumFeature internal constructor(
         internal const val DEFAULT_LONG_TASK_THRESHOLD_MS = 100L
         internal const val DD_TELEMETRY_CONFIG_SAMPLE_RATE_TAG =
             "_dd.telemetry.configuration_sample_rate"
-
-        internal val DEFAULT_NOOP_SDK_CORE = NoOpSdkCore()
 
         internal val DEFAULT_RUM_CONFIG = Configuration(
             customEndpointUrl = null,

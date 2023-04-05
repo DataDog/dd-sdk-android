@@ -37,14 +37,12 @@ import kotlin.random.Random
 @Composable
 internal fun NavigationSampleView() {
     val navController = rememberNavController().apply {
-        Datadog.getInstance()?.let { sdkCore ->
-            NavigationViewTrackingEffect(
-                navController = this,
-                trackArguments = true,
-                destinationPredicate = AcceptAllNavDestinations(),
-                sdkCore = sdkCore
-            )
-        }
+        NavigationViewTrackingEffect(
+            navController = this,
+            trackArguments = true,
+            destinationPredicate = AcceptAllNavDestinations(),
+            sdkCore = Datadog.getInstance()
+        )
     }
     ViewNavigation(navController = navController)
 }
@@ -68,15 +66,11 @@ internal fun SimpleView(
     ) {
         Text("View $viewId")
         val sdkCore = Datadog.getInstance()
-        val onClick = if (sdkCore == null) {
-            { onNavigate.invoke() }
-        } else {
-            trackClick(
-                targetName = "Open View",
-                onClick = { onNavigate.invoke() },
-                sdkCore = sdkCore
-            )
-        }
+        val onClick = trackClick(
+            targetName = "Open View",
+            onClick = { onNavigate.invoke() },
+            sdkCore = sdkCore
+        )
         Button(
             onClick = onClick,
             modifier = Modifier

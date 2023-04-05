@@ -24,20 +24,15 @@ internal class UserInteractionCustomTargetActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.user_interaction_strategy_button).setOnClickListener {
             val sdkCore = Datadog.getInstance()
-            if (sdkCore != null) {
-                GlobalRum.get(sdkCore).startResource(
-                    key,
-                    "get",
-                    key
-                )
-                GlobalRum.get(sdkCore).stopResource(
-                    key,
-                    HttpURLConnection.HTTP_OK,
-                    FAKE_RESOURCE_DOWNLOADED_BYTES,
-                    RumResourceKind.IMAGE,
-                    emptyMap()
-                )
-            }
+            val rumMonitor = GlobalRum.get(sdkCore)
+            rumMonitor.startResource(key, "get", key)
+            rumMonitor.stopResource(
+                key,
+                HttpURLConnection.HTTP_OK,
+                FAKE_RESOURCE_DOWNLOADED_BYTES,
+                RumResourceKind.IMAGE,
+                emptyMap()
+            )
         }
     }
 }

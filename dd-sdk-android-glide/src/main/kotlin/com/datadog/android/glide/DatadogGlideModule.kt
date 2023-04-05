@@ -43,7 +43,7 @@ import java.io.InputStream
  */
 open class DatadogGlideModule
 @JvmOverloads constructor(
-    private val sdkCoreProvider: () -> SdkCore? = { Datadog.getInstance() },
+    private val sdkCoreProvider: () -> SdkCore = { Datadog.getInstance() },
     private val firstPartyHosts: List<String> = emptyList(),
     private val samplingRate: Float = DEFAULT_SAMPLING_RATE
 ) : AppGlideModule() {
@@ -64,10 +64,8 @@ open class DatadogGlideModule
 
         val diskExecutorBuilder = newDiskCacheBuilder()
         val sourceExecutorBuilder = newSourceBuilder()
-        if (sdkCore != null) {
-            diskExecutorBuilder.setUncaughtThrowableStrategy(DatadogRUMUncaughtThrowableStrategy("Disk Cache", sdkCore))
-            sourceExecutorBuilder.setUncaughtThrowableStrategy(DatadogRUMUncaughtThrowableStrategy("Source", sdkCore))
-        }
+        diskExecutorBuilder.setUncaughtThrowableStrategy(DatadogRUMUncaughtThrowableStrategy("Disk Cache", sdkCore))
+        sourceExecutorBuilder.setUncaughtThrowableStrategy(DatadogRUMUncaughtThrowableStrategy("Source", sdkCore))
         builder.setDiskCacheExecutor(diskExecutorBuilder.build())
         builder.setSourceExecutor(sourceExecutorBuilder.build())
     }
@@ -87,16 +85,14 @@ open class DatadogGlideModule
         val builder = OkHttpClient.Builder()
 
         val sdkCore = sdkCoreProvider.invoke()
-        if (sdkCore != null) {
-            builder.eventListenerFactory(DatadogEventListener.Factory(sdkCore))
-            builder.addInterceptor(
-                DatadogInterceptor(
-                    sdkCore,
-                    firstPartyHosts,
-                    traceSamplingRate = samplingRate
-                )
+        builder.eventListenerFactory(DatadogEventListener.Factory(sdkCore))
+        builder.addInterceptor(
+            DatadogInterceptor(
+                sdkCore,
+                firstPartyHosts,
+                traceSamplingRate = samplingRate
             )
-        }
+        )
         return builder
     }
 

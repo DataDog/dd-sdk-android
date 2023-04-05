@@ -30,7 +30,6 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.pagerTabIndicatorOffset
 import com.google.accompanist.pager.rememberPagerState
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
@@ -56,12 +55,12 @@ class JetpackComposeActivity : AppCompatActivity() {
                     val lifecycleOwner = LocalLifecycleOwner.current
                     DisposableEffect(lifecycleOwner) {
                         val observer = LifecycleEventObserver { _, event ->
-                            val rumMonitor = sdkCore?.let { GlobalRum.get(it) }
+                            val rumMonitor = GlobalRum.get(sdkCore)
                             val screen = pages[pagerState.currentPage].trackingName
                             if (event == Lifecycle.Event.ON_RESUME) {
-                                rumMonitor?.startView(screen, screen)
+                                rumMonitor.startView(screen, screen)
                             } else if (event == Lifecycle.Event.ON_PAUSE) {
-                                rumMonitor?.stopView(screen)
+                                rumMonitor.stopView(screen)
                             }
                         }
 
@@ -78,7 +77,7 @@ class JetpackComposeActivity : AppCompatActivity() {
                             .drop(1)
                             .collect { page ->
                                 val screen = pages[page].trackingName
-                                sdkCore?.let { GlobalRum.get(it).startView(screen, screen) }
+                                GlobalRum.get(sdkCore).startView(screen, screen)
                             }
                     }
 

@@ -54,11 +54,7 @@ internal class AboutViewModel : ViewModel() {
         override fun doInBackground(vararg params: Unit): String {
             val sdkCore = Datadog.getInstance()
             return withinSpan("LoadResource") {
-                val inputStream = if (sdkCore != null) {
-                    context.getRawResAsRumResource(id, sdkCore)
-                } else {
-                    context.resources.openRawResource(id)
-                }
+                val inputStream = context.getRawResAsRumResource(id, sdkCore)
 
                 inputStream.bufferedReader().use(BufferedReader::readText)
             }
@@ -80,11 +76,7 @@ internal class AboutViewModel : ViewModel() {
         override fun doInBackground(vararg params: Unit): String {
             val sdkCore = Datadog.getInstance()
             return withinSpan("LoadAsset") {
-                val inputStream = if (sdkCore != null) {
-                    context.getAssetAsRumResource(fileName, sdkCore)
-                } else {
-                    context.assets.open(fileName)
-                }
+                val inputStream = context.getAssetAsRumResource(fileName, sdkCore)
 
                 inputStream.bufferedReader().use(BufferedReader::readText)
             }

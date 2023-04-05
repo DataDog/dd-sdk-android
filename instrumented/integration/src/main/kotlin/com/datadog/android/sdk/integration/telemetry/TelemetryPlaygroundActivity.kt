@@ -76,7 +76,6 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
             ?: throw IllegalArgumentException("Telemetry error message should be provided")
 
         val internalProxy = Datadog._internalProxy()
-        checkNotNull(internalProxy)
         internalProxy._telemetry.debug(debugMessage)
         internalProxy._telemetry.error(errorMessage)
         internalProxy._telemetry.error(errorMessage, forge.aThrowable())

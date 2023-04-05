@@ -19,31 +19,29 @@ internal class ResourceTrackingCustomSpanAttributesActivity : ResourceTrackingAc
     override val okHttpClient: OkHttpClient by lazy {
         val sdkCore = Datadog.getInstance()
         val builder = OkHttpClient.Builder()
-        if (sdkCore != null) {
-            builder.addInterceptor(
-                RumInterceptor(
-                    sdkCore,
-                    traceSamplingRate = HUNDRED_PERCENT
-                )
+        builder.addInterceptor(
+            RumInterceptor(
+                sdkCore,
+                traceSamplingRate = HUNDRED_PERCENT
             )
-            builder.addNetworkInterceptor(
-                TracingInterceptor(
-                    sdkCore,
-                    listOf(HOST),
-                    tracedRequestListener = object : TracedRequestListener {
-                        override fun onRequestIntercepted(
-                            request: Request,
-                            span: Span,
-                            response: Response?,
-                            throwable: Throwable?
-                        ) {
-                            span.setOperationName(TEST_METHOD_NAME)
-                        }
-                    },
-                    traceSamplingRate = HUNDRED_PERCENT
-                )
+        )
+        builder.addNetworkInterceptor(
+            TracingInterceptor(
+                sdkCore,
+                listOf(HOST),
+                tracedRequestListener = object : TracedRequestListener {
+                    override fun onRequestIntercepted(
+                        request: Request,
+                        span: Span,
+                        response: Response?,
+                        throwable: Throwable?
+                    ) {
+                        span.setOperationName(TEST_METHOD_NAME)
+                    }
+                },
+                traceSamplingRate = HUNDRED_PERCENT
             )
-        }
+        )
         builder.build()
     }
 

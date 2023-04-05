@@ -38,6 +38,7 @@ import okhttp3.Response
 import java.util.Locale
 import java.util.Random
 
+@Suppress("DEPRECATION")
 internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
 
     private var asyncOperationTask: AsyncTask<Unit, Unit, Unit>? = null
@@ -150,7 +151,7 @@ internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewMod
             try {
                 setTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
                 val flow = getFlow()
-                Datadog.getInstance()?.let { flow.sendErrorToDatadog(it) }
+                flow.sendErrorToDatadog(Datadog.getInstance())
                 flow.map {
                     it.replaceFirstChar { c ->
                         if (c.isLowerCase()) c.titlecase(Locale.US) else c.toString()
@@ -269,7 +270,6 @@ internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewMod
         @Suppress("CheckInternal")
         private val logger: Logger by lazy {
             val sdkCore = Datadog.getInstance()
-            checkNotNull(sdkCore)
             Logger.Builder(sdkCore)
                 .setLoggerName("async_task")
                 .setLogcatLogsEnabled(true)

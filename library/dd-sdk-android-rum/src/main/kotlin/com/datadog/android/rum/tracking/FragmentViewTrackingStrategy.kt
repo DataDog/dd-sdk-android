@@ -33,6 +33,7 @@ import com.datadog.android.v2.api.Feature
  * @param defaultFragmentComponentPredicate to accept the default Android Fragments
  * that will be taken into account as valid RUM View events.
  */
+@Suppress("DEPRECATION")
 class FragmentViewTrackingStrategy @JvmOverloads constructor(
     internal val trackArguments: Boolean,
     internal val supportFragmentComponentPredicate: ComponentPredicate<Fragment> =
@@ -45,11 +46,11 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
 
     private val androidXLifecycleCallbacks: FragmentLifecycleCallbacks<FragmentActivity>
         by lazy {
-            val rumFeature = sdkCore
-                .getFeature(Feature.RUM_FEATURE_NAME)
-                ?.unwrap<RumFeature>()
-            val rumMonitor = GlobalRum.get(sdkCore)
-            if (rumFeature != null) {
+            val rumFeature = withSdkCore {
+                it.getFeature(Feature.RUM_FEATURE_NAME)?.unwrap<RumFeature>()
+            }
+            val rumMonitor = withSdkCore { GlobalRum.get(it) }
+            if (rumFeature != null && rumMonitor != null) {
                 AndroidXFragmentLifecycleCallbacks(
                     argumentsProvider = {
                         if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
@@ -66,11 +67,14 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
         }
     private val oreoLifecycleCallbacks: FragmentLifecycleCallbacks<Activity>
         by lazy {
-            val rumFeature = sdkCore
-                .getFeature(Feature.RUM_FEATURE_NAME)
-                ?.unwrap<RumFeature>()
-            val rumMonitor = GlobalRum.get(sdkCore)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && rumFeature != null) {
+            val rumFeature = withSdkCore {
+                it.getFeature(Feature.RUM_FEATURE_NAME)?.unwrap<RumFeature>()
+            }
+            val rumMonitor = withSdkCore { GlobalRum.get(it) }
+            if (
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+                rumFeature != null && rumMonitor != null
+            ) {
                 OreoFragmentLifecycleCallbacks(
                     argumentsProvider = {
                         if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
@@ -90,11 +94,13 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
 
     override fun onActivityStarted(activity: Activity) {
         super.onActivityStarted(activity)
-        if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
-            androidXLifecycleCallbacks.register(activity as FragmentActivity, sdkCore)
-        } else {
-            // old deprecated way
-            oreoLifecycleCallbacks.register(activity, sdkCore)
+        withSdkCore { sdkCore ->
+            if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
+                androidXLifecycleCallbacks.register(activity as FragmentActivity, sdkCore)
+            } else {
+                // old deprecated way
+                oreoLifecycleCallbacks.register(activity, sdkCore)
+            }
         }
     }
 

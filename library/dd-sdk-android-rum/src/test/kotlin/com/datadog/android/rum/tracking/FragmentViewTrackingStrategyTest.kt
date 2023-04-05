@@ -228,7 +228,6 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         val mockFragment: Fragment = mockFragmentWithArguments(forge)
         val expectedAttrs = emptyMap<String, Any?>()
         val argumentCaptor = argumentCaptor<FragmentManager.FragmentLifecycleCallbacks>()
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityStarted(mockAndroidxActivity)
@@ -264,7 +263,6 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
 
         // When
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
         testedStrategy.onActivityStarted(mockAndroidxActivity)
         testedStrategy.onActivityStarted(mockAndroidxActivity)
 
@@ -306,7 +304,6 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
 
         // When
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
         testedStrategy.onActivityStarted(mockActivity)
 
         // Then
@@ -424,12 +421,11 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
     ) {
         // Given
         testedStrategy = FragmentViewTrackingStrategy(false)
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val expectedAttrs = emptyMap<String, Any?>()
         val mockFragment: android.app.Fragment = mockDeprecatedFragmentWithArguments(forge)
         val argumentCaptor =
             argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks>()
-        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
 
         // When
         testedStrategy.onActivityStarted(mockActivity)
@@ -514,7 +510,6 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
             argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks>()
 
         // When
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
         testedStrategy.onActivityStarted(mockAndroidxActivity)
         testedStrategy.onActivityStarted(mockActivity)
         testedStrategy.onActivityStopped(mockAndroidxActivity)

@@ -49,14 +49,12 @@ internal fun InteractionSampleView() {
     val collection = remember { mutableStateListOf<Int>().apply { addAll(1..100) } }
 
     val scrollState = rememberLazyListState().apply {
-        Datadog.getInstance()?.let { sdkCore ->
-            TrackInteractionEffect(
-                targetName = "Items list",
-                interactionSource = interactionSource,
-                interactionType = InteractionType.Scroll(this, Orientation.Vertical),
-                sdkCore = sdkCore
-            )
-        }
+        TrackInteractionEffect(
+            targetName = "Items list",
+            interactionSource = interactionSource,
+            interactionType = InteractionType.Scroll(this, Orientation.Vertical),
+            sdkCore = Datadog.getInstance()
+        )
     }
 
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), state = scrollState) {
@@ -88,18 +86,16 @@ internal fun ItemRow(index: Int, onDismissed: () -> Unit) {
         val interactionSource = remember {
             MutableInteractionSource()
         }.apply {
-            Datadog.getInstance()?.let { sdkCore ->
-                TrackInteractionEffect(
-                    targetName = "Item row",
-                    interactionSource = this,
-                    interactionType = InteractionType.Swipe(
-                        swipeableState,
-                        orientation = swipeOrientation
-                    ),
-                    attributes = mapOf("item" to index),
-                    sdkCore = sdkCore
-                )
-            }
+            TrackInteractionEffect(
+                targetName = "Item row",
+                interactionSource = this,
+                interactionType = InteractionType.Swipe(
+                    swipeableState,
+                    orientation = swipeOrientation
+                ),
+                attributes = mapOf("item" to index),
+                sdkCore = Datadog.getInstance()
+            )
         }
 
         Box(
