@@ -122,4 +122,5 @@
     <string name="sans_serif_typeface_label">Sans Serif Typeface</string>
     <string name="monospace_typeface_label">Monospace Typeface</string>
     <string name="sans_typeface_label">Sans Typeface</string>
+    <string name="password_input_components">Password input components</string>
 </resources>
