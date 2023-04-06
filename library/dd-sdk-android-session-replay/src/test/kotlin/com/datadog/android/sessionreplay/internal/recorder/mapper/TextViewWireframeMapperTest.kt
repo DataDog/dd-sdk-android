@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.content.res.ColorStateList
+import android.view.inputmethod.EditorInfo
 import android.widget.TextView
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.aMockTextView
@@ -126,6 +127,90 @@ internal class TextViewWireframeMapperTest : BaseTextViewWireframeMapperTest() {
                     )
                 )
             }
+        assertThat(textWireframes).isEqualTo(expectedWireframes)
+    }
+
+    @Test
+    fun `M mask the text value W map() { inputType is password }`(forge: Forge) {
+        // Given
+        val fakeMaskedText: String = forge.aString()
+        val fakeText = forge.aString()
+        whenever(mockStringObfuscator.obfuscate(fakeText)).thenReturn(fakeMaskedText)
+        val mockTextView: TextView = forge.aMockTextView().apply {
+            whenever(this.text).thenReturn(fakeText)
+            whenever(this.typeface).thenReturn(mock())
+            whenever(this.inputType).thenReturn(EditorInfo.TYPE_TEXT_VARIATION_PASSWORD)
+        }
+
+        // When
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
+
+        // Then
+        val expectedWireframes = mockTextView.toTextWireframes()
+            .map { it.copy(text = fakeMaskedText) }
+        assertThat(textWireframes).isEqualTo(expectedWireframes)
+    }
+
+    @Test
+    fun `M mask the text value W map() { inputType is visible password }`(forge: Forge) {
+        // Given
+        val fakeMaskedText: String = forge.aString()
+        val fakeText = forge.aString()
+        whenever(mockStringObfuscator.obfuscate(fakeText)).thenReturn(fakeMaskedText)
+        val mockTextView: TextView = forge.aMockTextView().apply {
+            whenever(this.text).thenReturn(fakeText)
+            whenever(this.typeface).thenReturn(mock())
+            whenever(this.inputType).thenReturn(EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD)
+        }
+
+        // When
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
+
+        // Then
+        val expectedWireframes = mockTextView.toTextWireframes()
+            .map { it.copy(text = fakeMaskedText) }
+        assertThat(textWireframes).isEqualTo(expectedWireframes)
+    }
+
+    @Test
+    fun `M mask the text value W map() { inputType is number password }`(forge: Forge) {
+        // Given
+        val fakeMaskedText: String = forge.aString()
+        val fakeText = forge.aString()
+        whenever(mockStringObfuscator.obfuscate(fakeText)).thenReturn(fakeMaskedText)
+        val mockTextView: TextView = forge.aMockTextView().apply {
+            whenever(this.text).thenReturn(fakeText)
+            whenever(this.typeface).thenReturn(mock())
+            whenever(this.inputType).thenReturn(EditorInfo.TYPE_NUMBER_VARIATION_PASSWORD)
+        }
+
+        // When
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
+
+        // Then
+        val expectedWireframes = mockTextView.toTextWireframes()
+            .map { it.copy(text = fakeMaskedText) }
+        assertThat(textWireframes).isEqualTo(expectedWireframes)
+    }
+
+    @Test
+    fun `M mask the text value W map() { inputType is web password }`(forge: Forge) {
+        // Given
+        val fakeMaskedText: String = forge.aString()
+        val fakeText = forge.aString()
+        whenever(mockStringObfuscator.obfuscate(fakeText)).thenReturn(fakeMaskedText)
+        val mockTextView: TextView = forge.aMockTextView().apply {
+            whenever(this.text).thenReturn(fakeText)
+            whenever(this.typeface).thenReturn(mock())
+            whenever(this.inputType).thenReturn(EditorInfo.TYPE_TEXT_VARIATION_WEB_PASSWORD)
+        }
+
+        // When
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
+
+        // Then
+        val expectedWireframes = mockTextView.toTextWireframes()
+            .map { it.copy(text = fakeMaskedText) }
         assertThat(textWireframes).isEqualTo(expectedWireframes)
     }
 }

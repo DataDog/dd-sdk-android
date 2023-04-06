@@ -14,18 +14,11 @@ import com.datadog.android.sessionreplay.SessionReplayPrivacy
  * [SessionReplayPrivacy.MASK_ALL] masking rule.
  */
 class MaskAllTextViewMapper : TextWireframeMapper {
+    constructor() : super()
 
-    private val stringObfuscator: StringObfuscator
+    internal constructor(stringObfuscator: StringObfuscator) : super(stringObfuscator)
 
-    constructor() {
-        stringObfuscator = StringObfuscator()
-    }
-
-    internal constructor(stringObfuscator: StringObfuscator) {
-        this@MaskAllTextViewMapper.stringObfuscator = stringObfuscator
-    }
-
-    override fun resolveTextValue(textView: TextView): String {
+    override fun resolveMaskedTextValue(textView: TextView): String {
         return stringObfuscator.obfuscate(super.resolveTextValue(textView))
     }
 }
