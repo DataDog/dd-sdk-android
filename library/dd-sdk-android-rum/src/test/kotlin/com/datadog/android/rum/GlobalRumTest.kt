@@ -9,7 +9,9 @@ package com.datadog.android.rum
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
 import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -40,6 +42,7 @@ internal class GlobalRumTest {
 
     @BeforeEach
     fun `set up`() {
+        whenever(mockSdkCore._internalLogger) doReturn mock()
         fakeRumMonitorProvider = Callable<RumMonitor> { mockRumMonitor }
     }
 
