@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.graphics.Typeface
 import android.view.Gravity
+import android.view.inputmethod.EditorInfo
 import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
@@ -16,8 +17,19 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 /**
  * A [WireframeMapper] implementation to map a [TextView] component.
  */
+@Suppress("TooManyFunctions")
 open class TextWireframeMapper :
-    BaseWireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe>() {
+    BaseWireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe> {
+
+    internal val stringObfuscator: StringObfuscator
+
+    constructor() {
+        stringObfuscator = StringObfuscator()
+    }
+
+    internal constructor(stringObfuscator: StringObfuscator) {
+        this.stringObfuscator = stringObfuscator
+    }
 
     override fun map(view: TextView, systemInformation: SystemInformation):
         List<MobileSegment.Wireframe.TextWireframe> {
@@ -33,7 +45,7 @@ open class TextWireframeMapper :
                 height = viewGlobalBounds.height,
                 shapeStyle = shapeStyle,
                 border = border,
-                text = resolveTextValue(view),
+                text = resolveMaskedTextValue(view),
                 textStyle = resolveTextStyle(view, systemInformation.screenDensity),
                 textPosition = resolveTextPosition(view, systemInformation.screenDensity)
             )
@@ -50,6 +62,27 @@ open class TextWireframeMapper :
         } else {
             textView.text?.toString() ?: ""
         }
+    }
+
+    /**
+     * Resolves the [TextView] text value by applying the general masking rule for this [textView].
+     * @param textView as [TextView]
+     */
+    protected open fun resolveMaskedTextValue(textView: TextView): String {
+        val unmaskedTextValue = resolveTextValue(textView)
+        return if (isPasswordInputType(textView)) {
+            stringObfuscator.obfuscate(unmaskedTextValue)
+        } else {
+            unmaskedTextValue
+        }
+    }
+
+    private fun isPasswordInputType(view: TextView): Boolean {
+        val variation = view.inputType and EditorInfo.TYPE_MASK_VARIATION
+        return variation == EditorInfo.TYPE_TEXT_VARIATION_PASSWORD ||
+            variation == EditorInfo.TYPE_TEXT_VARIATION_WEB_PASSWORD ||
+            variation == EditorInfo.TYPE_NUMBER_VARIATION_PASSWORD ||
+            variation == EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
     }
 
     // region Internal

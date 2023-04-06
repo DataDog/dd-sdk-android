@@ -24,7 +24,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -38,9 +37,6 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class MaskAllTextViewWireframeMapperTest : BaseTextViewWireframeMapperTest() {
 
-    @Mock
-    lateinit var mockStringObfuscator: StringObfuscator
-
     @StringForgery
     lateinit var fakeMaskedStringValue: String
 
@@ -48,7 +44,7 @@ internal class MaskAllTextViewWireframeMapperTest : BaseTextViewWireframeMapperT
 
     override fun initTestedMapper(): TextWireframeMapper {
         whenever(mockStringObfuscator.obfuscate(fakeText)).thenReturn(fakeMaskedStringValue)
-        return MaskAllTextViewMapper(stringObfuscator = mockStringObfuscator)
+        return MaskAllTextViewMapper(mockStringObfuscator)
     }
 
     override fun resolveTextValue(textView: TextView): String {
