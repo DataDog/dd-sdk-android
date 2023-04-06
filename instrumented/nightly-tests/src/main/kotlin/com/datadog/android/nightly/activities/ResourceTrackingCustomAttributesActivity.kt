@@ -19,12 +19,10 @@ import okhttp3.Response
 internal class ResourceTrackingCustomAttributesActivity : ResourceTrackingActivity() {
 
     override val okHttpClient: OkHttpClient by lazy {
-        val sdkCore = Datadog.getInstance()
-        val builder = OkHttpClient.Builder()
-        if (sdkCore != null) {
-            builder.addInterceptor(
+        OkHttpClient.Builder()
+            .addInterceptor(
                 RumInterceptor(
-                    sdkCore,
+                    Datadog.getInstance(),
                     rumResourceAttributesProvider = object :
                         RumResourceAttributesProvider {
                         override fun onProvideAttributes(
@@ -42,7 +40,6 @@ internal class ResourceTrackingCustomAttributesActivity : ResourceTrackingActivi
                     traceSamplingRate = HUNDRED_PERCENT
                 )
             )
-        }
-        builder.build()
+            .build()
     }
 }

@@ -53,6 +53,7 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -1621,6 +1622,87 @@ internal class DatadogRumMonitorTest {
                 it.get()
             }
         }
+    }
+
+    @Test
+    fun `M return map with attribute W addAttribute() + getAttributes()`(
+        @StringForgery key: String,
+        @StringForgery value: String
+    ) {
+        // Given
+        testedMonitor.addAttribute(key, value)
+
+        // When
+        val result = testedMonitor.getAttributes()
+
+        // Then
+        assertThat(result).containsEntry(key, value)
+    }
+
+    @Test
+    fun `M return map with updated attribute W addAttribute() twice + getAttributes()`(
+        @StringForgery key: String,
+        @StringForgery value: String,
+        @DoubleForgery value2: Double
+    ) {
+        // Given
+        testedMonitor.addAttribute(key, value)
+
+        // When
+        testedMonitor.addAttribute(key, value2)
+        val result = testedMonitor.getAttributes()
+
+        // Then
+        assertThat(result).containsEntry(key, value2)
+    }
+
+    @Test
+    fun `M return empty map W addAttribute() + addAttribute() {null value} + getAttributes()`(
+        @StringForgery key: String,
+        @StringForgery value: String
+    ) {
+        // Given
+        testedMonitor.addAttribute(key, value)
+
+        // When
+        testedMonitor.addAttribute(key, null)
+        val result = testedMonitor.getAttributes()
+
+        // Then
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `M return empty map W addAttribute() + removeAttribtue() + getAttributes()`(
+        @StringForgery key: String,
+        @StringForgery value: String
+    ) {
+        // Given
+        testedMonitor.addAttribute(key, value)
+
+        // When
+        testedMonitor.removeAttribute(key)
+        val result = testedMonitor.getAttributes()
+
+        // Then
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `M return empty map W addAttribute()++ + clearAttributes() + getAttributes()`(
+        forge: Forge
+    ) {
+        // Given
+        forge.exhaustiveAttributes().forEach { (k, v) ->
+            testedMonitor.addAttribute(k, v)
+        }
+
+        // When
+        testedMonitor.clearAttributes()
+        val result = testedMonitor.getAttributes()
+
+        // Then
+        assertThat(result).isEmpty()
     }
 
     companion object {

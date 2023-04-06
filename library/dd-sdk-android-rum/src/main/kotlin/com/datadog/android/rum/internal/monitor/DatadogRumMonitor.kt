@@ -38,6 +38,7 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -91,6 +92,8 @@ internal class DatadogRumMonitor(
     init {
         handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
     }
+
+    private val globalAttributes: MutableMap<String, Any?> = ConcurrentHashMap()
 
     // region RumMonitor
 
@@ -257,6 +260,30 @@ internal class DatadogRumMonitor(
 
     // endregion
 
+    // region RumMonitor/Attributes
+
+    override fun addAttribute(key: String, value: Any?) {
+        if (value == null) {
+            globalAttributes.remove(key)
+        } else {
+            globalAttributes[key] = value
+        }
+    }
+
+    override fun removeAttribute(key: String) {
+        globalAttributes.remove(key)
+    }
+
+    override fun getAttributes(): Map<String, Any?> {
+        return globalAttributes
+    }
+
+    override fun clearAttributes() {
+        globalAttributes.clear()
+    }
+
+    // endregion
+
     // region AdvancedRumMonitor
 
     override fun sendWebViewEvent() {
@@ -361,7 +388,13 @@ internal class DatadogRumMonitor(
     @Suppress("FunctionMaxLength")
     override fun sendConfigurationTelemetryEvent(coreConfiguration: TelemetryCoreConfiguration) {
         handleEvent(
-            RumRawEvent.SendTelemetry(TelemetryType.CONFIGURATION, "", null, null, coreConfiguration)
+            RumRawEvent.SendTelemetry(
+                TelemetryType.CONFIGURATION,
+                "",
+                null,
+                null,
+                coreConfiguration
+            )
         )
     }
 

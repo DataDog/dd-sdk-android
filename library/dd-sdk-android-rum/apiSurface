@@ -6,12 +6,10 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
   override fun delete(android.net.Uri, String?, Array<String>?): Int
   override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
 object com.datadog.android.rum.GlobalRum
-  fun isRegistered(): Boolean
-  fun registerIfAbsent(RumMonitor): Boolean
-  fun registerIfAbsent(java.util.concurrent.Callable<RumMonitor>): Boolean
-  fun get(): RumMonitor
-  fun addAttribute(String, Any?)
-  fun removeAttribute(String)
+  fun isRegistered(com.datadog.android.v2.api.SdkCore): Boolean
+  fun registerIfAbsent(com.datadog.android.v2.api.SdkCore, RumMonitor): Boolean
+  fun registerIfAbsent(com.datadog.android.v2.api.SdkCore, java.util.concurrent.Callable<RumMonitor>): Boolean
+  fun get(com.datadog.android.v2.api.SdkCore): RumMonitor
 enum com.datadog.android.rum.RumActionType
   - TAP
   - SCROLL
@@ -104,6 +102,10 @@ interface com.datadog.android.rum.RumMonitor
   fun addErrorWithStacktrace(String, RumErrorSource, String?, Map<String, Any?>)
   fun addTiming(String)
   fun addFeatureFlagEvaluation(String, Any)
+  fun addAttribute(String, Any?)
+  fun removeAttribute(String)
+  fun getAttributes(): Map<String, Any?>
+  fun clearAttributes()
   fun _getInternal(): _RumInternalProxy?
   class Builder
     constructor(com.datadog.android.v2.api.SdkCore)
@@ -154,7 +156,7 @@ interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
   fun addResourceTiming(String, com.datadog.android.rum.internal.domain.event.ResourceTiming)
   fun notifyInterceptorInstantiated()
 class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStream
-  constructor(java.io.InputStream, String)
+  constructor(java.io.InputStream, String, com.datadog.android.v2.api.SdkCore)
   override fun read(): Int
   override fun read(ByteArray): Int
   override fun read(ByteArray, Int, Int): Int
@@ -196,6 +198,7 @@ abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrateg
   override fun onActivityResumed(android.app.Activity)
   protected fun convertToRumAttributes(android.content.Intent?): Map<String, Any?>
   protected fun convertToRumAttributes(android.os.Bundle?): Map<String, Any?>
+  protected fun <T> withSdkCore((com.datadog.android.v2.api.SdkCore) -> T): T?
 class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
   constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
@@ -242,7 +245,7 @@ interface com.datadog.android.rum.tracking.ViewAttributesProvider
   fun extractAttributes(android.view.View, MutableMap<String, Any?>)
 interface com.datadog.android.rum.tracking.ViewTrackingStrategy : TrackingStrategy
 class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
-  constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
+  constructor(() -> com.datadog.android.v2.api.SdkCore, android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
   override fun onCorruption(android.database.sqlite.SQLiteDatabase)
 data class com.datadog.android.rum.model.ActionChildProperties
   constructor(Action? = null)

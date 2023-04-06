@@ -24,13 +24,14 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.AcceptAllNavDestinations
 import com.datadog.android.rum.tracking.ComponentPredicate
+import com.datadog.android.v2.api.SdkCore
 
 internal class ComposeNavigationObserver(
     private val trackArguments: Boolean = true,
     private val destinationPredicate: ComponentPredicate<NavDestination> =
         AcceptAllNavDestinations(),
     private val navController: NavController,
-    private val rumMonitor: RumMonitor = GlobalRum.get()
+    private val rumMonitor: RumMonitor
 ) : LifecycleEventObserver, NavController.OnDestinationChangedListener {
 
     override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
@@ -105,6 +106,7 @@ internal class ComposeNavigationObserver(
  * for Compose setup.
  *
  * @param navController [NavController] to watch
+ * @param sdkCore the SDK instance to use.
  * @param trackArguments whether to track navigation arguments
  * @param destinationPredicate to accept the [NavDestination] that will be taken into account as
  * valid RUM View events.
@@ -114,6 +116,7 @@ internal class ComposeNavigationObserver(
 @NonRestartableComposable
 fun NavigationViewTrackingEffect(
     navController: NavController,
+    sdkCore: SdkCore,
     trackArguments: Boolean = true,
     destinationPredicate: ComponentPredicate<NavDestination> = AcceptAllNavDestinations()
 ) {
@@ -125,7 +128,8 @@ fun NavigationViewTrackingEffect(
         val observer = ComposeNavigationObserver(
             currentTrackArguments,
             currentDestinationPredicate,
-            navController
+            navController,
+            GlobalRum.get(sdkCore)
         )
 
         @Suppress("ThreadSafety") // TODO RUMM-2214 check composable threading rules

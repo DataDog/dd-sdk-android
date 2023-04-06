@@ -6,15 +6,18 @@
 
 package com.datadog.android.rum.internal.instrumentation
 
-import android.util.Printer
+import android.os.Looper
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.ObjectTest
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
@@ -29,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -43,11 +47,39 @@ import java.util.concurrent.TimeUnit
 @ForgeConfiguration(Configurator::class)
 internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStrategy>() {
 
-    lateinit var testedPrinter: Printer
+    lateinit var testedPrinter: MainLooperLongTaskStrategy
+
+    @Mock
+    lateinit var mockMainLooper: Looper
 
     @BeforeEach
     fun `set up`() {
+        Looper::class.java.setStaticValue("sMainLooper", mockMainLooper)
+
         testedPrinter = MainLooperLongTaskStrategy(TEST_THRESHOLD_MS)
+        testedPrinter.register(rumMonitor.mockSdkCore, mock())
+    }
+
+    @Test
+    fun `M set printer on main looper W register()`() {
+        // Given
+        val mockLooper = mock<Looper>()
+        Looper::class.java.setStaticValue("sMainLooper", mockLooper)
+
+        // When
+        testedPrinter.register(rumMonitor.mockSdkCore, mock())
+
+        // Then
+        verify(mockLooper).setMessageLogging(testedPrinter)
+    }
+
+    @Test
+    fun `M unset printer on main looper W unregister()`() {
+        // When
+        testedPrinter.unregister(mock())
+
+        // Then
+        verify(mockMainLooper).setMessageLogging(testedPrinter)
     }
 
     @Test
@@ -66,7 +98,8 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
 
         // Then
         argumentCaptor<Long> {
-            verify(rumMonitor.mockInstance).addLongTask(capture(), eq("$target $callback: $what"))
+            verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+                .addLongTask(capture(), eq("$target $callback: $what"))
             val capturedMs = TimeUnit.NANOSECONDS.toMillis(firstValue)
             assertThat(capturedMs)
                 .isCloseTo(duration, offset(10L))
@@ -105,7 +138,7 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
     override fun createUnequalInstance(
         source: MainLooperLongTaskStrategy,
         forge: Forge
-    ): MainLooperLongTaskStrategy? {
+    ): MainLooperLongTaskStrategy {
         return MainLooperLongTaskStrategy(source.thresholdMs + forge.aLong(1, 65536L))
     }
 

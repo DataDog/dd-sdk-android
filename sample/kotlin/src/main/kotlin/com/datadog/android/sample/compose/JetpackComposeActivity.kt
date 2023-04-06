@@ -23,13 +23,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
 import com.google.accompanist.appcompattheme.AppCompatTheme
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.pagerTabIndicatorOffset
 import com.google.accompanist.pager.rememberPagerState
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
@@ -42,6 +42,7 @@ class JetpackComposeActivity : AppCompatActivity() {
     @OptIn(ExperimentalPagerApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val sdkCore = Datadog.getInstance()
         setContent {
             AppCompatTheme {
                 Column {
@@ -54,7 +55,7 @@ class JetpackComposeActivity : AppCompatActivity() {
                     val lifecycleOwner = LocalLifecycleOwner.current
                     DisposableEffect(lifecycleOwner) {
                         val observer = LifecycleEventObserver { _, event ->
-                            val rumMonitor = GlobalRum.get()
+                            val rumMonitor = GlobalRum.get(sdkCore)
                             val screen = pages[pagerState.currentPage].trackingName
                             if (event == Lifecycle.Event.ON_RESUME) {
                                 rumMonitor.startView(screen, screen)
@@ -74,9 +75,9 @@ class JetpackComposeActivity : AppCompatActivity() {
                         snapshotFlow { pagerState.currentPage }
                             // drop 1st, because it will be tracked by the lifecycle
                             .drop(1)
-                            .collect {
-                                val screen = pages[it].trackingName
-                                GlobalRum.get().startView(screen, screen)
+                            .collect { page ->
+                                val screen = pages[page].trackingName
+                                GlobalRum.get(sdkCore).startView(screen, screen)
                             }
                     }
 

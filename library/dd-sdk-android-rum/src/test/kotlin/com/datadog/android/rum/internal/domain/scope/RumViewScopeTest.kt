@@ -16,7 +16,6 @@ import androidx.navigation.NavDestination
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -48,7 +47,6 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.TimeInfo
-import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -134,9 +132,6 @@ internal class RumViewScopeTest {
 
     @Mock
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
-
-    @Mock
-    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -253,10 +248,10 @@ internal class RumViewScopeTest {
         whenever(mockActionScope.actionId) doReturn fakeActionId
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
         whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(true)
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        whenever(mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
-        whenever(mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        whenever(rumMonitor.mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
+        whenever(rumMonitor.mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
+        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
@@ -264,7 +259,7 @@ internal class RumViewScopeTest {
 
         testedScope = RumViewScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             fakeKey,
             fakeName,
             fakeEventTime,
@@ -321,7 +316,7 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 update RUM feature context 𝕎 init()`() {
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore)
+            verify(rumMonitor.mockSdkCore)
                 .updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), capture())
 
             val rumContext = mutableMapOf<String, Any?>()
@@ -369,7 +364,7 @@ internal class RumViewScopeTest {
         // When
         testedScope = RumViewScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             fakeKey,
             fakeName,
             fakeEventTime,
@@ -392,7 +387,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore, times(2)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(2)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -409,7 +404,7 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 update the feature context with the view timestamp offset W initializing`() {
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -436,7 +431,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore, times(2)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(2)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -466,7 +461,10 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), capture())
+            verify(rumMonitor.mockSdkCore).updateFeatureContext(
+                eq(Feature.RUM_FEATURE_NAME),
+                capture()
+            )
             val rumContext = mutableMapOf<String, Any?>()
             lastValue.invoke(rumContext)
             assertThat(rumContext["view_type"])
@@ -484,7 +482,7 @@ internal class RumViewScopeTest {
         // need to create this one, because RUM context is updated in the constructor
         val anotherScope = RumViewScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             fakeKey,
             fakeName,
             fakeEventTime,
@@ -509,7 +507,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             // A scope init + B scope init + A scope stop
-            verify(mockSdkCore, times(3)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -560,7 +558,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore, times(2)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(2)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -604,7 +602,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             // scope init + stop view + stop action
-            verify(mockSdkCore, times(3)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -684,7 +682,7 @@ internal class RumViewScopeTest {
         )
         RumViewScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             key,
             name,
             fakeEventTime,
@@ -709,7 +707,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             // A scope init + onStopView + B scope init
-            verify(mockSdkCore, times(3)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -740,7 +738,7 @@ internal class RumViewScopeTest {
         )
         RumViewScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             key,
             name,
             fakeEventTime,
@@ -765,7 +763,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             // A scope init + A scope stop + B scope init
-            verify(mockSdkCore, times(3)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(3)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -1286,11 +1284,11 @@ internal class RumViewScopeTest {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(fakeGlobalAttributes)
-        GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
 
         testedScope = RumViewScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             fakeKey,
             fakeName,
             fakeEventTime,
@@ -1306,9 +1304,8 @@ internal class RumViewScopeTest {
         whenever(
             mockFeaturesContextResolver
                 .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
-        )
-            .thenReturn(fakeHasReplay)
-        fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
+        ).thenReturn(fakeHasReplay)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
 
         // When
         val result = testedScope.handleEvent(
@@ -1379,9 +1376,9 @@ internal class RumViewScopeTest {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(fakeGlobalAttributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
 
         // When
-        GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
         val result = testedScope.handleEvent(
             RumRawEvent.StopView(fakeKey, emptyMap()),
             mockWriter
@@ -1444,14 +1441,14 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        GlobalRum.globalAttributes.clear()
         val fakeGlobalAttributeKey = forge.anAlphabeticalString()
         val fakeGlobalAttributeValue = forge.anAlphabeticalString()
-        GlobalRum.addAttribute(fakeGlobalAttributeKey, fakeGlobalAttributeValue)
+        whenever(rumMonitor.mockInstance.getAttributes())
+            .doReturn(mapOf(fakeGlobalAttributeKey to fakeGlobalAttributeValue))
 
         testedScope = RumViewScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             fakeKey,
             fakeName,
             fakeEventTime,
@@ -1474,7 +1471,7 @@ internal class RumViewScopeTest {
         expectedAttributes.put(fakeGlobalAttributeKey, fakeGlobalAttributeValue)
 
         // When
-        GlobalRum.removeAttribute(fakeGlobalAttributeKey)
+
         val result = testedScope.handleEvent(
             RumRawEvent.StopView(fakeKey, emptyMap()),
             mockWriter
@@ -1537,16 +1534,16 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        GlobalRum.globalAttributes.clear()
         val fakeGlobalAttributeKey = forge.anAlphabeticalString()
         val fakeGlobalAttributeValue = forge.anAlphabeticalString()
         val fakeGlobalAttributeNewValue =
             fakeGlobalAttributeValue + forge.anAlphabeticalString(size = 2)
-        GlobalRum.addAttribute(fakeGlobalAttributeKey, fakeGlobalAttributeValue)
+        whenever(rumMonitor.mockInstance.getAttributes())
+            .doReturn(mapOf(fakeGlobalAttributeKey to fakeGlobalAttributeValue))
 
         testedScope = RumViewScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             fakeKey,
             fakeName,
             fakeEventTime,
@@ -1567,9 +1564,10 @@ internal class RumViewScopeTest {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.put(fakeGlobalAttributeKey, fakeGlobalAttributeNewValue)
+        whenever(rumMonitor.mockInstance.getAttributes())
+            .doReturn(mapOf(fakeGlobalAttributeKey to fakeGlobalAttributeNewValue))
 
         // When
-        GlobalRum.addAttribute(fakeGlobalAttributeKey, fakeGlobalAttributeNewValue)
         val result = testedScope.handleEvent(
             RumRawEvent.StopView(fakeKey, emptyMap()),
             mockWriter
@@ -2295,7 +2293,7 @@ internal class RumViewScopeTest {
         val eventTime = Time()
         fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
-        GlobalRum.globalAttributes.putAll(attributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn attributes
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -2336,6 +2334,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    containsExactlyContextAttributes(attributes)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2899,7 +2898,7 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verify(mockSdkCore).updateFeatureContext(
+        verify(rumMonitor.mockSdkCore).updateFeatureContext(
             eq(Feature.SESSION_REPLAY_FEATURE_NAME),
             argumentCaptor.capture()
         )
@@ -2922,7 +2921,7 @@ internal class RumViewScopeTest {
         // Then
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
-        verify(mockSdkCore, never()).updateFeatureContext(
+        verify(rumMonitor.mockSdkCore, never()).updateFeatureContext(
             eq(Feature.SESSION_REPLAY_FEATURE_NAME),
             any()
         )
@@ -2943,7 +2942,7 @@ internal class RumViewScopeTest {
         // Then
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
-        verify(mockSdkCore, never()).updateFeatureContext(
+        verify(rumMonitor.mockSdkCore, never()).updateFeatureContext(
             eq(Feature.SESSION_REPLAY_FEATURE_NAME),
             any()
         )
@@ -2964,7 +2963,7 @@ internal class RumViewScopeTest {
         // Then
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
-        verify(mockSdkCore, never()).updateFeatureContext(
+        verify(rumMonitor.mockSdkCore, never()).updateFeatureContext(
             eq(Feature.SESSION_REPLAY_FEATURE_NAME),
             any()
         )
@@ -2985,7 +2984,7 @@ internal class RumViewScopeTest {
         // Then
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
-        verify(mockSdkCore, never()).updateFeatureContext(
+        verify(rumMonitor.mockSdkCore, never()).updateFeatureContext(
             eq(Feature.SESSION_REPLAY_FEATURE_NAME),
             any()
         )
@@ -3044,7 +3043,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<(Map<String, Any?>) -> Unit> {
-            verify(mockSdkCore, times(2)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(2)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -3132,9 +3131,7 @@ internal class RumViewScopeTest {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         testedScope.activeActionScope = mockChildScope
-        fakeEvent =
-            RumRawEvent.StartAction(RumActionType.CUSTOM, name, waitForStop = false, attributes)
-
+        fakeEvent = RumRawEvent.StartAction(RumActionType.CUSTOM, name, false, attributes)
         whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn mockChildScope
 
         // When
@@ -3262,7 +3259,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<(Map<String, Any?>) -> Unit> {
-            verify(mockSdkCore, times(2)).updateFeatureContext(
+            verify(rumMonitor.mockSdkCore, times(2)).updateFeatureContext(
                 eq(Feature.RUM_FEATURE_NAME),
                 capture()
             )
@@ -4154,7 +4151,7 @@ internal class RumViewScopeTest {
             sourceType = sourceType
         )
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
-        GlobalRum.globalAttributes.putAll(attributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn attributes
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -4607,7 +4604,7 @@ internal class RumViewScopeTest {
             sourceType = sourceType
         )
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
-        GlobalRum.globalAttributes.putAll(attributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn attributes
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -4957,7 +4954,7 @@ internal class RumViewScopeTest {
         val fakeLongTaskEvent = RumRawEvent.AddLongTask(durationNs, target)
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         val durationMs = TimeUnit.NANOSECONDS.toMillis(durationNs)
-        GlobalRum.globalAttributes.putAll(attributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn attributes
         val expectedAttributes = attributes + mapOf(
             RumAttributes.LONG_TASK_TARGET to fakeLongTaskEvent.target
         )
@@ -5018,7 +5015,7 @@ internal class RumViewScopeTest {
         val fakeLongTaskEvent = RumRawEvent.AddLongTask(durationNs, target)
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         val durationMs = TimeUnit.NANOSECONDS.toMillis(durationNs)
-        GlobalRum.globalAttributes.putAll(attributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn attributes
         val expectedAttributes = attributes + mapOf(
             RumAttributes.LONG_TASK_TARGET to fakeLongTaskEvent.target
         )
@@ -5979,7 +5976,7 @@ internal class RumViewScopeTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             mockActivity,
             fakeName,
             fakeEventTime,
@@ -6076,7 +6073,7 @@ internal class RumViewScopeTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             mockActivity,
             fakeName,
             fakeEventTime,
@@ -6175,7 +6172,7 @@ internal class RumViewScopeTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             mockFragment,
             fakeName,
             fakeEventTime,
@@ -6272,7 +6269,7 @@ internal class RumViewScopeTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             mockFragment,
             fakeName,
             fakeEventTime,
@@ -6370,7 +6367,7 @@ internal class RumViewScopeTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             mockFragment,
             fakeName,
             fakeEventTime,
@@ -6468,7 +6465,7 @@ internal class RumViewScopeTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             mockFragment,
             fakeName,
             fakeEventTime,
@@ -6565,7 +6562,7 @@ internal class RumViewScopeTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             NavigationViewTrackingStrategy.NavigationKey(navController, mockDestination),
             fakeName,
             fakeEventTime,
@@ -6998,7 +6995,7 @@ internal class RumViewScopeTest {
         val eventTime = Time()
         fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
-        GlobalRum.globalAttributes.putAll(attributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn attributes
         whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(false)
 
         // When
@@ -7040,6 +7037,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    containsExactlyContextAttributes(attributes)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -7177,7 +7175,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope = RumViewScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             rawEventData.viewKey,
             fakeName,
             fakeEventTime,

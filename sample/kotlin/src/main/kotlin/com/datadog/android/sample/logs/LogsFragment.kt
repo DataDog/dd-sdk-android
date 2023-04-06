@@ -16,6 +16,7 @@ import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.R
 
+@Suppress("DEPRECATION")
 internal class LogsFragment :
     Fragment(),
     View.OnClickListener {
@@ -26,7 +27,6 @@ internal class LogsFragment :
     @Suppress("CheckInternal")
     private val logger: Logger by lazy {
         val sdkCore = Datadog.getInstance()
-        checkNotNull(sdkCore)
         Logger.Builder(sdkCore)
             .setLoggerName("logs_fragment")
             .setLogcatLogsEnabled(true)
@@ -51,6 +51,7 @@ internal class LogsFragment :
         return rootView
     }
 
+    @Deprecated("Deprecated in parent Java class")
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(LogsViewModel::class.java)

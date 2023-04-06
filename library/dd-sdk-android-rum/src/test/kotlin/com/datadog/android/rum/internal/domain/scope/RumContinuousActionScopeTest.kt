@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -22,7 +21,6 @@ import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
-import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -76,9 +74,6 @@ internal class RumContinuousActionScopeTest {
 
     @Mock
     lateinit var mockWriter: DataWriter<Any>
-
-    @Mock
-    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -137,10 +132,10 @@ internal class RumContinuousActionScopeTest {
         fakeKey = forge.anAsciiString().toByteArray()
 
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
-        whenever(mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitor.mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
+        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
 
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
@@ -148,7 +143,7 @@ internal class RumContinuousActionScopeTest {
 
         testedScope = RumActionScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             true,
             fakeEventTime,
             fakeType,
@@ -634,6 +629,7 @@ internal class RumContinuousActionScopeTest {
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)
         fakeEvent = mockEvent()
+        @Suppress("UNUSED_VALUE")
         key = null
         System.gc()
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
@@ -681,7 +677,6 @@ internal class RumContinuousActionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
         assertThat(result3).isNull()
-        assertThat(key as? Any).isNull()
     }
 
     @Test
@@ -1235,10 +1230,10 @@ internal class RumContinuousActionScopeTest {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(fakeGlobalAttributes)
-        GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
         testedScope = RumActionScope(
             mockParentScope,
-            mockSdkCore,
+            rumMonitor.mockSdkCore,
             true,
             fakeEventTime,
             fakeType,
@@ -1249,7 +1244,7 @@ internal class RumContinuousActionScopeTest {
             TEST_MAX_DURATION_MS,
             trackFrustrations = fakeTrackFrustrations
         )
-        fakeGlobalAttributes.keys.forEach { GlobalRum.globalAttributes.remove(it) }
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
 
         // When
@@ -1313,7 +1308,7 @@ internal class RumContinuousActionScopeTest {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(fakeGlobalAttributes)
-        GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
 
         // When

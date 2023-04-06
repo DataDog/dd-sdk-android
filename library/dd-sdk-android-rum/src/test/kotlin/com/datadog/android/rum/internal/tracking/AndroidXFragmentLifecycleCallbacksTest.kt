@@ -20,6 +20,7 @@ import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewUrl
+import com.datadog.android.v2.api.SdkCore
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
@@ -80,6 +81,9 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     lateinit var mockRumMonitor: RumMonitor
 
     @Mock
+    lateinit var mockSdkCore: SdkCore
+
+    @Mock
     lateinit var mockAdvancedRumMonitor: AdvancedRumMonitor
 
     @Mock
@@ -101,8 +105,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
             viewLoadingTimer = mockViewLoadingTimer,
             rumMonitor = mockRumMonitor,
             advancedRumMonitor = mockAdvancedRumMonitor,
-            rumFeature = mockRumFeature,
-            internalLogger = mock()
+            rumFeature = mockRumFeature
         )
     }
 
@@ -414,10 +417,11 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
         whenever(mockDialogFragment.context) doReturn mockContext
         whenever(mockDialogFragment.dialog) doReturn mockDialog
         whenever(mockDialog.window) doReturn mockWindow
+        testedLifecycleCallbacks.register(mockFragmentActivity, mockSdkCore)
 
         testedLifecycleCallbacks.onFragmentActivityCreated(mock(), mockDialogFragment, null)
 
-        verify(mockGesturesTracker).startTracking(mockWindow, mockContext)
+        verify(mockGesturesTracker).startTracking(mockWindow, mockContext, mockSdkCore)
     }
 
     @Test
@@ -432,7 +436,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     @Test
     fun `will register the callback to fragment manager when required`() {
         // When
-        testedLifecycleCallbacks.register(mockFragmentActivity)
+        testedLifecycleCallbacks.register(mockFragmentActivity, mockSdkCore)
 
         // Then
         verify(mockFragmentManager)

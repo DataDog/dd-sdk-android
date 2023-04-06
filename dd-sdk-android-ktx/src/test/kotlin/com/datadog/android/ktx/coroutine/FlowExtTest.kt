@@ -9,7 +9,7 @@ package com.datadog.android.ktx.coroutine
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
-import com.datadog.tools.unit.getStaticValue
+import com.datadog.android.v2.api.SdkCore
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -30,8 +30,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.lang.IllegalStateException
-import java.util.concurrent.atomic.AtomicBoolean
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -43,15 +41,20 @@ class FlowExtTest {
     @Mock
     lateinit var mockRumMonitor: RumMonitor
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
     @BeforeEach
     fun `set up`() {
-        GlobalRum.registerIfAbsent(mockRumMonitor)
+        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
     }
 
     @AfterEach
     fun `tear down`() {
-        val isRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
-        isRegistered.set(false)
+        GlobalRum::class.java.getDeclaredMethod("reset").apply {
+            isAccessible = true
+            invoke(null)
+        }
     }
 
     @Test
@@ -60,13 +63,13 @@ class FlowExtTest {
     ) {
         // Given
         val throwable = IllegalStateException(message)
-        val flow = flow<String> { throw(throwable) }
+        val flow = flow<String> { throw (throwable) }
 
         // When
         assertThrows<IllegalStateException> {
             runBlocking {
                 withContext(Dispatchers.IO) {
-                    flow.sendErrorToDatadog()
+                    flow.sendErrorToDatadog(mockSdkCore)
                         .collect { println(it) }
                 }
             }
@@ -92,7 +95,7 @@ class FlowExtTest {
         val result = mutableListOf<String>()
         runBlocking {
             withContext(Dispatchers.IO) {
-                flow.sendErrorToDatadog()
+                flow.sendErrorToDatadog(mockSdkCore)
                     .collect { result.add(it) }
             }
         }

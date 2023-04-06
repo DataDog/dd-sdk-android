@@ -22,10 +22,12 @@ internal class MainLooperLongTaskStrategy(
     private val thresholdNS = TimeUnit.MILLISECONDS.toNanos(thresholdMs)
     private var startUptimeNs: Long = 0L
     private var target: String = ""
+    private lateinit var sdkCore: SdkCore
 
     // region TrackingStrategy
 
     override fun register(sdkCore: SdkCore, context: Context) {
+        this.sdkCore = sdkCore
         Looper.getMainLooper().setMessageLogging(this)
     }
 
@@ -78,8 +80,8 @@ internal class MainLooperLongTaskStrategy(
             startUptimeNs = now
         } else if (message.startsWith(PREFIX_END)) {
             val durationNs = now - startUptimeNs
-            if (durationNs > thresholdNS) {
-                (GlobalRum.get() as? AdvancedRumMonitor)?.addLongTask(durationNs, target)
+            if (durationNs > thresholdNS && this::sdkCore.isInitialized) {
+                (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)?.addLongTask(durationNs, target)
             }
         }
     }

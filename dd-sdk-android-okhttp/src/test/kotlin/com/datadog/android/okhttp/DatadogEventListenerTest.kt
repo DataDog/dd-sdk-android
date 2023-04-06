@@ -82,7 +82,7 @@ internal class DatadogEventListenerTest {
             .message("lorem ipsum dolor sit amet…")
             .build()
 
-        testedListener = DatadogEventListener(fakeKey)
+        testedListener = DatadogEventListener(rumMonitor.mockSdkCore, fakeKey)
     }
 
     @Test

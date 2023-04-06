@@ -35,14 +35,14 @@ class GdprRumE2ETests {
     @Test
     fun rum_config_consent_pending() {
         val testMethodName = "rum_config_consent_pending"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 consent = TrackingConsent.PENDING
             )
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendRandomRumEvent(forge, sdkCore, testMethodName)
     }
 
     /**
@@ -51,14 +51,14 @@ class GdprRumE2ETests {
     @Test
     fun rum_config_consent_granted() {
         val testMethodName = "rum_config_consent_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 consent = TrackingConsent.GRANTED
             )
         }
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
     }
 
     /**
@@ -67,14 +67,14 @@ class GdprRumE2ETests {
     @Test
     fun rum_config_consent_not_granted() {
         val testMethodName = "rum_config_consent_not_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 consent = TrackingConsent.NOT_GRANTED
             )
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendRandomRumEvent(forge, sdkCore, testMethodName)
     }
 
     /**
@@ -90,7 +90,7 @@ class GdprRumE2ETests {
                 consent = TrackingConsent.PENDING
             )
         }
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
         measureSetTrackingConsent {
             sdkCore.setTrackingConsent(TrackingConsent.GRANTED)
         }
@@ -109,7 +109,7 @@ class GdprRumE2ETests {
                 consent = TrackingConsent.PENDING
             )
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendRandomRumEvent(forge, sdkCore, testMethodName)
         measureSetTrackingConsent {
             sdkCore.setTrackingConsent(TrackingConsent.NOT_GRANTED)
         }
@@ -131,7 +131,7 @@ class GdprRumE2ETests {
         measureSetTrackingConsent {
             sdkCore.setTrackingConsent(TrackingConsent.NOT_GRANTED)
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendRandomRumEvent(forge, sdkCore, testMethodName)
     }
 
     /**
@@ -150,7 +150,7 @@ class GdprRumE2ETests {
         measureSetTrackingConsent {
             sdkCore.setTrackingConsent(TrackingConsent.PENDING)
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendRandomRumEvent(forge, sdkCore, testMethodName)
     }
 
     /**
@@ -169,7 +169,7 @@ class GdprRumE2ETests {
         measureSetTrackingConsent {
             sdkCore.setTrackingConsent(TrackingConsent.GRANTED)
         }
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
     }
 
     /**
@@ -188,6 +188,6 @@ class GdprRumE2ETests {
         measureSetTrackingConsent {
             sdkCore.setTrackingConsent(TrackingConsent.PENDING)
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendRandomRumEvent(forge, sdkCore, testMethodName)
     }
 }

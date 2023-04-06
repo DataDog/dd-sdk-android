@@ -8,6 +8,7 @@ package com.datadog.android.rum
 
 import android.app.Activity
 import android.os.Bundle
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -101,7 +102,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 notify viewLoadingTimer 𝕎 onActivityCreated()`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn true
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityCreated(mockActivity, null)
@@ -114,7 +115,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 notify viewLoadingTimer 𝕎 onActivityStarted()`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn true
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityStarted(mockActivity)
@@ -127,7 +128,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 notify viewLoadingTimer 𝕎 onActivityResumed()`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn true
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -140,7 +141,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 notify viewLoadingTimer 𝕎 onActivityPostResumed()`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn true
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityPostResumed(mockActivity)
@@ -153,7 +154,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 notify viewLoadingTimer 𝕎 onActivityPaused()`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn true
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityPaused(mockActivity)
@@ -166,7 +167,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 notify viewLoadingTimer 𝕎 onActivityDestroyed()`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn true
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityDestroyed(mockActivity)
@@ -183,7 +184,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 do nothing 𝕎 onActivityCreated() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityCreated(mockActivity, null)
@@ -196,7 +197,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 do nothing 𝕎 onActivityStarted() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityStarted(mockActivity)
@@ -209,7 +210,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 do nothing 𝕎 onActivityResumed() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -222,7 +223,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 do nothing 𝕎 onActivityPostResumed() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityPostResumed(mockActivity)
@@ -235,7 +236,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 do nothing 𝕎 onActivityPaused() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityPaused(mockActivity)
@@ -248,7 +249,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 do nothing 𝕎 onActivityDestroyed() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityDestroyed(mockActivity)
@@ -264,8 +265,9 @@ internal class ActivityViewTrackingStrategyTest :
     @Test
     fun `𝕄 start a RUM View event 𝕎 onActivityResumed()`() {
         // Given
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -288,6 +290,7 @@ internal class ActivityViewTrackingStrategyTest :
         @StringForgery uri: String
     ) {
         // Given
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val arguments = Bundle(extras.size)
         extras.forEach { (k, v) -> arguments.putString(k, v) }
         whenever(mockIntent.extras).thenReturn(arguments)
@@ -299,7 +302,7 @@ internal class ActivityViewTrackingStrategyTest :
             .toMutableMap()
         expectedAttributes["view.intent.action"] = action
         expectedAttributes["view.intent.uri"] = uri
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -323,10 +326,11 @@ internal class ActivityViewTrackingStrategyTest :
         val arguments = Bundle(attributes.size)
         attributes.forEach { (k, v) -> arguments.putString(k, v) }
         testedStrategy = ActivityViewTrackingStrategy(false, mockPredicate)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockIntent.extras).thenReturn(arguments)
         whenever(mockActivity.intent).thenReturn(mockIntent)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -343,9 +347,10 @@ internal class ActivityViewTrackingStrategyTest :
         @StringForgery fakeName: String
     ) {
         // Given
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
         whenever(mockPredicate.getViewName(mockActivity)) doReturn fakeName
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -363,9 +368,10 @@ internal class ActivityViewTrackingStrategyTest :
         @StringForgery(StringForgeryType.WHITESPACE) fakeName: String
     ) {
         // Given
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
         whenever(mockPredicate.getViewName(mockActivity)) doReturn fakeName
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -383,17 +389,18 @@ internal class ActivityViewTrackingStrategyTest :
         @LongForgery(1L) loadingTime: Long
     ) {
         // Given
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
         whenever(mockViewLoadingTimer.getLoadingTime(mockActivity)) doReturn loadingTime
         whenever(mockViewLoadingTimer.isFirstTimeLoading(mockActivity)) doReturn true
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityPaused(mockActivity)
 
         // Then
         inOrder(rumMonitor.mockInstance, mockViewLoadingTimer) {
-            verify(rumMonitor.mockInstance).updateViewLoadingTime(
+            verify(rumMonitor.mockInstance as AdvancedRumMonitor).updateViewLoadingTime(
                 mockActivity,
                 loadingTime,
                 ViewEvent.LoadingType.ACTIVITY_DISPLAY
@@ -408,17 +415,18 @@ internal class ActivityViewTrackingStrategyTest :
         @LongForgery(1L) loadingTime: Long
     ) {
         // Given
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
         whenever(mockViewLoadingTimer.getLoadingTime(mockActivity)) doReturn loadingTime
         whenever(mockViewLoadingTimer.isFirstTimeLoading(mockActivity)) doReturn false
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityPaused(mockActivity)
 
         // Then
         inOrder(rumMonitor.mockInstance, mockViewLoadingTimer) {
-            verify(rumMonitor.mockInstance).updateViewLoadingTime(
+            verify(rumMonitor.mockInstance as AdvancedRumMonitor).updateViewLoadingTime(
                 mockActivity,
                 loadingTime,
                 ViewEvent.LoadingType.ACTIVITY_REDISPLAY
@@ -436,7 +444,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 start a RUM View event 𝕎 onActivityResumed() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -449,7 +457,7 @@ internal class ActivityViewTrackingStrategyTest :
     fun `𝕄 update RUM View loading time 𝕎 onActivityPaused() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityPaused(mockActivity)

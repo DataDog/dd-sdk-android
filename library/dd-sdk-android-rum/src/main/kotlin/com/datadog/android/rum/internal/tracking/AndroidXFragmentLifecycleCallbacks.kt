@@ -20,6 +20,7 @@ import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 
 internal open class AndroidXFragmentLifecycleCallbacks(
     internal val argumentsProvider: (Fragment) -> Map<String, Any?>,
@@ -27,13 +28,22 @@ internal open class AndroidXFragmentLifecycleCallbacks(
     internal var viewLoadingTimer: ViewLoadingTimer = ViewLoadingTimer(),
     private val rumFeature: RumFeature,
     private val rumMonitor: RumMonitor,
-    private val advancedRumMonitor: AdvancedRumMonitor,
-    private val internalLogger: InternalLogger
+    private val advancedRumMonitor: AdvancedRumMonitor
 ) : FragmentLifecycleCallbacks<FragmentActivity>, FragmentManager.FragmentLifecycleCallbacks() {
+
+    protected lateinit var sdkCore: SdkCore
+
+    private val internalLogger: InternalLogger
+        get() = if (this::sdkCore.isInitialized) {
+            sdkCore._internalLogger
+        } else {
+            InternalLogger.UNBOUND
+        }
 
     // region FragmentLifecycleCallbacks
 
-    override fun register(activity: FragmentActivity) {
+    override fun register(activity: FragmentActivity, sdkCore: SdkCore) {
+        this.sdkCore = sdkCore
         activity.supportFragmentManager.registerFragmentLifecycleCallbacks(this, true)
     }
 
@@ -70,10 +80,10 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 
         val context = f.context
 
-        if (f is DialogFragment && context != null) {
+        if (f is DialogFragment && context != null && this::sdkCore.isInitialized) {
             val window = f.dialog?.window
             val gesturesTracker = rumFeature.actionTrackingStrategy.getGesturesTracker()
-            gesturesTracker.startTracking(window, context)
+            gesturesTracker.startTracking(window, context, sdkCore)
         }
     }
 

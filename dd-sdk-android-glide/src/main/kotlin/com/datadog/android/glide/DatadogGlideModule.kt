@@ -43,7 +43,7 @@ import java.io.InputStream
  */
 open class DatadogGlideModule
 @JvmOverloads constructor(
-    private val sdkCoreProvider: () -> SdkCore? = { Datadog.getInstance() },
+    private val sdkCoreProvider: () -> SdkCore = { Datadog.getInstance() },
     private val firstPartyHosts: List<String> = emptyList(),
     private val samplingRate: Float = DEFAULT_SAMPLING_RATE
 ) : AppGlideModule() {
@@ -60,17 +60,14 @@ open class DatadogGlideModule
 
     /** @inheritdoc */
     override fun applyOptions(context: Context, builder: GlideBuilder) {
-        builder.setDiskCacheExecutor(
-            newDiskCacheBuilder()
-                .setUncaughtThrowableStrategy(DatadogRUMUncaughtThrowableStrategy("Disk Cache"))
-                .build()
-        )
+        val sdkCore = sdkCoreProvider.invoke()
 
-        builder.setSourceExecutor(
-            newSourceBuilder()
-                .setUncaughtThrowableStrategy(DatadogRUMUncaughtThrowableStrategy("Source"))
-                .build()
-        )
+        val diskExecutorBuilder = newDiskCacheBuilder()
+        val sourceExecutorBuilder = newSourceBuilder()
+        diskExecutorBuilder.setUncaughtThrowableStrategy(DatadogRUMUncaughtThrowableStrategy("Disk Cache", sdkCore))
+        sourceExecutorBuilder.setUncaughtThrowableStrategy(DatadogRUMUncaughtThrowableStrategy("Source", sdkCore))
+        builder.setDiskCacheExecutor(diskExecutorBuilder.build())
+        builder.setSourceExecutor(sourceExecutorBuilder.build())
     }
 
     // endregion
@@ -86,18 +83,16 @@ open class DatadogGlideModule
     @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
     open fun getClientBuilder(): OkHttpClient.Builder {
         val builder = OkHttpClient.Builder()
-            .eventListenerFactory(DatadogEventListener.Factory())
 
         val sdkCore = sdkCoreProvider.invoke()
-        if (sdkCore != null) {
-            builder.addInterceptor(
-                DatadogInterceptor(
-                    sdkCore,
-                    firstPartyHosts,
-                    traceSamplingRate = samplingRate
-                )
+        builder.eventListenerFactory(DatadogEventListener.Factory(sdkCore))
+        builder.addInterceptor(
+            DatadogInterceptor(
+                sdkCore,
+                firstPartyHosts,
+                traceSamplingRate = samplingRate
             )
-        }
+        )
         return builder
     }
 

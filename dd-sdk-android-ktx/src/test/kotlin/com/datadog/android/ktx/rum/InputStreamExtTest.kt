@@ -7,6 +7,7 @@
 package com.datadog.android.ktx.rum
 
 import com.datadog.android.rum.resource.RumResourceInputStream
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -37,14 +38,16 @@ class InputStreamExtTest {
     ) {
         // Given
         val mockIS: InputStream = mock()
+        val mockSdkCore: SdkCore = mock()
 
         // When
-        val result = mockIS.asRumResource(url)
+        val result = mockIS.asRumResource(url, mockSdkCore)
 
         // Then
         assertThat(result).isInstanceOf(RumResourceInputStream::class.java)
         val rumRIS = result as RumResourceInputStream
         assertThat(rumRIS.delegate).isSameAs(mockIS)
+        assertThat(rumRIS.sdkCore).isSameAs(mockSdkCore)
         assertThat(rumRIS.url).isEqualTo(url)
     }
 }

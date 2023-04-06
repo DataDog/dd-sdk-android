@@ -43,10 +43,14 @@ internal class UserActionTrackingStrategyApi29Test :
 
     @Test
     fun `when activity pre created it will start tracking gestures`() {
+        // Given
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
+
         // When
         testedStrategy.onActivityPreCreated(mockActivity, mock())
+
         // Then
-        verify(mockGesturesTracker).startTracking(mockWindow, mockActivity)
+        verify(mockGesturesTracker).startTracking(mockWindow, mockActivity, rumMonitor.mockSdkCore)
     }
 
     override fun createInstance(forge: Forge): UserActionTrackingStrategyApi29 {

@@ -32,7 +32,7 @@ internal class ConsentPendingGrantedLogsTest : LogsTest() {
     @Test
     fun verifyActivityLogs() {
         // update the tracking consent
-        Datadog.getInstance()?.setTrackingConsent(TrackingConsent.GRANTED)
+        Datadog.getInstance().setTrackingConsent(TrackingConsent.GRANTED)
 
         // Wait to make sure all batches are consumed
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()

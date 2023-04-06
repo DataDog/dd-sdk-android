@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.sample.R
 import com.datadog.android.sample.SampleApplication
@@ -55,7 +56,7 @@ internal class DataListFragment : Fragment() {
                 when (it) {
                     is DataListViewModel.UIResponse.Success -> {
                         if (!firstDataWasLoaded) {
-                            GlobalRum.get().addTiming("logs_data_loaded")
+                            GlobalRum.get(Datadog.getInstance()).addTiming("logs_data_loaded")
                             firstDataWasLoaded = true
                         }
                         adapter.updateData(it.data)

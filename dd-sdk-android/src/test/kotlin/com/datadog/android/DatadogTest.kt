@@ -18,6 +18,7 @@ import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.android.v2.core.internal.HashGenerator
 import com.datadog.android.v2.core.internal.Sha256HashGenerator
 import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
@@ -379,7 +380,7 @@ internal class DatadogTest {
         val getInstance = Datadog.getInstance()
 
         // Then
-        assertThat(getInstance).isNull()
+        assertThat(getInstance).isInstanceOf(NoOpSdkCore::class.java)
         assertThat(sdk.coreFeature.initialized.get()).isFalse()
     }
 
@@ -404,7 +405,7 @@ internal class DatadogTest {
         val getInstance = Datadog.getInstance(name)
 
         // Then
-        assertThat(getInstance).isNull()
+        assertThat(getInstance).isInstanceOf(NoOpSdkCore::class.java)
         assertThat(sdk.coreFeature.initialized.get()).isFalse()
     }
 

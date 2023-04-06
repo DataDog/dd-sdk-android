@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.datadog.android.Datadog
 import com.datadog.android.compose.ExperimentalTrackingApi
 import com.datadog.android.compose.InteractionType
 import com.datadog.android.compose.TrackInteractionEffect
@@ -51,7 +52,8 @@ internal fun InteractionSampleView() {
         TrackInteractionEffect(
             targetName = "Items list",
             interactionSource = interactionSource,
-            interactionType = InteractionType.Scroll(this, Orientation.Vertical)
+            interactionType = InteractionType.Scroll(this, Orientation.Vertical),
+            sdkCore = Datadog.getInstance()
         )
     }
 
@@ -91,7 +93,8 @@ internal fun ItemRow(index: Int, onDismissed: () -> Unit) {
                     swipeableState,
                     orientation = swipeOrientation
                 ),
-                attributes = mapOf("item" to index)
+                attributes = mapOf("item" to index),
+                sdkCore = Datadog.getInstance()
             )
         }
 

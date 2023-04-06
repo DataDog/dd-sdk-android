@@ -22,15 +22,14 @@ import androidx.navigation.fragment.DialogFragmentNavigator
 import androidx.navigation.fragment.FragmentNavigator
 import androidx.navigation.fragment.NavHostFragment
 import com.datadog.android.rum.RumFeature
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -78,9 +77,6 @@ internal class NavigationViewTrackingStrategyTest {
     lateinit var mockAppContext: Application
 
     @Mock
-    lateinit var mockNotAppContext: Context
-
-    @Mock
     lateinit var mockNavView: View
 
     @Mock
@@ -99,9 +95,6 @@ internal class NavigationViewTrackingStrategyTest {
 
     @Mock
     lateinit var mockPredicate: ComponentPredicate<NavDestination>
-
-    @Mock
-    lateinit var mockSdkCore: SdkCore
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -124,20 +117,24 @@ internal class NavigationViewTrackingStrategyTest {
         val mockRumFeatureScope = mock<FeatureScope>()
         whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mock()
         whenever(
-            datadog.mockInstance.getFeature(Feature.RUM_FEATURE_NAME)
+            rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         ) doReturn mockRumFeatureScope
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
 
-        mockNavigationKey = NavigationViewTrackingStrategy.NavigationKey(mockNavController, mockNavDestination)
+        mockNavigationKey =
+            NavigationViewTrackingStrategy.NavigationKey(mockNavController, mockNavDestination)
 
         testedStrategy = NavigationViewTrackingStrategy(fakeNavViewId, true, mockPredicate)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
     }
 
     // region ActivityLifecycleTrackingStrategy
 
     @Test
     fun `when register it will register as lifecycle callback`() {
-        testedStrategy.register(mockSdkCore, mockAppContext)
+        testedStrategy = NavigationViewTrackingStrategy(fakeNavViewId, true, mockPredicate)
+
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
 
         verify(mockAppContext).registerActivityLifecycleCallbacks(testedStrategy)
     }
@@ -151,13 +148,17 @@ internal class NavigationViewTrackingStrategyTest {
 
     @Test
     fun `when register called with non application context will do nothing`() {
-        testedStrategy.register(mockSdkCore, mockNotAppContext)
+        val mockNotAppContext = mock<Context>()
+
+        testedStrategy.register(rumMonitor.mockSdkCore, mockNotAppContext)
 
         verifyZeroInteractions(mockNotAppContext)
     }
 
     @Test
     fun `when unregister called with non application context will do nothing`() {
+        val mockNotAppContext = mock<Context>()
+
         testedStrategy.unregister(mockNotAppContext)
 
         verifyZeroInteractions(mockNotAppContext)
@@ -169,7 +170,7 @@ internal class NavigationViewTrackingStrategyTest {
 
     @Test
     fun `registers navigation listener onActivityStarted`() {
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
         testedStrategy.onActivityStarted(mockActivity)
 
         verify(mockNavController).addOnDestinationChangedListener(testedStrategy)
@@ -178,7 +179,7 @@ internal class NavigationViewTrackingStrategyTest {
     @Test
     fun `registers navigation listener when nav controller added after activity started`() {
         whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn null
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
         testedStrategy.onActivityStarted(mockActivity)
         verifyZeroInteractions(mockNavController)
 
@@ -189,7 +190,7 @@ internal class NavigationViewTrackingStrategyTest {
 
     @Test
     fun `registers fragment lifecycle callback onActivityStarted`() {
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
         testedStrategy.onActivityStarted(mockActivity)
 
         verify(mockFragmentManager).registerFragmentLifecycleCallbacks(
@@ -201,7 +202,7 @@ internal class NavigationViewTrackingStrategyTest {
     @Test
     fun `unregisters navigation listener onActivityStopped if activity was started`() {
         // Given
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
         testedStrategy.onActivityStarted(mockActivity)
 
         // When
@@ -221,7 +222,7 @@ internal class NavigationViewTrackingStrategyTest {
     @Test
     fun `unregisters fragment lifecycle callback onActivityStopped`() {
         // Given
-        testedStrategy.register(mockSdkCore, mockAppContext)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         testedStrategy.onActivityStarted(mockActivity)
 
         // When
@@ -276,7 +277,7 @@ internal class NavigationViewTrackingStrategyTest {
     @Test
     fun `does nothing onActivityPaused when no NavController present`() {
         whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn null
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         testedStrategy.onActivityPaused(mockActivity)
 
@@ -286,7 +287,7 @@ internal class NavigationViewTrackingStrategyTest {
     @Test
     fun `M start view W onDestinationChanged()`() {
         whenever(mockPredicate.accept(mockNavDestination)) doReturn true
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
 
@@ -300,7 +301,7 @@ internal class NavigationViewTrackingStrategyTest {
     @Test
     fun `M start view W onDestinationChanged() {destination not tracked}`() {
         whenever(mockPredicate.accept(mockNavDestination)) doReturn false
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
 
@@ -313,7 +314,7 @@ internal class NavigationViewTrackingStrategyTest {
     ) {
         whenever(mockPredicate.accept(mockNavDestination)) doReturn true
         whenever(mockPredicate.getViewName(mockNavDestination)) doReturn customName
-        testedStrategy.register(mockSdkCore, mockAppContext)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
 
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
 
@@ -333,7 +334,7 @@ internal class NavigationViewTrackingStrategyTest {
             arguments.putString(key, value)
             expectedAttrs["view.arguments.$key"] = value
         }
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, arguments)
 
@@ -350,7 +351,7 @@ internal class NavigationViewTrackingStrategyTest {
     ) {
         whenever(mockPredicate.accept(mockNavDestination)) doReturn true
         testedStrategy = NavigationViewTrackingStrategy(fakeNavViewId, false)
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
 
         val arguments = Bundle()
         repeat(10) {
@@ -376,7 +377,7 @@ internal class NavigationViewTrackingStrategyTest {
         val newDestination = mockNavDestination(forge, newDestinationName)
         whenever(mockPredicate.accept(mockNavDestination)) doReturn true
         whenever(mockPredicate.accept(newDestination)) doReturn true
-        testedStrategy.register(mockSdkCore, mockActivity)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
         whenever(mockNavController.currentDestination) doReturn mockNavDestination
@@ -438,7 +439,7 @@ internal class NavigationViewTrackingStrategyTest {
         callback.onFragmentResumed(mock(), mockFragment)
 
         // Then
-        verify(rumMonitor.mockInstance).updateViewLoadingTime(
+        verify(rumMonitor.mockInstance as? AdvancedRumMonitor)?.updateViewLoadingTime(
             mockNavDestination,
             expectedLoadingTime,
             expectedLoadingType
@@ -488,7 +489,7 @@ internal class NavigationViewTrackingStrategyTest {
 
     private fun setupFragmentCallbacks(): NavLifecycleCallbacks {
         // Given
-        testedStrategy.register(mockSdkCore, mockAppContext)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         testedStrategy.onActivityStarted(mockActivity)
 
         // Then
@@ -520,12 +521,11 @@ internal class NavigationViewTrackingStrategyTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val datadog = DatadogSingletonTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor, datadog)
+            return listOf(rumMonitor)
         }
     }
 }

@@ -23,6 +23,7 @@ import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewUrl
+import com.datadog.android.v2.api.SdkCore
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
@@ -81,6 +82,9 @@ internal class OreoFragmentLifecycleCallbacksTest {
     lateinit var mockRumMonitor: RumMonitor
 
     @Mock
+    lateinit var mockSdkCore: SdkCore
+
+    @Mock
     lateinit var mockAdvancedRumMonitor: AdvancedRumMonitor
 
     @Mock
@@ -109,8 +113,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
             rumMonitor = mockRumMonitor,
             advancedRumMonitor = mockAdvancedRumMonitor,
             buildSdkVersionProvider = mockBuildSdkVersionProvider,
-            rumFeature = mockRumFeature,
-            internalLogger = mock()
+            rumFeature = mockRumFeature
         )
     }
 
@@ -422,10 +425,11 @@ internal class OreoFragmentLifecycleCallbacksTest {
         whenever(mockDialogFragment.context) doReturn mockActivity
         whenever(mockDialogFragment.dialog) doReturn mockDialog
         whenever(mockDialog.window) doReturn mockWindow
+        testedLifecycleCallbacks.register(mockActivity, mockSdkCore)
 
         testedLifecycleCallbacks.onFragmentActivityCreated(mock(), mockDialogFragment, null)
 
-        verify(mockGesturesTracker).startTracking(mockWindow, mockActivity)
+        verify(mockGesturesTracker).startTracking(mockWindow, mockActivity, mockSdkCore)
     }
 
     @Test
@@ -457,7 +461,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.O
 
         // When
-        testedLifecycleCallbacks.register(mockActivity)
+        testedLifecycleCallbacks.register(mockActivity, mockSdkCore)
 
         // Then
         verify(mockFragmentManager).registerFragmentLifecycleCallbacks(
@@ -484,7 +488,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.M
 
         // When
-        testedLifecycleCallbacks.register(mockActivity)
+        testedLifecycleCallbacks.register(mockActivity, mockSdkCore)
 
         // Then
         verifyZeroInteractions(mockFragmentManager)

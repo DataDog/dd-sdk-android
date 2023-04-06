@@ -20,9 +20,11 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 import java.util.Locale
 
 internal data class RumEventMapper(
+    var sdkCore: SdkCore,
     val viewEventMapper: EventMapper<ViewEvent> = NoOpEventMapper(),
     val errorEventMapper: EventMapper<ErrorEvent> = NoOpEventMapper(),
     val resourceEventMapper: EventMapper<ResourceEvent> = NoOpEventMapper(),
@@ -110,7 +112,7 @@ internal data class RumEventMapper(
     }
 
     private fun notifyEventDropped(event: Any) {
-        val monitor = (GlobalRum.get() as? AdvancedRumMonitor) ?: return
+        val monitor = (GlobalRum.get(sdkCore) as? AdvancedRumMonitor) ?: return
         when (event) {
             is ActionEvent -> monitor.eventDropped(
                 event.view.id,

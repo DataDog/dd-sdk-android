@@ -10,8 +10,8 @@ import android.annotation.SuppressLint
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.BaseConfigurator
-import com.datadog.tools.unit.getStaticValue
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -32,7 +32,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.util.concurrent.atomic.AtomicBoolean
 
 @Extensions(
     ExtendWith(
@@ -47,18 +46,23 @@ class DatadogRxExtTest {
     @Mock
     lateinit var mockRumMonitor: RumMonitor
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
     @Forgery
     lateinit var fakeException: Throwable
 
     @BeforeEach
     fun `set up`() {
-        GlobalRum.registerIfAbsent(mockRumMonitor)
+        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
     }
 
     @AfterEach
     fun `tear down`() {
-        val isRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
-        isRegistered.set(false)
+        GlobalRum::class.java.getDeclaredMethod("reset").apply {
+            isAccessible = true
+            invoke(null)
+        }
     }
 
     @Test
@@ -69,7 +73,7 @@ class DatadogRxExtTest {
             .concatWith(ObservableError.error(fakeException))
 
         // WHEN
-        val testSubscriber = testObservable.sendErrorToDatadog().test()
+        val testSubscriber = testObservable.sendErrorToDatadog(mockSdkCore).test()
 
         // THEN
         testSubscriber.assertValues(0, 1, 2)
@@ -88,7 +92,7 @@ class DatadogRxExtTest {
         val testSingle = SingleError.error<Int>(fakeException)
 
         // WHEN
-        val testSubscriber = testSingle.sendErrorToDatadog().test()
+        val testSubscriber = testSingle.sendErrorToDatadog(mockSdkCore).test()
 
         // THEN
         testSubscriber.assertError(fakeException)
@@ -106,7 +110,7 @@ class DatadogRxExtTest {
         val testMaybe = MaybeError.error<Int>(fakeException)
 
         // WHEN
-        val testSubscriber = testMaybe.sendErrorToDatadog().test()
+        val testSubscriber = testMaybe.sendErrorToDatadog(mockSdkCore).test()
 
         // THEN
         testSubscriber.assertError(fakeException)
@@ -122,7 +126,7 @@ class DatadogRxExtTest {
     @Test
     fun `M send an error event W exception in the stream {Completable}`() {
         // WHEN
-        CompletableError.error(fakeException).sendErrorToDatadog().test()
+        CompletableError.error(fakeException).sendErrorToDatadog(mockSdkCore).test()
 
         // THEN
         verify(mockRumMonitor).addError(
@@ -141,7 +145,7 @@ class DatadogRxExtTest {
             .concatWith(FlowableError.error(fakeException))
 
         // WHEN
-        val testSubscriber = testFlowable.sendErrorToDatadog().test()
+        val testSubscriber = testFlowable.sendErrorToDatadog(mockSdkCore).test()
 
         // THEN
         testSubscriber.assertValues(0, 1, 2)

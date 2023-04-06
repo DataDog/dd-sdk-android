@@ -17,6 +17,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
@@ -76,8 +77,9 @@ internal class UiRumDebugListenerTest {
 
     @BeforeEach
     fun setUp() {
-        testedListener = UiRumDebugListener(mockInternalLogger)
+        testedListener = UiRumDebugListener(rumMonitor.mockSdkCore)
 
+        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
         whenever(mockDecorView.findViewById<View>(android.R.id.content)) doReturn mockContentView
         whenever(mockWindow.decorView) doReturn mockDecorView
         whenever(mockActivity.window) doReturn mockWindow
@@ -142,8 +144,11 @@ internal class UiRumDebugListenerTest {
     @Test
     fun `M log a warning W onActivityResumed() { RUM monitor is not AdvancedRumMonitor }`() {
         // GIVEN
-        GlobalRum.monitor = mock()
-        testedListener = UiRumDebugListener(mockInternalLogger)
+        rumMonitor.mockInstance = NoOpRumMonitor()
+        GlobalRum.clear()
+        GlobalRum.registerIfAbsent(rumMonitor.mockSdkCore, rumMonitor.mockInstance)
+
+        testedListener = UiRumDebugListener(rumMonitor.mockSdkCore)
 
         // WHEN
         testedListener.onActivityResumed(mockActivity)
@@ -180,7 +185,7 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityResumed(mockActivity)
 
         // THEN
-        verify(rumMonitor.mockInstance).setDebugListener(testedListener)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor).setDebugListener(testedListener)
         verifyZeroInteractions(mockInternalLogger)
     }
 
@@ -190,7 +195,7 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityPaused(mockActivity)
 
         // THEN
-        verify(rumMonitor.mockInstance).setDebugListener(null)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor).setDebugListener(null)
     }
 
     @Test

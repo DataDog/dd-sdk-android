@@ -1,9 +1,9 @@
 object com.datadog.android.Datadog
   fun initialize(String?, android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.v2.api.SdkCore?
   fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.v2.api.SdkCore?
-  fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
+  fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore
   fun stopInstance(String? = null)
-  fun _internalProxy(String? = null): _InternalProxy?
+  fun _internalProxy(String? = null): _InternalProxy
 object com.datadog.android.DatadogEndpoint
   DEPRECATED const val LOGS_US1: String
   DEPRECATED const val LOGS_US3: String

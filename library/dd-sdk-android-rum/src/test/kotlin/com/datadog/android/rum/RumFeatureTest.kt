@@ -15,6 +15,7 @@ import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.ndk.NdkCrashEventHandler
 import com.datadog.android.rum.internal.storage.NoOpDataWriter
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
@@ -31,7 +32,6 @@ import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.rum.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
@@ -65,6 +65,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -104,6 +105,9 @@ internal class RumFeatureTest {
     lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
+    lateinit var mockRumMonitor: AdvancedRumMonitor
+
+    @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
@@ -115,12 +119,17 @@ internal class RumFeatureTest {
         mockChoreographerInstance(mockChoreographer)
         whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
 
-        testedFeature =
-            RumFeature(
-                fakeApplicationId.toString(),
-                fakeConfiguration,
-                ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
-            )
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+        )
+        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        GlobalRum.clear()
     }
 
     @Test
@@ -391,6 +400,13 @@ internal class RumFeatureTest {
 
     @Test
     fun `𝕄 store eventMapper 𝕎 initialize()`() {
+        // Given
+        testedFeature = RumFeature(
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
+        )
+
         // When
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
@@ -402,7 +418,6 @@ internal class RumFeatureTest {
             .getFieldValue<EventMapper<*>, MapperSerializer<*>>("eventMapper")
         assertThat(eventMapper).isInstanceOf(RumEventMapper::class.java)
         val rumEventMapper = eventMapper as RumEventMapper
-
         assertThat(rumEventMapper.actionEventMapper)
             .isSameAs(fakeConfiguration.actionEventMapper)
         assertThat(rumEventMapper.errorEventMapper)
@@ -712,7 +727,7 @@ internal class RumFeatureTest {
                 )
             )
 
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyZeroInteractions(mockRumMonitor)
     }
 
     @Test
@@ -739,7 +754,7 @@ internal class RumFeatureTest {
                 )
             )
 
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyZeroInteractions(mockRumMonitor)
     }
 
     // endregion
@@ -772,7 +787,7 @@ internal class RumFeatureTest {
                 RumFeature.JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS
             )
 
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyZeroInteractions(mockRumMonitor)
     }
 
     @Test
@@ -780,9 +795,9 @@ internal class RumFeatureTest {
         forge: Forge
     ) {
         // Given
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
         val fakeThrowable = forge.aThrowable()
         val fakeMessage = forge.anAlphabeticalString()
-
         val event = mutableMapOf(
             "type" to "jvm_crash",
             "message" to fakeMessage,
@@ -793,17 +808,12 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(rumMonitor.mockInstance)
-            .addCrash(
-                fakeMessage,
-                RumErrorSource.SOURCE,
-                fakeThrowable
-            )
-
-        verifyZeroInteractions(
-            mockSdkCore,
-            mockInternalLogger
+        verify(mockRumMonitor).addCrash(
+            fakeMessage,
+            RumErrorSource.SOURCE,
+            fakeThrowable
         )
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     // endregion
@@ -839,7 +849,7 @@ internal class RumFeatureTest {
             )
 
         verifyZeroInteractions(
-            rumMonitor.mockInstance,
+            mockRumMonitor,
             mockInternalLogger
         )
     }
@@ -851,10 +861,10 @@ internal class RumFeatureTest {
         forge: Forge
     ) {
         // Given
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
         val fakeThrowable = forge.aNullable { forge.aThrowable() }
         val fakeMessage = forge.anAlphabeticalString()
         val fakeAttributes = forge.aNullable { forge.exhaustiveAttributes() }
-
         val event = mutableMapOf(
             "type" to "logger_error",
             "message" to fakeMessage,
@@ -866,18 +876,14 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(rumMonitor.mockInstance)
-            .addError(
-                fakeMessage,
-                RumErrorSource.LOGGER,
-                fakeThrowable,
-                fakeAttributes?.toMap() ?: emptyMap()
-            )
-
-        verifyZeroInteractions(
-            mockSdkCore,
-            mockInternalLogger
+        verify(mockRumMonitor).addError(
+            fakeMessage,
+            RumErrorSource.LOGGER,
+            fakeThrowable,
+            fakeAttributes?.toMap() ?: emptyMap()
         )
+
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -887,7 +893,6 @@ internal class RumFeatureTest {
         // Given
         val fakeThrowable = forge.aNullable { forge.aThrowable() }
         val fakeAttributes = forge.aNullable { forge.exhaustiveAttributes() }
-
         val event = mutableMapOf(
             "type" to "logger_error",
             "throwable" to fakeThrowable,
@@ -906,7 +911,7 @@ internal class RumFeatureTest {
                 RumFeature.LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS
             )
 
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyZeroInteractions(mockRumMonitor)
     }
 
     @Test
@@ -914,10 +919,10 @@ internal class RumFeatureTest {
         forge: Forge
     ) {
         // Given
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
         val fakeStacktrace = forge.aNullable { forge.anAlphabeticalString() }
         val fakeMessage = forge.anAlphabeticalString()
         val fakeAttributes = forge.aNullable { forge.exhaustiveAttributes() }
-
         val event = mutableMapOf(
             "type" to "logger_error_with_stacktrace",
             "message" to fakeMessage,
@@ -929,18 +934,14 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(rumMonitor.mockInstance)
-            .addErrorWithStacktrace(
-                fakeMessage,
-                RumErrorSource.LOGGER,
-                fakeStacktrace,
-                fakeAttributes?.toMap() ?: emptyMap()
-            )
-
-        verifyZeroInteractions(
-            mockSdkCore,
-            mockInternalLogger
+        verify(mockRumMonitor).addErrorWithStacktrace(
+            fakeMessage,
+            RumErrorSource.LOGGER,
+            fakeStacktrace,
+            fakeAttributes?.toMap() ?: emptyMap()
         )
+
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -969,7 +970,7 @@ internal class RumFeatureTest {
                 RumFeature.LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS
             )
 
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyZeroInteractions(mockRumMonitor)
     }
 
     // endregion
@@ -977,6 +978,7 @@ internal class RumFeatureTest {
     @Test
     fun `𝕄 notify webview event received 𝕎 onReceive() {webview event received}`() {
         // Given
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
         val event = mapOf(
             "type" to "web_view_ingested_notification"
         )
@@ -985,13 +987,8 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(rumMonitor.mockInstance)
-            .sendWebViewEvent()
-
-        verifyZeroInteractions(
-            mockSdkCore,
-            mockInternalLogger
-        )
+        verify(mockRumMonitor).sendWebViewEvent()
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     // region FeatureEventReceiver#onReceive + telemetry event
@@ -1001,6 +998,7 @@ internal class RumFeatureTest {
         @StringForgery fakeMessage: String
     ) {
         // Given
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
         val event = mapOf(
             "type" to "telemetry_debug",
             "message" to fakeMessage
@@ -1010,15 +1008,9 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(rumMonitor.mockInstance)
-            .sendDebugTelemetryEvent(fakeMessage)
-
-        verifyNoMoreInteractions(rumMonitor.mockInstance)
-
-        verifyZeroInteractions(
-            mockSdkCore,
-            mockInternalLogger
-        )
+        verify(mockRumMonitor).sendDebugTelemetryEvent(fakeMessage)
+        verifyNoMoreInteractions(mockRumMonitor)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -1040,7 +1032,7 @@ internal class RumFeatureTest {
                 RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
             )
 
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyZeroInteractions(mockRumMonitor)
     }
 
     @Test
@@ -1049,6 +1041,7 @@ internal class RumFeatureTest {
         forge: Forge
     ) {
         // Given
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
         val fakeThrowable = forge.aThrowable()
         val event = mapOf(
             "type" to "telemetry_error",
@@ -1060,15 +1053,10 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(rumMonitor.mockInstance)
+        verify(mockRumMonitor)
             .sendErrorTelemetryEvent(fakeMessage, fakeThrowable)
-
-        verifyNoMoreInteractions(rumMonitor.mockInstance)
-
-        verifyZeroInteractions(
-            mockSdkCore,
-            mockInternalLogger
-        )
+        verifyNoMoreInteractions(mockRumMonitor)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -1077,6 +1065,7 @@ internal class RumFeatureTest {
         forge: Forge
     ) {
         // Given
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
         val fakeStack = forge.aNullable { aString() }
         val fakeKind = forge.aNullable { aString() }
         val event = mapOf(
@@ -1090,15 +1079,12 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(rumMonitor.mockInstance)
+        verify(mockRumMonitor)
             .sendErrorTelemetryEvent(fakeMessage, fakeStack, fakeKind)
 
-        verifyNoMoreInteractions(rumMonitor.mockInstance)
+        verifyNoMoreInteractions(mockRumMonitor)
 
-        verifyZeroInteractions(
-            mockSdkCore,
-            mockInternalLogger
-        )
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -1120,7 +1106,7 @@ internal class RumFeatureTest {
                 RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
             )
 
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyZeroInteractions(mockRumMonitor)
     }
 
     @Test
@@ -1132,6 +1118,7 @@ internal class RumFeatureTest {
         @LongForgery(min = 0L) batchUploadFrequency: Long
     ) {
         // Given
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
         val event = mapOf(
             "type" to "telemetry_configuration",
             "track_errors" to trackErrors,
@@ -1146,7 +1133,7 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(rumMonitor.mockInstance)
+        verify(mockRumMonitor)
             .sendConfigurationTelemetryEvent(
                 TelemetryCoreConfiguration(
                     trackErrors = trackErrors,
@@ -1164,12 +1151,11 @@ internal class RumFeatureTest {
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, rumMonitor)
+            return listOf(appContext)
         }
     }
 }

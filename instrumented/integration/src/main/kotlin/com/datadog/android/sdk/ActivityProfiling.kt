@@ -17,7 +17,7 @@ internal class ActivityProfiling : AppCompatActivity() {
 
     val logger: Logger by lazy {
         @Suppress("UnsafeCallOnNullableType")
-        RuntimeConfig.logger(Datadog.getInstance()!!)
+        RuntimeConfig.logger(Datadog.getInstance())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

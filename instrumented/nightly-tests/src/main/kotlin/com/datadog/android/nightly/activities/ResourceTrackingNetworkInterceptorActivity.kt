@@ -17,21 +17,18 @@ internal class ResourceTrackingNetworkInterceptorActivity : ResourceTrackingActi
     private val localServer: LocalServer by lazy { LocalServer() }
 
     override val okHttpClient: OkHttpClient by lazy {
-        val sdkCore = Datadog.getInstance()
-        val builder = OkHttpClient.Builder()
-        if (sdkCore != null) {
-            builder.addInterceptor(
-                RumInterceptor(sdkCore, traceSamplingRate = HUNDRED_PERCENT)
+        OkHttpClient.Builder()
+            .addInterceptor(
+                RumInterceptor(Datadog.getInstance(), traceSamplingRate = HUNDRED_PERCENT)
             )
-            builder.addNetworkInterceptor(
+            .addNetworkInterceptor(
                 TracingInterceptor(
-                    sdkCore,
+                    Datadog.getInstance(),
                     listOf(HOST, LocalServer.HOST),
                     traceSamplingRate = HUNDRED_PERCENT
                 )
             )
-        }
-        builder.build()
+            .build()
     }
 
     override val randomUrl: String by lazy {

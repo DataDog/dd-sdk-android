@@ -15,7 +15,6 @@ import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
-import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumFeature
@@ -26,7 +25,6 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
 import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.InternalLogger
 import java.lang.IllegalStateException
 import java.util.WeakHashMap
 
@@ -83,8 +81,9 @@ class NavigationViewTrackingStrategy(
 
     override fun onActivityPaused(activity: Activity) {
         super.onActivityPaused(activity)
+        val rumMonitor = withSdkCore { GlobalRum.get(it) }
         activity.findNavControllerOrNull(navigationViewId)?.currentDestination?.let {
-            GlobalRum.get().stopView(it)
+            rumMonitor?.stopView(it)
         }
     }
 
@@ -97,10 +96,11 @@ class NavigationViewTrackingStrategy(
         destination: NavDestination,
         arguments: Bundle?
     ) {
+        val rumMonitor = withSdkCore { GlobalRum.get(it) }
         componentPredicate.runIfValid(destination, internalLogger) {
             val attributes = if (trackArguments) convertToRumAttributes(arguments) else emptyMap()
             val viewName = componentPredicate.resolveViewName(destination)
-            GlobalRum.get().startView(NavigationKey(controller, destination), viewName, attributes)
+            rumMonitor?.startView(NavigationKey(controller, destination), viewName, attributes)
         }
     }
 
@@ -121,22 +121,29 @@ class NavigationViewTrackingStrategy(
      */
     fun startTracking() {
         val activity = startedActivity ?: return
-        val rumFeature = Datadog.getInstance()
-            ?.getFeature(Feature.RUM_FEATURE_NAME)
-            ?.unwrap<RumFeature>() ?: return
-        activity.findNavControllerOrNull(navigationViewId)?.let {
-            if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
+
+        withSdkCore { sdkCore ->
+            val rumFeature = sdkCore
+                .getFeature(Feature.RUM_FEATURE_NAME)
+                ?.unwrap<RumFeature>()
+            val rumMonitor = GlobalRum.get(sdkCore) as? AdvancedRumMonitor
+            val fragmentActivity = activity as? FragmentActivity
+            val navController = activity.findNavControllerOrNull(navigationViewId)
+            if (fragmentActivity != null && navController != null && rumFeature != null) {
                 val navControllerFragmentCallbacks = NavControllerFragmentLifecycleCallbacks(
-                    it,
+                    navController,
                     argumentsProvider = { emptyMap() },
                     componentPredicate = predicate,
                     rumFeature = rumFeature,
-                    internalLogger = internalLogger
+                    advancedRumMonitor = rumMonitor ?: NoOpAdvancedRumMonitor()
                 )
-                navControllerFragmentCallbacks.register(startedActivity as FragmentActivity)
+                navControllerFragmentCallbacks.register(
+                    startedActivity as FragmentActivity,
+                    sdkCore
+                )
                 lifecycleCallbackRefs[startedActivity] = navControllerFragmentCallbacks
+                navController.addOnDestinationChangedListener(this)
             }
-            it.addOnDestinationChangedListener(this)
         }
     }
 
@@ -188,16 +195,13 @@ class NavigationViewTrackingStrategy(
         argumentsProvider: (Fragment) -> Map<String, Any?>,
         componentPredicate: ComponentPredicate<Fragment>,
         rumFeature: RumFeature,
-        internalLogger: InternalLogger
+        advancedRumMonitor: AdvancedRumMonitor
     ) : AndroidXFragmentLifecycleCallbacks(
         argumentsProvider,
         componentPredicate,
         rumMonitor = NoOpRumMonitor(),
-        advancedRumMonitor = AdvancedMonitorDecorator(
-            GlobalRum.get() as? AdvancedRumMonitor ?: NoOpAdvancedRumMonitor()
-        ),
-        rumFeature = rumFeature,
-        internalLogger = internalLogger
+        advancedRumMonitor = AdvancedMonitorDecorator(advancedRumMonitor),
+        rumFeature = rumFeature
     ) {
         override fun resolveKey(fragment: Fragment): Any {
             return navController.currentDestination ?: NO_DESTINATION_FOUND

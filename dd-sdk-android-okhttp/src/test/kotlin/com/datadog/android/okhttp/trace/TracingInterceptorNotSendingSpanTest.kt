@@ -10,10 +10,10 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
+import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -112,9 +112,6 @@ internal open class TracingInterceptorNotSendingSpanTest {
     lateinit var mockTraceSampler: Sampler
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
-
-    @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     // endregion
@@ -176,8 +173,8 @@ internal open class TracingInterceptorNotSendingSpanTest {
         }
         fakeUrl = forgeUrl(forge)
         fakeRequest = forgeRequest(forge)
-        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
+        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
         doAnswer { false }.whenever(mockResolver).isFirstPartyUrl(any<HttpUrl>())
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(HttpUrl.get(fakeUrl))
 
@@ -196,7 +193,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
     ): TracingInterceptor {
         return object :
             TracingInterceptor(
-                mockSdkCore,
+                rumMonitor.mockSdkCore,
                 tracedHosts,
                 mockRequestListener,
                 mockResolver,
@@ -1000,7 +997,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
+        whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
         stubChain(mockChain, statusCode)
 
         testedInterceptor.intercept(mockChain)
@@ -1355,11 +1352,12 @@ internal open class TracingInterceptorNotSendingSpanTest {
                 "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
 
         val datadogCore = DatadogSingletonTestConfiguration()
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(datadogCore)
+            return listOf(rumMonitor, datadogCore)
         }
     }
 }

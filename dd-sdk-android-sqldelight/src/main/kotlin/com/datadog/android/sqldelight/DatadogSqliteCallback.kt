@@ -10,6 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.v2.api.SdkCore
 import com.squareup.sqldelight.android.AndroidSqliteDriver
 import com.squareup.sqldelight.db.SqlDriver
 import java.util.Locale
@@ -19,13 +20,18 @@ import java.util.Locale
  * automatically send a RUM error event whenever this issue occurs.
  *
  * For more information [https://www.sqlite.org/howtocorrupt.html]
+ * @param schema the SQL database schema
+ * @param sdkCore the SDK instance to forward the errors to
  */
-class DatadogSqliteCallback(schema: SqlDriver.Schema) : AndroidSqliteDriver.Callback(schema) {
+class DatadogSqliteCallback(
+    schema: SqlDriver.Schema,
+    private val sdkCore: SdkCore
+) : AndroidSqliteDriver.Callback(schema) {
 
     /** @inheritDoc */
     override fun onCorruption(db: SupportSQLiteDatabase) {
         super.onCorruption(db)
-        GlobalRum.get()
+        GlobalRum.get(sdkCore)
             .addError(
                 String.format(
                     Locale.US,

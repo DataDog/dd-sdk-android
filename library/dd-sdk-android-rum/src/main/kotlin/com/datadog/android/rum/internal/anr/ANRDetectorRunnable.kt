@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.anr
 import android.os.Handler
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.v2.api.SdkCore
 
 /**
  * A Runnable running on a background thread detecting ANR on the main thread.
@@ -16,6 +17,7 @@ import com.datadog.android.rum.RumErrorSource
  * It runs in a background thread and schedules regular no-op
  */
 internal class ANRDetectorRunnable(
+    private val sdkCore: SdkCore,
     private val handler: Handler,
     private val anrThresholdMs: Long = ANR_THRESHOLD_MS,
     private val anrTestDelayMs: Long = ANR_TEST_DELAY_MS
@@ -41,7 +43,7 @@ internal class ANRDetectorRunnable(
                     callback.wait(anrThresholdMs)
 
                     if (!callback.wasCalled()) {
-                        GlobalRum.get().addError(
+                        GlobalRum.get(sdkCore).addError(
                             ANR_MESSAGE,
                             RumErrorSource.SOURCE,
                             ANRException(handler.looper.thread),

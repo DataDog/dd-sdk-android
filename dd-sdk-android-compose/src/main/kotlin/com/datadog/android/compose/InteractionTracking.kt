@@ -28,6 +28,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.v2.api.SdkCore
 import kotlinx.coroutines.flow.collect
 import java.lang.Exception
 import kotlin.coroutines.cancellation.CancellationException
@@ -36,6 +37,7 @@ import kotlin.math.roundToInt
 /**
  * Creates a proxy around click listener, which will report clicks to Datadog.
  *
+ * @param sdkCore the SDK instance to use.
  * @param targetName Name of the click target.
  * @param attributes Additional custom attributes to attach to the action. Attributes can be
  * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
@@ -44,13 +46,14 @@ import kotlin.math.roundToInt
 @ExperimentalTrackingApi
 @Composable
 fun trackClick(
+    sdkCore: SdkCore,
     targetName: String,
     attributes: Map<String, Any?> = remember { emptyMap() },
     onClick: () -> Unit
 ): () -> Unit {
     val onTapState = rememberUpdatedState(newValue = onClick)
     return remember(targetName, attributes) {
-        TapActionTracker(targetName, attributes, onTapState)
+        TapActionTracker(targetName, attributes, onTapState, GlobalRum.get(sdkCore))
     }
 }
 
@@ -61,6 +64,7 @@ fun trackClick(
  *
  * For tracking clicks check [trackClick].
  *
+ * @param sdkCore the SDK instance to use.
  * @param targetName Name of the tracking target.
  * @param interactionSource [InteractionSource] which hosts the flow of interactions happening.
  * @param interactionType Type of the interaction, either [InteractionType.Scroll]
@@ -71,6 +75,7 @@ fun trackClick(
 @ExperimentalTrackingApi
 @Composable
 fun TrackInteractionEffect(
+    sdkCore: SdkCore,
     targetName: String,
     interactionSource: InteractionSource,
     interactionType: InteractionType,
@@ -79,7 +84,7 @@ fun TrackInteractionEffect(
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
     LaunchedEffect(interactionSource, interactionType, isRtl) {
-        val rumMonitor = GlobalRum.get()
+        val rumMonitor = GlobalRum.get(sdkCore)
         when (interactionType) {
             is InteractionType.Swipe<*> -> trackSwipe(
                 rumMonitor,
@@ -149,7 +154,7 @@ internal class TapActionTracker(
     private val targetName: String,
     private val attributes: Map<String, Any?> = emptyMap(),
     private val onTap: State<() -> Unit>,
-    private val rumMonitor: RumMonitor = GlobalRum.get()
+    private val rumMonitor: RumMonitor
 ) : () -> Unit {
     override fun invoke() {
         rumMonitor.addUserAction(

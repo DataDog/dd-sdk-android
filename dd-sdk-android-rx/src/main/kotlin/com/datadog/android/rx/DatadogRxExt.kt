@@ -6,6 +6,7 @@
 
 package com.datadog.android.rx
 
+import com.datadog.android.v2.api.SdkCore
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Maybe
@@ -13,46 +14,60 @@ import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
 
 /**
- *  Returns an [Observable<T>] that will send a RUM Error event
- *  if this [Observable<T>] emits an error.
- *  Note that the error will also be emitted by the returned [Observable<T>]
+ * Returns an [Observable] that will send a RUM Error event
+ * if this [Observable] emits an error.
+ * Note that the error will also be emitted by the returned [Observable]
+ * @param T the type of data in this [Observable]
+ * @param sdkCore the SDK instance to forward the errors to
+ * @return the new [Observable] instance
  */
-fun <T : Any> Observable<T>.sendErrorToDatadog(): Observable<T> {
-    return this.doOnError(DatadogRumErrorConsumer())
+fun <T : Any> Observable<T>.sendErrorToDatadog(sdkCore: SdkCore): Observable<T> {
+    return this.doOnError(DatadogRumErrorConsumer(sdkCore))
 }
 
 /**
- *  Returns a [Single<T>] that will send a RUM Error event
- *  if this [Single<T>] emits an error.
- *  Note that the error will also be emitted by the returned [Single<T>]
+ * Returns a [Single] that will send a RUM Error event
+ * if this [Single] emits an error.
+ * Note that the error will also be emitted by the returned [Single]
+ * @param T the type of data in this [Single]
+ * @param sdkCore the SDK instance to forward the errors to
+ * @return the new [Single] instance
  */
-fun <T : Any> Single<T>.sendErrorToDatadog(): Single<T> {
-    return this.doOnError(DatadogRumErrorConsumer())
+fun <T : Any> Single<T>.sendErrorToDatadog(sdkCore: SdkCore): Single<T> {
+    return this.doOnError(DatadogRumErrorConsumer(sdkCore))
 }
 
 /**
- *  Returns a [Flowable<T>] that will send a RUM Error event
- *  if this [Flowable<T>] emits an error.
- *  Note that the error will also be emitted by the returned [Flowable<T>]
+ * Returns a [Flowable] that will send a RUM Error event
+ * if this [Flowable] emits an error.
+ * Note that the error will also be emitted by the returned [Flowable]
+ * @param T the type of data in this [Flowable]
+ * @param sdkCore the SDK instance to forward the errors to
+ * @return the new [Flowable] instance
  */
-fun <T : Any> Flowable<T>.sendErrorToDatadog(): Flowable<T> {
-    return this.doOnError(DatadogRumErrorConsumer())
+fun <T : Any> Flowable<T>.sendErrorToDatadog(sdkCore: SdkCore): Flowable<T> {
+    return this.doOnError(DatadogRumErrorConsumer(sdkCore))
 }
 
 /**
- *  Returns an [Maybe<T>] that will send a RUM Error event
- *  if this [Maybe<T>] emits an error.
- *  Note that the error will also be emitted by the returned [Maybe<T>]
+ * Returns an [Maybe] that will send a RUM Error event
+ * if this [Maybe] emits an error.
+ * Note that the error will also be emitted by the returned [Maybe]
+ * @param T the type of data in this [Maybe]
+ * @param sdkCore the SDK instance to forward the errors to
+ * @return the new [Maybe] instance
  */
-fun <T> Maybe<T>.sendErrorToDatadog(): Maybe<T> {
-    return this.doOnError(DatadogRumErrorConsumer())
+fun <T> Maybe<T>.sendErrorToDatadog(sdkCore: SdkCore): Maybe<T> {
+    return this.doOnError(DatadogRumErrorConsumer(sdkCore))
 }
 
 /**
- *  Returns a [Completable] that will send a RUM Error event
- *  if this [Completable] emits an error.
- *  Note that the error will also be emitted by the returned [Completable]
+ * Returns a [Completable] that will send a RUM Error event
+ * if this [Completable] emits an error.
+ * Note that the error will also be emitted by the returned [Completable]
+ * @param sdkCore the SDK instance to forward the errors to
+ * @return the new [Completable] instance
  */
-fun Completable.sendErrorToDatadog(): Completable {
-    return this.doOnError(DatadogRumErrorConsumer())
+fun Completable.sendErrorToDatadog(sdkCore: SdkCore): Completable {
+    return this.doOnError(DatadogRumErrorConsumer(sdkCore))
 }

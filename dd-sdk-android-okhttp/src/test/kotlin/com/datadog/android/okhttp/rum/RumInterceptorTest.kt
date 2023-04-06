@@ -40,10 +40,10 @@ internal class RumInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     @Test
     fun `M instantiate with default values W init()`() {
         // Given
-        whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
+        whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mock()
 
         // When
-        val interceptor = RumInterceptor(mockSdkCore)
+        val interceptor = RumInterceptor(rumMonitor.mockSdkCore)
 
         // Then
         assertThat(interceptor.tracedHosts).isEmpty()

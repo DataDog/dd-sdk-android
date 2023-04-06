@@ -9,6 +9,7 @@ package com.datadog.android.rum.tracking
 import android.app.Activity
 import android.os.Bundle
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
 import com.datadog.android.rum.model.ViewEvent
@@ -58,11 +59,7 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
             } else {
                 emptyMap()
             }
-            GlobalRum.monitor.startView(
-                it,
-                viewName,
-                attributes
-            )
+            getRumMonitor()?.startView(it, viewName, attributes)
             // we still need to call onFinishedLoading here for API bellow 29 as the
             // onPostResumed is not available on these devices.
             viewLoadingTimer.onFinishedLoading(it)
@@ -83,7 +80,7 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
         super.onActivityPaused(activity)
         componentPredicate.runIfValid(activity, internalLogger) {
             updateLoadingTime(activity)
-            GlobalRum.monitor.stopView(it)
+            getRumMonitor()?.stopView(it)
             viewLoadingTimer.onPaused(activity)
         }
     }
@@ -121,10 +118,17 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
 
     // region Internal
 
+    private fun getRumMonitor(): RumMonitor? {
+        return withSdkCore { GlobalRum.get(it) }
+    }
+
+    private fun getAdvancedRumMonitor(): AdvancedRumMonitor? {
+        return getRumMonitor() as? AdvancedRumMonitor
+    }
+
     private fun updateLoadingTime(activity: Activity) {
         viewLoadingTimer.getLoadingTime(activity)?.let { loadingTime ->
-            val advancedRumMonitor = GlobalRum.get() as? AdvancedRumMonitor
-            advancedRumMonitor?.let { monitor ->
+            getAdvancedRumMonitor()?.let { monitor ->
                 val loadingType = resolveLoadingType(viewLoadingTimer.isFirstTimeLoading(activity))
                 monitor.updateViewLoadingTime(
                     activity,

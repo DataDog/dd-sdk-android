@@ -9,6 +9,7 @@ package com.datadog.android.okhttp
 import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -51,7 +52,7 @@ class DatadogEventListenerFactoryTest {
 
         whenever(mockCall.request()) doReturn fakeRequest
 
-        testedFactory = DatadogEventListener.Factory()
+        testedFactory = DatadogEventListener.Factory(mock())
     }
 
     @Test

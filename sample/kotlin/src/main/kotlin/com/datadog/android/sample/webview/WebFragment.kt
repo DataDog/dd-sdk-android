@@ -39,9 +39,7 @@ internal class WebFragment : Fragment() {
         webView = rootView.findViewById(R.id.webview)
         webView.webViewClient = WebViewClient()
         webView.settings.javaScriptEnabled = true
-        Datadog.getInstance()?.let {
-            DatadogEventBridge.setup(it, webView, webViewTrackingHosts)
-        }
+        DatadogEventBridge.setup(Datadog.getInstance(), webView, webViewTrackingHosts)
         return rootView
     }
 

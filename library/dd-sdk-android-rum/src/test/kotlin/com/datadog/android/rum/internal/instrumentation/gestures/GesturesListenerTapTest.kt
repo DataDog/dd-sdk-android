@@ -103,6 +103,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(target, expectedResourceName)
         testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger
@@ -142,6 +143,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(target, expectedResourceName)
         testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger
@@ -186,6 +188,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(validTarget, expectedResourceName)
         testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger
@@ -229,6 +232,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(validTarget, expectedResourceName)
         testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger
@@ -256,6 +260,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             whenever(it.childCount).thenReturn(0)
         }
         testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger
@@ -295,6 +300,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             whenever(it.getChildAt(0)).thenReturn(composeView)
         }
         testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger
@@ -322,6 +328,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             whenever(it.childCount).thenReturn(0)
         }
         testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger
@@ -363,6 +370,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             )
         )
         testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger
@@ -402,6 +410,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         }
         whenever(mockResources.getResourceEntryName(validTarget.id)).thenReturn(null)
         testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger
@@ -423,6 +432,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         // Given
         val mockEvent: MotionEvent = forge.getForgery()
         testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
             WeakReference<Window>(null),
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger
@@ -474,6 +484,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         }
 
         testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             providers,
             contextRef = WeakReference(mockAppContext),
@@ -537,6 +548,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         }
 
         testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             providers,
             contextRef = WeakReference(mockAppContext),
@@ -587,6 +599,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         )
 
         testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
             contextRef = WeakReference(mockAppContext),
@@ -637,6 +650,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         )
 
         testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
             contextRef = WeakReference(mockAppContext),

@@ -66,6 +66,7 @@ internal class ANRDetectorRunnableTest {
         whenever(mockLooper.thread) doReturn Thread.currentThread()
 
         testedRunnable = ANRDetectorRunnable(
+            rumMonitor.mockSdkCore,
             mockHandler,
             TEST_ANR_THRESHOLD_MS,
             TEST_ANR_TEST_DELAY_MS

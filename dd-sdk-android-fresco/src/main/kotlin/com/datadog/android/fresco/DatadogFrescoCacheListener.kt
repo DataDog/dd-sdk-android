@@ -8,6 +8,7 @@ package com.datadog.android.fresco
 
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.v2.api.SdkCore
 import com.facebook.cache.common.CacheEvent
 import com.facebook.cache.common.CacheEventListener
 import com.facebook.cache.common.CacheKey
@@ -19,7 +20,9 @@ import com.facebook.cache.common.CacheKey
  * It will automatically send RUM Error events whenever a read or write cache operation throws an exception.
  */
 
-class DatadogFrescoCacheListener : CacheEventListener {
+class DatadogFrescoCacheListener(
+    private val sdkCore: SdkCore
+) : CacheEventListener {
 
     // region CacheEventListener
 
@@ -31,7 +34,7 @@ class DatadogFrescoCacheListener : CacheEventListener {
     /** @inheritdoc */
     override fun onReadException(cacheEvent: CacheEvent) {
         val tags = tags(cacheEvent.cacheKey)
-        GlobalRum.get().addError(
+        GlobalRum.get(sdkCore).addError(
             CACHE_ERROR_READ_MESSAGE,
             RumErrorSource.SOURCE,
             cacheEvent.exception,
@@ -66,7 +69,7 @@ class DatadogFrescoCacheListener : CacheEventListener {
 
     /** @inheritDoc */
     override fun onWriteException(cacheEvent: CacheEvent) {
-        GlobalRum.get().addError(
+        GlobalRum.get(sdkCore).addError(
             CACHE_ERROR_WRITE_MESSAGE,
             RumErrorSource.SOURCE,
             cacheEvent.exception,

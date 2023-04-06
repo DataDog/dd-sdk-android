@@ -255,6 +255,29 @@ interface RumMonitor {
     )
 
     /**
+     * Adds a global attribute to all future RUM events.
+     * @param key the attribute key (non null)
+     * @param value the attribute value (or null)
+     */
+    fun addAttribute(key: String, value: Any?)
+
+    /**
+     * Removes a global attribute from all future RUM events.
+     * @param key the attribute key (non null)
+     */
+    fun removeAttribute(key: String)
+
+    /**
+     * @return the global attributes added to this monitor
+     */
+    fun getAttributes(): Map<String, Any?>
+
+    /**
+     * Clear all the global attributes added to this monitor.
+     */
+    fun clearAttributes()
+
+    /**
      * For Datadog internal use only.
      *
      * @see _RumInternalProxy

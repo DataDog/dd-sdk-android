@@ -19,7 +19,6 @@ import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
@@ -107,9 +106,6 @@ internal class DatadogInterceptorWithoutTracesTest {
     lateinit var mockTraceSampler: Sampler
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
-
-    @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     // endregion
@@ -154,16 +150,16 @@ internal class DatadogInterceptorWithoutTracesTest {
         fakeMediaType = MediaType.parse(mediaType)
         fakeRequest = forgeRequest(forge)
         testedInterceptor = DatadogInterceptor(
-            sdkCore = mockSdkCore,
+            sdkCore = rumMonitor.mockSdkCore,
             tracedHosts = emptyMap(),
             tracedRequestListener = mockRequestListener,
             firstPartyHostResolver = mockResolver,
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler
         ) { mockLocalTracer }
-        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
+        whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
+        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
 
         fakeResourceAttributes = forge.exhaustiveAttributes()
 

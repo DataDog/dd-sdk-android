@@ -8,13 +8,10 @@ package com.datadog.android.okhttp
 
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorTest
-import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
@@ -54,7 +51,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         factory: (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return DatadogInterceptor(
-            sdkCore = mockSdkCore,
+            sdkCore = rumMonitor.mockSdkCore,
             tracedHosts = tracedHosts,
             tracedRequestListener = mockRequestListener,
             firstPartyHostResolver = mockResolver,
@@ -134,15 +131,5 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         verify(rumMonitor.mockInstance).notifyInterceptorInstantiated()
         verifyNoMoreInteractions(rumMonitor.mockInstance)
         verifyZeroInteractions(mockRumAttributesProvider)
-    }
-
-    companion object {
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
-        }
     }
 }

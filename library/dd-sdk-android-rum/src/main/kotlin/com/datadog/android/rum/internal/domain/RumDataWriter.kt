@@ -78,7 +78,7 @@ internal class RumDataWriter(
     }
 
     private fun notifyEventSent(viewId: String, storageEvent: StorageEvent) {
-        val rumMonitor = GlobalRum.get()
+        val rumMonitor = GlobalRum.get(sdkCore)
         if (rumMonitor is AdvancedRumMonitor) {
             rumMonitor.eventSent(viewId, storageEvent)
         }

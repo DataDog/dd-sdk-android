@@ -42,23 +42,24 @@ inline fun executeInsideView(
     viewKey: String,
     viewName: String,
     testMethodName: String,
+    sdkCore: SdkCore,
     codeBlock: () -> Unit
 ) {
-    GlobalRum.get().startView(viewKey, viewName, attributes = defaultTestAttributes(testMethodName))
+    GlobalRum.get(sdkCore).startView(viewKey, viewName, attributes = defaultTestAttributes(testMethodName))
     codeBlock()
-    GlobalRum.get().stopView(viewKey)
+    GlobalRum.get(sdkCore).stopView(viewKey)
 }
 
-fun sendRandomActionOutcomeEvent(forge: Forge) {
+fun sendRandomActionOutcomeEvent(forge: Forge, sdkCore: SdkCore) {
     if (forge.aBool()) {
         val key = forge.anAlphabeticalString()
-        GlobalRum.get().startResource(
+        GlobalRum.get(sdkCore).startResource(
             key,
             forge.aResourceMethod(),
             key,
             forge.exhaustiveAttributes()
         )
-        GlobalRum.get().stopResource(
+        GlobalRum.get(sdkCore).stopResource(
             key,
             forge.anInt(min = 200, max = 500),
             forge.aLong(min = 1),
@@ -66,7 +67,7 @@ fun sendRandomActionOutcomeEvent(forge: Forge) {
             forge.exhaustiveAttributes()
         )
     } else {
-        GlobalRum.get().addError(
+        GlobalRum.get(sdkCore).addError(
             forge.anAlphabeticalString(),
             forge.aValueFrom(RumErrorSource::class.java),
             forge.aNullable { forge.aThrowable() },
@@ -123,7 +124,7 @@ fun initializeSdk(
             sdkCore.registerFeature(it)
         }
     GlobalTracer.registerIfAbsent(tracerProvider.invoke(sdkCore))
-    GlobalRum.registerIfAbsent(rumMonitorProvider.invoke(sdkCore))
+    GlobalRum.registerIfAbsent(sdkCore, rumMonitorProvider.invoke(sdkCore))
     return sdkCore
 }
 
@@ -143,10 +144,6 @@ fun cleanStorageFiles() {
         .getInstrumentation()
         .targetContext
         .cacheDir.deleteRecursively()
-}
-
-fun cleanGlobalAttributes() {
-    GlobalRum.removeAttribute(TEST_METHOD_NAME_KEY)
 }
 
 private fun createDatadogCredentials(): Credentials {
