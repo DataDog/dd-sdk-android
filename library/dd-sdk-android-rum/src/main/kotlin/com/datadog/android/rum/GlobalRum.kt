@@ -24,7 +24,7 @@ import java.util.concurrent.Callable
  */
 object GlobalRum {
 
-    internal val registeredMonitors: MutableMap<SdkCore, RumMonitor> = mutableMapOf()
+    private val registeredMonitors: MutableMap<SdkCore, RumMonitor> = mutableMapOf()
 
     /**
      * Identify whether a [RumMonitor] has previously been registered for the given SDK instance.
@@ -79,7 +79,7 @@ object GlobalRum {
     fun registerIfAbsent(sdkCore: SdkCore, provider: Callable<RumMonitor>): Boolean {
         return synchronized(registeredMonitors) {
             if (registeredMonitors.containsKey(sdkCore)) {
-                InternalLogger.UNBOUND.log(
+                sdkCore._internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     "A RumMonitor has already been registered for this SDK instance"
