@@ -78,6 +78,7 @@ internal open class NdkCrashService : CrashService() {
         if (encryptionEnabled) {
             configBuilder.setEncryption(NeverUseThatEncryption())
         }
+        Datadog.setVerbosity(Log.VERBOSE)
         val sdkCore = Datadog.initialize(
             this,
             getCredentials(),
@@ -85,7 +86,6 @@ internal open class NdkCrashService : CrashService() {
             TrackingConsent.GRANTED
         )
         checkNotNull(sdkCore)
-        sdkCore.setVerbosity(Log.VERBOSE)
         if (rumEnabled) {
             sdkCore.registerFeature(
                 RumFeature.Builder(rumApplicationId)

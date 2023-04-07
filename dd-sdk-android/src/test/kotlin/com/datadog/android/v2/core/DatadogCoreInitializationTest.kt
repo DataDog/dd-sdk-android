@@ -193,6 +193,7 @@ internal class DatadogCoreInitializationTest {
         @IntForgery fakeFlags: Int
     ) {
         // Given
+        Datadog.setVerbosity(Int.MAX_VALUE)
         appContext.fakeAppInfo.flags = fakeFlags and ApplicationInfo.FLAG_DEBUGGABLE.inv()
         val configuration = Configuration.Builder(
             crashReportsEnabled = true
@@ -211,7 +212,7 @@ internal class DatadogCoreInitializationTest {
         }
 
         // Then
-        assertThat(testedCore.libraryVerbosity)
+        assertThat(Datadog.libraryVerbosity)
             .isEqualTo(Int.MAX_VALUE)
     }
 
@@ -238,7 +239,7 @@ internal class DatadogCoreInitializationTest {
         }
 
         // Then
-        assertThat(testedCore.libraryVerbosity)
+        assertThat(Datadog.libraryVerbosity)
             .isEqualTo(Log.VERBOSE)
     }
 

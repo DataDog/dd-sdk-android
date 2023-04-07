@@ -110,13 +110,13 @@ class SampleApplication : Application() {
     private fun initializeDatadog() {
         val preferences = Preferences.defaultPreferences(this)
 
+        Datadog.setVerbosity(Log.VERBOSE)
         sdkCore = Datadog.initialize(
             this,
             createDatadogCredentials(),
             createDatadogConfiguration(),
             preferences.getTrackingConsent()
         ) ?: return
-        sdkCore.setVerbosity(Log.VERBOSE)
 
         val rumFeature = createRumFeature()
         sdkCore.registerFeature(rumFeature)

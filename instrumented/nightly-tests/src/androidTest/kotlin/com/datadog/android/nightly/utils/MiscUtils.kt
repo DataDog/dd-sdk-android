@@ -102,6 +102,7 @@ fun initializeSdk(
     tracerProvider: (SdkCore) -> Tracer = { createDefaultAndroidTracer(it) },
     rumMonitorProvider: (SdkCore) -> RumMonitor = { createDefaultRumMonitor(it) }
 ): SdkCore {
+    Datadog.setVerbosity(Log.VERBOSE)
     val sdkCore = Datadog.initialize(
         targetContext,
         createDatadogCredentials(),
@@ -109,7 +110,6 @@ fun initializeSdk(
         consent
     )
     checkNotNull(sdkCore)
-    sdkCore.setVerbosity(Log.VERBOSE)
     mutableListOf(
         rumFeatureProvider(
             RumFeature.Builder(BuildConfig.NIGHTLY_TESTS_RUM_APP_ID)

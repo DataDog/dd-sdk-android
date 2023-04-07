@@ -20,6 +20,7 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.android.v2.core.internal.HashGenerator
+import com.datadog.android.v2.core.internal.SdkCoreRegistry
 import com.datadog.android.v2.core.internal.Sha256HashGenerator
 import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -32,7 +33,9 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -47,6 +50,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -435,7 +439,83 @@ internal class DatadogTest {
         assertThat(sdk.coreFeature.initialized.get()).isTrue()
     }
 
+    @Test
+    fun `𝕄 warn 𝕎 getInstance() { instance is not initialized }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeInstanceName = forge.aNullable { anAlphabeticalString() }
+
+        // When
+        Datadog.getInstance(fakeInstanceName)
+
+        // Then
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                Datadog.MESSAGE_SDK_NOT_INITIALIZED.format(
+                    Locale.US,
+                    fakeInstanceName ?: SdkCoreRegistry.DEFAULT_INSTANCE_NAME
+                )
+            )
+    }
+
+    @Test
+    fun `𝕄 return false 𝕎 isInitialized() { instance is not initialized }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeInstanceName = forge.aNullable { anAlphabeticalString() }
+
+        // When
+        val result = Datadog.isInitialized(fakeInstanceName)
+
+        // Then
+        assertThat(result).isFalse
+        verifyZeroInteractions(logger.mockInternalLogger)
+    }
+
+    @Test
+    fun `𝕄 return true 𝕎 isInitialized() { instance is initialized }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeInstanceName = forge.aNullable { anAlphabeticalString() }
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
+        val configuration = Configuration.Builder(
+            crashReportsEnabled = true
+        ).build()
+
+        Datadog.initialize(
+            fakeInstanceName,
+            appContext.mockInstance,
+            credentials,
+            configuration,
+            fakeConsent
+        )
+
+        // When
+        val result = Datadog.isInitialized(fakeInstanceName)
+
+        // Then
+        assertThat(result).isTrue()
+        verifyZeroInteractions(logger.mockInternalLogger)
+    }
+
     // endregion
+
+    @Test
+    fun `𝕄 set and get lib verbosity 𝕎 setVerbosity() + getVerbosity()`(
+        @IntForgery level: Int
+    ) {
+        // When
+        Datadog.setVerbosity(level)
+        val result = Datadog.getVerbosity()
+
+        // Then
+        assertThat(result).isEqualTo(level)
+    }
 
     @Test
     fun `𝕄 do nothing 𝕎 stop() without initialize`() {

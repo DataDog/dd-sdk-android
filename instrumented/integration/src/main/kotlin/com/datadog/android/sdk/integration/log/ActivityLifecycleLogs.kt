@@ -37,9 +37,9 @@ internal class ActivityLifecycleLogs : AppCompatActivity() {
         val config = RuntimeConfig.configBuilder().build()
         val trackingConsent = intent.getTrackingConsent()
 
+        Datadog.setVerbosity(Log.VERBOSE)
         val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
         checkNotNull(sdkCore)
-        sdkCore.setVerbosity(Log.VERBOSE)
         val features = mutableListOf(
             RuntimeConfig.logsFeatureBuilder().build(),
             RuntimeConfig.tracingFeatureBuilder().build()

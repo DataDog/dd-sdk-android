@@ -8,6 +8,7 @@ package com.datadog.android.v2.core
 
 import android.util.Log
 import com.datadog.android.BuildConfig
+import com.datadog.android.Datadog
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
@@ -16,7 +17,7 @@ internal class SdkInternalLogger(
     private val sdkCore: SdkCore?,
     devLogHandlerFactory: () -> LogcatLogHandler = {
         LogcatLogHandler(DEV_LOG_TAG) { level ->
-            level >= (sdkCore?.getVerbosity() ?: Log.VERBOSE)
+            level >= Datadog.getVerbosity()
         }
     },
     sdkLogHandlerFactory: () -> LogcatLogHandler? = {
@@ -30,7 +31,7 @@ internal class SdkInternalLogger(
 
     /**
      * Global Dev Logger. This logger is meant for user's debugging purposes.
-     * Logcat logs are conditioned by the [DatadogCore.libraryVerbosity].
+     * Logcat logs are conditioned by the [Datadog.libraryVerbosity].
      * No Datadog logs should be sent.
      */
     internal val devLogger = devLogHandlerFactory.invoke()
