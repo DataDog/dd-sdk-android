@@ -1,6 +1,6 @@
 # Datadog Android SDK documentation
 
-This folder has dedicated documentation for:
+This folder has, or is linked to, dedicated documentation for:
 
 ## Main features
 * [Android Log Collection (reference link)](https://docs.datadoghq.com/logs/log_collection/android/)
