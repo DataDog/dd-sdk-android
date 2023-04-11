@@ -6,6 +6,7 @@
 
 package com.datadog.android.v2.core.internal.net
 
+import android.net.TrafficStats
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.v2.api.InternalLogger
@@ -97,6 +98,7 @@ internal class DataOkHttpUploader(
         }
 
         val okHttpRequest = buildOkHttpRequest(request)
+        TrafficStats.setThreadStatsTag(Thread.currentThread().id.toInt())
         val call = callFactory.newCall(okHttpRequest)
         val response = call.execute()
         response.close()

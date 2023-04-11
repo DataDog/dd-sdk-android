@@ -41,9 +41,10 @@ internal class NdkNetworkInfoDataWriter(
         ),
         dataMigrator = ConsentAwareFileMigrator(
             fileMover,
-            executorService,
             internalLogger
-        )
+        ),
+        executorService,
+        internalLogger
     ),
     NetworkInfoSerializer(),
     fileWriter,

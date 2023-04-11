@@ -13,6 +13,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Process
 import androidx.annotation.RequiresApi
+import androidx.annotation.WorkerThread
 import com.datadog.android.BuildConfig
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
@@ -51,6 +52,7 @@ import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecut
 import com.datadog.android.core.internal.thread.LoggingThreadPoolExecutor
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.LoggingSyncListener
+import com.datadog.android.core.internal.time.NoOpKronosClock
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.DatadogUserInfoProvider
@@ -103,7 +105,7 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
     internal var contextProvider: ContextProvider = NoOpContextProvider()
 
     internal lateinit var okHttpClient: OkHttpClient
-    internal lateinit var kronosClock: KronosClock
+    internal var kronosClock: KronosClock = NoOpKronosClock()
 
     internal var clientToken: String = ""
     internal var packageName: String = ""
@@ -140,18 +142,19 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
         readConfigurationSettings(configuration)
         readApplicationInformation(appContext, credentials)
         resolveProcessInfo(appContext)
-        initializeClockSync(appContext)
+        setupExecutors()
+        persistenceExecutorService.submit {
+            // Kronos performs I/O operation on startup, it needs to run in background
+            initializeClockSync(appContext)
+        }
         setupOkHttpClient(configuration)
         firstPartyHostHeaderTypeResolver
             .addKnownHostsWithHeaderTypes(configuration.firstPartyHostsWithHeaderTypes)
         androidInfoProvider = DefaultAndroidInfoProvider(appContext)
-        setupExecutors()
         storageDir = File(
             appContext.cacheDir,
             DATADOG_STORAGE_DIR_NAME.format(Locale.US, sdkInstanceId)
         )
-        // Time Provider
-        timeProvider = KronosTimeProvider(kronosClock)
         // BIG NOTE !!
         // Please do not move the block bellow.
         // The NDK crash handler `prepareData` function needs to be called exactly at this moment
@@ -249,6 +252,7 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
         }
     }
 
+    @WorkerThread
     private fun initializeClockSync(appContext: Context) {
         val safeContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             getSafeContext(appContext)
@@ -280,6 +284,8 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
                     )
                 }
             }
+
+            timeProvider = KronosTimeProvider(kronosClock)
         }
     }
 
