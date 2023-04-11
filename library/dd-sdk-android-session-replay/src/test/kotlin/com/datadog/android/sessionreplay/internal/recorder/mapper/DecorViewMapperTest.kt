@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.content.Context
 import android.view.View
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.aMockView
@@ -157,7 +158,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
     // region Window background
 
     @Test
-    fun `M add a ShapeWireframe as Window background W map`() {
+    fun `M add a ShapeWireframe as Window background W map { no PopUpDecorView }`() {
         // Given
         val expectedWindowWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeUniqueIdentifier,
@@ -180,7 +181,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
     }
 
     @Test
-    fun `M do not handle the Window W map {uniqueIdentifier could not be generated}`() {
+    fun `M do not handle the Window background W map {uniqueIdentifier could not be generated}`() {
         // Given
         whenever(
             mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
@@ -207,6 +208,40 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         assertThat(wireframes.size).isEqualTo(mockViewWireframes.size)
         assertThat(wireframes.first()).isNotEqualTo(expectedWindowWireframe)
     }
+
+    @Test
+    fun `M do not handle the Window background W map {PopUpDecorView class name}`(forge: Forge) {
+        // Given
+        val mockPopUpDecorView = forge.aMockView<PopUpDecorView>()
+        whenever(
+            mockuniqueIdentifierGenerator.resolveChildUniqueIdentifier(
+                mockPopUpDecorView,
+                DecorViewMapper.WINDOW_KEY_NAME
+            )
+        ).thenReturn(fakeUniqueIdentifier)
+        whenever(mockViewWireframeMapper.map(mockPopUpDecorView, fakeSystemInformation))
+            .thenReturn(mockViewWireframes)
+        val expectedWindowWireframe = MobileSegment.Wireframe.ShapeWireframe(
+            id = fakeUniqueIdentifier,
+            x = 0,
+            y = 0,
+            width = fakeSystemInformation.screenBounds.width,
+            height = fakeSystemInformation.screenBounds.height,
+            shapeStyle = MobileSegment.ShapeStyle(
+                backgroundColor = DecorViewMapper.WINDOW_WIREFRAME_COLOR,
+                opacity = DecorViewMapper.WINDOW_WIREFRAME_OPACITY
+            )
+        )
+
+        // When
+        val wireframes = testedDecorViewMapper.map(mockPopUpDecorView, fakeSystemInformation)
+
+        // Then
+        assertThat(wireframes.size).isEqualTo(mockViewWireframes.size)
+        assertThat(wireframes.first()).isNotEqualTo(expectedWindowWireframe)
+    }
+
+    private class PopUpDecorView(context: Context) : View(context)
 
     // endregion
 }
