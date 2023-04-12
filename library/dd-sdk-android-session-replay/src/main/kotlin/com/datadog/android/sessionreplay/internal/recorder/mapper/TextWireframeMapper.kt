@@ -12,8 +12,8 @@ import android.view.inputmethod.EditorInfo
 import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.NoOpStringObfuscator
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.FixedLengthStringObfuscator
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.NoOpStringObfuscator
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import com.datadog.android.sessionreplay.model.MobileSegment
 

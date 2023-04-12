@@ -21,8 +21,10 @@ class MaterialExtensionSupport : ExtensionSupport {
     @Suppress("UNCHECKED_CAST")
     override fun getCustomViewMappers():
         Map<SessionReplayPrivacy, Map<Class<*>, WireframeMapper<View, *>>> {
+        val maskUserInputSliderMapper = MaskAllSliderWireframeMapper() as WireframeMapper<View, *>
         val maskAllSliderMapper = MaskAllSliderWireframeMapper() as WireframeMapper<View, *>
         val allowAllSliderMapper = SliderWireframeMapper() as WireframeMapper<View, *>
+        val maskUserInputTabWireframeMapper = MaskAllTabWireframeMapper() as WireframeMapper<View, *>
         val maskAllTabWireframeMapper = MaskAllTabWireframeMapper() as WireframeMapper<View, *>
         val allowAllTabWireframeMapper = TabWireframeMapper() as WireframeMapper<View, *>
         return mapOf(
@@ -33,6 +35,10 @@ class MaterialExtensionSupport : ExtensionSupport {
             SessionReplayPrivacy.MASK_ALL to mapOf(
                 Slider::class.java to maskAllSliderMapper,
                 TabLayout.TabView::class.java to maskAllTabWireframeMapper
+            ),
+            SessionReplayPrivacy.MASK_USER_INPUT to mapOf(
+                Slider::class.java to maskUserInputSliderMapper,
+                TabLayout.TabView::class.java to maskUserInputTabWireframeMapper
             )
         )
     }

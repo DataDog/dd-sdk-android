@@ -7,8 +7,8 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.NoOpStringObfuscator
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.FixedLengthStringObfuscator
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.NoOpStringObfuscator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

@@ -20,6 +20,7 @@ class com.datadog.android.sessionreplay.SessionReplayFeature : com.datadog.andro
 enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - ALLOW_ALL
   - MASK_ALL
+  - MASK_USER_INPUT
 data class com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
   constructor(Long, Long, Long, Long)
 data class com.datadog.android.sessionreplay.internal.recorder.SystemInformation
