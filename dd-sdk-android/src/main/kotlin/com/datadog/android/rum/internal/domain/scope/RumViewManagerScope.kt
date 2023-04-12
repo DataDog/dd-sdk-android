@@ -47,7 +47,8 @@ internal class RumViewManagerScope(
 
     @WorkerThread
     override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope? {
-        if (!applicationDisplayed && event !is RumRawEvent.StopSession) {
+        val canDisplayApplication = !stopped && event !is RumRawEvent.StopSession
+        if (!applicationDisplayed && canDisplayApplication) {
             val isForegroundProcess = CoreFeature.processImportance ==
                 ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
             if (isForegroundProcess) {
@@ -57,7 +58,7 @@ internal class RumViewManagerScope(
 
         delegateToChildren(event, writer)
 
-        if (event is RumRawEvent.StartView) {
+        if (event is RumRawEvent.StartView && !stopped) {
             startForegroundView(event)
         } else if (event is RumRawEvent.StopSession) {
             stopped = true
