@@ -21,10 +21,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.Mock
 
 internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTest() {
 
     lateinit var testedTextWireframeMapper: TextWireframeMapper
+
+    @Mock
+    lateinit var mockStringObfuscator: StringObfuscator
 
     @StringForgery
     lateinit var fakeText: String
@@ -35,7 +39,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
     }
 
     protected open fun initTestedMapper(): TextWireframeMapper {
-        return TextWireframeMapper()
+        return TextWireframeMapper(mockStringObfuscator)
     }
 
     @ParameterizedTest

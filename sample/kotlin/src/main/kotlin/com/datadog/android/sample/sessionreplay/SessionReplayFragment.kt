@@ -57,6 +57,8 @@ internal class SessionReplayFragment :
             R.id.navigation_dropdowns_and_switchers_components ->
                 R.id.fragment_dropdowns_switchers_components
             R.id.navigation_sliders_and_steppers_components -> R.id.fragment_sliders_steppers_components
+            R.id.navigation_different_fonts -> R.id.fragment_different_fonts
+            R.id.navigation_password_edit_text_components -> R.id.fragment_password_edit_text_components
             else -> null
         }
         if (destination != null) {

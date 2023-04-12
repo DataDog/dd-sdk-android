@@ -6,20 +6,23 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.content.res.ColorStateList
 import android.os.Build
-import android.view.View
 import android.widget.EditText
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
 internal open class EditTextViewMapper(
     private val textWireframeMapper: TextWireframeMapper,
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    viewUtils: ViewUtils = ViewUtils
-) : BaseWireframeMapper<EditText, MobileSegment.Wireframe>(viewUtils = viewUtils) {
+    viewUtils: ViewUtils = ViewUtils,
+    private val stringUtils: StringUtils = StringUtils
+) : BaseWireframeMapper<EditText, MobileSegment.Wireframe>(
+    viewUtils = viewUtils,
+    stringUtils = stringUtils
+) {
 
     override fun map(view: EditText, systemInformation: SystemInformation):
         List<MobileSegment.Wireframe> {
@@ -30,18 +33,8 @@ internal open class EditTextViewMapper(
         return mainWireframeList
     }
 
-    private fun resolveUnderlineWireframe(parent: View, pixelsDensity: Float): MobileSegment.Wireframe? {
-        val backgroundTintList = resolveBackgroundTintList(parent)
-        return if (backgroundTintList != null) {
-            resolveUnderlineWireframe(backgroundTintList, parent, pixelsDensity)
-        } else {
-            null
-        }
-    }
-
     private fun resolveUnderlineWireframe(
-        backgroundTintList: ColorStateList,
-        parent: View,
+        parent: EditText,
         pixelsDensity: Float
     ): MobileSegment.Wireframe? {
         val identifier = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
@@ -49,10 +42,7 @@ internal open class EditTextViewMapper(
             UNDERLINE_KEY_NAME
         ) ?: return null
         val viewGlobalBounds = resolveViewGlobalBounds(parent, pixelsDensity)
-        val fieldUnderlineColor = colorAndAlphaAsStringHexa(
-            backgroundTintList.defaultColor,
-            OPAQUE_ALPHA_VALUE
-        )
+        val fieldUnderlineColor = resolveUnderlineColor(parent)
         return MobileSegment.Wireframe.ShapeWireframe(
             identifier,
             viewGlobalBounds.x,
@@ -66,12 +56,16 @@ internal open class EditTextViewMapper(
         )
     }
 
-    private fun resolveBackgroundTintList(view: View): ColorStateList? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            view.backgroundTintList
-        } else {
-            null
+    private fun resolveUnderlineColor(view: EditText): String {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            view.backgroundTintList?.let {
+                return colorAndAlphaAsStringHexa(
+                    it.defaultColor,
+                    OPAQUE_ALPHA_VALUE
+                )
+            }
         }
+        return colorAndAlphaAsStringHexa(view.currentTextColor, OPAQUE_ALPHA_VALUE)
     }
 
     companion object {
