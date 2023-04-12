@@ -21,12 +21,16 @@ internal class FeatureFileOrchestrator(
     consentProvider: ConsentProvider,
     pendingOrchestrator: FileOrchestrator,
     grantedOrchestrator: FileOrchestrator,
-    dataMigrator: DataMigrator<TrackingConsent>
+    dataMigrator: DataMigrator<TrackingConsent>,
+    executorService: ExecutorService,
+    internalLogger: InternalLogger
 ) : ConsentAwareFileOrchestrator(
     consentProvider,
     pendingOrchestrator,
     grantedOrchestrator,
-    dataMigrator
+    dataMigrator,
+    executorService,
+    internalLogger
 ) {
 
     constructor(
@@ -49,9 +53,10 @@ internal class FeatureFileOrchestrator(
         ),
         ConsentAwareFileMigrator(
             FileMover(internalLogger),
-            executorService,
             internalLogger
-        )
+        ),
+        executorService,
+        internalLogger
     )
 
     companion object {

@@ -6,25 +6,30 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
+import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
+import com.datadog.android.v2.api.InternalLogger
 import java.io.File
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.RejectedExecutionException
 
 internal open class ConsentAwareFileOrchestrator(
     consentProvider: ConsentProvider,
     internal val pendingOrchestrator: FileOrchestrator,
     internal val grantedOrchestrator: FileOrchestrator,
-    internal val dataMigrator: DataMigrator<TrackingConsent>
+    internal val dataMigrator: DataMigrator<TrackingConsent>,
+    internal val executorService: ExecutorService,
+    internal val internalLogger: InternalLogger
 ) : FileOrchestrator, TrackingConsentProviderCallback {
 
     private lateinit var delegateOrchestrator: FileOrchestrator
 
     init {
-        @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
         handleConsentChange(null, consentProvider.getConsent())
         @Suppress("LeakingThis")
         consentProvider.registerCallback(this)
@@ -70,7 +75,6 @@ internal open class ConsentAwareFileOrchestrator(
         previousConsent: TrackingConsent,
         newConsent: TrackingConsent
     ) {
-        @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
         handleConsentChange(previousConsent, newConsent)
     }
 
@@ -78,20 +82,32 @@ internal open class ConsentAwareFileOrchestrator(
 
     // region Internal
 
-    @WorkerThread
+    @AnyThread
     private fun handleConsentChange(
         previousConsent: TrackingConsent?,
         newConsent: TrackingConsent
     ) {
         val previousOrchestrator = resolveDelegateOrchestrator(previousConsent)
         val newOrchestrator = resolveDelegateOrchestrator(newConsent)
-        dataMigrator.migrateData(
-            previousConsent,
-            previousOrchestrator,
-            newConsent,
-            newOrchestrator
-        )
-        delegateOrchestrator = newOrchestrator
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            executorService.submit {
+                dataMigrator.migrateData(
+                    previousConsent,
+                    previousOrchestrator,
+                    newConsent,
+                    newOrchestrator
+                )
+                delegateOrchestrator = newOrchestrator
+            }
+        } catch (e: RejectedExecutionException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                DataMigrator.ERROR_REJECTED,
+                e
+            )
+        }
     }
 
     private fun resolveDelegateOrchestrator(consent: TrackingConsent?): FileOrchestrator {

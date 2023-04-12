@@ -11,17 +11,14 @@ import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
@@ -32,8 +29,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.io.File
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.RejectedExecutionException
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -55,16 +50,12 @@ internal class ConsentAwareFileMigratorTest {
     lateinit var mockFileMover: FileMover
 
     @Mock
-    lateinit var mockExecutorService: ExecutorService
-
-    @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`() {
         testedMigrator = ConsentAwareFileMigrator(
             mockFileMover,
-            mockExecutorService,
             mockInternalLogger
         )
     }
@@ -76,6 +67,7 @@ internal class ConsentAwareFileMigratorTest {
     ) {
         // Given
         whenever(mockPreviousOrchestrator.getRootDir()) doReturn pendingDir
+        whenever(mockFileMover.delete(pendingDir)) doReturn true
 
         // When
         testedMigrator.migrateData(
@@ -86,15 +78,7 @@ internal class ConsentAwareFileMigratorTest {
         )
 
         // Then
-        argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
-
-            assertThat(firstValue).isInstanceOf(WipeDataMigrationOperation::class.java)
-            val wipeOperation = firstValue as WipeDataMigrationOperation
-            assertThat(wipeOperation.targetDir).isSameAs(pendingDir)
-            assertThat(wipeOperation.fileMover).isSameAs(mockFileMover)
-            assertThat(wipeOperation.internalLogger).isSameAs(mockInternalLogger)
-        }
+        verify(mockFileMover).delete(pendingDir)
     }
 
     @Test
@@ -103,6 +87,7 @@ internal class ConsentAwareFileMigratorTest {
     ) {
         // Given
         whenever(mockPreviousOrchestrator.getRootDir()) doReturn pendingDir
+        whenever(mockFileMover.delete(pendingDir)) doReturn true
 
         // When
         testedMigrator.migrateData(
@@ -113,15 +98,7 @@ internal class ConsentAwareFileMigratorTest {
         )
 
         // Then
-        argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
-
-            assertThat(firstValue).isInstanceOf(WipeDataMigrationOperation::class.java)
-            val wipeOperation = firstValue as WipeDataMigrationOperation
-            assertThat(wipeOperation.targetDir).isSameAs(pendingDir)
-            assertThat(wipeOperation.fileMover).isSameAs(mockFileMover)
-            assertThat(wipeOperation.internalLogger).isSameAs(mockInternalLogger)
-        }
+        verify(mockFileMover).delete(pendingDir)
     }
 
     @Test
@@ -130,6 +107,7 @@ internal class ConsentAwareFileMigratorTest {
     ) {
         // Given
         whenever(mockNewOrchestrator.getRootDir()) doReturn pendingDir
+        whenever(mockFileMover.delete(pendingDir)) doReturn true
 
         // When
         testedMigrator.migrateData(
@@ -140,15 +118,7 @@ internal class ConsentAwareFileMigratorTest {
         )
 
         // Then
-        argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
-
-            assertThat(firstValue).isInstanceOf(WipeDataMigrationOperation::class.java)
-            val wipeOperation = firstValue as WipeDataMigrationOperation
-            assertThat(wipeOperation.targetDir).isSameAs(pendingDir)
-            assertThat(wipeOperation.fileMover).isSameAs(mockFileMover)
-            assertThat(wipeOperation.internalLogger).isSameAs(mockInternalLogger)
-        }
+        verify(mockFileMover).delete(pendingDir)
     }
 
     @Test
@@ -157,6 +127,7 @@ internal class ConsentAwareFileMigratorTest {
     ) {
         // Given
         whenever(mockNewOrchestrator.getRootDir()) doReturn pendingDir
+        whenever(mockFileMover.delete(pendingDir)) doReturn true
 
         // When
         testedMigrator.migrateData(
@@ -167,15 +138,7 @@ internal class ConsentAwareFileMigratorTest {
         )
 
         // Then
-        argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
-
-            assertThat(firstValue).isInstanceOf(WipeDataMigrationOperation::class.java)
-            val wipeOperation = firstValue as WipeDataMigrationOperation
-            assertThat(wipeOperation.targetDir).isSameAs(pendingDir)
-            assertThat(wipeOperation.fileMover).isSameAs(mockFileMover)
-            assertThat(wipeOperation.internalLogger).isSameAs(mockInternalLogger)
-        }
+        verify(mockFileMover).delete(pendingDir)
     }
 
     @Test
@@ -186,6 +149,7 @@ internal class ConsentAwareFileMigratorTest {
         // Given
         whenever(mockPreviousOrchestrator.getRootDir()) doReturn pendingDir
         whenever(mockNewOrchestrator.getRootDir()) doReturn grantedDir
+        whenever(mockFileMover.moveFiles(pendingDir, grantedDir)) doReturn true
 
         // When
         testedMigrator.migrateData(
@@ -196,16 +160,7 @@ internal class ConsentAwareFileMigratorTest {
         )
 
         // Then
-        argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
-
-            assertThat(firstValue).isInstanceOf(MoveDataMigrationOperation::class.java)
-            val moveOperation = firstValue as MoveDataMigrationOperation
-            assertThat(moveOperation.fromDir).isSameAs(pendingDir)
-            assertThat(moveOperation.toDir).isSameAs(grantedDir)
-            assertThat(moveOperation.fileMover).isSameAs(mockFileMover)
-            assertThat(moveOperation.internalLogger).isSameAs(mockInternalLogger)
-        }
+        verify(mockFileMover).moveFiles(pendingDir, grantedDir)
     }
 
     @RepeatedTest(8)
@@ -221,11 +176,7 @@ internal class ConsentAwareFileMigratorTest {
         )
 
         // Then
-        argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
-
-            assertThat(firstValue).isInstanceOf(NoOpDataMigrationOperation::class.java)
-        }
+        verifyZeroInteractions(mockFileMover)
     }
 
     @Test
@@ -239,11 +190,7 @@ internal class ConsentAwareFileMigratorTest {
         )
 
         // Then
-        argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
-
-            assertThat(firstValue).isInstanceOf(NoOpDataMigrationOperation::class.java)
-        }
+        verifyZeroInteractions(mockFileMover)
     }
 
     @Test
@@ -257,37 +204,6 @@ internal class ConsentAwareFileMigratorTest {
         )
 
         // Then
-        argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
-
-            assertThat(firstValue).isInstanceOf(NoOpDataMigrationOperation::class.java)
-        }
-    }
-
-    @Test
-    fun `𝕄 warn 𝕎 migrateData() {submission rejected}`(
-        @Forgery previousConsent: TrackingConsent,
-        @Forgery newConsent: TrackingConsent,
-        @StringForgery errorMessage: String
-    ) {
-        // Given
-        val exception = RejectedExecutionException(errorMessage)
-        whenever(mockExecutorService.submit(any())) doThrow exception
-
-        // When
-        testedMigrator.migrateData(
-            previousConsent,
-            mockPreviousOrchestrator,
-            newConsent,
-            mockNewOrchestrator
-        )
-
-        // Then
-        verify(mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            DataMigrator.ERROR_REJECTED,
-            throwable = exception
-        )
+        verifyZeroInteractions(mockFileMover)
     }
 }
