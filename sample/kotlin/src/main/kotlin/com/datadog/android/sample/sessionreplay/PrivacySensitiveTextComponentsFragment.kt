@@ -13,13 +13,13 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.datadog.android.sample.R
 
-internal class PasswordEditTextComponentsFragment : Fragment() {
+internal class PrivacySensitiveTextComponentsFragment : Fragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_password_edit_text_components, container, false)
+        return inflater.inflate(R.layout.fragment_privacy_sensitive_text_components, container, false)
     }
 }

@@ -89,7 +89,7 @@
         android:label="@string/different_fonts"/>
 
     <fragment android:id="@+id/fragment_password_edit_text_components"
-        android:name="com.datadog.android.sample.sessionreplay.PasswordEditTextComponentsFragment"
+        android:name="com.datadog.android.sample.sessionreplay.PrivacySensitiveTextComponentsFragment"
         android:label="@string/password_input_components"/>
 
     <fragment android:id="@+id/fragment_session_replay"
