@@ -12,6 +12,9 @@ import android.view.inputmethod.EditorInfo
 import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.NoOpStringObfuscator
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.FixedLengthStringObfuscator
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 /**
@@ -21,14 +24,20 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 open class TextWireframeMapper :
     BaseWireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe> {
 
-    internal val stringObfuscator: StringObfuscator
+    internal val defaultStringObfuscator: StringObfuscator
+    internal val extraSensibleStringsObfuscator: StringObfuscator
 
     constructor() {
-        stringObfuscator = StringObfuscator()
+        defaultStringObfuscator = NoOpStringObfuscator()
+        extraSensibleStringsObfuscator = FixedLengthStringObfuscator()
     }
 
-    internal constructor(stringObfuscator: StringObfuscator) {
-        this.stringObfuscator = stringObfuscator
+    internal constructor(
+        defaultStringObfuscator: StringObfuscator,
+        staticStringObfuscator: StringObfuscator
+    ) {
+        this.defaultStringObfuscator = defaultStringObfuscator
+        this.extraSensibleStringsObfuscator = staticStringObfuscator
     }
 
     override fun map(view: TextView, systemInformation: SystemInformation):
@@ -56,7 +65,7 @@ open class TextWireframeMapper :
      * Resolves the [TextView] text value.
      * @param textView as [TextView]
      */
-    protected open fun resolveTextValue(textView: TextView): String {
+    private fun resolveTextValue(textView: TextView): String {
         return if (textView.text.isNullOrEmpty()) {
             textView.hint?.toString() ?: ""
         } else {
@@ -68,21 +77,26 @@ open class TextWireframeMapper :
      * Resolves the [TextView] text value by applying the general masking rule for this [textView].
      * @param textView as [TextView]
      */
-    protected open fun resolveMaskedTextValue(textView: TextView): String {
+    private fun resolveMaskedTextValue(textView: TextView): String {
         val unmaskedTextValue = resolveTextValue(textView)
-        return if (isPasswordInputType(textView)) {
-            stringObfuscator.obfuscate(unmaskedTextValue)
+        return if (isPrivacySensitive(textView)) {
+            extraSensibleStringsObfuscator.obfuscate(unmaskedTextValue)
         } else {
-            unmaskedTextValue
+            defaultStringObfuscator.obfuscate(unmaskedTextValue)
         }
     }
 
-    private fun isPasswordInputType(view: TextView): Boolean {
+    private fun isPrivacySensitive(view: TextView): Boolean {
+        val classType = view.inputType and EditorInfo.TYPE_MASK_CLASS
         val variation = view.inputType and EditorInfo.TYPE_MASK_VARIATION
-        return variation == EditorInfo.TYPE_TEXT_VARIATION_PASSWORD ||
+        return classType == EditorInfo.TYPE_CLASS_PHONE ||
+            variation == EditorInfo.TYPE_TEXT_VARIATION_PASSWORD ||
             variation == EditorInfo.TYPE_TEXT_VARIATION_WEB_PASSWORD ||
             variation == EditorInfo.TYPE_NUMBER_VARIATION_PASSWORD ||
-            variation == EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            variation == EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
+            variation == EditorInfo.TYPE_TEXT_VARIATION_EMAIL_ADDRESS ||
+            variation == EditorInfo.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS ||
+            variation == EditorInfo.TYPE_TEXT_VARIATION_POSTAL_ADDRESS
     }
 
     // region Internal
