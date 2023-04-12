@@ -29,13 +29,10 @@ import org.mockito.Mock
 
 internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTest() {
 
-    lateinit var testedTextWireframeMapper: TextWireframeMapper
+    lateinit var testedTextWireframeMapper: TextViewMapper
 
     @Mock
-    lateinit var mockDefaultStringObfuscator: StringObfuscator
-
-    @Mock
-    lateinit var mockStaticStringObfuscator: StringObfuscator
+    lateinit var mockStringObfuscator: StringObfuscator
 
     @StringForgery
     lateinit var fakeText: String
@@ -45,13 +42,13 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockDefaultStringObfuscator.obfuscate(fakeText))
+        whenever(mockStringObfuscator.obfuscate(fakeText))
             .thenReturn(fakeDefaultObfuscatedText)
         testedTextWireframeMapper = initTestedMapper()
     }
 
-    protected open fun initTestedMapper(): TextWireframeMapper {
-        return TextWireframeMapper(mockDefaultStringObfuscator, mockStaticStringObfuscator)
+    protected open fun initTestedMapper(): TextViewMapper {
+        return TextViewMapper(mockStringObfuscator)
     }
 
     @ParameterizedTest
@@ -246,7 +243,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         // Given
         val fakeDefaultObfuscatedText = forge.aString()
         val fakeText = forge.aString()
-        whenever(mockDefaultStringObfuscator.obfuscate(fakeText))
+        whenever(mockStringObfuscator.obfuscate(fakeText))
             .thenReturn(fakeDefaultObfuscatedText)
         val mockTextView: TextView = forge.aMockTextView().apply {
             whenever(this.text).thenReturn(fakeText)
@@ -268,7 +265,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         val fakeDefaultObfuscatedText = forge.aString()
         val fakeHintText = forge.aString()
         val fakeHintColor = forge.anInt(min = 0, max = 0xffffff)
-        whenever(mockDefaultStringObfuscator.obfuscate(fakeHintText))
+        whenever(mockStringObfuscator.obfuscate(fakeHintText))
             .thenReturn(fakeDefaultObfuscatedText)
         val mockColorStateList: ColorStateList = mock {
             whenever(it.defaultColor).thenReturn(fakeHintColor)
@@ -290,7 +287,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
                 it.copy(
                     text = fakeDefaultObfuscatedText,
                     textStyle = MobileSegment.TextStyle(
-                        TextWireframeMapper.SANS_SERIF_FAMILY_NAME,
+                        TextViewMapper.SANS_SERIF_FAMILY_NAME,
                         mockTextView.textSize.toLong()
                             .densityNormalized(fakeSystemInformation.screenDensity),
                         StringUtils.formatColorAndAlphaAsHexa(
@@ -311,7 +308,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         val fakeDefaultObfuscatedText = forge.aString()
         val fakeHintText = forge.aString()
         val fakeTextColor = forge.anInt(min = 0, max = 0xffffff)
-        whenever(mockDefaultStringObfuscator.obfuscate(fakeHintText))
+        whenever(mockStringObfuscator.obfuscate(fakeHintText))
             .thenReturn(fakeDefaultObfuscatedText)
         val mockTextView: TextView = forge.aMockTextView().apply {
             whenever(this.text).thenReturn("")
@@ -331,7 +328,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
                 it.copy(
                     text = fakeDefaultObfuscatedText,
                     textStyle = MobileSegment.TextStyle(
-                        TextWireframeMapper.SANS_SERIF_FAMILY_NAME,
+                        TextViewMapper.SANS_SERIF_FAMILY_NAME,
                         mockTextView.textSize.toLong()
                             .densityNormalized(fakeSystemInformation.screenDensity),
                         StringUtils.formatColorAndAlphaAsHexa(
@@ -347,9 +344,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
     @Test
     fun `M mask the text value W map() { inputType is password }`(forge: Forge) {
         // Given
-        val fakeMaskedText: String = forge.aString()
         val fakeText = forge.aString()
-        whenever(mockStaticStringObfuscator.obfuscate(fakeText)).thenReturn(fakeMaskedText)
         val mockTextView: TextView = forge.aMockTextView().apply {
             whenever(this.text).thenReturn(fakeText)
             whenever(this.typeface).thenReturn(mock())
@@ -364,16 +359,14 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes()
-            .map { it.copy(text = fakeMaskedText) }
+            .map { it.copy(text = TextViewMapper.STATIC_MASK) }
         assertThat(textWireframes).isEqualTo(expectedWireframes)
     }
 
     @Test
     fun `M mask the text value W map() { inputType is visible password }`(forge: Forge) {
         // Given
-        val fakeMaskedText: String = forge.aString()
         val fakeText = forge.aString()
-        whenever(mockStaticStringObfuscator.obfuscate(fakeText)).thenReturn(fakeMaskedText)
         val mockTextView: TextView = forge.aMockTextView().apply {
             whenever(this.text).thenReturn(fakeText)
             whenever(this.typeface).thenReturn(mock())
@@ -388,16 +381,14 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes()
-            .map { it.copy(text = fakeMaskedText) }
+            .map { it.copy(text = TextViewMapper.STATIC_MASK) }
         assertThat(textWireframes).isEqualTo(expectedWireframes)
     }
 
     @Test
     fun `M mask the text value W map() { inputType is number password }`(forge: Forge) {
         // Given
-        val fakeMaskedText: String = forge.aString()
         val fakeText = forge.aString()
-        whenever(mockStaticStringObfuscator.obfuscate(fakeText)).thenReturn(fakeMaskedText)
         val mockTextView: TextView = forge.aMockTextView().apply {
             whenever(this.text).thenReturn(fakeText)
             whenever(this.typeface).thenReturn(mock())
@@ -412,16 +403,14 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes()
-            .map { it.copy(text = fakeMaskedText) }
+            .map { it.copy(text = TextViewMapper.STATIC_MASK) }
         assertThat(textWireframes).isEqualTo(expectedWireframes)
     }
 
     @Test
     fun `M mask the text value W map() { inputType is web password }`(forge: Forge) {
         // Given
-        val fakeMaskedText: String = forge.aString()
         val fakeText = forge.aString()
-        whenever(mockStaticStringObfuscator.obfuscate(fakeText)).thenReturn(fakeMaskedText)
         val mockTextView: TextView = forge.aMockTextView().apply {
             whenever(this.text).thenReturn(fakeText)
             whenever(this.typeface).thenReturn(mock())
@@ -436,16 +425,14 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes()
-            .map { it.copy(text = fakeMaskedText) }
+            .map { it.copy(text = TextViewMapper.STATIC_MASK) }
         assertThat(textWireframes).isEqualTo(expectedWireframes)
     }
 
     @Test
     fun `M mask the text value W map() { inputType is email }`(forge: Forge) {
         // Given
-        val fakeMaskedText: String = forge.aString()
         val fakeText = forge.aString()
-        whenever(mockStaticStringObfuscator.obfuscate(fakeText)).thenReturn(fakeMaskedText)
         val mockTextView: TextView = forge.aMockTextView().apply {
             whenever(this.text).thenReturn(fakeText)
             whenever(this.typeface).thenReturn(mock())
@@ -460,16 +447,14 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes()
-            .map { it.copy(text = fakeMaskedText) }
+            .map { it.copy(text = TextViewMapper.STATIC_MASK) }
         assertThat(textWireframes).isEqualTo(expectedWireframes)
     }
 
     @Test
     fun `M mask the text value W map() { inputType is web email }`(forge: Forge) {
         // Given
-        val fakeMaskedText: String = forge.aString()
         val fakeText = forge.aString()
-        whenever(mockStaticStringObfuscator.obfuscate(fakeText)).thenReturn(fakeMaskedText)
         val mockTextView: TextView = forge.aMockTextView().apply {
             whenever(this.text).thenReturn(fakeText)
             whenever(this.typeface).thenReturn(mock())
@@ -484,16 +469,14 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes()
-            .map { it.copy(text = fakeMaskedText) }
+            .map { it.copy(text = TextViewMapper.STATIC_MASK) }
         assertThat(textWireframes).isEqualTo(expectedWireframes)
     }
 
     @Test
     fun `M mask the text value W map() { inputType is postal address }`(forge: Forge) {
         // Given
-        val fakeMaskedText: String = forge.aString()
         val fakeText = forge.aString()
-        whenever(mockStaticStringObfuscator.obfuscate(fakeText)).thenReturn(fakeMaskedText)
         val mockTextView: TextView = forge.aMockTextView().apply {
             whenever(this.text).thenReturn(fakeText)
             whenever(this.typeface).thenReturn(mock())
@@ -508,16 +491,14 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes()
-            .map { it.copy(text = fakeMaskedText) }
+            .map { it.copy(text = TextViewMapper.STATIC_MASK) }
         assertThat(textWireframes).isEqualTo(expectedWireframes)
     }
 
     @Test
     fun `M mask the text value W map() { inputType is phone number }`(forge: Forge) {
         // Given
-        val fakeMaskedText: String = forge.aString()
         val fakeText = forge.aString()
-        whenever(mockStaticStringObfuscator.obfuscate(fakeText)).thenReturn(fakeMaskedText)
         val mockTextView: TextView = forge.aMockTextView().apply {
             whenever(this.text).thenReturn(fakeText)
             whenever(this.typeface).thenReturn(mock())
@@ -529,7 +510,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes()
-            .map { it.copy(text = fakeMaskedText) }
+            .map { it.copy(text = TextViewMapper.STATIC_MASK) }
         assertThat(textWireframes).isEqualTo(expectedWireframes)
     }
 }

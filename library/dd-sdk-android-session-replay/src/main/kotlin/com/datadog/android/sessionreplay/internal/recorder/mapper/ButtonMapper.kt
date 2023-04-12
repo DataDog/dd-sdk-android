@@ -11,7 +11,7 @@ import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal class ButtonMapper(
-    private val textWireframeMapper: TextWireframeMapper = TextWireframeMapper()
+    private val textWireframeMapper: TextViewMapper = TextViewMapper()
 ) :
     WireframeMapper<Button, MobileSegment.Wireframe.TextWireframe> {
     override fun map(view: Button, systemInformation: SystemInformation):

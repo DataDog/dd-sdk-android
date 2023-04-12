@@ -8,14 +8,22 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.os.Build
 import android.widget.EditText
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
+/**
+ * A [WireframeMapper] implementation to map a [EditText] component in case the
+ * [SessionReplayPrivacy.ALLOW_ALL] rule was used in the configuration.
+ * In this case the mapper will use the provided [textViewMapper] used for the current privacy
+ * level and will only mask the [EditText] for which the input type is considered sensible
+ * (password, email, address, postal address, numeric password) with the static mask: [***].
+ */
 internal open class EditTextViewMapper(
-    private val textWireframeMapper: TextWireframeMapper,
+    internal val textViewMapper: TextViewMapper,
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
     viewUtils: ViewUtils = ViewUtils,
     stringUtils: StringUtils = StringUtils
@@ -26,7 +34,7 @@ internal open class EditTextViewMapper(
 
     override fun map(view: EditText, systemInformation: SystemInformation):
         List<MobileSegment.Wireframe> {
-        val mainWireframeList = textWireframeMapper.map(view, systemInformation)
+        val mainWireframeList = textViewMapper.map(view, systemInformation)
         resolveUnderlineWireframe(view, systemInformation.screenDensity)?.let { wireframe ->
             return mainWireframeList + wireframe
         }

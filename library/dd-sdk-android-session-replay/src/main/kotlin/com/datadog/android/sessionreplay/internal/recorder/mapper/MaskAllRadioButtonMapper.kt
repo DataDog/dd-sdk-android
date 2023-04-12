@@ -13,7 +13,7 @@ import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
 internal class MaskAllRadioButtonMapper(
-    textWireframeMapper: TextWireframeMapper,
+    textWireframeMapper: TextViewMapper,
     stringUtils: StringUtils = StringUtils,
     uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
     viewUtils: ViewUtils = ViewUtils

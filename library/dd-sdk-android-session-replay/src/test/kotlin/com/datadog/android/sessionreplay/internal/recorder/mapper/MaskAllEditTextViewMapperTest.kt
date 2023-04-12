@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.DefaultStringObfuscator
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.FixedLengthStringObfuscator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -27,29 +26,23 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class MaskAllTextViewWireframeMapperTest : BaseTextViewWireframeMapperTest() {
-
-    override fun initTestedMapper(): TextWireframeMapper {
-        return MaskAllTextViewMapper(mockDefaultStringObfuscator, mockStaticStringObfuscator)
+internal class MaskAllEditTextViewMapperTest : BaseEditTextViewMapperTest() {
+    override fun initTestInstance(): EditTextViewMapper {
+        return MaskAllEditTextViewMapper(
+            mockTextWireframeMapper,
+            mockuniqueIdentifierGenerator,
+            mockViewUtils,
+            mockStringUtils
+        )
     }
 
     @Test
-    fun `M use the DefaultStringObfuscator as defaultObfuscator when initialized`() {
+    fun `M use only FixedLengthStringObfuscator for bundled TextViewMapper W init`() {
         // When
-        val textViewMapper = MaskAllTextViewMapper()
+        val editTextViewMapper = MaskAllEditTextViewMapper()
 
         // Then
-        assertThat(textViewMapper.defaultStringObfuscator)
-            .isInstanceOf(DefaultStringObfuscator::class.java)
-    }
-
-    @Test
-    fun `M use the StaticStringObfuscator as extraSensibleStringsObfuscator when initialized`() {
-        // When
-        val textViewMapper = MaskAllTextViewMapper()
-
-        // Then
-        assertThat(textViewMapper.extraSensibleStringsObfuscator)
+        assertThat(editTextViewMapper.textViewMapper.stringObfuscator)
             .isInstanceOf(FixedLengthStringObfuscator::class.java)
     }
 }

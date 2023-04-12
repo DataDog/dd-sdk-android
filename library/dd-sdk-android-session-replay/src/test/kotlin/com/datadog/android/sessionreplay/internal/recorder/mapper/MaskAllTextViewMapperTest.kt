@@ -7,9 +7,12 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.DefaultStringObfuscator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
@@ -23,14 +26,19 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class EditTextViewMapperTest : BaseEditTextViewMapperTest() {
+internal class MaskAllTextViewMapperTest : BaseTextViewWireframeMapperTest() {
 
-    override fun initTestInstance(): EditTextViewMapper {
-        return EditTextViewMapper(
-            mockTextWireframeMapper,
-            mockuniqueIdentifierGenerator,
-            mockViewUtils,
-            mockStringUtils
-        )
+    override fun initTestedMapper(): TextViewMapper {
+        return MaskAllTextViewMapper(mockStringObfuscator)
+    }
+
+    @Test
+    fun `M use the DefaultStringObfuscator as defaultObfuscator when initialized`() {
+        // When
+        val textViewMapper = MaskAllTextViewMapper()
+
+        // Then
+        assertThat(textViewMapper.stringObfuscator)
+            .isInstanceOf(DefaultStringObfuscator::class.java)
     }
 }

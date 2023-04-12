@@ -34,7 +34,7 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
     lateinit var mockuniqueIdentifierGenerator: UniqueIdentifierGenerator
 
     @Mock
-    lateinit var mockTextWireframeMapper: TextWireframeMapper
+    lateinit var mockTextWireframeMapper: TextViewMapper
 
     lateinit var fakeTextWireframes: List<MobileSegment.Wireframe.TextWireframe>
 

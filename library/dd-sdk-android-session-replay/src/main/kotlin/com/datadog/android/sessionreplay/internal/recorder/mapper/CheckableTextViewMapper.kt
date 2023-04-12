@@ -16,7 +16,7 @@ import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
 internal abstract class CheckableTextViewMapper<T>(
-    private val textWireframeMapper: TextWireframeMapper,
+    private val textWireframeMapper: TextViewMapper,
     private val stringUtils: StringUtils = StringUtils,
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator,
     viewUtils: ViewUtils = ViewUtils
