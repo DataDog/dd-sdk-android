@@ -20,7 +20,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
     }
     ```
 
-2. Initialize the library with your application context, tracking consent, as well as the [Datadog client token][2] and Application ID provided when you [created a RUM application][6]. For security reasons, you must use a client token: you cannot use [Datadog API keys][3] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code.
+2. Initialize the library with your application context, tracking consent, as well as the [Datadog client token][2] and Application ID provided when you [created a RUM application][6]. For security reasons, you must use a client token; you cannot use [Datadog API keys][3] to configure the `dd-sdk-android` library, as they would be exposed client-side in the Android application APK byte code.
 
    The `APP_VARIANT_NAME` specifies the variant of the application that generates data. This is required in the initialization credentials; use your `BuildConfig.FLAVOR` value or an empty string if you do not have variants. The appropriate ProGuard `mapping.txt` file will be automatically uploaded at build time, allowing you to view de-obfuscated RUM error stack traces. For more information, see [Android Crash Reporting and Error Tracking][7].
  
@@ -54,8 +54,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
                Configuration configuration =
                        new Configuration.Builder(true, true, true, true)
                                .build();
-               Credentials credentials = new Credentials( < CLIENT_TOKEN >, <ENV_NAME >, <APP_VARIANT_NAME >, <
-               APPLICATION_ID >);
+               Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
                Datadog.initialize(this, credentials, configuration, trackingConsent);
            }
        }
@@ -95,8 +94,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
                        new Configuration.Builder(true, true, true, true)
                                .useSite(DatadogSite.EU1)
                                .build();
-               Credentials credentials = new Credentials( < CLIENT_TOKEN >, <ENV_NAME >, <APP_VARIANT_NAME >, <
-               APPLICATION_ID >);
+               Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
                Datadog.initialize(this, credentials, configuration, trackingConsent);
            }
        }
@@ -136,8 +134,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
                        new Configuration.Builder(true, true, true, true)
                                .useSite(DatadogSite.US3)
                                .build();
-               Credentials credentials = new Credentials( < CLIENT_TOKEN >, <ENV_NAME >, <APP_VARIANT_NAME >, <
-               APPLICATION_ID >);
+               Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
                Datadog.initialize(this, credentials, configuration, trackingConsent);
            }
        }
@@ -177,8 +174,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
                        new Configuration.Builder(true, true, true, true)
                                .useSite(DatadogSite.US5)
                                .build();
-               Credentials credentials = new Credentials( < CLIENT_TOKEN >, <ENV_NAME >, <APP_VARIANT_NAME >, <
-               APPLICATION_ID >);
+               Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
                Datadog.initialize(this, credentials, configuration, trackingConsent);
            }
        }
@@ -218,8 +214,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
                        new Configuration.Builder(true, true, true, true)
                                .useSite(DatadogSite.US1_FED)
                                .build();
-               Credentials credentials = new Credentials( < CLIENT_TOKEN >, <ENV_NAME >, <APP_VARIANT_NAME >, <
-               APPLICATION_ID >);
+               Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
                Datadog.initialize(this, credentials, configuration, trackingConsent);
            }
        }
@@ -259,8 +254,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
                        new Configuration.Builder(true, true, true, true)
                                .useSite(DatadogSite.AP1)
                                .build();
-               Credentials credentials = new Credentials( < CLIENT_TOKEN >, <ENV_NAME >, <APP_VARIANT_NAME >, <
-               APPLICATION_ID >);
+               Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
                Datadog.initialize(this, credentials, configuration, trackingConsent);
            }
        }
