@@ -8,17 +8,20 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.TextView
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.DefaultStringObfuscator
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.FixedLengthStringObfuscator
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 
 /**
  * A [WireframeMapper] implementation to map a [TextView] component and apply the
  * [SessionReplayPrivacy.MASK_ALL] masking rule.
  */
 class MaskAllTextViewMapper : TextWireframeMapper {
-    constructor() : super()
+    constructor() : super(DefaultStringObfuscator(), FixedLengthStringObfuscator())
 
-    internal constructor(stringObfuscator: StringObfuscator) : super(stringObfuscator)
-
-    override fun resolveMaskedTextValue(textView: TextView): String {
-        return stringObfuscator.obfuscate(super.resolveTextValue(textView))
-    }
+    internal constructor(
+        defaultStringObfuscator: StringObfuscator,
+        staticStringObfuscator: StringObfuscator
+    ) :
+        super(defaultStringObfuscator, staticStringObfuscator)
 }

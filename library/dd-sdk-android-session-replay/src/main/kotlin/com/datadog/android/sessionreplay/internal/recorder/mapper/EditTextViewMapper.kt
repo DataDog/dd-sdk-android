@@ -18,7 +18,7 @@ internal open class EditTextViewMapper(
     private val textWireframeMapper: TextWireframeMapper,
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
     viewUtils: ViewUtils = ViewUtils,
-    private val stringUtils: StringUtils = StringUtils
+    stringUtils: StringUtils = StringUtils
 ) : BaseWireframeMapper<EditText, MobileSegment.Wireframe>(
     viewUtils = viewUtils,
     stringUtils = stringUtils

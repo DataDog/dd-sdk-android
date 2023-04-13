@@ -123,4 +123,11 @@
     <string name="monospace_typeface_label">Monospace Typeface</string>
     <string name="sans_typeface_label">Sans Typeface</string>
     <string name="password_input_components">Password input components</string>
+    <string name="postal_address_label">Postal Address</string>
+    <string name="web_email_label">Web Email</string>
+    <string name="email_label">Email</string>
+    <string name="web_password_label">Web Password</string>
+    <string name="number_password_label">Number Password</string>
+    <string name="visible_password_label">Visible Password</string>
+    <string name="default_password_label">Default password</string>
 </resources>
