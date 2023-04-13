@@ -57,12 +57,6 @@
           "type": "boolean",
           "description": "Whether this session has a replay",
           "readOnly": true
-        },
-        "is_active": {
-          "type": "boolean",
-          "description": "Whether this session is currently active. Set to false to manually stop a session",
-          "default": true,
-          "readOnly": true
         }
       },
       "readOnly": true
