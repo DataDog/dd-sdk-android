@@ -12,7 +12,6 @@ import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.android.rum.RumFeature
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
-import com.datadog.android.v2.api.SdkCore
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -33,11 +32,12 @@ import okhttp3.Request
  * To use:
  * ```
  *   OkHttpClient client = new OkHttpClient.Builder()
- *       .addInterceptor(new RumInterceptor(sdkCore))
+ *       .addInterceptor(new RumInterceptor())
  *       .build();
  * ```
  *
- * @param sdkCore SDK instance to bind to.
+ * @param sdkInstanceName SDK instance name to bind to, or null to check the default instance.
+ * Instrumentation won't be working until SDK instance is ready.
  * @param firstPartyHosts the list of first party hosts.
  * Requests made to a URL with any one of these hosts (or any subdomain) will:
  * - be considered a first party RUM Resource and categorised as such in your RUM dashboard;
@@ -52,13 +52,13 @@ import okhttp3.Request
  * be kept, `100.0` means all traces will be kept (default value is `20.0`).
  */
 class RumInterceptor(
-    sdkCore: SdkCore,
+    sdkInstanceName: String? = null,
     firstPartyHosts: List<String> = emptyList(),
     rumResourceAttributesProvider: RumResourceAttributesProvider =
         NoOpRumResourceAttributesProvider(),
     @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
 ) : DatadogInterceptor(
-    sdkCore,
+    sdkInstanceName,
     firstPartyHosts,
     rumResourceAttributesProvider = rumResourceAttributesProvider,
     traceSamplingRate = traceSamplingRate

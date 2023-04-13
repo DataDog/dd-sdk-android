@@ -34,9 +34,9 @@ internal class FragmentTrackingPlaygroundActivity : AppCompatActivity() {
             .build()
         val trackingConsent = intent.getTrackingConsent()
 
+        Datadog.setVerbosity(Log.VERBOSE)
         val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
         checkNotNull(sdkCore)
-        sdkCore.setVerbosity(Log.VERBOSE)
 
         sdkCore.registerFeature(
             RuntimeConfig.rumFeatureBuilder()

@@ -15,6 +15,7 @@ import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -167,7 +168,8 @@ internal open class TracingInterceptorTest {
         fakeRequest = forgeRequest(forge)
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
-        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) {
+        whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ ->
             mockLocalTracer
         }
 
@@ -176,16 +178,15 @@ internal open class TracingInterceptorTest {
 
     open fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>> = emptyMap(),
-        factory: (Set<TracingHeaderType>) -> Tracer
+        factory: (SdkCore, Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return TracingInterceptor(
-            rumMonitor.mockSdkCore,
-            tracedHosts,
-            mockRequestListener,
-            mockResolver,
-            fakeOrigin,
-            mockTraceSampler,
-            factory
+            sdkInstanceName = null,
+            tracedHosts = tracedHosts,
+            tracedRequestListener = mockRequestListener,
+            traceOrigin = fakeOrigin,
+            traceSampler = mockTraceSampler,
+            localTracerFactory = factory
         )
     }
 
@@ -204,7 +205,7 @@ internal open class TracingInterceptorTest {
         whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mock()
 
         // When
-        val interceptor = TracingInterceptor(rumMonitor.mockSdkCore)
+        val interceptor = TracingInterceptor()
 
         // Then
         assertThat(interceptor.tracedHosts).isEmpty()
@@ -226,7 +227,7 @@ internal open class TracingInterceptorTest {
         whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mock()
 
         // When
-        val interceptor = TracingInterceptor(rumMonitor.mockSdkCore, hosts)
+        val interceptor = TracingInterceptor(tracedHosts = hosts)
 
         // Then
         assertThat(interceptor.tracedHosts.keys).containsAll(hosts)
@@ -496,7 +497,7 @@ internal open class TracingInterceptorTest {
         whenever(mockTraceSampler.sample()).thenReturn(false)
         fakeLocalHosts =
             forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.B3MULTI) }
-        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
         fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
@@ -525,7 +526,7 @@ internal open class TracingInterceptorTest {
         whenever(mockTraceSampler.sample()).thenReturn(false)
         fakeLocalHosts =
             forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.B3) }
-        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
         fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
@@ -553,7 +554,7 @@ internal open class TracingInterceptorTest {
         whenever(mockTraceSampler.sample()).thenReturn(false)
         fakeLocalHosts =
             forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.TRACECONTEXT) }
-        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
 
         fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
@@ -593,7 +594,7 @@ internal open class TracingInterceptorTest {
                 TracingHeaderType.TRACECONTEXT
             )
         }
-        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
 
         fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
@@ -1395,12 +1396,19 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 init() with no known host`() {
+    fun `𝕄 warn once 𝕎 intercept() with no known host`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
         // GIVEN
-        whenever(mockResolver.isEmpty()).thenReturn(true)
+        whenever(mockResolver.isEmpty()) doReturn true
+        whenever(mockResolver.isFirstPartyUrl(any<String>())) doReturn false
+        whenever(mockResolver.isFirstPartyUrl(any<HttpUrl>())) doReturn false
+        testedInterceptor = instantiateTestedInterceptor { _, _ -> mockLocalTracer }
+        stubChain(mockChain, statusCode)
 
         // WHEN
-        testedInterceptor = instantiateTestedInterceptor { mockLocalTracer }
+        testedInterceptor.intercept(mockChain)
+        testedInterceptor.intercept(mockChain)
 
         verifyZeroInteractions(mockTracer, mockLocalTracer)
         verify(mockInternalLogger)
@@ -1417,7 +1425,7 @@ internal open class TracingInterceptorTest {
     ) {
         // Given
         var called = 0
-        testedInterceptor = instantiateTestedInterceptor {
+        testedInterceptor = instantiateTestedInterceptor { _, _ ->
             called++
             mockLocalTracer
         }
@@ -1515,12 +1523,12 @@ internal open class TracingInterceptorTest {
             "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{1,4}[a-zA-Z0-9]{2,3})\\.)+" +
                 "([A-Za-z]|[A-Za-z][A-Za-z0-9-]{1,2}[A-Za-z0-9])"
         val datadogCore = DatadogSingletonTestConfiguration()
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val rumMonitor = GlobalRumMonitorTestConfiguration(datadogCore)
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor, datadogCore)
+            return listOf(datadogCore, rumMonitor)
         }
     }
 }

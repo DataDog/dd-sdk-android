@@ -196,7 +196,7 @@ class DatadogDataConstraints(val internalLogger: InternalLogger) : DataConstrain
 
     // endregion
 
-    companion object {
+    internal companion object {
 
         private const val MAX_TAG_LENGTH = 200
         private const val MAX_TAG_COUNT = 100

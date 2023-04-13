@@ -8,7 +8,6 @@ package com.datadog.android.nightly.activities
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.datadog.android.Datadog
 import com.datadog.android.nightly.R
 import com.datadog.android.okhttp.rum.RumInterceptor
 import okhttp3.Call
@@ -22,16 +21,14 @@ import java.util.concurrent.TimeUnit
 
 internal open class ResourceTrackingActivity : AppCompatActivity() {
 
-    open val okHttpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .addInterceptor(
-                RumInterceptor(
-                    Datadog.getInstance(),
-                    traceSamplingRate = HUNDRED_PERCENT
-                )
+    open val okHttpClient: OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(
+            RumInterceptor(
+                traceSamplingRate = HUNDRED_PERCENT
             )
-            .build()
-    }
+        )
+        .build()
+
     open val randomUrl: String = RANDOM_URL
     private val countDownLatch = CountDownLatch(1)
 

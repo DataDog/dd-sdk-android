@@ -7,6 +7,7 @@
 package com.datadog.android.v2.core
 
 import android.util.Log
+import com.datadog.android.Datadog
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
@@ -95,7 +96,7 @@ internal class SdkInternalLoggerTest {
         @IntForgery(min = Log.VERBOSE, max = (Log.ASSERT + 1)) sdkVerbosity: Int
     ) {
         // Given
-        whenever(mockSdkCore.getVerbosity()) doReturn sdkVerbosity
+        Datadog.setVerbosity(sdkVerbosity)
 
         // When
         testedInternalLogger = SdkInternalLogger(

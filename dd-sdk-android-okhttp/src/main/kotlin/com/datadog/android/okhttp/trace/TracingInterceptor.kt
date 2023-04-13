@@ -10,11 +10,11 @@ import androidx.annotation.FloatRange
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.okhttp.utils.SdkReference
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.Feature
@@ -66,13 +66,12 @@ import java.util.concurrent.atomic.AtomicReference
 @Suppress("TooManyFunctions", "StringLiteralDuplication")
 open class TracingInterceptor
 internal constructor(
-    internal val sdkCore: SdkCore,
+    sdkInstanceName: String?,
     internal val tracedHosts: Map<String, Set<TracingHeaderType>>,
     internal val tracedRequestListener: TracedRequestListener,
-    internal val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver,
     internal val traceOrigin: String?,
     internal val traceSampler: Sampler,
-    internal val localTracerFactory: (Set<TracingHeaderType>) -> Tracer
+    internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
 ) : Interceptor {
 
     private val localTracerReference: AtomicReference<Tracer> = AtomicReference()
@@ -85,20 +84,15 @@ internal constructor(
         tracedHosts.filterKeys { sanitizedHosts.contains(it) }
     )
 
-    init {
-        if (localFirstPartyHostHeaderTypeResolver.isEmpty() && firstPartyHostResolver.isEmpty()) {
-            sdkCore._internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                WARNING_TRACING_NO_HOSTS
-            )
-        }
+    internal val sdkCoreReference = SdkReference(sdkInstanceName) {
+        onSdkInstanceReady(it)
     }
 
     /**
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
      *
-     * @param sdkCore SDK instance to bind to.
+     * @param sdkInstanceName SDK instance name to bind to, or null to check the default instance.
+     * Instrumentation won't be working until SDK instance is ready.
      * @param tracedHosts a list of all the hosts that you want to be automatically tracked
      * by this interceptor with Datadog style headers. If no host is provided (via this argument or global
      * configuration [Configuration.Builder.setFirstPartyHosts]) the interceptor won't trace any OkHttp [Request],
@@ -110,24 +104,26 @@ internal constructor(
      */
     @JvmOverloads
     constructor(
-        sdkCore: SdkCore,
+        sdkInstanceName: String? = null,
         tracedHosts: List<String>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
-        sdkCore,
+        sdkInstanceName,
         tracedHosts.associateWith { setOf(TracingHeaderType.DATADOG) },
         tracedRequestListener,
-        sdkCore.firstPartyHostResolver,
         null,
         RateBasedSampler(traceSamplingRate.percent()),
-        { AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(it).build() }
+        localTracerFactory = { sdkCore, tracingHeaderTypes ->
+            AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
+        }
     )
 
     /**
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
      *
-     * @param sdkCore SDK instance to bind to.
+     * @param sdkInstanceName SDK instance name to bind to, or null to check the default instance.
+     * Instrumentation won't be working until SDK instance is ready.
      * @param tracedHostsWithHeaderType a list of all the hosts and header types that you want to be automatically tracked
      * by this interceptor. If registering a GlobalTracer, the tracer must be configured with
      * [AndroidTracer.Builder.setTracingHeaderTypes] containing all the necessary header types configured for OkHttp tracking.
@@ -141,24 +137,26 @@ internal constructor(
      */
     @JvmOverloads
     constructor(
-        sdkCore: SdkCore,
+        sdkInstanceName: String? = null,
         tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
-        sdkCore,
+        sdkInstanceName,
         tracedHostsWithHeaderType,
         tracedRequestListener,
-        sdkCore.firstPartyHostResolver,
         null,
         RateBasedSampler(traceSamplingRate.percent()),
-        { AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(it).build() }
+        localTracerFactory = { sdkCore, tracingHeaderTypes ->
+            AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
+        }
     )
 
     /**
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
      *
-     * @param sdkCore SDK instance to bind to.
+     * @param sdkInstanceName SDK instance name to bind to, or null to check the default instance.
+     * Instrumentation won't be working until SDK instance is ready.
      * @param tracedRequestListener a listener for automatically created [Span]s
      * @param traceSamplingRate the sampling rate for APM traces created for auto-instrumented
      * requests. It must be a value between `0.0` and `100.0`. A value of `0.0` means no trace will
@@ -166,30 +164,42 @@ internal constructor(
      */
     @JvmOverloads
     constructor(
-        sdkCore: SdkCore,
+        sdkInstanceName: String? = null,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
-        sdkCore,
+        sdkInstanceName,
         emptyMap(),
         tracedRequestListener,
-        sdkCore.firstPartyHostResolver,
         null,
         RateBasedSampler(traceSamplingRate.percent()),
-        { AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(it).build() }
+        localTracerFactory = { sdkCore, tracingHeaderTypes ->
+            AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
+        }
     )
 
     // region Interceptor
 
     /** @inheritdoc */
     override fun intercept(chain: Interceptor.Chain): Response {
-        val tracer = resolveTracer()
-        val request = chain.request()
-
-        return if (tracer == null || !isRequestTraceable(request)) {
-            intercept(chain, request)
+        val sdkCore = sdkCoreReference.get()
+        if (sdkCore == null) {
+            InternalLogger.UNBOUND.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                "SDK instance for OkHttp instrumentation is not provided, skipping" +
+                    " tracking of request with url=${chain.request().url()}"
+            )
+            return chain.proceed(chain.request())
         } else {
-            interceptAndTrace(chain, request, tracer)
+            val tracer = resolveTracer(sdkCore)
+            val request = chain.request()
+
+            return if (tracer == null || !isRequestTraceable(sdkCore, request)) {
+                intercept(sdkCore, chain, request)
+            } else {
+                interceptAndTrace(sdkCore, chain, request, tracer)
+            }
         }
     }
 
@@ -201,12 +211,14 @@ internal constructor(
      * Called whenever a span was successfully created around an OkHttp [Request].
      * The given [Span] can be updated (e.g.: add custom tags / baggage items) before it is
      * finalized.
+     * @param sdkCore SDK instance to use.
      * @param request the intercepted [Request]
      * @param span the [Span] created around the [Request] (or null if request is not traced)
      * @param response the [Request] response (or null if an error occurred)
      * @param throwable the error which occurred during the [Request] (or null)
      */
     protected open fun onRequestIntercepted(
+        sdkCore: SdkCore,
         request: Request,
         span: Span?,
         response: Response?,
@@ -228,14 +240,27 @@ internal constructor(
 
     // region Internal
 
-    private fun isRequestTraceable(request: Request): Boolean {
+    internal open fun onSdkInstanceReady(sdkCore: SdkCore) {
+        if (localFirstPartyHostHeaderTypeResolver.isEmpty() &&
+            sdkCore.firstPartyHostResolver.isEmpty()
+        ) {
+            sdkCore._internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                WARNING_TRACING_NO_HOSTS
+            )
+        }
+    }
+
+    private fun isRequestTraceable(sdkCore: SdkCore, request: Request): Boolean {
         val url = request.url()
-        return firstPartyHostResolver.isFirstPartyUrl(url) ||
+        return sdkCore.firstPartyHostResolver.isFirstPartyUrl(url) ||
             localFirstPartyHostHeaderTypeResolver.isFirstPartyUrl(url)
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
     private fun interceptAndTrace(
+        sdkCore: SdkCore,
         chain: Interceptor.Chain,
         request: Request,
         tracer: Tracer
@@ -244,7 +269,7 @@ internal constructor(
         val span = buildSpan(tracer, request)
 
         val updatedRequest = try {
-            updateRequest(request, tracer, span, isSampled).build()
+            updateRequest(sdkCore, request, tracer, span, isSampled).build()
         } catch (e: IllegalStateException) {
             sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -257,31 +282,32 @@ internal constructor(
 
         try {
             val response = chain.proceed(updatedRequest)
-            handleResponse(request, response, span, isSampled)
+            handleResponse(sdkCore, request, response, span, isSampled)
             return response
         } catch (e: Throwable) {
-            handleThrowable(request, e, span, isSampled)
+            handleThrowable(sdkCore, request, e, span, isSampled)
             throw e
         }
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
     private fun intercept(
+        sdkCore: SdkCore,
         chain: Interceptor.Chain,
         request: Request
     ): Response {
         try {
             val response = chain.proceed(request)
-            onRequestIntercepted(request, null, response, null)
+            onRequestIntercepted(sdkCore, request, null, response, null)
             return response
         } catch (e: Throwable) {
-            onRequestIntercepted(request, null, null, e)
+            onRequestIntercepted(sdkCore, request, null, null, e)
             throw e
         }
     }
 
     @Synchronized
-    private fun resolveTracer(): Tracer? {
+    private fun resolveTracer(sdkCore: SdkCore): Tracer? {
         val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         return if (tracingFeature == null) {
             sdkCore._internalLogger.log(
@@ -296,18 +322,18 @@ internal constructor(
             GlobalTracer.get()
         } else {
             // we check if we already have a local tracer if not we instantiate one
-            resolveLocalTracer()
+            resolveLocalTracer(sdkCore)
         }
     }
 
-    private fun resolveLocalTracer(): Tracer {
+    private fun resolveLocalTracer(sdkCore: SdkCore): Tracer {
         // only register once
         if (localTracerReference.get() == null) {
             @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
             val localHeaderTypes = localFirstPartyHostHeaderTypeResolver.getAllHeaderTypes()
-            val globalHeaderTypes = firstPartyHostResolver.getAllHeaderTypes()
+            val globalHeaderTypes = sdkCore.firstPartyHostResolver.getAllHeaderTypes()
             val allHeaders = localHeaderTypes.plus(globalHeaderTypes)
-            localTracerReference.compareAndSet(null, localTracerFactory(allHeaders))
+            localTracerReference.compareAndSet(null, localTracerFactory(sdkCore, allHeaders))
             sdkCore._internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -450,19 +476,18 @@ internal constructor(
     }
 
     private fun updateRequest(
+        sdkCore: SdkCore,
         request: Request,
         tracer: Tracer,
         span: Span,
         isSampled: Boolean
     ): Request.Builder {
         val tracedRequestBuilder = request.newBuilder()
-        var tracingHeaderTypes =
+        val tracingHeaderTypes =
             localFirstPartyHostHeaderTypeResolver.headerTypesForUrl(request.url())
-        tracingHeaderTypes = if (!tracingHeaderTypes.isEmpty()) {
-            tracingHeaderTypes
-        } else {
-            firstPartyHostResolver.headerTypesForUrl(request.url())
-        }
+                .ifEmpty {
+                    sdkCore.firstPartyHostResolver.headerTypesForUrl(request.url())
+                }
 
         if (!isSampled) {
             setSampledOutHeaders(tracedRequestBuilder, tracingHeaderTypes, span)
@@ -505,13 +530,14 @@ internal constructor(
     }
 
     private fun handleResponse(
+        sdkCore: SdkCore,
         request: Request,
         response: Response,
         span: Span?,
         isSampled: Boolean
     ) {
         if (!isSampled || span == null) {
-            onRequestIntercepted(request, null, response, null)
+            onRequestIntercepted(sdkCore, request, null, response, null)
         } else {
             val statusCode = response.code()
             span.setTag(Tags.HTTP_STATUS.key, statusCode)
@@ -521,7 +547,7 @@ internal constructor(
             if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
                 (span as? MutableSpan)?.resourceName = RESOURCE_NAME_404
             }
-            onRequestIntercepted(request, span, response, null)
+            onRequestIntercepted(sdkCore, request, span, response, null)
             if (canSendSpan()) {
                 span.finish()
             } else {
@@ -531,19 +557,20 @@ internal constructor(
     }
 
     private fun handleThrowable(
+        sdkCore: SdkCore,
         request: Request,
         throwable: Throwable,
         span: Span?,
         isSampled: Boolean
     ) {
         if (!isSampled || span == null) {
-            onRequestIntercepted(request, null, null, throwable)
+            onRequestIntercepted(sdkCore, request, null, null, throwable)
         } else {
             (span as? MutableSpan)?.isError = true
             span.setTag(DDTags.ERROR_MSG, throwable.message)
             span.setTag(DDTags.ERROR_TYPE, throwable.javaClass.name)
             span.setTag(DDTags.ERROR_STACK, throwable.loggableStackTrace())
-            onRequestIntercepted(request, span, null, throwable)
+            onRequestIntercepted(sdkCore, request, span, null, throwable)
             if (canSendSpan()) {
                 span.finish()
             } else {

@@ -38,9 +38,9 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
         val credentials = RuntimeConfig.credentials()
         val config = RuntimeConfig.configBuilder().build()
         val trackingConsent = intent.getTrackingConsent()
+        Datadog.setVerbosity(Log.VERBOSE)
         val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
         checkNotNull(sdkCore)
-        sdkCore.setVerbosity(Log.VERBOSE)
         val features = mutableListOf(
             // we will use a large long task threshold to make sure we will not have LongTask events
             // noise in our integration tests.

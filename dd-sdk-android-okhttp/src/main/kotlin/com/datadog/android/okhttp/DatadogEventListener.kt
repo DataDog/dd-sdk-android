@@ -7,10 +7,12 @@
 package com.datadog.android.okhttp
 
 import com.datadog.android.okhttp.DatadogEventListener.Factory
+import com.datadog.android.okhttp.utils.SdkReference
 import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import okhttp3.Call
 import okhttp3.EventListener
@@ -229,14 +231,35 @@ internal constructor(
      *       .eventListenerFactory(new DatadogEventListener.Factory())
      *       .build();
      * ```
+     *
+     * @param sdkInstanceName SDK instance name to bind to, or null to check the default instance.
+     * Instrumentation won't be working until SDK instance is ready.
      */
     class Factory(
-        private val sdkCore: SdkCore
+        sdkInstanceName: String? = null
     ) : EventListener.Factory {
+
+        private val sdkCoreReference = SdkReference(sdkInstanceName)
+
         /** @inheritdoc */
         override fun create(call: Call): EventListener {
             val key = identifyRequest(call.request())
-            return DatadogEventListener(sdkCore, key)
+            val sdkCore = sdkCoreReference.get()
+            return if (sdkCore != null) {
+                DatadogEventListener(sdkCore, key)
+            } else {
+                InternalLogger.UNBOUND.log(
+                    InternalLogger.Level.INFO,
+                    InternalLogger.Target.USER,
+                    "No SDK instance is available, skipping tracking" +
+                        " timing information of request with url ${call.request().url()}."
+                )
+                NO_OP_EVENT_LISTENER
+            }
+        }
+
+        internal companion object {
+            val NO_OP_EVENT_LISTENER: EventListener = object : EventListener() {}
         }
     }
 }

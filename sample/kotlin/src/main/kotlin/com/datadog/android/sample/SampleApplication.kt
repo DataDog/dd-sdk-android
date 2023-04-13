@@ -43,7 +43,6 @@ import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingFeature
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.UserInfo
 import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
@@ -63,33 +62,25 @@ import timber.log.Timber
 @Suppress("MagicNumber")
 class SampleApplication : Application() {
 
-    private lateinit var sdkCore: SdkCore
-
     private val tracedHosts = listOf(
         "datadoghq.com",
         "127.0.0.1"
     )
 
-    // TODO RUMM-0000 lazy is needed here, because without it global first party host resolver is
-    //  not available yet at the interceptor construction time
-    private val okHttpClient by lazy {
-        OkHttpClient.Builder()
-            .addInterceptor(RumInterceptor(sdkCore, traceSamplingRate = 100f))
-            .addNetworkInterceptor(TracingInterceptor(sdkCore, traceSamplingRate = 100f))
-            .eventListenerFactory(DatadogEventListener.Factory(sdkCore))
-            .build()
-    }
+    private val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor(RumInterceptor(traceSamplingRate = 100f))
+        .addNetworkInterceptor(TracingInterceptor(traceSamplingRate = 100f))
+        .eventListenerFactory(DatadogEventListener.Factory())
+        .build()
 
-    private val retrofitClient by lazy {
-        Retrofit.Builder()
-            .baseUrl("https://api.datadoghq.com/api/v2/")
-            .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
-            .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
-            .client(okHttpClient)
-            .build()
-    }
+    private val retrofitClient = Retrofit.Builder()
+        .baseUrl("https://api.datadoghq.com/api/v2/")
+        .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
+        .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
+        .client(okHttpClient)
+        .build()
 
-    private val retrofitBaseDataSource by lazy { retrofitClient.create(RemoteDataSource::class.java) }
+    private val retrofitBaseDataSource = retrofitClient.create(RemoteDataSource::class.java)
 
     override fun onCreate() {
         super.onCreate()
@@ -110,13 +101,13 @@ class SampleApplication : Application() {
     private fun initializeDatadog() {
         val preferences = Preferences.defaultPreferences(this)
 
-        sdkCore = Datadog.initialize(
+        Datadog.setVerbosity(Log.VERBOSE)
+        val sdkCore = Datadog.initialize(
             this,
             createDatadogCredentials(),
             createDatadogConfiguration(),
             preferences.getTrackingConsent()
         ) ?: return
-        sdkCore.setVerbosity(Log.VERBOSE)
 
         val rumFeature = createRumFeature()
         sdkCore.registerFeature(rumFeature)

@@ -47,10 +47,6 @@ internal class NoOpSdkCore : SdkCore {
 
     override fun getFeature(featureName: String): FeatureScope? = null
 
-    override fun setVerbosity(level: Int) = Unit
-
-    override fun getVerbosity(): Int = 0
-
     override fun setTrackingConsent(consent: TrackingConsent) = Unit
 
     override fun setUserInfo(userInfo: UserInfo) = Unit

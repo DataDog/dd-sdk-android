@@ -62,8 +62,6 @@ internal class DatadogCore(
     internalLoggerProvider: (SdkCore) -> InternalLogger = { SdkInternalLogger(it) }
 ) : InternalSdkCore {
 
-    internal var libraryVerbosity = Int.MAX_VALUE
-
     internal lateinit var coreFeature: CoreFeature
 
     internal val features: MutableMap<String, SdkFeature> = mutableMapOf()
@@ -158,16 +156,6 @@ internal class DatadogCore(
     /** @inheritDoc */
     override fun getFeature(featureName: String): FeatureScope? {
         return features[featureName]
-    }
-
-    /** @inheritDoc */
-    override fun setVerbosity(level: Int) {
-        libraryVerbosity = level
-    }
-
-    /** @inheritDoc */
-    override fun getVerbosity(): Int {
-        return libraryVerbosity
     }
 
     /** @inheritDoc */
@@ -312,7 +300,7 @@ internal class DatadogCore(
         var mutableConfig = configuration
         if (isDebug and configuration.coreConfig.enableDeveloperModeWhenDebuggable) {
             mutableConfig = modifyConfigurationForDeveloperDebug(configuration)
-            setVerbosity(Log.VERBOSE)
+            Datadog.setVerbosity(Log.VERBOSE)
         }
 
         // always initialize Core Features first

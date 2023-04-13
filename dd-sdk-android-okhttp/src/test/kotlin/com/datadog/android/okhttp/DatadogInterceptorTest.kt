@@ -18,6 +18,7 @@ import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
@@ -73,15 +74,14 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     override fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
-        factory: (Set<TracingHeaderType>) -> Tracer
+        factory: (SdkCore, Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
-        whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mock()
+        whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver
         return DatadogInterceptor(
-            sdkCore = rumMonitor.mockSdkCore,
+            sdkInstanceName = null,
             tracedHosts = tracedHosts,
             tracedRequestListener = mockRequestListener,
-            firstPartyHostResolver = mockResolver,
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler,
             localTracerFactory = factory
@@ -107,10 +107,15 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `M notify monitor W init()`() {
+    fun `M notify monitor once W intercept()`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
         // Given
+        stubChain(mockChain, statusCode)
 
         // When
+        testedInterceptor.intercept(mockChain)
+        testedInterceptor.intercept(mockChain)
 
         // Then
         verify(rumMonitor.mockInstance).notifyInterceptorInstantiated()
@@ -119,7 +124,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     @Test
     fun `M instantiate with default values W init() { no tracing hosts specified }`() {
         // When
-        val interceptor = DatadogInterceptor(rumMonitor.mockSdkCore)
+        val interceptor = DatadogInterceptor()
 
         // Then
         assertThat(interceptor.tracedHosts).isEmpty()
@@ -140,7 +145,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @StringForgery(regex = "[a-z]+\\.[a-z]{3}") hosts: List<String>
     ) {
         // When
-        val interceptor = DatadogInterceptor(rumMonitor.mockSdkCore, hosts)
+        val interceptor = DatadogInterceptor(firstPartyHosts = hosts)
 
         // Then
         assertThat(interceptor.tracedHosts.keys).containsAll(hosts)

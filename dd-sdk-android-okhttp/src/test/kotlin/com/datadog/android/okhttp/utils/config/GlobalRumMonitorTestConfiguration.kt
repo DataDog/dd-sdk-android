@@ -15,14 +15,15 @@ import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 
 // TODO RUMM-2949 Share forgeries/test configurations between modules
-internal class GlobalRumMonitorTestConfiguration :
-    MockTestConfiguration<FakeRumMonitor>(FakeRumMonitor::class.java) {
+internal class GlobalRumMonitorTestConfiguration(
+    private val datadogSingletonTestConfiguration: DatadogSingletonTestConfiguration? = null
+) : MockTestConfiguration<FakeRumMonitor>(FakeRumMonitor::class.java) {
 
     lateinit var mockSdkCore: InternalSdkCore
 
     override fun setUp(forge: Forge) {
         super.setUp(forge)
-        mockSdkCore = mock()
+        mockSdkCore = datadogSingletonTestConfiguration?.mockInstance ?: mock()
         GlobalRum.registerIfAbsent(mockSdkCore, mockInstance)
     }
 

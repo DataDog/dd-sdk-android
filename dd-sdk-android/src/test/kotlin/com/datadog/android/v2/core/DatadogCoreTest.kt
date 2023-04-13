@@ -41,7 +41,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -193,18 +192,6 @@ internal class DatadogCoreTest {
 
         // Then
         verify(mockUserInfoProvider).setUserInfo(userInfo)
-    }
-
-    @Test
-    fun `𝕄 set and get lib verbosity 𝕎 setVerbosity() + getVerbosity()`(
-        @IntForgery level: Int
-    ) {
-        // When
-        testedCore.setVerbosity(level)
-        val result = testedCore.getVerbosity()
-
-        // Then
-        assertThat(result).isEqualTo(level)
     }
 
     @Test

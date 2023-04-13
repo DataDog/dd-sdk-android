@@ -58,30 +58,6 @@ interface SdkCore {
     fun getFeature(featureName: String): FeatureScope?
 
     /**
-     * Sets the verbosity of this instance of the Datadog SDK.
-     *
-     * Messages with a priority level equal or above the given level will be sent to Android's
-     * Logcat.
-     *
-     * @param level one of the Android [android.util.Log] constants
-     * ([android.util.Log.VERBOSE], [android.util.Log.DEBUG], [android.util.Log.INFO],
-     * [android.util.Log.WARN], [android.util.Log.ERROR], [android.util.Log.ASSERT]).
-     */
-    fun setVerbosity(level: Int)
-
-    /**
-     * Gets the verbosity of this instance of the Datadog SDK.
-     *
-     * Messages with a priority level equal or above the given level will be sent to Android's
-     * Logcat.
-     *
-     * @returns level one of the Android [android.util.Log] constants
-     * ([android.util.Log.VERBOSE], [android.util.Log.DEBUG], [android.util.Log.INFO],
-     * [android.util.Log.WARN], [android.util.Log.ERROR], [android.util.Log.ASSERT]).
-     */
-    fun getVerbosity(): Int
-
-    /**
      * Sets the tracking consent regarding the data collection for this instance of the Datadog SDK.
      *
      * @param consent which can take one of the values

@@ -44,9 +44,9 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
 
         val trackingConsent = intent.getTrackingConsent()
 
+        Datadog.setVerbosity(Log.VERBOSE)
         val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
         checkNotNull(sdkCore)
-        sdkCore.setVerbosity(Log.VERBOSE)
 
         sdkCore.registerFeature(
             // we will use a large long task threshold to make sure we will not have LongTask events

@@ -56,9 +56,9 @@ internal class EncryptionTest {
         val configuration = createSdkConfiguration()
         val credentials = createCredentials()
 
+        Datadog.setVerbosity(Log.VERBOSE)
         val sdkCore = Datadog.initialize(targetContext, credentials, configuration, TrackingConsent.PENDING)
         checkNotNull(sdkCore)
-        sdkCore.setVerbosity(Log.VERBOSE)
         val features = mutableListOf(
             RumFeature.Builder(applicationId = forge.anAlphaNumericalString()).build(),
             LogsFeature.Builder().build(),

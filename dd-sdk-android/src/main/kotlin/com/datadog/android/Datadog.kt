@@ -19,6 +19,7 @@ import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.android.v2.core.internal.HashGenerator
 import com.datadog.android.v2.core.internal.SdkCoreRegistry
 import com.datadog.android.v2.core.internal.Sha256HashGenerator
+import java.util.Locale
 
 /**
  * This class initializes the Datadog SDK, and sets up communication with the server.
@@ -28,6 +29,8 @@ object Datadog {
     internal val registry = SdkCoreRegistry(unboundInternalLogger)
 
     internal var hashGenerator: HashGenerator = Sha256HashGenerator()
+
+    internal var libraryVerbosity = Int.MAX_VALUE
 
     // region Initialization
 
@@ -124,13 +127,39 @@ object Datadog {
      * or the default instance if the name is null.
      * @param instanceName the name of the instance to retrieve,
      * or null to get the default instance
-     * @return the existing instance linked with the given name, or null
+     * @return the existing instance linked with the given name, or no-op instance if instance
+     * with given name is not yet initialized.
      */
     @JvmStatic
     @JvmOverloads
     fun getInstance(instanceName: String? = null): SdkCore {
         return synchronized(registry) {
-            registry.getInstance(instanceName) ?: NoOpSdkCore()
+            val sdkInstanceName = instanceName ?: SdkCoreRegistry.DEFAULT_INSTANCE_NAME
+            val sdkInstance = registry.getInstance(sdkInstanceName)
+            if (sdkInstance == null) {
+                unboundInternalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    MESSAGE_SDK_NOT_INITIALIZED.format(Locale.US, sdkInstanceName)
+                )
+                NoOpSdkCore()
+            } else {
+                sdkInstance
+            }
+        }
+    }
+
+    /**
+     * Checks if SDK instance with a given name is initialized.
+     * @param instanceName the name of the instance to retrieve,
+     * or null to check the default instance
+     * @return whenever the instance with given name is initialized or not.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun isInitialized(instanceName: String? = null): Boolean {
+        return synchronized(registry) {
+            registry.getInstance(instanceName) != null
         }
     }
 
@@ -148,6 +177,34 @@ object Datadog {
             instance?.stop()
         }
     }
+
+    /**
+     * Sets the verbosity of this instance of the Datadog SDK.
+     *
+     * Messages with a priority level equal or above the given level will be sent to Android's
+     * Logcat.
+     *
+     * @param level one of the Android [android.util.Log] constants
+     * ([android.util.Log.VERBOSE], [android.util.Log.DEBUG], [android.util.Log.INFO],
+     * [android.util.Log.WARN], [android.util.Log.ERROR], [android.util.Log.ASSERT]).
+     */
+    @JvmStatic
+    fun setVerbosity(level: Int) {
+        libraryVerbosity = level
+    }
+
+    /**
+     * Gets the verbosity of this instance of the Datadog SDK.
+     *
+     * Messages with a priority level equal or above the given level will be sent to Android's
+     * Logcat.
+     *
+     * @returns level one of the Android [android.util.Log] constants
+     * ([android.util.Log.VERBOSE], [android.util.Log.DEBUG], [android.util.Log.INFO],
+     * [android.util.Log.WARN], [android.util.Log.ERROR], [android.util.Log.ASSERT]).
+     */
+    @JvmStatic
+    fun getVerbosity(): Int = libraryVerbosity
 
     // endregion
 
@@ -195,11 +252,9 @@ object Datadog {
     internal const val MESSAGE_ALREADY_INITIALIZED =
         "The Datadog library has already been initialized."
 
-    internal const val MESSAGE_SDK_INITIALIZATION_GUIDE =
-        "Please add the following code in your application's onCreate() method:\n" +
-            "val credentials = Credentials" +
-            "(\"<CLIENT_TOKEN>\", \"<ENVIRONMENT>\", \"<VARIANT>\", \"<APPLICATION_ID>\")\n" +
-            "Datadog.initialize(context, credentials, configuration, trackingConsent);"
+    internal const val MESSAGE_SDK_NOT_INITIALIZED = "SDK instance with name %s is not found," +
+        " returning no-op implementation. Please make sure to call" +
+        " Datadog.initialize([instanceName]) before getting the instance."
 
     internal const val CANNOT_CREATE_SDK_INSTANCE_ID_ERROR =
         "Cannot create SDK instance ID, stopping SDK initialization."

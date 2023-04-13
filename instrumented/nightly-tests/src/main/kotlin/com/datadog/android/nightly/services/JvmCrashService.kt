@@ -69,6 +69,7 @@ internal open class JvmCrashService : CrashService() {
         val configBuilder = Configuration.Builder(
             crashReportsEnabled = crashReportsEnabled
         )
+        Datadog.setVerbosity(Log.VERBOSE)
         val sdkCore = Datadog.initialize(
             this,
             getCredentials(),
@@ -76,7 +77,6 @@ internal open class JvmCrashService : CrashService() {
             TrackingConsent.GRANTED
         )
         checkNotNull(sdkCore)
-        sdkCore.setVerbosity(Log.VERBOSE)
         if (rumEnabled) {
             sdkCore.registerFeature(
                 RumFeature.Builder(rumApplicationId)

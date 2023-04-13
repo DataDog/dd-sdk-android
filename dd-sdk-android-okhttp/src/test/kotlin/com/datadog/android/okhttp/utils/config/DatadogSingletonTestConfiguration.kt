@@ -8,12 +8,13 @@ package com.datadog.android.okhttp.utils.config
 
 import com.datadog.android.Datadog
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import fr.xgouchet.elmyr.Forge
 
 // TODO RUMM-2949 Share forgeries/test configurations between modules
 internal class DatadogSingletonTestConfiguration :
-    MockTestConfiguration<SdkCore>(SdkCore::class.java) {
+    MockTestConfiguration<InternalSdkCore>(InternalSdkCore::class.java) {
 
     override fun setUp(forge: Forge) {
         super.setUp(forge)
