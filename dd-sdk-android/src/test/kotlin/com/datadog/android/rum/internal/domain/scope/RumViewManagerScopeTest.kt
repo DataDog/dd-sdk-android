@@ -790,6 +790,37 @@ internal class RumViewManagerScopeTest {
         assertThat(testedScope.childrenScopes).isEmpty()
     }
 
+    @Test
+    fun `M not start a new view W stopped { application not displayed }`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+        val fakeEvent = forge.startViewEvent()
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(testedScope.childrenScopes).isEmpty()
+    }
+
+    @Test
+    fun `M not start a new view W stopped { application displayed }`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.applicationDisplayed = true
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+        val fakeEvent = forge.startViewEvent()
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(testedScope.childrenScopes).isEmpty()
+    }
+
     // endregion
 
     private fun resolveExpectedTimestamp(timestamp: Long): Long {
