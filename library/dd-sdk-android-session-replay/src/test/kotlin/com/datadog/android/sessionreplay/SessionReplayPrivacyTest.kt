@@ -45,6 +45,7 @@ import org.junit.jupiter.api.extension.Extensions
 )
 internal class SessionReplayPrivacyTest {
 
+    // TODO: REPLAY-0000 Add the proper tests for MASK_USER_INPUT
     @Test
     fun `M return the AllowAll mappers W rule(ALLOW_ALL)`() {
         // When

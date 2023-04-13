@@ -43,10 +43,16 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMappe
  * Defines the Session Replay privacy policy when recording the sessions.
  * @see SessionReplayPrivacy.ALLOW_ALL
  * @see SessionReplayPrivacy.MASK_ALL
+ * @see SessionReplayPrivacy.MASK_USER_INPUT
  *
  */
 enum class SessionReplayPrivacy {
-    /** Does not apply any privacy rule on the recorded data. **/
+    /** Does not apply any privacy rule on the recorded data with an exception for strong privacy
+     * sensitive EditTextViews.
+     * The EditTextViews which have email, password, postal address or phone number
+     * inputType will be masked no matter what the privacy option with space-preserving "x" mask
+     * (each char individually)
+     **/
     ALLOW_ALL,
 
     /**
@@ -54,7 +60,13 @@ enum class SessionReplayPrivacy {
      *  replaced with just a placeholder and switch buttons, check boxes and radio buttons will also
      *  be masked. This is the default privacy rule.
      **/
-    MASK_ALL;
+    MASK_ALL,
+
+    /**
+     * Masks most form fields such as inputs, checkboxes, radio buttons, switchers, sliders, etc.
+     * while recording all other text as is. Inputs are replaced with three asterisks (***).
+     */
+    MASK_USER_INPUT;
 
     @Suppress("LongMethod")
     internal fun mappers(): List<MapperTypeWrapper> {
@@ -93,6 +105,19 @@ enum class SessionReplayPrivacy {
                 switchCompatMapper = MaskAllSwitchCompatMapper(textMapper)
                 seekBarMapper = getMaskAllSeekBarMapper()
                 numberPickerMapper = getMaskAllNumberPickerMapper()
+            }
+            MASK_USER_INPUT -> {
+                // TODO: REPLAY-0000 Add the correct mappers in the followup tickets
+                imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
+                textMapper = TextWireframeMapper()
+                buttonMapper = ButtonMapper(textMapper)
+                editTextViewMapper = EditTextViewMapper(textMapper)
+                checkedTextViewMapper = CheckedTextViewMapper(textMapper)
+                checkBoxMapper = CheckBoxMapper(textMapper)
+                radioButtonMapper = RadioButtonMapper(textMapper)
+                switchCompatMapper = SwitchCompatMapper(textMapper)
+                seekBarMapper = getSeekBarMapper()
+                numberPickerMapper = getNumberPickerMapper()
             }
         }
         val mappersList = mutableListOf(
