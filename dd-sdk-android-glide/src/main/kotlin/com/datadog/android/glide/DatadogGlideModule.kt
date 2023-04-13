@@ -43,6 +43,7 @@ import java.io.InputStream
  */
 open class DatadogGlideModule
 @JvmOverloads constructor(
+    // TODO RUMM-3196 Maybe change provider to the instance name?
     private val sdkCoreProvider: () -> SdkCore = { Datadog.getInstance() },
     private val firstPartyHosts: List<String> = emptyList(),
     private val samplingRate: Float = DEFAULT_SAMPLING_RATE
@@ -85,10 +86,10 @@ open class DatadogGlideModule
         val builder = OkHttpClient.Builder()
 
         val sdkCore = sdkCoreProvider.invoke()
-        builder.eventListenerFactory(DatadogEventListener.Factory(sdkCore))
+        builder.eventListenerFactory(DatadogEventListener.Factory(sdkCore.name))
         builder.addInterceptor(
             DatadogInterceptor(
-                sdkCore,
+                sdkCore.name,
                 firstPartyHosts,
                 traceSamplingRate = samplingRate
             )

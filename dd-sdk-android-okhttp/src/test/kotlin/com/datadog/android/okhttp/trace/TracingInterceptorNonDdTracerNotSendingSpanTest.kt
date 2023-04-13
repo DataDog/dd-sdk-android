@@ -115,9 +115,6 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     lateinit var mockTraceSampler: Sampler
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
-
-    @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     // endregion
@@ -179,13 +176,14 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         }
         fakeUrl = forgeUrl(forge)
         fakeRequest = forgeRequest(forge)
-        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(datadogCore.mockInstance.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
+        whenever(datadogCore.mockInstance._internalLogger) doReturn mockInternalLogger
+        whenever(datadogCore.mockInstance.firstPartyHostResolver) doReturn mockResolver
         doAnswer { false }.whenever(mockResolver).isFirstPartyUrl(any<HttpUrl>())
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(HttpUrl.get(fakeUrl))
 
         GlobalTracer.registerIfAbsent(mockTracer)
-        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
     }
 
     @AfterEach
@@ -195,17 +193,16 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
     open fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
-        factory: (Set<TracingHeaderType>) -> Tracer
+        factory: (SdkCore, Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return object :
             TracingInterceptor(
-                mockSdkCore,
-                tracedHosts,
-                mockRequestListener,
-                mockResolver,
-                fakeOrigin,
-                mockTraceSampler,
-                factory
+                sdkInstanceName = null,
+                tracedHosts = tracedHosts,
+                tracedRequestListener = mockRequestListener,
+                traceOrigin = fakeOrigin,
+                traceSampler = mockTraceSampler,
+                localTracerFactory = factory
             ) {
             override fun canSendSpan(): Boolean {
                 return false
@@ -411,7 +408,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
                 TracingHeaderType.B3MULTI
             )
         }
-        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
         fakeUrl = forgeUrl(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
@@ -443,7 +440,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
                 TracingHeaderType.B3
             )
         }
-        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
         fakeUrl = forgeUrl(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
@@ -473,7 +470,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
                 TracingHeaderType.TRACECONTEXT
             )
         }
-        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
         fakeUrl = forgeUrl(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
@@ -944,7 +941,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
+        whenever(datadogCore.mockInstance.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
         stubChain(mockChain, statusCode)
 
         testedInterceptor.intercept(mockChain)
@@ -1163,11 +1160,21 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 init() with no known host`() {
+    fun `𝕄 warn once 𝕎 intercept() with no known host`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
         whenever(mockResolver.isEmpty()) doReturn true
+        whenever(mockResolver.isFirstPartyUrl(any<String>())) doReturn false
+        whenever(mockResolver.isFirstPartyUrl(any<HttpUrl>())) doReturn false
+        testedInterceptor = instantiateTestedInterceptor(emptyMap()) { _, _ -> mockLocalTracer }
+        stubChain(mockChain, statusCode)
 
-        testedInterceptor = instantiateTestedInterceptor(emptyMap()) { mockLocalTracer }
+        // When
+        testedInterceptor.intercept(mockChain)
+        testedInterceptor.intercept(mockChain)
 
+        // Then
         verifyZeroInteractions(mockTracer, mockLocalTracer)
         verify(mockInternalLogger)
             .log(
@@ -1186,7 +1193,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         val tracedHosts =
             listOf(fakeHostIp, fakeHostName).associateWith { setOf(TracingHeaderType.DATADOG) }
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        testedInterceptor = instantiateTestedInterceptor(tracedHosts) {
+        testedInterceptor = instantiateTestedInterceptor(tracedHosts) { _, _ ->
             called++
             mockLocalTracer
         }

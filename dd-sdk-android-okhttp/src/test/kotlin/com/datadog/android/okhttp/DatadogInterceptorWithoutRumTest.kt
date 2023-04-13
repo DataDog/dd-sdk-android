@@ -11,6 +11,7 @@ import com.datadog.android.okhttp.trace.TracingInterceptorTest
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.nhaarman.mockitokotlin2.any
@@ -48,13 +49,12 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
 
     override fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
-        factory: (Set<TracingHeaderType>) -> Tracer
+        factory: (SdkCore, Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return DatadogInterceptor(
-            sdkCore = rumMonitor.mockSdkCore,
+            sdkInstanceName = null,
             tracedHosts = tracedHosts,
             tracedRequestListener = mockRequestListener,
-            firstPartyHostResolver = mockResolver,
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler,
             localTracerFactory = factory

@@ -23,6 +23,7 @@ import java.util.Locale
  * For more information [https://www.sqlite.org/howtocorrupt.html]
  */
 class DatadogDatabaseErrorHandler(
+    // TODO RUMM-3196 Maybe change provider to the instance name?
     internal val sdkCoreProvider: () -> SdkCore,
     internal val defaultErrorHandler: DatabaseErrorHandler = DefaultDatabaseErrorHandler()
 ) : DatabaseErrorHandler {

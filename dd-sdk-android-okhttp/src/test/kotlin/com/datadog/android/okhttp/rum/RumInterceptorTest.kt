@@ -10,14 +10,8 @@ import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorNotSendingSpanTest
-import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.BaseConfigurator
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -39,11 +33,8 @@ internal class RumInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Test
     fun `M instantiate with default values W init()`() {
-        // Given
-        whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mock()
-
         // When
-        val interceptor = RumInterceptor(rumMonitor.mockSdkCore)
+        val interceptor = RumInterceptor()
 
         // Then
         assertThat(interceptor.tracedHosts).isEmpty()
@@ -56,15 +47,5 @@ internal class RumInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val traceSampler = interceptor.traceSampler as RateBasedSampler
         assertThat(traceSampler.getSamplingRate())
             .isEqualTo(TracingInterceptor.DEFAULT_TRACE_SAMPLING_RATE / 100)
-    }
-
-    companion object {
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
-        }
     }
 }

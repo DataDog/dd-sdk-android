@@ -150,16 +150,16 @@ internal class DatadogInterceptorWithoutTracesTest {
         fakeMediaType = MediaType.parse(mediaType)
         fakeRequest = forgeRequest(forge)
         testedInterceptor = DatadogInterceptor(
-            sdkCore = rumMonitor.mockSdkCore,
+            sdkInstanceName = null,
             tracedHosts = emptyMap(),
             tracedRequestListener = mockRequestListener,
-            firstPartyHostResolver = mockResolver,
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler
-        ) { mockLocalTracer }
+        ) { _, _ -> mockLocalTracer }
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver
 
         fakeResourceAttributes = forge.exhaustiveAttributes()
 
@@ -356,13 +356,13 @@ internal class DatadogInterceptorWithoutTracesTest {
     // endregion
 
     companion object {
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
         val datadogCore = DatadogSingletonTestConfiguration()
+        val rumMonitor = GlobalRumMonitorTestConfiguration(datadogCore)
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor, datadogCore)
+            return listOf(datadogCore, rumMonitor)
         }
     }
 }

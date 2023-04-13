@@ -8,7 +8,6 @@ package com.datadog.android.okhttp
 
 import androidx.annotation.FloatRange
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
@@ -64,26 +63,24 @@ import java.util.Locale
  * ```
  *     val tracedHosts = listOf("example.com", "example.eu")
  *     OkHttpClient client = new OkHttpClient.Builder()
- *         .addInterceptor(new DatadogInterceptor(sdkCore, tracedHosts))
+ *         .addInterceptor(new DatadogInterceptor(tracedHosts))
  *         // Optionally to get information about redirections and retries
- *         // .addNetworkInterceptor(new TracingInterceptor(sdkCore, tracedHosts))
+ *         // .addNetworkInterceptor(new TracingInterceptor(tracedHosts))
  *         .build();
  * ```
  */
 open class DatadogInterceptor
 internal constructor(
-    sdkCore: SdkCore,
+    sdkInstanceName: String?,
     tracedHosts: Map<String, Set<TracingHeaderType>>,
     tracedRequestListener: TracedRequestListener,
-    firstPartyHostResolver: FirstPartyHostHeaderTypeResolver,
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
     traceSampler: Sampler,
-    localTracerFactory: (Set<TracingHeaderType>) -> Tracer
+    localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
 ) : TracingInterceptor(
-    sdkCore,
+    sdkInstanceName,
     tracedHosts,
     tracedRequestListener,
-    firstPartyHostResolver,
     ORIGIN_RUM,
     traceSampler,
     localTracerFactory
@@ -93,7 +90,8 @@ internal constructor(
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s, and
      * track RUM Resources.
      *
-     * @param sdkCore SDK instance to bind to.
+     * @param sdkInstanceName SDK instance name to bind to, or null to check the default instance.
+     * Instrumentation won't be working until SDK instance is ready.
      * @param firstPartyHostsWithHeaderType the list of all the hosts and header types that you want to
      * be automatically tracked by this interceptor.
      * Requests made to a URL with any one of these hosts (or any subdomain) will:
@@ -113,27 +111,29 @@ internal constructor(
      */
     @JvmOverloads
     constructor(
-        sdkCore: SdkCore,
+        sdkInstanceName: String? = null,
         firstPartyHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider(),
         @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
-        sdkCore = sdkCore,
+        sdkInstanceName = sdkInstanceName,
         tracedHosts = firstPartyHostsWithHeaderType,
         tracedRequestListener = tracedRequestListener,
-        firstPartyHostResolver = sdkCore.firstPartyHostResolver,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = RateBasedSampler(traceSamplingRate.percent()),
-        localTracerFactory = { AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(it).build() }
+        localTracerFactory = { sdkCore, tracingHeaderTypes ->
+            AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
+        }
     )
 
     /**
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s, and
      * track RUM Resources.
      *
-     * @param sdkCore SDK instance to bind to.
+     * @param sdkInstanceName SDK instance name to bind to, or null to check the default instance.
+     * Instrumentation won't be working until SDK instance is ready.
      * @param firstPartyHosts the list of first party hosts.
      * Requests made to a URL with any one of these hosts (or any subdomain) will:
      * - be considered a first party RUM Resource and categorised as such in your RUM dashboard;
@@ -152,27 +152,29 @@ internal constructor(
      */
     @JvmOverloads
     constructor(
-        sdkCore: SdkCore,
+        sdkInstanceName: String? = null,
         firstPartyHosts: List<String>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider(),
         @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
-        sdkCore = sdkCore,
+        sdkInstanceName = sdkInstanceName,
         tracedHosts = firstPartyHosts.associateWith { setOf(TracingHeaderType.DATADOG) },
         tracedRequestListener = tracedRequestListener,
-        firstPartyHostResolver = sdkCore.firstPartyHostResolver,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = RateBasedSampler(traceSamplingRate.percent()),
-        localTracerFactory = { AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(it).build() }
+        localTracerFactory = { sdkCore, tracingHeaderTypes ->
+            AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
+        }
     )
 
     /**
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s, and
      * track RUM Resources.
      *
-     * @param sdkCore SDK instance to bind to.
+     * @param sdkInstanceName SDK instance name to bind to, or null to check the default instance.
+     * Instrumentation won't be working until SDK instance is ready.
      * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
      * the possibility to modify the created [io.opentracing.Span].
      * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
@@ -183,30 +185,28 @@ internal constructor(
      */
     @JvmOverloads
     constructor(
-        sdkCore: SdkCore,
+        sdkInstanceName: String? = null,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider(),
         @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
-        sdkCore = sdkCore,
+        sdkInstanceName = sdkInstanceName,
         tracedHosts = emptyMap(),
         tracedRequestListener = tracedRequestListener,
-        firstPartyHostResolver = sdkCore.firstPartyHostResolver,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = RateBasedSampler(traceSamplingRate.percent()),
-        localTracerFactory = { AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(it).build() }
+        localTracerFactory = { sdkCore, tracingHeaderTypes ->
+            AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
+        }
     )
-
-    init {
-        (GlobalRum.get(sdkCore) as? AdvancedNetworkRumMonitor)?.notifyInterceptorInstantiated()
-    }
 
     // region Interceptor
 
     /** @inheritdoc */
     override fun intercept(chain: Interceptor.Chain): Response {
-        val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+        val sdkCore = sdkCoreReference.get()
+        val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
         if (rumFeature != null) {
             val request = chain.request()
             val url = request.url().toString()
@@ -215,7 +215,7 @@ internal constructor(
 
             GlobalRum.get(sdkCore).startResource(requestId, method, url)
         } else {
-            sdkCore._internalLogger.log(
+            sdkCore?._internalLogger?.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 WARN_RUM_DISABLED
@@ -230,26 +230,32 @@ internal constructor(
 
     /** @inheritdoc */
     override fun onRequestIntercepted(
+        sdkCore: SdkCore,
         request: Request,
         span: Span?,
         response: Response?,
         throwable: Throwable?
     ) {
-        super.onRequestIntercepted(request, span, response, throwable)
+        super.onRequestIntercepted(sdkCore, request, span, response, throwable)
         val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         if (rumFeature != null) {
             if (response != null) {
-                handleResponse(request, response, span, span != null)
+                handleResponse(sdkCore, request, response, span, span != null)
             } else {
-                handleThrowable(request, throwable ?: IllegalStateException(ERROR_NO_RESPONSE))
+                handleThrowable(sdkCore, request, throwable ?: IllegalStateException(ERROR_NO_RESPONSE))
             }
         }
     }
 
     /** @inheritdoc */
     override fun canSendSpan(): Boolean {
-        val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+        val rumFeature = sdkCoreReference.get()?.getFeature(Feature.RUM_FEATURE_NAME)
         return rumFeature == null
+    }
+
+    override fun onSdkInstanceReady(sdkCore: SdkCore) {
+        super.onSdkInstanceReady(sdkCore)
+        (GlobalRum.get(sdkCore) as? AdvancedNetworkRumMonitor)?.notifyInterceptorInstantiated()
     }
 
     // endregion
@@ -257,6 +263,7 @@ internal constructor(
     // region Internal
 
     private fun handleResponse(
+        sdkCore: SdkCore,
         request: Request,
         response: Response,
         span: Span?,
@@ -264,9 +271,8 @@ internal constructor(
     ) {
         val requestId = identifyRequest(request)
         val statusCode = response.code()
-        val mimeType = response.header(HEADER_CT)
-        val kind = when {
-            mimeType == null -> RumResourceKind.NATIVE
+        val kind = when (val mimeType = response.header(HEADER_CT)) {
+            null -> RumResourceKind.NATIVE
             else -> RumResourceKind.fromMimeType(mimeType)
         }
         val attributes = if (!isSampled || span == null) {
@@ -281,13 +287,14 @@ internal constructor(
         GlobalRum.get(sdkCore).stopResource(
             requestId,
             statusCode,
-            getBodyLength(response),
+            getBodyLength(response, sdkCore._internalLogger),
             kind,
             attributes + rumResourceAttributesProvider.onProvideAttributes(request, response, null)
         )
     }
 
     private fun handleThrowable(
+        sdkCore: SdkCore,
         request: Request,
         throwable: Throwable
     ) {
@@ -304,13 +311,13 @@ internal constructor(
         )
     }
 
-    private fun getBodyLength(response: Response): Long? {
+    private fun getBodyLength(response: Response, internalLogger: InternalLogger): Long? {
         return try {
             val body = response.peekBody(MAX_BODY_PEEK)
             val contentLength = body.contentLength()
             if (contentLength == 0L) null else contentLength
         } catch (e: IOException) {
-            sdkCore._internalLogger.log(
+            internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
                 ERROR_PEEK_BODY,
@@ -318,7 +325,7 @@ internal constructor(
             )
             null
         } catch (e: IllegalStateException) {
-            sdkCore._internalLogger.log(
+            internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
                 ERROR_PEEK_BODY,
@@ -326,7 +333,7 @@ internal constructor(
             )
             null
         } catch (e: IllegalArgumentException) {
-            sdkCore._internalLogger.log(
+            internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
                 ERROR_PEEK_BODY,
@@ -341,7 +348,7 @@ internal constructor(
     internal companion object {
 
         internal const val WARN_RUM_DISABLED =
-            "You set up a DatadogInterceptor, but RUM features are disabled." +
+            "You set up a DatadogInterceptor, but RUM features are disabled. " +
                 "Make sure you initialized the Datadog SDK with a valid Application Id, " +
                 "and that RUM features are enabled."
 

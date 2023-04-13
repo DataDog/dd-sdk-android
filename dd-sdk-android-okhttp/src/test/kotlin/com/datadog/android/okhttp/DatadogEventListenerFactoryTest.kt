@@ -6,10 +6,13 @@
 
 package com.datadog.android.okhttp
 
+import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.identifyRequest
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -28,11 +31,12 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(BaseConfigurator::class)
-class DatadogEventListenerFactoryTest {
+internal class DatadogEventListenerFactoryTest {
 
     lateinit var testedFactory: DatadogEventListener.Factory
 
@@ -42,7 +46,7 @@ class DatadogEventListenerFactoryTest {
     @StringForgery(regex = "[a-z]+\\.[a-z]{3}")
     lateinit var fakeDomain: String
 
-    lateinit var fakeRequest: Request
+    private lateinit var fakeRequest: Request
 
     @BeforeEach
     fun `set up`() {
@@ -52,7 +56,7 @@ class DatadogEventListenerFactoryTest {
 
         whenever(mockCall.request()) doReturn fakeRequest
 
-        testedFactory = DatadogEventListener.Factory(mock())
+        testedFactory = DatadogEventListener.Factory()
     }
 
     @Test
@@ -63,5 +67,27 @@ class DatadogEventListenerFactoryTest {
         // Then
         check(result is DatadogEventListener)
         assertThat(result.key).isEqualTo(identifyRequest(fakeRequest))
+    }
+
+    @Test
+    fun `𝕄 create no-op event listener 𝕎 create() { SDK instance is not ready }`(
+        @StringForgery fakeSdkInstanceName: String
+    ) {
+        // When
+        val factory = DatadogEventListener.Factory(fakeSdkInstanceName)
+        val result = factory.create(mockCall)
+
+        // Then
+        assertThat(result).isSameAs(DatadogEventListener.Factory.NO_OP_EVENT_LISTENER)
+    }
+
+    companion object {
+        val datadogCore = DatadogSingletonTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(datadogCore)
+        }
     }
 }
