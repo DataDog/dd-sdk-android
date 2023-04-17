@@ -12,32 +12,28 @@ import android.view.inputmethod.EditorInfo
 import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.FixedLengthStringObfuscator
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.NoOpStringObfuscator
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 /**
  * A [WireframeMapper] implementation to map a [TextView] component.
+ * In this case any [TextView] for which the input type is considered sensible (password, email
+ * address, postal address, numeric password) will be masked with the static mask: [***].
+ * All the other text fields will not be masked.
  */
 @Suppress("TooManyFunctions")
-open class TextWireframeMapper :
+open class TextViewMapper :
     BaseWireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe> {
 
-    internal val defaultStringObfuscator: StringObfuscator
-    internal val extraSensibleStringsObfuscator: StringObfuscator
+    internal val stringObfuscator: StringObfuscator
 
     constructor() {
-        defaultStringObfuscator = NoOpStringObfuscator()
-        extraSensibleStringsObfuscator = FixedLengthStringObfuscator()
+        stringObfuscator = NoOpStringObfuscator()
     }
 
-    internal constructor(
-        defaultStringObfuscator: StringObfuscator,
-        staticStringObfuscator: StringObfuscator
-    ) {
-        this.defaultStringObfuscator = defaultStringObfuscator
-        this.extraSensibleStringsObfuscator = staticStringObfuscator
+    internal constructor(stringObfuscator: StringObfuscator) {
+        this.stringObfuscator = stringObfuscator
     }
 
     override fun map(view: TextView, systemInformation: SystemInformation):
@@ -61,10 +57,8 @@ open class TextWireframeMapper :
         )
     }
 
-    /**
-     * Resolves the [TextView] text value.
-     * @param textView as [TextView]
-     */
+    // region Internal
+
     private fun resolveTextValue(textView: TextView): String {
         return if (textView.text.isNullOrEmpty()) {
             textView.hint?.toString() ?: ""
@@ -73,16 +67,12 @@ open class TextWireframeMapper :
         }
     }
 
-    /**
-     * Resolves the [TextView] text value by applying the general masking rule for this [textView].
-     * @param textView as [TextView]
-     */
     private fun resolveMaskedTextValue(textView: TextView): String {
         val unmaskedTextValue = resolveTextValue(textView)
         return if (isPrivacySensitive(textView)) {
-            extraSensibleStringsObfuscator.obfuscate(unmaskedTextValue)
+            STATIC_MASK
         } else {
-            defaultStringObfuscator.obfuscate(unmaskedTextValue)
+            stringObfuscator.obfuscate(unmaskedTextValue)
         }
     }
 
@@ -98,8 +88,6 @@ open class TextWireframeMapper :
             variation == EditorInfo.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS ||
             variation == EditorInfo.TYPE_TEXT_VARIATION_POSTAL_ADDRESS
     }
-
-    // region Internal
 
     private fun resolveTextStyle(textView: TextView, pixelsDensity: Float):
         MobileSegment.TextStyle {
@@ -201,6 +189,7 @@ open class TextWireframeMapper :
     // endregion
 
     companion object {
+        internal const val STATIC_MASK = "***"
         internal const val SANS_SERIF_FAMILY_NAME = "roboto, sans-serif"
         internal const val SERIF_FAMILY_NAME = "serif"
         internal const val MONOSPACE_FAMILY_NAME = "monospace"

@@ -6,12 +6,10 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.obfuscator
 
+import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
+
 internal class FixedLengthStringObfuscator : StringObfuscator {
     override fun obfuscate(stringValue: String): String {
-        return STATIC_MASK
-    }
-
-    companion object {
-        const val STATIC_MASK = "***"
+        return TextViewMapper.STATIC_MASK
     }
 }

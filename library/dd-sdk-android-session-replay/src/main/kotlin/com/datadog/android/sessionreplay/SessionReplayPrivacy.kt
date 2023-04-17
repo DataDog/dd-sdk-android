@@ -25,6 +25,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.EditTextViewMa
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckedTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllEditTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllNumberPickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllRadioButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllSeekBarWireframeMapper
@@ -34,7 +35,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.NumberPickerMa
 import com.datadog.android.sessionreplay.internal.recorder.mapper.RadioButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.TextWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewScreenshotWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
@@ -72,7 +73,7 @@ enum class SessionReplayPrivacy {
     internal fun mappers(): List<MapperTypeWrapper> {
         val viewWireframeMapper = ViewWireframeMapper()
         val imageMapper: ViewScreenshotWireframeMapper
-        val textMapper: TextWireframeMapper
+        val textMapper: TextViewMapper
         val buttonMapper: ButtonMapper
         val editTextViewMapper: EditTextViewMapper
         val checkedTextViewMapper: CheckedTextViewMapper
@@ -84,7 +85,7 @@ enum class SessionReplayPrivacy {
         when (this) {
             ALLOW_ALL -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
-                textMapper = TextWireframeMapper()
+                textMapper = TextViewMapper()
                 buttonMapper = ButtonMapper(textMapper)
                 editTextViewMapper = EditTextViewMapper(textMapper)
                 checkedTextViewMapper = CheckedTextViewMapper(textMapper)
@@ -98,7 +99,7 @@ enum class SessionReplayPrivacy {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
                 textMapper = MaskAllTextViewMapper()
                 buttonMapper = ButtonMapper(textMapper)
-                editTextViewMapper = EditTextViewMapper(textMapper)
+                editTextViewMapper = MaskAllEditTextViewMapper()
                 checkedTextViewMapper = MaskAllCheckedTextViewMapper(textMapper)
                 checkBoxMapper = MaskAllCheckBoxMapper(textMapper)
                 radioButtonMapper = MaskAllRadioButtonMapper(textMapper)
@@ -107,11 +108,10 @@ enum class SessionReplayPrivacy {
                 numberPickerMapper = getMaskAllNumberPickerMapper()
             }
             MASK_USER_INPUT -> {
-                // TODO: REPLAY-0000 Add the correct mappers in the followup tickets
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
-                textMapper = TextWireframeMapper()
+                textMapper = TextViewMapper()
                 buttonMapper = ButtonMapper(textMapper)
-                editTextViewMapper = EditTextViewMapper(textMapper)
+                editTextViewMapper = MaskAllEditTextViewMapper()
                 checkedTextViewMapper = CheckedTextViewMapper(textMapper)
                 checkBoxMapper = CheckBoxMapper(textMapper)
                 radioButtonMapper = RadioButtonMapper(textMapper)

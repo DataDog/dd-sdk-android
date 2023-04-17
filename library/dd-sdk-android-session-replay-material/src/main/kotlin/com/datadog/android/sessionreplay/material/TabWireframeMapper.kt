@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.material
 
 import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
-import com.datadog.android.sessionreplay.internal.recorder.mapper.TextWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.material.internal.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -21,7 +21,7 @@ internal open class TabWireframeMapper(
     private val viewUtils: ViewUtils = ViewUtils,
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
     private val textViewMapper: WireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe> =
-        TextWireframeMapper()
+        TextViewMapper()
 ) : WireframeMapper<TabLayout.TabView, MobileSegment.Wireframe> {
 
     override fun map(

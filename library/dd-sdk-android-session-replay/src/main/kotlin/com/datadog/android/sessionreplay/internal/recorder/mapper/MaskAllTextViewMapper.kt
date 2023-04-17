@@ -7,21 +7,24 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.TextView
+import androidx.annotation.VisibleForTesting
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.DefaultStringObfuscator
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.FixedLengthStringObfuscator
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 
 /**
  * A [WireframeMapper] implementation to map a [TextView] component and apply the
  * [SessionReplayPrivacy.MASK_ALL] masking rule.
+ * In this case any [TextView] for which the input type is considered sensible (password, email
+ * address, postal address, numeric password) will be masked with the static mask: [***].
+ * All the other text fields will be masked with the [DefaultStringObfuscator] which replaces
+ * all characters with 'x' and preserves the text length value.
  */
-class MaskAllTextViewMapper : TextWireframeMapper {
-    constructor() : super(DefaultStringObfuscator(), FixedLengthStringObfuscator())
+class MaskAllTextViewMapper : TextViewMapper {
+    constructor() : super(DefaultStringObfuscator())
 
+    @VisibleForTesting
     internal constructor(
-        defaultStringObfuscator: StringObfuscator,
-        staticStringObfuscator: StringObfuscator
-    ) :
-        super(defaultStringObfuscator, staticStringObfuscator)
+        defaultStringObfuscator: StringObfuscator
+    ) : super(defaultStringObfuscator)
 }

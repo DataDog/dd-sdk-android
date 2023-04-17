@@ -75,7 +75,7 @@ internal abstract class BaseWireframeMapperTest {
                 width = width.toLong().densityNormalized(fakeSystemInformation.screenDensity),
                 height = height.toLong().densityNormalized(fakeSystemInformation.screenDensity),
                 textStyle = MobileSegment.TextStyle(
-                    TextWireframeMapper.SANS_SERIF_FAMILY_NAME,
+                    TextViewMapper.SANS_SERIF_FAMILY_NAME,
                     textSize.toLong().densityNormalized(fakeSystemInformation.screenDensity),
                     textColor
                 ),
@@ -109,12 +109,12 @@ internal abstract class BaseWireframeMapperTest {
             Typeface::class.java.setStaticValue("SERIF", mock<Typeface>())
             Typeface::class.java.setStaticValue("SANS_SERIF", mock<Typeface>())
             return listOf(
-                Arguments.of(Typeface.DEFAULT, TextWireframeMapper.SANS_SERIF_FAMILY_NAME),
-                Arguments.of(Typeface.DEFAULT_BOLD, TextWireframeMapper.SANS_SERIF_FAMILY_NAME),
-                Arguments.of(Typeface.MONOSPACE, TextWireframeMapper.MONOSPACE_FAMILY_NAME),
-                Arguments.of(Typeface.SERIF, TextWireframeMapper.SERIF_FAMILY_NAME),
-                Arguments.of(mock<Typeface>(), TextWireframeMapper.SANS_SERIF_FAMILY_NAME),
-                Arguments.of(null, TextWireframeMapper.SANS_SERIF_FAMILY_NAME)
+                Arguments.of(Typeface.DEFAULT, TextViewMapper.SANS_SERIF_FAMILY_NAME),
+                Arguments.of(Typeface.DEFAULT_BOLD, TextViewMapper.SANS_SERIF_FAMILY_NAME),
+                Arguments.of(Typeface.MONOSPACE, TextViewMapper.MONOSPACE_FAMILY_NAME),
+                Arguments.of(Typeface.SERIF, TextViewMapper.SERIF_FAMILY_NAME),
+                Arguments.of(mock<Typeface>(), TextViewMapper.SANS_SERIF_FAMILY_NAME),
+                Arguments.of(null, TextViewMapper.SANS_SERIF_FAMILY_NAME)
             )
                 .stream()
         }

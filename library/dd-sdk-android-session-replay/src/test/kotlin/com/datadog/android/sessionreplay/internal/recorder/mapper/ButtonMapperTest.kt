@@ -35,7 +35,7 @@ internal class ButtonMapperTest : BaseWireframeMapperTest() {
     private lateinit var testedButtonMapper: ButtonMapper
 
     @Mock
-    lateinit var mockTextWireframeMapper: TextWireframeMapper
+    lateinit var mockTextWireframeMapper: TextViewMapper
 
     @Forgery
     lateinit var fakeTextWireframes: List<MobileSegment.Wireframe.TextWireframe>

@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay.material
 import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
-import com.datadog.android.sessionreplay.internal.recorder.mapper.TextWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
@@ -41,7 +41,7 @@ internal abstract class BaseTabWireframeMapperTest {
     lateinit var mockViewUtils: ViewUtils
 
     @Mock
-    lateinit var mockTextWireframeMapper: TextWireframeMapper
+    lateinit var mockTextWireframeMapper: TextViewMapper
 
     lateinit var testedTabWireframeMapper: TabWireframeMapper
 
