@@ -36,7 +36,8 @@ object Datadog {
 
     /**
      * Initializes a named instance of the Datadog SDK.
-     * @param instanceName the name of the instance (or null to initialize the default instance)
+     * @param instanceName the name of the instance (or null to initialize the default instance).
+     * Note that the instance name should be stable across builds.
      * @param context your application context
      * @param credentials your organization credentials
      * @param configuration the configuration for the SDK library
@@ -70,7 +71,7 @@ object Datadog {
             }
 
             val sdkInstanceId = hashGenerator.generate(
-                "${credentials.clientToken}${configuration.coreConfig.site.siteName}"
+                "$instanceName/${configuration.coreConfig.site.siteName}"
             )
 
             if (sdkInstanceId == null) {

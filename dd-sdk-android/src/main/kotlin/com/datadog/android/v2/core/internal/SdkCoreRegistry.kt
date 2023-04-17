@@ -69,6 +69,6 @@ internal class SdkCoreRegistry(
     // endregion
 
     companion object {
-        const val DEFAULT_INSTANCE_NAME = "main"
+        const val DEFAULT_INSTANCE_NAME = "_dd.sdk_core.default"
     }
 }

@@ -203,7 +203,7 @@ internal class DatadogTest {
         val mockHashGenerator: HashGenerator = mock()
         whenever(
             mockHashGenerator.generate(
-                fakeCredentials.clientToken + fakeConfiguration.coreConfig.site.siteName
+                "null/${fakeConfiguration.coreConfig.site.siteName}"
             )
         ) doReturn fakeHash
         Datadog.hashGenerator = mockHashGenerator
@@ -223,7 +223,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 create instance ID 𝕎 initialize(name)`(
-        @StringForgery name: String,
+        @StringForgery instanceName: String,
         @Forgery fakeCredentials: Credentials,
         @Forgery fakeConfiguration: Configuration,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeHash: String
@@ -232,14 +232,14 @@ internal class DatadogTest {
         val mockHashGenerator: HashGenerator = mock()
         whenever(
             mockHashGenerator.generate(
-                fakeCredentials.clientToken + fakeConfiguration.coreConfig.site.siteName
+                "$instanceName/${fakeConfiguration.coreConfig.site.siteName}"
             )
         ) doReturn fakeHash
         Datadog.hashGenerator = mockHashGenerator
 
         // When
         val instance = Datadog.initialize(
-            name,
+            instanceName,
             appContext.mockInstance,
             fakeCredentials,
             fakeConfiguration,
@@ -261,7 +261,7 @@ internal class DatadogTest {
         val mockHashGenerator: HashGenerator = mock()
         whenever(
             mockHashGenerator.generate(
-                fakeCredentials.clientToken + fakeConfiguration.coreConfig.site.siteName
+                "null/${fakeConfiguration.coreConfig.site.siteName}"
             )
         ) doReturn fakeHash
         Datadog.hashGenerator = mockHashGenerator
@@ -281,7 +281,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 set tracking consent 𝕎 initialize(name)`(
-        @StringForgery name: String,
+        @StringForgery instanceName: String,
         @Forgery fakeCredentials: Credentials,
         @Forgery fakeConfiguration: Configuration,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeHash: String
@@ -290,14 +290,14 @@ internal class DatadogTest {
         val mockHashGenerator: HashGenerator = mock()
         whenever(
             mockHashGenerator.generate(
-                fakeCredentials.clientToken + fakeConfiguration.coreConfig.site.siteName
+                "$instanceName/${fakeConfiguration.coreConfig.site.siteName}"
             )
         ) doReturn fakeHash
         Datadog.hashGenerator = mockHashGenerator
 
         // When
         val instance = Datadog.initialize(
-            name,
+            instanceName,
             appContext.mockInstance,
             fakeCredentials,
             fakeConfiguration,
