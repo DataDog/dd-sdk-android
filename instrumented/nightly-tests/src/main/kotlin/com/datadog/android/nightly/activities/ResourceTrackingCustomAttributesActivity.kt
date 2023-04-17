@@ -6,10 +6,12 @@
 
 package com.datadog.android.nightly.activities
 
+import com.datadog.android.core.internal.utils.percent
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.nightly.SPECIAL_INT_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_NULL_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_STRING_ATTRIBUTE_NAME
-import com.datadog.android.okhttp.rum.RumInterceptor
+import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.android.rum.RumResourceAttributesProvider
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -19,7 +21,7 @@ internal class ResourceTrackingCustomAttributesActivity : ResourceTrackingActivi
 
     override val okHttpClient: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(
-            RumInterceptor(
+            DatadogInterceptor(
                 rumResourceAttributesProvider = object :
                     RumResourceAttributesProvider {
                     override fun onProvideAttributes(
@@ -34,7 +36,7 @@ internal class ResourceTrackingCustomAttributesActivity : ResourceTrackingActivi
                         )
                     }
                 },
-                traceSamplingRate = HUNDRED_PERCENT
+                traceSampler = RateBasedSampler(HUNDRED_PERCENT.percent())
             )
         )
         .build()

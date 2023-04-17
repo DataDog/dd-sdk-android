@@ -111,21 +111,21 @@ object RumAttributes {
 
     /**
      * Indicates the action performed by the Resource which triggered the error. (String)
-     * This value is filled automatically by the [RumMonitor] and the [RumInterceptor].
+     * This value is filled automatically by the [RumMonitor] and the [DatadogInterceptor].
      * @see [RumMonitor.startResource]
      */
     const val ERROR_RESOURCE_METHOD: String = "error.resource.method"
 
     /**
      * The HTTP response status code for the Resource which triggered the error. (Number)
-     * This value is filled automatically by the [RumInterceptor].
+     * This value is filled automatically by the [DatadogInterceptor].
      * @see [RumMonitor.stopResourceWithError]
      */
     const val ERROR_RESOURCE_STATUS_CODE: String = "error.resource.status_code"
 
     /**
      * The URL of a loaded Resource which triggered the error. (String)
-     * This value is filled automatically by the [RumMonitor] and the [RumInterceptor].
+     * This value is filled automatically by the [RumMonitor] and the [DatadogInterceptor].
      * @see [RumMonitor.stopResourceWithError]
      */
     const val ERROR_RESOURCE_URL: String = "error.resource.url"

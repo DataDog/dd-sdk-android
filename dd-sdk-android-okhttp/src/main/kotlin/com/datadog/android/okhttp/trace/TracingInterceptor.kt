@@ -6,12 +6,10 @@
 
 package com.datadog.android.okhttp.trace
 
-import androidx.annotation.FloatRange
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.utils.SdkReference
@@ -107,13 +105,13 @@ internal constructor(
         sdkInstanceName: String? = null,
         tracedHosts: List<String>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
-        @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
+        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE)
     ) : this(
         sdkInstanceName,
         tracedHosts.associateWith { setOf(TracingHeaderType.DATADOG) },
         tracedRequestListener,
         null,
-        RateBasedSampler(traceSamplingRate.percent()),
+        traceSampler,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -140,13 +138,13 @@ internal constructor(
         sdkInstanceName: String? = null,
         tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
-        @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
+        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE)
     ) : this(
         sdkInstanceName,
         tracedHostsWithHeaderType,
         tracedRequestListener,
         null,
-        RateBasedSampler(traceSamplingRate.percent()),
+        traceSampler,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -166,13 +164,13 @@ internal constructor(
     constructor(
         sdkInstanceName: String? = null,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
-        @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
+        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE)
     ) : this(
         sdkInstanceName,
         emptyMap(),
         tracedRequestListener,
         null,
-        RateBasedSampler(traceSamplingRate.percent()),
+        traceSampler,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -605,7 +603,7 @@ internal constructor(
                 "We automatically created a local tracer for you."
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
-        internal const val DEFAULT_TRACE_SAMPLING_RATE: Float = 20f
+        internal const val DEFAULT_TRACE_SAMPLING_RATE: Float = 0.2f
 
         // taken from DatadogHttpCodec
         internal const val DATADOG_TRACE_ID_HEADER = "x-datadog-trace-id"

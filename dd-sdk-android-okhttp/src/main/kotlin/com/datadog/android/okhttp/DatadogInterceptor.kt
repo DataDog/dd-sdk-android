@@ -6,13 +6,10 @@
 
 package com.datadog.android.okhttp
 
-import androidx.annotation.FloatRange
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.rum.NoOpRumResourceAttributesProvider
-import com.datadog.android.okhttp.rum.RumInterceptor
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
@@ -41,23 +38,20 @@ import java.io.IOException
 import java.util.Locale
 
 /**
- * Provides automatic integration for [OkHttpClient] by way of the [Interceptor] system.
+ * Provides automatic RUM & APM integration for [OkHttpClient] by way of the [Interceptor] system.
  *
- * This interceptor will combine the effects of the [TracingInterceptor] and the
- * [RumInterceptor].
- *
- * From [RumInterceptor]: this interceptor will log the request as a RUM Resource, and fill the
+ * For RUM integration: this interceptor will log the request as a RUM Resource, and fill the
  * request information (url, method, status code, optional error). Note that RUM Resources are only
  * tracked when a view is active. You can use one of the existing [ViewTrackingStrategy] when
  * configuring the SDK (see [RumFeature.Builder.useViewTrackingStrategy]) or start a view
  * manually (see [RumMonitor.startView]).
  *
- * From [TracingInterceptor]: This interceptor will create a [Span] around the request and fill the
+ * For APM integration: This interceptor will create a [Span] around the request and fill the
  * request information (url, method, status code, optional error). It will also propagate the span
  * and trace information in the request header to link it with backend spans.
  *
  * Note: If you want to get more insights on the network requests (such as redirections), you can also add
- * this interceptor as a Network level interceptor.
+ * [TracingInterceptor] interceptor as a Network level interceptor.
  *
  * To use:
  * ```
@@ -116,20 +110,20 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider(),
-        @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
+        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE)
     ) : this(
         sdkInstanceName = sdkInstanceName,
         tracedHosts = firstPartyHostsWithHeaderType,
         tracedRequestListener = tracedRequestListener,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
-        traceSampler = RateBasedSampler(traceSamplingRate.percent()),
+        traceSampler = traceSampler,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
     )
 
     /**
-     * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s, and
+     * Creates a [DatadogInterceptor] to automatically create a trace around OkHttp [Request]s, and
      * track RUM Resources.
      *
      * @param sdkInstanceName SDK instance name to bind to, or null to check the default instance.
@@ -157,13 +151,13 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider(),
-        @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
+        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE)
     ) : this(
         sdkInstanceName = sdkInstanceName,
         tracedHosts = firstPartyHosts.associateWith { setOf(TracingHeaderType.DATADOG) },
         tracedRequestListener = tracedRequestListener,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
-        traceSampler = RateBasedSampler(traceSamplingRate.percent()),
+        traceSampler = traceSampler,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -189,13 +183,13 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider(),
-        @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
+        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE)
     ) : this(
         sdkInstanceName = sdkInstanceName,
         tracedHosts = emptyMap(),
         tracedRequestListener = tracedRequestListener,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
-        traceSampler = RateBasedSampler(traceSamplingRate.percent()),
+        traceSampler = traceSampler,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }

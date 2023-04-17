@@ -8,8 +8,10 @@ package com.datadog.android.nightly.activities
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.datadog.android.core.internal.utils.percent
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.nightly.R
-import com.datadog.android.okhttp.rum.RumInterceptor
+import com.datadog.android.okhttp.DatadogInterceptor
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
@@ -23,8 +25,8 @@ internal open class ResourceTrackingActivity : AppCompatActivity() {
 
     open val okHttpClient: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(
-            RumInterceptor(
-                traceSamplingRate = HUNDRED_PERCENT
+            DatadogInterceptor(
+                traceSampler = RateBasedSampler(HUNDRED_PERCENT.percent())
             )
         )
         .build()

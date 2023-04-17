@@ -134,10 +134,11 @@ interface com.datadog.android.core.persistence.Serializer<T: Any>
   companion object 
 fun <T: Any> Serializer<T>.serializeToByteArray(T, com.datadog.android.v2.api.InternalLogger): ByteArray?
 class com.datadog.android.core.sampling.RateBasedSampler : Sampler
+  constructor(() -> Float)
   constructor(Float)
   constructor(Double)
   override fun sample(): Boolean
-  override fun getSamplingRate(): Float?
+  override fun getSamplingRate(): Float
 interface com.datadog.android.core.sampling.Sampler
   fun sample(): Boolean
   fun getSamplingRate(): Float?

@@ -41,7 +41,7 @@ internal class RumResourceTrackingE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
-     * apiMethodSignature: com.datadog.android.okhttp.rum.RumInterceptor#constructor(String? = null, List<String> = emptyList(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+     * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, List<String>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE))
      */
     @Test
     fun rum_resource_tracking() {
@@ -64,8 +64,7 @@ internal class RumResourceTrackingE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
-     * apiMethodSignature: com.datadog.android.okhttp.rum.RumInterceptor#constructor(String? = null, List<String> = emptyList(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-     * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, List<String>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+     * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, List<String>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE))
      */
     @Test
     fun rum_resource_tracking_with_custom_attributes() {
@@ -88,9 +87,8 @@ internal class RumResourceTrackingE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
-     * apiMethodSignature: com.datadog.android.okhttp.trace.TracingInterceptor#constructor(String? = null, TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-     * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-     * apiMethodSignature: com.datadog.android.okhttp.rum.RumInterceptor#constructor(String? = null, List<String> = emptyList(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+     * apiMethodSignature: com.datadog.android.okhttp.trace.TracingInterceptor#constructor(String? = null, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE))
+     * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE))
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setFirstPartyHosts(List<String>): Builder
      */
     @Test
@@ -120,9 +118,8 @@ internal class RumResourceTrackingE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
-     * apiMethodSignature: com.datadog.android.okhttp.trace.TracingInterceptor#constructor(String? = null, TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-     * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-     * apiMethodSignature: com.datadog.android.okhttp.rum.RumInterceptor#constructor(String? = null, List<String> = emptyList(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+     * apiMethodSignature: com.datadog.android.okhttp.trace.TracingInterceptor#constructor(String? = null, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE))
+     * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE))
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setFirstPartyHostsWithHeaderType(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>): Builder
      */
     @Test
@@ -159,8 +156,8 @@ internal class RumResourceTrackingE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
-     * apiMethodSignature: com.datadog.android.okhttp.rum.RumInterceptor#constructor(String? = null, List<String> = emptyList(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-     * apiMethodSignature: com.datadog.android.okhttp.trace.TracingInterceptor#constructor(String? = null, List<String>, TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+     * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, List<String>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE))
+     * apiMethodSignature: com.datadog.android.okhttp.trace.TracingInterceptor#constructor(String? = null, List<String>, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE))
      */
     @Test
     fun rum_resource_tracking_with_network_interceptor() {
@@ -186,8 +183,7 @@ internal class RumResourceTrackingE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
-     * apiMethodSignature: com.datadog.android.okhttp.rum.RumInterceptor#constructor(String? = null, List<String> = emptyList(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-     * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, List<String>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+     * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, List<String>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE))
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setFirstPartyHosts(List<String>): Builder
      */
     @Test
@@ -214,7 +210,7 @@ internal class RumResourceTrackingE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
-     * apiMethodSignature: com.datadog.android.okhttp.rum.RumInterceptor#constructor(String? = null, List<String> = emptyList(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+     * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, List<String>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE))
      */
     @Test
     fun rum_resource_tracking_trace_sampling_75_percent() {
