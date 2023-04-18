@@ -7,8 +7,7 @@
 package com.datadog.android.sessionreplay.material
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllTextViewMapper
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -36,84 +35,12 @@ internal class MaskAllTabWireframeMapperTest : BaseTabWireframeMapperTest() {
     }
 
     @Test
-    fun `M map the Tab to a list of wireframes W map() { tab has label, tab selected }`() {
+    fun `M use a MaskAllTextViewMapper when initialized`() {
         // Given
-        whenever(mockTabView.isSelected).thenReturn(true)
-        val expectedMappedWireframes = fakeTextWireframes
-
-        // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeSystemInformation)
+        val maskAllTabWireframeMapper = MaskAllTabWireframeMapper()
 
         // Then
-        assertThat(mappedWireframes).isEqualTo(expectedMappedWireframes)
-    }
-
-    @Test
-    fun `M map the Tab to a list of wireframes W map() { tab has label, tab not selected }`() {
-        // Given
-        whenever(mockTabView.isSelected).thenReturn(false)
-        val expectedMappedWireframes = fakeTextWireframes
-
-        // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeSystemInformation)
-
-        // Then
-        assertThat(mappedWireframes).isEqualTo(expectedMappedWireframes)
-    }
-
-    @Test
-    fun `M map the Tab to a list of wireframes W map() { tab has no label, tab selected }`() {
-        // Given
-        for (i in 0 until mockTabView.childCount) {
-            whenever(mockTabView.getChildAt(i)).thenReturn(mock())
-        }
-        whenever(mockTabView.isSelected).thenReturn(true)
-
-        // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeSystemInformation)
-
-        // Then
-        assertThat(mappedWireframes).isEmpty()
-    }
-
-    @Test
-    fun `M map the Tab to a list of wireframes W map() { tab has no label, tab not selected }`() {
-        // Given
-        for (i in 0 until mockTabView.childCount) {
-            whenever(mockTabView.getChildAt(i)).thenReturn(mock())
-        }
-        whenever(mockTabView.isSelected).thenReturn(false)
-
-        // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeSystemInformation)
-
-        // Then
-        assertThat(mappedWireframes).isEmpty()
-    }
-
-    @Test
-    fun `M map the Tab to a list of wireframes W map() { tab has no children, tab selected }`() {
-        // Given
-        whenever(mockTabView.childCount).thenReturn(0)
-        whenever(mockTabView.isSelected).thenReturn(true)
-
-        // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeSystemInformation)
-
-        // Then
-        assertThat(mappedWireframes).isEmpty()
-    }
-
-    @Test
-    fun `M map the Tab to a list of wireframes W map() { tab has no children, tab not selected }`() {
-        // Given
-        whenever(mockTabView.childCount).thenReturn(0)
-        whenever(mockTabView.isSelected).thenReturn(false)
-
-        // When
-        val mappedWireframes = testedTabWireframeMapper.map(mockTabView, fakeSystemInformation)
-
-        // Then
-        assertThat(mappedWireframes).isEmpty()
+        assertThat(maskAllTabWireframeMapper.textViewMapper)
+            .isInstanceOf(MaskAllTextViewMapper::class.java)
     }
 }

@@ -20,7 +20,7 @@ import com.google.android.material.tabs.TabLayout.TabView
 internal open class TabWireframeMapper(
     private val viewUtils: ViewUtils = ViewUtils,
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    private val textViewMapper: WireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe> =
+    internal val textViewMapper: WireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe> =
         TextViewMapper()
 ) : WireframeMapper<TabLayout.TabView, MobileSegment.Wireframe> {
 

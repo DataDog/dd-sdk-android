@@ -92,6 +92,6 @@ class MaterialExtensionSupportTest {
         // Then
         assertThat(customMappers.entries.size).isEqualTo(3)
         assertThat(customMappers[SessionReplayPrivacy.MASK_ALL]?.get(TabView::class.java))
-            .isInstanceOf(MaskAllTabWireframeMapper::class.java)
+            .isInstanceOf(TabWireframeMapper::class.java)
     }
 }
