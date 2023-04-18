@@ -115,7 +115,7 @@ enum class SessionReplayPrivacy {
                 checkedTextViewMapper = CheckedTextViewMapper(textMapper)
                 checkBoxMapper = MaskAllCheckBoxMapper(textMapper)
                 radioButtonMapper = MaskAllRadioButtonMapper(textMapper)
-                switchCompatMapper = SwitchCompatMapper(textMapper)
+                switchCompatMapper = MaskAllSwitchCompatMapper(textMapper)
                 seekBarMapper = getSeekBarMapper()
                 numberPickerMapper = getNumberPickerMapper()
             }
