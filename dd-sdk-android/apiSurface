@@ -461,6 +461,7 @@ class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTrac
     fun setPartialFlushThreshold(Int): Builder
     fun addGlobalTag(String, String): Builder
     fun setBundleWithRumEnabled(Boolean): Builder
+    fun setSamplingRate(Double): Builder
   companion object 
     fun logThrowable(io.opentracing.Span, Throwable)
     fun logErrorMessage(io.opentracing.Span, String)
