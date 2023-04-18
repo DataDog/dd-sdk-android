@@ -18,7 +18,7 @@ android {
 
     defaultConfig {
         applicationId = "com.datadog.android.wear.sample"
-        minSdk = AndroidConfig.MIN_SDK_FOR_COMPOSE
+        minSdk = AndroidConfig.MIN_SDK_FOR_WEAR
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
