@@ -8,7 +8,6 @@ package com.datadog.android.nightly.activities
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.nightly.R
 import com.datadog.android.nightly.server.LocalServer
@@ -36,7 +35,7 @@ internal class ResourceTrackingTraceSamplingActivity : AppCompatActivity() {
             DatadogInterceptor(
                 firstPartyHosts = listOf(LocalServer.HOST),
                 // 75% of the RUM resources sent should have traces included
-                traceSampler = RateBasedSampler(75f.percent())
+                traceSampler = @Suppress("MagicNumber") RateBasedSampler(75f)
             )
         )
         .build()

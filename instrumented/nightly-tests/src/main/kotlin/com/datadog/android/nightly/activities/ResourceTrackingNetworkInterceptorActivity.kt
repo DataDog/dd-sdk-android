@@ -6,7 +6,6 @@
 
 package com.datadog.android.nightly.activities
 
-import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.nightly.server.LocalServer
 import com.datadog.android.okhttp.DatadogInterceptor
@@ -19,12 +18,12 @@ internal class ResourceTrackingNetworkInterceptorActivity : ResourceTrackingActi
 
     override val okHttpClient: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(
-            DatadogInterceptor(traceSampler = RateBasedSampler(HUNDRED_PERCENT.percent()))
+            DatadogInterceptor(traceSampler = RateBasedSampler(HUNDRED_PERCENT))
         )
         .addNetworkInterceptor(
             TracingInterceptor(
                 tracedHosts = listOf(HOST, LocalServer.HOST),
-                traceSampler = RateBasedSampler(HUNDRED_PERCENT.percent())
+                traceSampler = RateBasedSampler(HUNDRED_PERCENT)
             )
         )
         .build()

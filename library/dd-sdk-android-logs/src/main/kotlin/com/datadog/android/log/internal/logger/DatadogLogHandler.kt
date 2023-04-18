@@ -25,7 +25,7 @@ internal class DatadogLogHandler(
     internal val attachNetworkInfo: Boolean,
     internal val bundleWithTraces: Boolean = true,
     internal val bundleWithRum: Boolean = true,
-    internal val sampler: Sampler = RateBasedSampler(1.0f),
+    internal val sampler: Sampler = RateBasedSampler(DEFAULT_SAMPLING_RATE),
     internal val minLogPriority: Int = -1
 ) : LogHandler {
 
@@ -226,6 +226,7 @@ internal class DatadogLogHandler(
     // endregion
 
     private companion object {
+        const val DEFAULT_SAMPLING_RATE = 100f
         const val LOGS_FEATURE_NOT_REGISTERED_INFO =
             "Requested to write log, but Logs feature is not registered."
         const val RUM_FEATURE_NOT_REGISTERED_FOR_ERROR_FORWARD_INFO =

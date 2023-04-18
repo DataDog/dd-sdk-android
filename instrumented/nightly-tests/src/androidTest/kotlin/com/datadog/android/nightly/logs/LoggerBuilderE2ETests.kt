@@ -57,7 +57,7 @@ class LoggerBuilderE2ETests {
     fun logs_logger_builder_sample_all_in() {
         val testMethodName = "logs_logger_builder_sample_all_in"
         measureLoggerInitialize {
-            logger = Logger.Builder(sdkCore).setSampleRate(1f).build()
+            logger = Logger.Builder(sdkCore).setSampleRate(100f).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -88,7 +88,7 @@ class LoggerBuilderE2ETests {
         val testMethodName = "logs_logger_builder_sample_in_75_percent"
         val logsNumber = 10
         measureLoggerInitialize {
-            logger = Logger.Builder(sdkCore).setSampleRate(0.75f).build()
+            logger = Logger.Builder(sdkCore).setSampleRate(75f).build()
         }
         repeat(logsNumber) {
             logger.sendRandomLog(testMethodName, forge)

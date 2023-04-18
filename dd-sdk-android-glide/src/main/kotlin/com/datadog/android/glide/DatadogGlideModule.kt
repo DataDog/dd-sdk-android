@@ -16,7 +16,6 @@ import com.bumptech.glide.load.engine.executor.GlideExecutor.newSourceBuilder
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.module.AppGlideModule
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.okhttp.DatadogEventListener
 import com.datadog.android.okhttp.DatadogInterceptor
@@ -93,7 +92,7 @@ open class DatadogGlideModule
             DatadogInterceptor(
                 sdkCore.name,
                 firstPartyHosts,
-                traceSampler = RateBasedSampler(samplingRate.percent())
+                traceSampler = RateBasedSampler(samplingRate)
             )
         )
         return builder

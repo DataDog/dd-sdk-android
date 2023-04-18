@@ -7,7 +7,6 @@
 package com.datadog.android.telemetry.internal
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.rum.RumFeature
@@ -32,7 +31,8 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrack
 internal class TelemetryEventHandler(
     internal val sdkCore: SdkCore,
     internal val eventSampler: Sampler,
-    internal val configurationExtraSampler: Sampler = RateBasedSampler(20f.percent()),
+    internal val configurationExtraSampler: Sampler =
+        RateBasedSampler(DEFAULT_CONFIGURATION_SAMPLING_RATE),
     internal val maxEventCountPerSession: Int = MAX_EVENTS_PER_SESSION
 ) : RumSessionListener {
 
@@ -284,6 +284,7 @@ internal class TelemetryEventHandler(
 
     companion object {
         const val MAX_EVENTS_PER_SESSION = 100
+        const val DEFAULT_CONFIGURATION_SAMPLING_RATE = 20f
         const val ALREADY_SEEN_EVENT_MESSAGE =
             "Already seen telemetry event with identity=%s, rejecting."
         const val MAX_EVENT_NUMBER_REACHED_MESSAGE =

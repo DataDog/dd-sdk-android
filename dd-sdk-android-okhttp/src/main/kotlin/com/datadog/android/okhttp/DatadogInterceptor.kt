@@ -99,9 +99,11 @@ internal constructor(
      * the possibility to modify the created [io.opentracing.Span].
      * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
      * and offers the possibility to add custom attributes to the RUM resource events.
-     * @param traceSamplingRate the sampling rate for APM traces created for auto-instrumented
-     * requests. It must be a value between `0.0` and `100.0`. A value of `0.0` means no trace will
-     * be kept, `100.0` means all traces will be kept (default value is `20.0`).
+     * @param traceSampler Sampler controlling the sampling of APM traces created for
+     * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
+     * fixed sampling rate or can get it dynamically from the provider. Value between `0.0` and
+     * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
+     * be kept (default value is `20.0`).
      */
     @JvmOverloads
     constructor(
@@ -140,9 +142,11 @@ internal constructor(
      * the possibility to modify the created [io.opentracing.Span].
      * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
      * and offers the possibility to add custom attributes to the RUM resource events.
-     * @param traceSamplingRate the sampling rate for APM traces created for auto-instrumented
-     * requests. It must be a value between `0.0` and `100.0`. A value of `0.0` means no trace will
-     * be kept, `100.0` means all traces will be kept (default value is `20.0`).
+     * @param traceSampler Sampler controlling the sampling of APM traces created for
+     * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
+     * fixed sampling rate or can get it dynamically from the provider. Value between `0.0` and
+     * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
+     * be kept (default value is `20.0`).
      */
     @JvmOverloads
     constructor(
@@ -173,9 +177,11 @@ internal constructor(
      * the possibility to modify the created [io.opentracing.Span].
      * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
      * and offers the possibility to add custom attributes to the RUM resource events.
-     * @param traceSamplingRate the sampling rate for APM traces created for auto-instrumented
-     * requests. It must be a value between `0.0` and `100.0`. A value of `0.0` means no trace will
-     * be kept, `100.0` means all traces will be kept (default value is `20.0`).
+     * @param traceSampler Sampler controlling the sampling of APM traces created for
+     * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
+     * fixed sampling rate or can get it dynamically from the provider. Value between `0.0` and
+     * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
+     * be kept (default value is `20.0`).
      */
     @JvmOverloads
     constructor(

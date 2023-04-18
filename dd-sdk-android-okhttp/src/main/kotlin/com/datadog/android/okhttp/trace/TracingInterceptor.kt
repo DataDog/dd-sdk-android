@@ -96,9 +96,11 @@ internal constructor(
      * configuration [Configuration.Builder.setFirstPartyHosts]) the interceptor won't trace any OkHttp [Request],
      * nor propagate tracing information to the backend.
      * @param tracedRequestListener a listener for automatically created [Span]s
-     * @param traceSamplingRate the sampling rate for APM traces created for auto-instrumented
-     * requests. It must be a value between `0.0` and `100.0`. A value of `0.0` means no trace will
-     * be kept, `100.0` means all traces will be kept (default value is `20.0`).
+     * @param traceSampler Sampler controlling the sampling of APM traces created for
+     * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
+     * fixed sampling rate or can get it dynamically from the provider. Value between `0.0` and
+     * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
+     * be kept (default value is `20.0`).
      */
     @JvmOverloads
     constructor(
@@ -129,9 +131,11 @@ internal constructor(
      * configuration [Configuration.Builder.setFirstPartyHosts] or [Configuration.Builder.setFirstPartyHostsWithHeaderType] )
      * the interceptor won't trace any OkHttp [Request], nor propagate tracing information to the backend.
      * @param tracedRequestListener a listener for automatically created [Span]s
-     * @param traceSamplingRate the sampling rate for APM traces created for auto-instrumented
-     * requests. It must be a value between `0.0` and `100.0`. A value of `0.0` means no trace will
-     * be kept, `100.0` means all traces will be kept (default value is `20.0`).
+     * @param traceSampler Sampler controlling the sampling of APM traces created for
+     * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
+     * fixed sampling rate or can get it dynamically from the provider. Value between `0.0` and
+     * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
+     * be kept (default value is `20.0`).
      */
     @JvmOverloads
     constructor(
@@ -156,9 +160,11 @@ internal constructor(
      * @param sdkInstanceName SDK instance name to bind to, or null to check the default instance.
      * Instrumentation won't be working until SDK instance is ready.
      * @param tracedRequestListener a listener for automatically created [Span]s
-     * @param traceSamplingRate the sampling rate for APM traces created for auto-instrumented
-     * requests. It must be a value between `0.0` and `100.0`. A value of `0.0` means no trace will
-     * be kept, `100.0` means all traces will be kept (default value is `20.0`).
+     * @param traceSampler Sampler controlling the sampling of APM traces created for
+     * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
+     * fixed sampling rate or can get it dynamically from the provider. Value between `0.0` and
+     * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
+     * be kept (default value is `20.0`).
      */
     @JvmOverloads
     constructor(
@@ -603,7 +609,7 @@ internal constructor(
                 "We automatically created a local tracer for you."
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
-        internal const val DEFAULT_TRACE_SAMPLING_RATE: Float = 0.2f
+        internal const val DEFAULT_TRACE_SAMPLING_RATE: Float = 20f
 
         // taken from DatadogHttpCodec
         internal const val DATADOG_TRACE_ID_HEADER = "x-datadog-trace-id"

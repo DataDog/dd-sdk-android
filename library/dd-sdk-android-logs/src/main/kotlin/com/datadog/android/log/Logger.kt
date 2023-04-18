@@ -206,7 +206,7 @@ internal constructor(internal var handler: LogHandler) {
         private var networkInfoEnabled: Boolean = false
         private var bundleWithTraceEnabled: Boolean = true
         private var bundleWithRumEnabled: Boolean = true
-        private var sampleRate: Float = 1.0f
+        private var sampleRate: Float = DEFAULT_SAMPLING_RATE
         private var minDatadogLogsPriority: Int = -1
 
         /**
@@ -313,10 +313,10 @@ internal constructor(internal var handler: LogHandler) {
         /**
          * Sets the sample rate for this Logger.
          * @param rate the sampling rate, in percent.
-         * A value of `0.3` means we'll send 30% of the logs.
-         * Default is 1.0 (ie: all logs are sent).
+         * A value of `30` means we'll send 30% of the logs.
+         * Default is 100.0 (ie: all logs are sent).
          */
-        fun setSampleRate(@FloatRange(from = 0.0, to = 1.0) rate: Float): Builder {
+        fun setSampleRate(@FloatRange(from = 0.0, to = 100.0) rate: Float): Builder {
             sampleRate = rate
             return this
         }
@@ -515,6 +515,7 @@ internal constructor(internal var handler: LogHandler) {
     // endregion
 
     internal companion object {
+        internal const val DEFAULT_SAMPLING_RATE = 100f
         internal const val SDK_NOT_INITIALIZED_WARNING_MESSAGE =
             "You're trying to create a Logger instance, but the SDK was not yet initialized. " +
                 "This Logger will not be able to send any messages. " +

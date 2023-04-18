@@ -32,7 +32,7 @@ internal class RateBasedSamplerTest {
 
     private lateinit var testedSampler: RateBasedSampler
 
-    @FloatForgery(min = 0f, max = 1f)
+    @FloatForgery(min = 0f, max = 100f)
     var randomSampleRate: Float = 0.0f
 
     @BeforeEach
@@ -54,7 +54,7 @@ internal class RateBasedSamplerTest {
                 val isValid = if (testedSampler.sample()) 1 else 0
                 validated += isValid
             }
-            val computedSamplingRate = validated.toDouble() / dataSize.toDouble()
+            val computedSamplingRate = (validated.toDouble() / dataSize.toDouble()) * 100
             computedSamplingRates.add(computedSamplingRate)
         }
         val samplingRateMean = computedSamplingRates.sum().div(computedSamplingRates.size)
@@ -72,8 +72,8 @@ internal class RateBasedSamplerTest {
 
     @Test
     fun `the sampler will sample the values based on the dynamic sample rate`(
-        @FloatForgery(min = 0f, max = 1f) fakeSamplingRateA: Float,
-        @FloatForgery(min = 0f, max = 1f) fakeSamplingRateB: Float
+        @FloatForgery(min = 0f, max = 100f) fakeSamplingRateA: Float,
+        @FloatForgery(min = 0f, max = 100f) fakeSamplingRateB: Float
     ) {
         // Given
         val dataSize = 1000
@@ -96,7 +96,7 @@ internal class RateBasedSamplerTest {
                 val isValid = if (testedSampler.sample()) 1 else 0
                 validated += isValid
             }
-            val computedSamplingRate = validated.toDouble() / dataSize.toDouble()
+            val computedSamplingRate = (validated.toDouble() / dataSize.toDouble()) * 100
             computedSamplingRates.add(computedSamplingRate)
         }
         val samplingRateMean = computedSamplingRates.sum().div(computedSamplingRates.size)
@@ -128,8 +128,8 @@ internal class RateBasedSamplerTest {
     }
 
     @Test
-    fun `when sample rate is 1 all values will pass`() {
-        testedSampler = RateBasedSampler(1.0f)
+    fun `when sample rate is 100 all values will pass`() {
+        testedSampler = RateBasedSampler(100.0f)
 
         var validated = 0
         val dataSize = 10
@@ -157,8 +157,8 @@ internal class RateBasedSamplerTest {
     }
 
     @Test
-    fun `when sample rate is above 1 it is normalized to 1`(
-        @FloatForgery(min = 1.01f) fakeSamplingRate: Float
+    fun `when sample rate is above 100 it is normalized to 100`(
+        @FloatForgery(min = 100.01f) fakeSamplingRate: Float
     ) {
         // Given
         testedSampler = RateBasedSampler(fakeSamplingRate)
@@ -167,6 +167,6 @@ internal class RateBasedSamplerTest {
         val effectiveSamplingRate = testedSampler.getSamplingRate()
 
         // Then
-        assertThat(effectiveSamplingRate).isOne
+        assertThat(effectiveSamplingRate).isEqualTo(100f)
     }
 }

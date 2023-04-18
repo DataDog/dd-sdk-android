@@ -6,7 +6,6 @@
 
 package com.datadog.android.nightly.activities
 
-import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.android.okhttp.trace.TracedRequestListener
@@ -21,7 +20,7 @@ internal class ResourceTrackingCustomSpanAttributesActivity : ResourceTrackingAc
         val builder = OkHttpClient.Builder()
         builder.addInterceptor(
             DatadogInterceptor(
-                traceSampler = RateBasedSampler(HUNDRED_PERCENT.percent())
+                traceSampler = RateBasedSampler(HUNDRED_PERCENT)
             )
         )
         builder.addNetworkInterceptor(
@@ -37,7 +36,7 @@ internal class ResourceTrackingCustomSpanAttributesActivity : ResourceTrackingAc
                         span.setOperationName(TEST_METHOD_NAME)
                     }
                 },
-                traceSampler = RateBasedSampler(HUNDRED_PERCENT.percent())
+                traceSampler = RateBasedSampler(HUNDRED_PERCENT)
             )
         )
         builder.build()
