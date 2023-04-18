@@ -7,25 +7,15 @@
 package com.datadog.android.sessionreplay.material
 
 import android.widget.TextView
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
-import com.google.android.material.tabs.TabLayout
 
 internal class MaskAllTabWireframeMapper(
     viewUtils: ViewUtils = ViewUtils,
     uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
     textViewMapper: WireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe> =
-        MaskAllTabLabelMapper()
-) : TabWireframeMapper(viewUtils, uniqueIdentifierGenerator, textViewMapper) {
-
-    override fun resolveTabIndicatorWireframe(
-        view: TabLayout.TabView,
-        systemInformation: SystemInformation,
-        textWireframe: MobileSegment.Wireframe.TextWireframe?
-    ): MobileSegment.Wireframe? {
-        return null
-    }
-}
+        MaskAllTextViewMapper()
+) : TabWireframeMapper(viewUtils, uniqueIdentifierGenerator, textViewMapper)
