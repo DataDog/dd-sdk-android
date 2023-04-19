@@ -85,13 +85,13 @@ class MaterialExtensionSupportTest {
     }
 
     @Test
-    fun `M return a MaskAllTabMapper W getCustomViewMappers() { MASK_USER_INPUT  }`() {
+    fun `M return a MaskInputTabMapper W getCustomViewMappers() { MASK_USER_INPUT  }`() {
         // When
         val customMappers = testedMaterialExtensionSupport.getCustomViewMappers()
 
         // Then
         assertThat(customMappers.entries.size).isEqualTo(3)
-        assertThat(customMappers[SessionReplayPrivacy.MASK_ALL]?.get(TabView::class.java))
-            .isInstanceOf(TabWireframeMapper::class.java)
+        assertThat(customMappers[SessionReplayPrivacy.MASK_USER_INPUT]?.get(TabView::class.java))
+            .isInstanceOf(MaskInputTabWireframeMapper::class.java)
     }
 }

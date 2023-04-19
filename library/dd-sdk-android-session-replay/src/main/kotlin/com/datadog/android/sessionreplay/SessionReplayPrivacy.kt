@@ -25,12 +25,12 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.EditTextViewMa
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckedTextViewMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllEditTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllNumberPickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllRadioButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllSeekBarWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllSwitchCompatMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskInputTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.NumberPickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.RadioButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWireframeMapper
@@ -99,7 +99,7 @@ enum class SessionReplayPrivacy {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
                 textMapper = MaskAllTextViewMapper()
                 buttonMapper = ButtonMapper(textMapper)
-                editTextViewMapper = MaskAllEditTextViewMapper()
+                editTextViewMapper = EditTextViewMapper(textMapper)
                 checkedTextViewMapper = MaskAllCheckedTextViewMapper(textMapper)
                 checkBoxMapper = MaskAllCheckBoxMapper(textMapper)
                 radioButtonMapper = MaskAllRadioButtonMapper(textMapper)
@@ -109,9 +109,9 @@ enum class SessionReplayPrivacy {
             }
             MASK_USER_INPUT -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
-                textMapper = TextViewMapper()
+                textMapper = MaskInputTextViewMapper()
                 buttonMapper = ButtonMapper(textMapper)
-                editTextViewMapper = MaskAllEditTextViewMapper()
+                editTextViewMapper = EditTextViewMapper(textMapper)
                 checkedTextViewMapper = CheckedTextViewMapper(textMapper)
                 checkBoxMapper = MaskAllCheckBoxMapper(textMapper)
                 radioButtonMapper = MaskAllRadioButtonMapper(textMapper)
