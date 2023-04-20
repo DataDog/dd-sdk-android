@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.NoOpStringObfuscator
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.AllowAllObfuscationRule
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -29,12 +29,12 @@ import org.mockito.quality.Strictness
 internal class TextViewMapperTest : BaseTextViewWireframeMapperTest() {
 
     @Test
-    fun `M use the NoOpObfuscator as defaultObfuscator when initialized`() {
+    fun `M use the AllowAllObfuscationRule when initialized`() {
         // When
         val textViewMapper = TextViewMapper()
 
         // Then
-        assertThat(textViewMapper.stringObfuscator)
-            .isInstanceOf(NoOpStringObfuscator::class.java)
+        assertThat(textViewMapper.textValueObfuscationRule)
+            .isInstanceOf(AllowAllObfuscationRule::class.java)
     }
 }

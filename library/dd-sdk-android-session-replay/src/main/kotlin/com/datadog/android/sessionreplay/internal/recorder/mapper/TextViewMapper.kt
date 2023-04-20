@@ -8,12 +8,11 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.graphics.Typeface
 import android.view.Gravity
-import android.view.inputmethod.EditorInfo
 import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.NoOpStringObfuscator
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.AllowAllObfuscationRule
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.TextValueObfuscationRule
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 /**
@@ -26,14 +25,14 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 open class TextViewMapper :
     BaseWireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe> {
 
-    internal val stringObfuscator: StringObfuscator
+    internal val textValueObfuscationRule: TextValueObfuscationRule
 
     constructor() {
-        stringObfuscator = NoOpStringObfuscator()
+        textValueObfuscationRule = AllowAllObfuscationRule()
     }
 
-    internal constructor(stringObfuscator: StringObfuscator) {
-        this.stringObfuscator = stringObfuscator
+    internal constructor(textValueObfuscationRule: TextValueObfuscationRule) {
+        this.textValueObfuscationRule = textValueObfuscationRule
     }
 
     override fun map(view: TextView, systemInformation: SystemInformation):
@@ -50,7 +49,7 @@ open class TextViewMapper :
                 height = viewGlobalBounds.height,
                 shapeStyle = shapeStyle,
                 border = border,
-                text = resolveMaskedTextValue(view),
+                text = textValueObfuscationRule.resolveObfuscatedValue(view),
                 textStyle = resolveTextStyle(view, systemInformation.screenDensity),
                 textPosition = resolveTextPosition(view, systemInformation.screenDensity)
             )
@@ -58,36 +57,6 @@ open class TextViewMapper :
     }
 
     // region Internal
-
-    private fun resolveTextValue(textView: TextView): String {
-        return if (textView.text.isNullOrEmpty()) {
-            textView.hint?.toString() ?: ""
-        } else {
-            textView.text?.toString() ?: ""
-        }
-    }
-
-    private fun resolveMaskedTextValue(textView: TextView): String {
-        val unmaskedTextValue = resolveTextValue(textView)
-        return if (isPrivacySensitive(textView)) {
-            STATIC_MASK
-        } else {
-            stringObfuscator.obfuscate(unmaskedTextValue)
-        }
-    }
-
-    private fun isPrivacySensitive(view: TextView): Boolean {
-        val classType = view.inputType and EditorInfo.TYPE_MASK_CLASS
-        val variation = view.inputType and EditorInfo.TYPE_MASK_VARIATION
-        return classType == EditorInfo.TYPE_CLASS_PHONE ||
-            variation == EditorInfo.TYPE_TEXT_VARIATION_PASSWORD ||
-            variation == EditorInfo.TYPE_TEXT_VARIATION_WEB_PASSWORD ||
-            variation == EditorInfo.TYPE_NUMBER_VARIATION_PASSWORD ||
-            variation == EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
-            variation == EditorInfo.TYPE_TEXT_VARIATION_EMAIL_ADDRESS ||
-            variation == EditorInfo.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS ||
-            variation == EditorInfo.TYPE_TEXT_VARIATION_POSTAL_ADDRESS
-    }
 
     private fun resolveTextStyle(textView: TextView, pixelsDensity: Float):
         MobileSegment.TextStyle {

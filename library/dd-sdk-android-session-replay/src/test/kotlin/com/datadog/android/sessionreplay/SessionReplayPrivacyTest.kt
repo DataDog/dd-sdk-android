@@ -22,7 +22,6 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckedTextVie
 import com.datadog.android.sessionreplay.internal.recorder.mapper.EditTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckedTextViewMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllEditTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllNumberPickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllRadioButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllSeekBarWireframeMapper
@@ -89,7 +88,7 @@ internal class SessionReplayPrivacyTest {
         assertThat(mappers[4].type).isEqualTo(Button::class.java)
         assertThat(mappers[4].mapper).isInstanceOf(ButtonMapper::class.java)
         assertThat(mappers[5].type).isEqualTo(EditText::class.java)
-        assertThat(mappers[5].mapper).isInstanceOf(MaskAllEditTextViewMapper::class.java)
+        assertThat(mappers[5].mapper).isInstanceOf(EditTextViewMapper::class.java)
         assertThat(mappers[6].type).isEqualTo(TextView::class.java)
         assertThat(mappers[6].mapper).isInstanceOf(MaskAllTextViewMapper::class.java)
         assertThat(mappers[7].type).isEqualTo(ImageView::class.java)
@@ -114,7 +113,7 @@ internal class SessionReplayPrivacyTest {
         assertThat(mappers[4].type).isEqualTo(Button::class.java)
         assertThat(mappers[4].mapper).isInstanceOf(ButtonMapper::class.java)
         assertThat(mappers[5].type).isEqualTo(EditText::class.java)
-        assertThat(mappers[5].mapper).isInstanceOf(MaskAllEditTextViewMapper::class.java)
+        assertThat(mappers[5].mapper).isInstanceOf(EditTextViewMapper::class.java)
         assertThat(mappers[6].type).isEqualTo(TextView::class.java)
         assertThat(mappers[6].mapper).isInstanceOf(TextViewMapper::class.java)
         assertThat(mappers[7].type).isEqualTo(ImageView::class.java)
@@ -170,7 +169,7 @@ internal class SessionReplayPrivacyTest {
         assertThat(mappers[5].type).isEqualTo(Button::class.java)
         assertThat(mappers[5].mapper).isInstanceOf(ButtonMapper::class.java)
         assertThat(mappers[6].type).isEqualTo(EditText::class.java)
-        assertThat(mappers[6].mapper).isInstanceOf(MaskAllEditTextViewMapper::class.java)
+        assertThat(mappers[6].mapper).isInstanceOf(EditTextViewMapper::class.java)
         assertThat(mappers[7].type).isEqualTo(TextView::class.java)
         assertThat(mappers[7].mapper).isInstanceOf(TextViewMapper::class.java)
         assertThat(mappers[8].type).isEqualTo(ImageView::class.java)
@@ -198,7 +197,7 @@ internal class SessionReplayPrivacyTest {
         assertThat(mappers[5].type).isEqualTo(Button::class.java)
         assertThat(mappers[5].mapper).isInstanceOf(ButtonMapper::class.java)
         assertThat(mappers[6].type).isEqualTo(EditText::class.java)
-        assertThat(mappers[6].mapper).isInstanceOf(MaskAllEditTextViewMapper::class.java)
+        assertThat(mappers[6].mapper).isInstanceOf(EditTextViewMapper::class.java)
         assertThat(mappers[7].type).isEqualTo(TextView::class.java)
         assertThat(mappers[7].mapper).isInstanceOf(MaskAllTextViewMapper::class.java)
         assertThat(mappers[8].type).isEqualTo(ImageView::class.java)
@@ -258,7 +257,7 @@ internal class SessionReplayPrivacyTest {
         assertThat(mappers[6].type).isEqualTo(Button::class.java)
         assertThat(mappers[6].mapper).isInstanceOf(ButtonMapper::class.java)
         assertThat(mappers[7].type).isEqualTo(EditText::class.java)
-        assertThat(mappers[7].mapper).isInstanceOf(MaskAllEditTextViewMapper::class.java)
+        assertThat(mappers[7].mapper).isInstanceOf(EditTextViewMapper::class.java)
         assertThat(mappers[8].type).isEqualTo(TextView::class.java)
         assertThat(mappers[8].mapper).isInstanceOf(TextViewMapper::class.java)
         assertThat(mappers[9].type).isEqualTo(ImageView::class.java)
