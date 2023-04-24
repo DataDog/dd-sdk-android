@@ -107,19 +107,19 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
         fakeValue = forge.anInt(min = fakeMinValue + 1, max = fakeMaxValue)
         mockNumberPicker = generateMockedNumberPicker(forge)
         val normalizedPaddingEnd = fakePaddingEnd
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         val normalizedPaddingStart = fakePaddingStart
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         val normalizedPadding = NumberPickerMapper.PADDING_IN_PX
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         fakeExpectedDividerWidth = fakeViewGlobalBounds.width -
             normalizedPaddingEnd -
             normalizedPaddingStart
         fakeExpectedDividerHeight = NumberPickerMapper.DIVIDER_HEIGHT_IN_PX
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         fakeExpectedLabelWidth = fakeViewGlobalBounds.width
         fakeExpectedTextSize = fakeTextSize.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         fakeExpectedLabelHeight = fakeExpectedTextSize * 2
 
         fakeExpectedSelectedLabelYPos = fakeViewGlobalBounds.y +
@@ -140,7 +140,7 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
         whenever(
             mockViewUtils.resolveViewGlobalBounds(
                 mockNumberPicker,
-                fakeSystemInformation.screenDensity
+                fakeMappingContext.systemInformation.screenDensity
             )
         )
             .thenReturn(fakeViewGlobalBounds)
@@ -217,7 +217,7 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
         )
             .thenReturn(null)
         // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)).isEmpty()
+        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
     }
 
     @Test
@@ -232,7 +232,7 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
         )
             .thenReturn(null)
         // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)).isEmpty()
+        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
     }
 
     @Test
@@ -247,7 +247,7 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
         )
             .thenReturn(null)
         // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)).isEmpty()
+        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
     }
 
     @Test
@@ -262,7 +262,7 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
         )
             .thenReturn(null)
         // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)).isEmpty()
+        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
     }
 
     @Test
@@ -277,7 +277,7 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
         )
             .thenReturn(null)
         // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)).isEmpty()
+        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
     }
 
     protected fun fakeNextLabelWireframe() =

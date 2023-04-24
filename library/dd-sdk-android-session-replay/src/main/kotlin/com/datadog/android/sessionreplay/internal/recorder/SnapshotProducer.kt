@@ -19,16 +19,16 @@ internal class SnapshotProducer(
         rootView: View,
         systemInformation: SystemInformation
     ): Node? {
-        return convertViewToNode(rootView, systemInformation, LinkedList())
+        return convertViewToNode(rootView, MappingContext(systemInformation), LinkedList())
     }
 
     @Suppress("ComplexMethod", "ReturnCount")
     private fun convertViewToNode(
         view: View,
-        systemInformation: SystemInformation,
+        mappingContext: MappingContext,
         parents: LinkedList<MobileSegment.Wireframe>
     ): Node? {
-        val traversedTreeView = treeViewTraversal.traverse(view, systemInformation)
+        val traversedTreeView = treeViewTraversal.traverse(view, mappingContext)
         val nextTraversalStrategy = traversedTreeView.nextActionStrategy
         val resolvedWireframes = traversedTreeView.mappedWireframes
         if (nextTraversalStrategy == TreeViewTraversal.TraversalStrategy.STOP_AND_DROP_NODE) {
@@ -46,7 +46,7 @@ internal class SnapshotProducer(
             val parentsCopy = LinkedList(parents).apply { addAll(resolvedWireframes) }
             for (i in 0 until view.childCount) {
                 val viewChild = view.getChildAt(i) ?: continue
-                convertViewToNode(viewChild, systemInformation, parentsCopy)?.let {
+                convertViewToNode(viewChild, mappingContext, parentsCopy)?.let {
                     childNodes.add(it)
                 }
             }

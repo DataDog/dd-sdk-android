@@ -61,7 +61,7 @@ internal class SnapshotProducerTest {
             fakeViewWireframes,
             TreeViewTraversal.TraversalStrategy.STOP_AND_DROP_NODE
         )
-        whenever(mockTreeViewTraversal.traverse(mockRoot, fakeSystemInformation))
+        whenever(mockTreeViewTraversal.traverse(eq(mockRoot), any()))
             .thenReturn(fakeTraversedTreeView)
 
         // When
@@ -81,7 +81,7 @@ internal class SnapshotProducerTest {
             fakeViewWireframes,
             TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE
         )
-        whenever(mockTreeViewTraversal.traverse(fakeRoot, fakeSystemInformation))
+        whenever(mockTreeViewTraversal.traverse(eq(fakeRoot), any()))
             .thenReturn(fakeTraversedTreeView)
         val expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
 
@@ -102,7 +102,7 @@ internal class SnapshotProducerTest {
             fakeViewWireframes,
             TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE
         )
-        whenever(mockTreeViewTraversal.traverse(fakeRoot, fakeSystemInformation))
+        whenever(mockTreeViewTraversal.traverse(any(), any()))
             .thenReturn(fakeTraversedTreeView)
         val expectedSnapshot = Node(wireframes = fakeViewWireframes)
 
@@ -123,7 +123,7 @@ internal class SnapshotProducerTest {
             fakeViewWireframes,
             TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
         )
-        whenever(mockTreeViewTraversal.traverse(any(), eq(fakeSystemInformation)))
+        whenever(mockTreeViewTraversal.traverse(any(), any()))
             .thenReturn(fakeTraversedTreeView)
         val expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
 
@@ -144,7 +144,7 @@ internal class SnapshotProducerTest {
             fakeViewWireframes,
             TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
         )
-        whenever(mockTreeViewTraversal.traverse(any(), eq(fakeSystemInformation)))
+        whenever(mockTreeViewTraversal.traverse(any(), any()))
             .thenReturn(fakeTraversedTreeView)
             .thenReturn(
                 fakeTraversedTreeView.copy(
@@ -176,7 +176,7 @@ internal class SnapshotProducerTest {
             fakeViewWireframes,
             TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
         )
-        whenever(mockTreeViewTraversal.traverse(any(), eq(fakeSystemInformation)))
+        whenever(mockTreeViewTraversal.traverse(any(), any()))
             .thenReturn(fakeTraversedTreeView)
             .thenReturn(
                 fakeTraversedTreeView.copy(

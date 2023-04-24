@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
 import android.widget.Checkable
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
@@ -16,12 +16,12 @@ internal abstract class CheckableWireframeMapper<T>(viewUtils: ViewUtils) :
     BaseWireframeMapper<T, MobileSegment.Wireframe>(viewUtils = viewUtils)
         where T : View, T : Checkable {
 
-    override fun map(view: T, systemInformation: SystemInformation): List<MobileSegment.Wireframe> {
-        val mainWireframes = resolveMainWireframes(view, systemInformation)
+    override fun map(view: T, mappingContext: MappingContext): List<MobileSegment.Wireframe> {
+        val mainWireframes = resolveMainWireframes(view, mappingContext)
         val checkableWireframes = if (view.isChecked) {
-            resolveCheckedCheckable(view, systemInformation)
+            resolveCheckedCheckable(view, mappingContext)
         } else {
-            resolveNotCheckedCheckable(view, systemInformation)
+            resolveNotCheckedCheckable(view, mappingContext)
         }
         checkableWireframes?.let { wireframes ->
             return mainWireframes + wireframes
@@ -29,11 +29,11 @@ internal abstract class CheckableWireframeMapper<T>(viewUtils: ViewUtils) :
         return mainWireframes
     }
 
-    abstract fun resolveMainWireframes(view: T, systemInformation: SystemInformation):
+    abstract fun resolveMainWireframes(view: T, mappingContext: MappingContext):
         List<MobileSegment.Wireframe>
 
-    abstract fun resolveNotCheckedCheckable(view: T, systemInformation: SystemInformation):
+    abstract fun resolveNotCheckedCheckable(view: T, mappingContext: MappingContext):
         List<MobileSegment.Wireframe>?
-    abstract fun resolveCheckedCheckable(view: T, systemInformation: SystemInformation):
+    abstract fun resolveCheckedCheckable(view: T, mappingContext: MappingContext):
         List<MobileSegment.Wireframe>?
 }

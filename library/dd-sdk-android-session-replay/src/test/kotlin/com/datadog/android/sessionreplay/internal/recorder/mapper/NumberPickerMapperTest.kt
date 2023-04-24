@@ -47,7 +47,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -79,7 +79,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -111,7 +111,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -147,7 +147,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -184,7 +184,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
 
         // Then
         assertThat(wireframes).isEqualTo(
@@ -222,7 +222,7 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
 
         // Then
         assertThat(wireframes).isEqualTo(

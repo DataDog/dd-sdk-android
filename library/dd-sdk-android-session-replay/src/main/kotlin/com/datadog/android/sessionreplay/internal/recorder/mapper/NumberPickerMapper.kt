@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.os.Build
 import android.widget.NumberPicker
 import androidx.annotation.RequiresApi
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -23,7 +24,7 @@ internal open class NumberPickerMapper(
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator
 ) : BaseWireframeMapper<NumberPicker, MobileSegment.Wireframe>(stringUtils, viewUtils) {
 
-    override fun map(view: NumberPicker, systemInformation: SystemInformation):
+    override fun map(view: NumberPicker, mappingContext: MappingContext):
         List<MobileSegment.Wireframe> {
         val prevIndexLabelId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
             view,
@@ -55,7 +56,7 @@ internal open class NumberPickerMapper(
         ) {
             return map(
                 view,
-                systemInformation,
+                mappingContext.systemInformation,
                 prevIndexLabelId,
                 topDividerId,
                 selectedIndexLabelId,

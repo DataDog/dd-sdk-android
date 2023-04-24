@@ -73,12 +73,12 @@ internal abstract class BaseEditTextViewMapperTest : BaseWireframeMapperTest() {
             )
         ).thenReturn(fakeGeneratedIdentifier)
         whenever(mockEditText.backgroundTintList).thenReturn(mockBackgroundTintList)
-        whenever(mockTextWireframeMapper.map(mockEditText, fakeSystemInformation))
+        whenever(mockTextWireframeMapper.map(mockEditText, fakeMappingContext))
             .thenReturn(fakeTextWireframes)
         whenever(
             mockViewUtils.resolveViewGlobalBounds(
                 mockEditText,
-                fakeSystemInformation.screenDensity
+                fakeMappingContext.systemInformation.screenDensity
             )
         )
             .thenReturn(fakeViewGlobalBounds)
@@ -114,7 +114,7 @@ internal abstract class BaseEditTextViewMapperTest : BaseWireframeMapperTest() {
         )
 
         // When
-        assertThat(testedEditTextViewMapper.map(mockEditText, fakeSystemInformation))
+        assertThat(testedEditTextViewMapper.map(mockEditText, fakeMappingContext))
             .isEqualTo(fakeTextWireframes + expectedUnderlineShapeWireframe)
     }
 
@@ -148,7 +148,7 @@ internal abstract class BaseEditTextViewMapperTest : BaseWireframeMapperTest() {
         )
 
         // When
-        assertThat(testedEditTextViewMapper.map(mockEditText, fakeSystemInformation))
+        assertThat(testedEditTextViewMapper.map(mockEditText, fakeMappingContext))
             .isEqualTo(fakeTextWireframes + expectedUnderlineShapeWireframe)
     }
 
@@ -178,7 +178,7 @@ internal abstract class BaseEditTextViewMapperTest : BaseWireframeMapperTest() {
         )
 
         // When
-        assertThat(testedEditTextViewMapper.map(mockEditText, fakeSystemInformation))
+        assertThat(testedEditTextViewMapper.map(mockEditText, fakeMappingContext))
             .isEqualTo(fakeTextWireframes + expectedUnderlineShapeWireframe)
     }
 
@@ -193,7 +193,7 @@ internal abstract class BaseEditTextViewMapperTest : BaseWireframeMapperTest() {
         ).thenReturn(null)
 
         // Then
-        assertThat(testedEditTextViewMapper.map(mockEditText, fakeSystemInformation))
+        assertThat(testedEditTextViewMapper.map(mockEditText, fakeMappingContext))
             .isEqualTo(fakeTextWireframes)
     }
 }

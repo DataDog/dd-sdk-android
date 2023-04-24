@@ -6,8 +6,8 @@
 
 package com.datadog.android.sessionreplay.material
 
-import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllTextViewMapper
+import com.datadog.android.sessionreplay.material.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat

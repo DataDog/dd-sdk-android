@@ -125,7 +125,6 @@ class SampleApplication : Application() {
                 }
             }
             .addExtensionSupport(MaterialExtensionSupport())
-            .setPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
             .build()
         val sessionReplayFeature = SessionReplayFeature(sessionReplayConfig)
         Datadog.registerFeature(sessionReplayFeature)

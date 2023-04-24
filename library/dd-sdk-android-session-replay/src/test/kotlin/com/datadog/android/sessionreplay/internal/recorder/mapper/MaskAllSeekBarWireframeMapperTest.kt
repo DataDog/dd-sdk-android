@@ -56,7 +56,7 @@ internal class MaskAllSeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTes
         )
 
         // When
-        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeSystemInformation)
+        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(
@@ -103,7 +103,7 @@ internal class MaskAllSeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTes
         )
 
         // When
-        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeSystemInformation)
+        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(listOf(expectedInactiveTrackWireframe))
@@ -146,7 +146,7 @@ internal class MaskAllSeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTes
         )
 
         // When
-        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeSystemInformation)
+        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(listOf(expectedInactiveTrackWireframe))
