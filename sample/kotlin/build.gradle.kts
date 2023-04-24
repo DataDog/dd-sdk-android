@@ -66,14 +66,14 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
-    flavorDimensions += listOf("version")
+    flavorDimensions += listOf("site")
     productFlavors {
         val regions = arrayOf("us1", "us3", "us5", "us1_fed", "eu1", "ap1", "staging")
 
         regions.forEachIndexed { index, region ->
             register(region) {
                 isDefault = index == 0
-                dimension = "version"
+                dimension = "site"
                 configureFlavorForSampleApp(this, project.rootDir)
             }
         }
@@ -111,16 +111,16 @@ android {
 
 dependencies {
 
-    api(project(":dd-sdk-android"))
-    api(project(":dd-sdk-android-ktx"))
-    api(project(":dd-sdk-android-ndk"))
-    api(project(":dd-sdk-android-rx"))
-    api(project(":dd-sdk-android-timber"))
-    api(project(":dd-sdk-android-coil"))
-    api(project(":dd-sdk-android-glide"))
-    api(project(":dd-sdk-android-fresco"))
-    api(project(":dd-sdk-android-sqldelight"))
-    api(project(":dd-sdk-android-compose"))
+    implementation(project(":dd-sdk-android"))
+    implementation(project(":dd-sdk-android-ktx"))
+    implementation(project(":dd-sdk-android-ndk"))
+    implementation(project(":dd-sdk-android-rx"))
+    implementation(project(":dd-sdk-android-timber"))
+    implementation(project(":dd-sdk-android-coil"))
+    implementation(project(":dd-sdk-android-glide"))
+    implementation(project(":dd-sdk-android-fresco"))
+    implementation(project(":dd-sdk-android-sqldelight"))
+    implementation(project(":dd-sdk-android-compose"))
 
     implementation(libs.kotlin)
 

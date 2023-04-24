@@ -6,6 +6,7 @@
 
 package com.datadog.android.tracing
 
+import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.log.LogAttributes
@@ -92,6 +93,7 @@ class AndroidTracer internal constructor(
 
         private var tracingHeaderTypes: Set<TracingHeaderType> = setOf(TracingHeaderType.DATADOG)
         private var bundleWithRumEnabled: Boolean = true
+        private var samplingRate: Double = DEFAULT_SAMPLING_RATE
 
         // TODO RUMM-0000 should have a nicer call chain
         private var serviceName: String? = (Datadog.globalSdkCore as? DatadogCore)
@@ -193,6 +195,17 @@ class AndroidTracer internal constructor(
             return this
         }
 
+        /**
+         * Sets the sampling rate of spans.
+         * @param samplingRate the sampling rate as a percentage between 0 and 100 (default is 100%)
+         */
+        fun setSamplingRate(
+            @FloatRange(from = 0.0, to = 100.0) samplingRate: Double
+        ): Builder {
+            this.samplingRate = samplingRate
+            return this
+        }
+
         // endregion
 
         // region Internal
@@ -215,6 +228,10 @@ class AndroidTracer internal constructor(
             properties.setProperty(
                 Config.TAGS,
                 globalTags.map { "${it.key}:${it.value}" }.joinToString(",")
+            )
+            properties.setProperty(
+                Config.TRACE_SAMPLE_RATE,
+                (samplingRate / DEFAULT_SAMPLING_RATE).toString()
             )
 
             val propagationStyles = tracingHeaderTypes.joinToString(",")
@@ -248,6 +265,8 @@ class AndroidTracer internal constructor(
     // endregion
 
     companion object {
+        internal const val DEFAULT_SAMPLING_RATE = 100.0
+
         internal const val TRACING_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to create an AndroidTracer instance, " +
                 "but either the SDK was not initialized or the Tracing feature was " +

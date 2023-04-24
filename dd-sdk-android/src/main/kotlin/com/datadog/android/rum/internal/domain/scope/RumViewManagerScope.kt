@@ -22,6 +22,7 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.DataWriter
+import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 
 internal class RumViewManagerScope(
@@ -29,22 +30,25 @@ internal class RumViewManagerScope(
     private val sdkCore: SdkCore,
     private val backgroundTrackingEnabled: Boolean,
     private val trackFrustrations: Boolean,
+    private val viewChangedListener: RumViewChangedListener?,
     internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
     private val appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider(),
-    private val contextProvider: ContextProvider
+    private val contextProvider: ContextProvider,
+    internal var applicationDisplayed: Boolean
 ) : RumScope {
 
     internal val childrenScopes = mutableListOf<RumScope>()
-    internal var applicationDisplayed = false
+    internal var stopped = false
 
     // region RumScope
 
     @WorkerThread
-    override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope {
-        if (!applicationDisplayed) {
+    override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope? {
+        val canDisplayApplication = !stopped && event !is RumRawEvent.StopSession
+        if (!applicationDisplayed && canDisplayApplication) {
             val isForegroundProcess = CoreFeature.processImportance ==
                 ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
             if (isForegroundProcess) {
@@ -54,13 +58,19 @@ internal class RumViewManagerScope(
 
         delegateToChildren(event, writer)
 
-        if (event is RumRawEvent.StartView) {
+        if (event is RumRawEvent.StartView && !stopped) {
             startForegroundView(event)
+        } else if (event is RumRawEvent.StopSession) {
+            stopped = true
         } else if (childrenScopes.count { it.isActive() } == 0) {
             handleOrphanEvent(event, writer)
         }
 
-        return this
+        return if (isViewManagerComplete()) {
+            null
+        } else {
+            this
+        }
     }
 
     override fun getRumContext(): RumContext {
@@ -68,12 +78,16 @@ internal class RumViewManagerScope(
     }
 
     override fun isActive(): Boolean {
-        return true
+        return !stopped
     }
 
     // endregion
 
     // region Internal
+
+    fun isViewManagerComplete(): Boolean {
+        return stopped && childrenScopes.isEmpty()
+    }
 
     @WorkerThread
     private fun startApplicationLaunchView(event: RumRawEvent, writer: DataWriter<Any>) {
@@ -141,6 +155,7 @@ internal class RumViewManagerScope(
             this,
             sdkCore,
             event,
+            viewChangedListener,
             firstPartyHostHeaderTypeResolver,
             cpuVitalMonitor,
             memoryVitalMonitor,
@@ -150,6 +165,14 @@ internal class RumViewManagerScope(
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
+        viewChangedListener?.onViewChanged(
+            RumViewInfo(
+                keyRef = WeakReference(event.key),
+                name = event.name,
+                attributes = event.attributes,
+                isActive = true
+            )
+        )
     }
 
     @WorkerThread
@@ -188,6 +211,7 @@ internal class RumViewManagerScope(
             RUM_BACKGROUND_VIEW_NAME,
             event.eventTime,
             emptyMap(),
+            viewChangedListener,
             firstPartyHostHeaderTypeResolver,
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
@@ -206,6 +230,7 @@ internal class RumViewManagerScope(
             RUM_APP_LAUNCH_VIEW_NAME,
             time,
             emptyMap(),
+            viewChangedListener,
             firstPartyHostHeaderTypeResolver,
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),

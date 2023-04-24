@@ -13,6 +13,7 @@ import java.util.UUID
 internal data class RumContext(
     val applicationId: String = NULL_UUID,
     val sessionId: String = NULL_UUID,
+    val isSessionActive: Boolean = false,
     val viewId: String? = null,
     val viewName: String? = null,
     val viewUrl: String? = null,

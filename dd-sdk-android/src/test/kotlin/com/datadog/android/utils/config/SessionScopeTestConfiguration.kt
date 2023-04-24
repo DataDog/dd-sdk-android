@@ -31,7 +31,7 @@ internal class SessionScopeTestConfiguration :
         mockSessionScope = mock()
         GlobalRum.monitor = mockInstance
         whenever(mockInstance.rootScope).thenReturn(mockApplicationScope)
-        whenever(mockApplicationScope.childScope).thenReturn(mockSessionScope)
+        whenever(mockApplicationScope.activeSession).thenReturn(mockSessionScope)
         whenever(mockSessionScope.getRumContext()).thenReturn(fakeRumContext)
     }
 

@@ -313,6 +313,7 @@ interface com.datadog.android.rum.RumMonitor
   fun addErrorWithStacktrace(String, RumErrorSource, String?, Map<String, Any?>)
   fun addTiming(String)
   fun addFeatureFlagEvaluation(String, Any)
+  fun stopSession()
   fun _getInternal(): _RumInternalProxy?
   class Builder
     fun sampleRumSessions(Float): Builder
@@ -460,6 +461,7 @@ class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTrac
     fun setPartialFlushThreshold(Int): Builder
     fun addGlobalTag(String, String): Builder
     fun setBundleWithRumEnabled(Boolean): Builder
+    fun setSamplingRate(Double): Builder
   companion object 
     fun logThrowable(io.opentracing.Span, Throwable)
     fun logErrorMessage(io.opentracing.Span, String)
@@ -1590,7 +1592,7 @@ data class com.datadog.android.rum.model.ViewEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class ViewEventSession
-    constructor(kotlin.String, ViewEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.String, ViewEventSessionType, kotlin.Boolean? = null, StartReason? = null, kotlin.Boolean? = true)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ViewEventSession
@@ -1753,6 +1755,16 @@ data class com.datadog.android.rum.model.ViewEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ViewEventSessionType
+  enum StartReason
+    constructor(kotlin.String)
+    - APP_START
+    - INACTIVITY_TIMEOUT
+    - MAX_DURATION
+    - STOP_API
+    - BACKGROUND_EVENT
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): StartReason
   enum LoadingType
     constructor(kotlin.String)
     - INITIAL_LOAD

@@ -24,6 +24,7 @@ include(":instrumented:nightly-tests")
 include(":library:dd-sdk-android-session-replay")
 
 include(":sample:kotlin")
+include(":sample:wear")
 
 include(":tools:detekt")
 include(":tools:unit")
