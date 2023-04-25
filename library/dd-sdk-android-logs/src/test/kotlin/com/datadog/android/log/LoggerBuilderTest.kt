@@ -107,7 +107,7 @@ internal class LoggerBuilderTest {
         assertThat(handler.writer).isSameAs(mockDataWriter)
         assertThat(handler.bundleWithTraces).isTrue
         assertThat(handler.sampler).isInstanceOf(RateBasedSampler::class.java)
-        assertThat((handler.sampler as RateBasedSampler).getSamplingRate()).isEqualTo(1.0f)
+        assertThat((handler.sampler as RateBasedSampler).getSamplingRate()).isEqualTo(100.0f)
         assertThat(handler.minLogPriority).isEqualTo(-1)
         assertThat(handler.loggerName).isEqualTo(fakePackageName)
         assertThat(handler.attachNetworkInfo).isFalse
@@ -227,7 +227,7 @@ internal class LoggerBuilderTest {
 
     @Test
     fun `builder can set a sampling rate`(@Forgery forge: Forge) {
-        val expectedSampleRate = forge.aFloat(min = 0.0f, max = 1.0f)
+        val expectedSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 
         val logger = Logger.Builder(mockSdkCore).setSampleRate(expectedSampleRate).build()
 

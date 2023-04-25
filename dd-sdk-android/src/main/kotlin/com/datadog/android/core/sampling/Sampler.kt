@@ -6,6 +6,8 @@
 
 package com.datadog.android.core.sampling
 
+import androidx.annotation.FloatRange
+
 /**
  * Interface representing the sampling.
  */
@@ -18,8 +20,9 @@ interface Sampler {
     fun sample(): Boolean
 
     /**
-     * @return the sampling rate if applicable, as a float between 0 and 1,
+     * @return the sampling rate if applicable, as a float between 0 and 100,
      * or null if not applicable
      */
+    @FloatRange(from = 0.0, to = 100.0)
     fun getSamplingRate(): Float?
 }

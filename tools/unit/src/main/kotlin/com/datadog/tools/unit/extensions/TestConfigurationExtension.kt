@@ -123,10 +123,6 @@ class TestConfigurationExtension :
     }
 
     private fun collectProviderMethods(clazz: Class<*>, accumulator: MutableList<Method>) {
-        // RumInterceptorTest <- child of TracingInterceptorNotSendingSpanTest. Both have
-        // static getTestConfigurations declared, RumInterceptor::class.java.methods returns only
-        // RumInterceptor#getTestConfigurations, without parent one (because "methods" returns
-        // inherited as well, but static method cannot be inherited).
         // GesturesListenerScrollSwipeTest <- child of abstract AbstractGesturesListenerTest.
         // Only AbstractGesturesListenerTest has getTestConfigurations.
         // GesturesListenerScrollSwipeTest::class.java.methods returns only parent one, as expected.

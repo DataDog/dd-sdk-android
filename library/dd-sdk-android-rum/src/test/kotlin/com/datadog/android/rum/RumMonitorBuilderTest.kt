@@ -124,7 +124,7 @@ internal class RumMonitorBuilderTest {
         check(telemetrySampler is RateBasedSampler)
 
         assertThat(telemetrySampler.getSamplingRate())
-            .isEqualTo(mockRumFeature.telemetrySamplingRate / 100)
+            .isEqualTo(mockRumFeature.telemetrySamplingRate)
     }
 
     @Test

@@ -9,7 +9,7 @@ package com.datadog.android.sdk.integration.rum
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.okhttp.rum.RumInterceptor
+import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.sdk.integration.RuntimeConfig
@@ -50,7 +50,7 @@ internal class ResourceTrackingTest {
 
         okHttpClient = OkHttpClient.Builder()
             .addInterceptor(
-                RumInterceptor(
+                DatadogInterceptor(
                     rumResourceAttributesProvider = object : RumResourceAttributesProvider {
                         override fun onProvideAttributes(
                             request: Request,

@@ -14,12 +14,13 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.Logger
 import com.datadog.android.log.LogsFeature
 import com.datadog.android.ndk.NdkCrashReportsFeature
 import com.datadog.android.okhttp.DatadogEventListener
-import com.datadog.android.okhttp.rum.RumInterceptor
+import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumFeature
@@ -68,8 +69,8 @@ class SampleApplication : Application() {
     )
 
     private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(RumInterceptor(traceSamplingRate = 100f))
-        .addNetworkInterceptor(TracingInterceptor(traceSamplingRate = 100f))
+        .addInterceptor(DatadogInterceptor(traceSampler = RateBasedSampler(100f)))
+        .addNetworkInterceptor(TracingInterceptor(traceSampler = RateBasedSampler(100f)))
         .eventListenerFactory(DatadogEventListener.Factory())
         .build()
 
