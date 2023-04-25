@@ -106,6 +106,7 @@ interface com.datadog.android.rum.RumMonitor
   fun removeAttribute(String)
   fun getAttributes(): Map<String, Any?>
   fun clearAttributes()
+  fun stopSession()
   fun _getInternal(): _RumInternalProxy?
   class Builder
     constructor(com.datadog.android.v2.api.SdkCore)
@@ -1196,7 +1197,7 @@ data class com.datadog.android.rum.model.ViewEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class ViewEventSession
-    constructor(kotlin.String, ViewEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.String, ViewEventSessionType, kotlin.Boolean? = null, StartReason? = null, kotlin.Boolean? = true)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ViewEventSession
@@ -1359,6 +1360,16 @@ data class com.datadog.android.rum.model.ViewEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ViewEventSessionType
+  enum StartReason
+    constructor(kotlin.String)
+    - APP_START
+    - INACTIVITY_TIMEOUT
+    - MAX_DURATION
+    - STOP_API
+    - BACKGROUND_EVENT
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): StartReason
   enum LoadingType
     constructor(kotlin.String)
     - INITIAL_LOAD

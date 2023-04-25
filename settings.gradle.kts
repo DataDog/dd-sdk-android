@@ -30,6 +30,7 @@ include(":library:dd-sdk-android-session-replay")
 include(":library:dd-sdk-android-session-replay-material")
 
 include(":sample:kotlin")
+include(":sample:wear")
 
 include(":tools:detekt")
 include(":tools:unit")

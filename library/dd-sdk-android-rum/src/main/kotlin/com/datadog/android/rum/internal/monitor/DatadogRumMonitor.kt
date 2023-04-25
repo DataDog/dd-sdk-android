@@ -258,6 +258,12 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun stopSession() {
+        handleEvent(
+            RumRawEvent.StopSession()
+        )
+    }
+
     // endregion
 
     // region RumMonitor/Attributes
@@ -507,7 +513,7 @@ internal class DatadogRumMonitor(
     internal fun notifyDebugListenerWithState() {
         debugListener?.let {
             val applicationScope = rootScope as? RumApplicationScope
-            val sessionScope = applicationScope?.childScope as? RumSessionScope
+            val sessionScope = applicationScope?.activeSession as? RumSessionScope
             val viewManagerScope = sessionScope?.childScope as? RumViewManagerScope
             if (viewManagerScope != null) {
                 it.onReceiveRumActiveViews(

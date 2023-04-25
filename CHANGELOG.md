@@ -1,3 +1,16 @@
+# 1.19.0 / 2023-04-24
+
+* [FEATURE] RUM: Allow users to stop a RUM session. See [#1356](https://github.com/DataDog/dd-sdk-android/pull/1356)
+* [FEATURE] APM: Add tracer sampling rate. See [#1393](https://github.com/DataDog/dd-sdk-android/pull/1393)
+* [IMPROVEMENT] Create a minimal WearOS sample to test compatibility. See [#1384](https://github.com/DataDog/dd-sdk-android/pull/1384)
+* [BUGFIX] RUM: Fix stopped `RUMViewManager` from being able to start new views. See [#1381](https://github.com/DataDog/dd-sdk-android/pull/1381)
+* [MAINTENANCE] Update RUM Event Schema. See [#1383](https://github.com/DataDog/dd-sdk-android/pull/1383)
+* [DOCS] Delete referenced docs and update README. See [#1376](https://github.com/DataDog/dd-sdk-android/pull/1376)
+
+# 1.18.1 / 2023-03-30
+
+* [IMPROVEMENT] RUM: Remove extra telemetry sent when detecting refresh rate scale. See [#1358](https://github.com/DataDog/dd-sdk-android/pull/1358)
+
 # 1.18.0 / 2023-03-21
 
 * [FEATURE] RUM: Add `addFeatureFlagEvaluation` function for RUM. See [#1265](https://github.com/DataDog/dd-sdk-android/pull/1265)

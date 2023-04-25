@@ -94,6 +94,9 @@ internal class RumViewManagerScopeTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockViewChangedListener: RumViewChangedListener
+
     @Forgery
     lateinit var fakeParentContext: RumContext
 
@@ -121,18 +124,19 @@ internal class RumViewManagerScopeTest {
             mockSdkCore,
             true,
             fakeTrackFrustrations,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockAppStartTimeProvider
+            mockAppStartTimeProvider,
+            applicationDisplayed = false
         )
     }
 
     @AfterEach
     fun `tear down`() {
         // whatever happens
-        assertThat(testedScope.isActive()).isTrue()
         assertThat(testedScope.getRumContext()).isEqualTo(fakeParentContext)
     }
 
@@ -414,10 +418,12 @@ internal class RumViewManagerScopeTest {
             sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
+            viewChangedListener = mockViewChangedListener,
             firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
-            frameRateVitalMonitor = mockFrameRateVitalMonitor
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            applicationDisplayed = false
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -439,11 +445,13 @@ internal class RumViewManagerScopeTest {
             sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
+            viewChangedListener = mockViewChangedListener,
             firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            appStartTimeProvider = mockAppStartTimeProvider
+            appStartTimeProvider = mockAppStartTimeProvider,
+            applicationDisplayed = false
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -468,11 +476,13 @@ internal class RumViewManagerScopeTest {
             sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
+            viewChangedListener = mockViewChangedListener,
             firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            appStartTimeProvider = mockAppStartTimeProvider
+            appStartTimeProvider = mockAppStartTimeProvider,
+            applicationDisplayed = false
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -549,10 +559,12 @@ internal class RumViewManagerScopeTest {
             sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
+            viewChangedListener = mockViewChangedListener,
             firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
-            frameRateVitalMonitor = mockFrameRateVitalMonitor
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            applicationDisplayed = false
         )
         testedScope.applicationDisplayed = false
         // Start view still creates a child scope
@@ -575,11 +587,13 @@ internal class RumViewManagerScopeTest {
             sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
+            viewChangedListener = mockViewChangedListener,
             firstPartyHostHeaderTypeResolver = mockResolver,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            appStartTimeProvider = mockAppStartTimeProvider
+            appStartTimeProvider = mockAppStartTimeProvider,
+            applicationDisplayed = false
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -696,6 +710,97 @@ internal class RumViewManagerScopeTest {
 
         // Then
         verifyZeroInteractions(childView, mockWriter)
+    }
+
+    // endregion
+
+    // region Session Ended
+
+    @Test
+    fun `M set isActive to false W handleEvent { StopSession }`() {
+        // Given
+        testedScope.applicationDisplayed = true
+
+        // When
+        val result = testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+
+        // Then
+        assertThat(result).isNull()
+        assertThat(testedScope.isActive()).isFalse()
+    }
+
+    @Test
+    fun `M return scope from handleEvent W stopped { with active child scopes }`() {
+        // Given
+        testedScope.applicationDisplayed = true
+        testedScope.childrenScopes.add(mockChildScope)
+        whenever(mockChildScope.handleEvent(any(), eq(mockWriter))) doReturn mockChildScope
+
+        // When
+        val result = testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `M return null from handleEvent W stopped { completed child scopes }`() {
+        // Given
+        testedScope.applicationDisplayed = true
+        testedScope.childrenScopes.add(mockChildScope)
+        val stopEvent = RumRawEvent.StopSession()
+        val fakeEvent: RumRawEvent = mock()
+        whenever(mockChildScope.handleEvent(stopEvent, mockWriter)) doReturn mockChildScope
+        whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn null
+
+        // When
+        val firstResult = testedScope.handleEvent(stopEvent, mockWriter)
+        val secondResult = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(firstResult).isSameAs(testedScope)
+        assertThat(secondResult).isNull()
+    }
+
+    @Test
+    fun `M not display application W stopped`() {
+        // When
+        val result = testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+
+        assertThat(result).isNull()
+        assertThat(testedScope.applicationDisplayed).isFalse
+        assertThat(testedScope.childrenScopes).isEmpty()
+    }
+
+    @Test
+    fun `M not start a new view W stopped { application not displayed }`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+        val fakeEvent = forge.startViewEvent()
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(testedScope.childrenScopes).isEmpty()
+    }
+
+    @Test
+    fun `M not start a new view W stopped { application displayed }`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.applicationDisplayed = true
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+        val fakeEvent = forge.startViewEvent()
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(testedScope.childrenScopes).isEmpty()
     }
 
     // endregion
