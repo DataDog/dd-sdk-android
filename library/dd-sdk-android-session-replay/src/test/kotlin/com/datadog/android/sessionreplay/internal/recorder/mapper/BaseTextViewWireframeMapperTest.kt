@@ -69,7 +69,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             whenever(this.currentTextColor).thenReturn(fakeFontColor)
             whenever(this.text).thenReturn(fakeText)
         }
-        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView))
+        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))
             .thenReturn(fakeDefaultObfuscatedText)
 
         // When
@@ -102,7 +102,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             whenever(this.typeface).thenReturn(mock())
             whenever(this.textAlignment).thenReturn(fakeTextAlignment)
         }
-        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView))
+        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))
             .thenReturn(fakeDefaultObfuscatedText)
 
         // When
@@ -135,7 +135,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             whenever(this.textAlignment).thenReturn(TextView.TEXT_ALIGNMENT_GRAVITY)
             whenever(this.gravity).thenReturn(fakeGravity)
         }
-        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView))
+        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))
             .thenReturn(fakeDefaultObfuscatedText)
 
         // When
@@ -175,7 +175,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             fakeTextPaddingStart.densityNormalized(fakeMappingContext.systemInformation.screenDensity).toLong(),
             fakeTextPaddingEnd.densityNormalized(fakeMappingContext.systemInformation.screenDensity).toLong()
         )
-        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView))
+        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))
             .thenReturn(fakeDefaultObfuscatedText)
 
         // When
@@ -225,7 +225,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             whenever(this.typeface).thenReturn(mock())
             whenever(this.alpha).thenReturn(fakeViewAlpha)
         }
-        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView))
+        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))
             .thenReturn(fakeDefaultObfuscatedText)
 
         // When
@@ -260,7 +260,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             whenever(this.hintTextColors).thenReturn(mockColorStateList)
             whenever(this.typeface).thenReturn(mock())
         }
-        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView))
+        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))
             .thenReturn(fakeDefaultObfuscatedText)
 
         // When
@@ -301,7 +301,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             whenever(this.typeface).thenReturn(mock())
             whenever(this.currentTextColor).thenReturn(fakeTextColor)
         }
-        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView))
+        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))
             .thenReturn(fakeDefaultObfuscatedText)
 
         // When

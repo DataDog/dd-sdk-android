@@ -11,8 +11,10 @@ import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.TextView
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -34,6 +36,9 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class TextTypeResolverTest {
 
+    @Forgery
+    lateinit var fakeMappingContext: MappingContext
+
     lateinit var testedTextTypeResolver: TextTypeResolver
 
     @Mock
@@ -41,6 +46,8 @@ internal class TextTypeResolverTest {
 
     @BeforeEach
     fun `set up`() {
+        // make sure the initial mappingContext hasOptionSelectorParent is false
+        fakeMappingContext = fakeMappingContext.copy(hasOptionSelectorParent = false)
         testedTextTypeResolver = TextTypeResolver()
     }
 
@@ -53,7 +60,7 @@ internal class TextTypeResolverTest {
         )
 
         // When
-        val textType = testedTextTypeResolver.resolveTextType(mockTextView)
+        val textType = testedTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext)
 
         // Then
         assertThat(textType).isEqualTo(TextType.SENSITIVE_TEXT)
@@ -68,7 +75,7 @@ internal class TextTypeResolverTest {
         )
 
         // When
-        val textType = testedTextTypeResolver.resolveTextType(mockTextView)
+        val textType = testedTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext)
 
         // Then
         assertThat(textType).isEqualTo(TextType.SENSITIVE_TEXT)
@@ -83,7 +90,7 @@ internal class TextTypeResolverTest {
         )
 
         // When
-        val textType = testedTextTypeResolver.resolveTextType(mockTextView)
+        val textType = testedTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext)
 
         // Then
         assertThat(textType).isEqualTo(TextType.SENSITIVE_TEXT)
@@ -98,7 +105,7 @@ internal class TextTypeResolverTest {
         )
 
         // When
-        val textType = testedTextTypeResolver.resolveTextType(mockTextView)
+        val textType = testedTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext)
 
         // Then
         assertThat(textType).isEqualTo(TextType.SENSITIVE_TEXT)
@@ -113,7 +120,7 @@ internal class TextTypeResolverTest {
         )
 
         // When
-        val textType = testedTextTypeResolver.resolveTextType(mockTextView)
+        val textType = testedTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext)
 
         // Then
         assertThat(textType).isEqualTo(TextType.SENSITIVE_TEXT)
@@ -128,7 +135,7 @@ internal class TextTypeResolverTest {
         )
 
         // When
-        val textType = testedTextTypeResolver.resolveTextType(mockTextView)
+        val textType = testedTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext)
 
         // Then
         assertThat(textType).isEqualTo(TextType.SENSITIVE_TEXT)
@@ -143,7 +150,7 @@ internal class TextTypeResolverTest {
         )
 
         // When
-        val textType = testedTextTypeResolver.resolveTextType(mockTextView)
+        val textType = testedTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext)
 
         // Then
         assertThat(textType).isEqualTo(TextType.SENSITIVE_TEXT)
@@ -155,7 +162,7 @@ internal class TextTypeResolverTest {
         whenever(mockTextView.inputType).thenReturn(EditorInfo.TYPE_CLASS_PHONE)
 
         // When
-        val textType = testedTextTypeResolver.resolveTextType(mockTextView)
+        val textType = testedTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext)
 
         // Then
         assertThat(textType).isEqualTo(TextType.SENSITIVE_TEXT)
@@ -171,7 +178,7 @@ internal class TextTypeResolverTest {
         }
 
         // When
-        val textType = testedTextTypeResolver.resolveTextType(fakeEditText)
+        val textType = testedTextTypeResolver.resolveTextType(fakeEditText, fakeMappingContext)
 
         // Then
         assertThat(textType).isEqualTo(TextType.INPUT_TEXT)
@@ -185,7 +192,7 @@ internal class TextTypeResolverTest {
         }
 
         // When
-        val textType = testedTextTypeResolver.resolveTextType(fakeEditText)
+        val textType = testedTextTypeResolver.resolveTextType(fakeEditText, fakeMappingContext)
 
         // Then
         assertThat(textType).isEqualTo(TextType.INPUT_TEXT)
@@ -199,10 +206,24 @@ internal class TextTypeResolverTest {
         }
 
         // When
-        val textType = testedTextTypeResolver.resolveTextType(fakeEditText)
+        val textType = testedTextTypeResolver.resolveTextType(fakeEditText, fakeMappingContext)
 
         // Then
         assertThat(textType).isEqualTo(TextType.INPUT_TEXT)
+    }
+
+    @Test
+    fun `M resolve as OPTION_TEXT W resolveTextType {TextView, optionsSelector parent}`() {
+        // Given
+        val fakeText: TextView = mock()
+        val fakeContextWithOptionSelector = fakeMappingContext.copy(hasOptionSelectorParent = true)
+
+        // When
+        val textType =
+            testedTextTypeResolver.resolveTextType(fakeText, fakeContextWithOptionSelector)
+
+        // Then
+        assertThat(textType).isEqualTo(TextType.OPTION_TEXT)
     }
 
     @Test
@@ -216,7 +237,7 @@ internal class TextTypeResolverTest {
         }
 
         // When
-        val textType = testedTextTypeResolver.resolveTextType(fakeEditText)
+        val textType = testedTextTypeResolver.resolveTextType(fakeEditText, fakeMappingContext)
 
         // Then
         assertThat(textType).isEqualTo(TextType.HINTS_TEXT)
@@ -233,7 +254,7 @@ internal class TextTypeResolverTest {
         }
 
         // When
-        val textType = testedTextTypeResolver.resolveTextType(fakeEditText)
+        val textType = testedTextTypeResolver.resolveTextType(fakeEditText, fakeMappingContext)
 
         // Then
         assertThat(textType).isEqualTo(TextType.HINTS_TEXT)
@@ -242,7 +263,7 @@ internal class TextTypeResolverTest {
     @Test
     fun `M resolve as STATIC_TEXT W resolveTextType {TextView, no sensitive}`() {
         // When
-        val textType = testedTextTypeResolver.resolveTextType(mockTextView)
+        val textType = testedTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext)
 
         // Then
         assertThat(textType).isEqualTo(TextType.STATIC_TEXT)

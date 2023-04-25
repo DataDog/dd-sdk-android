@@ -12,6 +12,9 @@ import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class MappingContextForgeryFactory : ForgeryFactory<MappingContext> {
     override fun getForgery(forge: Forge): MappingContext {
-        return MappingContext(systemInformation = forge.getForgery())
+        return MappingContext(
+            systemInformation = forge.getForgery(),
+            hasOptionSelectorParent = forge.aBool()
+        )
     }
 }

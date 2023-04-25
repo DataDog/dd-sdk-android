@@ -12,7 +12,8 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.LinkedList
 
 internal class SnapshotProducer(
-    private val treeViewTraversal: TreeViewTraversal
+    private val treeViewTraversal: TreeViewTraversal,
+    private val optionSelectorDetector: OptionSelectorDetector = OptionSelectorDetector()
 ) {
 
     fun produce(
@@ -43,10 +44,11 @@ internal class SnapshotProducer(
             view.childCount > 0 &&
             nextTraversalStrategy == TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
         ) {
+            val childMappingContext = resolveChildMappingContext(view, mappingContext)
             val parentsCopy = LinkedList(parents).apply { addAll(resolvedWireframes) }
             for (i in 0 until view.childCount) {
                 val viewChild = view.getChildAt(i) ?: continue
-                convertViewToNode(viewChild, mappingContext, parentsCopy)?.let {
+                convertViewToNode(viewChild, childMappingContext, parentsCopy)?.let {
                     childNodes.add(it)
                 }
             }
@@ -56,5 +58,16 @@ internal class SnapshotProducer(
             wireframes = resolvedWireframes,
             parents = parents
         )
+    }
+
+    private fun resolveChildMappingContext(
+        parent: ViewGroup,
+        parentMappingContext: MappingContext
+    ): MappingContext {
+        return if (optionSelectorDetector.isOptionSelector(parent)) {
+            parentMappingContext.copy(hasOptionSelectorParent = true)
+        } else {
+            parentMappingContext
+        }
     }
 }

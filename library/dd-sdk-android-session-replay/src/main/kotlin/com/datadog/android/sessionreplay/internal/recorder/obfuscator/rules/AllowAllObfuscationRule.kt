@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules
 
 import android.widget.TextView
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.FixedLengthStringObfuscator
 
 internal class AllowAllObfuscationRule(
@@ -15,8 +16,11 @@ internal class AllowAllObfuscationRule(
     private val textTypeResolver: TextTypeResolver = TextTypeResolver(),
     private val textValueResolver: TextValueResolver = TextValueResolver()
 ) : TextValueObfuscationRule {
-    override fun resolveObfuscatedValue(textView: TextView): String {
-        val textType = textTypeResolver.resolveTextType(textView)
+    override fun resolveObfuscatedValue(
+        textView: TextView,
+        mappingContext: MappingContext
+    ): String {
+        val textType = textTypeResolver.resolveTextType(textView, mappingContext)
         val textValue = textValueResolver.resolveTextValue(textView)
         return if (textType == TextType.SENSITIVE_TEXT) {
             fixedLengthStringObfuscator.obfuscate(textValue)

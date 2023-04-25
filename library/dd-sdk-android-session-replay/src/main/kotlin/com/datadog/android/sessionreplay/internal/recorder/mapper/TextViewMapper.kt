@@ -52,10 +52,12 @@ open class TextViewMapper :
                 height = viewGlobalBounds.height,
                 shapeStyle = shapeStyle,
                 border = border,
-                text = textValueObfuscationRule.resolveObfuscatedValue(view),
+                text = textValueObfuscationRule.resolveObfuscatedValue(view, mappingContext),
                 textStyle = resolveTextStyle(view, mappingContext.systemInformation.screenDensity),
-                textPosition = resolveTextPosition(view,
-                        mappingContext.systemInformation.screenDensity)
+                textPosition = resolveTextPosition(
+                    view,
+                    mappingContext.systemInformation.screenDensity
+                )
             )
         )
     }
