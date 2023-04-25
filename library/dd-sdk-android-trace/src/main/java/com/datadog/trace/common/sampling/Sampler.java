@@ -27,7 +27,12 @@ public interface Sampler {
       Sampler sampler;
       if (config != null) {
         if (config.isPrioritySamplingEnabled()) {
-          sampler = new RateByServiceSampler(config.getTraceSampleRate());
+          Double samplingRate = config.getTraceSampleRate();
+          if (samplingRate != null) {
+            sampler = new RateByServiceSampler(config.getTraceSampleRate());
+          } else {
+            sampler = new RateByServiceSampler();
+          }
         } else {
           sampler = new AllSampler();
         }
