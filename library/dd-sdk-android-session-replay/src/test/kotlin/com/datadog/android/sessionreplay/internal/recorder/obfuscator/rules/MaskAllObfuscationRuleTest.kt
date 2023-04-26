@@ -43,11 +43,12 @@ internal class MaskAllObfuscationRuleTest : BaseObfuscationRuleTest() {
     @Test
     fun `M resolve as fix length mask W resolveObfuscatedValue { SENSITIVE_TEXT }`() {
         // Given
-        whenever(mockTextTypeResolver.resolveTextType(mockTextView))
+        whenever(mockTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext))
             .thenReturn(TextType.SENSITIVE_TEXT)
 
         // When
-        val obfuscatedTextValue = testedRule.resolveObfuscatedValue(mockTextView)
+        val obfuscatedTextValue =
+            testedRule.resolveObfuscatedValue(mockTextView, fakeMappingContext)
 
         // Then
         assertThat(obfuscatedTextValue).isEqualTo(fakeFixedLengthMask)
@@ -56,11 +57,12 @@ internal class MaskAllObfuscationRuleTest : BaseObfuscationRuleTest() {
     @Test
     fun `M resolve as fix length mask W resolveObfuscatedValue { INPUT_TEXT }`() {
         // Given
-        whenever(mockTextTypeResolver.resolveTextType(mockTextView))
+        whenever(mockTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext))
             .thenReturn(TextType.INPUT_TEXT)
 
         // When
-        val obfuscatedTextValue = testedRule.resolveObfuscatedValue(mockTextView)
+        val obfuscatedTextValue =
+            testedRule.resolveObfuscatedValue(mockTextView, fakeMappingContext)
 
         // Then
         assertThat(obfuscatedTextValue).isEqualTo(fakeFixedLengthMask)
@@ -69,11 +71,12 @@ internal class MaskAllObfuscationRuleTest : BaseObfuscationRuleTest() {
     @Test
     fun `M resolve as fix length mask W resolveObfuscatedValue { OPTION_TEXT }`() {
         // Given
-        whenever(mockTextTypeResolver.resolveTextType(mockTextView))
+        whenever(mockTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext))
             .thenReturn(TextType.OPTION_TEXT)
 
         // When
-        val obfuscatedTextValue = testedRule.resolveObfuscatedValue(mockTextView)
+        val obfuscatedTextValue =
+            testedRule.resolveObfuscatedValue(mockTextView, fakeMappingContext)
 
         // Then
         assertThat(obfuscatedTextValue).isEqualTo(fakeFixedLengthMask)
@@ -82,11 +85,12 @@ internal class MaskAllObfuscationRuleTest : BaseObfuscationRuleTest() {
     @Test
     fun `M resolve as fix length mask W resolveObfuscatedValue { HINTS_TEXT }`() {
         // Given
-        whenever(mockTextTypeResolver.resolveTextType(mockTextView))
+        whenever(mockTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext))
             .thenReturn(TextType.HINTS_TEXT)
 
         // When
-        val obfuscatedTextValue = testedRule.resolveObfuscatedValue(mockTextView)
+        val obfuscatedTextValue =
+            testedRule.resolveObfuscatedValue(mockTextView, fakeMappingContext)
 
         // Then
         assertThat(obfuscatedTextValue).isEqualTo(fakeFixedLengthMask)
@@ -95,11 +99,12 @@ internal class MaskAllObfuscationRuleTest : BaseObfuscationRuleTest() {
     @Test
     fun `M resolve as preserved length text mask W resolveObfuscatedValue { STATIC_TEXT }`() {
         // Given
-        whenever(mockTextTypeResolver.resolveTextType(mockTextView))
+        whenever(mockTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext))
             .thenReturn(TextType.STATIC_TEXT)
 
         // When
-        val obfuscatedTextValue = testedRule.resolveObfuscatedValue(mockTextView)
+        val obfuscatedTextValue =
+            testedRule.resolveObfuscatedValue(mockTextView, fakeMappingContext)
 
         // Then
         assertThat(obfuscatedTextValue).isEqualTo(fakeDefaultMask)

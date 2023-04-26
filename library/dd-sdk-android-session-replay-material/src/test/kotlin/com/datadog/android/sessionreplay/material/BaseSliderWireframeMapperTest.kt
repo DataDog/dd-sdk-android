@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.material
 
 import android.content.res.ColorStateList
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.material.internal.densityNormalized
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
@@ -31,7 +31,7 @@ internal abstract class BaseSliderWireframeMapperTest {
 
     // misc
     @Forgery
-    lateinit var fakeSystemInformation: SystemInformation
+    lateinit var fakeMappingContext: MappingContext
 
     // fake wireframe ids
     @LongForgery
@@ -161,25 +161,25 @@ internal abstract class BaseSliderWireframeMapperTest {
         val normalizedSliderYPos = fakeSliderYPos
         val normalizedSliderXPos = fakeSliderXPos
         val normalizedSliderTopPadding = fakeSliderTopPadding.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         val normalizedSliderStartPadding = fakeSliderStartPadding.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         val normalizedTrackSidePadding = fakeTrackSidePadding.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         val normalizedSliderHeight = fakeSliderHeight
         val normalizedSliderValue = (fakeSliderValue - fakeSliderFromValue) /
             (fakeSliderToValue - fakeSliderFromValue)
 
         fakeExpectedInactiveTrackHeight = fakeTrackHeight.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         fakeExpectedActiveTrackHeight = fakeExpectedInactiveTrackHeight
 
         fakeExpectedInactiveTrackWidth = fakeTrackWidth.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         fakeExpectedActiveTrackWidth = (fakeExpectedInactiveTrackWidth * normalizedSliderValue)
             .toLong()
         fakeExpectedThumbHeight = fakeThumbRadius.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity) * 2
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity) * 2
         fakeExpectedInactiveTrackXPos = normalizedSliderXPos + normalizedSliderStartPadding +
             normalizedTrackSidePadding
         fakeExpectedInactiveTrackYPos = normalizedSliderYPos + normalizedSliderTopPadding +
@@ -218,7 +218,7 @@ internal abstract class BaseSliderWireframeMapperTest {
         whenever(
             mockViewUtils.resolveViewGlobalBounds(
                 mockSlider,
-                fakeSystemInformation.screenDensity
+                fakeMappingContext.systemInformation.screenDensity
             )
         )
             .thenReturn(fakeViewGlobalBounds)
@@ -256,7 +256,7 @@ internal abstract class BaseSliderWireframeMapperTest {
         ).thenReturn(null)
 
         // Then
-        assertThat(testedSliderWireframeMapper.map(mockSlider, fakeSystemInformation)).isEmpty()
+        assertThat(testedSliderWireframeMapper.map(mockSlider, fakeMappingContext)).isEmpty()
     }
 
     @Test
@@ -270,7 +270,7 @@ internal abstract class BaseSliderWireframeMapperTest {
         ).thenReturn(null)
 
         // Then
-        assertThat(testedSliderWireframeMapper.map(mockSlider, fakeSystemInformation)).isEmpty()
+        assertThat(testedSliderWireframeMapper.map(mockSlider, fakeMappingContext)).isEmpty()
     }
 
     @Test
@@ -284,7 +284,7 @@ internal abstract class BaseSliderWireframeMapperTest {
         ).thenReturn(null)
 
         // Then
-        assertThat(testedSliderWireframeMapper.map(mockSlider, fakeSystemInformation)).isEmpty()
+        assertThat(testedSliderWireframeMapper.map(mockSlider, fakeMappingContext)).isEmpty()
     }
 
     private fun generateMockedSlider(forge: Forge): Slider {

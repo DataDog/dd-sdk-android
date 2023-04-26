@@ -44,11 +44,12 @@ internal class AllowAllObfuscationRuleTest : BaseObfuscationRuleTest() {
     @Test
     fun `M resolve as fix length mask W resolveObfuscatedValue { SENSITIVE_TEXT }`() {
         // Given
-        whenever(mockTextTypeResolver.resolveTextType(mockTextView))
+        whenever(mockTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext))
             .thenReturn(TextType.SENSITIVE_TEXT)
 
         // When
-        val obfuscatedTextValue = testedRule.resolveObfuscatedValue(mockTextView)
+        val obfuscatedTextValue =
+            testedRule.resolveObfuscatedValue(mockTextView, fakeMappingContext)
 
         // Then
         assertThat(obfuscatedTextValue).isEqualTo(fakeFixedLengthMask)
@@ -64,11 +65,12 @@ internal class AllowAllObfuscationRuleTest : BaseObfuscationRuleTest() {
         textType: TextType
     ) {
         // Given
-        whenever(mockTextTypeResolver.resolveTextType(mockTextView))
+        whenever(mockTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext))
             .thenReturn(textType)
 
         // When
-        val obfuscatedTextValue = testedRule.resolveObfuscatedValue(mockTextView)
+        val obfuscatedTextValue =
+            testedRule.resolveObfuscatedValue(mockTextView, fakeMappingContext)
 
         // Then
         assertThat(obfuscatedTextValue).isEqualTo(fakeTextValue)

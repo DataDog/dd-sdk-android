@@ -7,11 +7,13 @@
 package com.datadog.android.sessionreplay.material
 
 import android.widget.TextView
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.material.internal.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.TextWireframe
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 import com.google.android.material.tabs.TabLayout
@@ -19,20 +21,20 @@ import com.google.android.material.tabs.TabLayout.TabView
 
 internal open class TabWireframeMapper(
     private val viewUtils: ViewUtils = ViewUtils,
-    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    internal val textViewMapper: WireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe> =
-        TextViewMapper()
+    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator =
+        UniqueIdentifierGenerator,
+    internal val textViewMapper: WireframeMapper<TextView, TextWireframe> = TextViewMapper()
 ) : WireframeMapper<TabLayout.TabView, MobileSegment.Wireframe> {
 
     override fun map(
-        view: TabLayout.TabView,
-        systemInformation: SystemInformation
+        view: TabView,
+        mappingContext: MappingContext
     ): List<MobileSegment.Wireframe> {
-        val labelWireframes = findAndResolveLabelWireframes(view, systemInformation)
+        val labelWireframes = findAndResolveLabelWireframes(view, mappingContext)
         if (view.isSelected) {
             val selectedTabIndicatorWireframe = resolveTabIndicatorWireframe(
                 view,
-                systemInformation,
+                mappingContext.systemInformation,
                 labelWireframes.firstOrNull()
             )
             if (selectedTabIndicatorWireframe != null) {
@@ -45,7 +47,7 @@ internal open class TabWireframeMapper(
     protected open fun resolveTabIndicatorWireframe(
         view: TabView,
         systemInformation: SystemInformation,
-        textWireframe: MobileSegment.Wireframe.TextWireframe?
+        textWireframe: TextWireframe?
     ): MobileSegment.Wireframe? {
         val selectorId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
             view,
@@ -76,12 +78,12 @@ internal open class TabWireframeMapper(
         )
     }
 
-    private fun findAndResolveLabelWireframes(view: TabView, systemInformation: SystemInformation):
-        List<MobileSegment.Wireframe.TextWireframe> {
+    private fun findAndResolveLabelWireframes(view: TabView, mappingContext: MappingContext):
+        List<TextWireframe> {
         for (i in 0 until view.childCount) {
             val viewChild = view.getChildAt(i) ?: continue
             if (TextView::class.java.isAssignableFrom(viewChild::class.java)) {
-                return textViewMapper.map(viewChild as TextView, systemInformation)
+                return textViewMapper.map(viewChild as TextView, mappingContext)
             }
         }
         return emptyList()

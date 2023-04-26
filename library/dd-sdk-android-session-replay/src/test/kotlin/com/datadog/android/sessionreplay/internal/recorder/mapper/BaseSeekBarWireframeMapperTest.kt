@@ -11,7 +11,7 @@ import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.widget.SeekBar
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
@@ -33,7 +33,7 @@ internal abstract class BaseSeekBarWireframeMapperTest {
 
     // misc
     @Forgery
-    lateinit var fakeSystemInformation: SystemInformation
+    lateinit var fakeMappingContext: MappingContext
 
     // fake wireframe ids
     @LongForgery
@@ -151,23 +151,23 @@ internal abstract class BaseSeekBarWireframeMapperTest {
         val normalizedSliderYPos = fakeSliderYPos
         val normalizedSliderXPos = fakeSliderXPos
         val normalizedSliderTopPadding = fakeSeekBarTopPadding.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         val normalizedSliderStartPadding = fakeSeekBarStartPadding.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         val normalizedSliderHeight = fakeSeekBarHeight
         val normalizedSliderValue = (fakeProgressValue.toFloat() - fakeProgressMinValue.toFloat()) /
             (fakeProgressMaxValue.toFloat() - fakeProgressMinValue.toFloat())
 
         fakeExpectedInactiveTrackHeight = SeekBarWireframeMapper.TRACK_HEIGHT_IN_PX
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         fakeExpectedActiveTrackHeight = fakeExpectedInactiveTrackHeight
 
         fakeExpectedInactiveTrackWidth = fakeTrackWidth.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         fakeExpectedActiveTrackWidth = (fakeExpectedInactiveTrackWidth * normalizedSliderValue)
             .toLong()
         fakeExpectedThumbHeight = fakeThumbHeight.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         fakeExpectedInactiveTrackXPos = normalizedSliderXPos + normalizedSliderStartPadding
         fakeExpectedInactiveTrackYPos = normalizedSliderYPos + normalizedSliderTopPadding +
             (normalizedSliderHeight - fakeExpectedActiveTrackHeight) / 2
@@ -205,7 +205,7 @@ internal abstract class BaseSeekBarWireframeMapperTest {
         whenever(
             mockViewUtils.resolveViewGlobalBounds(
                 mockSeekBar,
-                fakeSystemInformation.screenDensity
+                fakeMappingContext.systemInformation.screenDensity
             )
         )
             .thenReturn(fakeViewGlobalBounds)
@@ -243,7 +243,7 @@ internal abstract class BaseSeekBarWireframeMapperTest {
         ).thenReturn(null)
 
         // Then
-        assertThat(testedSeekBarWireframeMapper.map(mockSeekBar, fakeSystemInformation)).isEmpty()
+        assertThat(testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)).isEmpty()
     }
 
     @Test
@@ -257,7 +257,7 @@ internal abstract class BaseSeekBarWireframeMapperTest {
         ).thenReturn(null)
 
         // Then
-        assertThat(testedSeekBarWireframeMapper.map(mockSeekBar, fakeSystemInformation)).isEmpty()
+        assertThat(testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)).isEmpty()
     }
 
     @Test
@@ -271,7 +271,7 @@ internal abstract class BaseSeekBarWireframeMapperTest {
         ).thenReturn(null)
 
         // Then
-        assertThat(testedSeekBarWireframeMapper.map(mockSeekBar, fakeSystemInformation)).isEmpty()
+        assertThat(testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)).isEmpty()
     }
 
     private fun generateMockedSeekBar(forge: Forge): SeekBar {

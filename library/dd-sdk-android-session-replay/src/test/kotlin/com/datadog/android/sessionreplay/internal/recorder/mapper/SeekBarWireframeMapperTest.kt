@@ -79,7 +79,7 @@ internal class SeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
         )
 
         // When
-        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeSystemInformation)
+        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(
@@ -158,7 +158,7 @@ internal class SeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
         )
 
         // When
-        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeSystemInformation)
+        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(
@@ -237,7 +237,7 @@ internal class SeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
         )
 
         // When
-        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeSystemInformation)
+        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(
@@ -308,7 +308,7 @@ internal class SeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
         )
 
         // When
-        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeSystemInformation)
+        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(
@@ -379,7 +379,7 @@ internal class SeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
         )
 
         // When
-        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeSystemInformation)
+        val mappedWireframes = testedSeekBarWireframeMapper.map(mockSeekBar, fakeMappingContext)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(

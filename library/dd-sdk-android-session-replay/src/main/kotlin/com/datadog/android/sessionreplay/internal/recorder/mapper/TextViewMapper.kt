@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.Typeface
 import android.view.Gravity
 import android.widget.TextView
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.AllowAllObfuscationRule
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.TextValueObfuscationRule
@@ -35,9 +35,12 @@ open class TextViewMapper :
         this.textValueObfuscationRule = textValueObfuscationRule
     }
 
-    override fun map(view: TextView, systemInformation: SystemInformation):
+    override fun map(view: TextView, mappingContext: MappingContext):
         List<MobileSegment.Wireframe.TextWireframe> {
-        val viewGlobalBounds = resolveViewGlobalBounds(view, systemInformation.screenDensity)
+        val viewGlobalBounds = resolveViewGlobalBounds(
+            view,
+            mappingContext.systemInformation.screenDensity
+        )
         val (shapeStyle, border) = view.background?.resolveShapeStyleAndBorder(view.alpha)
             ?: (null to null)
         return listOf(
@@ -49,9 +52,12 @@ open class TextViewMapper :
                 height = viewGlobalBounds.height,
                 shapeStyle = shapeStyle,
                 border = border,
-                text = textValueObfuscationRule.resolveObfuscatedValue(view),
-                textStyle = resolveTextStyle(view, systemInformation.screenDensity),
-                textPosition = resolveTextPosition(view, systemInformation.screenDensity)
+                text = textValueObfuscationRule.resolveObfuscatedValue(view, mappingContext),
+                textStyle = resolveTextStyle(view, mappingContext.systemInformation.screenDensity),
+                textPosition = resolveTextPosition(
+                    view,
+                    mappingContext.systemInformation.screenDensity
+                )
             )
         )
     }

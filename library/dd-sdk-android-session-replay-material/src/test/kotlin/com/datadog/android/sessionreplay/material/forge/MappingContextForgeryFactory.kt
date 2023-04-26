@@ -6,16 +6,15 @@
 
 package com.datadog.android.sessionreplay.material.forge
 
-import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class ShapeBorderForgeryFactory :
-    ForgeryFactory<MobileSegment.ShapeBorder> {
-    override fun getForgery(forge: Forge): MobileSegment.ShapeBorder {
-        return MobileSegment.ShapeBorder(
-            color = forge.aStringMatching("#[0-9A-Fa-f]{6}[fF]{2}"),
-            width = forge.aPositiveLong(strict = true)
+internal class MappingContextForgeryFactory : ForgeryFactory<MappingContext> {
+    override fun getForgery(forge: Forge): MappingContext {
+        return MappingContext(
+            systemInformation = forge.getForgery(),
+            hasOptionSelectorParent = forge.aBool()
         )
     }
 }

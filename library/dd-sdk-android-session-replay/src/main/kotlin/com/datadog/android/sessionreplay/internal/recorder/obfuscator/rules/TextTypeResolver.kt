@@ -9,11 +9,12 @@ package com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.TextView
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 
 internal class TextTypeResolver {
 
     @Suppress("ReturnCount")
-    fun resolveTextType(textView: TextView): TextType {
+    fun resolveTextType(textView: TextView, mappingContext: MappingContext): TextType {
         if (textView.isPrivacySensitive()) {
             return TextType.SENSITIVE_TEXT
         }
@@ -24,6 +25,10 @@ internal class TextTypeResolver {
             } else {
                 TextType.INPUT_TEXT
             }
+        }
+
+        if (mappingContext.hasOptionSelectorParent) {
+            return TextType.OPTION_TEXT
         }
 
         return TextType.STATIC_TEXT

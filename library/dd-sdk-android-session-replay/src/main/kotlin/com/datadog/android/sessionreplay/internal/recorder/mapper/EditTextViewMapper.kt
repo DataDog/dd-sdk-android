@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.os.Build
 import android.widget.EditText
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
@@ -32,12 +32,13 @@ internal open class EditTextViewMapper(
     stringUtils = stringUtils
 ) {
 
-    override fun map(view: EditText, systemInformation: SystemInformation):
+    override fun map(view: EditText, mappingContext: MappingContext):
         List<MobileSegment.Wireframe> {
-        val mainWireframeList = textViewMapper.map(view, systemInformation)
-        resolveUnderlineWireframe(view, systemInformation.screenDensity)?.let { wireframe ->
-            return mainWireframeList + wireframe
-        }
+        val mainWireframeList = textViewMapper.map(view, mappingContext)
+        resolveUnderlineWireframe(view, mappingContext.systemInformation.screenDensity)
+            ?.let { wireframe ->
+                return mainWireframeList + wireframe
+            }
         return mainWireframeList
     }
 

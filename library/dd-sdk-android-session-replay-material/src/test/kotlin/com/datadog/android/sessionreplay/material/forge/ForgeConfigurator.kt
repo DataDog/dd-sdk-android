@@ -4,9 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.forge
+package com.datadog.android.sessionreplay.material.forge
 
-import com.datadog.android.sessionreplay.material.forge.TextWireframeForgeryFactory
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.jvm.useJvmFactories
@@ -26,6 +25,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(ShapeBorderForgeryFactory())
         forge.addFactory(GlobalBoundsForgeryFactory())
         forge.addFactory(SystemInformationForgeryFactory())
+        forge.addFactory(MappingContextForgeryFactory())
 
         forge.useJvmFactories()
     }

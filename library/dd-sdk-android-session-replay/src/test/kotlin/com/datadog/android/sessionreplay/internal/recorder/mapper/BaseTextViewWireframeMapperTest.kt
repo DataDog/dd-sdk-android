@@ -69,11 +69,11 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             whenever(this.currentTextColor).thenReturn(fakeFontColor)
             whenever(this.text).thenReturn(fakeText)
         }
-        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView))
+        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))
             .thenReturn(fakeDefaultObfuscatedText)
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeMappingContext)
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes().map {
@@ -81,7 +81,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
                 text = fakeDefaultObfuscatedText,
                 textStyle = MobileSegment.TextStyle(
                     expectedFontFamily,
-                    fakeFontSize.toLong().densityNormalized(fakeSystemInformation.screenDensity),
+                    fakeFontSize.toLong().densityNormalized(fakeMappingContext.systemInformation.screenDensity),
                     fakeStyleColor
                 )
             )
@@ -102,11 +102,11 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             whenever(this.typeface).thenReturn(mock())
             whenever(this.textAlignment).thenReturn(fakeTextAlignment)
         }
-        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView))
+        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))
             .thenReturn(fakeDefaultObfuscatedText)
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeMappingContext)
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes().map {
@@ -135,11 +135,11 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             whenever(this.textAlignment).thenReturn(TextView.TEXT_ALIGNMENT_GRAVITY)
             whenever(this.gravity).thenReturn(fakeGravity)
         }
-        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView))
+        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))
             .thenReturn(fakeDefaultObfuscatedText)
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeMappingContext)
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes().map {
@@ -170,16 +170,16 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             whenever(this.totalPaddingEnd).thenReturn(fakeTextPaddingEnd)
         }
         val expectedWireframeTextPadding = MobileSegment.Padding(
-            fakeTextPaddingTop.densityNormalized(fakeSystemInformation.screenDensity).toLong(),
-            fakeTextPaddingBottom.densityNormalized(fakeSystemInformation.screenDensity).toLong(),
-            fakeTextPaddingStart.densityNormalized(fakeSystemInformation.screenDensity).toLong(),
-            fakeTextPaddingEnd.densityNormalized(fakeSystemInformation.screenDensity).toLong()
+            fakeTextPaddingTop.densityNormalized(fakeMappingContext.systemInformation.screenDensity).toLong(),
+            fakeTextPaddingBottom.densityNormalized(fakeMappingContext.systemInformation.screenDensity).toLong(),
+            fakeTextPaddingStart.densityNormalized(fakeMappingContext.systemInformation.screenDensity).toLong(),
+            fakeTextPaddingEnd.densityNormalized(fakeMappingContext.systemInformation.screenDensity).toLong()
         )
-        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView))
+        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))
             .thenReturn(fakeDefaultObfuscatedText)
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeMappingContext)
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes().map {
@@ -225,11 +225,11 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             whenever(this.typeface).thenReturn(mock())
             whenever(this.alpha).thenReturn(fakeViewAlpha)
         }
-        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView))
+        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))
             .thenReturn(fakeDefaultObfuscatedText)
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeMappingContext)
 
         // Then
         val expectedWireframes = mockTextView.toTextWireframes().map {
@@ -260,11 +260,11 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             whenever(this.hintTextColors).thenReturn(mockColorStateList)
             whenever(this.typeface).thenReturn(mock())
         }
-        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView))
+        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))
             .thenReturn(fakeDefaultObfuscatedText)
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeMappingContext)
 
         // Then
         val expectedWireframes = mockTextView
@@ -275,7 +275,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
                     textStyle = MobileSegment.TextStyle(
                         TextViewMapper.SANS_SERIF_FAMILY_NAME,
                         mockTextView.textSize.toLong()
-                            .densityNormalized(fakeSystemInformation.screenDensity),
+                            .densityNormalized(fakeMappingContext.systemInformation.screenDensity),
                         StringUtils.formatColorAndAlphaAsHexa(
                             fakeHintColor,
                             OPAQUE_ALPHA_VALUE
@@ -301,11 +301,11 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             whenever(this.typeface).thenReturn(mock())
             whenever(this.currentTextColor).thenReturn(fakeTextColor)
         }
-        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView))
+        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))
             .thenReturn(fakeDefaultObfuscatedText)
 
         // When
-        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeSystemInformation)
+        val textWireframes = testedTextWireframeMapper.map(mockTextView, fakeMappingContext)
 
         // Then
         val expectedWireframes = mockTextView
@@ -316,7 +316,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
                     textStyle = MobileSegment.TextStyle(
                         TextViewMapper.SANS_SERIF_FAMILY_NAME,
                         mockTextView.textSize.toLong()
-                            .densityNormalized(fakeSystemInformation.screenDensity),
+                            .densityNormalized(fakeMappingContext.systemInformation.screenDensity),
                         StringUtils.formatColorAndAlphaAsHexa(
                             fakeTextColor,
                             OPAQUE_ALPHA_VALUE
