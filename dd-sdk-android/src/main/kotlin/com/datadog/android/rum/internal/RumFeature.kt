@@ -10,7 +10,6 @@ import android.app.Application
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.CoreFeature
@@ -37,9 +36,9 @@ import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.CPUVitalReader
+import com.datadog.android.rum.internal.vitals.JankStatsActivityLifecycleListener
 import com.datadog.android.rum.internal.vitals.MemoryVitalReader
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
-import com.datadog.android.rum.internal.vitals.VitalFrameCallback
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalObserver
 import com.datadog.android.rum.internal.vitals.VitalReader
@@ -86,6 +85,7 @@ internal class RumFeature(
     internal var frameRateVitalMonitor: VitalMonitor = NoOpVitalMonitor()
 
     internal var debugActivityLifecycleListener: Application.ActivityLifecycleCallbacks? = null
+    internal var jankStatsActivityLifecycleListener: Application.ActivityLifecycleCallbacks? = null
 
     internal var vitalExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
     internal lateinit var anrDetectorExecutorService: ExecutorService
@@ -104,6 +104,7 @@ internal class RumFeature(
         backgroundEventTracking = configuration.backgroundEventTracking
         trackFrustrations = configuration.trackFrustrations
         rumEventMapper = configuration.rumEventMapper
+        appContext = context.applicationContext
 
         configuration.viewTrackingStrategy?.let { viewTrackingStrategy = it }
         configuration.userActionTrackingStrategy?.let { actionTrackingStrategy = it }
@@ -114,8 +115,6 @@ internal class RumFeature(
         initializeANRDetector()
 
         registerTrackingStrategies(context)
-
-        appContext = context.applicationContext
 
         sdkCore.setEventReceiver(RUM_FEATURE_NAME, this)
 
@@ -236,25 +235,8 @@ internal class RumFeature(
 
         initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor, periodInMs)
         initializeVitalMonitor(MemoryVitalReader(), memoryVitalMonitor, periodInMs)
-
-        val vitalFrameCallback = VitalFrameCallback(frameRateVitalMonitor) { initialized.get() }
-        try {
-            Choreographer.getInstance().postFrameCallback(vitalFrameCallback)
-        } catch (e: IllegalStateException) {
-            // This can happen if the SDK is initialized on a Thread with no looper
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                "Unable to initialize the Choreographer FrameCallback",
-                e
-            )
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                "It seems you initialized the SDK on a thread without a Looper: " +
-                    "we won't be able to track your Views' refresh rate."
-            )
-        }
+        jankStatsActivityLifecycleListener = JankStatsActivityLifecycleListener(frameRateVitalMonitor, internalLogger)
+        (appContext as? Application)?.registerActivityLifecycleCallbacks(jankStatsActivityLifecycleListener)
     }
 
     private fun initializeVitalMonitor(
