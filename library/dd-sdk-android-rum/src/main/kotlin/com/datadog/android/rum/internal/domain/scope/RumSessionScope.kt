@@ -30,11 +30,13 @@ internal class RumSessionScope(
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
+    viewChangedListener: RumViewChangedListener?,
     internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     internal val sessionListener: RumSessionListener?,
+    applicationDisplayed: Boolean,
     appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider(),
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
@@ -42,6 +44,7 @@ internal class RumSessionScope(
 
     internal var sessionId = RumContext.NULL_UUID
     internal var sessionState: State = State.NOT_TRACKED
+    internal var isActive: Boolean = true
     private val sessionStartNs = AtomicLong(System.nanoTime())
     private val lastUserInteractionNs = AtomicLong(0L)
 
@@ -50,16 +53,18 @@ internal class RumSessionScope(
     private val noOpWriter = NoOpDataWriter<Any>()
 
     @Suppress("LongParameterList")
-    internal var childScope: RumScope = RumViewManagerScope(
+    internal var childScope: RumScope? = RumViewManagerScope(
         this,
         sdkCore,
         backgroundTrackingEnabled,
         trackFrustrations,
+        viewChangedListener,
         firstPartyHostHeaderTypeResolver,
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
-        appStartTimeProvider
+        appStartTimeProvider,
+        applicationDisplayed
     )
 
     init {
@@ -80,35 +85,50 @@ internal class RumSessionScope(
     override fun handleEvent(
         event: RumRawEvent,
         writer: DataWriter<Any>
-    ): RumScope {
+    ): RumScope? {
         if (event is RumRawEvent.ResetSession) {
             renewSession(System.nanoTime())
+        } else if (event is RumRawEvent.StopSession) {
+            stopSession()
         }
 
         updateSession(event)
 
         val actualWriter = if (sessionState == State.TRACKED) writer else noOpWriter
 
-        childScope.handleEvent(event, actualWriter)
+        childScope = childScope?.handleEvent(event, actualWriter)
 
-        return this
+        return if (isSessionComplete()) {
+            null
+        } else {
+            this
+        }
     }
 
     override fun getRumContext(): RumContext {
         val parentContext = parentScope.getRumContext()
         return parentContext.copy(
             sessionId = sessionId,
-            sessionState = sessionState
+            sessionState = sessionState,
+            isSessionActive = isActive
         )
     }
 
     override fun isActive(): Boolean {
-        return true
+        return isActive
     }
 
     // endregion
 
     // region Internal
+
+    private fun stopSession() {
+        isActive = false
+    }
+
+    private fun isSessionComplete(): Boolean {
+        return !isActive && childScope == null
+    }
 
     @Suppress("ComplexMethod")
     private fun updateSession(event: RumRawEvent) {

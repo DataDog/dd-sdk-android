@@ -26,9 +26,13 @@ public interface Sampler {
     public static Sampler forConfig(final Config config) {
       Sampler sampler;
       if (config != null) {
-
         if (config.isPrioritySamplingEnabled()) {
-          sampler = new RateByServiceSampler();
+          Double samplingRate = config.getTraceSampleRate();
+          if (samplingRate != null) {
+            sampler = new RateByServiceSampler(config.getTraceSampleRate());
+          } else {
+            sampler = new RateByServiceSampler();
+          }
         } else {
           sampler = new AllSampler();
         }

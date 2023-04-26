@@ -36,7 +36,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.offset
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -87,6 +86,9 @@ internal class RumSessionScopeTest {
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
 
+    @Mock
+    lateinit var mockViewChangedListener: RumViewChangedListener
+
     @Forgery
     lateinit var fakeParentContext: RumContext
 
@@ -114,12 +116,6 @@ internal class RumSessionScopeTest {
             mockSessionReplayFeatureScope
 
         initializeTestedScope()
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        // whatever happens
-        assertThat(testedScope.isActive()).isTrue()
     }
 
     // region RUM Feature Context
@@ -200,6 +196,64 @@ internal class RumSessionScopeTest {
         // Then
         assertThat(result).isSameAs(testedScope)
         verify(mockChildScope).handleEvent(same(mockEvent), isA<NoOpDataWriter<Any>>())
+    }
+
+    // endregion
+
+    // region Stopping Sessions
+
+    @Test
+    fun `M set session active to false W handleEvent { StopSession }`() {
+        // Given
+        whenever(mockChildScope.handleEvent(any(), any())) doReturn null
+
+        // When
+        val result = testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+
+        // Then
+        assertThat(result).isNull()
+        assertThat(testedScope.isActive()).isFalse
+    }
+
+    @Test
+    fun `M update context W handleEvent { StopSession }`() {
+        // When
+        val initialContext = testedScope.getRumContext()
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+
+        // Then
+        val context = testedScope.getRumContext()
+        assertThat(context.applicationId).isEqualTo(initialContext.applicationId)
+        assertThat(context.isSessionActive).isFalse
+    }
+
+    fun `M return scope from handleEvent W stopped { with active child scopes }`() {
+        // Given
+        whenever(mockChildScope.handleEvent(any(), mockWriter)) doReturn mockChildScope
+
+        // When
+        val result = testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.isActive()).isFalse
+    }
+
+    @Test
+    fun `M return null from handleEvent W stopped { completed child scopes }`() {
+        // Given
+        val stopEvent = RumRawEvent.StopSession()
+        val fakeEvent: RumRawEvent = mock()
+        whenever(mockChildScope.handleEvent(eq(stopEvent), any())) doReturn mockChildScope
+        whenever(mockChildScope.handleEvent(eq(fakeEvent), any())) doReturn null
+
+        // When
+        val firstResult = testedScope.handleEvent(stopEvent, mockWriter)
+        val secondResult = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(firstResult).isSameAs(testedScope)
+        assertThat(secondResult).isNull()
     }
 
     // endregion
@@ -984,11 +1038,13 @@ internal class RumSessionScopeTest {
             samplingRate,
             backgroundTrackingEnabled ?: fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
+            applicationDisplayed = false,
             mockAppStartTimeProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS

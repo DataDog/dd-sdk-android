@@ -185,6 +185,9 @@ internal class RumViewScopeTest {
     @Mock
     lateinit var mockFeaturesContextResolver: FeaturesContextResolver
 
+    @Mock
+    lateinit var mockViewChangedListener: RumViewChangedListener
+
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
@@ -264,6 +267,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -369,6 +373,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -487,6 +492,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -687,6 +693,7 @@ internal class RumViewScopeTest {
             name,
             fakeEventTime,
             fakeAttributes,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -743,6 +750,7 @@ internal class RumViewScopeTest {
             name,
             fakeEventTime,
             fakeAttributes,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -851,6 +859,7 @@ internal class RumViewScopeTest {
                 hasConnectivityInfo(fakeDatadogContext.networkInfo)
                 hasServiceName(fakeDatadogContext.service)
                 hasVersion(fakeDatadogContext.version)
+                hasSessionActive(fakeParentContext.isSessionActive)
             }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -920,6 +929,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -989,6 +999,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1064,6 +1075,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1136,6 +1148,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1208,6 +1221,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1267,6 +1281,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1293,6 +1308,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1359,6 +1375,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1430,6 +1447,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1453,6 +1471,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1523,6 +1542,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1548,6 +1568,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1619,6 +1640,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1691,6 +1713,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1762,6 +1785,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1826,6 +1850,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1933,6 +1958,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2017,6 +2043,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2102,6 +2129,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2189,6 +2217,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2256,6 +2285,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2397,6 +2427,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2481,6 +2512,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2567,6 +2599,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2652,6 +2685,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2863,6 +2897,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4125,6 +4160,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4309,6 +4345,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4437,6 +4474,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4693,6 +4731,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5293,6 +5332,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5362,6 +5402,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5449,6 +5490,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5571,6 +5613,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5653,6 +5696,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5724,6 +5768,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5794,6 +5839,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5874,6 +5920,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5954,6 +6001,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5981,6 +6029,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -6051,6 +6100,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6078,6 +6128,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -6148,6 +6199,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6177,6 +6229,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -6245,6 +6298,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6274,6 +6328,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -6342,6 +6397,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6372,6 +6428,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -6440,6 +6497,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6470,6 +6528,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -6538,6 +6597,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6567,6 +6627,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -6635,6 +6696,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -7165,6 +7227,34 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region Stopping Sessions
+
+    @Test
+    fun `M set view to inactive and send update W handleEvent { StopSession }`() {
+        // Given
+        whenever(mockParentScope.getRumContext())
+            .doReturn(fakeParentContext.copy(isSessionActive = false))
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(),
+            mockWriter
+        )
+
+        // Then
+        assertThat(testedScope.isActive()).isFalse()
+
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasSessionActive(false)
+                }
+        }
+    }
+
+    // endregion
+
     // region Misc
 
     @ParameterizedTest
@@ -7180,6 +7270,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
+            mockViewChangedListener,
             mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
