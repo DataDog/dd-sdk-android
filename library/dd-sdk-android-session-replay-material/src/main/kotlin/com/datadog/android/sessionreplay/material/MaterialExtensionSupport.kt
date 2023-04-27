@@ -26,8 +26,6 @@ class MaterialExtensionSupport : ExtensionSupport {
         val allowAllSliderMapper = SliderWireframeMapper() as WireframeMapper<View, *>
         val maskAllTabWireframeMapper = MaskAllTabWireframeMapper() as WireframeMapper<View, *>
         val allowAllTabWireframeMapper = TabWireframeMapper() as WireframeMapper<View, *>
-        val maskUserInputTabWireframeMapper =
-            MaskInputTabWireframeMapper() as WireframeMapper<View, *>
         return mapOf(
             SessionReplayPrivacy.ALLOW_ALL to mapOf(
                 Slider::class.java to allowAllSliderMapper,
@@ -39,7 +37,7 @@ class MaterialExtensionSupport : ExtensionSupport {
             ),
             SessionReplayPrivacy.MASK_USER_INPUT to mapOf(
                 Slider::class.java to maskUserInputSliderMapper,
-                TabLayout.TabView::class.java to maskUserInputTabWireframeMapper
+                TabLayout.TabView::class.java to allowAllTabWireframeMapper
             )
         )
     }
