@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN ln -sf /usr/share/zoneinfo/Etc/UTC /etc/localtime
 
 RUN apt-get update \
-    && apt-get -y install openjdk-11-jdk \
+    && apt-get -y install openjdk-17-jdk \
     && rm -rf /var/lib/apt/lists/*
 
 RUN set -x \
