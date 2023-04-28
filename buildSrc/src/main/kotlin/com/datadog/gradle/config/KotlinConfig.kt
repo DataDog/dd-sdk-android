@@ -15,7 +15,7 @@ import java.io.File
 fun Project.kotlinConfig(evaluateWarningsAsErrors: Boolean = true) {
     taskConfig<KotlinCompile> {
         kotlinOptions {
-            jvmTarget = JavaVersion.VERSION_11.toString()
+            jvmTarget = JavaVersion.VERSION_17.toString()
             allWarningsAsErrors = evaluateWarningsAsErrors
             apiVersion = "1.6"
             languageVersion = "1.6"
