@@ -18,6 +18,7 @@ import android.widget.RadioButton
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.widget.SwitchCompat
+import com.datadog.android.sessionreplay.internal.recorder.mapper.BasePickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckedTextViewMapper
@@ -81,7 +82,7 @@ enum class SessionReplayPrivacy {
         val radioButtonMapper: RadioButtonMapper
         val switchCompatMapper: SwitchCompatMapper
         val seekBarMapper: SeekBarWireframeMapper?
-        val numberPickerMapper: NumberPickerMapper?
+        val numberPickerMapper: BasePickerMapper?
         when (this) {
             ALLOW_ALL -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
@@ -112,12 +113,12 @@ enum class SessionReplayPrivacy {
                 textMapper = MaskInputTextViewMapper()
                 buttonMapper = ButtonMapper(textMapper)
                 editTextViewMapper = EditTextViewMapper(textMapper)
-                checkedTextViewMapper = CheckedTextViewMapper(textMapper)
+                checkedTextViewMapper = MaskAllCheckedTextViewMapper(textMapper)
                 checkBoxMapper = MaskAllCheckBoxMapper(textMapper)
                 radioButtonMapper = MaskAllRadioButtonMapper(textMapper)
                 switchCompatMapper = MaskAllSwitchCompatMapper(textMapper)
-                seekBarMapper = getSeekBarMapper()
-                numberPickerMapper = getNumberPickerMapper()
+                seekBarMapper = getMaskAllSeekBarMapper()
+                numberPickerMapper = getMaskAllNumberPickerMapper()
             }
         }
         val mappersList = mutableListOf(
@@ -164,7 +165,7 @@ enum class SessionReplayPrivacy {
         }
     }
 
-    private fun getNumberPickerMapper(): NumberPickerMapper? {
+    private fun getNumberPickerMapper(): BasePickerMapper? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             NumberPickerMapper()
         } else {
@@ -172,7 +173,7 @@ enum class SessionReplayPrivacy {
         }
     }
 
-    private fun getMaskAllNumberPickerMapper(): NumberPickerMapper? {
+    private fun getMaskAllNumberPickerMapper(): BasePickerMapper? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MaskAllNumberPickerMapper()
         } else {

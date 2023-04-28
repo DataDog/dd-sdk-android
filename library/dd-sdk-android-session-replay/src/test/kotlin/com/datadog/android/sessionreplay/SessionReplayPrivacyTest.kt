@@ -157,7 +157,7 @@ internal class SessionReplayPrivacyTest {
         // Then
         assertThat(mappers.size).isEqualTo(9)
         assertThat(mappers[0].type).isEqualTo(SeekBar::class.java)
-        assertThat(mappers[0].mapper).isInstanceOf(SeekBarWireframeMapper::class.java)
+        assertThat(mappers[0].mapper).isInstanceOf(MaskAllSeekBarWireframeMapper::class.java)
         assertThat(mappers[1].type).isEqualTo(SwitchCompat::class.java)
         assertThat(mappers[1].mapper).isInstanceOf(MaskAllSwitchCompatMapper::class.java)
         assertThat(mappers[2].type).isEqualTo(RadioButton::class.java)
@@ -243,9 +243,9 @@ internal class SessionReplayPrivacyTest {
         // Then
         assertThat(mappers.size).isEqualTo(10)
         assertThat(mappers[0].type).isEqualTo(NumberPicker::class.java)
-        assertThat(mappers[0].mapper).isInstanceOf(NumberPickerMapper::class.java)
+        assertThat(mappers[0].mapper).isInstanceOf(MaskAllNumberPickerMapper::class.java)
         assertThat(mappers[1].type).isEqualTo(SeekBar::class.java)
-        assertThat(mappers[1].mapper).isInstanceOf(SeekBarWireframeMapper::class.java)
+        assertThat(mappers[1].mapper).isInstanceOf(MaskAllSeekBarWireframeMapper::class.java)
         assertThat(mappers[2].type).isEqualTo(SwitchCompat::class.java)
         assertThat(mappers[2].mapper).isInstanceOf(MaskAllSwitchCompatMapper::class.java)
         assertThat(mappers[3].type).isEqualTo(RadioButton::class.java)

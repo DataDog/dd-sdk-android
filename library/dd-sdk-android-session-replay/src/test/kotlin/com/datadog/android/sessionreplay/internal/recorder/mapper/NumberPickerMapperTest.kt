@@ -235,4 +235,34 @@ internal class NumberPickerMapperTest : BaseNumberPickerMapperTest() {
             )
         )
     }
+
+    @Test
+    fun `M return empty list W map { prevLabelId null }`() {
+        // Given
+        whenever(
+            mockUniqueIdentifierGenerator
+                .resolveChildUniqueIdentifier(
+                    mockNumberPicker,
+                    BasePickerMapper.PREV_INDEX_KEY_NAME
+                )
+        )
+            .thenReturn(null)
+        // Then
+        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
+    }
+
+    @Test
+    fun `M return empty list W map { nextLabelId null }`() {
+        // Given
+        whenever(
+            mockUniqueIdentifierGenerator
+                .resolveChildUniqueIdentifier(
+                    mockNumberPicker,
+                    BasePickerMapper.NEXT_INDEX_KEY_NAME
+                )
+        )
+            .thenReturn(null)
+        // Then
+        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
+    }
 }
