@@ -11,6 +11,7 @@ import org.gradle.api.tasks.testing.Test
 
 fun Project.junitConfig() {
     tasks.withType(Test::class.java).configureEach {
+        jvmArgs("--add-opens=java.base/java.lang.reflect=ALL-UNNAMED")
         useJUnitPlatform {
             includeEngines("spek", "junit-jupiter", "junit-vintage")
         }

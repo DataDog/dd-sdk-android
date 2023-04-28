@@ -34,6 +34,7 @@ android {
 
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
+        java.srcDir("src/main/java")
     }
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
