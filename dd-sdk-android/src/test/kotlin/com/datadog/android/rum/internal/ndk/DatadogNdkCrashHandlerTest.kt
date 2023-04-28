@@ -49,6 +49,7 @@ import org.mockito.kotlin.firstValue
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
@@ -301,7 +302,8 @@ internal class DatadogNdkCrashHandlerTest {
             DatadogNdkCrashHandler.INFO_LOGS_FEATURE_NOT_REGISTERED
         )
 
-        verifyNoInteractions(mockInternalLogger, mockLogsFeatureScope)
+        verifyNoMoreInteractions(mockInternalLogger)
+        verifyNoInteractions(mockLogsFeatureScope)
     }
 
     @Test

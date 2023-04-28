@@ -55,6 +55,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
@@ -189,8 +190,8 @@ internal class LogsFeatureTest {
                 )
             )
 
+        verifyNoMoreInteractions(logger.mockInternalLogger)
         verifyNoInteractions(
-            logger.mockInternalLogger,
             mockSdkCore,
             mockDataWriter
         )

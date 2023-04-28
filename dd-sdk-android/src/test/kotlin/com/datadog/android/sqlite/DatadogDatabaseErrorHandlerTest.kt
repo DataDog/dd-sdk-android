@@ -31,7 +31,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
@@ -100,7 +100,7 @@ internal class DatadogDatabaseErrorHandlerTest {
 
         // THEN
         verify(mockDefaultHandler).onCorruption(mockSqliteDatabase)
-        verifyNoInteractions(mockDefaultHandler)
+        verifyNoMoreInteractions(mockDefaultHandler)
     }
 
     @Test
