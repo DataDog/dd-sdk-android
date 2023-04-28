@@ -11,7 +11,6 @@ import com.datadog.android.ndk.NdkCrashReportsPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.unit.setFieldValue
-import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -24,6 +23,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
 import java.io.File
 

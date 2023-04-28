@@ -7,9 +7,9 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.core.configuration.Configuration
-import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
+import org.mockito.kotlin.mock
 
 internal class ConfigurationCrashReportForgeryFactory :
     ForgeryFactory<Configuration.Feature.CrashReport> {

@@ -9,8 +9,6 @@ package com.datadog.android.rum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
 import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -18,6 +16,8 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -60,7 +60,7 @@ internal class GlobalRumTest {
         GlobalRum.notifyIngestedWebViewEvent()
 
         // Then
-        verifyZeroInteractions(mockNoOpRumMonitor)
+        verifyNoInteractions(mockNoOpRumMonitor)
     }
 
     @Test
@@ -84,6 +84,6 @@ internal class GlobalRumTest {
         GlobalRum.notifyInterceptorInstantiated()
 
         // Then
-        verifyZeroInteractions(mockNoOpRumMonitor)
+        verifyNoInteractions(mockNoOpRumMonitor)
     }
 }

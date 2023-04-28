@@ -10,10 +10,6 @@ import com.datadog.android.core.internal.persistence.file.EventMeta
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
 import com.google.gson.JsonParseException
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.isA
-import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -29,6 +25,10 @@ import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isA
+import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.io.File
 import java.nio.ByteBuffer

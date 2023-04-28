@@ -7,8 +7,6 @@
 package com.datadog.android.log.internal.logger
 
 import com.datadog.android.utils.forge.Configurator
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -20,6 +18,8 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit

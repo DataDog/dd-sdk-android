@@ -9,10 +9,6 @@ package com.datadog.android.core.internal.thread
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.forge.aThrowable
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.isA
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -25,6 +21,10 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isA
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutorService
@@ -65,7 +65,7 @@ internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> 
         Thread.sleep(DEFAULT_SLEEP_DURATION_MS)
 
         // Then
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -77,7 +77,7 @@ internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> 
         Thread.sleep(DEFAULT_SLEEP_DURATION_MS)
 
         // Then
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -118,7 +118,7 @@ internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> 
         // Then
         assertThat(futureTask.isDone).isTrue
 
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -132,7 +132,7 @@ internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> 
         // Then
         assertThat(futureTask.isDone).isTrue
 
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test

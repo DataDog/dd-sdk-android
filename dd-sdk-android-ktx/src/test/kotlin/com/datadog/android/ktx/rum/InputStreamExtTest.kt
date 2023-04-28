@@ -8,7 +8,6 @@ package com.datadog.android.ktx.rum
 
 import com.datadog.android.rum.resource.RumResourceInputStream
 import com.datadog.tools.unit.forge.BaseConfigurator
-import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -18,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
 import java.io.InputStream
 

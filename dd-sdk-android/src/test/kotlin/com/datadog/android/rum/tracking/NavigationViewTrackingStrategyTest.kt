@@ -32,15 +32,6 @@ import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -54,6 +45,15 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 internal typealias NavLifecycleCallbacks =
@@ -148,14 +148,14 @@ internal class NavigationViewTrackingStrategyTest {
     fun `when register called with non application context will do nothing`() {
         testedStrategy.register(mockNotAppContext)
 
-        verifyZeroInteractions(mockNotAppContext)
+        verifyNoInteractions(mockNotAppContext)
     }
 
     @Test
     fun `when unregister called with non application context will do nothing`() {
         testedStrategy.unregister(mockNotAppContext)
 
-        verifyZeroInteractions(mockNotAppContext)
+        verifyNoInteractions(mockNotAppContext)
     }
 
     // endregion
@@ -173,7 +173,7 @@ internal class NavigationViewTrackingStrategyTest {
     fun `registers navigation listener when nav controller added after activity started`() {
         whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn null
         testedStrategy.onActivityStarted(mockActivity)
-        verifyZeroInteractions(mockNavController)
+        verifyNoInteractions(mockNavController)
 
         whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn mockNavController
         testedStrategy.startTracking()
@@ -202,7 +202,7 @@ internal class NavigationViewTrackingStrategyTest {
     fun `doesn't unregister navigation listener onActivityStopped if activity not started`() {
         testedStrategy.onActivityStopped(mockActivity)
 
-        verifyZeroInteractions(mockNavController)
+        verifyNoInteractions(mockNavController)
     }
 
     @Test
@@ -224,21 +224,21 @@ internal class NavigationViewTrackingStrategyTest {
     fun `does nothing onActivityStarted when no NavHost present`() {
         testedStrategy.onActivityStarted(mock())
 
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
     fun `does nothing onActivityStopped when no NavHost present`() {
         testedStrategy.onActivityStopped(mock())
 
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
     fun `does nothing onActivityPaused when no NavHost present`() {
         testedStrategy.onActivityPaused(mock())
 
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -247,7 +247,7 @@ internal class NavigationViewTrackingStrategyTest {
 
         testedStrategy.onActivityStarted(mockActivity)
 
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -256,7 +256,7 @@ internal class NavigationViewTrackingStrategyTest {
 
         testedStrategy.onActivityStopped(mockActivity)
 
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -265,7 +265,7 @@ internal class NavigationViewTrackingStrategyTest {
 
         testedStrategy.onActivityPaused(mockActivity)
 
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -287,7 +287,7 @@ internal class NavigationViewTrackingStrategyTest {
 
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
 
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -388,7 +388,7 @@ internal class NavigationViewTrackingStrategyTest {
         whenever(mockNavController.currentDestination) doReturn null
         testedStrategy.onActivityPaused(mockActivity)
 
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     // endregion
@@ -441,7 +441,7 @@ internal class NavigationViewTrackingStrategyTest {
         callback.onFragmentResumed(mock(), navHostFragment)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -460,7 +460,7 @@ internal class NavigationViewTrackingStrategyTest {
         callback.onFragmentResumed(mock(), mockFragment)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     // region Internal

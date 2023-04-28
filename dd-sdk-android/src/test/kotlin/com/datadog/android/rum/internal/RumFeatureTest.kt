@@ -38,14 +38,6 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
 import com.google.gson.JsonObject
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.doNothing
-import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -62,6 +54,14 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doNothing
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -304,7 +304,7 @@ internal class RumFeatureTest {
         )
 
         // Then
-        verifyZeroInteractions(mockChoreographer)
+        verifyNoInteractions(mockChoreographer)
     }
 
     @Test
@@ -499,7 +499,7 @@ internal class RumFeatureTest {
                 )
             )
 
-        verifyZeroInteractions(
+        verifyNoInteractions(
             mockSdkCore,
             rumMonitor.mockInstance
         )
@@ -528,7 +528,7 @@ internal class RumFeatureTest {
                 )
             )
 
-        verifyZeroInteractions(
+        verifyNoInteractions(
             mockSdkCore,
             rumMonitor.mockInstance
         )
@@ -559,7 +559,7 @@ internal class RumFeatureTest {
                 RumFeature.JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS
             )
 
-        verifyZeroInteractions(
+        verifyNoInteractions(
             mockSdkCore,
             rumMonitor.mockInstance
         )
@@ -590,7 +590,7 @@ internal class RumFeatureTest {
                 fakeThrowable
             )
 
-        verifyZeroInteractions(
+        verifyNoInteractions(
             mockSdkCore,
             logger.mockInternalLogger
         )
@@ -625,7 +625,7 @@ internal class RumFeatureTest {
                 testedFeature.dataWriter
             )
 
-        verifyZeroInteractions(
+        verifyNoInteractions(
             rumMonitor.mockInstance,
             mockSdkCore,
             logger.mockInternalLogger

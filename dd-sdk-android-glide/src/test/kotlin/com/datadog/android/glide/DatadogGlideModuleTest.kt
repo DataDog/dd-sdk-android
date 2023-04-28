@@ -18,9 +18,6 @@ import com.bumptech.glide.module.AppGlideModule
 import com.datadog.android.DatadogInterceptor
 import com.datadog.tools.unit.assertj.containsInstanceOf
 import com.datadog.tools.unit.getFieldValue
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.OkHttpClient
@@ -32,6 +29,9 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.io.InputStream
 import java.util.concurrent.ExecutorService

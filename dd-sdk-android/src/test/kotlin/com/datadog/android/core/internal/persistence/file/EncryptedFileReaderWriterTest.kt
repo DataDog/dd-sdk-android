@@ -14,13 +14,6 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -32,6 +25,13 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 import kotlin.experimental.inv
@@ -99,7 +99,7 @@ internal class EncryptedFileReaderWriterTest {
                 false
             )
 
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -124,8 +124,8 @@ internal class EncryptedFileReaderWriterTest {
             InternalLogger.Target.USER,
             EncryptedFileReaderWriter.BAD_ENCRYPTION_RESULT_MESSAGE
         )
-        verifyZeroInteractions(mockInternalLogger)
-        verifyZeroInteractions(mockFileReaderWriterDelegate)
+        verifyNoInteractions(mockInternalLogger)
+        verifyNoInteractions(mockFileReaderWriterDelegate)
     }
 
     @Test
@@ -147,8 +147,8 @@ internal class EncryptedFileReaderWriterTest {
             InternalLogger.Target.MAINTAINER,
             EncryptedFileReaderWriter.APPEND_MODE_NOT_SUPPORTED_MESSAGE
         )
-        verifyZeroInteractions(mockInternalLogger)
-        verifyZeroInteractions(mockFileReaderWriterDelegate)
+        verifyNoInteractions(mockInternalLogger)
+        verifyNoInteractions(mockFileReaderWriterDelegate)
     }
 
     // endregion
@@ -205,7 +205,7 @@ internal class EncryptedFileReaderWriterTest {
         assertThat(writeResult).isTrue()
         assertThat(readResult).isEqualTo(data.toByteArray())
 
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     // endregion

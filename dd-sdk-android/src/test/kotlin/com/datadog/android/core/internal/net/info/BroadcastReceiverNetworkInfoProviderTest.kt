@@ -18,10 +18,6 @@ import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.log.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.context.NetworkInfo
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -35,6 +31,10 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -105,7 +105,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         testedProvider.unregister(mockContext)
 
         // Then
-        verifyZeroInteractions(mockContext)
+        verifyNoInteractions(mockContext)
     }
 
     @Test

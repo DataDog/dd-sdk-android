@@ -7,8 +7,6 @@
 package com.datadog.android.log.internal.logger
 
 import com.datadog.android.utils.forge.Configurator
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -20,6 +18,8 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -149,7 +149,7 @@ internal class ConditionalLogHandlerTest {
             fakeTags
         )
 
-        verifyZeroInteractions(mockDevLogHandler)
+        verifyNoInteractions(mockDevLogHandler)
     }
 
     @Test
@@ -174,7 +174,7 @@ internal class ConditionalLogHandlerTest {
         thread.start()
         countDownLatch.await(1, TimeUnit.SECONDS)
 
-        verifyZeroInteractions(mockDevLogHandler)
+        verifyNoInteractions(mockDevLogHandler)
     }
 
     @Test
@@ -189,6 +189,6 @@ internal class ConditionalLogHandlerTest {
             emptySet()
         )
 
-        verifyZeroInteractions(mockDevLogHandler)
+        verifyNoInteractions(mockDevLogHandler)
     }
 }

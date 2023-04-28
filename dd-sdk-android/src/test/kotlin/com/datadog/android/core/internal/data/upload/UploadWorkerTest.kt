@@ -30,14 +30,6 @@ import com.datadog.android.v2.core.internal.storage.Storage
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -56,6 +48,14 @@ import org.mockito.Mock
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import org.mockito.stubbing.Answer
 import java.util.concurrent.Executor
@@ -544,8 +544,8 @@ internal class UploadWorkerTest {
             InternalLogger.Target.USER,
             Datadog.MESSAGE_NOT_INITIALIZED
         )
-        verifyZeroInteractions(mockFeatureA, mockBatchReaderA, mockUploaderA)
-        verifyZeroInteractions(mockFeatureB, mockBatchReaderB, mockUploaderB)
+        verifyNoInteractions(mockFeatureA, mockBatchReaderA, mockUploaderA)
+        verifyNoInteractions(mockFeatureB, mockBatchReaderB, mockUploaderB)
 
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())

@@ -26,11 +26,11 @@ import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import com.lyft.kronos.KronosClock
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import okhttp3.OkHttpClient
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.io.File
 import java.lang.ref.WeakReference
 import java.nio.file.Files

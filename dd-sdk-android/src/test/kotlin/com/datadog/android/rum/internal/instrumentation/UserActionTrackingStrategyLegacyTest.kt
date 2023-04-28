@@ -9,8 +9,6 @@ package com.datadog.android.rum.internal.instrumentation
 import com.datadog.android.rum.ActivityLifecycleTrackingStrategyTest
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.utils.forge.Configurator
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -21,6 +19,8 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
 @Extensions(

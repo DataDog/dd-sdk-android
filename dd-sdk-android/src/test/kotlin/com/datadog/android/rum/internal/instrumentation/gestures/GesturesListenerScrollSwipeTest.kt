@@ -19,15 +19,6 @@ import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -40,6 +31,15 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.lang.ref.WeakReference
 import java.util.stream.Stream
@@ -320,7 +320,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
                 InternalLogger.Target.USER,
                 GesturesListener.MSG_NO_TARGET_SCROLL_SWIPE
             )
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -361,8 +361,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
-        verifyZeroInteractions(logger.mockInternalLogger)
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(logger.mockInternalLogger)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @ParameterizedTest
@@ -805,7 +805,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(startDownEvent)
         testedListener.onDown(endUpEvent)
 
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     // endregion

@@ -12,7 +12,6 @@ import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
 import com.datadog.android.rum.tracking.StubComponentPredicate
 import com.datadog.android.utils.forge.Configurator
-import com.nhaarman.mockitokotlin2.inOrder
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -23,6 +22,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.inOrder
 import org.mockito.quality.Strictness
 
 @Extensions(

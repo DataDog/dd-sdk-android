@@ -9,8 +9,6 @@ package com.datadog.android.log.internal.logger
 import com.datadog.android.telemetry.internal.Telemetry
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.forge.aThrowable
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -22,6 +20,8 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.quality.Strictness
 import android.util.Log as AndroidLog
 

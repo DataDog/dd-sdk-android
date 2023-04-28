@@ -7,12 +7,6 @@
 package com.datadog.android.core.internal.lifecycle
 
 import android.app.Activity
-import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -20,6 +14,12 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
 
@@ -165,7 +165,7 @@ internal class ProcessLifecycleMonitorTest {
         testedMonitor.onActivityStopped(mockActivity1)
 
         // Then
-        verifyZeroInteractions(mockCallback)
+        verifyNoInteractions(mockCallback)
     }
 
     @Test

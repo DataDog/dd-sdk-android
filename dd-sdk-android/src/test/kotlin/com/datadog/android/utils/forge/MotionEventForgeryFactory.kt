@@ -7,10 +7,10 @@
 package com.datadog.android.utils.forge
 
 import android.view.MotionEvent
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 internal class MotionEventForgeryFactory : ForgeryFactory<MotionEvent> {
 

@@ -17,10 +17,6 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -33,6 +29,10 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -90,7 +90,7 @@ internal class RumWebChromeClientTest {
             emptySet(),
             null
         )
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
         assertThat(result).isFalse()
     }
 
@@ -111,7 +111,7 @@ internal class RumWebChromeClientTest {
             emptySet(),
             null
         )
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
         assertThat(result).isFalse()
     }
 
@@ -132,7 +132,7 @@ internal class RumWebChromeClientTest {
             emptySet(),
             null
         )
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
         assertThat(result).isFalse()
     }
 
@@ -153,7 +153,7 @@ internal class RumWebChromeClientTest {
             emptySet(),
             null
         )
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
         assertThat(result).isFalse()
     }
 
@@ -163,7 +163,7 @@ internal class RumWebChromeClientTest {
 
         val result = testedClient.onConsoleMessage(mockConsoleMessage)
 
-        verifyZeroInteractions(mockLogHandler)
+        verifyNoInteractions(mockLogHandler)
         verify(rumMonitor.mockInstance).addError(
             fakeMessage,
             RumErrorSource.WEBVIEW,
@@ -180,7 +180,7 @@ internal class RumWebChromeClientTest {
     fun `onConsoleMessage with null message doesn't do anything`() {
         val result = testedClient.onConsoleMessage(null)
 
-        verifyZeroInteractions(mockLogHandler, rumMonitor.mockInstance)
+        verifyNoInteractions(mockLogHandler, rumMonitor.mockInstance)
         assertThat(result).isFalse()
     }
 

@@ -20,14 +20,6 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.setStaticValue
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argThat
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -38,6 +30,14 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -113,7 +113,7 @@ internal class ProcessLifecycleCallbackTest {
         testedCallback.onStopped()
 
         // Then
-        verifyZeroInteractions(mockWorkManager)
+        verifyNoInteractions(mockWorkManager)
     }
 
     @Test
@@ -131,7 +131,7 @@ internal class ProcessLifecycleCallbackTest {
         testedCallback.onStopped()
 
         // Then
-        verifyZeroInteractions(mockWorkManager)
+        verifyNoInteractions(mockWorkManager)
     }
 
     @Test
@@ -149,7 +149,7 @@ internal class ProcessLifecycleCallbackTest {
         testedCallback.onStopped()
 
         // Then
-        verifyZeroInteractions(mockWorkManager)
+        verifyNoInteractions(mockWorkManager)
     }
 
     @Test
@@ -173,7 +173,7 @@ internal class ProcessLifecycleCallbackTest {
         testedCallback.onStarted()
 
         // Then
-        verifyZeroInteractions(mockWorkManager)
+        verifyNoInteractions(mockWorkManager)
     }
 
     companion object {

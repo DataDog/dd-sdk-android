@@ -22,15 +22,6 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -44,6 +35,15 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 import java.util.Locale
@@ -140,7 +140,7 @@ internal class RumDataWriterTest {
         // Then
         assertThat(result).isFalse
 
-        verifyZeroInteractions(mockEventBatchWriter)
+        verifyNoInteractions(mockEventBatchWriter)
     }
 
     @Test
@@ -175,7 +175,7 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(viewEvent, fakeSerializedData)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -193,7 +193,7 @@ internal class RumDataWriterTest {
         // Then
         verify(mockFileWriter)
             .writeData(fakeLastViewEventFile, fakeSerializedData, false)
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -207,7 +207,7 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(viewEvent, fakeSerializedData)
 
         // Then
-        verifyZeroInteractions(mockFileWriter)
+        verifyNoInteractions(mockFileWriter)
         verify(mockInternalLogger).log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.MAINTAINER,
@@ -230,7 +230,7 @@ internal class RumDataWriterTest {
             actionEvent.view.id,
             StorageEvent.Action(frustrationCount = actionEvent.action.frustration?.type?.size ?: 0)
         )
-        verifyZeroInteractions(mockFileWriter)
+        verifyNoInteractions(mockFileWriter)
     }
 
     @Test
@@ -242,7 +242,7 @@ internal class RumDataWriterTest {
 
         // Then
         verify(rumMonitor.mockInstance).eventSent(resourceEvent.view.id, StorageEvent.Resource)
-        verifyZeroInteractions(mockFileWriter)
+        verifyNoInteractions(mockFileWriter)
     }
 
     @Test
@@ -257,7 +257,7 @@ internal class RumDataWriterTest {
 
         // Then
         verify(rumMonitor.mockInstance).eventSent(fakeEvent.view.id, StorageEvent.Error)
-        verifyZeroInteractions(mockFileWriter)
+        verifyNoInteractions(mockFileWriter)
     }
 
     @Test
@@ -272,7 +272,7 @@ internal class RumDataWriterTest {
 
         // Then
         verify(rumMonitor.mockInstance, never()).eventSent(eq(fakeEvent.view.id), any())
-        verifyZeroInteractions(mockFileWriter)
+        verifyNoInteractions(mockFileWriter)
     }
 
     @Test
@@ -293,7 +293,7 @@ internal class RumDataWriterTest {
 
         // Then
         verify(rumMonitor.mockInstance).eventSent(longTaskEvent.view.id, StorageEvent.LongTask)
-        verifyZeroInteractions(mockFileWriter)
+        verifyNoInteractions(mockFileWriter)
     }
 
     @Test
@@ -317,7 +317,7 @@ internal class RumDataWriterTest {
             frozenFrameEvent.view.id,
             StorageEvent.FrozenFrame
         )
-        verifyZeroInteractions(mockFileWriter)
+        verifyNoInteractions(mockFileWriter)
     }
 
     // endregion
