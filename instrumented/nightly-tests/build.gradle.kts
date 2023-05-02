@@ -1,7 +1,7 @@
 import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.java11
 import com.datadog.gradle.config.kotlinConfig
-import org.gradle.api.JavaVersion
 
 plugins {
     id("com.android.application")
@@ -54,8 +54,7 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        java11()
     }
 
     packagingOptions {

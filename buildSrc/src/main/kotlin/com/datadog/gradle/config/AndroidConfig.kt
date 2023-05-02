@@ -6,8 +6,10 @@
 
 package com.datadog.gradle.config
 
+import com.android.build.api.dsl.CompileOptions
 import com.android.build.api.dsl.LibraryDefaultConfig
 import com.datadog.gradle.utils.Version
+import org.gradle.api.JavaVersion
 
 object AndroidConfig {
 
@@ -20,6 +22,12 @@ object AndroidConfig {
     const val BUILD_TOOLS_VERSION = "33.0.0"
 
     val VERSION = Version(1, 20, 0, Version.Type.Snapshot)
+}
+
+// TODO RUMM-3263 Switch to Java 17 bytecode
+fun CompileOptions.java11() {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 @Suppress("UnstableApiUsage")
