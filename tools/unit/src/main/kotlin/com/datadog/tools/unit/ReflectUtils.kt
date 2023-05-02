@@ -7,7 +7,6 @@
 package com.datadog.tools.unit
 
 import java.lang.reflect.Field
-import java.lang.reflect.Modifier
 import java.util.LinkedList
 
 /**
@@ -107,30 +106,11 @@ private fun <R> setFieldValue(instance: Any?, field: Field, fieldValue: R): Bool
         // field is named `accessFlags` instead of `modifiers` as in a default JVM
         // Because these methods are being shared between JUnit and AndroidJUnit runtimes we will
         // have to support both implementations.
-        val androidVmAccessField = resolveAndroidVMAccessField()
-        if (androidVmAccessField == null) {
-            // by some reason Kotlin produces wrong java bytecode while working with VarHandle,
-            // resulting to the following (basically for .set(Field, int) it creates
-            // .set(new Object[...]), because .set has vararg signature):
-            // cannot convert MethodHandle(VarHandle,Field,int)void to (VarHandle,Object[])void
-            // so will do the work on Java side
-            ReflectJava.removeFinalModifierWithVarHandle(field)
-        } else {
-            androidVmAccessField.set(field, field.modifiers and Modifier.FINAL.inv())
-        }
+        RemoveFinalModifier.remove(field)
     } catch (e: NoSuchFieldException) {
         e.printStackTrace()
         return false
     }
     field.set(instance, fieldValue)
     return true
-}
-
-@SuppressWarnings("SwallowedException")
-private fun resolveAndroidVMAccessField(): Field? {
-    return try {
-        Field::class.java.getDeclaredField("accessFlags")
-    } catch (e: NoSuchFieldException) {
-        null
-    }
 }

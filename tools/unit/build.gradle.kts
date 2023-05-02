@@ -42,6 +42,16 @@ android {
     sourceSets.named("androidTest") {
         java.srcDir("src/androidTest/kotlin")
     }
+
+    flavorDimensions += "platform"
+    productFlavors {
+        register("art") {
+            isDefault = false
+        }
+        register("jvm") {
+            isDefault = true
+        }
+    }
 }
 
 dependencies {

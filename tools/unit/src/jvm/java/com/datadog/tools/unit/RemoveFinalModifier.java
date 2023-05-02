@@ -10,11 +10,16 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
-public class ReflectJava {
+public class RemoveFinalModifier {
 
     // Supposed to be run only for JVM
+    // by some reason Kotlin produces wrong java bytecode while working with VarHandle,
+    // resulting to the following (basically for .set(Field, int) it creates
+    // .set(new Object[...]), because .set has vararg signature):
+    // cannot convert MethodHandle(VarHandle,Field,int)void to (VarHandle,Object[])void
+    // so will do the work on Java side
     @SuppressWarnings("NewApi")
-    static void removeFinalModifierWithVarHandle(Field field) {
+    static void remove(Field field) {
         try {
             var lookup = MethodHandles.privateLookupIn(Field.class, MethodHandles.lookup());
             //noinspection JavaLangInvokeHandleSignature

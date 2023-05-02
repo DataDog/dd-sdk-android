@@ -78,7 +78,14 @@ dependencies {
     implementation(libs.androidXAnnotation)
     implementation(libs.okHttp)
 
-    testImplementation(project(":tools:unit"))
+    testImplementation(project(":tools:unit")) {
+        attributes {
+            attribute(
+                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
+                objects.named("jvm")
+            )
+        }
+    }
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)

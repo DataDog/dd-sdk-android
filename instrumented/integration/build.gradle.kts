@@ -100,6 +100,12 @@ dependencies {
         // available only for API 26 and above
         exclude(group = "org.junit.jupiter")
         exclude(group = "org.mockito")
+        attributes {
+            attribute(
+                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
+                objects.named("art")
+            )
+        }
     }
     androidTestImplementation(libs.assertJ)
     androidTestImplementation(libs.bundles.integrationTests)
