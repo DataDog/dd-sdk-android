@@ -10,12 +10,12 @@ package com.datadog.android.rum.tracking
 
 import android.app.Fragment
 import com.datadog.tools.unit.ObjectTest
-import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.kotlin.mock
 
 @ExtendWith(ForgeExtension::class)
 internal class AcceptAllDefaultFragmentTest : ObjectTest<AcceptAllDefaultFragment>() {

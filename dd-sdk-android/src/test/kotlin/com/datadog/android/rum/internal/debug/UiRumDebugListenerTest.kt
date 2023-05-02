@@ -25,16 +25,6 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.isA
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -46,6 +36,16 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.isA
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
 
@@ -98,7 +98,7 @@ internal class UiRumDebugListenerTest {
             UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
         )
 
-        verifyZeroInteractions(rumMonitor.mockInstance, mockContentView)
+        verifyNoInteractions(rumMonitor.mockInstance, mockContentView)
     }
 
     @Test
@@ -116,7 +116,7 @@ internal class UiRumDebugListenerTest {
             UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
         )
 
-        verifyZeroInteractions(rumMonitor.mockInstance, mockContentView)
+        verifyNoInteractions(rumMonitor.mockInstance, mockContentView)
     }
 
     @Test
@@ -134,7 +134,7 @@ internal class UiRumDebugListenerTest {
             UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
         )
 
-        verifyZeroInteractions(rumMonitor.mockInstance, mockContentView)
+        verifyNoInteractions(rumMonitor.mockInstance, mockContentView)
     }
 
     @Test
@@ -156,7 +156,7 @@ internal class UiRumDebugListenerTest {
             )
         )
 
-        verifyZeroInteractions(mockContentView)
+        verifyNoInteractions(mockContentView)
     }
 
     @Test
@@ -169,7 +169,7 @@ internal class UiRumDebugListenerTest {
 
         assertThat(testedListener.rumViewsContainer).isNotNull
 
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyNoInteractions(logger.mockInternalLogger)
     }
 
     @Test
@@ -179,7 +179,7 @@ internal class UiRumDebugListenerTest {
 
         // THEN
         verify(rumMonitor.mockInstance).setDebugListener(testedListener)
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyNoInteractions(logger.mockInternalLogger)
     }
 
     @Test
@@ -214,7 +214,7 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityStopped(mockActivity)
 
         // THEN
-        verifyZeroInteractions(mockActivity, logger.mockInternalLogger, rumMonitor.mockInstance)
+        verifyNoInteractions(mockActivity, logger.mockInternalLogger, rumMonitor.mockInstance)
     }
 
     // endregion

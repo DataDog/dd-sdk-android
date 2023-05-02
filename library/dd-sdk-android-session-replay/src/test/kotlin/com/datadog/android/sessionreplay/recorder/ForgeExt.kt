@@ -8,10 +8,10 @@ package com.datadog.android.sessionreplay.recorder
 
 import android.view.View
 import android.view.ViewGroup
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 internal fun Forge.aMockViewWithChildren(
     numberOfChildren: Int,

@@ -8,7 +8,7 @@ package com.datadog.android.utils.extension
 
 import android.view.Choreographer
 import com.datadog.tools.unit.setStaticValue
-import com.nhaarman.mockitokotlin2.mock
+import org.mockito.kotlin.mock
 
 fun mockChoreographerInstance(mock: Choreographer = mock()) {
     Choreographer::class.java.setStaticValue(

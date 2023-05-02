@@ -15,13 +15,6 @@ import com.datadog.android.sessionreplay.recorder.OrientationChanged
 import com.datadog.android.sessionreplay.utils.RumContextProvider
 import com.datadog.android.sessionreplay.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.utils.TimeProvider
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -38,6 +31,13 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
@@ -672,7 +672,7 @@ internal class RecordedDataProcessorTest {
         processArgument(argument)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
     }
 
     // TODO: RUMM-2397 When proper logs are added modify this test accordingly
@@ -687,7 +687,7 @@ internal class RecordedDataProcessorTest {
         processArgument(argument)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
     }
 
     // TODO: RUMM-2397 When proper logs are added modify this test accordingly
@@ -702,7 +702,7 @@ internal class RecordedDataProcessorTest {
         processArgument(argument)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
     }
 
     @ParameterizedTest

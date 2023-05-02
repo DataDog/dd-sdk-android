@@ -8,13 +8,13 @@ package com.datadog.android.core.internal.thread
 
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.forge.aThrowable
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.isA
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isA
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -37,7 +37,7 @@ internal class LoggingScheduledThreadPoolExecutorTest :
         // Then
         assertThat(futureTask.isDone).isTrue
 
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -51,7 +51,7 @@ internal class LoggingScheduledThreadPoolExecutorTest :
         // Then
         assertThat(futureTask.isDone).isTrue
 
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test

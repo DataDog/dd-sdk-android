@@ -62,8 +62,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     testOptions {
@@ -103,11 +103,25 @@ dependencies {
     implementation(libs.okHttp)
     implementation(libs.androidXMultidex)
 
-    testImplementation(project(":tools:unit"))
+    testImplementation(project(":tools:unit")) {
+        attributes {
+            attribute(
+                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
+                objects.named("jvm")
+            )
+        }
+    }
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
 
-    androidTestImplementation(project(":tools:unit"))
+    androidTestImplementation(project(":tools:unit")) {
+        attributes {
+            attribute(
+                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
+                objects.named("art")
+            )
+        }
+    }
     androidTestImplementation(libs.bundles.integrationTests)
     androidTestImplementation(libs.gson)
     androidTestImplementation(libs.assertJ)

@@ -14,12 +14,6 @@ import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.internal.storage.FileEventBatchWriter.Companion.ERROR_LARGE_DATA
 import com.datadog.android.v2.core.internal.storage.FileEventBatchWriter.Companion.WARNING_METADATA_WRITE_FAILED
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -34,6 +28,12 @@ import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 import java.util.Locale
@@ -131,7 +131,7 @@ internal class FileEventBatchWriterTest {
         // Then
         assertThat(result).isTrue
 
-        verifyZeroInteractions(
+        verifyNoInteractions(
             mockBatchWriter,
             mockMetaReaderWriter
         )
@@ -209,7 +209,7 @@ internal class FileEventBatchWriterTest {
         // Then
         assertThat(result).isTrue
 
-        verifyZeroInteractions(mockMetaReaderWriter)
+        verifyNoInteractions(mockMetaReaderWriter)
     }
 
     @Test
@@ -233,7 +233,7 @@ internal class FileEventBatchWriterTest {
             true
         )
         verifyNoMoreInteractions(mockBatchWriter)
-        verifyZeroInteractions(mockMetaReaderWriter)
+        verifyNoInteractions(mockMetaReaderWriter)
     }
 
     @Test
@@ -253,7 +253,7 @@ internal class FileEventBatchWriterTest {
         // Then
         assertThat(result).isFalse
 
-        verifyZeroInteractions(mockMetaReaderWriter)
+        verifyNoInteractions(mockMetaReaderWriter)
     }
 
     @Test
@@ -274,7 +274,7 @@ internal class FileEventBatchWriterTest {
         // Then
         assertThat(result).isFalse
 
-        verifyZeroInteractions(mockMetaReaderWriter)
+        verifyNoInteractions(mockMetaReaderWriter)
     }
 
     @Test
@@ -329,7 +329,7 @@ internal class FileEventBatchWriterTest {
 
         // Then
         assertThat(meta).isNull()
-        verifyZeroInteractions(mockMetaReaderWriter)
+        verifyNoInteractions(mockMetaReaderWriter)
     }
 
     @Test
@@ -353,7 +353,7 @@ internal class FileEventBatchWriterTest {
 
         // Then
         assertThat(meta).isNull()
-        verifyZeroInteractions(mockMetaReaderWriter)
+        verifyNoInteractions(mockMetaReaderWriter)
     }
 
     @Test

@@ -18,12 +18,6 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -36,6 +30,12 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.quality.Strictness
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
@@ -208,7 +208,7 @@ internal class SessionReplayFeatureTest {
         testedFeature.stopRecording()
 
         // Then
-        verifyZeroInteractions(mockSessionReplayLifecycleCallback)
+        verifyNoInteractions(mockSessionReplayLifecycleCallback)
     }
 
     @Test
@@ -267,7 +267,7 @@ internal class SessionReplayFeatureTest {
         testedFeature.startRecording()
 
         // Then
-        verifyZeroInteractions(mockSessionReplayLifecycleCallback)
+        verifyNoInteractions(mockSessionReplayLifecycleCallback)
     }
 
     @Test
@@ -334,7 +334,7 @@ internal class SessionReplayFeatureTest {
                 )
             )
 
-        verifyZeroInteractions(mockSessionReplayLifecycleCallback)
+        verifyNoInteractions(mockSessionReplayLifecycleCallback)
     }
 
     @Test
@@ -360,7 +360,7 @@ internal class SessionReplayFeatureTest {
                 expectedMessage
             )
 
-        verifyZeroInteractions(mockSessionReplayLifecycleCallback)
+        verifyNoInteractions(mockSessionReplayLifecycleCallback)
     }
 
     @Test
@@ -382,7 +382,7 @@ internal class SessionReplayFeatureTest {
                 SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
             )
 
-        verifyZeroInteractions(mockSessionReplayLifecycleCallback)
+        verifyNoInteractions(mockSessionReplayLifecycleCallback)
     }
 
     @Test
@@ -408,7 +408,7 @@ internal class SessionReplayFeatureTest {
                 SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
             )
 
-        verifyZeroInteractions(mockSessionReplayLifecycleCallback)
+        verifyNoInteractions(mockSessionReplayLifecycleCallback)
     }
 
     companion object {

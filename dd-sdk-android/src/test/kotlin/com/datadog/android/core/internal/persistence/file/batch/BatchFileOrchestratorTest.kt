@@ -10,11 +10,6 @@ import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -33,6 +28,11 @@ import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 import java.util.Locale
@@ -918,7 +918,7 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isEqualTo(fakeRootDir)
-        verifyZeroInteractions(mockLogger)
+        verifyNoInteractions(mockLogger)
     }
 
     @Test
@@ -944,7 +944,7 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(results).containsExactlyElementsOf(List(4) { fakeRootDir })
-        verifyZeroInteractions(mockLogger)
+        verifyNoInteractions(mockLogger)
     }
 
     // endregion

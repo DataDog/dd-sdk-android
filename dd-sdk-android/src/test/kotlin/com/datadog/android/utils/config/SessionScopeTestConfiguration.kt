@@ -13,9 +13,9 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 internal class SessionScopeTestConfiguration :
     MockTestConfiguration<DatadogRumMonitor>(DatadogRumMonitor::class.java) {

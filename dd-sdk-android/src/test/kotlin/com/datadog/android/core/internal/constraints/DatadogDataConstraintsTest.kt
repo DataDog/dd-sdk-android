@@ -15,12 +15,6 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.isNull
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Case
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -32,6 +26,12 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import java.util.Locale
 
 @Extensions(
@@ -60,7 +60,7 @@ internal class DatadogDataConstraintsTest {
         val result = testedConstraints.validateTags(listOf(tag))
 
         assertThat(result).containsOnly(tag)
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyNoInteractions(logger.mockInternalLogger)
     }
 
     @Test
@@ -218,7 +218,7 @@ internal class DatadogDataConstraintsTest {
 
         assertThat(result)
             .containsEntry(key, value)
-        verifyZeroInteractions(logger.mockInternalLogger)
+        verifyNoInteractions(logger.mockInternalLogger)
     }
 
     @Test

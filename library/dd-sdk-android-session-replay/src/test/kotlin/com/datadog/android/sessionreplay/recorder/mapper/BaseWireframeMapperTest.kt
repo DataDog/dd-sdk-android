@@ -13,10 +13,10 @@ import android.widget.TextView
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.densityNormalized
 import com.datadog.tools.unit.setStaticValue
-import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.params.provider.Arguments
+import org.mockito.kotlin.mock
 import java.util.stream.Stream
 
 internal abstract class BaseWireframeMapperTest {

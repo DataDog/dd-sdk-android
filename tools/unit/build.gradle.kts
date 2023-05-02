@@ -28,18 +28,29 @@ android {
     namespace = "com.datadog.tools.unit"
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
+        java.srcDir("src/main/java")
     }
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
     }
     sourceSets.named("androidTest") {
         java.srcDir("src/androidTest/kotlin")
+    }
+
+    flavorDimensions += "platform"
+    productFlavors {
+        register("art") {
+            isDefault = false
+        }
+        register("jvm") {
+            isDefault = true
+        }
     }
 }
 
