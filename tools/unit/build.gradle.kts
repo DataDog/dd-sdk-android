@@ -6,6 +6,7 @@
 
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
+import com.datadog.gradle.config.java11
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 
@@ -28,8 +29,7 @@ android {
     namespace = "com.datadog.tools.unit"
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        java11()
     }
 
     sourceSets.named("main") {
