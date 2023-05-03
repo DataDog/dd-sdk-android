@@ -11,11 +11,6 @@ import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -27,6 +22,10 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 
@@ -176,7 +175,7 @@ internal class ConsentAwareFileMigratorTest {
         )
 
         // Then
-        verifyZeroInteractions(mockFileMover)
+        verifyNoInteractions(mockFileMover)
     }
 
     @Test
@@ -190,7 +189,7 @@ internal class ConsentAwareFileMigratorTest {
         )
 
         // Then
-        verifyZeroInteractions(mockFileMover)
+        verifyNoInteractions(mockFileMover)
     }
 
     @Test
@@ -204,6 +203,6 @@ internal class ConsentAwareFileMigratorTest {
         )
 
         // Then
-        verifyZeroInteractions(mockFileMover)
+        verifyNoInteractions(mockFileMover)
     }
 }

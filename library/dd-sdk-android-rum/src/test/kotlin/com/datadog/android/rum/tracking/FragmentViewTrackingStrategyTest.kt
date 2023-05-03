@@ -28,16 +28,6 @@ import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.isA
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -49,6 +39,16 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.isA
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -128,7 +128,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         testedStrategy.register(rumMonitor.mockSdkCore, mockBadContext)
 
         // verify
-        verifyZeroInteractions(mockBadContext)
+        verifyNoInteractions(mockBadContext)
     }
 
     @Test
@@ -137,7 +137,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         testedStrategy.unregister(mockBadContext)
 
         // verify
-        verifyZeroInteractions(mockBadContext)
+        verifyNoInteractions(mockBadContext)
     }
 
     @Test
@@ -159,7 +159,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
                 argumentCaptor.capture(),
                 eq(true)
             )
-        verifyZeroInteractions(mockDefaultFragmentManager)
+        verifyNoInteractions(mockDefaultFragmentManager)
 
         // When
         argumentCaptor.firstValue.onFragmentResumed(mockAndroidxFragmentManager, mockFragment)
@@ -208,14 +208,14 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
                 argumentCaptor.capture(),
                 eq(true)
             )
-        verifyZeroInteractions(mockDefaultFragmentManager)
+        verifyNoInteractions(mockDefaultFragmentManager)
 
         // When
         argumentCaptor.firstValue.onFragmentResumed(mockAndroidxFragmentManager, mockFragment)
         argumentCaptor.firstValue.onFragmentPaused(mockAndroidxFragmentManager, mockFragment)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -238,7 +238,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
                 argumentCaptor.capture(),
                 eq(true)
             )
-        verifyZeroInteractions(mockDefaultFragmentManager)
+        verifyNoInteractions(mockDefaultFragmentManager)
 
         // When
         argumentCaptor.firstValue.onFragmentResumed(mockAndroidxFragmentManager, mockFragment)
@@ -294,7 +294,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         // Then
         verify(mockAndroidxFragmentManager)
             .unregisterFragmentLifecycleCallbacks(argumentCaptor.firstValue)
-        verifyZeroInteractions(mockDefaultFragmentManager)
+        verifyNoInteractions(mockDefaultFragmentManager)
     }
 
     @Test
@@ -309,7 +309,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         // Then
         verify(mockDefaultFragmentManager)
             .registerFragmentLifecycleCallbacks(isA<OreoFragmentLifecycleCallbacks>(), eq(true))
-        verifyZeroInteractions(mockAndroidxFragmentManager)
+        verifyNoInteractions(mockAndroidxFragmentManager)
     }
 
     @Test
@@ -353,7 +353,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
                 argumentCaptor.capture(),
                 eq(true)
             )
-        verifyZeroInteractions(mockAndroidxFragmentManager)
+        verifyNoInteractions(mockAndroidxFragmentManager)
 
         // When
         argumentCaptor.firstValue.onFragmentResumed(mockDefaultFragmentManager, mockFragment)
@@ -404,14 +404,14 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
                 argumentCaptor.capture(),
                 eq(true)
             )
-        verifyZeroInteractions(mockAndroidxFragmentManager)
+        verifyNoInteractions(mockAndroidxFragmentManager)
 
         // When
         argumentCaptor.firstValue.onFragmentResumed(mockDefaultFragmentManager, mockFragment)
         argumentCaptor.firstValue.onFragmentPaused(mockDefaultFragmentManager, mockFragment)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -436,7 +436,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
                 argumentCaptor.capture(),
                 eq(true)
             )
-        verifyZeroInteractions(mockAndroidxFragmentManager)
+        verifyNoInteractions(mockAndroidxFragmentManager)
 
         // When
         argumentCaptor.firstValue.onFragmentResumed(mockDefaultFragmentManager, mockFragment)
@@ -475,7 +475,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         // Then
         verify(mockDefaultFragmentManager)
             .unregisterFragmentLifecycleCallbacks(argumentCaptor.firstValue)
-        verifyZeroInteractions(mockAndroidxFragmentManager)
+        verifyNoInteractions(mockAndroidxFragmentManager)
     }
 
     @Test
@@ -485,8 +485,8 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         testedStrategy.onActivityStarted(mockActivity)
 
         // Then
-        verifyZeroInteractions(mockAndroidxFragmentManager)
-        verifyZeroInteractions(mockDefaultFragmentManager)
+        verifyNoInteractions(mockAndroidxFragmentManager)
+        verifyNoInteractions(mockDefaultFragmentManager)
     }
 
     @Test
@@ -496,8 +496,8 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         testedStrategy.onActivityStopped(mockActivity)
 
         // Then
-        verifyZeroInteractions(mockAndroidxFragmentManager)
-        verifyZeroInteractions(mockDefaultFragmentManager)
+        verifyNoInteractions(mockAndroidxFragmentManager)
+        verifyNoInteractions(mockDefaultFragmentManager)
     }
 
     @Test

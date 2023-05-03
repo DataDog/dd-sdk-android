@@ -21,12 +21,6 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewUrl
 import com.datadog.android.v2.api.SdkCore
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -39,6 +33,12 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -192,7 +192,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
         )
 
         // Then
-        verifyZeroInteractions(mockViewLoadingTimer)
+        verifyNoInteractions(mockViewLoadingTimer)
     }
 
     @Test
@@ -204,7 +204,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
         testedLifecycleCallbacks.onFragmentStarted(mockFragmentManager, mockFragment)
 
         // Then
-        verifyZeroInteractions(mockViewLoadingTimer)
+        verifyNoInteractions(mockViewLoadingTimer)
     }
 
     @Test
@@ -216,7 +216,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
         testedLifecycleCallbacks.onFragmentResumed(mockFragmentManager, mockFragment)
 
         // Then
-        verifyZeroInteractions(mockViewLoadingTimer)
+        verifyNoInteractions(mockViewLoadingTimer)
     }
 
     @Test
@@ -228,7 +228,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
         testedLifecycleCallbacks.onFragmentPaused(mockFragmentManager, mockFragment)
 
         // Then
-        verifyZeroInteractions(mockViewLoadingTimer)
+        verifyNoInteractions(mockViewLoadingTimer)
     }
 
     @Test
@@ -240,7 +240,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
         testedLifecycleCallbacks.onFragmentDestroyed(mockFragmentManager, mockFragment)
 
         // Then
-        verifyZeroInteractions(mockViewLoadingTimer)
+        verifyNoInteractions(mockViewLoadingTimer)
     }
 
     // endregion
@@ -382,7 +382,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
         testedLifecycleCallbacks.onFragmentResumed(mockFragmentManager, mockFragment)
 
         // Then
-        verifyZeroInteractions(mockRumMonitor, mockViewLoadingTimer)
+        verifyNoInteractions(mockRumMonitor, mockViewLoadingTimer)
     }
 
     @Test
@@ -394,7 +394,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
         testedLifecycleCallbacks.onFragmentResumed(mockFragmentManager, mockFragment)
 
         // Then
-        verifyZeroInteractions(mockRumMonitor, mockViewLoadingTimer)
+        verifyNoInteractions(mockRumMonitor, mockViewLoadingTimer)
     }
 
     @Test
@@ -406,7 +406,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
         testedLifecycleCallbacks.onFragmentPaused(mockFragmentManager, mockFragment)
 
         // Then
-        verifyZeroInteractions(mockRumMonitor, mockViewLoadingTimer)
+        verifyNoInteractions(mockRumMonitor, mockViewLoadingTimer)
     }
 
     // endregion
@@ -430,7 +430,7 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
 
         testedLifecycleCallbacks.onFragmentActivityCreated(mock(), mockFragment, null)
 
-        verifyZeroInteractions(mockGesturesTracker)
+        verifyNoInteractions(mockGesturesTracker)
     }
 
     @Test

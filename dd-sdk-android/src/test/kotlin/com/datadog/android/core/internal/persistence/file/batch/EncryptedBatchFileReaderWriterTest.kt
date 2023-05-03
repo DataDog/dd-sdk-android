@@ -9,14 +9,6 @@ package com.datadog.android.core.internal.persistence.file.batch
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -30,6 +22,14 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 import kotlin.experimental.inv
@@ -101,7 +101,7 @@ internal class EncryptedBatchFileReaderWriterTest {
                 append
             )
 
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -128,7 +128,7 @@ internal class EncryptedBatchFileReaderWriterTest {
             EncryptedBatchReaderWriter.BAD_ENCRYPTION_RESULT_MESSAGE
         )
         verifyNoMoreInteractions(mockInternalLogger)
-        verifyZeroInteractions(mockBatchFileReaderWriter)
+        verifyNoInteractions(mockBatchFileReaderWriter)
     }
 
     // endregion
@@ -194,7 +194,7 @@ internal class EncryptedBatchFileReaderWriterTest {
         assertThat(writeResult).isTrue()
         assertThat(readResult).containsExactlyElementsOf(events)
 
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     // endregion

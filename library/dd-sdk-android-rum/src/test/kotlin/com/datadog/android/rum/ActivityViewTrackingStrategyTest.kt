@@ -15,11 +15,6 @@ import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.tracking.StubComponentPredicate
 import com.datadog.android.rum.utils.forge.Configurator
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -35,6 +30,11 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -190,7 +190,7 @@ internal class ActivityViewTrackingStrategyTest :
         testedStrategy.onActivityCreated(mockActivity, null)
 
         // Then
-        verifyZeroInteractions(mockViewLoadingTimer)
+        verifyNoInteractions(mockViewLoadingTimer)
     }
 
     @Test
@@ -203,7 +203,7 @@ internal class ActivityViewTrackingStrategyTest :
         testedStrategy.onActivityStarted(mockActivity)
 
         // Then
-        verifyZeroInteractions(mockViewLoadingTimer)
+        verifyNoInteractions(mockViewLoadingTimer)
     }
 
     @Test
@@ -216,7 +216,7 @@ internal class ActivityViewTrackingStrategyTest :
         testedStrategy.onActivityResumed(mockActivity)
 
         // Then
-        verifyZeroInteractions(mockViewLoadingTimer)
+        verifyNoInteractions(mockViewLoadingTimer)
     }
 
     @Test
@@ -229,7 +229,7 @@ internal class ActivityViewTrackingStrategyTest :
         testedStrategy.onActivityPostResumed(mockActivity)
 
         // Then
-        verifyZeroInteractions(mockViewLoadingTimer)
+        verifyNoInteractions(mockViewLoadingTimer)
     }
 
     @Test
@@ -242,7 +242,7 @@ internal class ActivityViewTrackingStrategyTest :
         testedStrategy.onActivityPaused(mockActivity)
 
         // Then
-        verifyZeroInteractions(mockViewLoadingTimer)
+        verifyNoInteractions(mockViewLoadingTimer)
     }
 
     @Test
@@ -255,7 +255,7 @@ internal class ActivityViewTrackingStrategyTest :
         testedStrategy.onActivityDestroyed(mockActivity)
 
         // Then
-        verifyZeroInteractions(mockViewLoadingTimer)
+        verifyNoInteractions(mockViewLoadingTimer)
     }
 
     // endregion
@@ -450,7 +450,7 @@ internal class ActivityViewTrackingStrategyTest :
         testedStrategy.onActivityResumed(mockActivity)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -463,7 +463,7 @@ internal class ActivityViewTrackingStrategyTest :
         testedStrategy.onActivityPaused(mockActivity)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance, mockViewLoadingTimer)
+        verifyNoInteractions(rumMonitor.mockInstance, mockViewLoadingTimer)
     }
     // endregion
 

@@ -10,9 +10,9 @@ import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDTracer
 import com.datadog.opentracing.DDTracer.DDSpanBuilder
 import com.datadog.trace.api.Config
-import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
+import org.mockito.kotlin.mock
 import java.security.SecureRandom
 
 internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {

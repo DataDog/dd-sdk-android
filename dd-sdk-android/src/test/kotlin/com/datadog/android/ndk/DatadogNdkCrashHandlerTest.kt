@@ -20,16 +20,6 @@ import com.datadog.android.v2.api.context.UserInfo
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.firstValue
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -49,6 +39,18 @@ import org.mockito.Captor
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.firstValue
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 import java.util.Locale
@@ -286,7 +288,7 @@ internal class DatadogNdkCrashHandlerTest {
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
         captureRunnable.firstValue.run()
-        verifyZeroInteractions(mockSdkCore)
+        verifyNoInteractions(mockSdkCore)
     }
 
     @Test
@@ -302,7 +304,7 @@ internal class DatadogNdkCrashHandlerTest {
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
-        verifyZeroInteractions(mockSdkCore)
+        verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
 
         verify(mockInternalLogger).log(
@@ -311,7 +313,8 @@ internal class DatadogNdkCrashHandlerTest {
             DatadogNdkCrashHandler.INFO_LOGS_FEATURE_NOT_REGISTERED
         )
 
-        verifyZeroInteractions(mockInternalLogger, mockLogsFeatureScope)
+        verifyNoMoreInteractions(mockInternalLogger)
+        verifyNoInteractions(mockLogsFeatureScope)
     }
 
     @Test
@@ -327,10 +330,10 @@ internal class DatadogNdkCrashHandlerTest {
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
-        verifyZeroInteractions(mockSdkCore)
+        verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -350,10 +353,10 @@ internal class DatadogNdkCrashHandlerTest {
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
-        verifyZeroInteractions(mockSdkCore)
+        verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -372,7 +375,7 @@ internal class DatadogNdkCrashHandlerTest {
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
-        verifyZeroInteractions(mockSdkCore)
+        verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
     }
@@ -420,7 +423,7 @@ internal class DatadogNdkCrashHandlerTest {
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
-        verifyZeroInteractions(mockSdkCore)
+        verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
         verify(mockInternalLogger)
@@ -448,7 +451,7 @@ internal class DatadogNdkCrashHandlerTest {
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
-        verifyZeroInteractions(mockSdkCore)
+        verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockInternalLogger).log(
             InternalLogger.Level.INFO,
@@ -469,9 +472,9 @@ internal class DatadogNdkCrashHandlerTest {
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
-        verifyZeroInteractions(mockSdkCore)
+        verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
-        verifyZeroInteractions(mockInternalLogger, mockRumFeatureScope)
+        verifyNoInteractions(mockInternalLogger, mockRumFeatureScope)
     }
 
     @Test
@@ -489,7 +492,7 @@ internal class DatadogNdkCrashHandlerTest {
 
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
-        verifyZeroInteractions(mockSdkCore)
+        verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockRumFeatureScope).sendEvent(
             mapOf(
@@ -530,7 +533,7 @@ internal class DatadogNdkCrashHandlerTest {
 
         // Then
         verify(mockExecutorService, times(2)).submit(captureRunnable.capture())
-        verifyZeroInteractions(mockSdkCore)
+        verifyNoInteractions(mockSdkCore)
         captureRunnable.allValues.forEach { it.run() }
 
         assertThat(testedHandler.lastNdkCrashLog).isNull()

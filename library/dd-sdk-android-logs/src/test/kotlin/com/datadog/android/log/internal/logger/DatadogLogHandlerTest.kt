@@ -20,14 +20,6 @@ import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.storage.DataWriter
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -44,6 +36,14 @@ import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
@@ -220,7 +220,7 @@ internal class DatadogLogHandlerTest {
         )
 
         // Then
-        verifyZeroInteractions(mockWriter, mockSampler)
+        verifyNoInteractions(mockWriter, mockSampler)
     }
 
     @Test
@@ -338,7 +338,8 @@ internal class DatadogLogHandlerTest {
             fakeAttributes,
             fakeTags
         )
-        verifyZeroInteractions(mockRumFeature)
+
+        verifyNoInteractions(mockRumFeature)
     }
 
     @ParameterizedTest
@@ -402,7 +403,7 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        verifyZeroInteractions(mockRumFeature)
+        verifyNoInteractions(mockRumFeature)
     }
 
     @ParameterizedTest
@@ -781,7 +782,7 @@ internal class DatadogLogHandlerTest {
         )
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
     }
 
     @Test

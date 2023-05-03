@@ -8,6 +8,7 @@ import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.configureFlavorForSampleApp
 import com.datadog.gradle.config.dependencyUpdateConfig
+import com.datadog.gradle.config.java11
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -90,8 +91,7 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        java11()
     }
 
     packagingOptions {

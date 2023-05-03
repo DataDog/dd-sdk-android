@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.tracking
 
-import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
 
 @Extensions(

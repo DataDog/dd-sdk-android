@@ -15,6 +15,7 @@ import java.io.File
 fun Project.kotlinConfig(evaluateWarningsAsErrors: Boolean = true) {
     taskConfig<KotlinCompile> {
         kotlinOptions {
+            // TODO RUMM-3263 Switch to Java 17 bytecode
             jvmTarget = JavaVersion.VERSION_11.toString()
             allWarningsAsErrors = evaluateWarningsAsErrors
             apiVersion = "1.6"

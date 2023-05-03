@@ -23,14 +23,6 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.nhaarman.mockitokotlin2.argThat
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -46,6 +38,14 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argThat
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -130,7 +130,7 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.dispatchTouchEvent(null)
 
         // Then
-        verifyZeroInteractions(mockGestureDetector)
+        verifyNoInteractions(mockGestureDetector)
         verify(mockCallback).dispatchTouchEvent(null)
     }
 
@@ -343,7 +343,7 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.dispatchKeyEvent(keyEvent)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -357,7 +357,7 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.dispatchKeyEvent(keyEvent)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -371,7 +371,7 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.dispatchKeyEvent(keyEvent)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -599,7 +599,7 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.dispatchKeyEvent(mockKeyEvent)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -614,7 +614,7 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.dispatchKeyEvent(mockKeyEvent)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -627,7 +627,7 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.dispatchKeyEvent(mockKeyEvent)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test

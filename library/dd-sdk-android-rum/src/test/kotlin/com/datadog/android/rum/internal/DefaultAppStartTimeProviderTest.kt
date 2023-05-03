@@ -11,9 +11,6 @@ import android.os.Process
 import android.os.SystemClock
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.RumFeature
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -21,6 +18,9 @@ import org.assertj.core.data.Offset
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.util.concurrent.TimeUnit
 
 @Extensions(

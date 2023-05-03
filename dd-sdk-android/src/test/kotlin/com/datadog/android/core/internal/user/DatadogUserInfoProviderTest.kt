@@ -10,7 +10,6 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.tools.unit.forge.exhaustiveAttributes
-import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -22,6 +21,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
 @ExtendWith(ForgeExtension::class)

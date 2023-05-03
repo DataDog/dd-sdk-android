@@ -46,16 +46,6 @@ import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.datadog.tools.unit.getFieldValue
 import com.google.gson.JsonObject
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.doNothing
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -75,6 +65,16 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doNothing
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
 import java.util.UUID
@@ -531,7 +531,7 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // Then
-        verifyZeroInteractions(mockChoreographer)
+        verifyNoInteractions(mockChoreographer)
     }
 
     @Test
@@ -727,7 +727,7 @@ internal class RumFeatureTest {
                 )
             )
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyNoInteractions(mockRumMonitor)
     }
 
     @Test
@@ -754,7 +754,7 @@ internal class RumFeatureTest {
                 )
             )
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyNoInteractions(mockRumMonitor)
     }
 
     // endregion
@@ -787,7 +787,7 @@ internal class RumFeatureTest {
                 RumFeature.JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS
             )
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyNoInteractions(mockRumMonitor)
     }
 
     @Test
@@ -813,7 +813,7 @@ internal class RumFeatureTest {
             RumErrorSource.SOURCE,
             fakeThrowable
         )
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     // endregion
@@ -848,7 +848,7 @@ internal class RumFeatureTest {
                 testedFeature.dataWriter
             )
 
-        verifyZeroInteractions(
+        verifyNoInteractions(
             mockRumMonitor,
             mockInternalLogger
         )
@@ -883,7 +883,7 @@ internal class RumFeatureTest {
             fakeAttributes?.toMap() ?: emptyMap()
         )
 
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -911,7 +911,7 @@ internal class RumFeatureTest {
                 RumFeature.LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS
             )
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyNoInteractions(mockRumMonitor)
     }
 
     @Test
@@ -941,7 +941,7 @@ internal class RumFeatureTest {
             fakeAttributes?.toMap() ?: emptyMap()
         )
 
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -970,7 +970,7 @@ internal class RumFeatureTest {
                 RumFeature.LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS
             )
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyNoInteractions(mockRumMonitor)
     }
 
     // endregion
@@ -988,7 +988,7 @@ internal class RumFeatureTest {
 
         // Then
         verify(mockRumMonitor).sendWebViewEvent()
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     // region FeatureEventReceiver#onReceive + telemetry event
@@ -1010,7 +1010,7 @@ internal class RumFeatureTest {
         // Then
         verify(mockRumMonitor).sendDebugTelemetryEvent(fakeMessage)
         verifyNoMoreInteractions(mockRumMonitor)
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -1032,7 +1032,7 @@ internal class RumFeatureTest {
                 RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
             )
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyNoInteractions(mockRumMonitor)
     }
 
     @Test
@@ -1056,7 +1056,7 @@ internal class RumFeatureTest {
         verify(mockRumMonitor)
             .sendErrorTelemetryEvent(fakeMessage, fakeThrowable)
         verifyNoMoreInteractions(mockRumMonitor)
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -1084,7 +1084,7 @@ internal class RumFeatureTest {
 
         verifyNoMoreInteractions(mockRumMonitor)
 
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -1106,7 +1106,7 @@ internal class RumFeatureTest {
                 RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
             )
 
-        verifyZeroInteractions(mockRumMonitor)
+        verifyNoInteractions(mockRumMonitor)
     }
 
     @Test
@@ -1144,7 +1144,7 @@ internal class RumFeatureTest {
                 )
             )
 
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     // endregion

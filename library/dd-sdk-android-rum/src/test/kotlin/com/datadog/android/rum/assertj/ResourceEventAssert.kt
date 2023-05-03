@@ -15,10 +15,10 @@ import com.datadog.android.rum.internal.domain.scope.toSchemaType
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
-import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
+import org.mockito.kotlin.mock
 
 internal class ResourceEventAssert(actual: ResourceEvent) :
     AbstractObjectAssert<ResourceEventAssert, ResourceEvent>(

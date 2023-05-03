@@ -6,7 +6,6 @@
 
 package com.datadog.android.telemetry.internal
 
-import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -18,6 +17,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.kotlin.mock
 
 @Extensions(
     ExtendWith(ForgeExtension::class)

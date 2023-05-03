@@ -18,9 +18,9 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.InternalSdkCore
-import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.net.DataUploader
 import com.datadog.android.v2.core.internal.storage.BatchConfirmation
 import com.datadog.android.v2.core.internal.storage.BatchId
@@ -29,13 +29,6 @@ import com.datadog.android.v2.core.internal.storage.Storage
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -54,6 +47,14 @@ import org.mockito.Mock
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import org.mockito.stubbing.Answer
 import java.util.concurrent.Executor
@@ -72,9 +73,6 @@ internal class UploadWorkerTest {
 
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
-
-    @Mock
-    lateinit var mockContextProvider: ContextProvider
 
     @Mock
     lateinit var mockFeatureA: SdkFeature
@@ -526,6 +524,27 @@ internal class UploadWorkerTest {
             batchBMeta
         )
         verify(batchBConfirmation).markAsRead(true)
+
+        assertThat(result)
+            .isEqualTo(ListenableWorker.Result.success())
+    }
+
+    @Test
+    fun `𝕄 log error 𝕎 doWork() { SDK is not initialized }`() {
+        // Given
+        Datadog.registry.clear()
+
+        // When
+        val result = testedWorker.doWork()
+
+        // Then
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            UploadWorker.MESSAGE_NOT_INITIALIZED
+        )
+        verifyNoInteractions(mockFeatureA, mockBatchReaderA, mockUploaderA)
+        verifyNoInteractions(mockFeatureB, mockBatchReaderB, mockUploaderB)
 
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())

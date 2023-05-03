@@ -14,8 +14,6 @@ import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 import com.google.android.material.slider.Slider
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -26,6 +24,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 internal abstract class BaseSliderWireframeMapperTest {
 

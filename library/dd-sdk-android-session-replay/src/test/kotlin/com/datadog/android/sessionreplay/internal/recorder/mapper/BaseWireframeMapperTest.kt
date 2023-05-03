@@ -16,11 +16,11 @@ import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.tools.unit.setStaticValue
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.params.provider.Arguments
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.util.stream.Stream
 
 internal abstract class BaseWireframeMapperTest {

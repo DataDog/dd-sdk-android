@@ -19,11 +19,6 @@ import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -36,6 +31,11 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -154,8 +154,8 @@ internal class WindowsOnDrawListenerTest {
         testedListener.onDraw()
 
         // Then
-        verifyZeroInteractions(mockProcessor)
-        verifyZeroInteractions(mockSnapshotProducer)
+        verifyNoInteractions(mockProcessor)
+        verifyNoInteractions(mockSnapshotProducer)
     }
 
     @Test
@@ -168,8 +168,8 @@ internal class WindowsOnDrawListenerTest {
         testedListener.onDraw()
 
         // Then
-        verifyZeroInteractions(mockProcessor)
-        verifyZeroInteractions(mockSnapshotProducer)
+        verifyNoInteractions(mockProcessor)
+        verifyNoInteractions(mockSnapshotProducer)
     }
 
     @Test
@@ -182,8 +182,8 @@ internal class WindowsOnDrawListenerTest {
         testedListener.onDraw()
 
         // Then
-        verifyZeroInteractions(mockProcessor)
-        verifyZeroInteractions(mockSnapshotProducer)
+        verifyNoInteractions(mockProcessor)
+        verifyNoInteractions(mockSnapshotProducer)
     }
 
     // region Internal

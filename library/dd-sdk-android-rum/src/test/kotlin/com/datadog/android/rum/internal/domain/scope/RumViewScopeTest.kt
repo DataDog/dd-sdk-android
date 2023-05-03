@@ -54,19 +54,6 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aFilteredMap
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.reset
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.DoubleForgery
@@ -90,6 +77,19 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.reset
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Arrays
 import java.util.Locale
@@ -799,7 +799,7 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isNull()
     }
 
@@ -1875,7 +1875,7 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
 
@@ -1897,7 +1897,7 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isNull()
     }
 
@@ -1981,7 +1981,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.pendingErrorCount).isEqualTo(pending)
     }
@@ -2066,7 +2066,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.pendingResourceCount).isEqualTo(pending)
     }
@@ -2153,7 +2153,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.pendingActionCount).isEqualTo(pending)
     }
@@ -2309,7 +2309,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.pendingLongTaskCount).isEqualTo(pending)
     }
@@ -2451,7 +2451,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.pendingErrorCount).isEqualTo(pending)
     }
@@ -2536,7 +2536,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.pendingResourceCount).isEqualTo(pending)
     }
@@ -2624,7 +2624,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.pendingActionCount).isEqualTo(pending)
     }
@@ -2709,7 +2709,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.pendingLongTaskCount).isEqualTo(pending)
     }
@@ -2839,7 +2839,7 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isNull()
     }
 
@@ -2914,7 +2914,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isNull()
     }
 
@@ -2954,7 +2954,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         verify(rumMonitor.mockSdkCore, never()).updateFeatureContext(
             eq(Feature.SESSION_REPLAY_FEATURE_NAME),
@@ -2975,7 +2975,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         verify(rumMonitor.mockSdkCore, never()).updateFeatureContext(
             eq(Feature.SESSION_REPLAY_FEATURE_NAME),
@@ -2996,7 +2996,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         verify(rumMonitor.mockSdkCore, never()).updateFeatureContext(
             eq(Feature.SESSION_REPLAY_FEATURE_NAME),
@@ -3017,7 +3017,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         verify(rumMonitor.mockSdkCore, never()).updateFeatureContext(
             eq(Feature.SESSION_REPLAY_FEATURE_NAME),
@@ -3047,7 +3047,7 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isInstanceOf(RumActionScope::class.java)
         val actionScope = testedScope.activeActionScope as RumActionScope
@@ -3111,7 +3111,7 @@ internal class RumViewScopeTest {
 
         // Then
         verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
 
@@ -3143,7 +3143,7 @@ internal class RumViewScopeTest {
 
         // Then
         verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
 
@@ -3233,7 +3233,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isNull()
         assertThat(testedScope.activeActionScope).isNull()
     }
@@ -3248,7 +3248,7 @@ internal class RumViewScopeTest {
 
         // Then
         verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
 
@@ -3263,7 +3263,7 @@ internal class RumViewScopeTest {
 
         // Then
         verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isNull()
     }
 
@@ -3278,7 +3278,7 @@ internal class RumViewScopeTest {
 
         // Then
         verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isNull()
     }
@@ -3424,7 +3424,7 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeResourceScopes).isNotEmpty()
         val entry = testedScope.activeResourceScopes.entries.first()
@@ -3458,7 +3458,7 @@ internal class RumViewScopeTest {
 
         // Then
         verify(mockActionScope).handleEvent(fakeEvent, mockWriter)
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeResourceScopes).isNotEmpty()
         val entry = testedScope.activeResourceScopes.entries.first()
@@ -3487,7 +3487,7 @@ internal class RumViewScopeTest {
 
         // Then
         verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
 
@@ -3505,7 +3505,7 @@ internal class RumViewScopeTest {
 
         // Then
         verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
 
@@ -4756,7 +4756,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isNull()
     }
 
@@ -4778,7 +4778,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isNull()
     }
 
@@ -5120,7 +5120,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(testedScope.pendingLongTaskCount).isEqualTo(pending)
         assertThat(result).isSameAs(testedScope)
     }
@@ -5426,7 +5426,7 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
     }
 
@@ -6763,7 +6763,7 @@ internal class RumViewScopeTest {
         }
 
         // Then
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
     }
 
     // endregion

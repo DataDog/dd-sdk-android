@@ -12,11 +12,6 @@ import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
-import com.nhaarman.mockitokotlin2.argThat
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -28,6 +23,11 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
 import java.util.Locale.US
 
@@ -116,8 +116,8 @@ internal class MixedWebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
-        verifyZeroInteractions(mockLogsEventConsumer)
-        verifyZeroInteractions(mockRumEventConsumer)
+        verifyNoInteractions(mockLogsEventConsumer)
+        verifyNoInteractions(mockRumEventConsumer)
     }
 
     @Test
@@ -156,8 +156,8 @@ internal class MixedWebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
-        verifyZeroInteractions(mockLogsEventConsumer)
-        verifyZeroInteractions(mockRumEventConsumer)
+        verifyNoInteractions(mockLogsEventConsumer)
+        verifyNoInteractions(mockRumEventConsumer)
     }
 
     @Test
@@ -190,8 +190,8 @@ internal class MixedWebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
-        verifyZeroInteractions(mockLogsEventConsumer)
-        verifyZeroInteractions(mockRumEventConsumer)
+        verifyNoInteractions(mockLogsEventConsumer)
+        verifyNoInteractions(mockRumEventConsumer)
     }
 
     @Test
@@ -226,8 +226,8 @@ internal class MixedWebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeBadJsonFormatEvent)
 
         // Then
-        verifyZeroInteractions(mockLogsEventConsumer)
-        verifyZeroInteractions(mockRumEventConsumer)
+        verifyNoInteractions(mockLogsEventConsumer)
+        verifyNoInteractions(mockRumEventConsumer)
     }
 
     @Test

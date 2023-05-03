@@ -11,15 +11,6 @@ import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -32,6 +23,15 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
@@ -115,8 +115,8 @@ internal class VitalReaderRunnableTest {
         testedRunnable.run()
 
         // Then
-        verifyZeroInteractions(mockReader)
-        verifyZeroInteractions(mockObserver)
+        verifyNoInteractions(mockReader)
+        verifyNoInteractions(mockObserver)
         verify(mockExecutor).schedule(testedRunnable, TEST_PERIOD_MS, TimeUnit.MILLISECONDS)
     }
 
@@ -132,8 +132,8 @@ internal class VitalReaderRunnableTest {
         testedRunnable.run()
 
         // Then
-        verifyZeroInteractions(mockReader)
-        verifyZeroInteractions(mockObserver)
+        verifyNoInteractions(mockReader)
+        verifyNoInteractions(mockObserver)
         verify(mockExecutor).schedule(testedRunnable, TEST_PERIOD_MS, TimeUnit.MILLISECONDS)
     }
 

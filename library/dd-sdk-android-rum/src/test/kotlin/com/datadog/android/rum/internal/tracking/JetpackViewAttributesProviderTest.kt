@@ -15,8 +15,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.rum.RumAttributes
 import com.datadog.tools.unit.ObjectTest
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -28,6 +26,8 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(

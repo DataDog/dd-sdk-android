@@ -9,9 +9,6 @@ package com.datadog.android.sessionreplay.internal
 import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.v2.api.SdkCore
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -23,6 +20,9 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.util.UUID
 

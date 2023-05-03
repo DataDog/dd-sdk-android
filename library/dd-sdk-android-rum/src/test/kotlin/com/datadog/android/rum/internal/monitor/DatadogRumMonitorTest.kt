@@ -37,20 +37,6 @@ import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argThat
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.same
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.DoubleForgery
@@ -74,6 +60,20 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.same
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -155,7 +155,8 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockSessionListener
+            mockSessionListener,
+            sendSdkInit = false
         )
         testedMonitor.rootScope = mockScope
     }
@@ -1110,7 +1111,7 @@ internal class DatadogRumMonitorTest {
         argumentCaptor<Runnable> {
             inOrder(mockScope, mockWriter, mockHandler) {
                 verify(mockHandler).postDelayed(capture(), eq(DatadogRumMonitor.KEEP_ALIVE_MS))
-                verifyZeroInteractions(mockScope)
+                verifyNoInteractions(mockScope)
                 val runnable = firstValue
                 runnable.run()
                 Thread.sleep(PROCESSING_DELAY)
@@ -1123,6 +1124,38 @@ internal class DatadogRumMonitorTest {
                 verifyNoMoreInteractions()
             }
         }
+    }
+
+    @Test
+    fun `M delegate SdkInit event to rootScope W init()`() {
+        // When
+        testedMonitor = DatadogRumMonitor(
+            fakeApplicationId,
+            mockSdkCore,
+            fakeSamplingRate,
+            fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
+            mockWriter,
+            mockHandler,
+            mockTelemetryEventHandler,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockSessionListener,
+            sendSdkInit = true
+        )
+        testedMonitor.rootScope = mockScope
+
+        Thread.sleep(PROCESSING_DELAY)
+
+        // Then
+        verify(mockScope).handleEvent(
+            argThat { this is RumRawEvent.SdkInit },
+            same(mockWriter)
+        )
+
+        verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     @Test
@@ -1250,7 +1283,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            false
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -1368,7 +1402,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor.notifyDebugListenerWithState()
 
         // Then
-        verifyZeroInteractions(listener)
+        verifyNoInteractions(listener)
     }
 
     @Test
@@ -1391,7 +1425,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor.notifyDebugListenerWithState()
 
         // Then
-        verifyZeroInteractions(listener)
+        verifyNoInteractions(listener)
     }
 
     @Test
@@ -1561,7 +1595,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            executorService = mockExecutorService
+            executorService = mockExecutorService,
+            false
         )
 
         var isMethodOccupied = false

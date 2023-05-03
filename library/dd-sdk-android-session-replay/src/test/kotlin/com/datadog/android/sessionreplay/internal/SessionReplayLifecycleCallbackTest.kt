@@ -19,12 +19,6 @@ import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterce
 import com.datadog.android.sessionreplay.internal.recorder.callback.RecorderFragmentLifecycleCallback
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -35,6 +29,12 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -118,7 +118,7 @@ internal class SessionReplayLifecycleCallbackTest {
         testedCallback.onActivityCreated(mockActivity, mock())
 
         // Then
-        verifyZeroInteractions(mockActivity)
+        verifyNoInteractions(mockActivity)
     }
 
     @Test

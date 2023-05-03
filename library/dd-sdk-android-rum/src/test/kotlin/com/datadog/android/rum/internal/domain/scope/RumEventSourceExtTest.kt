@@ -14,9 +14,6 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.forge.aStringNotMatchingSet
 import com.datadog.android.v2.api.InternalLogger
-import com.nhaarman.mockitokotlin2.argThat
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -26,7 +23,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
+import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.argThat
+import org.mockito.kotlin.eq
 import java.util.Locale
 
 @Extensions(

@@ -6,6 +6,7 @@
 
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
+import com.datadog.gradle.config.java11
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 
@@ -29,18 +30,28 @@ android {
     namespace = "com.datadog.tools.unit"
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        java11()
     }
 
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
+        java.srcDir("src/main/java")
     }
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
     }
     sourceSets.named("androidTest") {
         java.srcDir("src/androidTest/kotlin")
+    }
+
+    flavorDimensions += "platform"
+    productFlavors {
+        register("art") {
+            isDefault = false
+        }
+        register("jvm") {
+            isDefault = true
+        }
     }
 }
 
