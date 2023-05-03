@@ -11,9 +11,6 @@ import com.datadog.opentracing.assertj.DDSpanContextAssert.Companion.assertThat
 import com.datadog.opentracing.decorators.AbstractDecorator
 import com.datadog.trace.api.DDTags
 import com.datadog.trace.api.sampling.PrioritySampling
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -29,6 +26,9 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.math.BigInteger
 import java.util.concurrent.CountDownLatch

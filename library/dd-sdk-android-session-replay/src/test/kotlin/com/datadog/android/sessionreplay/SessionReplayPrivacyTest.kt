@@ -8,9 +8,9 @@ package com.datadog.android.sessionreplay
 
 import com.datadog.android.sessionreplay.internal.recorder.mapper.AllowAllWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllWireframeMapper
-import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 
 internal class SessionReplayPrivacyTest {
 

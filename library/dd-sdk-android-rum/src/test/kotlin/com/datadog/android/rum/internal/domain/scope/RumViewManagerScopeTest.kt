@@ -27,16 +27,6 @@ import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.atLeastOnce
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -51,6 +41,16 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
 
@@ -155,7 +155,7 @@ internal class RumViewManagerScopeTest {
         // Then
         verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
         assertThat(result).isSameAs(testedScope)
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
     }
 
     @Test
@@ -171,7 +171,7 @@ internal class RumViewManagerScopeTest {
         // Then
         assertThat(testedScope.childrenScopes).containsExactly(mockChildScope)
         assertThat(result).isSameAs(testedScope)
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
     }
 
     @Test
@@ -187,7 +187,7 @@ internal class RumViewManagerScopeTest {
         // Then
         assertThat(testedScope.childrenScopes).isEmpty()
         assertThat(result).isSameAs(testedScope)
-        verifyZeroInteractions(mockWriter)
+        verifyNoInteractions(mockWriter)
     }
 
     // endregion
@@ -621,7 +621,7 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     // endregion
@@ -680,7 +680,7 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(startViewEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(childView, mockWriter)
+        verifyNoInteractions(childView, mockWriter)
     }
 
     @Test
@@ -709,7 +709,7 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(startViewEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(childView, mockWriter)
+        verifyNoInteractions(childView, mockWriter)
     }
 
     // endregion

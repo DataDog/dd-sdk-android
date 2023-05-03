@@ -10,12 +10,6 @@ import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.utils.forge.Configurator
-import com.nhaarman.mockitokotlin2.argForWhich
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -29,6 +23,12 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argForWhich
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -106,7 +106,7 @@ internal class TrackingConsentProviderTest {
         testedConsentProvider.setConsent(fakeConsent)
 
         // THEN
-        verifyZeroInteractions(mockedCallback)
+        verifyNoInteractions(mockedCallback)
     }
 
     @ParameterizedTest
@@ -122,8 +122,8 @@ internal class TrackingConsentProviderTest {
         testedConsentProvider.setConsent(fakeConsent)
 
         // THEN
-        verifyZeroInteractions(mockedCallback)
-        verifyZeroInteractions(anotherMockedCallback)
+        verifyNoInteractions(mockedCallback)
+        verifyNoInteractions(anotherMockedCallback)
     }
 
     @ParameterizedTest
@@ -145,7 +145,7 @@ internal class TrackingConsentProviderTest {
         }.start()
 
         // THEN
-        verifyZeroInteractions(mockedCallback)
+        verifyNoInteractions(mockedCallback)
     }
 
     @Test

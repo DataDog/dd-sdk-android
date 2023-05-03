@@ -10,10 +10,10 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.security.NoOpEncryption
 import com.datadog.android.trace.TracingHeaderType
-import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import okhttp3.Authenticator
+import org.mockito.kotlin.mock
 import java.net.Proxy
 import java.net.URL
 

@@ -13,12 +13,6 @@ import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -30,6 +24,12 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import org.mockito.stubbing.Answer
 import java.io.File
@@ -139,7 +139,7 @@ internal class SingleItemDataWriterTest {
         testedWriter.write(data)
 
         // Then
-        verifyZeroInteractions(mockFileWriter)
+        verifyNoInteractions(mockFileWriter)
     }
 
     @Test
@@ -153,7 +153,7 @@ internal class SingleItemDataWriterTest {
         testedWriter.write(data)
 
         // Then
-        verifyZeroInteractions(mockFileWriter)
+        verifyNoInteractions(mockFileWriter)
         verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
@@ -185,7 +185,7 @@ internal class SingleItemDataWriterTest {
         testedWriter.write(data)
 
         // Then
-        verifyZeroInteractions(mockFileWriter)
+        verifyNoInteractions(mockFileWriter)
         verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),

@@ -9,11 +9,6 @@ package com.datadog.android.core.internal.persistence.file.advanced
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -25,6 +20,11 @@ import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 import kotlin.system.measureTimeMillis
@@ -74,7 +74,7 @@ internal class MoveDataMigrationOperationTest {
         testedOperation.run()
 
         // Then
-        verifyZeroInteractions(mockFileMover)
+        verifyNoInteractions(mockFileMover)
         verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
@@ -97,7 +97,7 @@ internal class MoveDataMigrationOperationTest {
         testedOperation.run()
 
         // Then
-        verifyZeroInteractions(mockFileMover)
+        verifyNoInteractions(mockFileMover)
         verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,

@@ -79,6 +79,7 @@ gradlePlugin {
 }
 
 tasks.withType<KotlinCompile>().configureEach {
+    // TODO RUMM-3263 Switch to Java 17 bytecode
     kotlinOptions.jvmTarget = JavaVersion.VERSION_11.toString()
 }
 

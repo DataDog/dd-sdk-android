@@ -102,7 +102,14 @@ dependencies {
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
 
-    testImplementation(project(":tools:unit"))
+    testImplementation(project(":tools:unit")) {
+        attributes {
+            attribute(
+                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
+                objects.named("jvm")
+            )
+        }
+    }
     testImplementation(project(":library:dd-sdk-android-rum"))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)

@@ -21,14 +21,6 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileIncrementalData
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord
 import com.datadog.tools.unit.forge.aThrowable
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -42,6 +34,14 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
 
@@ -385,7 +385,7 @@ internal class RecorderWindowCallbackTest {
         testedWindowCallback.onWindowFocusChanged(forge.aBool())
 
         // Then
-        verifyZeroInteractions(mockViewOnDrawInterceptor)
+        verifyNoInteractions(mockViewOnDrawInterceptor)
     }
 
     @Test
@@ -399,7 +399,7 @@ internal class RecorderWindowCallbackTest {
         testedWindowCallback.onWindowFocusChanged(forge.aBool())
 
         // Then
-        verifyZeroInteractions(mockViewOnDrawInterceptor)
+        verifyNoInteractions(mockViewOnDrawInterceptor)
     }
 
     // endregion

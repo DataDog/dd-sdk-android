@@ -11,8 +11,8 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
-import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
+import org.mockito.kotlin.mock
 
 internal class GlobalRumMonitorTestConfiguration :
     MockTestConfiguration<RumMonitor>(AdvancedRumMonitor::class.java) {

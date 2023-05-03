@@ -7,9 +7,9 @@
 package com.datadog.android.core.internal.utils
 
 import com.datadog.android.v2.core.SdkInternalLogger
-import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 
 internal class InternalLoggerReleaseTest {
 

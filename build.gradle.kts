@@ -140,7 +140,7 @@ tasks.register("unitTestDebug") {
 tasks.register("unitTestTools") {
     dependsOn(
         ":sample:kotlin:assembleUs1Release",
-        ":tools:unit:testReleaseUnitTest"
+        ":tools:unit:testJvmReleaseUnitTest"
     )
 }
 

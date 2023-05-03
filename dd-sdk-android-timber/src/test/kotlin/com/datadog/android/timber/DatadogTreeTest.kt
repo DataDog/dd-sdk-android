@@ -8,7 +8,6 @@ package com.datadog.android.timber
 
 import android.util.Log
 import com.datadog.android.log.Logger
-import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.AfterEach
@@ -19,6 +18,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import timber.log.Timber
 

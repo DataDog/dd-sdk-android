@@ -22,14 +22,6 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -43,6 +35,14 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -130,7 +130,7 @@ internal class RumDataWriterTest {
         // Then
         assertThat(result).isFalse
 
-        verifyZeroInteractions(mockEventBatchWriter)
+        verifyNoInteractions(mockEventBatchWriter)
     }
 
     @Test
@@ -165,7 +165,7 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(viewEvent, fakeSerializedData)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
@@ -177,7 +177,7 @@ internal class RumDataWriterTest {
 
         // Then
         verify(rumMonitor.mockSdkCore).writeLastViewEvent(fakeSerializedData)
-        verifyZeroInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -192,7 +192,7 @@ internal class RumDataWriterTest {
             actionEvent.view.id,
             StorageEvent.Action(frustrationCount = actionEvent.action.frustration?.type?.size ?: 0)
         )
-        verifyZeroInteractions(rumMonitor.mockSdkCore)
+        verifyNoInteractions(rumMonitor.mockSdkCore)
     }
 
     @Test
@@ -207,7 +207,7 @@ internal class RumDataWriterTest {
             resourceEvent.view.id,
             StorageEvent.Resource
         )
-        verifyZeroInteractions(rumMonitor.mockSdkCore)
+        verifyNoInteractions(rumMonitor.mockSdkCore)
     }
 
     @Test
@@ -225,7 +225,7 @@ internal class RumDataWriterTest {
             fakeEvent.view.id,
             StorageEvent.Error
         )
-        verifyZeroInteractions(rumMonitor.mockSdkCore)
+        verifyNoInteractions(rumMonitor.mockSdkCore)
     }
 
     @Test
@@ -243,7 +243,7 @@ internal class RumDataWriterTest {
             rumMonitor.mockInstance as AdvancedRumMonitor,
             never()
         ).eventSent(eq(fakeEvent.view.id), any())
-        verifyZeroInteractions(rumMonitor.mockSdkCore)
+        verifyNoInteractions(rumMonitor.mockSdkCore)
     }
 
     @Test
@@ -267,7 +267,7 @@ internal class RumDataWriterTest {
             longTaskEvent.view.id,
             StorageEvent.LongTask
         )
-        verifyZeroInteractions(rumMonitor.mockSdkCore)
+        verifyNoInteractions(rumMonitor.mockSdkCore)
     }
 
     @Test
@@ -291,7 +291,7 @@ internal class RumDataWriterTest {
             frozenFrameEvent.view.id,
             StorageEvent.FrozenFrame
         )
-        verifyZeroInteractions(rumMonitor.mockSdkCore)
+        verifyNoInteractions(rumMonitor.mockSdkCore)
     }
 
     // endregion

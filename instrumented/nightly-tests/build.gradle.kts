@@ -1,7 +1,7 @@
 import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.java11
 import com.datadog.gradle.config.kotlinConfig
-import org.gradle.api.JavaVersion
 
 plugins {
     id("com.android.application")
@@ -54,8 +54,7 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        java11()
     }
 
     packagingOptions {
@@ -121,6 +120,12 @@ dependencies {
         // available only for API 26 and above
         exclude(group = "org.junit.jupiter")
         exclude(group = "org.mockito")
+        attributes {
+            attribute(
+                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
+                objects.named("art")
+            )
+        }
     }
     androidTestImplementation(libs.bundles.integrationTests)
 }

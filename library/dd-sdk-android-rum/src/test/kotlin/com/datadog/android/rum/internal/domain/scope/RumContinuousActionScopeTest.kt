@@ -27,17 +27,6 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aFilteredMap
 import com.datadog.tools.unit.forge.exhaustiveAttributes
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -55,6 +44,17 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
 
@@ -168,7 +168,7 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter, mockParentScope)
+        verifyNoInteractions(mockWriter, mockParentScope)
         assertThat(result).isSameAs(testedScope)
     }
 
@@ -184,7 +184,7 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter, mockParentScope)
+        verifyNoInteractions(mockWriter, mockParentScope)
         assertThat(result).isSameAs(testedScope)
     }
 
@@ -202,7 +202,7 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter, mockParentScope)
+        verifyNoInteractions(mockWriter, mockParentScope)
         assertThat(result).isSameAs(testedScope)
     }
 
@@ -1728,7 +1728,7 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter, mockParentScope)
+        verifyNoInteractions(mockWriter, mockParentScope)
         assertThat(result).isSameAs(testedScope)
     }
 
@@ -1738,7 +1738,7 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter, mockParentScope)
+        verifyNoInteractions(mockWriter, mockParentScope)
         assertThat(result).isSameAs(testedScope)
     }
 
@@ -1755,7 +1755,7 @@ internal class RumContinuousActionScopeTest {
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter, mockParentScope)
+        verifyNoInteractions(mockWriter, mockParentScope)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
     }
@@ -1776,7 +1776,7 @@ internal class RumContinuousActionScopeTest {
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter, mockParentScope)
+        verifyNoInteractions(mockWriter, mockParentScope)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
         assertThat(result3).isSameAs(testedScope)

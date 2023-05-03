@@ -11,15 +11,6 @@ import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.atLeast
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.reset
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -35,6 +26,15 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeast
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.reset
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 import java.util.concurrent.ExecutorService
@@ -159,7 +159,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isSameAs(file)
-        verifyZeroInteractions(mockGrantedOrchestrator)
+        verifyNoInteractions(mockGrantedOrchestrator)
     }
 
     @Test
@@ -179,7 +179,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isSameAs(file)
-        verifyZeroInteractions(mockGrantedOrchestrator)
+        verifyNoInteractions(mockGrantedOrchestrator)
     }
 
     @Test
@@ -199,7 +199,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isSameAs(file)
-        verifyZeroInteractions(mockGrantedOrchestrator)
+        verifyNoInteractions(mockGrantedOrchestrator)
     }
 
     @Test
@@ -217,7 +217,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isSameAs(file)
-        verifyZeroInteractions(mockPendingOrchestrator)
+        verifyNoInteractions(mockPendingOrchestrator)
     }
 
     @Test
@@ -237,7 +237,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isSameAs(file)
-        verifyZeroInteractions(mockPendingOrchestrator)
+        verifyNoInteractions(mockPendingOrchestrator)
     }
 
     @Test
@@ -257,7 +257,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isSameAs(file)
-        verifyZeroInteractions(mockPendingOrchestrator)
+        verifyNoInteractions(mockPendingOrchestrator)
     }
 
     @Test
@@ -273,7 +273,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verifyZeroInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
+        verifyNoInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
     }
 
     @Test
@@ -291,7 +291,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verifyZeroInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
+        verifyNoInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
     }
 
     @Test
@@ -309,7 +309,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verifyZeroInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
+        verifyNoInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
     }
 
     // endregion
@@ -330,7 +330,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isSameAs(file)
-        verifyZeroInteractions(mockPendingOrchestrator)
+        verifyNoInteractions(mockPendingOrchestrator)
     }
 
     @Test
@@ -349,7 +349,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isSameAs(file)
-        verifyZeroInteractions(mockPendingOrchestrator)
+        verifyNoInteractions(mockPendingOrchestrator)
     }
 
     // endregion
@@ -440,7 +440,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verifyZeroInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
+        verifyNoInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
     }
 
     @RepeatedTest(16)
@@ -457,7 +457,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verifyZeroInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
+        verifyNoInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
     }
 
     // endregion
@@ -477,7 +477,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isSameAs(metaFile)
-        verifyZeroInteractions(mockGrantedOrchestrator)
+        verifyNoInteractions(mockGrantedOrchestrator)
     }
 
     @Test
@@ -497,7 +497,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isSameAs(metaFile)
-        verifyZeroInteractions(mockGrantedOrchestrator)
+        verifyNoInteractions(mockGrantedOrchestrator)
     }
 
     @Test
@@ -517,7 +517,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isSameAs(metaFile)
-        verifyZeroInteractions(mockGrantedOrchestrator)
+        verifyNoInteractions(mockGrantedOrchestrator)
     }
 
     @Test
@@ -535,7 +535,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isSameAs(metaFile)
-        verifyZeroInteractions(mockPendingOrchestrator)
+        verifyNoInteractions(mockPendingOrchestrator)
     }
 
     @Test
@@ -555,7 +555,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isSameAs(metaFile)
-        verifyZeroInteractions(mockPendingOrchestrator)
+        verifyNoInteractions(mockPendingOrchestrator)
     }
 
     @Test
@@ -575,7 +575,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isSameAs(metaFile)
-        verifyZeroInteractions(mockPendingOrchestrator)
+        verifyNoInteractions(mockPendingOrchestrator)
     }
 
     @Test
@@ -591,7 +591,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verifyZeroInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
+        verifyNoInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
     }
 
     @Test
@@ -609,7 +609,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verifyZeroInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
+        verifyNoInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
     }
 
     @Test
@@ -627,7 +627,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verifyZeroInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
+        verifyNoInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
     }
 
     // endregion

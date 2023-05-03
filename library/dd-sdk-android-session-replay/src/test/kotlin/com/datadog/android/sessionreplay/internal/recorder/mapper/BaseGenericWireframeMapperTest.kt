@@ -13,8 +13,8 @@ import android.widget.ProgressBar
 import android.widget.Switch
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
+import org.mockito.kotlin.mock
 
 internal open class BaseGenericWireframeMapperTest : BaseWireframeMapperTest() {
 
