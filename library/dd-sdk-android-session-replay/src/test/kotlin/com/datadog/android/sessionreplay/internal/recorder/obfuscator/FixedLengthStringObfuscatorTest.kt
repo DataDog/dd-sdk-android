@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.obfuscator
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
-import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -33,10 +33,7 @@ internal class FixedLengthStringObfuscatorTest {
     }
 
     @Test
-    fun `M return STATIC_MASK W obfuscate(){string}`(forge: Forge) {
-        // Given
-        val fakeInputString: String = forge.aString()
-
+    fun `M return STATIC_MASK W obfuscate(){string}`(@StringForgery fakeInputString: String) {
         // When
         val obfuscatedString = testedObfuscator.obfuscate(fakeInputString)
 

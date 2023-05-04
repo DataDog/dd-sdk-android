@@ -46,16 +46,16 @@ internal class TextValueResolverTest {
         }
 
         // When
-        val resolvedText: String = testedResolver.resolveTextValue(mockTextView)
+        val resolvedText = testedResolver.resolveTextValue(mockTextView)
 
         // Then
-        assertThat(resolvedText).isEqualTo("")
+        assertThat(resolvedText).isEmpty()
     }
 
     @Test
     fun `M resolve to hint String W resolveTextValue(){textView with hint and no text}`(forge: Forge) {
         // Given
-        val fakeExpectedHint: String = forge.aString()
+        val fakeExpectedHint = forge.aString()
 
         val mockTextView: TextView = forge.aMockTextView().apply {
             whenever(this.text).thenReturn("")
@@ -63,7 +63,7 @@ internal class TextValueResolverTest {
         }
 
         // When
-        val resolvedText: String = testedResolver.resolveTextValue(mockTextView)
+        val resolvedText = testedResolver.resolveTextValue(mockTextView)
 
         // Then
         assertThat(resolvedText).isEqualTo(fakeExpectedHint)
@@ -72,7 +72,7 @@ internal class TextValueResolverTest {
     @Test
     fun `M resolve to text String W resolveTextValue(){textView with text and no hint}`(forge: Forge) {
         // Given
-        val fakeExpectedText: String = forge.aString()
+        val fakeExpectedText = forge.aString()
 
         val mockTextView: TextView = forge.aMockTextView().apply {
             whenever(this.text).thenReturn(fakeExpectedText)
@@ -80,7 +80,7 @@ internal class TextValueResolverTest {
         }
 
         // When
-        val resolvedText: String = testedResolver.resolveTextValue(mockTextView)
+        val resolvedText = testedResolver.resolveTextValue(mockTextView)
 
         // Then
         assertThat(resolvedText).isEqualTo(fakeExpectedText)
@@ -89,8 +89,8 @@ internal class TextValueResolverTest {
     @Test
     fun `M resolve to text String W resolveTextValue(){textView with text and hint}`(forge: Forge) {
         // Given
-        val fakeExpectedText: String = forge.aString()
-        val fakeExpectedHint: String = forge.aString()
+        val fakeExpectedText = forge.aString()
+        val fakeExpectedHint = forge.aString()
 
         val mockTextView: TextView = forge.aMockTextView().apply {
             whenever(this.text).thenReturn(fakeExpectedText)
@@ -98,7 +98,7 @@ internal class TextValueResolverTest {
         }
 
         // When
-        val resolvedText: String = testedResolver.resolveTextValue(mockTextView)
+        val resolvedText = testedResolver.resolveTextValue(mockTextView)
 
         // Then
         assertThat(resolvedText).isEqualTo(fakeExpectedText)

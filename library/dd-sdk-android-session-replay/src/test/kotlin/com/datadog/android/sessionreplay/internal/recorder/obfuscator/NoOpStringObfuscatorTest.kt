@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.obfuscator
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -32,10 +32,7 @@ internal class NoOpStringObfuscatorTest {
     }
 
     @Test
-    fun `M return input String W obfuscate(){string}`(forge: Forge) {
-        // Given
-        val fakeInputString: String = forge.aString()
-
+    fun `M return input String W obfuscate(){string}`(@StringForgery fakeInputString: String) {
         // When
         val obfuscatedString = testedObfuscator.obfuscate(fakeInputString)
 
