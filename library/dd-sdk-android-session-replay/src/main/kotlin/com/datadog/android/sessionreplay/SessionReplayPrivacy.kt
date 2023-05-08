@@ -125,10 +125,7 @@ enum class SessionReplayPrivacy {
             MapperTypeWrapper(SwitchCompat::class.java, switchCompatMapper.toGenericMapper()),
             MapperTypeWrapper(RadioButton::class.java, radioButtonMapper.toGenericMapper()),
             MapperTypeWrapper(CheckBox::class.java, checkBoxMapper.toGenericMapper()),
-            MapperTypeWrapper(
-                CheckedTextView::class.java,
-                checkedTextViewMapper.toGenericMapper()
-            ),
+            MapperTypeWrapper(CheckedTextView::class.java, checkedTextViewMapper.toGenericMapper()),
             MapperTypeWrapper(Button::class.java, buttonMapper.toGenericMapper()),
             MapperTypeWrapper(EditText::class.java, editTextViewMapper.toGenericMapper()),
             MapperTypeWrapper(TextView::class.java, textMapper.toGenericMapper()),

@@ -6,6 +6,8 @@
 
 package com.datadog.android.sessionreplay
 
+import android.os.Build
+import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.CheckedTextView
@@ -20,6 +22,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckedTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.EditTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckedTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllNumberPickerMapper
@@ -27,270 +30,159 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllRadioBu
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllSeekBarWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllSwitchCompatMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskInputTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.NumberPickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.RadioButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewScreenshotWireframeMapper
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
+import com.datadog.tools.unit.setStaticValue
+import com.nhaarman.mockitokotlin2.mock
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
+import org.junit.runners.Parameterized
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.provider.Arguments
+import java.util.stream.Stream
 
-@Extensions(
-    ExtendWith(ApiLevelExtension::class)
-)
+
 internal class SessionReplayPrivacyTest {
 
-    @Test
-    fun `M return the AllowAll mappers W rule(ALLOW_ALL)`() {
+    @ParameterizedTest(name = "M return mappers W rule({1}, API Level {0}")
+    @MethodSource("provideTestArguments")
+    fun `M return mappers W rule({1}, API Level {0}`(
+            apiLevel: Int,
+            maskLevel: String,
+            expectedMappers: List<MapperTypeWrapper>
+    ) {
+        // Given
+        Build.VERSION::class.java.setStaticValue("SDK_INT", apiLevel)
+
         // When
-        val mappers = SessionReplayPrivacy.ALLOW_ALL.mappers()
+        val actualMappers = when(maskLevel) {
+            SessionReplayPrivacy.ALLOW_ALL.toString() -> SessionReplayPrivacy.ALLOW_ALL.mappers()
+            SessionReplayPrivacy.MASK_ALL.toString() -> SessionReplayPrivacy.MASK_ALL.mappers()
+            SessionReplayPrivacy.MASK_USER_INPUT.toString() -> SessionReplayPrivacy.MASK_USER_INPUT.mappers()
+            else -> throw IllegalArgumentException("Unknown masking level")
+        }
 
         // Then
-        assertThat(mappers.size).isEqualTo(8)
-        assertThat(mappers[0].type).isEqualTo(SwitchCompat::class.java)
-        assertThat(mappers[0].mapper).isInstanceOf(SwitchCompatMapper::class.java)
-        assertThat(mappers[1].type).isEqualTo(RadioButton::class.java)
-        assertThat(mappers[1].mapper).isInstanceOf(RadioButtonMapper::class.java)
-        assertThat(mappers[2].type).isEqualTo(CheckBox::class.java)
-        assertThat(mappers[2].mapper).isInstanceOf(CheckBoxMapper::class.java)
-        assertThat(mappers[3].type).isEqualTo(CheckedTextView::class.java)
-        assertThat(mappers[3].mapper).isInstanceOf(CheckedTextViewMapper::class.java)
-        assertThat(mappers[4].type).isEqualTo(Button::class.java)
-        assertThat(mappers[4].mapper).isInstanceOf(ButtonMapper::class.java)
-        assertThat(mappers[5].type).isEqualTo(EditText::class.java)
-        assertThat(mappers[5].mapper).isInstanceOf(EditTextViewMapper::class.java)
-        assertThat(mappers[6].type).isEqualTo(TextView::class.java)
-        assertThat(mappers[6].mapper).isInstanceOf(TextViewMapper::class.java)
-        assertThat(mappers[7].type).isEqualTo(ImageView::class.java)
-        assertThat(mappers[7].mapper).isInstanceOf(ViewScreenshotWireframeMapper::class.java)
+        assertThat(actualMappers.size).isEqualTo(expectedMappers.size)
+
+        for ((type, mapper) in actualMappers) {
+            val expectedMapper = expectedMappers.find { it.type == type }?.mapper
+            assertThat(mapper.javaClass.name).isEqualTo(expectedMapper?.javaClass?.name)
+        }
     }
 
-    @Test
-    fun `M return the MASK_ALL mappers W rule(MASK_ALL)`() {
-        // When
-        val mappers = SessionReplayPrivacy.MASK_ALL.mappers()
+    companion object {
+        @Suppress("UNCHECKED_CAST")
+        private fun WireframeMapper<*, *>.toGenericMapper(): WireframeMapper<View, *> {
+            return this as WireframeMapper<View, *>
+        }
 
-        // Then
-        assertThat(mappers.size).isEqualTo(8)
-        assertThat(mappers[0].type).isEqualTo(SwitchCompat::class.java)
-        assertThat(mappers[0].mapper).isInstanceOf(MaskAllSwitchCompatMapper::class.java)
-        assertThat(mappers[1].type).isEqualTo(RadioButton::class.java)
-        assertThat(mappers[1].mapper).isInstanceOf(MaskAllRadioButtonMapper::class.java)
-        assertThat(mappers[2].type).isEqualTo(CheckBox::class.java)
-        assertThat(mappers[2].mapper).isInstanceOf(MaskAllCheckBoxMapper::class.java)
-        assertThat(mappers[3].type).isEqualTo(CheckedTextView::class.java)
-        assertThat(mappers[3].mapper).isInstanceOf(MaskAllCheckedTextViewMapper::class.java)
-        assertThat(mappers[4].type).isEqualTo(Button::class.java)
-        assertThat(mappers[4].mapper).isInstanceOf(ButtonMapper::class.java)
-        assertThat(mappers[5].type).isEqualTo(EditText::class.java)
-        assertThat(mappers[5].mapper).isInstanceOf(EditTextViewMapper::class.java)
-        assertThat(mappers[6].type).isEqualTo(TextView::class.java)
-        assertThat(mappers[6].mapper).isInstanceOf(MaskAllTextViewMapper::class.java)
-        assertThat(mappers[7].type).isEqualTo(ImageView::class.java)
-        assertThat(mappers[7].mapper).isInstanceOf(ViewScreenshotWireframeMapper::class.java)
-    }
+        // BASE
+        private val mockButtonMapper: ButtonMapper = mock()
+        private val mockEditTextViewMapper: EditTextViewMapper = mock()
+        private val mockImageMapper: ViewScreenshotWireframeMapper = mock()
 
-    @Test
-    fun `M return the MaskUserInput mappers W rule(MASK_USER_INPUT)`() {
-        // When
-        val mappers = SessionReplayPrivacy.MASK_USER_INPUT.mappers()
+        private val baseMappers = listOf(
+                MapperTypeWrapper(Button::class.java, mockButtonMapper.toGenericMapper()),
+                MapperTypeWrapper(EditText::class.java, mockEditTextViewMapper.toGenericMapper()),
+                MapperTypeWrapper(ImageView::class.java, mockImageMapper.toGenericMapper()),
+        )
 
-        // Then
-        assertThat(mappers.size).isEqualTo(8)
-        assertThat(mappers[0].type).isEqualTo(SwitchCompat::class.java)
-        assertThat(mappers[0].mapper).isInstanceOf(MaskAllSwitchCompatMapper::class.java)
-        assertThat(mappers[1].type).isEqualTo(RadioButton::class.java)
-        assertThat(mappers[1].mapper).isInstanceOf(MaskAllRadioButtonMapper::class.java)
-        assertThat(mappers[2].type).isEqualTo(CheckBox::class.java)
-        assertThat(mappers[2].mapper).isInstanceOf(MaskAllCheckBoxMapper::class.java)
-        assertThat(mappers[3].type).isEqualTo(CheckedTextView::class.java)
-        assertThat(mappers[3].mapper).isInstanceOf(CheckedTextViewMapper::class.java)
-        assertThat(mappers[4].type).isEqualTo(Button::class.java)
-        assertThat(mappers[4].mapper).isInstanceOf(ButtonMapper::class.java)
-        assertThat(mappers[5].type).isEqualTo(EditText::class.java)
-        assertThat(mappers[5].mapper).isInstanceOf(EditTextViewMapper::class.java)
-        assertThat(mappers[6].type).isEqualTo(TextView::class.java)
-        assertThat(mappers[6].mapper).isInstanceOf(TextViewMapper::class.java)
-        assertThat(mappers[7].type).isEqualTo(ImageView::class.java)
-        assertThat(mappers[7].mapper).isInstanceOf(ViewScreenshotWireframeMapper::class.java)
-    }
 
-    @TestTargetApi(26)
-    @Test
-    fun `M return the AllowAll mappers W rule(ALLOW_ALL, above API 26)`() {
-        // When
-        val mappers = SessionReplayPrivacy.ALLOW_ALL.mappers()
+        // ALLOW_ALL
+        private val mockTextViewMapper: TextViewMapper = mock()
+        private val mockSwitchCompatMapper: SwitchCompatMapper = mock()
+        private val mockCheckedTextViewMapper: CheckedTextViewMapper = mock()
+        private val mockCheckBoxMapper: CheckBoxMapper = mock()
+        private val mockRadioButtonMapper: RadioButtonMapper = mock()
+        private val mockSeekBarMapper: SeekBarWireframeMapper = mock()
+        private val mockNumberPickerMapper: NumberPickerMapper = mock()
 
-        // Then
-        assertThat(mappers.size).isEqualTo(9)
-        assertThat(mappers[0].type).isEqualTo(SeekBar::class.java)
-        assertThat(mappers[0].mapper).isInstanceOf(SeekBarWireframeMapper::class.java)
-        assertThat(mappers[1].type).isEqualTo(SwitchCompat::class.java)
-        assertThat(mappers[1].mapper).isInstanceOf(SwitchCompatMapper::class.java)
-        assertThat(mappers[2].type).isEqualTo(RadioButton::class.java)
-        assertThat(mappers[2].mapper).isInstanceOf(RadioButtonMapper::class.java)
-        assertThat(mappers[3].type).isEqualTo(CheckBox::class.java)
-        assertThat(mappers[3].mapper).isInstanceOf(CheckBoxMapper::class.java)
-        assertThat(mappers[4].type).isEqualTo(CheckedTextView::class.java)
-        assertThat(mappers[4].mapper).isInstanceOf(CheckedTextViewMapper::class.java)
-        assertThat(mappers[5].type).isEqualTo(Button::class.java)
-        assertThat(mappers[5].mapper).isInstanceOf(ButtonMapper::class.java)
-        assertThat(mappers[6].type).isEqualTo(EditText::class.java)
-        assertThat(mappers[6].mapper).isInstanceOf(EditTextViewMapper::class.java)
-        assertThat(mappers[7].type).isEqualTo(TextView::class.java)
-        assertThat(mappers[7].mapper).isInstanceOf(TextViewMapper::class.java)
-        assertThat(mappers[8].type).isEqualTo(ImageView::class.java)
-        assertThat(mappers[8].mapper).isInstanceOf(ViewScreenshotWireframeMapper::class.java)
-    }
+        private val allowAll = baseMappers + listOf(
+                MapperTypeWrapper(TextView::class.java, mockTextViewMapper.toGenericMapper()),
+                MapperTypeWrapper(CheckedTextView::class.java, mockCheckedTextViewMapper.toGenericMapper()),
+                MapperTypeWrapper(CheckBox::class.java, mockCheckBoxMapper.toGenericMapper()),
+                MapperTypeWrapper(RadioButton::class.java, mockRadioButtonMapper.toGenericMapper()),
+                MapperTypeWrapper(SwitchCompat::class.java, mockSwitchCompatMapper.toGenericMapper()),
+        )
 
-    @TestTargetApi(26)
-    @Test
-    fun `M return the AllowAll mappers W rule(MASK_USER_INPUT, above API 26)`() {
-        // When
-        val mappers = SessionReplayPrivacy.MASK_USER_INPUT.mappers()
+        private val allowAllAbove26 = allowAll + listOf(
+                MapperTypeWrapper(SeekBar::class.java, mockSeekBarMapper.toGenericMapper()),
+        )
 
-        // Then
-        assertThat(mappers.size).isEqualTo(9)
-        assertThat(mappers[0].type).isEqualTo(SeekBar::class.java)
-        assertThat(mappers[0].mapper).isInstanceOf(MaskAllSeekBarWireframeMapper::class.java)
-        assertThat(mappers[1].type).isEqualTo(SwitchCompat::class.java)
-        assertThat(mappers[1].mapper).isInstanceOf(MaskAllSwitchCompatMapper::class.java)
-        assertThat(mappers[2].type).isEqualTo(RadioButton::class.java)
-        assertThat(mappers[2].mapper).isInstanceOf(MaskAllRadioButtonMapper::class.java)
-        assertThat(mappers[3].type).isEqualTo(CheckBox::class.java)
-        assertThat(mappers[3].mapper).isInstanceOf(MaskAllCheckBoxMapper::class.java)
-        assertThat(mappers[4].type).isEqualTo(CheckedTextView::class.java)
-        assertThat(mappers[4].mapper).isInstanceOf(CheckedTextViewMapper::class.java)
-        assertThat(mappers[5].type).isEqualTo(Button::class.java)
-        assertThat(mappers[5].mapper).isInstanceOf(ButtonMapper::class.java)
-        assertThat(mappers[6].type).isEqualTo(EditText::class.java)
-        assertThat(mappers[6].mapper).isInstanceOf(EditTextViewMapper::class.java)
-        assertThat(mappers[7].type).isEqualTo(TextView::class.java)
-        assertThat(mappers[7].mapper).isInstanceOf(TextViewMapper::class.java)
-        assertThat(mappers[8].type).isEqualTo(ImageView::class.java)
-        assertThat(mappers[8].mapper).isInstanceOf(ViewScreenshotWireframeMapper::class.java)
-    }
+        private val allowAllAbove29 = allowAllAbove26 + listOf(
+                MapperTypeWrapper(NumberPicker::class.java, mockNumberPickerMapper.toGenericMapper()),
+        )
 
-    @TestTargetApi(26)
-    @Test
-    fun `M return the MASK_ALL mappers W rule(MASK_ALL, above API 26)`() {
-        // When
-        val mappers = SessionReplayPrivacy.MASK_ALL.mappers()
+        // MASK_ALL
+        private val mockMaskAllTextViewMapper: MaskAllTextViewMapper = mock()
+        private val mockMaskAllCheckedTextViewMapper: MaskAllCheckedTextViewMapper = mock()
+        private val mockMaskAllCheckBoxMapper: MaskAllCheckBoxMapper = mock()
+        private val mockMaskAllRadioButtonMapper: MaskAllRadioButtonMapper = mock()
+        private val mockMaskAllSwitchCompatMapper: MaskAllSwitchCompatMapper = mock()
+        private val mockMaskAllSeekBarWireframeMapper: MaskAllSeekBarWireframeMapper = mock()
+        private val mockMaskAllNumberPickerMapper: MaskAllNumberPickerMapper = mock()
 
-        // Then
-        assertThat(mappers.size).isEqualTo(9)
-        assertThat(mappers[0].type).isEqualTo(SeekBar::class.java)
-        assertThat(mappers[0].mapper).isInstanceOf(MaskAllSeekBarWireframeMapper::class.java)
-        assertThat(mappers[1].type).isEqualTo(SwitchCompat::class.java)
-        assertThat(mappers[1].mapper).isInstanceOf(MaskAllSwitchCompatMapper::class.java)
-        assertThat(mappers[2].type).isEqualTo(RadioButton::class.java)
-        assertThat(mappers[2].mapper).isInstanceOf(MaskAllRadioButtonMapper::class.java)
-        assertThat(mappers[3].type).isEqualTo(CheckBox::class.java)
-        assertThat(mappers[3].mapper).isInstanceOf(MaskAllCheckBoxMapper::class.java)
-        assertThat(mappers[4].type).isEqualTo(CheckedTextView::class.java)
-        assertThat(mappers[4].mapper).isInstanceOf(MaskAllCheckedTextViewMapper::class.java)
-        assertThat(mappers[5].type).isEqualTo(Button::class.java)
-        assertThat(mappers[5].mapper).isInstanceOf(ButtonMapper::class.java)
-        assertThat(mappers[6].type).isEqualTo(EditText::class.java)
-        assertThat(mappers[6].mapper).isInstanceOf(EditTextViewMapper::class.java)
-        assertThat(mappers[7].type).isEqualTo(TextView::class.java)
-        assertThat(mappers[7].mapper).isInstanceOf(MaskAllTextViewMapper::class.java)
-        assertThat(mappers[8].type).isEqualTo(ImageView::class.java)
-        assertThat(mappers[8].mapper).isInstanceOf(ViewScreenshotWireframeMapper::class.java)
-    }
+        private val maskAll = baseMappers + listOf(
+                MapperTypeWrapper(TextView::class.java, mockMaskAllTextViewMapper.toGenericMapper()),
+                MapperTypeWrapper(CheckedTextView::class.java, mockMaskAllCheckedTextViewMapper.toGenericMapper()),
+                MapperTypeWrapper(CheckBox::class.java, mockMaskAllCheckBoxMapper.toGenericMapper()),
+                MapperTypeWrapper(RadioButton::class.java, mockMaskAllRadioButtonMapper.toGenericMapper()),
+                MapperTypeWrapper(SwitchCompat::class.java, mockMaskAllSwitchCompatMapper.toGenericMapper())
+        )
 
-    @TestTargetApi(29)
-    @Test
-    fun `M return the AllowAll mappers W rule(ALLOW_ALL, above API 29)`() {
-        // When
-        val mappers = SessionReplayPrivacy.ALLOW_ALL.mappers()
+        private val maskAllAbove26 = maskAll + listOf(
+                MapperTypeWrapper(SeekBar::class.java, mockMaskAllSeekBarWireframeMapper.toGenericMapper()),
+        )
 
-        // Then
-        assertThat(mappers.size).isEqualTo(10)
-        assertThat(mappers[0].type).isEqualTo(NumberPicker::class.java)
-        assertThat(mappers[0].mapper).isInstanceOf(NumberPickerMapper::class.java)
-        assertThat(mappers[1].type).isEqualTo(SeekBar::class.java)
-        assertThat(mappers[1].mapper).isInstanceOf(SeekBarWireframeMapper::class.java)
-        assertThat(mappers[2].type).isEqualTo(SwitchCompat::class.java)
-        assertThat(mappers[2].mapper).isInstanceOf(SwitchCompatMapper::class.java)
-        assertThat(mappers[3].type).isEqualTo(RadioButton::class.java)
-        assertThat(mappers[3].mapper).isInstanceOf(RadioButtonMapper::class.java)
-        assertThat(mappers[4].type).isEqualTo(CheckBox::class.java)
-        assertThat(mappers[4].mapper).isInstanceOf(CheckBoxMapper::class.java)
-        assertThat(mappers[5].type).isEqualTo(CheckedTextView::class.java)
-        assertThat(mappers[5].mapper).isInstanceOf(CheckedTextViewMapper::class.java)
-        assertThat(mappers[6].type).isEqualTo(Button::class.java)
-        assertThat(mappers[6].mapper).isInstanceOf(ButtonMapper::class.java)
-        assertThat(mappers[7].type).isEqualTo(EditText::class.java)
-        assertThat(mappers[7].mapper).isInstanceOf(EditTextViewMapper::class.java)
-        assertThat(mappers[8].type).isEqualTo(TextView::class.java)
-        assertThat(mappers[8].mapper).isInstanceOf(TextViewMapper::class.java)
-        assertThat(mappers[9].type).isEqualTo(ImageView::class.java)
-        assertThat(mappers[9].mapper).isInstanceOf(ViewScreenshotWireframeMapper::class.java)
-    }
+        private val maskAllAbove29 = maskAllAbove26 + listOf(
+                MapperTypeWrapper(NumberPicker::class.java, mockMaskAllNumberPickerMapper.toGenericMapper()),
+        )
 
-    @TestTargetApi(29)
-    @Test
-    fun `M return the AllowAll mappers W rule(MASK_USER_INPUT, above API 29)`() {
-        // When
-        val mappers = SessionReplayPrivacy.MASK_USER_INPUT.mappers()
 
-        // Then
-        assertThat(mappers.size).isEqualTo(10)
-        assertThat(mappers[0].type).isEqualTo(NumberPicker::class.java)
-        assertThat(mappers[0].mapper).isInstanceOf(MaskAllNumberPickerMapper::class.java)
-        assertThat(mappers[1].type).isEqualTo(SeekBar::class.java)
-        assertThat(mappers[1].mapper).isInstanceOf(MaskAllSeekBarWireframeMapper::class.java)
-        assertThat(mappers[2].type).isEqualTo(SwitchCompat::class.java)
-        assertThat(mappers[2].mapper).isInstanceOf(MaskAllSwitchCompatMapper::class.java)
-        assertThat(mappers[3].type).isEqualTo(RadioButton::class.java)
-        assertThat(mappers[3].mapper).isInstanceOf(MaskAllRadioButtonMapper::class.java)
-        assertThat(mappers[4].type).isEqualTo(CheckBox::class.java)
-        assertThat(mappers[4].mapper).isInstanceOf(MaskAllCheckBoxMapper::class.java)
-        assertThat(mappers[5].type).isEqualTo(CheckedTextView::class.java)
-        assertThat(mappers[5].mapper).isInstanceOf(CheckedTextViewMapper::class.java)
-        assertThat(mappers[6].type).isEqualTo(Button::class.java)
-        assertThat(mappers[6].mapper).isInstanceOf(ButtonMapper::class.java)
-        assertThat(mappers[7].type).isEqualTo(EditText::class.java)
-        assertThat(mappers[7].mapper).isInstanceOf(EditTextViewMapper::class.java)
-        assertThat(mappers[8].type).isEqualTo(TextView::class.java)
-        assertThat(mappers[8].mapper).isInstanceOf(TextViewMapper::class.java)
-        assertThat(mappers[9].type).isEqualTo(ImageView::class.java)
-        assertThat(mappers[9].mapper).isInstanceOf(ViewScreenshotWireframeMapper::class.java)
-    }
+        // MASK_USER_INPUT
+        private val mockMaskInputTextViewMapper: MaskInputTextViewMapper = mock()
 
-    @TestTargetApi(29)
-    @Test
-    fun `M return the MASK_ALL mappers W rule(MASK_ALL, above API 29)`() {
-        // When
-        val mappers = SessionReplayPrivacy.MASK_ALL.mappers()
+        private val maskUserInput = baseMappers + listOf(
+                MapperTypeWrapper(TextView::class.java, mockMaskInputTextViewMapper.toGenericMapper()),
+                MapperTypeWrapper(CheckedTextView::class.java, mockMaskAllCheckedTextViewMapper.toGenericMapper()),
+                MapperTypeWrapper(CheckBox::class.java, mockMaskAllCheckBoxMapper.toGenericMapper()),
+                MapperTypeWrapper(RadioButton::class.java, mockMaskAllRadioButtonMapper.toGenericMapper()),
+                MapperTypeWrapper(SwitchCompat::class.java, mockMaskAllSwitchCompatMapper.toGenericMapper())
+        )
 
-        // Then
-        assertThat(mappers.size).isEqualTo(10)
-        assertThat(mappers[0].type).isEqualTo(NumberPicker::class.java)
-        assertThat(mappers[0].mapper).isInstanceOf(MaskAllNumberPickerMapper::class.java)
-        assertThat(mappers[1].type).isEqualTo(SeekBar::class.java)
-        assertThat(mappers[1].mapper).isInstanceOf(MaskAllSeekBarWireframeMapper::class.java)
-        assertThat(mappers[2].type).isEqualTo(SwitchCompat::class.java)
-        assertThat(mappers[2].mapper).isInstanceOf(MaskAllSwitchCompatMapper::class.java)
-        assertThat(mappers[3].type).isEqualTo(RadioButton::class.java)
-        assertThat(mappers[3].mapper).isInstanceOf(MaskAllRadioButtonMapper::class.java)
-        assertThat(mappers[4].type).isEqualTo(CheckBox::class.java)
-        assertThat(mappers[4].mapper).isInstanceOf(MaskAllCheckBoxMapper::class.java)
-        assertThat(mappers[5].type).isEqualTo(CheckedTextView::class.java)
-        assertThat(mappers[5].mapper).isInstanceOf(MaskAllCheckedTextViewMapper::class.java)
-        assertThat(mappers[6].type).isEqualTo(Button::class.java)
-        assertThat(mappers[6].mapper).isInstanceOf(ButtonMapper::class.java)
-        assertThat(mappers[7].type).isEqualTo(EditText::class.java)
-        assertThat(mappers[7].mapper).isInstanceOf(EditTextViewMapper::class.java)
-        assertThat(mappers[8].type).isEqualTo(TextView::class.java)
-        assertThat(mappers[8].mapper).isInstanceOf(MaskAllTextViewMapper::class.java)
-        assertThat(mappers[9].type).isEqualTo(ImageView::class.java)
-        assertThat(mappers[9].mapper).isInstanceOf(ViewScreenshotWireframeMapper::class.java)
+        private val maskUserInputAbove26 = maskUserInput + listOf(
+                MapperTypeWrapper(SeekBar::class.java, mockMaskAllSeekBarWireframeMapper.toGenericMapper()),
+        )
+
+        private val maskUserInputAbove29 = maskUserInputAbove26 + listOf(
+                MapperTypeWrapper(NumberPicker::class.java, mockMaskAllNumberPickerMapper.toGenericMapper()),
+        )
+
+        @JvmStatic
+        @Parameterized.Parameters
+        fun provideTestArguments(): Stream<Arguments> {
+            val allowAllLevel = SessionReplayPrivacy.ALLOW_ALL.toString()
+            val maskAllLevel = SessionReplayPrivacy.MASK_ALL.toString()
+            val maskUserInputLevel = SessionReplayPrivacy.MASK_USER_INPUT.toString()
+
+            return Stream.of(
+                    Arguments.of(Build.VERSION_CODES.M, allowAllLevel, allowAll),
+                    Arguments.of(Build.VERSION_CODES.O, allowAllLevel, allowAllAbove26),
+                    Arguments.of(Build.VERSION_CODES.Q, allowAllLevel, allowAllAbove29),
+                    Arguments.of(Build.VERSION_CODES.M, maskAllLevel, maskAll),
+                    Arguments.of(Build.VERSION_CODES.O, maskAllLevel, maskAllAbove26),
+                    Arguments.of(Build.VERSION_CODES.Q, maskAllLevel, maskAllAbove29),
+                    Arguments.of(Build.VERSION_CODES.M, maskUserInputLevel, maskUserInput),
+                    Arguments.of(Build.VERSION_CODES.O, maskUserInputLevel, maskUserInputAbove26),
+                    Arguments.of(Build.VERSION_CODES.Q, maskUserInputLevel, maskUserInputAbove29),
+            )
+        }
     }
 }
