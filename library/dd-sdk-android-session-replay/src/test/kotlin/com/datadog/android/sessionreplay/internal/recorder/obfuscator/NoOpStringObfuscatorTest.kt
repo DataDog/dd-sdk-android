@@ -33,7 +33,9 @@ internal class NoOpStringObfuscatorTest {
     }
 
     @Test
-    fun `M return input String W obfuscate(){string}`(@StringForgery(type = StringForgeryType.ASCII_EXTENDED) fakeInputString: String) {
+    fun `M return input String W obfuscate(){string}`(
+        @StringForgery(type = StringForgeryType.ASCII_EXTENDED) fakeInputString: String
+    ) {
         // When
         val obfuscatedString = testedObfuscator.obfuscate(fakeInputString)
 

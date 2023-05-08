@@ -34,7 +34,11 @@ internal class FixedLengthStringObfuscatorTest {
     }
 
     @Test
-    fun `M return STATIC_MASK W obfuscate(){string}`(@StringForgery(type = StringForgeryType.ASCII_EXTENDED) fakeInputString: String) {
+    fun `M return STATIC_MASK W obfuscate(){string}`(
+        @StringForgery(
+            type = StringForgeryType.ASCII_EXTENDED
+        ) fakeInputString: String
+    ) {
         // When
         val obfuscatedString = testedObfuscator.obfuscate(fakeInputString)
 
