@@ -77,6 +77,9 @@ internal class DatadogCore(
             }
         }
 
+    internal val isActive: Boolean
+        get() = coreFeature.initialized.get()
+
     private val ndkLastViewEventFileWriter: FileWriter by lazy {
         BatchFileReaderWriter.create(
             internalLogger = _internalLogger,
@@ -181,27 +184,6 @@ internal class DatadogCore(
     }
 
     /** @inheritDoc */
-    override fun stop() {
-        features.forEach {
-            it.value.stop()
-        }
-        features.clear()
-
-        coreFeature.stop()
-    }
-
-    /** @inheritDoc */
-    override fun flushStoredData() {
-        // We need to drain and shutdown the executors first to make sure we avoid duplicated
-        // data due to async operations.
-        coreFeature.drainAndShutdownExecutors()
-
-        features.values.forEach {
-            it.flushStoredData()
-        }
-    }
-
-    /** @inheritDoc */
     override fun updateFeatureContext(
         featureName: String,
         updateCallback: (context: MutableMap<String, Any?>) -> Unit
@@ -292,7 +274,7 @@ internal class DatadogCore(
 
     // endregion
 
-    // region Internal Initialization
+    // region Internal
 
     internal fun initialize(configuration: Configuration) {
         val isDebug = isAppDebuggable(context)
@@ -447,6 +429,31 @@ internal class DatadogCore(
             _internalLogger,
             runnable
         )
+    }
+
+    /**
+     * Stops all process for this instance of the Datadog SDK.
+     */
+    internal fun stop() {
+        features.forEach {
+            it.value.stop()
+        }
+        features.clear()
+
+        coreFeature.stop()
+    }
+
+    /**
+     * Flushes all stored data (send everything right now).
+     */
+    internal fun flushStoredData() {
+        // We need to drain and shutdown the executors first to make sure we avoid duplicated
+        // data due to async operations.
+        coreFeature.drainAndShutdownExecutors()
+
+        features.values.forEach {
+            it.flushStoredData()
+        }
     }
 
     // endregion

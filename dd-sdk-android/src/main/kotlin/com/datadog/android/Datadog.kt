@@ -175,7 +175,7 @@ object Datadog {
     fun stopInstance(instanceName: String? = null) {
         synchronized(registry) {
             val instance = registry.unregister(instanceName)
-            instance?.stop()
+            (instance as? DatadogCore)?.stop()
         }
     }
 
@@ -231,7 +231,7 @@ object Datadog {
                             "type" to "flush_and_stop_monitor"
                         )
                     )
-                sdkCore.flushStoredData()
+                (sdkCore as? DatadogCore)?.flushStoredData()
             }
         }
     }
