@@ -152,6 +152,24 @@ internal class RumFeatureTest {
     }
 
     @Test
+    fun `𝕄 set sampling rate to 100 𝕎 initialize() {developer mode enabled}`() {
+        // Given
+        whenever(mockSdkCore.isDeveloperModeEnabled) doReturn true
+
+        // When
+        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.samplingRate).isEqualTo(RumFeature.ALL_IN_SAMPLING_RATE)
+        verify(mockSdkCore._internalLogger)
+            .log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                RumFeature.DEVELOPER_MODE_SAMPLING_RATE_CHANGED_MESSAGE
+            )
+    }
+
+    @Test
     fun `𝕄 store telemetry sampling rate 𝕎 initialize()`() {
         // When
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)

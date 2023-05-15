@@ -245,6 +245,61 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
+    fun `𝕄 not set isDeveloperModeEnabled 𝕎 initializing() {dev mode when debug, debug=false}`(
+        @IntForgery fakeFlags: Int
+    ) {
+        // Given
+        Datadog.setVerbosity(Int.MAX_VALUE)
+        appContext.fakeAppInfo.flags = fakeFlags and ApplicationInfo.FLAG_DEBUGGABLE.inv()
+        val configuration = Configuration.Builder(
+            crashReportsEnabled = true
+        )
+            .setUseDeveloperModeWhenDebuggable(true)
+            .build()
+
+        // When
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
+
+        // Then
+        assertThat(testedCore.isDeveloperModeEnabled)
+            .isFalse
+    }
+
+    @Test
+    fun `𝕄 set isDeveloperModeEnabled 𝕎 initializing() {dev mode when debug, debug=true}`(
+        @IntForgery fakeFlags: Int
+    ) {
+        // Given
+        appContext.fakeAppInfo.flags = fakeFlags or ApplicationInfo.FLAG_DEBUGGABLE
+        val configuration = Configuration.Builder(
+            crashReportsEnabled = true
+        )
+            .setUseDeveloperModeWhenDebuggable(true)
+            .build()
+
+        // When
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeInstanceId,
+            fakeInstanceName
+        ).apply {
+            initialize(configuration)
+        }
+
+        // Then
+        assertThat(testedCore.isDeveloperModeEnabled)
+            .isTrue
+    }
+
+    @Test
     fun `𝕄 submit core config telemetry 𝕎 initializing()`(
         forge: Forge
     ) {

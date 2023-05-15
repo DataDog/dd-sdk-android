@@ -37,6 +37,12 @@ interface InternalSdkCore : SdkCore {
     val rootStorageDir: File
 
     /**
+     * Shows if core is running in developer mode (some settings are overwritten to simplify
+     * debugging during app development).
+     */
+    val isDeveloperModeEnabled: Boolean
+
+    /**
      * Writes current RUM view event to the dedicated file for the needs of NDK crash reporting.
      *
      * @param data Serialized RUM view event.
