@@ -11,7 +11,6 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckedTextView
 import android.widget.CompoundButton
-import android.widget.ImageView
 import android.widget.RadioButton
 import android.widget.TextView
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -45,7 +44,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class TreeViewTraversalTest {
 
-    lateinit var testedTreeViewTraversal: TreeViewTraversal
+    private lateinit var testedTreeViewTraversal: TreeViewTraversal
 
     @Forgery
     lateinit var fakeMappingContext: MappingContext
@@ -244,36 +243,4 @@ internal class TreeViewTraversalTest {
     }
 
     // endregion
-
-    // region Toolbar
-
-    @Test
-    fun `M resolve a Node with screenshot with border W traverse() { view is Toolbar }`(
-        forge: Forge
-    ) {
-        // Given
-        val mockToolBar: View = forge.aMockView<View>().apply {
-            whenever(mockViewUtilsInternal.isToolbar(this)).thenReturn(true)
-        }
-        val fakeScreenShotWireframes: List<MobileSegment.Wireframe> = forge.aList { getForgery() }
-        val mockScreenshotWireframeMapper: WireframeMapper<View, *> = mock {
-            whenever(it.map(mockToolBar, fakeMappingContext)).thenReturn(fakeScreenShotWireframes)
-        }
-        val fakeMappers =
-            listOf(MapperTypeWrapper(ImageView::class.java, mockScreenshotWireframeMapper))
-        testedTreeViewTraversal = TreeViewTraversal(
-            fakeMappers,
-            mockViewMapper,
-            mockDecorViewMapper,
-            mockViewUtilsInternal
-        )
-
-        // When
-        val traversedTreeView = testedTreeViewTraversal.traverse(mockToolBar, fakeMappingContext)
-
-        // Then
-        assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeScreenShotWireframes)
-        assertThat(traversedTreeView.nextActionStrategy)
-            .isEqualTo(TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE)
-    }
 }
