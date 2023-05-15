@@ -619,7 +619,7 @@ internal class DatadogCoreTest {
         }
 
         assertThat(testedCore.contextProvider).isNull()
-
+        assertThat(testedCore.isActive).isFalse
         assertThat(testedCore.features).isEmpty()
     }
 

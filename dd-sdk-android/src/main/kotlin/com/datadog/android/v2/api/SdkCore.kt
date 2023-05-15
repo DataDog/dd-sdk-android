@@ -84,19 +84,9 @@ interface SdkCore {
     fun addUserProperties(extraInfo: Map<String, Any?>)
 
     /**
-     * Stops all process for this instance of the Datadog SDK.
-     */
-    fun stop()
-
-    /**
      * Clears all unsent data in all registered features.
      */
     fun clearAllData()
-
-    /**
-     * Flushes all stored data (send everything right now).
-     */
-    fun flushStoredData()
 
     // TODO RUMM-0000 Should feature context methods be moved into the FeatureScope maybe?
     /**

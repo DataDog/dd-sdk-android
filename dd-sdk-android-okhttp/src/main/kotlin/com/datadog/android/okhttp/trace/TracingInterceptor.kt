@@ -6,13 +6,13 @@
 
 package com.datadog.android.okhttp.trace
 
+import com.datadog.android.SdkReference
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.okhttp.utils.SdkReference
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.Feature

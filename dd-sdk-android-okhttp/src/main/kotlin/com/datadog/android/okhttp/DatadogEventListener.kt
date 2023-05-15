@@ -6,8 +6,8 @@
 
 package com.datadog.android.okhttp
 
+import com.datadog.android.SdkReference
 import com.datadog.android.okhttp.DatadogEventListener.Factory
-import com.datadog.android.okhttp.utils.SdkReference
 import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.event.ResourceTiming

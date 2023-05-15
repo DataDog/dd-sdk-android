@@ -53,11 +53,7 @@ internal class NoOpSdkCore : SdkCore {
 
     override fun addUserProperties(extraInfo: Map<String, Any?>) = Unit
 
-    override fun stop() = Unit
-
     override fun clearAllData() = Unit
-
-    override fun flushStoredData() = Unit
 
     override fun updateFeatureContext(
         featureName: String,

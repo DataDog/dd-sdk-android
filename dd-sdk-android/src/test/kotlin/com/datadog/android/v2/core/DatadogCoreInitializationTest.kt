@@ -105,7 +105,8 @@ internal class DatadogCoreInitializationTest {
         }
 
         // Then
-        assertThat(testedCore.coreFeature.initialized.get()).isTrue()
+        assertThat(testedCore.coreFeature.initialized.get()).isTrue
+        assertThat(testedCore.isActive).isTrue
         assertThat(testedCore.contextProvider).isNotNull
 
         assertThat(testedCore.getFeature(CrashReportsFeature.CRASH_FEATURE_NAME)).let {
