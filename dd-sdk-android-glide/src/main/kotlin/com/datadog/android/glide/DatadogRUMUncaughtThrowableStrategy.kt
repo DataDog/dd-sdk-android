@@ -7,10 +7,11 @@
 package com.datadog.android.glide
 
 import com.bumptech.glide.load.engine.executor.GlideExecutor
+import com.datadog.android.SdkReference
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.InternalLogger
 
 /**
  * A [GlideExecutor.UncaughtThrowableStrategy] implementation that will forward all errors
@@ -18,20 +19,38 @@ import com.datadog.android.v2.api.SdkCore
  *
  * @param name the name of the feature this strategy will be used for
  * (e.g.: "Disk Cache", "Source", …)
- * @param sdkCore the SDK instance to use.
+ * @param sdkInstanceName the SDK instance name to bind to, or null to check the default instance.
+ * Instrumentation won't be working until SDK instance is ready.
  */
 class DatadogRUMUncaughtThrowableStrategy(
     val name: String,
-    val sdkCore: SdkCore
+    private val sdkInstanceName: String? = null
 ) : GlideExecutor.UncaughtThrowableStrategy {
+
+    private val sdkReference = SdkReference(sdkInstanceName)
 
     // region GlideExecutor.UncaughtThrowableStrategy
 
     /** @inheritdoc */
     override fun handle(t: Throwable?) {
         if (t != null) {
-            GlobalRum.get(sdkCore)
-                .addError("Glide $name error", RumErrorSource.SOURCE, t, emptyMap())
+            val sdkCore = sdkReference.get()
+            if (sdkCore != null) {
+                GlobalRum.get(sdkCore)
+                    .addError("Glide $name error", RumErrorSource.SOURCE, t, emptyMap())
+            } else {
+                val prefix = if (sdkInstanceName == null) {
+                    "Default SDK instance"
+                } else {
+                    "SDK instance with name=$sdkInstanceName"
+                }
+                InternalLogger.UNBOUND.log(
+                    InternalLogger.Level.INFO,
+                    InternalLogger.Target.USER,
+                    "$prefix is not provided, skipping" +
+                        " reporting the Glide $name error"
+                )
+            }
         }
     }
 

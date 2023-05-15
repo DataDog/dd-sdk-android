@@ -9,9 +9,11 @@ package com.datadog.android.sqlite
 import android.database.DatabaseErrorHandler
 import android.database.DefaultDatabaseErrorHandler
 import android.database.sqlite.SQLiteDatabase
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -21,6 +23,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -53,6 +56,9 @@ internal class DatadogDatabaseErrorHandlerTest {
     @Mock
     lateinit var mockSqliteDatabase: SQLiteDatabase
 
+    @Mock
+    lateinit var mockRumMonitor: RumMonitor
+
     @StringForgery(regex = "[a-z]/[a-z]")
     lateinit var fakeDbPath: String
 
@@ -61,9 +67,15 @@ internal class DatadogDatabaseErrorHandlerTest {
 
     @BeforeEach
     fun `set up`() {
-        testedHandler = DatadogDatabaseErrorHandler({ rumMonitor.mockSdkCore }, mockDefaultHandler)
+        testedHandler = DatadogDatabaseErrorHandler(defaultErrorHandler = mockDefaultHandler)
         whenever(mockSqliteDatabase.path).thenReturn(fakeDbPath)
         whenever(mockSqliteDatabase.version).thenReturn(fakeDbVersion)
+        GlobalRum.registerIfAbsent(datadog.mockInstance, mockRumMonitor)
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        GlobalRum.clear()
     }
 
     @Test
@@ -73,7 +85,7 @@ internal class DatadogDatabaseErrorHandlerTest {
 
         // THEN
         val argumentCaptor = argumentCaptor<Map<String, Any?>>()
-        verify(rumMonitor.mockInstance).addError(
+        verify(mockRumMonitor).addError(
             eq(
                 String.format(
                     Locale.US,
@@ -104,9 +116,9 @@ internal class DatadogDatabaseErrorHandlerTest {
     }
 
     @Test
-    fun `M intialise with DefaultDatabaseHandler instance W none provided`() {
+    fun `M initialise with DefaultDatabaseHandler instance W none provided`() {
         // WHEN
-        testedHandler = DatadogDatabaseErrorHandler({ rumMonitor.mockSdkCore })
+        testedHandler = DatadogDatabaseErrorHandler()
 
         // THEN
         assertThat(testedHandler.defaultErrorHandler)
@@ -114,12 +126,12 @@ internal class DatadogDatabaseErrorHandlerTest {
     }
 
     companion object {
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val datadog = DatadogSingletonTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
+            return listOf(datadog)
         }
     }
 }
