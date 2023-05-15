@@ -6,10 +6,13 @@
 
 package com.datadog.android.glide
 
+import com.datadog.android.glide.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.v2.api.SdkCore
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.AfterEach
@@ -28,7 +31,8 @@ import java.lang.RuntimeException
 @Extensions(
     ExtendWith(
         MockitoExtension::class,
-        ForgeExtension::class
+        ForgeExtension::class,
+        TestConfigurationExtension::class
     )
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -39,17 +43,14 @@ internal class DatadogRUMUncaughtThrowableStrategyTest {
     @Mock
     lateinit var mockRumMonitor: RumMonitor
 
-    @Mock
-    lateinit var mockSdkCore: SdkCore
-
     @StringForgery
     lateinit var fakeName: String
 
     @BeforeEach
     fun `set up`() {
-        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        GlobalRum.registerIfAbsent(datadog.mockInstance, mockRumMonitor)
 
-        testedStrategy = DatadogRUMUncaughtThrowableStrategy(fakeName, mockSdkCore)
+        testedStrategy = DatadogRUMUncaughtThrowableStrategy(fakeName)
     }
 
     @AfterEach
@@ -77,5 +78,15 @@ internal class DatadogRUMUncaughtThrowableStrategyTest {
         testedStrategy.handle(null)
 
         verifyNoInteractions(mockRumMonitor)
+    }
+
+    companion object {
+        val datadog = DatadogSingletonTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(datadog)
+        }
     }
 }

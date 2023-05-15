@@ -64,7 +64,7 @@ import java.util.concurrent.atomic.AtomicReference
 @Suppress("TooManyFunctions", "StringLiteralDuplication")
 open class TracingInterceptor
 internal constructor(
-    sdkInstanceName: String?,
+    private val sdkInstanceName: String?,
     internal val tracedHosts: Map<String, Set<TracingHeaderType>>,
     internal val tracedRequestListener: TracedRequestListener,
     internal val traceOrigin: String?,
@@ -188,10 +188,15 @@ internal constructor(
     override fun intercept(chain: Interceptor.Chain): Response {
         val sdkCore = sdkCoreReference.get()
         if (sdkCore == null) {
+            val prefix = if (sdkInstanceName == null) {
+                "Default SDK instance"
+            } else {
+                "SDK instance with name=$sdkInstanceName"
+            }
             InternalLogger.UNBOUND.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                "SDK instance for OkHttp instrumentation is not provided, skipping" +
+                "$prefix for OkHttp instrumentation is found, skipping" +
                     " tracking of request with url=${chain.request().url()}"
             )
             return chain.proceed(chain.request())

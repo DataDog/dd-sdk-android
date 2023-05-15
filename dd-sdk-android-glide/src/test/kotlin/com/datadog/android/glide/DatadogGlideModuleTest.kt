@@ -31,11 +31,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.InputStream
 import java.util.concurrent.ExecutorService
@@ -73,14 +70,11 @@ internal class DatadogGlideModuleTest {
 
     @BeforeEach
     fun `set up`() {
-        testedModule = DatadogGlideModule({ mockSdkCore }, listOf(fakeHost))
+        testedModule = DatadogGlideModule(firstPartyHosts = listOf(fakeHost))
     }
 
     @Test
     fun `registers a custom OkHttpLoader`() {
-        // Given
-        whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
-
         // When
         testedModule.registerComponents(mockContext, mockGlide, mockRegistry)
 

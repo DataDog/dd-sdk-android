@@ -15,11 +15,9 @@ import com.bumptech.glide.load.engine.executor.GlideExecutor.newDiskCacheBuilder
 import com.bumptech.glide.load.engine.executor.GlideExecutor.newSourceBuilder
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.module.AppGlideModule
-import com.datadog.android.Datadog
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.okhttp.DatadogEventListener
 import com.datadog.android.okhttp.DatadogInterceptor
-import com.datadog.android.v2.api.SdkCore
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.InputStream
@@ -31,7 +29,8 @@ import java.io.InputStream
  * This sets up an OkHttp based downloader that will send Traces and RUM Resource events.
  * Also any Glide related error (Disk cache, source transformation, …) will be sent as RUM Errors.
  *
- * @param sdkCoreProvider a provider for the SDK instance to use.
+ * @param sdkInstanceName the SDK instance name to bind to, or null to check the default instance.
+ * Instrumentation won't be working until SDK instance is ready.
  * @param firstPartyHosts the list of first party hosts.
  * Requests made to a URL with any one of these hosts (or any subdomain) will:
  * - be considered a first party RUM Resource and categorised as such in your RUM dashboard;
@@ -44,8 +43,7 @@ import java.io.InputStream
  */
 open class DatadogGlideModule
 @JvmOverloads constructor(
-    // TODO RUMM-3196 Maybe change provider to the instance name?
-    private val sdkCoreProvider: () -> SdkCore = { Datadog.getInstance() },
+    private val sdkInstanceName: String? = null,
     private val firstPartyHosts: List<String> = emptyList(),
     private val samplingRate: Float = DEFAULT_SAMPLING_RATE
 ) : AppGlideModule() {
@@ -62,12 +60,14 @@ open class DatadogGlideModule
 
     /** @inheritdoc */
     override fun applyOptions(context: Context, builder: GlideBuilder) {
-        val sdkCore = sdkCoreProvider.invoke()
-
         val diskExecutorBuilder = newDiskCacheBuilder()
         val sourceExecutorBuilder = newSourceBuilder()
-        diskExecutorBuilder.setUncaughtThrowableStrategy(DatadogRUMUncaughtThrowableStrategy("Disk Cache", sdkCore))
-        sourceExecutorBuilder.setUncaughtThrowableStrategy(DatadogRUMUncaughtThrowableStrategy("Source", sdkCore))
+        diskExecutorBuilder.setUncaughtThrowableStrategy(
+            DatadogRUMUncaughtThrowableStrategy("Disk Cache", sdkInstanceName)
+        )
+        sourceExecutorBuilder.setUncaughtThrowableStrategy(
+            DatadogRUMUncaughtThrowableStrategy("Source", sdkInstanceName)
+        )
         builder.setDiskCacheExecutor(diskExecutorBuilder.build())
         builder.setSourceExecutor(sourceExecutorBuilder.build())
     }
@@ -86,11 +86,10 @@ open class DatadogGlideModule
     open fun getClientBuilder(): OkHttpClient.Builder {
         val builder = OkHttpClient.Builder()
 
-        val sdkCore = sdkCoreProvider.invoke()
-        builder.eventListenerFactory(DatadogEventListener.Factory(sdkCore.name))
+        builder.eventListenerFactory(DatadogEventListener.Factory(sdkInstanceName))
         builder.addInterceptor(
             DatadogInterceptor(
-                sdkCore.name,
+                sdkInstanceName,
                 firstPartyHosts,
                 traceSampler = RateBasedSampler(samplingRate)
             )
