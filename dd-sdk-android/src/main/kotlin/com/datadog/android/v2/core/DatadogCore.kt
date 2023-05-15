@@ -132,6 +132,10 @@ internal class DatadogCore(
     override val _internalLogger: InternalLogger = internalLoggerProvider(this)
 
     /** @inheritDoc */
+    override var isDeveloperModeEnabled: Boolean = false
+        private set
+
+    /** @inheritDoc */
     override fun registerFeature(feature: Feature) {
         val sdkFeature = SdkFeature(
             coreFeature,
@@ -282,6 +286,7 @@ internal class DatadogCore(
         var mutableConfig = configuration
         if (isDebug and configuration.coreConfig.enableDeveloperModeWhenDebuggable) {
             mutableConfig = modifyConfigurationForDeveloperDebug(configuration)
+            isDeveloperModeEnabled = true
             Datadog.setVerbosity(Log.VERBOSE)
         }
 
@@ -319,10 +324,6 @@ internal class DatadogCore(
                 batchSize = BatchSize.SMALL,
                 uploadFrequency = UploadFrequency.FREQUENT
             )
-            // TODO RUMM-0000 RUM is not a part of the core anymore, need to find another way.
-//            rumConfig = configuration.rumConfig?.copy(
-//                samplingRate = 100.0f
-//            )
         )
     }
 

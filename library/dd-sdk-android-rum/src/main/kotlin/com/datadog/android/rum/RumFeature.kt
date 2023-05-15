@@ -140,7 +140,16 @@ class RumFeature internal constructor(
             sdkCore as InternalSdkCore
         )
 
-        samplingRate = configuration.samplingRate
+        samplingRate = if (sdkCore.isDeveloperModeEnabled) {
+            sdkCore._internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                DEVELOPER_MODE_SAMPLING_RATE_CHANGED_MESSAGE
+            )
+            ALL_IN_SAMPLING_RATE
+        } else {
+            configuration.samplingRate
+        }
         telemetrySamplingRate = configuration.telemetrySamplingRate
         telemetryConfigurationSamplingRate = configuration.telemetryConfigurationSamplingRate
         backgroundEventTracking = configuration.backgroundEventTracking
@@ -764,6 +773,7 @@ class RumFeature internal constructor(
 
     internal companion object {
 
+        internal const val ALL_IN_SAMPLING_RATE: Float = 100f
         internal const val DEFAULT_SAMPLING_RATE: Float = 100f
         internal const val DEFAULT_TELEMETRY_SAMPLING_RATE: Float = 20f
         internal const val DEFAULT_TELEMETRY_CONFIGURATION_SAMPLING_RATE: Float = 20f
@@ -819,6 +829,8 @@ class RumFeature internal constructor(
                 " where mandatory message field is either missing or has a wrong type."
         internal const val TELEMETRY_MISSING_MESSAGE_FIELD = "RUM feature received a telemetry" +
             " event, but mandatory message field is either missing or has a wrong type."
+        internal const val DEVELOPER_MODE_SAMPLING_RATE_CHANGED_MESSAGE =
+            "Developer mode enabled, setting RUM sampling rate to 100%."
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,

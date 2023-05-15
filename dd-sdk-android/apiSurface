@@ -331,6 +331,7 @@ interface com.datadog.android.v2.core.InternalSdkCore : com.datadog.android.v2.a
   val networkInfo: com.datadog.android.v2.api.context.NetworkInfo
   val trackingConsent: com.datadog.android.privacy.TrackingConsent
   val rootStorageDir: java.io.File
+  val isDeveloperModeEnabled: Boolean
   fun writeLastViewEvent(ByteArray)
   fun getPersistenceExecutorService(): java.util.concurrent.ExecutorService
   fun getAllFeatures(): List<com.datadog.android.v2.api.FeatureScope>
