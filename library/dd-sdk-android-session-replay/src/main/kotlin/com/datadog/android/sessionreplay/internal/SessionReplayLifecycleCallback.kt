@@ -12,6 +12,9 @@ import android.os.Bundle
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
+import com.datadog.android.sessionreplay.internal.recorder.ComposedOptionSelectorDetector
+import com.datadog.android.sessionreplay.internal.recorder.DefaultOptionSelectorDetector
+import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.TreeViewTraversal
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
@@ -33,7 +36,8 @@ internal class SessionReplayLifecycleCallback(
     recordWriter: RecordWriter,
     timeProvider: TimeProvider,
     recordCallback: RecordCallback = NoOpRecordCallback(),
-    customMappers: List<MapperTypeWrapper> = emptyList()
+    customMappers: List<MapperTypeWrapper> = emptyList(),
+    customOptionSelectorDetectors: List<OptionSelectorDetector> = emptyList()
 ) : LifecycleCallback {
 
     @Suppress("UnsafeThirdPartyFunctionCall") // workQueue can't be null
@@ -53,7 +57,12 @@ internal class SessionReplayLifecycleCallback(
     )
     internal var viewOnDrawInterceptor = ViewOnDrawInterceptor(
         processor,
-        SnapshotProducer(TreeViewTraversal(customMappers + privacy.mappers()))
+        SnapshotProducer(
+            TreeViewTraversal(customMappers + privacy.mappers()),
+            ComposedOptionSelectorDetector(
+                customOptionSelectorDetectors + DefaultOptionSelectorDetector()
+            )
+        )
     )
 
     internal var windowCallbackInterceptor =

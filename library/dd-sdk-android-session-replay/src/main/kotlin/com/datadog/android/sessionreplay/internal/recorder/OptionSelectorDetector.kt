@@ -7,28 +7,18 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.ViewGroup
-import androidx.appcompat.widget.AppCompatSpinner
 
-internal class OptionSelectorDetector {
-    fun isOptionSelector(view: ViewGroup): Boolean {
-        val parentClassName = view.javaClass.canonicalName ?: ""
-        return parentClassName in OPTION_SELECTORS_CLASS_NAMES_SET ||
-            AppCompatSpinner::class.java.isAssignableFrom(view::class.java)
-    }
+/**
+ * Detects if a [ViewGroup] is a parent of selectable UI elements
+ * (e.g. TextView, CheckBoxes, etc.).
+ * This interface is meant for internal usage but feel free to provide an implementation
+ * through the [com.datadog.android.sessionreplay.ExtensionSupport] if you need it.
+ */
+interface OptionSelectorDetector {
 
-    companion object {
-        private const val DROP_DOWN_LIST_CLASS_NAME = "android.widget.DropDownListView"
-        private const val APPCOMPAT_DROP_DOWN_LIST_CLASS_NAME =
-            "androidx.appcompat.widget.DropDownListView"
-        private const val MATERIAL_TIME_PICKER_CLASS_NAME =
-            "com.google.android.material.timepicker.TimePickerView"
-        private const val MATERIAL_CALENDAR_GRID_CLASS_NAME =
-            "com.google.android.material.datepicker.MaterialCalendarGridView"
-        private val OPTION_SELECTORS_CLASS_NAMES_SET = setOf(
-            DROP_DOWN_LIST_CLASS_NAME,
-            APPCOMPAT_DROP_DOWN_LIST_CLASS_NAME,
-            MATERIAL_TIME_PICKER_CLASS_NAME,
-            MATERIAL_CALENDAR_GRID_CLASS_NAME
-        )
-    }
+    /**
+     * Checks and returns true if this [ViewGroup] is considered as a container of selectable UI
+     * elements, otherwise returns false.
+     */
+    fun isOptionSelector(view: ViewGroup): Boolean
 }
