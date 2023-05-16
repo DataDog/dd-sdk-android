@@ -45,10 +45,12 @@ internal class UnsupportedViewMapperTest : BaseTextViewWireframeMapperTest() {
 
     @BeforeEach
     fun setup() {
-        whenever(mockViewUtils.resolveViewGlobalBounds(
-                        mockUnsupportedView,
-                        fakeMappingContext.systemInformation.screenDensity
-                )).thenReturn(fakeViewGlobalBounds)
+        whenever(
+            mockViewUtils.resolveViewGlobalBounds(
+                mockUnsupportedView,
+                fakeMappingContext.systemInformation.screenDensity
+            )
+        ).thenReturn(fakeViewGlobalBounds)
 
         testedUnsupportedViewMapper = UnsupportedViewMapper()
     }
@@ -57,7 +59,9 @@ internal class UnsupportedViewMapperTest : BaseTextViewWireframeMapperTest() {
     fun `M resolve with the class name of the View W map()`() {
         // When
         val wireframes = testedUnsupportedViewMapper.map(
-                mockUnsupportedView, fakeMappingContext)
+            mockUnsupportedView,
+            fakeMappingContext
+        )
 
         // Then
         Assertions.assertThat(wireframes[0].text)

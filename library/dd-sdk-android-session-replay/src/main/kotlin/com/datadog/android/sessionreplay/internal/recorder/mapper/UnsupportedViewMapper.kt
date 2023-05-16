@@ -31,7 +31,7 @@ internal class UnsupportedViewMapper :
                 border = resolveBorder(),
                 text = view::class.java.name,
                 textStyle = resolveTextStyle(),
-                textPosition = resolveTextPosition(),
+                textPosition = resolveTextPosition()
             )
         )
     }
@@ -39,38 +39,38 @@ internal class UnsupportedViewMapper :
     // region Internal
 
     private fun resolveTextStyle():
-            MobileSegment.TextStyle{
+        MobileSegment.TextStyle {
         return MobileSegment.TextStyle(
-                family = SANS_SERIF_FAMILY_NAME,
-                size = LABEL_TEXT_SIZE,
-                color = TEXT_COLOR
+            family = SANS_SERIF_FAMILY_NAME,
+            size = LABEL_TEXT_SIZE,
+            color = TEXT_COLOR
         )
     }
 
     private fun resolveTextPosition():
-            MobileSegment.TextPosition {
+        MobileSegment.TextPosition {
         return MobileSegment.TextPosition(
-                alignment = MobileSegment.Alignment(
-                        horizontal = MobileSegment.Horizontal.CENTER,
-                        vertical = MobileSegment.Vertical.CENTER
-                )
+            alignment = MobileSegment.Alignment(
+                horizontal = MobileSegment.Horizontal.CENTER,
+                vertical = MobileSegment.Vertical.CENTER
+            )
         )
     }
 
     private fun resolveBorder():
-            MobileSegment.ShapeBorder {
+        MobileSegment.ShapeBorder {
         return MobileSegment.ShapeBorder(
-                color = BORDER_COLOR,
-                width = BORDER_WIDTH
+            color = BORDER_COLOR,
+            width = BORDER_WIDTH
         )
     }
 
     private fun resolveShapeStyle(view: View):
-            MobileSegment.ShapeStyle {
+        MobileSegment.ShapeStyle {
         return MobileSegment.ShapeStyle(
-                backgroundColor = BACKGROUND_COLOR,
-                opacity = view.alpha,
-                cornerRadius = CORNER_RADIUS
+            backgroundColor = BACKGROUND_COLOR,
+            opacity = view.alpha,
+            cornerRadius = CORNER_RADIUS
         )
     }
 
