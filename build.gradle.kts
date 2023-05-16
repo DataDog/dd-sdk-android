@@ -295,7 +295,7 @@ tasks.register("printSdkDebugRuntimeClasspath") {
                 val ext =
                     subproject.extensions.findByType(LibraryExtension::class.java) ?: return@doLast
                 val classpath = ext.libraryVariants
-                    .filter { it.name == "debug" }
+                    .filter { it.name == "jvmDebug" || it.name == "debug" }
                     .map {
                         // returns also test part of classpath for now, no idea how to filter it out
                         it.getCompileClasspath(null).filter { it.exists() }

@@ -33,6 +33,7 @@ internal class ConsentAwareFileMigrator(
         operation.run()
     }
 
+    @WorkerThread
     private fun resolveMigrationOperation(
         previousState: TrackingConsent?,
         newState: TrackingConsent,

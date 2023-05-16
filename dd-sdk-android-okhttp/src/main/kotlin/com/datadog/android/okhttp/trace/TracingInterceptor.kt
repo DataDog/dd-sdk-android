@@ -199,6 +199,7 @@ internal constructor(
                 "$prefix for OkHttp instrumentation is found, skipping" +
                     " tracking of request with url=${chain.request().url()}"
             )
+            @Suppress("UnsafeThirdPartyFunctionCall") // we are in method which allows throwing IOException
             return chain.proceed(chain.request())
         } else {
             val tracer = resolveTracer(sdkCore)

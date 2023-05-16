@@ -92,6 +92,7 @@ internal open class ConsentAwareFileOrchestrator(
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             executorService.submit {
+                @Suppress("ThreadSafety") // we are in the worker thread context
                 dataMigrator.migrateData(
                     previousConsent,
                     previousOrchestrator,
