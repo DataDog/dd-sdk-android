@@ -79,7 +79,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeSystemInformation
+            fakeMappingContext
         )
 
         // Then
@@ -129,7 +129,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeSystemInformation
+            fakeMappingContext
         )
 
         // Then
@@ -153,7 +153,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeSystemInformation
+            fakeMappingContext
         )
 
         // Then

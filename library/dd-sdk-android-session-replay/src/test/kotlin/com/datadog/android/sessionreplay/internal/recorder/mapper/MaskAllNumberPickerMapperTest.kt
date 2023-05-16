@@ -27,7 +27,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class MaskAllNumberPickerMapperTest : BaseNumberPickerMapperTest() {
 
-    override fun provideTestInstance(): NumberPickerMapper {
+    override fun provideTestInstance(): BasePickerMapper {
         return MaskAllNumberPickerMapper(
             mockStringUtils,
             mockViewUtils,
@@ -39,27 +39,19 @@ internal class MaskAllNumberPickerMapperTest : BaseNumberPickerMapperTest() {
     fun `M map the NumberPicker to a list of wireframes W map()`() {
         // Given
         val expectedSelectedLabelValue = "xxx"
-        val expectedPrevLabelValue = "xxx"
-        val expectedNextLabelValue = "xxx"
-        val expectedPrevLabelWireframe = fakePrevLabelWireframe()
-            .copy(text = expectedPrevLabelValue)
         val expectedTopDividerWireframe = fakeTopDividerWireframe()
         val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
             .copy(text = expectedSelectedLabelValue)
         val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
-        val expectedNextLabelWireframe = fakeNextLabelWireframe()
-            .copy(text = expectedNextLabelValue)
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
 
         // Then
         assertThat(wireframes).isEqualTo(
             listOf(
-                expectedPrevLabelWireframe,
                 expectedTopDividerWireframe,
                 expectedSelectedLabelWireframe,
-                expectedBottomDividerWireframe,
-                expectedNextLabelWireframe
+                expectedBottomDividerWireframe
             )
         )
     }
@@ -70,27 +62,19 @@ internal class MaskAllNumberPickerMapperTest : BaseNumberPickerMapperTest() {
         fakeValue = fakeMaxValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val expectedSelectedLabelValue = "xxx"
-        val expectedPrevLabelValue = "xxx"
-        val expectedNextLabelValue = "xxx"
-        val expectedPrevLabelWireframe = fakePrevLabelWireframe()
-            .copy(text = expectedPrevLabelValue)
         val expectedTopDividerWireframe = fakeTopDividerWireframe()
         val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
             .copy(text = expectedSelectedLabelValue)
         val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
-        val expectedNextLabelWireframe = fakeNextLabelWireframe()
-            .copy(text = expectedNextLabelValue)
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
 
         // Then
         assertThat(wireframes).isEqualTo(
             listOf(
-                expectedPrevLabelWireframe,
                 expectedTopDividerWireframe,
                 expectedSelectedLabelWireframe,
-                expectedBottomDividerWireframe,
-                expectedNextLabelWireframe
+                expectedBottomDividerWireframe
             )
         )
     }
@@ -101,28 +85,20 @@ internal class MaskAllNumberPickerMapperTest : BaseNumberPickerMapperTest() {
         fakeValue = fakeMinValue
         whenever(mockNumberPicker.value).thenReturn(fakeValue)
         val expectedSelectedLabelValue = "xxx"
-        val expectedPrevLabelValue = "xxx"
-        val expectedNextLabelValue = "xxx"
-        val expectedPrevLabelWireframe = fakePrevLabelWireframe()
-            .copy(text = expectedPrevLabelValue)
         val expectedTopDividerWireframe = fakeTopDividerWireframe()
         val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
             .copy(text = expectedSelectedLabelValue)
         val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
-        val expectedNextLabelWireframe = fakeNextLabelWireframe()
-            .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
 
         // Then
         assertThat(wireframes).isEqualTo(
             listOf(
-                expectedPrevLabelWireframe,
                 expectedTopDividerWireframe,
                 expectedSelectedLabelWireframe,
-                expectedBottomDividerWireframe,
-                expectedNextLabelWireframe
+                expectedBottomDividerWireframe
             )
         )
     }
@@ -136,27 +112,19 @@ internal class MaskAllNumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .toTypedArray()
         whenever(mockNumberPicker.displayedValues).thenReturn(fakeDisplayedValues)
         val expectedSelectedLabelValue = "xxx"
-        val expectedPrevLabelValue = "xxx"
-        val expectedNextLabelValue = "xxx"
-        val expectedPrevLabelWireframe = fakePrevLabelWireframe()
-            .copy(text = expectedPrevLabelValue)
         val expectedTopDividerWireframe = fakeTopDividerWireframe()
         val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
             .copy(text = expectedSelectedLabelValue)
         val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
-        val expectedNextLabelWireframe = fakeNextLabelWireframe()
-            .copy(text = expectedNextLabelValue)
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
 
         // Then
         assertThat(wireframes).isEqualTo(
             listOf(
-                expectedPrevLabelWireframe,
                 expectedTopDividerWireframe,
                 expectedSelectedLabelWireframe,
-                expectedBottomDividerWireframe,
-                expectedNextLabelWireframe
+                expectedBottomDividerWireframe
             )
         )
     }
@@ -172,27 +140,19 @@ internal class MaskAllNumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .toTypedArray()
         whenever(mockNumberPicker.displayedValues).thenReturn(fakeDisplayedValues)
         val expectedSelectedLabelValue = "xxx"
-        val expectedPrevLabelValue = "xxx"
-        val expectedNextLabelValue = "xxx"
-        val expectedPrevLabelWireframe = fakePrevLabelWireframe()
-            .copy(text = expectedPrevLabelValue)
         val expectedTopDividerWireframe = fakeTopDividerWireframe()
         val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
             .copy(text = expectedSelectedLabelValue)
         val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
-        val expectedNextLabelWireframe = fakeNextLabelWireframe()
-            .copy(text = expectedNextLabelValue)
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
 
         // Then
         assertThat(wireframes).isEqualTo(
             listOf(
-                expectedPrevLabelWireframe,
                 expectedTopDividerWireframe,
                 expectedSelectedLabelWireframe,
-                expectedBottomDividerWireframe,
-                expectedNextLabelWireframe
+                expectedBottomDividerWireframe
             )
         )
     }
@@ -208,28 +168,20 @@ internal class MaskAllNumberPickerMapperTest : BaseNumberPickerMapperTest() {
             .toTypedArray()
         whenever(mockNumberPicker.displayedValues).thenReturn(fakeDisplayedValues)
         val expectedSelectedLabelValue = "xxx"
-        val expectedPrevLabelValue = "xxx"
-        val expectedNextLabelValue = "xxx"
-        val expectedPrevLabelWireframe = fakePrevLabelWireframe()
-            .copy(text = expectedPrevLabelValue)
         val expectedTopDividerWireframe = fakeTopDividerWireframe()
         val expectedSelectedLabelWireframe = fakeSelectedLabelWireframe()
             .copy(text = expectedSelectedLabelValue)
         val expectedBottomDividerWireframe = fakeBottomDividerWireframe()
-        val expectedNextLabelWireframe = fakeNextLabelWireframe()
-            .copy(text = expectedNextLabelValue)
 
         // When
-        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)
+        val wireframes = testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)
 
         // Then
         assertThat(wireframes).isEqualTo(
             listOf(
-                expectedPrevLabelWireframe,
                 expectedTopDividerWireframe,
                 expectedSelectedLabelWireframe,
-                expectedBottomDividerWireframe,
-                expectedNextLabelWireframe
+                expectedBottomDividerWireframe
             )
         )
     }

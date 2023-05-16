@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.material
 
 import android.content.res.ColorStateList
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.material.internal.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -25,7 +25,7 @@ internal open class SliderWireframeMapper(
     WireframeMapper<Slider, MobileSegment.Wireframe> {
 
     @Suppress("LongMethod")
-    override fun map(view: Slider, systemInformation: SystemInformation):
+    override fun map(view: Slider, mappingContext: MappingContext):
         List<MobileSegment.Wireframe> {
         val activeTrackId = uniqueIdentifierGenerator
             .resolveChildUniqueIdentifier(view, TRACK_ACTIVE_KEY_NAME)
@@ -37,7 +37,7 @@ internal open class SliderWireframeMapper(
             return emptyList()
         }
 
-        val screenDensity = systemInformation.screenDensity
+        val screenDensity = mappingContext.systemInformation.screenDensity
         val viewGlobalBounds = viewUtils.resolveViewGlobalBounds(view, screenDensity)
         val normalizedSliderValue = view.normalizedValue()
         val viewAlpha = view.alpha

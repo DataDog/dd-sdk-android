@@ -9,14 +9,14 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.widget.Checkable
 import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
 internal abstract class CheckableTextViewMapper<T>(
-    private val textWireframeMapper: TextWireframeMapper,
+    private val textWireframeMapper: TextViewMapper,
     private val stringUtils: StringUtils = StringUtils,
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator,
     viewUtils: ViewUtils = ViewUtils
@@ -24,19 +24,22 @@ internal abstract class CheckableTextViewMapper<T>(
 
     // region CheckableWireframeMapper
 
-    override fun resolveMainWireframes(view: T, systemInformation: SystemInformation):
+    override fun resolveMainWireframes(view: T, mappingContext: MappingContext):
         List<MobileSegment.Wireframe> {
-        return textWireframeMapper.map(view, systemInformation)
+        return textWireframeMapper.map(view, mappingContext)
     }
 
-    override fun resolveCheckedCheckable(view: T, systemInformation: SystemInformation):
+    override fun resolveCheckedCheckable(view: T, mappingContext: MappingContext):
         List<MobileSegment.Wireframe>? {
         val checkableId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
             view,
             CHECKABLE_KEY_NAME
         ) ?: return null
         val checkBoxColor = resolveCheckableColor(view)
-        val checkBoxBounds = resolveCheckableBounds(view, systemInformation.screenDensity)
+        val checkBoxBounds = resolveCheckableBounds(
+            view,
+            mappingContext.systemInformation.screenDensity
+        )
         val shapeStyle = resolveCheckedShapeStyle(view, checkBoxColor)
         val shapeBorder = resolveCheckedShapeBorder(view, checkBoxColor)
         return listOf(
@@ -52,14 +55,17 @@ internal abstract class CheckableTextViewMapper<T>(
         )
     }
 
-    override fun resolveNotCheckedCheckable(view: T, systemInformation: SystemInformation):
+    override fun resolveNotCheckedCheckable(view: T, mappingContext: MappingContext):
         List<MobileSegment.Wireframe>? {
         val checkableId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
             view,
             CHECKABLE_KEY_NAME
         ) ?: return null
         val checkBoxColor = resolveCheckableColor(view)
-        val checkBoxBounds = resolveCheckableBounds(view, systemInformation.screenDensity)
+        val checkBoxBounds = resolveCheckableBounds(
+            view,
+            mappingContext.systemInformation.screenDensity
+        )
         val shapeBorder = resolveNotCheckedShapeBorder(view, checkBoxColor)
         val shapeStyle = resolveNotCheckedShapeStyle(view, checkBoxColor)
         return listOf(

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/default_padding"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <TextView
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/default_password_label_view"
+        android:text="@string/default_password_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <androidx.appcompat.widget.AppCompatEditText
+        app:layout_constraintTop_toBottomOf="@+id/default_password_label_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/default_password_view"
+        android:inputType="textPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+  <TextView
+        app:layout_constraintTop_toBottomOf="@+id/default_password_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/visible_password_label_view"
+      android:text="@string/visible_password_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+  <androidx.appcompat.widget.AppCompatEditText
+        app:layout_constraintTop_toBottomOf="@+id/visible_password_label_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/visible_password_view"
+        android:inputType="textVisiblePassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        app:layout_constraintTop_toBottomOf="@+id/visible_password_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/number_password_label_view"
+        android:text="@string/number_password_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <androidx.appcompat.widget.AppCompatEditText
+        app:layout_constraintTop_toBottomOf="@+id/number_password_label_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/number_password_view"
+        android:inputType="numberPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        app:layout_constraintTop_toBottomOf="@+id/number_password_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/web_password_label_view"
+        android:layout_width="match_parent"
+        android:text="@string/web_password_label"
+        android:layout_height="wrap_content" />
+
+    <androidx.appcompat.widget.AppCompatEditText
+        app:layout_constraintTop_toBottomOf="@+id/web_password_label_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/web_password_view"
+        android:layout_width="match_parent"
+        android:inputType="textWebPassword"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        app:layout_constraintTop_toBottomOf="@+id/web_password_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/email_label_view"
+        android:layout_width="match_parent"
+        android:text="@string/email_label"
+        android:layout_height="wrap_content" />
+
+    <androidx.appcompat.widget.AppCompatEditText
+        app:layout_constraintTop_toBottomOf="@+id/email_label_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/email_view"
+        android:layout_width="match_parent"
+        android:inputType="textEmailAddress"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        app:layout_constraintTop_toBottomOf="@+id/email_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/web_email_label_view"
+        android:layout_width="match_parent"
+        android:text="@string/web_email_label"
+        android:layout_height="wrap_content" />
+
+    <androidx.appcompat.widget.AppCompatEditText
+        app:layout_constraintTop_toBottomOf="@+id/web_email_label_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/web_email_view"
+        android:layout_width="match_parent"
+        android:inputType="textWebEmailAddress"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        app:layout_constraintTop_toBottomOf="@+id/web_email_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/postal_address_label_view"
+        android:layout_width="match_parent"
+        android:text="@string/postal_address_label"
+        android:layout_height="wrap_content" />
+
+    <androidx.appcompat.widget.AppCompatEditText
+        app:layout_constraintTop_toBottomOf="@+id/postal_address_label_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/postal_address_view"
+        android:layout_width="match_parent"
+        android:inputType="textPostalAddress"
+        android:layout_height="wrap_content" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

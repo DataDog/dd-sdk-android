@@ -24,7 +24,7 @@ internal class TreeViewTraversal(
     @Suppress("ReturnCount")
     fun traverse(
         view: View,
-        systemInformation: SystemInformation
+        mappingContext: MappingContext
     ): TraversedTreeView {
         if (viewUtilsInternal.isNotVisible(view) ||
             viewUtilsInternal.isSystemNoise(view)
@@ -38,7 +38,7 @@ internal class TreeViewTraversal(
             // and we cannot actually get all the details here.
             val toolbarWireframes = mappers
                 .findFirstForType(ImageView::class.java)
-                ?.map(view, systemInformation) ?: emptyList()
+                ?.map(view, mappingContext) ?: emptyList()
 
             return TraversedTreeView(toolbarWireframes, TraversalStrategy.STOP_AND_RETURN_NODE)
         }
@@ -51,13 +51,13 @@ internal class TreeViewTraversal(
 
         if (exhaustiveTypeMapper != null) {
             traversalStrategy = TraversalStrategy.STOP_AND_RETURN_NODE
-            resolvedWireframes = exhaustiveTypeMapper.map(view, systemInformation)
+            resolvedWireframes = exhaustiveTypeMapper.map(view, mappingContext)
         } else if (isDecorView(view)) {
             traversalStrategy = TraversalStrategy.TRAVERSE_ALL_CHILDREN
-            resolvedWireframes = decorViewMapper.map(view, systemInformation)
+            resolvedWireframes = decorViewMapper.map(view, mappingContext)
         } else {
             traversalStrategy = TraversalStrategy.TRAVERSE_ALL_CHILDREN
-            resolvedWireframes = viewMapper.map(view, systemInformation)
+            resolvedWireframes = viewMapper.map(view, mappingContext)
         }
 
         return TraversedTreeView(resolvedWireframes, traversalStrategy)

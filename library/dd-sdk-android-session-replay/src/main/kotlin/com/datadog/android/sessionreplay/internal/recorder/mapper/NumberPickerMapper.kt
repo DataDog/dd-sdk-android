@@ -9,8 +9,8 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.os.Build
 import android.widget.NumberPicker
 import androidx.annotation.RequiresApi
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
@@ -21,9 +21,9 @@ internal open class NumberPickerMapper(
     stringUtils: StringUtils = StringUtils,
     private val viewUtils: ViewUtils = ViewUtils,
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator
-) : BaseWireframeMapper<NumberPicker, MobileSegment.Wireframe>(stringUtils, viewUtils) {
+) : BasePickerMapper(stringUtils, viewUtils) {
 
-    override fun map(view: NumberPicker, systemInformation: SystemInformation):
+    override fun map(view: NumberPicker, mappingContext: MappingContext):
         List<MobileSegment.Wireframe> {
         val prevIndexLabelId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
             view,
@@ -55,7 +55,7 @@ internal open class NumberPickerMapper(
         ) {
             return map(
                 view,
-                systemInformation,
+                mappingContext.systemInformation,
                 prevIndexLabelId,
                 topDividerId,
                 selectedIndexLabelId,
@@ -82,22 +82,19 @@ internal open class NumberPickerMapper(
             view,
             screenDensity
         )
-        val currentIndex = view.value
-        val prevIndex = view.getPrevIndex()
-        val nextIndex = view.getNextIndex()
-        val textSize = view.textSize.toLong().densityNormalized(screenDensity)
+        val textSize = resolveTextSize(view, screenDensity)
         val labelHeight = textSize * 2
-        val paddingStart = view.paddingStart.densityNormalized(screenDensity)
-        val paddingEnd = view.paddingEnd.densityNormalized(screenDensity)
-        val textColor = colorAndAlphaAsStringHexa(view.textColor, OPAQUE_ALPHA_VALUE)
+        val paddingStart = resolveDividerPaddingStart(view, screenDensity)
+        val paddingEnd = resolveDividerPaddingEnd(view, screenDensity)
+        val textColor = resolveSelectedTextColor(view)
         val nextPrevLabelTextColor = colorAndAlphaAsStringHexa(
             view.textColor,
             PARTIALLY_OPAQUE_ALPHA_VALUE
         )
-        val padding = PADDING_IN_PX.densityNormalized(screenDensity)
-        val selectedLabelYPos = viewGlobalBounds.y + (viewGlobalBounds.height - labelHeight) / 2
-        val dividerHeight = DIVIDER_HEIGHT_IN_PX
-            .densityNormalized(screenDensity)
+        val padding = resolvePadding(screenDensity)
+        val selectedLabelYPos = resolveSelectedLabelYPos(viewGlobalBounds, labelHeight)
+        val dividerHeight = resolveDividerHeight(screenDensity)
+
         val topDividerYPos = selectedLabelYPos - dividerHeight - padding
         val bottomDividerYPos = selectedLabelYPos + labelHeight + padding
         val prevLabelYPos = topDividerYPos - labelHeight - padding
@@ -110,7 +107,7 @@ internal open class NumberPickerMapper(
             prevLabelYPos,
             labelHeight,
             viewGlobalBounds.width,
-            resolveLabelValue(view, prevIndex),
+            resolvePrevLabelValue(view),
             textSize,
             nextPrevLabelTextColor
         )
@@ -128,7 +125,7 @@ internal open class NumberPickerMapper(
             selectedLabelYPos,
             labelHeight,
             viewGlobalBounds.width,
-            resolveLabelValue(view, currentIndex),
+            resolveSelectedLabelValue(view),
             textSize,
             textColor
         )
@@ -146,7 +143,7 @@ internal open class NumberPickerMapper(
             nextLabelYPos,
             labelHeight,
             viewGlobalBounds.width,
-            resolveLabelValue(view, nextIndex),
+            resolveNextLabelValue(view),
             textSize,
             nextPrevLabelTextColor
         )
@@ -159,56 +156,17 @@ internal open class NumberPickerMapper(
         )
     }
 
-    @Suppress("LongParameterList")
-    private fun provideLabelWireframe(
-        id: Long,
-        x: Long,
-        y: Long,
-        height: Long,
-        width: Long,
-        labelValue: String,
-        textSize: Long,
-        textColor: String
-    ) =
-        MobileSegment.Wireframe.TextWireframe(
-            id = id,
-            x = x,
-            y = y,
-            width = width,
-            height = height,
-            text = labelValue,
-            textStyle = MobileSegment.TextStyle(
-                family = FONT_FAMILY,
-                size = textSize,
-                color = textColor
-            ),
-            textPosition = MobileSegment.TextPosition(
-                alignment = MobileSegment.Alignment(
-                    horizontal = MobileSegment.Horizontal.CENTER,
-                    vertical = MobileSegment.Vertical.CENTER
-                )
-            )
-        )
+    private fun resolvePrevLabelValue(view: NumberPicker): String {
+        return resolveLabelValue(view, view.getPrevIndex())
+    }
 
-    @Suppress("LongParameterList")
-    private fun provideDividerWireframe(
-        id: Long,
-        x: Long,
-        y: Long,
-        width: Long,
-        height: Long,
-        color: String
-    ) =
-        MobileSegment.Wireframe.ShapeWireframe(
-            id = id,
-            x = x,
-            y = y,
-            width = width,
-            height = height,
-            shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = color
-            )
-        )
+    private fun resolveNextLabelValue(view: NumberPicker): String {
+        return resolveLabelValue(view, view.getNextIndex())
+    }
+
+    private fun resolveSelectedLabelValue(view: NumberPicker): String {
+        return resolveLabelValue(view, view.value)
+    }
 
     private fun NumberPicker.getPrevIndex(): Int {
         return if (value > minValue) {
@@ -226,7 +184,7 @@ internal open class NumberPickerMapper(
         }
     }
 
-    protected open fun resolveLabelValue(numberPicker: NumberPicker, index: Int): String {
+    private fun resolveLabelValue(numberPicker: NumberPicker, index: Int): String {
         val normalizedIndex = index - numberPicker.minValue
         if (numberPicker.displayedValues != null &&
             numberPicker.displayedValues.size > normalizedIndex
@@ -234,17 +192,5 @@ internal open class NumberPickerMapper(
             return numberPicker.displayedValues[normalizedIndex]
         }
         return index.toString()
-    }
-
-    companion object {
-        internal const val PARTIALLY_OPAQUE_ALPHA_VALUE: Int = 0x44
-        internal const val PREV_INDEX_KEY_NAME = "numeric_picker_prev_index"
-        internal const val SELECTED_INDEX_KEY_NAME = "numeric_picker_selected_index"
-        internal const val NEXT_INDEX_KEY_NAME = "numeric_picker_next_index"
-        internal const val DIVIDER_TOP_KEY_NAME = "numeric_picker_divider_top"
-        internal const val DIVIDER_BOTTOM_KEY_NAME = "numeric_picker_divider_bottom"
-        internal const val DIVIDER_HEIGHT_IN_PX = 6L
-        internal const val PADDING_IN_PX = 10L
-        internal const val FONT_FAMILY = "Roboto, sans-serif"
     }
 }

@@ -8,32 +8,39 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.graphics.Typeface
 import android.view.Gravity
-import android.view.inputmethod.EditorInfo
 import android.widget.TextView
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.AllowAllObfuscationRule
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.TextValueObfuscationRule
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 /**
  * A [WireframeMapper] implementation to map a [TextView] component.
+ * In this case any [TextView] for which the input type is considered sensible (password, email
+ * address, postal address, numeric password) will be masked with the static mask: [***].
+ * All the other text fields will not be masked.
  */
 @Suppress("TooManyFunctions")
-open class TextWireframeMapper :
+open class TextViewMapper :
     BaseWireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe> {
 
-    internal val stringObfuscator: StringObfuscator
+    internal val textValueObfuscationRule: TextValueObfuscationRule
 
     constructor() {
-        stringObfuscator = StringObfuscator()
+        textValueObfuscationRule = AllowAllObfuscationRule()
     }
 
-    internal constructor(stringObfuscator: StringObfuscator) {
-        this.stringObfuscator = stringObfuscator
+    internal constructor(textValueObfuscationRule: TextValueObfuscationRule) {
+        this.textValueObfuscationRule = textValueObfuscationRule
     }
 
-    override fun map(view: TextView, systemInformation: SystemInformation):
+    override fun map(view: TextView, mappingContext: MappingContext):
         List<MobileSegment.Wireframe.TextWireframe> {
-        val viewGlobalBounds = resolveViewGlobalBounds(view, systemInformation.screenDensity)
+        val viewGlobalBounds = resolveViewGlobalBounds(
+            view,
+            mappingContext.systemInformation.screenDensity
+        )
         val (shapeStyle, border) = view.background?.resolveShapeStyleAndBorder(view.alpha)
             ?: (null to null)
         return listOf(
@@ -45,44 +52,14 @@ open class TextWireframeMapper :
                 height = viewGlobalBounds.height,
                 shapeStyle = shapeStyle,
                 border = border,
-                text = resolveMaskedTextValue(view),
-                textStyle = resolveTextStyle(view, systemInformation.screenDensity),
-                textPosition = resolveTextPosition(view, systemInformation.screenDensity)
+                text = textValueObfuscationRule.resolveObfuscatedValue(view, mappingContext),
+                textStyle = resolveTextStyle(view, mappingContext.systemInformation.screenDensity),
+                textPosition = resolveTextPosition(
+                    view,
+                    mappingContext.systemInformation.screenDensity
+                )
             )
         )
-    }
-
-    /**
-     * Resolves the [TextView] text value.
-     * @param textView as [TextView]
-     */
-    protected open fun resolveTextValue(textView: TextView): String {
-        return if (textView.text.isNullOrEmpty()) {
-            textView.hint?.toString() ?: ""
-        } else {
-            textView.text?.toString() ?: ""
-        }
-    }
-
-    /**
-     * Resolves the [TextView] text value by applying the general masking rule for this [textView].
-     * @param textView as [TextView]
-     */
-    protected open fun resolveMaskedTextValue(textView: TextView): String {
-        val unmaskedTextValue = resolveTextValue(textView)
-        return if (isPasswordInputType(textView)) {
-            stringObfuscator.obfuscate(unmaskedTextValue)
-        } else {
-            unmaskedTextValue
-        }
-    }
-
-    private fun isPasswordInputType(view: TextView): Boolean {
-        val variation = view.inputType and EditorInfo.TYPE_MASK_VARIATION
-        return variation == EditorInfo.TYPE_TEXT_VARIATION_PASSWORD ||
-            variation == EditorInfo.TYPE_TEXT_VARIATION_WEB_PASSWORD ||
-            variation == EditorInfo.TYPE_NUMBER_VARIATION_PASSWORD ||
-            variation == EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
     }
 
     // region Internal
@@ -187,6 +164,7 @@ open class TextWireframeMapper :
     // endregion
 
     companion object {
+        internal const val STATIC_MASK = "***"
         internal const val SANS_SERIF_FAMILY_NAME = "roboto, sans-serif"
         internal const val SERIF_FAMILY_NAME = "serif"
         internal const val MONOSPACE_FAMILY_NAME = "monospace"

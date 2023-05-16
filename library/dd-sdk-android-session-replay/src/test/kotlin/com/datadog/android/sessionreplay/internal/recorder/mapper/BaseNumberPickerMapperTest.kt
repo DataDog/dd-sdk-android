@@ -37,7 +37,7 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
     @Mock
     lateinit var mockUniqueIdentifierGenerator: UniqueIdentifierGenerator
 
-    lateinit var testedNumberPickerMapper: NumberPickerMapper
+    lateinit var testedNumberPickerMapper: BasePickerMapper
 
     @LongForgery
     var fakePrevLabelId: Long = 0L
@@ -98,7 +98,7 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
 
     lateinit var mockNumberPicker: NumberPicker
 
-    abstract fun provideTestInstance(): NumberPickerMapper
+    abstract fun provideTestInstance(): BasePickerMapper
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -107,19 +107,19 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
         fakeValue = forge.anInt(min = fakeMinValue + 1, max = fakeMaxValue)
         mockNumberPicker = generateMockedNumberPicker(forge)
         val normalizedPaddingEnd = fakePaddingEnd
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         val normalizedPaddingStart = fakePaddingStart
-            .densityNormalized(fakeSystemInformation.screenDensity)
-        val normalizedPadding = NumberPickerMapper.PADDING_IN_PX
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
+        val normalizedPadding = BasePickerMapper.PADDING_IN_PX
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         fakeExpectedDividerWidth = fakeViewGlobalBounds.width -
             normalizedPaddingEnd -
             normalizedPaddingStart
-        fakeExpectedDividerHeight = NumberPickerMapper.DIVIDER_HEIGHT_IN_PX
-            .densityNormalized(fakeSystemInformation.screenDensity)
+        fakeExpectedDividerHeight = BasePickerMapper.DIVIDER_HEIGHT_IN_PX
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         fakeExpectedLabelWidth = fakeViewGlobalBounds.width
         fakeExpectedTextSize = fakeTextSize.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         fakeExpectedLabelHeight = fakeExpectedTextSize * 2
 
         fakeExpectedSelectedLabelYPos = fakeViewGlobalBounds.y +
@@ -140,7 +140,7 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
         whenever(
             mockViewUtils.resolveViewGlobalBounds(
                 mockNumberPicker,
-                fakeSystemInformation.screenDensity
+                fakeMappingContext.systemInformation.screenDensity
             )
         )
             .thenReturn(fakeViewGlobalBounds)
@@ -154,38 +154,38 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
         whenever(
             mockStringUtils.formatColorAndAlphaAsHexa(
                 fakeTextColor,
-                NumberPickerMapper.PARTIALLY_OPAQUE_ALPHA_VALUE
+                BasePickerMapper.PARTIALLY_OPAQUE_ALPHA_VALUE
             )
         )
             .thenReturn(fakeExpectedNextPrevLabelHtmlColor)
         whenever(
             mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
                 mockNumberPicker,
-                NumberPickerMapper.PREV_INDEX_KEY_NAME
+                BasePickerMapper.PREV_INDEX_KEY_NAME
             )
         ).thenReturn(fakePrevLabelId)
         whenever(
             mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
                 mockNumberPicker,
-                NumberPickerMapper.DIVIDER_TOP_KEY_NAME
+                BasePickerMapper.DIVIDER_TOP_KEY_NAME
             )
         ).thenReturn(fakeTopDividerId)
         whenever(
             mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
                 mockNumberPicker,
-                NumberPickerMapper.SELECTED_INDEX_KEY_NAME
+                BasePickerMapper.SELECTED_INDEX_KEY_NAME
             )
         ).thenReturn(fakeSelectedLabelId)
         whenever(
             mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
                 mockNumberPicker,
-                NumberPickerMapper.DIVIDER_BOTTOM_KEY_NAME
+                BasePickerMapper.DIVIDER_BOTTOM_KEY_NAME
             )
         ).thenReturn(fakeBottomDividerId)
         whenever(
             mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(
                 mockNumberPicker,
-                NumberPickerMapper.NEXT_INDEX_KEY_NAME
+                BasePickerMapper.NEXT_INDEX_KEY_NAME
             )
         ).thenReturn(fakeNextLabelId)
         testedNumberPickerMapper = provideTestInstance()
@@ -206,33 +206,18 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
     }
 
     @Test
-    fun `M return empty list W map { prevLabelId null }`() {
-        // Given
-        whenever(
-            mockUniqueIdentifierGenerator
-                .resolveChildUniqueIdentifier(
-                    mockNumberPicker,
-                    NumberPickerMapper.PREV_INDEX_KEY_NAME
-                )
-        )
-            .thenReturn(null)
-        // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)).isEmpty()
-    }
-
-    @Test
     fun `M return empty list W map { topDividerId null }`() {
         // Given
         whenever(
             mockUniqueIdentifierGenerator
                 .resolveChildUniqueIdentifier(
                     mockNumberPicker,
-                    NumberPickerMapper.DIVIDER_TOP_KEY_NAME
+                    BasePickerMapper.DIVIDER_TOP_KEY_NAME
                 )
         )
             .thenReturn(null)
         // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)).isEmpty()
+        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
     }
 
     @Test
@@ -242,12 +227,12 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
             mockUniqueIdentifierGenerator
                 .resolveChildUniqueIdentifier(
                     mockNumberPicker,
-                    NumberPickerMapper.SELECTED_INDEX_KEY_NAME
+                    BasePickerMapper.SELECTED_INDEX_KEY_NAME
                 )
         )
             .thenReturn(null)
         // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)).isEmpty()
+        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
     }
 
     @Test
@@ -257,27 +242,12 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
             mockUniqueIdentifierGenerator
                 .resolveChildUniqueIdentifier(
                     mockNumberPicker,
-                    NumberPickerMapper.DIVIDER_BOTTOM_KEY_NAME
+                    BasePickerMapper.DIVIDER_BOTTOM_KEY_NAME
                 )
         )
             .thenReturn(null)
         // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)).isEmpty()
-    }
-
-    @Test
-    fun `M return empty list W map { nextLabelId null }`() {
-        // Given
-        whenever(
-            mockUniqueIdentifierGenerator
-                .resolveChildUniqueIdentifier(
-                    mockNumberPicker,
-                    NumberPickerMapper.NEXT_INDEX_KEY_NAME
-                )
-        )
-            .thenReturn(null)
-        // Then
-        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeSystemInformation)).isEmpty()
+        assertThat(testedNumberPickerMapper.map(mockNumberPicker, fakeMappingContext)).isEmpty()
     }
 
     protected fun fakeNextLabelWireframe() =
@@ -288,7 +258,7 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
             width = fakeExpectedLabelWidth,
             height = fakeExpectedLabelHeight,
             textStyle = MobileSegment.TextStyle(
-                family = NumberPickerMapper.FONT_FAMILY,
+                family = BasePickerMapper.FONT_FAMILY,
                 size = fakeExpectedTextSize,
                 color = fakeExpectedNextPrevLabelHtmlColor
             ),
@@ -320,7 +290,7 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
             width = fakeExpectedLabelWidth,
             height = fakeExpectedLabelHeight,
             textStyle = MobileSegment.TextStyle(
-                family = NumberPickerMapper.FONT_FAMILY,
+                family = BasePickerMapper.FONT_FAMILY,
                 size = fakeExpectedTextSize,
                 color = fakeExpectedSelectedLabelHtmlColor
             ),
@@ -352,7 +322,7 @@ internal abstract class BaseNumberPickerMapperTest : BaseWireframeMapperTest() {
             width = fakeExpectedLabelWidth,
             height = fakeExpectedLabelHeight,
             textStyle = MobileSegment.TextStyle(
-                family = NumberPickerMapper.FONT_FAMILY,
+                family = BasePickerMapper.FONT_FAMILY,
                 size = fakeExpectedTextSize,
                 color = fakeExpectedNextPrevLabelHtmlColor
             ),

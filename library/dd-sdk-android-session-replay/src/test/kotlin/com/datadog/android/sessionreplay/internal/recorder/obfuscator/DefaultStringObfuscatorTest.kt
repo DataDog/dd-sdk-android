@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.mapper
+package com.datadog.android.sessionreplay.internal.recorder.obfuscator
 
 import android.os.Build
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -30,13 +30,13 @@ import java.util.LinkedList
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class StringObfuscatorTest {
+internal class DefaultStringObfuscatorTest {
 
-    lateinit var testedObfuscator: StringObfuscator
+    lateinit var testedObfuscator: DefaultStringObfuscator
 
     @BeforeEach
     fun `set up`() {
-        testedObfuscator = StringObfuscator()
+        testedObfuscator = DefaultStringObfuscator()
     }
 
     // region Android N and above

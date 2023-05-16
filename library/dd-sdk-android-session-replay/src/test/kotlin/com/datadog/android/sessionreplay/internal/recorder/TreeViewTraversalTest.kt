@@ -48,7 +48,7 @@ internal class TreeViewTraversalTest {
     lateinit var testedTreeViewTraversal: TreeViewTraversal
 
     @Forgery
-    lateinit var fakeSystemInformation: SystemInformation
+    lateinit var fakeMappingContext: MappingContext
 
     @Mock
     lateinit var mockViewMapper: ViewWireframeMapper
@@ -92,7 +92,7 @@ internal class TreeViewTraversalTest {
             MapperTypeWrapper(it, mapper)
         }
         val mockView = forge.anElementFrom(mockViews)
-        whenever(fakeTypeToMapperMap[mockView::class.java]!!.map(mockView, fakeSystemInformation))
+        whenever(fakeTypeToMapperMap[mockView::class.java]!!.map(mockView, fakeMappingContext))
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
             fakeTypeMapperWrappers,
@@ -102,7 +102,7 @@ internal class TreeViewTraversalTest {
         )
 
         // When
-        val traversedTreeView = testedTreeViewTraversal.traverse(mockView, fakeSystemInformation)
+        val traversedTreeView = testedTreeViewTraversal.traverse(mockView, fakeMappingContext)
 
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
@@ -128,7 +128,7 @@ internal class TreeViewTraversalTest {
             whenever(this.parent)
                 .thenReturn(mock<ViewGroup>())
         }
-        whenever(mockViewMapper.map(mockView, fakeSystemInformation))
+        whenever(mockViewMapper.map(mockView, fakeMappingContext))
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
             emptyList(),
@@ -138,7 +138,7 @@ internal class TreeViewTraversalTest {
         )
 
         // When
-        val traversedTreeView = testedTreeViewTraversal.traverse(mockView, fakeSystemInformation)
+        val traversedTreeView = testedTreeViewTraversal.traverse(mockView, fakeMappingContext)
 
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
@@ -156,7 +156,7 @@ internal class TreeViewTraversalTest {
         val mockView = forge.aMockView<View>().apply {
             whenever(this.parent).thenReturn(mock())
         }
-        whenever(mockDecorViewMapper.map(mockView, fakeSystemInformation))
+        whenever(mockDecorViewMapper.map(mockView, fakeMappingContext))
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
             emptyList(),
@@ -166,7 +166,7 @@ internal class TreeViewTraversalTest {
         )
 
         // When
-        val traversedTreeView = testedTreeViewTraversal.traverse(mockView, fakeSystemInformation)
+        val traversedTreeView = testedTreeViewTraversal.traverse(mockView, fakeMappingContext)
 
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
@@ -185,7 +185,7 @@ internal class TreeViewTraversalTest {
             whenever(this.parent).thenReturn(null)
         }
 
-        whenever(mockDecorViewMapper.map(mockView, fakeSystemInformation))
+        whenever(mockDecorViewMapper.map(mockView, fakeMappingContext))
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
             emptyList(),
@@ -195,7 +195,7 @@ internal class TreeViewTraversalTest {
         )
 
         // When
-        val traversedTreeView = testedTreeViewTraversal.traverse(mockView, fakeSystemInformation)
+        val traversedTreeView = testedTreeViewTraversal.traverse(mockView, fakeMappingContext)
 
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
@@ -215,7 +215,7 @@ internal class TreeViewTraversalTest {
         }
 
         // When
-        val traversedTreeView = testedTreeViewTraversal.traverse(fakeRoot, fakeSystemInformation)
+        val traversedTreeView = testedTreeViewTraversal.traverse(fakeRoot, fakeMappingContext)
 
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEmpty()
@@ -235,7 +235,7 @@ internal class TreeViewTraversalTest {
         }
 
         // When
-        val traversedTreeView = testedTreeViewTraversal.traverse(fakeRoot, fakeSystemInformation)
+        val traversedTreeView = testedTreeViewTraversal.traverse(fakeRoot, fakeMappingContext)
 
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEmpty()
@@ -257,7 +257,7 @@ internal class TreeViewTraversalTest {
         }
         val fakeScreenShotWireframes: List<MobileSegment.Wireframe> = forge.aList { getForgery() }
         val mockScreenshotWireframeMapper: WireframeMapper<View, *> = mock {
-            whenever(it.map(mockToolBar, fakeSystemInformation)).thenReturn(fakeScreenShotWireframes)
+            whenever(it.map(mockToolBar, fakeMappingContext)).thenReturn(fakeScreenShotWireframes)
         }
         val fakeMappers =
             listOf(MapperTypeWrapper(ImageView::class.java, mockScreenshotWireframeMapper))
@@ -269,7 +269,7 @@ internal class TreeViewTraversalTest {
         )
 
         // When
-        val traversedTreeView = testedTreeViewTraversal.traverse(mockToolBar, fakeSystemInformation)
+        val traversedTreeView = testedTreeViewTraversal.traverse(mockToolBar, fakeMappingContext)
 
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeScreenShotWireframes)

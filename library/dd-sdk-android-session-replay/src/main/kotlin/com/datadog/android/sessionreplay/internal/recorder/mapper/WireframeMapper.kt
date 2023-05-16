@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
 
@@ -20,10 +21,10 @@ interface WireframeMapper<in T : View, out S : MobileSegment.Wireframe> {
     /**
      * Maps a [View] to a [List<Wireframe>] in order to be rendered in the Session Replay player.
      * @param view as the [View] instance that will be mapped
-     * @param systemInformation in which we provide useful information regarding the current
+     * @param mappingContext in which we provide useful information regarding the current
      * system state.
      * @see MobileSegment.Wireframe
      * @see SystemInformation
      */
-    fun map(view: T, systemInformation: SystemInformation): List<S>
+    fun map(view: T, mappingContext: MappingContext): List<S>
 }

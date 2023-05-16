@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import java.util.Locale
@@ -17,13 +17,13 @@ internal class DecorViewMapper(
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator
 ) : BaseWireframeMapper<View, MobileSegment.Wireframe.ShapeWireframe>() {
 
-    override fun map(view: View, systemInformation: SystemInformation):
+    override fun map(view: View, mappingContext: MappingContext):
         List<MobileSegment.Wireframe.ShapeWireframe> {
-        val wireframes = viewWireframeMapper.map(view, systemInformation).toMutableList()
-        if (systemInformation.themeColor != null) {
+        val wireframes = viewWireframeMapper.map(view, mappingContext).toMutableList()
+        if (mappingContext.systemInformation.themeColor != null) {
             // we add the background color from the theme to the decorView
             addShapeStyleFromThemeIfNeeded(
-                systemInformation.themeColor,
+                mappingContext.systemInformation.themeColor,
                 wireframes,
                 view
             )
@@ -49,8 +49,8 @@ internal class DecorViewMapper(
                     id = it,
                     x = 0,
                     y = 0,
-                    width = systemInformation.screenBounds.width,
-                    height = systemInformation.screenBounds.height,
+                    width = mappingContext.systemInformation.screenBounds.width,
+                    height = mappingContext.systemInformation.screenBounds.height,
                     shapeStyle = MobileSegment.ShapeStyle(
                         backgroundColor = WINDOW_WIREFRAME_COLOR,
                         opacity = WINDOW_WIREFRAME_OPACITY
