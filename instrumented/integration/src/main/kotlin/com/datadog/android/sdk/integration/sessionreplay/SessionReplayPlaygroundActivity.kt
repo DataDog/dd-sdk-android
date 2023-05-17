@@ -59,6 +59,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
     fun getExpectedSrData(): ExpectedSrData {
         val density = resources.displayMetrics.density
         val decorView = window.decorView
+
         val decorWidth = decorView.width.toLong()
             .densityNormalized(density)
         val decorHeight = decorView.height.toLong()
@@ -100,6 +101,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
             height = decorHeight,
             shapeStyle = decorViewShapeStyle
         )
+
         val titleViewScreenCoordinates = titleTextView.getViewAbsoluteCoordinates()
         val titleWireframe = MobileSegment.Wireframe.TextWireframe(
             id = titleTextView.resolveId(),
@@ -167,26 +169,41 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
         fullSnapshotRecordWireframes.add(rootWireframe)
         fullSnapshotRecordWireframes.add(titleWireframe)
         fullSnapshotRecordWireframes.add(buttonWireframe)
-        // one shape wireframe for action bar container and one for toolbar
-        // probably these will be changed later as we decide how to handle the action bars
+
         decorView.findViewByType(ActionBarContainer::class.java)?.let {
             (it.getChildAt(0) as? Toolbar)?.let { toolbar ->
                 val toolbarScreenCoordinates = toolbar.getViewAbsoluteCoordinates()
-                val actionBarToolbarWireframe = MobileSegment.Wireframe.ShapeWireframe(
+
+                val toolbarWireframe = MobileSegment.Wireframe.TextWireframe(
                     id = toolbar.resolveId(),
-                    width = toolbar.width.toLong().densityNormalized(density),
-                    height = toolbar.height.toLong().densityNormalized(density),
                     x = toolbarScreenCoordinates[0].toLong().densityNormalized(density),
                     y = toolbarScreenCoordinates[1].toLong().densityNormalized(density),
+                    width = toolbar.width.toLong().densityNormalized(density),
+                    height = toolbar.height.toLong().densityNormalized(density),
+                    shapeStyle = MobileSegment.ShapeStyle(
+                        backgroundColor = "#F1F1F3FF",
+                        opacity = toolbar.alpha,
+                        cornerRadius = 4
+                    ),
                     border = MobileSegment.ShapeBorder(
-                        color = StringUtils.formatColorAndAlphaAsHexa(
-                            BLACK_COLOR_AS_HEXA,
-                            FULL_OPACITY_AS_HEXA
-                        ),
-                        width = 1
+                        color = "#D3D3D3FF",
+                        width = 1L
+                    ),
+                    text = toolbar::class.java.name,
+                    textStyle = MobileSegment.TextStyle(
+                        family = "roboto, sans-serif",
+                        size = 10,
+                        color = "#FF0000FF"
+                    ),
+                    textPosition = MobileSegment.TextPosition(
+                        alignment = MobileSegment.Alignment(
+                            horizontal = MobileSegment.Horizontal.CENTER,
+                            vertical = MobileSegment.Vertical.CENTER
+                        )
                     )
                 )
-                fullSnapshotRecordWireframes.add(actionBarToolbarWireframe)
+
+                fullSnapshotRecordWireframes.add(toolbarWireframe)
             }
         }
 
