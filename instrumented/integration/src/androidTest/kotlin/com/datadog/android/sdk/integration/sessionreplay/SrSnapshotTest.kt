@@ -17,6 +17,10 @@ internal abstract class SrSnapshotTest :
         mockServerRule: SessionReplayTestRule<SessionReplayPlaygroundActivity>
     ): ExpectedSrData {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
+        // we need this to avoid the Bitrise flakiness and to force and to wait for
+        // SurfaceFlinger to call the onDraw method which will trigger the screen snapshot.
+        mockServerRule.activity.clickMeButton.performClick()
+
         instrumentation.waitForIdleSync()
         return mockServerRule.activity.getExpectedSrData()
     }
