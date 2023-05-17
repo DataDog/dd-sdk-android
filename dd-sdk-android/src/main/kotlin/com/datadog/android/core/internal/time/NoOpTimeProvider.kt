@@ -6,15 +6,12 @@
 
 package com.datadog.android.core.internal.time
 
-// there is no NoOpImplementation on purpose, we don't want to have 0 values for the
-// case when this instance is used.
-internal interface TimeProvider {
+internal class NoOpTimeProvider : TimeProvider {
+    override fun getDeviceTimestamp(): Long = System.currentTimeMillis()
 
-    fun getDeviceTimestamp(): Long
+    override fun getServerTimestamp(): Long = System.currentTimeMillis()
 
-    fun getServerTimestamp(): Long
+    override fun getServerOffsetNanos(): Long = 0L
 
-    fun getServerOffsetNanos(): Long
-
-    fun getServerOffsetMillis(): Long
+    override fun getServerOffsetMillis(): Long = 0L
 }
