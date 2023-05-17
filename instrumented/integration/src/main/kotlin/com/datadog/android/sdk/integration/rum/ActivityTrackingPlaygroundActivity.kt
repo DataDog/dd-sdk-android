@@ -37,7 +37,7 @@ internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
 
         sdkCore.registerFeature(
             RuntimeConfig.rumFeatureBuilder()
-                .trackInteractions()
+                .trackUserInteractions()
                 .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
                 .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                 .build()

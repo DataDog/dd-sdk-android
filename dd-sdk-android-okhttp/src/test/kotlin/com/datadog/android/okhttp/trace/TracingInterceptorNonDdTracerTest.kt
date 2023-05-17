@@ -212,8 +212,8 @@ internal open class TracingInterceptorNonDdTracerTest {
         assertThat(interceptor.traceSampler)
             .isInstanceOf(RateBasedSampler::class.java)
         val traceSampler = interceptor.traceSampler as RateBasedSampler
-        assertThat(traceSampler.getSamplingRate()).isEqualTo(
-            TracingInterceptor.DEFAULT_TRACE_SAMPLING_RATE
+        assertThat(traceSampler.getSampleRate()).isEqualTo(
+            TracingInterceptor.DEFAULT_TRACE_SAMPLE_RATE
         )
     }
 
@@ -234,8 +234,8 @@ internal open class TracingInterceptorNonDdTracerTest {
         assertThat(interceptor.traceSampler)
             .isInstanceOf(RateBasedSampler::class.java)
         val traceSampler = interceptor.traceSampler as RateBasedSampler
-        assertThat(traceSampler.getSamplingRate()).isEqualTo(
-            TracingInterceptor.DEFAULT_TRACE_SAMPLING_RATE
+        assertThat(traceSampler.getSampleRate()).isEqualTo(
+            TracingInterceptor.DEFAULT_TRACE_SAMPLE_RATE
         )
     }
 

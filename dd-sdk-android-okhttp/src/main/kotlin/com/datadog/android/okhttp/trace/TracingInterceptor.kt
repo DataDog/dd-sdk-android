@@ -98,7 +98,7 @@ internal constructor(
      * @param tracedRequestListener a listener for automatically created [Span]s
      * @param traceSampler Sampler controlling the sampling of APM traces created for
      * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
-     * fixed sampling rate or can get it dynamically from the provider. Value between `0.0` and
+     * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
      * be kept (default value is `20.0`).
      */
@@ -107,7 +107,7 @@ internal constructor(
         sdkInstanceName: String? = null,
         tracedHosts: List<String>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
-        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE)
+        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
         sdkInstanceName,
         tracedHosts.associateWith { setOf(TracingHeaderType.DATADOG) },
@@ -133,7 +133,7 @@ internal constructor(
      * @param tracedRequestListener a listener for automatically created [Span]s
      * @param traceSampler Sampler controlling the sampling of APM traces created for
      * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
-     * fixed sampling rate or can get it dynamically from the provider. Value between `0.0` and
+     * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
      * be kept (default value is `20.0`).
      */
@@ -142,7 +142,7 @@ internal constructor(
         sdkInstanceName: String? = null,
         tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
-        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE)
+        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
         sdkInstanceName,
         tracedHostsWithHeaderType,
@@ -162,7 +162,7 @@ internal constructor(
      * @param tracedRequestListener a listener for automatically created [Span]s
      * @param traceSampler Sampler controlling the sampling of APM traces created for
      * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
-     * fixed sampling rate or can get it dynamically from the provider. Value between `0.0` and
+     * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
      * be kept (default value is `20.0`).
      */
@@ -170,7 +170,7 @@ internal constructor(
     constructor(
         sdkInstanceName: String? = null,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
-        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE)
+        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
         sdkInstanceName,
         emptyMap(),
@@ -615,7 +615,7 @@ internal constructor(
                 "We automatically created a local tracer for you."
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
-        internal const val DEFAULT_TRACE_SAMPLING_RATE: Float = 20f
+        internal const val DEFAULT_TRACE_SAMPLE_RATE: Float = 20f
 
         // taken from DatadogHttpCodec
         internal const val DATADOG_TRACE_ID_HEADER = "x-datadog-trace-id"

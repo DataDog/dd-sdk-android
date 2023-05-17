@@ -15,7 +15,7 @@ import android.os.Process
 import androidx.annotation.RequiresApi
 import androidx.annotation.WorkerThread
 import com.datadog.android.BuildConfig
-import com.datadog.android.DatadogEndpoint
+import com.datadog.android.DatadogNtpEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
@@ -263,11 +263,11 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
         kronosClock = AndroidClockFactory.createKronosClock(
             safeContext,
             ntpHosts = listOf(
-                DatadogEndpoint.NTP_0,
-                DatadogEndpoint.NTP_1,
-                DatadogEndpoint.NTP_2,
-                DatadogEndpoint.NTP_3
-            ),
+                DatadogNtpEndpoint.NTP_0,
+                DatadogNtpEndpoint.NTP_1,
+                DatadogNtpEndpoint.NTP_2,
+                DatadogNtpEndpoint.NTP_3
+            ).map { it.host },
             cacheExpirationMs = TimeUnit.MINUTES.toMillis(NTP_CACHE_EXPIRATION_MINUTES),
             minWaitTimeBetweenSyncMs = TimeUnit.MINUTES.toMillis(NTP_DELAY_BETWEEN_SYNCS_MINUTES),
             syncListener = LoggingSyncListener(internalLogger)
@@ -311,8 +311,8 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
             } ?: DEFAULT_APP_VERSION
         )
         clientToken = credentials.clientToken
-        serviceName = credentials.serviceName ?: appContext.packageName
-        envName = credentials.envName
+        serviceName = credentials.service ?: appContext.packageName
+        envName = credentials.env
         variant = credentials.variant
         contextRef = WeakReference(appContext)
     }

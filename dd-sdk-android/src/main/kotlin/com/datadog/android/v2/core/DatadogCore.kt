@@ -88,7 +88,7 @@ internal class DatadogCore(
     }
 
     init {
-        if (!isEnvironmentNameValid(credentials.envName)) {
+        if (!isEnvironmentNameValid(credentials.env)) {
             @Suppress("ThrowingInternalException")
             throw IllegalArgumentException(MESSAGE_ENV_NAME_NOT_VALID)
         }

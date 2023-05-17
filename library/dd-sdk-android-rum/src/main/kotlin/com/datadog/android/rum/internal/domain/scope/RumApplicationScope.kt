@@ -21,7 +21,7 @@ import java.util.Locale
 internal class RumApplicationScope(
     applicationId: String,
     private val sdkCore: InternalSdkCore,
-    internal val samplingRate: Float,
+    internal val sampleRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
     private val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
@@ -36,7 +36,7 @@ internal class RumApplicationScope(
         RumSessionScope(
             this,
             sdkCore,
-            samplingRate,
+            sampleRate,
             backgroundTrackingEnabled,
             trackFrustrations,
             this,
@@ -113,7 +113,7 @@ internal class RumApplicationScope(
         val newSession = RumSessionScope(
             this,
             sdkCore,
-            samplingRate,
+            sampleRate,
             backgroundTrackingEnabled,
             trackFrustrations,
             this,

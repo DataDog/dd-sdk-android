@@ -52,7 +52,7 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
             // we will use a large long task threshold to make sure we will not have LongTask events
             // noise in our integration tests.
             RuntimeConfig.rumFeatureBuilder()
-                .sampleTelemetry(HUNDRED_PERCENT)
+                .setTelemetrySampleRate(HUNDRED_PERCENT)
                 .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
                 .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                 .build()

@@ -156,7 +156,7 @@ class SampleApplication : Application() {
 
         GlobalTracer.registerIfAbsent(
             AndroidTracer.Builder(sdkCore)
-                .setServiceName(BuildConfig.APPLICATION_ID)
+                .setService(BuildConfig.APPLICATION_ID)
                 .build()
         )
         GlobalRum.registerIfAbsent(sdkCore, RumMonitor.Builder(sdkCore).build())
@@ -166,7 +166,7 @@ class SampleApplication : Application() {
     private fun createDatadogCredentials(): Credentials {
         return Credentials(
             clientToken = BuildConfig.DD_CLIENT_TOKEN,
-            envName = BuildConfig.BUILD_TYPE,
+            env = BuildConfig.BUILD_TYPE,
             variant = BuildConfig.FLAVOR
         )
     }
@@ -185,34 +185,34 @@ class SampleApplication : Application() {
                     SampleNavigationPredicate()
                 )
             )
-            .sampleTelemetry(100f)
-            .trackInteractions()
+            .setTelemetrySampleRate(100f)
+            .trackUserInteractions()
             .trackLongTasks(250L)
-            .setRumViewEventMapper(object : ViewEventMapper {
+            .setViewEventMapper(object : ViewEventMapper {
                 override fun map(event: ViewEvent): ViewEvent {
                     event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                     return event
                 }
             })
-            .setRumActionEventMapper(object : EventMapper<ActionEvent> {
+            .setActionEventMapper(object : EventMapper<ActionEvent> {
                 override fun map(event: ActionEvent): ActionEvent {
                     event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                     return event
                 }
             })
-            .setRumResourceEventMapper(object : EventMapper<ResourceEvent> {
+            .setResourceEventMapper(object : EventMapper<ResourceEvent> {
                 override fun map(event: ResourceEvent): ResourceEvent {
                     event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                     return event
                 }
             })
-            .setRumErrorEventMapper(object : EventMapper<ErrorEvent> {
+            .setErrorEventMapper(object : EventMapper<ErrorEvent> {
                 override fun map(event: ErrorEvent): ErrorEvent {
                     event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                     return event
                 }
             })
-            .setRumLongTaskEventMapper(object : EventMapper<LongTaskEvent> {
+            .setLongTaskEventMapper(object : EventMapper<LongTaskEvent> {
                 override fun map(event: LongTaskEvent): LongTaskEvent {
                     event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                     return event
@@ -222,7 +222,6 @@ class SampleApplication : Application() {
     }
 
     private fun createDatadogConfiguration(): Configuration {
-        @Suppress("DEPRECATION")
         val configBuilder = Configuration.Builder(
             crashReportsEnabled = true
         )

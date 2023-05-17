@@ -20,9 +20,9 @@ interface Sampler {
     fun sample(): Boolean
 
     /**
-     * @return the sampling rate if applicable, as a float between 0 and 100,
+     * @return the sample rate if applicable, as a float between 0 and 100,
      * or null if not applicable
      */
     @FloatRange(from = 0.0, to = 100.0)
-    fun getSamplingRate(): Float?
+    fun getSampleRate(): Float?
 }

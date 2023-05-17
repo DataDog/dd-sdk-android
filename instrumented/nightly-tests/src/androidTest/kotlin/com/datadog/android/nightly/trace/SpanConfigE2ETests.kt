@@ -280,7 +280,7 @@ class SpanConfigE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.v2.api.SdkCore)
-     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun setServiceName(String): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun setService(String): Builder
      */
     @Test
     fun trace_config_set_service_name() {
@@ -290,7 +290,7 @@ class SpanConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 tracerProvider = { sdkCore ->
-                    AndroidTracer.Builder(sdkCore).setServiceName("service-$testMethodName").build()
+                    AndroidTracer.Builder(sdkCore).setService("service-$testMethodName").build()
                 }
             )
         }

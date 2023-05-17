@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicLong
 internal class RumSessionScope(
     private val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
-    internal val samplingRate: Float,
+    internal val sampleRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
     viewChangedListener: RumViewChangedListener?,
@@ -163,7 +163,7 @@ internal class RumSessionScope(
     }
 
     private fun renewSession(nanoTime: Long) {
-        val keepSession = random.nextFloat() < samplingRate.percent()
+        val keepSession = random.nextFloat() < sampleRate.percent()
         sessionState = if (keepSession) State.TRACKED else State.NOT_TRACKED
         sessionId = UUID.randomUUID().toString()
         sessionStartNs.set(nanoTime)

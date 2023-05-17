@@ -301,17 +301,17 @@ interface RumMonitor {
      */
     class Builder(private val sdkCore: SdkCore) {
 
-        private var samplingRate: Float? = null
+        private var sampleRate: Float? = null
         private var sessionListener: RumSessionListener? = null
 
         /**
-         * Sets the sampling rate for RUM Sessions.
+         * Sets the sample rate for RUM Sessions.
          *
-         * @param samplingRate the sampling rate must be a value between 0 and 100. A value of 0
+         * @param sampleRate the sample rate must be a value between 0 and 100. A value of 0
          * means no RUM event will be sent, 100 means all sessions will be kept.
          */
-        fun sampleRumSessions(@FloatRange(from = 0.0, to = 100.0) samplingRate: Float): Builder {
-            this.samplingRate = samplingRate
+        fun setSessionSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): Builder {
+            this.sampleRate = sampleRate
             return this
         }
 
@@ -357,14 +357,14 @@ interface RumMonitor {
                 DatadogRumMonitor(
                     applicationId = rumFeature.applicationId,
                     sdkCore = sdkCore,
-                    samplingRate = samplingRate ?: rumFeature.samplingRate,
+                    sampleRate = sampleRate ?: rumFeature.sampleRate,
                     writer = rumFeature.dataWriter,
                     handler = Handler(Looper.getMainLooper()),
                     telemetryEventHandler = TelemetryEventHandler(
                         sdkCore = sdkCore,
-                        eventSampler = RateBasedSampler(rumFeature.telemetrySamplingRate),
+                        eventSampler = RateBasedSampler(rumFeature.telemetrySampleRate),
                         configurationExtraSampler = RateBasedSampler(
-                            rumFeature.telemetryConfigurationSamplingRate
+                            rumFeature.telemetryConfigurationSampleRate
                         )
                     ),
                     firstPartyHostHeaderTypeResolver = sdkCore.firstPartyHostResolver,

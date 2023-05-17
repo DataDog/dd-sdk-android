@@ -7,31 +7,6 @@ object com.datadog.android.Datadog
   fun setVerbosity(Int)
   fun getVerbosity(): Int
   fun _internalProxy(String? = null): _InternalProxy
-object com.datadog.android.DatadogEndpoint
-  DEPRECATED const val LOGS_US1: String
-  DEPRECATED const val LOGS_US3: String
-  DEPRECATED const val LOGS_US5: String
-  DEPRECATED const val LOGS_US1_FED: String
-  DEPRECATED const val LOGS_EU1: String
-  DEPRECATED const val TRACES_US1: String
-  DEPRECATED const val TRACES_US3: String
-  DEPRECATED const val TRACES_US5: String
-  DEPRECATED const val TRACES_US1_FED: String
-  DEPRECATED const val TRACES_EU1: String
-  DEPRECATED const val RUM_US1: String
-  DEPRECATED const val RUM_US3: String
-  DEPRECATED const val RUM_US5: String
-  DEPRECATED const val RUM_US1_FED: String
-  DEPRECATED const val RUM_EU1: String
-  const val NTP_0: String
-  const val NTP_1: String
-  const val NTP_2: String
-  const val NTP_3: String
-  DEPRECATED const val SESSION_REPLAY_US1: String
-  DEPRECATED const val SESSION_REPLAY_US3: String
-  DEPRECATED const val SESSION_REPLAY_US5: String
-  DEPRECATED const val SESSION_REPLAY_US1_FED: String
-  DEPRECATED const val SESSION_REPLAY_EU1: String
 enum com.datadog.android.DatadogSite
   constructor(String, String)
   - US1
@@ -141,10 +116,10 @@ class com.datadog.android.core.sampling.RateBasedSampler : Sampler
   constructor(Float)
   constructor(Double)
   override fun sample(): Boolean
-  override fun getSamplingRate(): Float
+  override fun getSampleRate(): Float
 interface com.datadog.android.core.sampling.Sampler
   fun sample(): Boolean
-  fun getSamplingRate(): Float?
+  fun getSampleRate(): Float?
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
 class com.datadog.android.event.MapperSerializer<T: Any> : com.datadog.android.core.persistence.Serializer<T>

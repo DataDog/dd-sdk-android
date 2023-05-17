@@ -187,7 +187,7 @@ class LoggerBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setServiceName(String): Builder
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setService(String): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
      * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
@@ -196,7 +196,7 @@ class LoggerBuilderE2ETests {
     fun logs_logger_builder_set_service_name() {
         val testMethodName = "logs_logger_builder_set_service_name"
         measureLoggerInitialize {
-            logger = Logger.Builder(sdkCore).setServiceName(CUSTOM_SERVICE_NAME).build()
+            logger = Logger.Builder(sdkCore).setService(CUSTOM_SERVICE_NAME).build()
         }
         logger.sendRandomLog(testMethodName, forge)
     }

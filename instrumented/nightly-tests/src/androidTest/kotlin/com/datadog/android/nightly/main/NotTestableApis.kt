@@ -33,10 +33,10 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.rum._RumInternalProxy#fun addLongTask(Long, String)
  * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun registerIfAbsent(com.datadog.android.v2.api.SdkCore, java.util.concurrent.Callable<RumMonitor>): Boolean
  * apiMethodSignature: com.datadog.android.rum.resource.RumResourceInputStream#constructor(java.io.InputStream, String, com.datadog.android.v2.api.SdkCore)
- * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun disableInteractionTracking(): Builder
- * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun sampleTelemetry(Float): Builder
- * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useCustomEndpoint(String): Builder
+ * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun disableUserInteractionTracking(): Builder
  * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun setSessionListener(RumSessionListener): Builder
+ * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setTelemetrySampleRate(Float): Builder
+ * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useCustomEndpoint(String): Builder
  * apiMethodSignature: com.datadog.android.rum.RumFeature#fun enableRumDebugging(Boolean)
  * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setAdditionalConfiguration(Map<String, Any>): Builder
  * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#fun startTracking()

@@ -46,7 +46,7 @@ internal class TracerExtensionsTest {
         whenever(mockSdkCore._internalLogger) doReturn mock()
 
         tracer = AndroidTracer.Builder(mockSdkCore)
-            .setServiceName(forge.anAlphaNumericalString())
+            .setService(forge.anAlphaNumericalString())
             .build()
     }
 

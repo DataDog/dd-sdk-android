@@ -15,9 +15,9 @@ internal class CredentialsForgeryFactory :
     override fun getForgery(forge: Forge): Credentials {
         return Credentials(
             clientToken = forge.anHexadecimalString(),
-            envName = forge.aStringMatching("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]"),
+            env = forge.aStringMatching("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]"),
             variant = forge.anElementFrom(forge.anAlphabeticalString(), ""),
-            serviceName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
+            service = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         )
     }
 }

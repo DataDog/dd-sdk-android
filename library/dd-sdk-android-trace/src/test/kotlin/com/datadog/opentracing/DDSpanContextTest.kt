@@ -328,7 +328,7 @@ internal class DDSpanContextTest {
     }
 
     @Test
-    fun `M use the mapped serviceName W setServiceName and key exists in mapping`(forge: Forge) {
+    fun `M use the mapped serviceName W setService and key exists in mapping`(forge: Forge) {
         // GIVEN
         fakeServiceNamesMapping = forge.aMap(size = forge.anInt(min = 1, max = 10)) {
             forge.anAlphabeticalString() to forge.anAlphaNumericalString()
@@ -360,7 +360,7 @@ internal class DDSpanContextTest {
     }
 
     @Test
-    fun `M set serviceName W setServiceName and key does not exists in mapping`(forge: Forge) {
+    fun `M set serviceName W setService and key does not exists in mapping`(forge: Forge) {
         // GIVEN
         val fakeNewServiceName = forge.anAlphabeticalString()
 

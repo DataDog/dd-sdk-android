@@ -69,9 +69,9 @@ internal class RumFeatureBuilderTest {
         assertThat(rumFeature.configuration).isEqualTo(
             RumFeature.Configuration(
                 customEndpointUrl = null,
-                samplingRate = RumFeature.DEFAULT_SAMPLING_RATE,
-                telemetrySamplingRate = RumFeature.DEFAULT_TELEMETRY_SAMPLING_RATE,
-                telemetryConfigurationSamplingRate = RumFeature.DEFAULT_TELEMETRY_CONFIGURATION_SAMPLING_RATE,
+                sampleRate = RumFeature.DEFAULT_SAMPLE_RATE,
+                telemetrySampleRate = RumFeature.DEFAULT_TELEMETRY_SAMPLE_RATE,
+                telemetryConfigurationSampleRate = RumFeature.DEFAULT_TELEMETRY_CONFIGURATION_SAMPLE_RATE,
                 userActionTracking = true,
                 touchTargetExtraAttributesProviders = emptyList(),
                 interactionPredicate = NoOpInteractionPredicate(),
@@ -116,12 +116,12 @@ internal class RumFeatureBuilderTest {
     }
 
     @Test
-    fun `𝕄 disable user action tracking W disableInteractionTracking()`() {
+    fun `𝕄 disable user action tracking W disableUserInteractionTracking()`() {
         // Given
 
         // When
         val rumFeature = testedBuilder
-            .disableInteractionTracking()
+            .disableUserInteractionTracking()
             .build()
 
         // Then
@@ -142,7 +142,7 @@ internal class RumFeatureBuilderTest {
 
         // When
         val rumFeature = testedBuilder
-            .trackInteractions(mockProviders)
+            .trackUserInteractions(mockProviders)
             .build()
 
         // Then
@@ -160,7 +160,7 @@ internal class RumFeatureBuilderTest {
 
         // When
         val rumFeature = testedBuilder
-            .trackInteractions(interactionPredicate = mockInteractionPredicate)
+            .trackUserInteractions(interactionPredicate = mockInteractionPredicate)
             .build()
 
         // Then
@@ -175,7 +175,7 @@ internal class RumFeatureBuilderTest {
     fun `𝕄 use the NoOpInteractionPredicate 𝕎 trackInteractions() { predicate not provided }`() {
         // When
         val rumFeature = testedBuilder
-            .trackInteractions()
+            .trackUserInteractions()
             .build()
 
         // Then
@@ -261,35 +261,35 @@ internal class RumFeatureBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with sampling rate 𝕎 sampleRumSessions() and build()`(
+    fun `𝕄 build config with sample rate 𝕎 setSessionSampleRate() and build()`(
         @FloatForgery(min = 0f, max = 100f) sampling: Float
     ) {
         // When
         val rumFeature = testedBuilder
-            .sampleRumSessions(sampling)
+            .setSessionSampleRate(sampling)
             .build()
 
         // Then
         assertThat(rumFeature.configuration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
-                samplingRate = sampling
+                sampleRate = sampling
             )
         )
     }
 
     @Test
-    fun `𝕄 build config with sampling rate 𝕎 sampleTelemetry() and build()`(
+    fun `𝕄 build config with sample rate 𝕎 telemetrySampleRate() and build()`(
         @FloatForgery(min = 0f, max = 100f) sampling: Float
     ) {
         // When
         val rumFeature = testedBuilder
-            .sampleTelemetry(sampling)
+            .setTelemetrySampleRate(sampling)
             .build()
 
         // Then
         assertThat(rumFeature.configuration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
-                telemetrySamplingRate = sampling
+                telemetrySampleRate = sampling
             )
         )
     }
@@ -300,7 +300,7 @@ internal class RumFeatureBuilderTest {
     ) {
         // When
         val rumFeature = testedBuilder
-            .trackBackgroundRumEvents(backgroundEventEnabled)
+            .trackBackgroundEvents(backgroundEventEnabled)
             .build()
 
         // Then
@@ -312,13 +312,13 @@ internal class RumFeatureBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with RUM View eventMapper 𝕎 setRumViewEventMapper() and build()`() {
+    fun `𝕄 build config with RUM View eventMapper 𝕎 setViewEventMapper() and build()`() {
         // Given
         val eventMapper: ViewEventMapper = mock()
 
         // When
         val rumFeature = testedBuilder
-            .setRumViewEventMapper(eventMapper)
+            .setViewEventMapper(eventMapper)
             .build()
 
         // Then
@@ -330,13 +330,13 @@ internal class RumFeatureBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with RUM Resource eventMapper 𝕎 setRumResourceEventMapper() & build()`() {
+    fun `𝕄 build config with RUM Resource eventMapper 𝕎 setResourceEventMapper() & build()`() {
         // Given
         val eventMapper: EventMapper<ResourceEvent> = mock()
 
         // When
         val rumFeature = testedBuilder
-            .setRumResourceEventMapper(eventMapper)
+            .setResourceEventMapper(eventMapper)
             .build()
 
         // Then
@@ -348,13 +348,13 @@ internal class RumFeatureBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with RUM Action eventMapper 𝕎 setRumActionEventMapper() and build()`() {
+    fun `𝕄 build config with RUM Action eventMapper 𝕎 setActionEventMapper() and build()`() {
         // Given
         val eventMapper: EventMapper<ActionEvent> = mock()
 
         // When
         val rumFeature = testedBuilder
-            .setRumActionEventMapper(eventMapper)
+            .setActionEventMapper(eventMapper)
             .build()
 
         // Then
@@ -366,13 +366,13 @@ internal class RumFeatureBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with RUM Error eventMapper 𝕎 setRumErrorEventMapper() and build()`() {
+    fun `𝕄 build config with RUM Error eventMapper 𝕎 setErrorEventMapper() and build()`() {
         // Given
         val eventMapper: EventMapper<ErrorEvent> = mock()
 
         // When
         val rumFeature = testedBuilder
-            .setRumErrorEventMapper(eventMapper)
+            .setErrorEventMapper(eventMapper)
             .build()
 
         // Then
@@ -384,13 +384,13 @@ internal class RumFeatureBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with RUM LongTask eventMapper 𝕎 setRumLongTaskEventMapper() & build()`() {
+    fun `𝕄 build config with RUM LongTask eventMapper 𝕎 setLongTaskEventMapper() & build()`() {
         // Given
         val eventMapper: EventMapper<LongTaskEvent> = mock()
 
         // When
         val rumFeature = testedBuilder
-            .setRumLongTaskEventMapper(eventMapper)
+            .setLongTaskEventMapper(eventMapper)
             .build()
 
         // Then
@@ -476,7 +476,7 @@ internal class RumFeatureBuilderTest {
             .build()
 
         // Then
-        assertThat(rumFeature.configuration.telemetryConfigurationSamplingRate)
+        assertThat(rumFeature.configuration.telemetryConfigurationSampleRate)
             .isEqualTo(sampleRate)
     }
 }

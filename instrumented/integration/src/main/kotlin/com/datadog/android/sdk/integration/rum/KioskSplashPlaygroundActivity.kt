@@ -40,7 +40,7 @@ internal class KioskSplashPlaygroundActivity : AppCompatActivity() {
             RuntimeConfig.rumFeatureBuilder()
                 .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
                 .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
-                .disableInteractionTracking()
+                .disableUserInteractionTracking()
                 .build(),
             RuntimeConfig.logsFeatureBuilder().build(),
             RuntimeConfig.tracingFeatureBuilder().build()

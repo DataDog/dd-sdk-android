@@ -133,7 +133,7 @@ internal class EncryptionTest {
     private fun createCredentials(): Credentials {
         return Credentials(
             clientToken = forge.anAlphaNumericalString(),
-            envName = forge.anAlphaNumericalString(),
+            env = forge.anAlphaNumericalString(),
             variant = Credentials.NO_VARIANT
         )
     }

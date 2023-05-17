@@ -15,7 +15,7 @@ interface RumSessionListener {
     /**
      * Called whenever a new session is started.
      * @param sessionId the Session's id (matching the `session.id` attribute in Datadog's RUM events)
-     * @param isDiscarded whether or not the session is discarded by the sampling rate
+     * @param isDiscarded whether or not the session is discarded by the sample rate
      * (when `true` it means no event in this session will be kept).
      */
     fun onSessionStarted(sessionId: String, isDiscarded: Boolean)

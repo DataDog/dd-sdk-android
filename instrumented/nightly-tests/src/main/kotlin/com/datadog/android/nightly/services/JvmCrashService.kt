@@ -80,7 +80,7 @@ internal open class JvmCrashService : CrashService() {
         if (rumEnabled) {
             sdkCore.registerFeature(
                 RumFeature.Builder(rumApplicationId)
-                    .sampleTelemetry(HUNDRED_PERCENT)
+                    .setTelemetrySampleRate(HUNDRED_PERCENT)
                     .build()
             )
         }

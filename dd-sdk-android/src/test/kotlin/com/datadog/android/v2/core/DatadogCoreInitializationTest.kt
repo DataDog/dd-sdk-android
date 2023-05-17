@@ -125,7 +125,7 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         appContext.fakeAppInfo.flags = fakeFlags and ApplicationInfo.FLAG_DEBUGGABLE.inv()
-        fakeCredentials = fakeCredentials.copy(envName = invalidEnvName)
+        fakeCredentials = fakeCredentials.copy(env = invalidEnvName)
 
         // When
         val exception = assertThrows<IllegalArgumentException> {
@@ -150,7 +150,7 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         appContext.fakeAppInfo.flags = fakeFlags or ApplicationInfo.FLAG_DEBUGGABLE
-        fakeCredentials = fakeCredentials.copy(envName = invalidEnvName)
+        fakeCredentials = fakeCredentials.copy(env = invalidEnvName)
 
         // When
         val exception = assertThrows<IllegalArgumentException> {
