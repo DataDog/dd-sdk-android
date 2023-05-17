@@ -13,7 +13,8 @@ import java.util.LinkedList
 
 internal class SnapshotProducer(
     private val treeViewTraversal: TreeViewTraversal,
-    private val optionSelectorDetector: OptionSelectorDetector = OptionSelectorDetector()
+    private val optionSelectorDetector: OptionSelectorDetector =
+        ComposedOptionSelectorDetector(listOf(DefaultOptionSelectorDetector()))
 ) {
 
     fun produce(

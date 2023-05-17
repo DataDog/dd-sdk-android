@@ -52,7 +52,7 @@ internal class SnapshotProducerTest {
     lateinit var fakeViewWireframes: List<MobileSegment.Wireframe>
 
     @Mock
-    lateinit var mockOptionSelectorDetector: OptionSelectorDetector
+    lateinit var mockOptionSelectorDetector: DefaultOptionSelectorDetector
 
     @BeforeEach
     fun `set up`() {

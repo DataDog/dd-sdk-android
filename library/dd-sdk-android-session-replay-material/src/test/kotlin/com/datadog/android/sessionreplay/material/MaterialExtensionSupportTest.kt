@@ -94,4 +94,14 @@ class MaterialExtensionSupportTest {
         assertThat(customMappers[SessionReplayPrivacy.MASK_USER_INPUT]?.get(TabView::class.java))
             .isInstanceOf(TabWireframeMapper::class.java)
     }
+
+    @Test
+    fun `M return a MaterialOptionSelectorDetector W getOptionSelectorDetectors`() {
+        // When
+        val customDetectors = testedMaterialExtensionSupport.getOptionSelectorDetectors()
+
+        // Then
+        assertThat(customDetectors.size).isEqualTo(1)
+        assertThat(customDetectors[0]).isInstanceOf(MaterialOptionSelectorDetector::class.java)
+    }
 }
