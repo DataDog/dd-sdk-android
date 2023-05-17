@@ -24,7 +24,6 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.file.existsSafe
-import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.ndk.DatadogNdkCrashHandler
@@ -100,16 +99,8 @@ internal class DatadogCore(
     override val time: TimeInfo
         get() {
             return with(coreFeature.timeProvider) {
-                val deviceTimeMs = if (this is NoOpTimeProvider) {
-                    System.currentTimeMillis()
-                } else {
-                    getDeviceTimestamp()
-                }
-                val serverTimeMs = if (this is NoOpTimeProvider) {
-                    deviceTimeMs
-                } else {
-                    getServerTimestamp()
-                }
+                val deviceTimeMs = getDeviceTimestamp()
+                val serverTimeMs = getServerTimestamp()
                 TimeInfo(
                     deviceTimeNs = TimeUnit.MILLISECONDS.toNanos(deviceTimeMs),
                     serverTimeNs = TimeUnit.MILLISECONDS.toNanos(serverTimeMs),

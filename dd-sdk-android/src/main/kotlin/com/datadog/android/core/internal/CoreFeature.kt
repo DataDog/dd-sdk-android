@@ -52,7 +52,6 @@ import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecut
 import com.datadog.android.core.internal.thread.LoggingThreadPoolExecutor
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.LoggingSyncListener
-import com.datadog.android.core.internal.time.NoOpKronosClock
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.DatadogUserInfoProvider
@@ -105,7 +104,7 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
     internal var contextProvider: ContextProvider = NoOpContextProvider()
 
     internal lateinit var okHttpClient: OkHttpClient
-    internal var kronosClock: KronosClock = NoOpKronosClock()
+    internal var kronosClock: KronosClock? = null
 
     internal var clientToken: String = ""
     internal var packageName: String = ""
@@ -184,7 +183,7 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
             shutDownExecutors()
 
             try {
-                kronosClock.shutdown()
+                kronosClock?.shutdown()
             } catch (ise: IllegalStateException) {
                 // this may be called from the test
                 // when Kronos is already shut down
@@ -286,7 +285,7 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
                 }
             }
 
-            timeProvider = KronosTimeProvider(kronosClock)
+            timeProvider = KronosTimeProvider(this)
         }
     }
 
