@@ -206,7 +206,7 @@ internal constructor(internal var handler: LogHandler) {
         private var networkInfoEnabled: Boolean = false
         private var bundleWithTraceEnabled: Boolean = true
         private var bundleWithRumEnabled: Boolean = true
-        private var sampleRate: Float = DEFAULT_SAMPLING_RATE
+        private var sampleRate: Float = DEFAULT_SAMPLE_RATE
         private var minDatadogLogsPriority: Int = -1
 
         /**
@@ -233,10 +233,10 @@ internal constructor(internal var handler: LogHandler) {
 
         /**
          * Sets the service name that will appear in your logs.
-         * @param serviceName the service name (default = application package name)
+         * @param service the service name (default = application package name)
          */
-        fun setServiceName(serviceName: String): Builder {
-            this.serviceName = serviceName
+        fun setService(service: String): Builder {
+            this.serviceName = service
             return this
         }
 
@@ -312,12 +312,12 @@ internal constructor(internal var handler: LogHandler) {
 
         /**
          * Sets the sample rate for this Logger.
-         * @param rate the sampling rate, in percent.
+         * @param sampleRate the sample rate, in percent.
          * A value of `30` means we'll send 30% of the logs.
          * Default is 100.0 (ie: all logs are sent).
          */
-        fun setSampleRate(@FloatRange(from = 0.0, to = 100.0) rate: Float): Builder {
-            sampleRate = rate
+        fun setSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): Builder {
+            this.sampleRate = sampleRate
             return this
         }
 
@@ -515,7 +515,7 @@ internal constructor(internal var handler: LogHandler) {
     // endregion
 
     internal companion object {
-        internal const val DEFAULT_SAMPLING_RATE = 100f
+        internal const val DEFAULT_SAMPLE_RATE = 100f
         internal const val SDK_NOT_INITIALIZED_WARNING_MESSAGE =
             "You're trying to create a Logger instance, but the SDK was not yet initialized. " +
                 "This Logger will not be able to send any messages. " +

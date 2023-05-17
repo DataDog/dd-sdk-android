@@ -71,18 +71,18 @@ class com.datadog.android.rum.RumFeature : com.datadog.android.v2.api.StorageBac
   fun enableRumDebugging(Boolean)
   class Builder
     constructor(String)
-    fun sampleRumSessions(Float): Builder
-    fun sampleTelemetry(Float): Builder
-    fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
-    fun disableInteractionTracking(): Builder
+    fun setSessionSampleRate(Float): Builder
+    fun setTelemetrySampleRate(Float): Builder
+    fun trackUserInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
+    fun disableUserInteractionTracking(): Builder
     fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
     fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
-    fun setRumViewEventMapper(com.datadog.android.rum.event.ViewEventMapper): Builder
-    fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
-    fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
-    fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
-    fun setRumLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
-    fun trackBackgroundRumEvents(Boolean): Builder
+    fun setViewEventMapper(com.datadog.android.rum.event.ViewEventMapper): Builder
+    fun setResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
+    fun setActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
+    fun setErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
+    fun setLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
+    fun trackBackgroundEvents(Boolean): Builder
     fun trackFrustrations(Boolean): Builder
     fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
     fun useCustomEndpoint(String): Builder
@@ -110,7 +110,7 @@ interface com.datadog.android.rum.RumMonitor
   fun _getInternal(): _RumInternalProxy?
   class Builder
     constructor(com.datadog.android.v2.api.SdkCore)
-    fun sampleRumSessions(Float): Builder
+    fun setSessionSampleRate(Float): Builder
     fun setSessionListener(RumSessionListener): Builder
     fun build(): RumMonitor
 enum com.datadog.android.rum.RumPerformanceMetric

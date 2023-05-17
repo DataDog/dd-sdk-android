@@ -309,8 +309,8 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
         assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version).isEqualTo(appContext.fakeVersionName)
-        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
-        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.service)
+        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.env)
         assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
         assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
@@ -334,8 +334,8 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(appContext.fakeVersionName)
-        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
-        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.service)
+        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.env)
         assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
         assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
@@ -348,7 +348,7 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials.copy(serviceName = null),
+            fakeCredentials.copy(service = null),
             fakeConfig,
             fakeConsent
         )
@@ -359,7 +359,7 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(appContext.fakeVersionName)
         assertThat(testedFeature.serviceName).isEqualTo(appContext.fakePackageName)
-        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.env)
         assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
         assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
@@ -387,8 +387,8 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(appContext.fakeVersionCode.toString())
-        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
-        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.service)
+        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.env)
         assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
         assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
@@ -419,8 +419,8 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(CoreFeature.DEFAULT_APP_VERSION)
-        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
-        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.service)
+        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.env)
         assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
         assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
@@ -456,8 +456,8 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.packageVersionProvider.version).isEqualTo(
             CoreFeature.DEFAULT_APP_VERSION
         )
-        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
-        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.service)
+        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.env)
         assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
         assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
@@ -605,8 +605,8 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(appContext.fakeVersionName)
-        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
-        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.service)
+        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.env)
         assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
         assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)

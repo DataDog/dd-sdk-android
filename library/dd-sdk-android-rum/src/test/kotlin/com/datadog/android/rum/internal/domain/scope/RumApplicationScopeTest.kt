@@ -88,7 +88,7 @@ internal class RumApplicationScopeTest {
     lateinit var fakeApplicationId: String
 
     @FloatForgery(min = 0f, max = 100f)
-    var fakeSamplingRate: Float = 0f
+    var fakeSampleRate: Float = 0f
 
     @BoolForgery
     var fakeBackgroundTrackingEnabled: Boolean = false
@@ -111,7 +111,7 @@ internal class RumApplicationScopeTest {
         testedScope = RumApplicationScope(
             fakeApplicationId,
             mockSdkCore,
-            fakeSamplingRate,
+            fakeSampleRate,
             fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
             mockResolver,
@@ -123,13 +123,13 @@ internal class RumApplicationScopeTest {
     }
 
     @Test
-    fun `create child session scope with sampling rate`() {
+    fun `create child session scope with sample rate`() {
         val childScopes = testedScope.childScopes
 
         assertThat(childScopes).hasSize(1)
         val childScope = childScopes.firstOrNull()
         check(childScope is RumSessionScope)
-        assertThat(childScope.samplingRate).isEqualTo(fakeSamplingRate)
+        assertThat(childScope.sampleRate).isEqualTo(fakeSampleRate)
         assertThat(childScope.backgroundTrackingEnabled).isEqualTo(fakeBackgroundTrackingEnabled)
         assertThat(childScope.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
     }
@@ -215,7 +215,7 @@ internal class RumApplicationScopeTest {
         val newSession = testedScope.childScopes.first()
         check(newSession is RumSessionScope)
         assertThat(newSession).isNotSameAs(initialSession)
-        assertThat(newSession.samplingRate).isEqualTo(fakeSamplingRate)
+        assertThat(newSession.sampleRate).isEqualTo(fakeSampleRate)
         assertThat(newSession.backgroundTrackingEnabled).isEqualTo(fakeBackgroundTrackingEnabled)
         assertThat(newSession.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
     }

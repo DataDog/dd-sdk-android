@@ -128,7 +128,7 @@ internal class DatadogRumMonitorTest {
     lateinit var fakeAttributes: Map<String, Any?>
 
     @FloatForgery(min = 0f, max = 100f)
-    var fakeSamplingRate: Float = 0f
+    var fakeSampleRate: Float = 0f
 
     @LongForgery(TIMESTAMP_MIN, TIMESTAMP_MAX)
     var fakeTimestamp: Long = 0L
@@ -145,7 +145,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             mockSdkCore,
-            fakeSamplingRate,
+            fakeSampleRate,
             fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
             mockWriter,
@@ -166,7 +166,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             mockSdkCore,
-            fakeSamplingRate,
+            fakeSampleRate,
             fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
             mockWriter,
@@ -181,7 +181,7 @@ internal class DatadogRumMonitorTest {
 
         val rootScope = testedMonitor.rootScope
         check(rootScope is RumApplicationScope)
-        assertThat(rootScope.samplingRate).isEqualTo(fakeSamplingRate)
+        assertThat(rootScope.sampleRate).isEqualTo(fakeSampleRate)
         assertThat(rootScope.backgroundTrackingEnabled).isEqualTo(fakeBackgroundTrackingEnabled)
     }
 
@@ -1132,7 +1132,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             mockSdkCore,
-            fakeSamplingRate,
+            fakeSampleRate,
             fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
             mockWriter,
@@ -1197,7 +1197,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             mockSdkCore,
-            fakeSamplingRate,
+            fakeSampleRate,
             fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
             mockWriter,
@@ -1241,7 +1241,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             mockSdkCore,
-            fakeSamplingRate,
+            fakeSampleRate,
             fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
             mockWriter,
@@ -1272,7 +1272,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             mockSdkCore,
-            fakeSamplingRate,
+            fakeSampleRate,
             fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
             mockWriter,
@@ -1584,7 +1584,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             mockSdkCore,
-            fakeSamplingRate,
+            fakeSampleRate,
             fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
             mockWriter,

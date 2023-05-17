@@ -21,9 +21,9 @@ internal class ConfigurationRumForgeryFactory :
     override fun getForgery(forge: Forge): RumFeature.Configuration {
         return RumFeature.Configuration(
             customEndpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
-            samplingRate = forge.aFloat(0f, 100f),
-            telemetrySamplingRate = forge.aFloat(0f, 100f),
-            telemetryConfigurationSamplingRate = forge.aFloat(0f, 100f),
+            sampleRate = forge.aFloat(0f, 100f),
+            telemetrySampleRate = forge.aFloat(0f, 100f),
+            telemetryConfigurationSampleRate = forge.aFloat(0f, 100f),
             userActionTracking = forge.aBool(),
             touchTargetExtraAttributesProviders = forge.aList { mock() },
             interactionPredicate = mock(),

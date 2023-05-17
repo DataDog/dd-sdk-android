@@ -34,7 +34,7 @@ class RumMonitorBuilderE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore)
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun sampleRumSessions(Float): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun setSessionSampleRate(Float): Builder
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
      * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun registerIfAbsent(com.datadog.android.v2.api.SdkCore, RumMonitor): Boolean
      */
@@ -57,7 +57,7 @@ class RumMonitorBuilderE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore)
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun sampleRumSessions(Float): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun setSessionSampleRate(Float): Builder
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
      */
     @Test
@@ -68,7 +68,7 @@ class RumMonitorBuilderE2ETests {
             forgeSeed = forge.seed,
             rumMonitorProvider = { sdkCore ->
                 measureRumMonitorInitialize {
-                    RumMonitor.Builder(sdkCore).sampleRumSessions(0f).build()
+                    RumMonitor.Builder(sdkCore).setSessionSampleRate(0f).build()
                 }
             }
         )
@@ -77,7 +77,7 @@ class RumMonitorBuilderE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore)
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun sampleRumSessions(Float): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun setSessionSampleRate(Float): Builder
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
      */
     @Test
@@ -89,7 +89,7 @@ class RumMonitorBuilderE2ETests {
             forgeSeed = forge.seed,
             rumMonitorProvider = { sdkCore ->
                 measureRumMonitorInitialize {
-                    RumMonitor.Builder(sdkCore).sampleRumSessions(75f).build()
+                    RumMonitor.Builder(sdkCore).setSessionSampleRate(75f).build()
                 }
             }
         )

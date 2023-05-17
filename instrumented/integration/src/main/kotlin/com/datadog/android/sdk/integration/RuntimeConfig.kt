@@ -61,7 +61,7 @@ internal object RuntimeConfig {
     fun credentials(): Credentials {
         return Credentials(
             clientToken = DD_TOKEN,
-            envName = INTEGRATION_TESTS_ENVIRONMENT,
+            env = INTEGRATION_TESTS_ENVIRONMENT,
             variant = Credentials.NO_VARIANT
         )
     }

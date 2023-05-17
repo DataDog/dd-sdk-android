@@ -51,7 +51,7 @@ class RumMonitorBackgroundE2ETests {
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
      * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#constructor(String)
      * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun build(): RumFeature
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun trackBackgroundRumEvents(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun trackBackgroundEvents(Boolean): Builder
      * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun trackFrustrations(Boolean): Builder
      * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun get(com.datadog.android.v2.api.SdkCore): RumMonitor
      * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun isRegistered(com.datadog.android.v2.api.SdkCore): Boolean
@@ -63,7 +63,7 @@ class RumMonitorBackgroundE2ETests {
             InstrumentationRegistry.getInstrumentation().targetContext,
             forgeSeed = forge.seed,
             rumFeatureProvider = {
-                it.trackBackgroundRumEvents(true)
+                it.trackBackgroundEvents(true)
                     .trackFrustrations(true)
                     .build()
             },

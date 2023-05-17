@@ -10,7 +10,7 @@ class com.datadog.android.log.Logger
   class Builder
     constructor(com.datadog.android.v2.api.SdkCore)
     fun build(): Logger
-    fun setServiceName(String): Builder
+    fun setService(String): Builder
     fun setDatadogLogsEnabled(Boolean): Builder
     fun setDatadogLogsMinPriority(Int): Builder
     fun setLogcatLogsEnabled(Boolean): Builder

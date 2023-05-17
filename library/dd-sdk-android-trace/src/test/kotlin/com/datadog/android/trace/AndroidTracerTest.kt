@@ -236,7 +236,7 @@ internal class AndroidTracerTest {
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) serviceName: String
     ) {
         val tracer = AndroidTracer.Builder(mockSdkCore)
-            .setServiceName(serviceName)
+            .setService(serviceName)
             .build()
 
         val span = tracer.buildSpan(operationName).start() as DDSpan
@@ -458,7 +458,7 @@ internal class AndroidTracerTest {
         val threshold = forge.anInt(max = 100)
         // When
         val tracer = testedTracerBuilder
-            .setServiceName(serviceName)
+            .setService(serviceName)
             .setPartialFlushThreshold(threshold)
             .build()
         val properties = testedTracerBuilder.properties()
@@ -472,21 +472,21 @@ internal class AndroidTracerTest {
     }
 
     @Test
-    fun `it will build a valid Tracer with sampling rate`(
-        @DoubleForgery(0.0, 1.0) samplingRate: Double
+    fun `it will build a valid Tracer with sample rate`(
+        @DoubleForgery(0.0, 1.0) sampleRate: Double
     ) {
         // Given
 
         // When
         val tracer = testedTracerBuilder
-            .setSamplingRate(samplingRate * 100.0)
+            .setSampleRate(sampleRate * 100.0)
             .build()
         val properties = testedTracerBuilder.properties()
 
         // Then
         assertThat(tracer).isNotNull()
         assertThat(properties.getProperty(Config.TRACE_SAMPLE_RATE).toDouble())
-            .isCloseTo(samplingRate, offset(0.005))
+            .isCloseTo(sampleRate, offset(0.005))
     }
 
     @Test
@@ -498,7 +498,7 @@ internal class AndroidTracerTest {
     ) {
         // When
         val tracer = testedTracerBuilder
-            .setServiceName(serviceName)
+            .setService(serviceName)
             .addGlobalTag(key, value)
             .build()
 
@@ -628,7 +628,7 @@ internal class AndroidTracerTest {
         val tracingHeaderStyles = forge.aList { aValueFrom(TracingHeaderType::class.java) }.toSet()
         // When
         val tracer = testedTracerBuilder
-            .setServiceName(serviceName)
+            .setService(serviceName)
             .setTracingHeaderTypes(tracingHeaderStyles)
             .build()
         val properties = testedTracerBuilder.properties()
@@ -654,7 +654,7 @@ internal class AndroidTracerTest {
     ) {
         // Given
         val tracer = testedTracerBuilder
-            .setServiceName(serviceName)
+            .setService(serviceName)
             .build()
         // call to updateFeatureContext is guarded by "synchronize" in the real implementation,
         // but since we are using mock here, let's use thread-safe map instead.

@@ -143,16 +143,16 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 store sampling rate 𝕎 initialize()`() {
+    fun `𝕄 store sample rate 𝕎 initialize()`() {
         // When
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // Then
-        assertThat(testedFeature.samplingRate).isEqualTo(fakeConfiguration.samplingRate)
+        assertThat(testedFeature.sampleRate).isEqualTo(fakeConfiguration.sampleRate)
     }
 
     @Test
-    fun `𝕄 set sampling rate to 100 𝕎 initialize() {developer mode enabled}`() {
+    fun `𝕄 set sample rate to 100 𝕎 initialize() {developer mode enabled}`() {
         // Given
         whenever(mockSdkCore.isDeveloperModeEnabled) doReturn true
 
@@ -160,23 +160,23 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // Then
-        assertThat(testedFeature.samplingRate).isEqualTo(RumFeature.ALL_IN_SAMPLING_RATE)
+        assertThat(testedFeature.sampleRate).isEqualTo(RumFeature.ALL_IN_SAMPLE_RATE)
         verify(mockSdkCore._internalLogger)
             .log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                RumFeature.DEVELOPER_MODE_SAMPLING_RATE_CHANGED_MESSAGE
+                RumFeature.DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE
             )
     }
 
     @Test
-    fun `𝕄 store telemetry sampling rate 𝕎 initialize()`() {
+    fun `𝕄 store telemetry sample rate 𝕎 initialize()`() {
         // When
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // Then
-        assertThat(testedFeature.telemetrySamplingRate)
-            .isEqualTo(fakeConfiguration.telemetrySamplingRate)
+        assertThat(testedFeature.telemetrySampleRate)
+            .isEqualTo(fakeConfiguration.telemetrySampleRate)
     }
 
     @Test

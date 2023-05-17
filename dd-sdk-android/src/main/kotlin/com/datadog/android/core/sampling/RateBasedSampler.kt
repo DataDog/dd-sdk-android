@@ -13,10 +13,10 @@ import java.security.SecureRandom
 /**
  * [Sampler] with the given sample rate which can be fixed or dynamic.
  *
- * @param samplingRateProvider Provider for the sample rate value which will be called each time
+ * @param sampleRateProvider Provider for the sample rate value which will be called each time
  * the sampling decision needs to be made. All the values should be on the scale [0;100].
  */
-class RateBasedSampler(internal val samplingRateProvider: () -> Float) : Sampler {
+class RateBasedSampler(internal val sampleRateProvider: () -> Float) : Sampler {
 
     /**
      * Creates a new instance of [RateBasedSampler] with the given sample rate.
@@ -37,7 +37,7 @@ class RateBasedSampler(internal val samplingRateProvider: () -> Float) : Sampler
     /** @inheritDoc */
     @Suppress("MagicNumber")
     override fun sample(): Boolean {
-        return when (val sampleRate = getSamplingRate()) {
+        return when (val sampleRate = getSampleRate()) {
             0f -> false
             SAMPLE_ALL_RATE -> true
             else -> random.nextFloat() * 100 <= sampleRate
@@ -45,20 +45,20 @@ class RateBasedSampler(internal val samplingRateProvider: () -> Float) : Sampler
     }
 
     /** @inheritDoc */
-    override fun getSamplingRate(): Float {
-        val rawSampleRate = samplingRateProvider()
+    override fun getSampleRate(): Float {
+        val rawSampleRate = sampleRateProvider()
         return if (rawSampleRate < 0f) {
             InternalLogger.UNBOUND.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                "Sampling rate value provided $rawSampleRate is below 0, setting it to 0."
+                "Sample rate value provided $rawSampleRate is below 0, setting it to 0."
             )
             0f
         } else if (rawSampleRate > SAMPLE_ALL_RATE) {
             InternalLogger.UNBOUND.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                "Sampling rate value provided $rawSampleRate is above 100, setting it to 100."
+                "Sample rate value provided $rawSampleRate is above 100, setting it to 100."
             )
             SAMPLE_ALL_RATE
         } else {

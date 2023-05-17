@@ -36,7 +36,7 @@ internal abstract class CrashService : Service() {
 
     protected fun getCredentials() = Credentials(
         clientToken = BuildConfig.NIGHTLY_TESTS_TOKEN,
-        envName = "instrumentation",
+        env = "instrumentation",
         variant = ""
     )
 

@@ -78,8 +78,8 @@ internal class RumMonitorBuilderTest {
         whenever(mockRumFeature.frameRateVitalMonitor) doReturn mock()
         whenever(mockRumFeature.backgroundEventTracking) doReturn forge.aBool()
         whenever(mockRumFeature.trackFrustrations) doReturn forge.aBool()
-        whenever(mockRumFeature.telemetrySamplingRate) doReturn forge.aFloat(min = 0f, max = 100f)
-        whenever(mockRumFeature.samplingRate) doReturn forge.aFloat(min = 0f, max = 100f)
+        whenever(mockRumFeature.telemetrySampleRate) doReturn forge.aFloat(min = 0f, max = 100f)
+        whenever(mockRumFeature.sampleRate) doReturn forge.aFloat(min = 0f, max = 100f)
 
         val mockRumFeatureScope = mock<FeatureScope>()
         whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
@@ -92,11 +92,11 @@ internal class RumMonitorBuilderTest {
 
     @Test
     fun `𝕄 builds a default RumMonitor 𝕎 build()`(
-        @FloatForgery(0f, 100f) fakeSamplingRate: Float,
+        @FloatForgery(0f, 100f) fakeSampleRate: Float,
         @BoolForgery fakeBackgroundEventTracking: Boolean
     ) {
         // Given
-        whenever(mockRumFeature.samplingRate) doReturn fakeSamplingRate
+        whenever(mockRumFeature.sampleRate) doReturn fakeSampleRate
         whenever(mockRumFeature.backgroundEventTracking) doReturn fakeBackgroundEventTracking
 
         // When
@@ -115,7 +115,7 @@ internal class RumMonitorBuilderTest {
                     .applicationId == fakeRumApplicationId.toString()
             }
         assertThat(monitor.handler.looper).isSameAs(Looper.getMainLooper())
-        assertThat(monitor.samplingRate).isEqualTo(fakeSamplingRate)
+        assertThat(monitor.sampleRate).isEqualTo(fakeSampleRate)
         assertThat(monitor.backgroundTrackingEnabled).isEqualTo(fakeBackgroundEventTracking)
 
         assertThat(monitor.telemetryEventHandler.sdkCore).isSameAs(mockSdkCore)
@@ -123,17 +123,17 @@ internal class RumMonitorBuilderTest {
         val telemetrySampler = monitor.telemetryEventHandler.eventSampler
         check(telemetrySampler is RateBasedSampler)
 
-        assertThat(telemetrySampler.getSamplingRate())
-            .isEqualTo(mockRumFeature.telemetrySamplingRate)
+        assertThat(telemetrySampler.getSampleRate())
+            .isEqualTo(mockRumFeature.telemetrySampleRate)
     }
 
     @Test
     fun `𝕄 builds a RumMonitor with custom sampling 𝕎 build()`(
-        @FloatForgery(0f, 100f) samplingRate: Float
+        @FloatForgery(0f, 100f) sampleRate: Float
     ) {
         // When
         val monitor = testedBuilder
-            .sampleRumSessions(samplingRate)
+            .setSessionSampleRate(sampleRate)
             .build()
 
         // Then
@@ -149,7 +149,7 @@ internal class RumMonitorBuilderTest {
                     .applicationId == fakeRumApplicationId.toString()
             }
         assertThat(monitor.handler.looper).isSameAs(Looper.getMainLooper())
-        assertThat(monitor.samplingRate).isEqualTo(samplingRate)
+        assertThat(monitor.sampleRate).isEqualTo(sampleRate)
     }
 
     @Test

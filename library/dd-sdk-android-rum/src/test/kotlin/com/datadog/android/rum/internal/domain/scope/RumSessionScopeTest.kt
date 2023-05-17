@@ -93,7 +93,7 @@ internal class RumSessionScopeTest {
     lateinit var fakeParentContext: RumContext
 
     @FloatForgery(min = 0f, max = 100f)
-    var fakeSamplingRate: Float = 0f
+    var fakeSampleRate: Float = 0f
 
     @BoolForgery
     var fakeBackgroundTrackingEnabled: Boolean = false
@@ -145,7 +145,7 @@ internal class RumSessionScopeTest {
     @Test
     fun `𝕄 have a ViewManager child scope 𝕎 init()`() {
         // Given
-        initializeTestedScope(fakeSamplingRate, false)
+        initializeTestedScope(fakeSampleRate, false)
 
         // When
         val childScope = (testedScope as RumSessionScope).childScope
@@ -340,7 +340,7 @@ internal class RumSessionScopeTest {
 
         repeat(1000) {
             // Given
-            initializeTestedScope(fakeSamplingRate)
+            initializeTestedScope(fakeSampleRate)
 
             // When
             testedScope.handleEvent(forge.startViewEvent(), mockWriter)
@@ -360,7 +360,7 @@ internal class RumSessionScopeTest {
         assertThat(other).isZero()
         val sampledRate = tracked.toFloat() * 100f / (tracked + untracked).toFloat()
         // because sampling is random based we can't guarantee exactly 75%
-        assertThat(sampledRate).isCloseTo(fakeSamplingRate, offset(5f))
+        assertThat(sampledRate).isCloseTo(fakeSampleRate, offset(5f))
     }
 
     @Test
@@ -1045,14 +1045,14 @@ internal class RumSessionScopeTest {
     // region Internal
 
     private fun initializeTestedScope(
-        samplingRate: Float = 100f,
+        sampleRate: Float = 100f,
         withMockChildScope: Boolean = true,
         backgroundTrackingEnabled: Boolean? = null
     ) {
         testedScope = RumSessionScope(
             mockParentScope,
             mockSdkCore,
-            samplingRate,
+            sampleRate,
             backgroundTrackingEnabled ?: fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
             mockViewChangedListener,

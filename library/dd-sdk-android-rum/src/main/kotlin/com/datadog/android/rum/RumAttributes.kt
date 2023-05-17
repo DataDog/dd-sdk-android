@@ -33,7 +33,7 @@ object RumAttributes {
      * The name of the application or service generating the rum events. (String)
      * This values is configurable through the [Credentials] during the SDK initialization.
      * By default it will take the application package name.
-     * @see [Credentials.serviceName]
+     * @see [Credentials.service]
      */
     const val SERVICE_NAME: String = "service"
 

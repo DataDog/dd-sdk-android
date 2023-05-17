@@ -266,8 +266,8 @@ object LogAttributes {
     /**
      * The name of the application or service generating the log events. (String)
      * This value is filled automatically by the [Logger].
-     * @see [Credentials.serviceName]
-     * @see [Logger.Builder.setServiceName]
+     * @see [Credentials.service]
+     * @see [Logger.Builder.setService]
      */
     const val SERVICE_NAME: String = "service"
 

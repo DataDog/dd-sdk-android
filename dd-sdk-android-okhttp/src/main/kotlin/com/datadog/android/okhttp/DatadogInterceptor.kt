@@ -101,7 +101,7 @@ internal constructor(
      * and offers the possibility to add custom attributes to the RUM resource events.
      * @param traceSampler Sampler controlling the sampling of APM traces created for
      * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
-     * fixed sampling rate or can get it dynamically from the provider. Value between `0.0` and
+     * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
      * be kept (default value is `20.0`).
      */
@@ -112,7 +112,7 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider(),
-        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE)
+        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
         sdkInstanceName = sdkInstanceName,
         tracedHosts = firstPartyHostsWithHeaderType,
@@ -144,7 +144,7 @@ internal constructor(
      * and offers the possibility to add custom attributes to the RUM resource events.
      * @param traceSampler Sampler controlling the sampling of APM traces created for
      * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
-     * fixed sampling rate or can get it dynamically from the provider. Value between `0.0` and
+     * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
      * be kept (default value is `20.0`).
      */
@@ -155,7 +155,7 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider(),
-        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE)
+        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
         sdkInstanceName = sdkInstanceName,
         tracedHosts = firstPartyHosts.associateWith { setOf(TracingHeaderType.DATADOG) },
@@ -179,7 +179,7 @@ internal constructor(
      * and offers the possibility to add custom attributes to the RUM resource events.
      * @param traceSampler Sampler controlling the sampling of APM traces created for
      * auto-instrumented requests. By default it is [RateBasedSampler], which either can accept
-     * fixed sampling rate or can get it dynamically from the provider. Value between `0.0` and
+     * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
      * be kept (default value is `20.0`).
      */
@@ -189,7 +189,7 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider(),
-        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLING_RATE)
+        traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
         sdkInstanceName = sdkInstanceName,
         tracedHosts = emptyMap(),
@@ -281,7 +281,7 @@ internal constructor(
             mapOf(
                 RumAttributes.TRACE_ID to span.context().toTraceId(),
                 RumAttributes.SPAN_ID to span.context().toSpanId(),
-                RumAttributes.RULE_PSR to traceSampler.getSamplingRate()
+                RumAttributes.RULE_PSR to traceSampler.getSampleRate()
             )
         }
         GlobalRum.get(sdkCore).stopResource(

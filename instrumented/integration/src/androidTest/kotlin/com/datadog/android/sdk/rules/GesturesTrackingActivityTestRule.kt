@@ -39,7 +39,7 @@ internal class GesturesTrackingActivityTestRule<T : Activity>(
             // we will use a large long task threshold to make sure we will not have LongTask events
             // noise in our integration tests.
             RuntimeConfig.rumFeatureBuilder()
-                .trackInteractions()
+                .trackUserInteractions()
                 .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
                 .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
                 .build()

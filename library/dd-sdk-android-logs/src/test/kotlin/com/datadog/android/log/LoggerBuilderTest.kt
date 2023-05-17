@@ -107,7 +107,7 @@ internal class LoggerBuilderTest {
         assertThat(handler.writer).isSameAs(mockDataWriter)
         assertThat(handler.bundleWithTraces).isTrue
         assertThat(handler.sampler).isInstanceOf(RateBasedSampler::class.java)
-        assertThat((handler.sampler as RateBasedSampler).getSamplingRate()).isEqualTo(100.0f)
+        assertThat((handler.sampler as RateBasedSampler).getSampleRate()).isEqualTo(100.0f)
         assertThat(handler.minLogPriority).isEqualTo(-1)
         assertThat(handler.loggerName).isEqualTo(fakePackageName)
         assertThat(handler.attachNetworkInfo).isFalse
@@ -121,7 +121,7 @@ internal class LoggerBuilderTest {
         val serviceName = forge.anAlphabeticalString()
 
         val logger = Logger.Builder(mockSdkCore)
-            .setServiceName(serviceName)
+            .setService(serviceName)
             .build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
@@ -179,7 +179,7 @@ internal class LoggerBuilderTest {
         val logger = Logger.Builder(mockSdkCore)
             .setDatadogLogsEnabled(false)
             .setLogcatLogsEnabled(logcatLogsEnabled)
-            .setServiceName(fakeServiceName)
+            .setService(fakeServiceName)
             .build()
 
         val handler: LogHandler = logger.handler
@@ -226,7 +226,7 @@ internal class LoggerBuilderTest {
     }
 
     @Test
-    fun `builder can set a sampling rate`(@Forgery forge: Forge) {
+    fun `builder can set a sample rate`(@Forgery forge: Forge) {
         val expectedSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 
         val logger = Logger.Builder(mockSdkCore).setSampleRate(expectedSampleRate).build()
@@ -234,6 +234,6 @@ internal class LoggerBuilderTest {
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
         val sampler = handler.sampler
         assertThat(sampler).isInstanceOf(RateBasedSampler::class.java)
-        assertThat((sampler as RateBasedSampler).getSamplingRate()).isEqualTo(expectedSampleRate)
+        assertThat((sampler as RateBasedSampler).getSampleRate()).isEqualTo(expectedSampleRate)
     }
 }

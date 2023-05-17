@@ -90,7 +90,7 @@ class AndroidTracer internal constructor(
 
         private var tracingHeaderTypes: Set<TracingHeaderType> = setOf(TracingHeaderType.DATADOG)
         private var bundleWithRumEnabled: Boolean = true
-        private var samplingRate: Double = DEFAULT_SAMPLING_RATE
+        private var sampleRate: Double = DEFAULT_SAMPLE_RATE
 
         // TODO RUMM-0000 should have a nicer call chain
         private var serviceName: String = ""
@@ -167,10 +167,10 @@ class AndroidTracer internal constructor(
 
         /**
          * Sets the service name that will appear in your traces.
-         * @param serviceName the service name (default = application package name)
+         * @param service the service name (default = application package name)
          */
-        fun setServiceName(serviceName: String): Builder {
-            this.serviceName = serviceName
+        fun setService(service: String): Builder {
+            this.serviceName = service
             return this
         }
 
@@ -207,13 +207,13 @@ class AndroidTracer internal constructor(
         }
 
         /**
-         * Sets the sampling rate of spans.
-         * @param samplingRate the sampling rate as a percentage between 0 and 100 (default is 100%)
+         * Sets the sample rate of spans.
+         * @param sampleRate the sample rate as a percentage between 0 and 100 (default is 100%)
          */
-        fun setSamplingRate(
-            @FloatRange(from = 0.0, to = 100.0) samplingRate: Double
+        fun setSampleRate(
+            @FloatRange(from = 0.0, to = 100.0) sampleRate: Double
         ): Builder {
-            this.samplingRate = samplingRate
+            this.sampleRate = sampleRate
             return this
         }
 
@@ -239,7 +239,7 @@ class AndroidTracer internal constructor(
             )
             properties.setProperty(
                 Config.TRACE_SAMPLE_RATE,
-                (samplingRate / DEFAULT_SAMPLING_RATE).toString()
+                (sampleRate / DEFAULT_SAMPLE_RATE).toString()
             )
 
             val propagationStyles = tracingHeaderTypes.joinToString(",")
@@ -277,7 +277,7 @@ class AndroidTracer internal constructor(
     }
 
     companion object {
-        internal const val DEFAULT_SAMPLING_RATE = 100.0
+        internal const val DEFAULT_SAMPLE_RATE = 100.0
 
         internal const val TRACING_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to create an AndroidTracer instance, " +

@@ -80,7 +80,7 @@ internal constructor(
         /**
          * Sets the DataDog SDK to be more verbose when an application is set to `debuggable`.
          * This is equivalent to setting:
-         *   sampleRumSessions(100)
+         *   setSessionSampleRate(100)
          *   setBatchSize(BatchSize.SMALL)
          *   setUploadFrequency(UploadFrequency.FREQUENT)
          *   Datadog.setVerbosity(Log.VERBOSE)

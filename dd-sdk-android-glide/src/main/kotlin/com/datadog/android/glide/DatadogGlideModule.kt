@@ -37,7 +37,7 @@ import java.io.InputStream
  * - be wrapped in a Span and have trace id injected to get a full flame-graph in APM.
  * If no host provided the interceptor won't trace any OkHttp [Request], nor propagate tracing
  * information to the backend, but RUM Resource events will still be sent for each request.
- * @param samplingRate the sampling rate for APM traces created for auto-instrumented
+ * @param sampleRate the sample rate for APM traces created for auto-instrumented
  * requests. It must be a value between `0.0` and `100.0`. A value of `0.0` means no trace will
  * be kept, `100.0` means all traces will be kept (default value is `20.0`).
  */
@@ -45,7 +45,7 @@ open class DatadogGlideModule
 @JvmOverloads constructor(
     private val sdkInstanceName: String? = null,
     private val firstPartyHosts: List<String> = emptyList(),
-    private val samplingRate: Float = DEFAULT_SAMPLING_RATE
+    private val sampleRate: Float = DEFAULT_SAMPLE_RATE
 ) : AppGlideModule() {
 
     // region AppGlideModule
@@ -91,7 +91,7 @@ open class DatadogGlideModule
             DatadogInterceptor(
                 sdkInstanceName,
                 firstPartyHosts,
-                traceSampler = RateBasedSampler(samplingRate)
+                traceSampler = RateBasedSampler(sampleRate)
             )
         )
         return builder
@@ -100,6 +100,6 @@ open class DatadogGlideModule
     // endregion
 
     private companion object {
-        private const val DEFAULT_SAMPLING_RATE: Float = 20f
+        private const val DEFAULT_SAMPLE_RATE: Float = 20f
     }
 }

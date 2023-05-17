@@ -32,7 +32,7 @@ internal class TelemetryEventHandler(
     internal val sdkCore: SdkCore,
     internal val eventSampler: Sampler,
     internal val configurationExtraSampler: Sampler =
-        RateBasedSampler(DEFAULT_CONFIGURATION_SAMPLING_RATE),
+        RateBasedSampler(DEFAULT_CONFIGURATION_SAMPLE_RATE),
     internal val maxEventCountPerSession: Int = MAX_EVENTS_PER_SESSION
 ) : RumSessionListener {
 
@@ -227,8 +227,8 @@ internal class TelemetryEventHandler(
             experimentalFeatures = null,
             telemetry = TelemetryConfigurationEvent.Telemetry(
                 TelemetryConfigurationEvent.Configuration(
-                    sessionSampleRate = rumConfig?.samplingRate?.toLong(),
-                    telemetrySampleRate = rumConfig?.telemetrySamplingRate?.toLong(),
+                    sessionSampleRate = rumConfig?.sampleRate?.toLong(),
+                    telemetrySampleRate = rumConfig?.telemetrySampleRate?.toLong(),
                     useProxy = coreConfiguration.useProxy,
                     trackFrustrations = rumConfig?.trackFrustrations,
                     useLocalEncryption = coreConfiguration.useLocalEncryption,
@@ -284,7 +284,7 @@ internal class TelemetryEventHandler(
 
     companion object {
         const val MAX_EVENTS_PER_SESSION = 100
-        const val DEFAULT_CONFIGURATION_SAMPLING_RATE = 20f
+        const val DEFAULT_CONFIGURATION_SAMPLE_RATE = 20f
         const val ALREADY_SEEN_EVENT_MESSAGE =
             "Already seen telemetry event with identity=%s, rejecting."
         const val MAX_EVENT_NUMBER_REACHED_MESSAGE =

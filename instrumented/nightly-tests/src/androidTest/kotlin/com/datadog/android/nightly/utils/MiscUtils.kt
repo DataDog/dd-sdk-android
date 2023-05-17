@@ -113,7 +113,7 @@ fun initializeSdk(
     mutableListOf(
         rumFeatureProvider(
             RumFeature.Builder(BuildConfig.NIGHTLY_TESTS_RUM_APP_ID)
-                .sampleTelemetry(100f)
+                .setTelemetrySampleRate(100f)
         ),
         logsFeatureProvider(),
         tracingFeatureProvider()
@@ -149,7 +149,7 @@ fun cleanStorageFiles() {
 private fun createDatadogCredentials(): Credentials {
     return Credentials(
         clientToken = BuildConfig.NIGHTLY_TESTS_TOKEN,
-        envName = ENV_NAME,
+        env = ENV_NAME,
         variant = ""
     )
 }

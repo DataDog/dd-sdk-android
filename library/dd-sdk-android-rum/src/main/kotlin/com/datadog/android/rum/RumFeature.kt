@@ -96,9 +96,9 @@ class RumFeature internal constructor(
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
     internal val initialized = AtomicBoolean(false)
 
-    internal var samplingRate: Float = 0f
-    internal var telemetrySamplingRate: Float = 0f
-    internal var telemetryConfigurationSamplingRate: Float = 0f
+    internal var sampleRate: Float = 0f
+    internal var telemetrySampleRate: Float = 0f
+    internal var telemetryConfigurationSampleRate: Float = 0f
     internal var backgroundEventTracking: Boolean = false
     internal var trackFrustrations: Boolean = false
 
@@ -140,18 +140,18 @@ class RumFeature internal constructor(
             sdkCore as InternalSdkCore
         )
 
-        samplingRate = if (sdkCore.isDeveloperModeEnabled) {
+        sampleRate = if (sdkCore.isDeveloperModeEnabled) {
             sdkCore._internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                DEVELOPER_MODE_SAMPLING_RATE_CHANGED_MESSAGE
+                DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE
             )
-            ALL_IN_SAMPLING_RATE
+            ALL_IN_SAMPLE_RATE
         } else {
-            configuration.samplingRate
+            configuration.sampleRate
         }
-        telemetrySamplingRate = configuration.telemetrySamplingRate
-        telemetryConfigurationSamplingRate = configuration.telemetryConfigurationSamplingRate
+        telemetrySampleRate = configuration.telemetrySampleRate
+        telemetryConfigurationSampleRate = configuration.telemetryConfigurationSampleRate
         backgroundEventTracking = configuration.backgroundEventTracking
         trackFrustrations = configuration.trackFrustrations
 
@@ -520,25 +520,25 @@ class RumFeature internal constructor(
         private var rumConfig = DEFAULT_RUM_CONFIG
 
         /**
-         * Sets the sampling rate for RUM Sessions.
+         * Sets the sample rate for RUM Sessions.
          *
-         * @param samplingRate the sampling rate must be a value between 0 and 100. A value of 0
+         * @param sampleRate the sample rate must be a value between 0 and 100. A value of 0
          * means no RUM event will be sent, 100 means all sessions will be kept.
          */
-        fun sampleRumSessions(@FloatRange(from = 0.0, to = 100.0) samplingRate: Float): Builder {
-            rumConfig = rumConfig.copy(samplingRate = samplingRate)
+        fun setSessionSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): Builder {
+            rumConfig = rumConfig.copy(sampleRate = sampleRate)
             return this
         }
 
         /**
-         * Sets the sampling rate for Internal Telemetry (info related to the work of the
+         * Sets the sample rate for Internal Telemetry (info related to the work of the
          * SDK internals). Default value is 20.
          *
-         * @param samplingRate the sampling rate must be a value between 0 and 100. A value of 0
+         * @param sampleRate the sample rate must be a value between 0 and 100. A value of 0
          * means no telemetry will be sent, 100 means all telemetry will be kept.
          */
-        fun sampleTelemetry(@FloatRange(from = 0.0, to = 100.0) samplingRate: Float): Builder {
-            rumConfig = rumConfig.copy(telemetrySamplingRate = samplingRate)
+        fun setTelemetrySampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): Builder {
+            rumConfig = rumConfig.copy(telemetrySampleRate = sampleRate)
             return this
         }
 
@@ -553,7 +553,7 @@ class RumFeature internal constructor(
          * @see [InteractionPredicate]
          */
         @JvmOverloads
-        fun trackInteractions(
+        fun trackUserInteractions(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider> = emptyArray(),
             interactionPredicate: InteractionPredicate = NoOpInteractionPredicate()
         ): Builder {
@@ -567,7 +567,7 @@ class RumFeature internal constructor(
         /**
          * Disable the user interaction automatic tracker.
          */
-        fun disableInteractionTracking(): Builder {
+        fun disableUserInteractionTracking(): Builder {
             rumConfig = rumConfig.copy(userActionTracking = false)
             return this
         }
@@ -615,7 +615,7 @@ class RumFeature internal constructor(
          *
          * @param eventMapper the [ViewEventMapper] implementation.
          */
-        fun setRumViewEventMapper(eventMapper: ViewEventMapper): Builder {
+        fun setViewEventMapper(eventMapper: ViewEventMapper): Builder {
             rumConfig = rumConfig.copy(viewEventMapper = eventMapper)
             return this
         }
@@ -626,7 +626,7 @@ class RumFeature internal constructor(
          *
          * @param eventMapper the [EventMapper] implementation.
          */
-        fun setRumResourceEventMapper(eventMapper: EventMapper<ResourceEvent>): Builder {
+        fun setResourceEventMapper(eventMapper: EventMapper<ResourceEvent>): Builder {
             rumConfig = rumConfig.copy(resourceEventMapper = eventMapper)
             return this
         }
@@ -637,7 +637,7 @@ class RumFeature internal constructor(
          *
          * @param eventMapper the [EventMapper] implementation.
          */
-        fun setRumActionEventMapper(eventMapper: EventMapper<ActionEvent>): Builder {
+        fun setActionEventMapper(eventMapper: EventMapper<ActionEvent>): Builder {
             rumConfig = rumConfig.copy(actionEventMapper = eventMapper)
             return this
         }
@@ -648,7 +648,7 @@ class RumFeature internal constructor(
          *
          * @param eventMapper the [EventMapper] implementation.
          */
-        fun setRumErrorEventMapper(eventMapper: EventMapper<ErrorEvent>): Builder {
+        fun setErrorEventMapper(eventMapper: EventMapper<ErrorEvent>): Builder {
             rumConfig = rumConfig.copy(errorEventMapper = eventMapper)
             return this
         }
@@ -659,7 +659,7 @@ class RumFeature internal constructor(
          *
          * @param eventMapper the [EventMapper] implementation.
          */
-        fun setRumLongTaskEventMapper(eventMapper: EventMapper<LongTaskEvent>): Builder {
+        fun setLongTaskEventMapper(eventMapper: EventMapper<LongTaskEvent>): Builder {
             rumConfig = rumConfig.copy(longTaskEventMapper = eventMapper)
             return this
         }
@@ -680,7 +680,7 @@ class RumFeature internal constructor(
          *
          * @param enabled whether background events should be tracked in RUM.
          */
-        fun trackBackgroundRumEvents(enabled: Boolean): Builder {
+        fun trackBackgroundEvents(enabled: Boolean): Builder {
             rumConfig = rumConfig.copy(backgroundEventTracking = enabled)
             return this
         }
@@ -730,16 +730,16 @@ class RumFeature internal constructor(
          * Builds a [RumFeature] based on the current state of this Builder.
          */
         fun build(): RumFeature {
-            val telemetryConfigurationSamplingRate =
+            val telemetryConfigurationSampleRate =
                 rumConfig.additionalConfig[DD_TELEMETRY_CONFIG_SAMPLE_RATE_TAG]?.let {
                     if (it is Number) it.toFloat() else null
                 }
             return RumFeature(
                 applicationId = applicationId,
                 configuration = rumConfig.let {
-                    if (telemetryConfigurationSamplingRate != null) {
+                    if (telemetryConfigurationSampleRate != null) {
                         rumConfig.copy(
-                            telemetryConfigurationSamplingRate = telemetryConfigurationSamplingRate
+                            telemetryConfigurationSampleRate = telemetryConfigurationSampleRate
                         )
                     } else {
                         rumConfig
@@ -751,9 +751,9 @@ class RumFeature internal constructor(
 
     internal data class Configuration(
         val customEndpointUrl: String?,
-        val samplingRate: Float,
-        val telemetrySamplingRate: Float,
-        val telemetryConfigurationSamplingRate: Float,
+        val sampleRate: Float,
+        val telemetrySampleRate: Float,
+        val telemetryConfigurationSampleRate: Float,
         val userActionTracking: Boolean,
         val touchTargetExtraAttributesProviders: List<ViewAttributesProvider>,
         val interactionPredicate: InteractionPredicate,
@@ -773,19 +773,19 @@ class RumFeature internal constructor(
 
     internal companion object {
 
-        internal const val ALL_IN_SAMPLING_RATE: Float = 100f
-        internal const val DEFAULT_SAMPLING_RATE: Float = 100f
-        internal const val DEFAULT_TELEMETRY_SAMPLING_RATE: Float = 20f
-        internal const val DEFAULT_TELEMETRY_CONFIGURATION_SAMPLING_RATE: Float = 20f
+        internal const val ALL_IN_SAMPLE_RATE: Float = 100f
+        internal const val DEFAULT_SAMPLE_RATE: Float = 100f
+        internal const val DEFAULT_TELEMETRY_SAMPLE_RATE: Float = 20f
+        internal const val DEFAULT_TELEMETRY_CONFIGURATION_SAMPLE_RATE: Float = 20f
         internal const val DEFAULT_LONG_TASK_THRESHOLD_MS = 100L
         internal const val DD_TELEMETRY_CONFIG_SAMPLE_RATE_TAG =
             "_dd.telemetry.configuration_sample_rate"
 
         internal val DEFAULT_RUM_CONFIG = Configuration(
             customEndpointUrl = null,
-            samplingRate = DEFAULT_SAMPLING_RATE,
-            telemetrySamplingRate = DEFAULT_TELEMETRY_SAMPLING_RATE,
-            telemetryConfigurationSamplingRate = DEFAULT_TELEMETRY_CONFIGURATION_SAMPLING_RATE,
+            sampleRate = DEFAULT_SAMPLE_RATE,
+            telemetrySampleRate = DEFAULT_TELEMETRY_SAMPLE_RATE,
+            telemetryConfigurationSampleRate = DEFAULT_TELEMETRY_CONFIGURATION_SAMPLE_RATE,
             userActionTracking = true,
             touchTargetExtraAttributesProviders = emptyList(),
             interactionPredicate = NoOpInteractionPredicate(),
@@ -829,8 +829,8 @@ class RumFeature internal constructor(
                 " where mandatory message field is either missing or has a wrong type."
         internal const val TELEMETRY_MISSING_MESSAGE_FIELD = "RUM feature received a telemetry" +
             " event, but mandatory message field is either missing or has a wrong type."
-        internal const val DEVELOPER_MODE_SAMPLING_RATE_CHANGED_MESSAGE =
-            "Developer mode enabled, setting RUM sampling rate to 100%."
+        internal const val DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE =
+            "Developer mode enabled, setting RUM sample rate to 100%."
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,
