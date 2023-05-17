@@ -56,6 +56,11 @@ android {
 dependencies {
 
     implementation(project(":dd-sdk-android"))
+    implementation(project(":library:dd-sdk-android-ndk"))
+    implementation(project(":library:dd-sdk-android-trace"))
+    implementation(project(":library:dd-sdk-android-rum"))
+    implementation(project(":library:dd-sdk-android-logs"))
+    implementation(libs.timber)
     implementation("androidx.core:core-ktx:1.7.0")
     implementation("com.google.android.gms:play-services-wearable:17.1.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
