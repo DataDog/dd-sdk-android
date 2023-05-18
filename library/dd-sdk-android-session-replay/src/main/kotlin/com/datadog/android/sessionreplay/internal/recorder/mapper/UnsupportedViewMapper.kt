@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal class UnsupportedViewMapper :
@@ -29,7 +30,7 @@ internal class UnsupportedViewMapper :
                 height = viewGlobalBounds.height,
                 shapeStyle = resolveShapeStyle(view),
                 border = resolveBorder(),
-                text = view::class.java.name,
+                text = resolveViewTitle(view),
                 textStyle = resolveTextStyle(),
                 textPosition = resolveTextPosition()
             )
@@ -37,6 +38,15 @@ internal class UnsupportedViewMapper :
     }
 
     // region Internal
+
+    private fun resolveViewTitle(view: View): String {
+        val viewUtilsInternal = ViewUtilsInternal()
+        return if (viewUtilsInternal.isToolbar(view)) {
+            return TOOLBAR_LABEL
+        } else {
+            DEFAULT_LABEL
+        }
+    }
 
     private fun resolveTextStyle():
         MobileSegment.TextStyle {
@@ -84,5 +94,7 @@ internal class UnsupportedViewMapper :
         internal const val BORDER_COLOR = "#D3D3D3FF"
         internal const val BORDER_WIDTH = 1L
         internal const val LABEL_TEXT_SIZE = 10L
+        internal const val TOOLBAR_LABEL = "Toolbar"
+        internal const val DEFAULT_LABEL = "Unsupported view"
     }
 }

@@ -111,7 +111,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
             height = titleTextView.height.toLong().densityNormalized(density),
             text = "${titleTextView.text}",
             textStyle = MobileSegment.TextStyle(
-                family = "roboto, sans-serif",
+                family = SANS_SERIF_FAMILY_NAME,
                 size = titleTextView.textSize.toLong().densityNormalized(density),
                 color = StringUtils.formatColorAndAlphaAsHexa(
                     titleTextView.currentTextColor,
@@ -142,7 +142,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
                 )
             ),
             textStyle = MobileSegment.TextStyle(
-                family = "roboto, sans-serif",
+                family = SANS_SERIF_FAMILY_NAME,
                 size = clickMeButton.textSize.toLong().densityNormalized(density),
                 color = StringUtils.formatColorAndAlphaAsHexa(
                     clickMeButton.currentTextColor,
@@ -189,9 +189,9 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
                         color = "#D3D3D3FF",
                         width = 1L
                     ),
-                    text = toolbar::class.java.name,
+                    text = UNSUPPORTED_VIEW_TITLE,
                     textStyle = MobileSegment.TextStyle(
-                        family = "roboto, sans-serif",
+                        family = SANS_SERIF_FAMILY_NAME,
                         size = 10,
                         color = "#FF0000FF"
                     ),
@@ -251,5 +251,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
     companion object {
         private const val BLACK_COLOR_AS_HEXA = 0
         private const val FULL_OPACITY_AS_HEXA = 255
+        private const val SANS_SERIF_FAMILY_NAME = "roboto, sans-serif"
+        private const val UNSUPPORTED_VIEW_TITLE = "Toolbar"
     }
 }

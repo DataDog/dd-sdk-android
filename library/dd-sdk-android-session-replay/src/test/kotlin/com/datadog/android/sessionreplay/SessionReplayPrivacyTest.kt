@@ -43,6 +43,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMappe
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -52,6 +53,18 @@ import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 
 internal class SessionReplayPrivacyTest {
 
+    /*
+        At some point in future this may cause issues for us due to final static optimization
+        After x times changing a static final value, the changes will cease having an effect
+        see: https://stackoverflow.com/questions/3301635/change-private-static-final-field-using-java-reflection/3301720#3301720
+     */
+    private val origApiLevel = Build.VERSION.SDK_INT
+
+    @AfterEach
+    fun teardown() {
+        setApiLevel(origApiLevel)
+    }
+
     @ParameterizedTest(name = "M return mappers W rule({1}, API Level {0}")
     @MethodSource("provideTestArguments")
     fun `M return mappers W rule({1}, API Level {0}`(
@@ -60,7 +73,7 @@ internal class SessionReplayPrivacyTest {
         expectedMappers: List<MapperTypeWrapper>
     ) {
         // Given
-        Build.VERSION::class.java.setStaticValue("SDK_INT", apiLevel)
+        setApiLevel(apiLevel)
 
         // When
         val actualMappers = when (maskLevel) {
@@ -79,6 +92,14 @@ internal class SessionReplayPrivacyTest {
         }
     }
 
+    // region Internal
+
+    private fun setApiLevel(newApiLevel: Int) {
+        Build.VERSION::class.java.setStaticValue("SDK_INT", newApiLevel)
+    }
+
+    // endregion
+
     companion object {
         @Suppress("UNCHECKED_CAST")
         private fun WireframeMapper<*, *>.toGenericMapper(): WireframeMapper<View, *> {
@@ -96,8 +117,7 @@ internal class SessionReplayPrivacyTest {
             MapperTypeWrapper(EditText::class.java, mockEditTextViewMapper.toGenericMapper()),
             MapperTypeWrapper(ImageView::class.java, mockImageMapper.toGenericMapper()),
 
-            MapperTypeWrapper(AppCompatToolbar::class.java, mockUnsupportedViewMapper.toGenericMapper()),
-            MapperTypeWrapper(Toolbar::class.java, mockUnsupportedViewMapper.toGenericMapper())
+            MapperTypeWrapper(AppCompatToolbar::class.java, mockUnsupportedViewMapper.toGenericMapper())
         )
 
         // ALLOW_ALL
@@ -117,11 +137,15 @@ internal class SessionReplayPrivacyTest {
             MapperTypeWrapper(SwitchCompat::class.java, mockSwitchCompatMapper.toGenericMapper())
         )
 
-        private val allowAllAbove26 = allowAll + listOf(
+        private val allowAllFromApi21 = allowAll + listOf(
+            MapperTypeWrapper(Toolbar::class.java, mockUnsupportedViewMapper.toGenericMapper())
+        )
+
+        private val allowAllFromApi26 = allowAllFromApi21 + listOf(
             MapperTypeWrapper(SeekBar::class.java, mockSeekBarMapper.toGenericMapper())
         )
 
-        private val allowAllAbove29 = allowAllAbove26 + listOf(
+        private val allowAllFromApi29 = allowAllFromApi26 + listOf(
             MapperTypeWrapper(NumberPicker::class.java, mockNumberPickerMapper.toGenericMapper())
         )
 
@@ -142,11 +166,15 @@ internal class SessionReplayPrivacyTest {
             MapperTypeWrapper(SwitchCompat::class.java, mockMaskAllSwitchCompatMapper.toGenericMapper())
         )
 
-        private val maskAllAbove26 = maskAll + listOf(
+        private val maskAllFromApi21 = maskAll + listOf(
+            MapperTypeWrapper(Toolbar::class.java, mockUnsupportedViewMapper.toGenericMapper())
+        )
+
+        private val maskAllFromApi26 = maskAllFromApi21 + listOf(
             MapperTypeWrapper(SeekBar::class.java, mockMaskAllSeekBarWireframeMapper.toGenericMapper())
         )
 
-        private val maskAllAbove29 = maskAllAbove26 + listOf(
+        private val maskAllFromApi29 = maskAllFromApi26 + listOf(
             MapperTypeWrapper(NumberPicker::class.java, mockMaskAllNumberPickerMapper.toGenericMapper())
         )
 
@@ -161,11 +189,15 @@ internal class SessionReplayPrivacyTest {
             MapperTypeWrapper(SwitchCompat::class.java, mockMaskAllSwitchCompatMapper.toGenericMapper())
         )
 
-        private val maskUserInputAbove26 = maskUserInput + listOf(
+        private val maskUserInputFromApi21 = maskUserInput + listOf(
+            MapperTypeWrapper(Toolbar::class.java, mockUnsupportedViewMapper.toGenericMapper())
+        )
+
+        private val maskUserInputFromApi26 = maskUserInputFromApi21 + listOf(
             MapperTypeWrapper(SeekBar::class.java, mockMaskAllSeekBarWireframeMapper.toGenericMapper())
         )
 
-        private val maskUserInputAbove29 = maskUserInputAbove26 + listOf(
+        private val maskUserInputFromApi29 = maskUserInputFromApi26 + listOf(
             MapperTypeWrapper(NumberPicker::class.java, mockMaskAllNumberPickerMapper.toGenericMapper())
         )
 
@@ -177,15 +209,18 @@ internal class SessionReplayPrivacyTest {
             val maskUserInputLevel = SessionReplayPrivacy.MASK_USER_INPUT.toString()
 
             return Stream.of(
-                Arguments.of(Build.VERSION_CODES.M, allowAllLevel, allowAll),
-                Arguments.of(Build.VERSION_CODES.O, allowAllLevel, allowAllAbove26),
-                Arguments.of(Build.VERSION_CODES.Q, allowAllLevel, allowAllAbove29),
-                Arguments.of(Build.VERSION_CODES.M, maskAllLevel, maskAll),
-                Arguments.of(Build.VERSION_CODES.O, maskAllLevel, maskAllAbove26),
-                Arguments.of(Build.VERSION_CODES.Q, maskAllLevel, maskAllAbove29),
-                Arguments.of(Build.VERSION_CODES.M, maskUserInputLevel, maskUserInput),
-                Arguments.of(Build.VERSION_CODES.O, maskUserInputLevel, maskUserInputAbove26),
-                Arguments.of(Build.VERSION_CODES.Q, maskUserInputLevel, maskUserInputAbove29)
+                Arguments.of(Build.VERSION_CODES.KITKAT, allowAllLevel, allowAll),
+                Arguments.of(Build.VERSION_CODES.LOLLIPOP, allowAllLevel, allowAllFromApi21),
+                Arguments.of(Build.VERSION_CODES.O, allowAllLevel, allowAllFromApi26),
+                Arguments.of(Build.VERSION_CODES.Q, allowAllLevel, allowAllFromApi29),
+                Arguments.of(Build.VERSION_CODES.KITKAT, maskAllLevel, maskAll),
+                Arguments.of(Build.VERSION_CODES.LOLLIPOP, maskAllLevel, maskAllFromApi21),
+                Arguments.of(Build.VERSION_CODES.O, maskAllLevel, maskAllFromApi26),
+                Arguments.of(Build.VERSION_CODES.Q, maskAllLevel, maskAllFromApi29),
+                Arguments.of(Build.VERSION_CODES.KITKAT, maskUserInputLevel, maskUserInput),
+                Arguments.of(Build.VERSION_CODES.LOLLIPOP, maskUserInputLevel, maskUserInputFromApi21),
+                Arguments.of(Build.VERSION_CODES.O, maskUserInputLevel, maskUserInputFromApi26),
+                Arguments.of(Build.VERSION_CODES.Q, maskUserInputLevel, maskUserInputFromApi29)
             )
         }
     }
