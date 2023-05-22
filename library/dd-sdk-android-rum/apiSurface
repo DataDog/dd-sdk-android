@@ -223,6 +223,8 @@ interface com.datadog.android.rum.tracking.InteractionPredicate
   fun getTargetName(Any): String?
 class com.datadog.android.rum.tracking.MixedViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
   constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities(), ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
+  override fun register(com.datadog.android.v2.api.SdkCore, android.content.Context)
+  override fun unregister(android.content.Context?)
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
   override fun onActivityStarted(android.app.Activity)
   override fun onActivityResumed(android.app.Activity)

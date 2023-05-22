@@ -7,8 +7,10 @@
 package com.datadog.android.rum.tracking
 
 import android.app.Activity
+import android.content.Context
 import android.os.Bundle
 import androidx.fragment.app.Fragment
+import com.datadog.android.v2.api.SdkCore
 
 /**
  * A [ViewTrackingStrategy] that will track [Activity] and [Fragment] as RUM View Events.
@@ -46,6 +48,18 @@ class MixedViewTrackingStrategy internal constructor(
             defaultFragmentComponentPredicate
         )
     )
+
+    override fun register(sdkCore: SdkCore, context: Context) {
+        super.register(sdkCore, context)
+        activityViewTrackingStrategy.register(sdkCore, context)
+        fragmentViewTrackingStrategy.register(sdkCore, context)
+    }
+
+    override fun unregister(context: Context?) {
+        activityViewTrackingStrategy.unregister(context)
+        fragmentViewTrackingStrategy.unregister(context)
+        super.unregister(context)
+    }
 
     // region ActivityLifecycleTrackingStrategy
 

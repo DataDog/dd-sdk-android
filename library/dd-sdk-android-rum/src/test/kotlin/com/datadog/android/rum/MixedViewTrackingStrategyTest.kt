@@ -12,6 +12,7 @@ import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
 import com.datadog.android.rum.tracking.StubComponentPredicate
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.v2.api.SdkCore
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -23,6 +24,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -43,6 +45,9 @@ internal class MixedViewTrackingStrategyTest :
     @Mock
     lateinit var mockBundle: Bundle
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
     // region tests
 
     @BeforeEach
@@ -56,7 +61,27 @@ internal class MixedViewTrackingStrategyTest :
     }
 
     @Test
-    fun `when created will delegate to the bundled strategies`() {
+    fun `when registered will delegate to the bundled strategies`() {
+        // Whenever
+        testedStrategy.register(mockSdkCore, mockAppContext)
+
+        // Then
+        verify(mockActivityViewTrackingStrategy).register(mockSdkCore, mockAppContext)
+        verify(mockFragmentViewTrackingStrategy).register(mockSdkCore, mockAppContext)
+    }
+
+    @Test
+    fun `when unregistered will delegate to the bundled strategies`() {
+        // Whenever
+        testedStrategy.unregister(mockAppContext)
+
+        // Then
+        verify(mockActivityViewTrackingStrategy).unregister(mockAppContext)
+        verify(mockFragmentViewTrackingStrategy).unregister(mockAppContext)
+    }
+
+    @Test
+    fun `when activity created will delegate to the bundled strategies`() {
         // Whenever
         testedStrategy.onActivityCreated(mockActivity, mockBundle)
 
@@ -68,7 +93,7 @@ internal class MixedViewTrackingStrategyTest :
     }
 
     @Test
-    fun `when destroyed will delegate to the bundled strategies`() {
+    fun `when activity destroyed will delegate to the bundled strategies`() {
         // Whenever
         testedStrategy.onActivityDestroyed(mockActivity)
 
@@ -80,7 +105,7 @@ internal class MixedViewTrackingStrategyTest :
     }
 
     @Test
-    fun `when started will delegate to the bundled strategies`() {
+    fun `when activity started will delegate to the bundled strategies`() {
         // Whenever
         testedStrategy.onActivityStarted(mockActivity)
 
@@ -92,7 +117,7 @@ internal class MixedViewTrackingStrategyTest :
     }
 
     @Test
-    fun `when stopped will delegate to the bundled strategies`() {
+    fun `when activity stopped will delegate to the bundled strategies`() {
         // Whenever
         testedStrategy.onActivityStopped(mockActivity)
 
@@ -104,7 +129,7 @@ internal class MixedViewTrackingStrategyTest :
     }
 
     @Test
-    fun `when resumed will delegate to the bundled strategies`() {
+    fun `when activity resumed will delegate to the bundled strategies`() {
         // Whenever
         testedStrategy.onActivityResumed(mockActivity)
 
@@ -116,7 +141,7 @@ internal class MixedViewTrackingStrategyTest :
     }
 
     @Test
-    fun `when paused will delegate to the bundled strategies`() {
+    fun `when activity paused will delegate to the bundled strategies`() {
         // Whenever
         testedStrategy.onActivityPaused(mockActivity)
 
