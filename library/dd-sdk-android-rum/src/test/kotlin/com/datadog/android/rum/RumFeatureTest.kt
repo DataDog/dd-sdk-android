@@ -709,6 +709,15 @@ internal class RumFeatureTest {
     }
 
     @Test
+    fun `𝕄 enable RUM debugging 𝕎 enableRumDebugging(true){RUM feature is not yet initialized}`() {
+        // When
+        testedFeature.enableRumDebugging(true)
+
+        // Then
+        assertThat(testedFeature.debugActivityLifecycleListener).isNull()
+    }
+
+    @Test
     fun `𝕄 disable RUM debugging 𝕎 enableRumDebugging(false)`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
