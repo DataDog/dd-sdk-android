@@ -15,6 +15,7 @@ import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
+import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.core.internal.utils.executeSafe
@@ -235,8 +236,14 @@ internal class RumFeature(
 
         initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor, periodInMs)
         initializeVitalMonitor(MemoryVitalReader(), memoryVitalMonitor, periodInMs)
-        jankStatsActivityLifecycleListener = JankStatsActivityLifecycleListener(frameRateVitalMonitor, internalLogger)
-        (appContext as? Application)?.registerActivityLifecycleCallbacks(jankStatsActivityLifecycleListener)
+        jankStatsActivityLifecycleListener = JankStatsActivityLifecycleListener(
+            frameRateVitalMonitor,
+            DefaultBuildSdkVersionProvider(),
+            internalLogger
+        )
+        (appContext as? Application)?.registerActivityLifecycleCallbacks(
+            jankStatsActivityLifecycleListener
+        )
     }
 
     private fun initializeVitalMonitor(

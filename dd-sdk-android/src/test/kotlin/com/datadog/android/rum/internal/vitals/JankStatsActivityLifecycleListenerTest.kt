@@ -6,14 +6,16 @@
 
 package com.datadog.android.rum.internal.vitals
 
+import android.app.Activity
+import android.os.Build
+import android.view.Display
+import android.view.Window
 import androidx.metrics.performance.FrameData
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -21,9 +23,15 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.AdditionalMatchers.eq
 import org.mockito.Mock
+import org.mockito.Mockito.never
+import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -42,9 +50,34 @@ internal class JankStatsActivityLifecycleListenerTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
+    @Mock
+    lateinit var mockActivity: Activity
+
+    @Mock
+    lateinit var mockDisplay: Display
+
+    @Mock
+    lateinit var mockWindow: Window
+
+    @FloatForgery(30f, 120f)
+    var fakeDeviceRefreshRate: Float = 0f
+
     @BeforeEach
     fun `set up`() {
-        testedJankListener = JankStatsActivityLifecycleListener(mockObserver, mockInternalLogger)
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
+        whenever(mockActivity.window) doReturn mockWindow
+        whenever(mockActivity.display) doReturn mockDisplay
+        whenever(mockDisplay.refreshRate) doReturn fakeDeviceRefreshRate
+
+        testedJankListener = JankStatsActivityLifecycleListener(
+            mockObserver,
+            mockBuildSdkVersionProvider,
+            mockInternalLogger
+        )
+        testedJankListener.onActivityCreated(mockActivity, null)
     }
 
     @Test
@@ -63,20 +96,22 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 forward frame rate to observer 𝕎 doFrame() {two frame timestamp}`(
+    fun `𝕄 forward frame rate to observer 𝕎 doFrame() {acceptable frame rate}`(
         @LongForgery timestampNs: Long,
         @LongForgery(ONE_MILLISSECOND_NS, ONE_SECOND_NS) frameDurationNs: Long,
         @BoolForgery isJank: Boolean
     ) {
         // Given
         val expectedFrameRate = ONE_SECOND_NS.toDouble() / frameDurationNs.toDouble()
-        val frameData = FrameData(timestampNs, frameDurationNs, isJank, emptyList())
+        val expectedScale = STANDARD_FPS / fakeDeviceRefreshRate
+        val scaledFrameDuration = (frameDurationNs * expectedScale).toLong()
+        val frameData = FrameData(timestampNs, scaledFrameDuration, isJank, emptyList())
 
         // When
         testedJankListener.onFrame(frameData)
 
         // Then
-        verify(mockObserver).onNewSample(expectedFrameRate)
+        verify(mockObserver).onNewSample(eq(expectedFrameRate, 0.0001))
     }
 
     @Test
@@ -112,6 +147,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     companion object {
+        const val STANDARD_FPS: Float = 60f
         const val ONE_MILLISSECOND_NS: Long = 1000L * 1000L
         const val ONE_SECOND_NS: Long = 1000L * 1000L * 1000L
         const val TEN_SECOND_NS: Long = 10L * ONE_SECOND_NS
