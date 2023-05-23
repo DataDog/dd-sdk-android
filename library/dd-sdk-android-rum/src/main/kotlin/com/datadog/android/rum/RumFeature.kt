@@ -290,6 +290,14 @@ class RumFeature internal constructor(
     // region Internal
 
     private fun enableDebugging() {
+        if (!initialized.get()) {
+            InternalLogger.UNBOUND.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                "$RUM_FEATURE_NOT_YET_INITIALIZED Cannot enable RUM debugging."
+            )
+            return
+        }
         val context = appContext
         if (context is Application) {
             debugActivityLifecycleListener = UiRumDebugListener(sdkCore)
@@ -831,6 +839,9 @@ class RumFeature internal constructor(
             " event, but mandatory message field is either missing or has a wrong type."
         internal const val DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE =
             "Developer mode enabled, setting RUM sample rate to 100%."
+        internal const val RUM_FEATURE_NOT_YET_INITIALIZED =
+            "RUM feature is not initialized yet, you need to register it with a" +
+                " SDK instance by calling SdkCore#registerFeature method."
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,

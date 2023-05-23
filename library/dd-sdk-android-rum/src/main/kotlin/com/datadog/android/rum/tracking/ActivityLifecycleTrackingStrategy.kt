@@ -11,6 +11,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import com.datadog.android.rum.RumFeature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 
@@ -150,6 +151,12 @@ abstract class ActivityLifecycleTrackingStrategy :
         return if (this::sdkCore.isInitialized) {
             block(sdkCore)
         } else {
+            InternalLogger.UNBOUND.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                RumFeature.RUM_FEATURE_NOT_YET_INITIALIZED +
+                    " Cannot provide SDK instance for view tracking."
+            )
             null
         }
     }
