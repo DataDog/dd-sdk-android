@@ -216,8 +216,8 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            type = RumViewScope.RumViewType.BACKGROUND,
             contextProvider = contextProvider,
+            type = RumViewScope.RumViewType.BACKGROUND,
             trackFrustrations = trackFrustrations
         )
     }
@@ -235,8 +235,8 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            type = RumViewScope.RumViewType.APPLICATION_LAUNCH,
             contextProvider = contextProvider,
+            type = RumViewScope.RumViewType.APPLICATION_LAUNCH,
             trackFrustrations = trackFrustrations
         )
     }
