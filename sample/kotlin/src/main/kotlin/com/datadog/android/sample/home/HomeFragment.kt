@@ -15,7 +15,7 @@ import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import androidx.navigation.NavController
-import androidx.navigation.fragment.NavHostFragment.findNavController
+import androidx.navigation.fragment.findNavController
 import com.datadog.android.sample.R
 
 internal class HomeFragment :
@@ -45,7 +45,7 @@ internal class HomeFragment :
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(HomeViewModel::class.java)
-        navController = findNavController(this)
+        navController = findNavController()
     }
 
     // endregion

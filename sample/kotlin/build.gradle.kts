@@ -142,6 +142,7 @@ dependencies {
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
     implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
     implementation("androidx.preference:preference-ktx:1.1.1")
+    implementation("androidx.startup:startup-runtime:1.1.1")
     implementation("io.opentracing.contrib:opentracing-rxjava-3:0.1.4") {
         exclude(group = "io.opentracing")
     }

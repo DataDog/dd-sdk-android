@@ -27,7 +27,7 @@
         </receiver>
 
         <activity
-            android:name=".NavActivity"
+            android:name=".MainActivity"
             android:exported="true"
             android:label="@string/title_main">
             <intent-filter>
@@ -47,6 +47,16 @@
             android:authorities="com.datadog.android.provider"
             android:name=".data.db.sqlite.DatadogContentProvider"
             android:exported="false"/>
+
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="com.datadog.android.sample.DatadogInitializer"
+                android:value="androidx.startup" />
+        </provider>
     </application>
 
 </manifest>

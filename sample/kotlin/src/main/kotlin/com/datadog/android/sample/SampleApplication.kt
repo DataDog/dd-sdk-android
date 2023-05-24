@@ -89,12 +89,12 @@ class SampleApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        Stetho.initializeWithDefaults(this)
-        initializeDatadog()
-
-        initializeTimber()
-
-        initializeImageLoaders()
+//        Stetho.initializeWithDefaults(this)
+//        initializeDatadog()
+//
+//        initializeTimber()
+//
+//        initializeImageLoaders()
     }
 
     private fun initializeImageLoaders() {

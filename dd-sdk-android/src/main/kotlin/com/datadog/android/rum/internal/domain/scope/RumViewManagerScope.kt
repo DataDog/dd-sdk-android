@@ -7,12 +7,14 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import android.app.ActivityManager
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
+import com.datadog.android.rum.internal.RumDebugObject
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -47,6 +49,10 @@ internal class RumViewManagerScope(
 
     @WorkerThread
     override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope? {
+        if (RumDebugObject.isTargetEvent(event)) {
+            Log.d("Datadog:debug", "--- RumViewManagerScope::handleEvent($event)")
+        }
+
         val canDisplayApplication = !stopped && event !is RumRawEvent.StopSession
         if (!applicationDisplayed && canDisplayApplication) {
             val isForegroundProcess = CoreFeature.processImportance ==
@@ -119,11 +125,17 @@ internal class RumViewManagerScope(
         event: RumRawEvent,
         writer: DataWriter<Any>
     ) {
+        if (RumDebugObject.isTargetEvent(event)) {
+            Log.d("Datadog:debug", "--- RumViewManagerScope::delegateToChildren($event)")
+            Log.d("Datadog:debug", "--- RumApplicationScope: childrenScopes(${childrenScopes.size}): ${childrenScopes.joinToString { it.getRumContext().viewName.orEmpty() }}")
+        }
+
         val iterator = childrenScopes.iterator()
         @Suppress("UnsafeThirdPartyFunctionCall") // next/remove can't fail: we checked hasNext
         while (iterator.hasNext()) {
             val result = iterator.next().handleEvent(event, writer)
             if (result == null) {
+                Log.d("Datadog:debug", "--- RumViewManagerScope: scope removed")
                 iterator.remove()
             }
         }

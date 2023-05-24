@@ -20,10 +20,10 @@ internal class ViewModelFactory(
     private val remoteDataSource: RemoteDataSource,
     private val localDataSource: LocalDataSource
 ) :
-    ViewModelProvider.Factory {
+    ViewModelProvider.AndroidViewModelFactory() {
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return when (modelClass) {
             TracesViewModel::class.java -> {
                 TracesViewModel(okHttpClient) as T

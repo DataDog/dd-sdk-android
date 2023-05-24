@@ -6,10 +6,12 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.RumDebugObject
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -67,6 +69,10 @@ internal class RumApplicationScope(
         event: RumRawEvent,
         writer: DataWriter<Any>
     ): RumScope {
+        if (RumDebugObject.isTargetEvent(event)) {
+            Log.d("Datadog:debug", "-- RumApplicationScope::handleEvent($event)")
+        }
+
         val isInteraction = (event is RumRawEvent.StartView) || (event is RumRawEvent.StartAction)
         if (activeSession == null && isInteraction) {
             startNewSession(event, writer)
@@ -102,6 +108,11 @@ internal class RumApplicationScope(
         event: RumRawEvent,
         writer: DataWriter<Any>
     ) {
+        if (RumDebugObject.isTargetEvent(event)) {
+            Log.d("Datadog:debug", "-- RumApplicationScope::delegateToChildren($event)")
+            Log.d("Datadog:debug", "-- RumApplicationScope: childScopes(${childScopes.size}): ${childScopes.joinToString { it.getRumContext().viewName.orEmpty() }}")
+        }
+
         val iterator = childScopes.iterator()
         @Suppress("UnsafeThirdPartyFunctionCall") // next/remove can't fail: we checked hasNext
         while (iterator.hasNext()) {

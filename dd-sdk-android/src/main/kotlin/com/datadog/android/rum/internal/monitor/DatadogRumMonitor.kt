@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
+import android.util.Log
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
@@ -313,6 +314,7 @@ internal class DatadogRumMonitor(
     }
 
     override fun addTiming(name: String) {
+        Log.d("Datadog:debug", "- DatadogRumMonitor::addTiming($name)")
         handleEvent(
             RumRawEvent.AddCustomTiming(name)
         )

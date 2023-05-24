@@ -10,6 +10,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import android.view.WindowManager
 import androidx.annotation.WorkerThread
 import androidx.fragment.app.Fragment
@@ -25,6 +26,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.internal.FeaturesContextResolver
+import com.datadog.android.rum.internal.RumDebugObject
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -165,6 +167,10 @@ internal open class RumViewScope(
         event: RumRawEvent,
         writer: DataWriter<Any>
     ): RumScope? {
+        if (RumDebugObject.isTargetEvent(event)) {
+            Log.d("Datadog:debug", "---- RumViewScope($name)::delegateToChildren($event)")
+        }
+
         when (event) {
             is RumRawEvent.ResourceSent -> onResourceSent(event, writer)
             is RumRawEvent.ActionSent -> onActionSent(event, writer)
