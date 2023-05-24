@@ -5563,6 +5563,25 @@ internal class RumViewScopeTest {
         verifyNoMoreInteractions(mockWriter)
     }
 
+    @Test
+    fun `𝕄 not add custom timing 𝕎 handleEvent(AddCustomTiming) on stopped view`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.stopped = true
+        val fakeTimingKey = forge.anAlphabeticalString()
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.AddCustomTiming(fakeTimingKey),
+            mockWriter
+        )
+
+        // Then
+        assertThat(testedScope.customTimings).isEmpty()
+        verifyNoInteractions(mockWriter)
+    }
+
     // endregion
 
     // region Vitals
@@ -6902,6 +6921,28 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue).hasFeatureFlag(flagName, flagValue)
         }
+    }
+
+    @Test
+    fun `M not add feature flag W handleEvent(AddFeatureFlagEvaluation) on stopped view`(
+        @StringForgery flagName: String,
+        @StringForgery flagValue: String
+    ) {
+        // GIVEN
+        testedScope.stopped = true
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name = flagName,
+                value = flagValue
+            ),
+            mockWriter
+        )
+
+        // THEN
+        assertThat(testedScope.featureFlags).isEmpty()
+        verifyNoInteractions(mockWriter)
     }
 
     @Test
