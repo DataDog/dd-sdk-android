@@ -11,7 +11,6 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.tools.unit.ConditionWatcher
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 
@@ -25,7 +24,6 @@ internal class ConsentGrantedSrTest : SrSnapshotTest() {
     )
 
     @Test
-    @Ignore("Failing on bitrise - need to investigate in task REPLAY-1669")
     fun verifySessionFirstSnapshot() {
         // Wait to make sure all batches are consumed
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()

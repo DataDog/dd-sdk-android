@@ -28,6 +28,6 @@ internal abstract class SrSnapshotTest :
     }
 
     companion object {
-        const val UI_THREAD_DELAY_IN_MS = 5000L
+        const val UI_THREAD_DELAY_IN_MS = 1000L
     }
 }
