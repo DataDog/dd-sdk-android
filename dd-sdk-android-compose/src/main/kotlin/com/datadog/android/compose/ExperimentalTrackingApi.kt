@@ -14,4 +14,5 @@ package com.datadog.android.compose
         " It may change in the future.",
     level = RequiresOptIn.Level.WARNING
 )
+@Retention(AnnotationRetention.BINARY)
 annotation class ExperimentalTrackingApi
