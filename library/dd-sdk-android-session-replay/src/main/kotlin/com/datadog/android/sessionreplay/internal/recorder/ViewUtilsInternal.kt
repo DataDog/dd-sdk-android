@@ -34,8 +34,7 @@ internal class ViewUtilsInternal {
 
     internal fun isToolbar(view: View): Boolean {
         return (
-            Toolbar::class.java.isAssignableFrom(view::class.java) &&
-                view.id == androidx.appcompat.R.id.action_bar
+            Toolbar::class.java.isAssignableFrom(view::class.java)
             ) ||
             (
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
