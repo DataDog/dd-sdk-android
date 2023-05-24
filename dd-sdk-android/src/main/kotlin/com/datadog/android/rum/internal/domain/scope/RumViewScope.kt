@@ -106,7 +106,7 @@ internal open class RumViewScope(
     private var version: Long = 1
     private var loadingTime: Long? = null
     private var loadingType: ViewEvent.LoadingType? = null
-    private val customTimings: MutableMap<String, Long> = mutableMapOf()
+    internal val customTimings: MutableMap<String, Long> = mutableMapOf()
     internal val featureFlags: MutableMap<String, Any?> = mutableMapOf()
 
     internal var stopped: Boolean = false
@@ -467,6 +467,8 @@ internal open class RumViewScope(
         event: RumRawEvent.AddCustomTiming,
         writer: DataWriter<Any>
     ) {
+        if (stopped) return
+
         customTimings[event.name] = max(event.eventTime.nanoTime - startedNanos, 1L)
         sendViewUpdate(event, writer)
     }
@@ -988,6 +990,8 @@ internal open class RumViewScope(
         event: RumRawEvent.AddFeatureFlagEvaluation,
         writer: DataWriter<Any>
     ) {
+        if (stopped) return
+
         featureFlags[event.name] = event.value
         sendViewUpdate(event, writer)
         sendViewChanged()
