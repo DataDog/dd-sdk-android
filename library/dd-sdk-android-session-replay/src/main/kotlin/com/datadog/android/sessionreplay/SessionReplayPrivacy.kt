@@ -17,6 +17,7 @@ import android.widget.NumberPicker
 import android.widget.RadioButton
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toolbar
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.sessionreplay.internal.recorder.mapper.BasePickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
@@ -37,9 +38,11 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.RadioButtonMap
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.UnsupportedViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewScreenshotWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
+import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 
 /**
  * Defines the Session Replay privacy policy when recording the sessions.
@@ -73,6 +76,7 @@ enum class SessionReplayPrivacy {
     @Suppress("LongMethod")
     internal fun mappers(): List<MapperTypeWrapper> {
         val viewWireframeMapper = ViewWireframeMapper()
+        val unsupportedViewMapper = UnsupportedViewMapper()
         val imageMapper: ViewScreenshotWireframeMapper
         val textMapper: TextViewMapper
         val buttonMapper: ButtonMapper
@@ -125,15 +129,18 @@ enum class SessionReplayPrivacy {
             MapperTypeWrapper(SwitchCompat::class.java, switchCompatMapper.toGenericMapper()),
             MapperTypeWrapper(RadioButton::class.java, radioButtonMapper.toGenericMapper()),
             MapperTypeWrapper(CheckBox::class.java, checkBoxMapper.toGenericMapper()),
-            MapperTypeWrapper(
-                CheckedTextView::class.java,
-                checkedTextViewMapper.toGenericMapper()
-            ),
+            MapperTypeWrapper(CheckedTextView::class.java, checkedTextViewMapper.toGenericMapper()),
             MapperTypeWrapper(Button::class.java, buttonMapper.toGenericMapper()),
             MapperTypeWrapper(EditText::class.java, editTextViewMapper.toGenericMapper()),
             MapperTypeWrapper(TextView::class.java, textMapper.toGenericMapper()),
-            MapperTypeWrapper(ImageView::class.java, imageMapper.toGenericMapper())
+            MapperTypeWrapper(ImageView::class.java, imageMapper.toGenericMapper()),
+            MapperTypeWrapper(AppCompatToolbar::class.java, unsupportedViewMapper.toGenericMapper())
         )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            mappersList.add(0, MapperTypeWrapper(Toolbar::class.java, unsupportedViewMapper.toGenericMapper()))
+        }
+
         seekBarMapper?.let {
             mappersList.add(0, MapperTypeWrapper(SeekBar::class.java, it.toGenericMapper()))
         }
