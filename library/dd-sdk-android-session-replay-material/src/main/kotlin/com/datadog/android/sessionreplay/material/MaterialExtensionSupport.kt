@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.material
 import android.view.View
 import com.datadog.android.sessionreplay.ExtensionSupport
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.google.android.material.slider.Slider
 import com.google.android.material.tabs.TabLayout
@@ -40,5 +41,9 @@ class MaterialExtensionSupport : ExtensionSupport {
                 TabLayout.TabView::class.java to allowAllTabWireframeMapper
             )
         )
+    }
+
+    override fun getOptionSelectorDetectors(): List<OptionSelectorDetector> {
+        return listOf(MaterialOptionSelectorDetector())
     }
 }

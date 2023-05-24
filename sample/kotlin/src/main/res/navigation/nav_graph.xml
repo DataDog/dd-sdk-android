@@ -105,4 +105,8 @@
               android:name="com.datadog.android.sample.ViewPagerFragment"
               android:label="@string/title_view_pager"/>
 
+    <fragment android:id="@+id/fragment_unsupported_views"
+        android:name="com.datadog.android.sample.sessionreplay.UnsupportedViewsFragment"
+        android:label="@string/title_unsupported_views"/>
+
 </navigation>

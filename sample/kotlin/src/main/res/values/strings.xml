@@ -16,6 +16,7 @@
     <string name="title_unknown">"?"</string>
     <string name="title_data_list">Data List</string>
     <string name="title_view_pager">View Pager</string>
+    <string name="title_unsupported_views">Unsupported views</string>
     <string name="title_snackbar">Snackbar</string>
     <string name="title_foreground_service">Foreground service</string>
     <string name="title_picture">Picture loading</string>
@@ -81,6 +82,8 @@
     <string name="load_picture">Load picture</string>
     <string name="widget_description">Datadog Sample Widget</string>
     <string name="add_widget">Add widget</string>
+    <string name="legacy_toolbar_title">Legacy toolbar</string>
+    <string name="appcompat_toolbar_title">Appcompat toolbar</string>
     <string name="loading">Loading…</string>
     <string name="load_resource">Perform http request</string>
     <string name="set_tracking_consent">Set tracking consent</string>

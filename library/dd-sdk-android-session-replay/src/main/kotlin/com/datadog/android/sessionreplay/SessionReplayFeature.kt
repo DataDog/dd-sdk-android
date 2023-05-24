@@ -52,7 +52,9 @@ class SessionReplayFeature internal constructor(
                 recordWriter = recordWriter,
                 timeProvider = SessionReplayTimeProvider(sdkCore),
                 recordCallback = SessionReplayRecordCallback(sdkCore),
-                customMappers = configuration.customMappers()
+                customMappers = configuration.customMappers(),
+                customOptionSelectorDetectors =
+                configuration.extensionSupport.getOptionSelectorDetectors()
             )
         }
     )

@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay
 
 import android.view.View
+import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 
 /**
@@ -22,4 +23,11 @@ interface ExtensionSupport {
      * @return the [View] type to custom [WireframeMapper] map grouped by [SessionReplayPrivacy].
      */
     fun getCustomViewMappers(): Map<SessionReplayPrivacy, Map<Class<*>, WireframeMapper<View, *>>>
+
+    /**
+     * Implement this method if you need to return some specific implementations for the
+     * [OptionSelectorDetector].
+     * @return a list of custom [OptionSelectorDetector].
+     */
+    fun getOptionSelectorDetectors(): List<OptionSelectorDetector>
 }

@@ -6,8 +6,11 @@
 
 package com.datadog.android.sdk.integration.sessionreplay
 
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.matcher.ViewMatchers
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.sdk.rules.SessionReplayTestRule
+import com.datadog.android.sdk.utils.waitFor
 
 internal abstract class SrSnapshotTest :
     SrTest<SessionReplayPlaygroundActivity,
@@ -17,7 +20,14 @@ internal abstract class SrSnapshotTest :
         mockServerRule: SessionReplayTestRule<SessionReplayPlaygroundActivity>
     ): ExpectedSrData {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
+        // we need this to avoid the Bitrise flakiness and to force and to wait for
+        // SurfaceFlinger to call the onDraw method which will trigger the screen snapshot.
+        onView(ViewMatchers.isRoot()).perform(waitFor(UI_THREAD_DELAY_IN_MS))
         instrumentation.waitForIdleSync()
         return mockServerRule.activity.getExpectedSrData()
+    }
+
+    companion object {
+        const val UI_THREAD_DELAY_IN_MS = 1000L
     }
 }

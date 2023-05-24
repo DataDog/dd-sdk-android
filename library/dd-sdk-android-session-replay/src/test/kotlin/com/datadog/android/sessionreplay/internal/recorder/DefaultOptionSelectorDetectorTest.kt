@@ -30,15 +30,15 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class OptionSelectorDetectorTest {
-    lateinit var testedOptionSelectorDetector: OptionSelectorDetector
+internal class DefaultOptionSelectorDetectorTest {
+    lateinit var testedOptionSelectorDetector: DefaultOptionSelectorDetector
 
     @Mock
     lateinit var mockViewGroup: ViewGroup
 
     @BeforeEach
     fun `set up`() {
-        testedOptionSelectorDetector = OptionSelectorDetector()
+        testedOptionSelectorDetector = DefaultOptionSelectorDetector()
     }
 
     @Test

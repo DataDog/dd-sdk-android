@@ -32,7 +32,7 @@ internal class Debouncer(
         if (timePassedSinceLastExecution >= maxRecordDelayInNs) {
             executeRunnable(runnable)
         } else {
-            handler.postDelayed({ executeRunnable(runnable) }, DEBOUNCE_TIME_IN_NS)
+            handler.postDelayed({ executeRunnable(runnable) }, DEBOUNCE_TIME_IN_MS)
         }
     }
 
@@ -43,9 +43,9 @@ internal class Debouncer(
 
     companion object {
         // one frame time
-        private val MAX_DELAY_THRESHOLD_NS: Long = TimeUnit.MILLISECONDS.toNanos(16)
+        private val MAX_DELAY_THRESHOLD_NS: Long = TimeUnit.MILLISECONDS.toNanos(64)
 
         // one frame time
-        internal val DEBOUNCE_TIME_IN_NS: Long = TimeUnit.MILLISECONDS.toNanos(16)
+        internal const val DEBOUNCE_TIME_IN_MS: Long = 64
     }
 }
