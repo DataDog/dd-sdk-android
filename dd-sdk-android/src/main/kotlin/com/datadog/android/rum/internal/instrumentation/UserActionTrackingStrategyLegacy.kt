@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.instrumentation
 
 import android.app.Activity
+import androidx.annotation.MainThread
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy
@@ -27,11 +28,13 @@ internal class UserActionTrackingStrategyLegacy(
 
     // region ActivityLifecycleTrackingStrategy
 
+    @MainThread
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
         gesturesTracker.startTracking(activity.window, activity)
     }
 
+    @MainThread
     override fun onActivityPaused(activity: Activity) {
         super.onActivityPaused(activity)
         gesturesTracker.stopTracking(activity.window, activity)

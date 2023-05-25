@@ -9,6 +9,7 @@ package com.datadog.android.rum.tracking
 import android.app.Activity
 import android.os.Bundle
 import androidx.annotation.IdRes
+import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavController
@@ -68,18 +69,21 @@ class NavigationViewTrackingStrategy(
 
     // region ActivityLifecycleTrackingStrategy
 
+    @MainThread
     override fun onActivityStarted(activity: Activity) {
         super.onActivityStarted(activity)
         startedActivity = activity
         startTracking()
     }
 
+    @MainThread
     override fun onActivityStopped(activity: Activity) {
         super.onActivityStopped(activity)
         stopTracking()
         startedActivity = null
     }
 
+    @MainThread
     override fun onActivityPaused(activity: Activity) {
         super.onActivityPaused(activity)
         activity.findNavControllerOrNull(navigationViewId)?.currentDestination?.let {

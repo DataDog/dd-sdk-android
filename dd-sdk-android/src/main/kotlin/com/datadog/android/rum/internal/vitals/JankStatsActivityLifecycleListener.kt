@@ -13,6 +13,7 @@ import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
+import androidx.annotation.MainThread
 import androidx.metrics.performance.FrameData
 import androidx.metrics.performance.JankStats
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
@@ -34,6 +35,7 @@ internal class JankStatsActivityLifecycleListener(
 
     @Suppress("DEPRECATION")
     @SuppressLint("NewApi")
+    @MainThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         try {
             val display = if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.R) {
@@ -54,21 +56,27 @@ internal class JankStatsActivityLifecycleListener(
         }
     }
 
+    @MainThread
     override fun onActivityStarted(activity: Activity) {
     }
 
+    @MainThread
     override fun onActivityResumed(activity: Activity) {
     }
 
+    @MainThread
     override fun onActivityPaused(activity: Activity) {
     }
 
+    @MainThread
     override fun onActivityStopped(activity: Activity) {
     }
 
+    @MainThread
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
     }
 
+    @MainThread
     override fun onActivityDestroyed(activity: Activity) {
     }
 

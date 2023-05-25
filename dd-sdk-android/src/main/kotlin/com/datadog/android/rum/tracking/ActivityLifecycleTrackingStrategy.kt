@@ -11,6 +11,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import androidx.annotation.MainThread
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.v2.api.InternalLogger
 
@@ -47,30 +48,37 @@ abstract class ActivityLifecycleTrackingStrategy :
 
     // region Application.ActivityLifecycleCallbacks
 
+    @MainThread
     override fun onActivityPaused(activity: Activity) {
         // No Op
     }
 
+    @MainThread
     override fun onActivityStarted(activity: Activity) {
         // No Op
     }
 
+    @MainThread
     override fun onActivityDestroyed(activity: Activity) {
         // No Op
     }
 
+    @MainThread
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
         // No Op
     }
 
+    @MainThread
     override fun onActivityStopped(activity: Activity) {
         // No Op
     }
 
+    @MainThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         // No Op
     }
 
+    @MainThread
     override fun onActivityResumed(activity: Activity) {
         // No Op
     }

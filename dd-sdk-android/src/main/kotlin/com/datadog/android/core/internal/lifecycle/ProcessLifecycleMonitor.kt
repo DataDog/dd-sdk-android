@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.lifecycle
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import androidx.annotation.MainThread
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -20,6 +21,7 @@ internal class ProcessLifecycleMonitor(val callback: Callback) :
     val wasPaused = AtomicBoolean(true)
     val wasStopped = AtomicBoolean(true)
 
+    @MainThread
     override fun onActivityPaused(activity: Activity) {
         if (activitiesResumedCounter.decrementAndGet() == 0 &&
             !wasPaused.getAndSet(true)
@@ -29,6 +31,7 @@ internal class ProcessLifecycleMonitor(val callback: Callback) :
         }
     }
 
+    @MainThread
     override fun onActivityStarted(activity: Activity) {
         if (activitiesStartedCounter.incrementAndGet() == 1 &&
             wasStopped.getAndSet(false)
@@ -38,14 +41,17 @@ internal class ProcessLifecycleMonitor(val callback: Callback) :
         }
     }
 
+    @MainThread
     override fun onActivityDestroyed(activity: Activity) {
         //  NO-OP
     }
 
+    @MainThread
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
         //  NO-OP
     }
 
+    @MainThread
     override fun onActivityStopped(activity: Activity) {
         if (activitiesStartedCounter.decrementAndGet() == 0 && wasPaused.get()) {
             // trigger on process stopped
@@ -54,10 +60,12 @@ internal class ProcessLifecycleMonitor(val callback: Callback) :
         }
     }
 
+    @MainThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         //  NO-OP
     }
 
+    @MainThread
     override fun onActivityResumed(activity: Activity) {
         if (activitiesResumedCounter.incrementAndGet() == 1 &&
             wasPaused.getAndSet(false)

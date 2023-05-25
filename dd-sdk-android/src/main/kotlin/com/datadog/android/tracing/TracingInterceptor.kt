@@ -427,6 +427,7 @@ internal constructor(
                     requestBuilder.removeHeader(W3C_TRACEPARENT_KEY)
                     requestBuilder.addHeader(
                         W3C_TRACEPARENT_KEY,
+                        @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
                         W3C_DROP_SAMPLING_DECISION.format(
                             span.context().toTraceId(),
                             span.context().toSpanId()
