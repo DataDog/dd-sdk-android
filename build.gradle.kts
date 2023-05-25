@@ -1,11 +1,14 @@
-import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.nightlyTestsCoverageConfig
-
 /*
  * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
+
+import com.android.build.gradle.LibraryExtension
+import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.nightlyTestsCoverageConfig
+import org.gradle.api.internal.file.UnionFileTree
+import java.util.Properties
 
 plugins {
     `maven-publish`
@@ -240,4 +243,58 @@ kover {
         "unit"
     )
     instrumentAndroidPackage = false
+}
+
+tasks.register("printSdkDebugRuntimeClasspath") {
+    val fileTreeClassPathCollector = UnionFileTree()
+    val nonFileTreeClassPathCollector = mutableListOf<FileCollection>()
+
+    allprojects.minus(project).forEach { subproject ->
+        val childTask = subproject.tasks.register("printDebugRuntimeClasspath") {
+            doLast {
+                val ext =
+                    subproject.extensions.findByType(LibraryExtension::class.java) ?: return@doLast
+                val classpath = ext.libraryVariants
+                    .filter { it.name == "jvmDebug" || it.name == "debug" }
+                    .map { libVariant ->
+                        // returns also test part of classpath for now, no idea how to filter it out
+                        libVariant.getCompileClasspath(null).filter { it.exists() }
+                    }
+                    .first()
+                if (classpath is FileTree) {
+                    fileTreeClassPathCollector.addToUnion(classpath)
+                } else {
+                    nonFileTreeClassPathCollector += classpath
+                }
+            }
+        }
+        this@register.dependsOn(childTask)
+    }
+    doLast {
+        val fileCollections = mutableListOf<FileCollection>()
+        fileCollections.addAll(nonFileTreeClassPathCollector)
+        if (!fileTreeClassPathCollector.isEmpty) {
+            fileCollections.add(fileTreeClassPathCollector)
+        }
+        val result = fileCollections.flatMap {
+            it.files
+        }.toMutableSet()
+
+        val localPropertiesFile = File(project.rootDir, "local.properties")
+        if (localPropertiesFile.exists()) {
+            val localProperties = Properties().apply {
+                localPropertiesFile.inputStream().use { load(it) }
+            }
+            val sdkDirPath = localProperties["sdk.dir"]
+            val androidJarFilePath = listOf(
+                sdkDirPath,
+                "platforms",
+                "android-${AndroidConfig.TARGET_SDK}",
+                "android.jar"
+            )
+            result += File(androidJarFilePath.joinToString(File.separator))
+        }
+
+        File("sdk_classpath").writeText(result.joinToString(File.pathSeparator) { it.absolutePath })
+    }
 }
