@@ -5579,7 +5579,7 @@ internal class RumViewScopeTest {
 
         // Then
         assertThat(testedScope.customTimings).isEmpty()
-        verifyNoInteractions(mockWriter)
+        verifyZeroInteractions(mockWriter)
     }
 
     // endregion
@@ -6942,7 +6942,7 @@ internal class RumViewScopeTest {
 
         // THEN
         assertThat(testedScope.featureFlags).isEmpty()
-        verifyNoInteractions(mockWriter)
+        verifyZeroInteractions(mockWriter)
     }
 
     @Test
