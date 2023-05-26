@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+local_ci_usage="Usage: local_ci.sh [-s|--setup] [-n|--clean] [-a|--analysis] [-c|--compile] [-t|--test]"
+
 SETUP=0
 CLEANUP=0
 ANALYSIS=0
@@ -29,12 +31,13 @@ while [[ $# -gt 0 ]]; do
     shift
     ;;
   -h | --help)
-    echo "local_ci.sh [-a|--analysis] [-c|--compile] [-t|--test]"
+    echo $local_ci_usage
     shift
     ;;
   *)
     echo "unknown arg: $1"
-    shift
+    echo $local_ci_usage
+    exit 1
     ;;
   esac
 done
@@ -133,3 +136,5 @@ if [[ $TEST == 1 ]]; then
   echo "---- Unit tests (Debug)"
   ./gradlew uTD
 fi
+
+echo "-- Done ✔︎"
