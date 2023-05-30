@@ -21,7 +21,6 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -122,30 +121,6 @@ internal class WorkManagerUtilsTest {
 
         // Then
         verifyNoInteractions(mockWorkManager)
-    }
-
-    @Test
-    fun `it will return false if WorkManager was not correctly instantiated`() {
-        // Given
-        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", null)
-
-        // When
-        val result = isWorkManagerInitialized(appContext.mockInstance)
-
-        // Then
-        assertThat(result).isFalse
-    }
-
-    @Test
-    fun `it will return true if WorkManager is correctly instantiated`() {
-        // Given
-        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
-
-        // When
-        val result = isWorkManagerInitialized(appContext.mockInstance)
-
-        // Then
-        assertThat(result).isTrue
     }
 
     companion object {

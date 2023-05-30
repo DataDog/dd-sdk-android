@@ -7,8 +7,8 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
+import androidx.work.WorkManager
 import com.datadog.android.core.internal.thread.waitToIdle
-import com.datadog.android.core.internal.utils.isWorkManagerInitialized
 import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
@@ -84,7 +84,7 @@ internal class DatadogExceptionHandler(
 
         // trigger a task to send the logs ASAP
         contextRef.get()?.let {
-            if (isWorkManagerInitialized(it)) {
+            if (WorkManager.isInitialized()) {
                 triggerUploadWorker(it, sdkCore._internalLogger)
             }
         }
