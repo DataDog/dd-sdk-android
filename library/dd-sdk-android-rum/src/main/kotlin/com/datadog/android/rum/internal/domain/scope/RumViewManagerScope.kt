@@ -83,7 +83,7 @@ internal class RumViewManagerScope(
 
     // region Internal
 
-    fun isViewManagerComplete(): Boolean {
+    private fun isViewManagerComplete(): Boolean {
         return stopped && childrenScopes.isEmpty()
     }
 

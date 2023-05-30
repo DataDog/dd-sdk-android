@@ -57,6 +57,12 @@ internal class DataOkHttpUploader(
                 "Unable to upload batch data.",
                 e
             )
+            internalLogger.log(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.USER,
+                "Unable to upload batch data.",
+                e
+            )
             UploadStatus.NETWORK_ERROR
         }
 
