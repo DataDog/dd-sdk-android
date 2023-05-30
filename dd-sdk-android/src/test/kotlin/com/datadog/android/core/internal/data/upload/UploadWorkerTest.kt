@@ -666,6 +666,7 @@ internal class UploadWorkerTest {
             tags,
             runtimeExtras,
             runAttemptCount,
+            generation,
             backgroundExecutor,
             taskExecutor,
             workerFactory,

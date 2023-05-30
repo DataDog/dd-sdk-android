@@ -11,7 +11,7 @@ import androidx.work.Data
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import androidx.work.impl.utils.SerialExecutor
+import androidx.work.impl.utils.taskexecutor.SerialExecutor
 import androidx.work.impl.utils.taskexecutor.TaskExecutor
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -30,20 +30,15 @@ class WorkerParametersForgeryFactory : ForgeryFactory<WorkerParameters> {
             forge.aList { anAlphabeticalString() },
             WorkerParameters.RuntimeExtras(),
             forge.aSmallInt(),
+            forge.aSmallInt(),
             threadExecutor,
             object : TaskExecutor {
                 override fun getMainThreadExecutor(): Executor {
                     TODO()
                 }
 
-                override fun postToMainThread(runnable: Runnable?) {
-                }
-
-                override fun executeOnBackgroundThread(runnable: Runnable?) {
-                }
-
-                override fun getBackgroundExecutor(): SerialExecutor {
-                    TODO()
+                override fun getSerialTaskExecutor(): SerialExecutor {
+                    TODO("Not yet implemented")
                 }
             },
             object : WorkerFactory() {
