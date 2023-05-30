@@ -204,6 +204,10 @@ internal sealed class RumRawEvent {
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
+    internal data class SdkInit(
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
     internal data class WebViewEvent(override val eventTime: Time = Time()) : RumRawEvent()
 
     internal data class SendTelemetry(
