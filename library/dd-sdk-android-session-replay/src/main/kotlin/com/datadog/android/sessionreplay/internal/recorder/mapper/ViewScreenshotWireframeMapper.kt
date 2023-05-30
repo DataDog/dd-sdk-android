@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 // TODO: RUMM-0000 This should take a screenshot of the current view and return it as
@@ -16,9 +16,9 @@ internal class ViewScreenshotWireframeMapper(
     private val viewWireframeMapper: ViewWireframeMapper = ViewWireframeMapper()
 ) : BaseWireframeMapper<View, MobileSegment.Wireframe.ShapeWireframe>() {
 
-    override fun map(view: View, systemInformation: SystemInformation):
+    override fun map(view: View, mappingContext: MappingContext):
         List<MobileSegment.Wireframe.ShapeWireframe> {
-        return viewWireframeMapper.map(view, systemInformation).map {
+        return viewWireframeMapper.map(view, mappingContext).map {
             it.copy(border = MobileSegment.ShapeBorder("#000000ff", 1))
         }
     }

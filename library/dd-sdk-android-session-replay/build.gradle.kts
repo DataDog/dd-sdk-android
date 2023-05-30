@@ -40,6 +40,7 @@ android {
         minSdk = AndroidConfig.MIN_SDK
         targetSdk = AndroidConfig.TARGET_SDK
         setLibraryVersion()
+        consumerProguardFiles("consumer-rules.pro")
     }
 
     namespace = "com.datadog.android.sessionreplay"

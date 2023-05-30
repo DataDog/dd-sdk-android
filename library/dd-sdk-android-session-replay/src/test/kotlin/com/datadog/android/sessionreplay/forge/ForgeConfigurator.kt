@@ -41,6 +41,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(MobileSegmentForgeryFactory())
         forge.addFactory(GlobalBoundsForgeryFactory())
         forge.addFactory(SystemInformationForgeryFactory())
+        forge.addFactory(MappingContextForgeryFactory())
 
         forge.useJvmFactories()
     }

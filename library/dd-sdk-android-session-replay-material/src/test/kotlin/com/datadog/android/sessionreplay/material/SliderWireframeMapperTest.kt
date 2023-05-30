@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.material
 
-import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.material.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -73,7 +73,7 @@ internal class SliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
         )
 
         // When
-        val mappedWireframes = testeSliderWireframeMapper.map(mockSlider, fakeSystemInformation)
+        val mappedWireframes = testedSliderWireframeMapper.map(mockSlider, fakeMappingContext)
 
         // Then
         assertThat(mappedWireframes).isEqualTo(

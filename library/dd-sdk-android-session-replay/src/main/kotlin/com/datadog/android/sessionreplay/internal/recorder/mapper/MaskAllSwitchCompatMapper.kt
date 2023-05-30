@@ -7,14 +7,14 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import androidx.appcompat.widget.SwitchCompat
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
 internal class MaskAllSwitchCompatMapper(
-    textWireframeMapper: TextWireframeMapper,
+    textWireframeMapper: TextViewMapper,
     stringUtils: StringUtils = StringUtils,
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
     viewUtils: ViewUtils = ViewUtils
@@ -24,24 +24,30 @@ internal class MaskAllSwitchCompatMapper(
 
     override fun resolveCheckedCheckable(
         view: SwitchCompat,
-        systemInformation: SystemInformation
+        mappingContext: MappingContext
     ): List<MobileSegment.Wireframe>? {
-        return resolveNotCheckedCheckable(view, systemInformation)
+        return resolveNotCheckedCheckable(view, mappingContext)
     }
 
     override fun resolveNotCheckedCheckable(
         view: SwitchCompat,
-        systemInformation: SystemInformation
+        mappingContext: MappingContext
     ): List<MobileSegment.Wireframe>? {
         val trackId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, TRACK_KEY_NAME)
-        val trackThumbDimensions = resolveThumbAndTrackDimensions(view, systemInformation)
+        val trackThumbDimensions = resolveThumbAndTrackDimensions(
+            view,
+            mappingContext.systemInformation
+        )
         if (trackId == null || trackThumbDimensions == null) {
             return null
         }
         val trackWidth = trackThumbDimensions[TRACK_WIDTH_INDEX]
         val trackHeight = trackThumbDimensions[TRACK_HEIGHT_INDEX]
         val checkableColor = resolveCheckableColor(view)
-        val viewGlobalBounds = resolveViewGlobalBounds(view, systemInformation.screenDensity)
+        val viewGlobalBounds = resolveViewGlobalBounds(
+            view,
+            mappingContext.systemInformation.screenDensity
+        )
         val trackShapeStyle = resolveTrackShapeStyle(view, checkableColor)
         val trackWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = trackId,

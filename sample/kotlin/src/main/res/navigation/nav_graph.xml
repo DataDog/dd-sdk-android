@@ -14,8 +14,6 @@
         android:id="@+id/fragment_home"
         android:name="com.datadog.android.sample.home.HomeFragment"
         android:label="@string/title_home">
-        <action android:id="@+id/action_fragment_home_to_activity_view_pager"
-                app:destination="@id/activity_view_pager"/>
     </fragment>
 
     <fragment
@@ -86,16 +84,29 @@
         android:name="com.datadog.android.sample.sessionreplay.SlidersSteppersFragment"
         android:label="@string/sliders_and_steppers_components"/>
 
+    <fragment android:id="@+id/fragment_different_fonts"
+        android:name="com.datadog.android.sample.sessionreplay.DifferentFontsFragment"
+        android:label="@string/different_fonts"/>
+
+    <fragment android:id="@+id/fragment_password_edit_text_components"
+        android:name="com.datadog.android.sample.sessionreplay.PrivacySensitiveTextComponentsFragment"
+        android:label="@string/password_input_components"/>
+
     <fragment android:id="@+id/fragment_session_replay"
         android:name="com.datadog.android.sample.sessionreplay.SessionReplayFragment"
         android:label="@string/session_replay"/>
+
 
     <dialog android:id="@+id/fragment_gdpr"
               android:name="com.datadog.android.sample.gdpr.GdprDialogFragment"
               android:label="@string/title_gdpr"/>
 
-    <activity android:id="@+id/activity_view_pager"
-              android:name="com.datadog.android.sample.ViewPagerActivity"
+    <fragment android:id="@+id/fragment_view_pager"
+              android:name="com.datadog.android.sample.ViewPagerFragment"
               android:label="@string/title_view_pager"/>
+
+    <fragment android:id="@+id/fragment_unsupported_views"
+        android:name="com.datadog.android.sample.sessionreplay.UnsupportedViewsFragment"
+        android:label="@string/title_unsupported_views"/>
 
 </navigation>

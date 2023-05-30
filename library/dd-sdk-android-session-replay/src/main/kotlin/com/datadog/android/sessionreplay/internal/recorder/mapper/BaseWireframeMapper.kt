@@ -17,21 +17,34 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
-internal abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
+@Suppress("UndocumentedPublicClass")
+abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
     private val stringUtils: StringUtils = StringUtils,
     private val viewUtils: ViewUtils = ViewUtils
 ) : WireframeMapper<T, S> {
 
+    /**
+     * Resolves the [View] unique id to be used in the mapped [MobileSegment.Wireframe].
+     */
     protected fun resolveViewId(view: View): Long {
         // we will use the System.identityHashcode in here which always returns the default
         // hashcode value whether or not a child class overrides this.
         return System.identityHashCode(view).toLong()
     }
 
+    /**
+     * Takes color and the alpha value and returns a string formatted color in RGBA format
+     * (e.g. #000000FF).
+     */
     protected fun colorAndAlphaAsStringHexa(color: Int, alphaAsHexa: Int): String {
         return stringUtils.formatColorAndAlphaAsHexa(color, alphaAsHexa)
     }
 
+    /**
+     * Resolves the [View] bounds. These dimensions are already normalized according with
+     * the provided [pixelsDensity]. By Global we mean that the View position will not be relative
+     * to its parent but to the Device screen.
+     */
     protected fun resolveViewGlobalBounds(view: View, pixelsDensity: Float):
         GlobalBounds {
         // RUMM-0000 return an array of primitives here instead of creating an object.
@@ -40,6 +53,10 @@ internal abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wirefram
         return viewUtils.resolveViewGlobalBounds(view, pixelsDensity)
     }
 
+    /**
+     * Resolves the [MobileSegment.ShapeStyle] and [MobileSegment.ShapeBorder] based on the [View]
+     * drawables.
+     */
     protected fun Drawable.resolveShapeStyleAndBorder(viewAlpha: Float):
         Pair<MobileSegment.ShapeStyle?, MobileSegment.ShapeBorder?>? {
         return if (this is ColorDrawable) {

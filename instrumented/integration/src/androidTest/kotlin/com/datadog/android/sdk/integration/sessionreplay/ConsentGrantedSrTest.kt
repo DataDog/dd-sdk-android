@@ -27,12 +27,12 @@ internal class ConsentGrantedSrTest : SrSnapshotTest() {
     fun verifySessionFirstSnapshot() {
         // Wait to make sure all batches are consumed
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-
+        val expectedData = runInstrumentationScenario(rule)
         ConditionWatcher {
             // verify the captured log events into the MockedWebServer
             verifyExpectedSrData(
                 rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl),
-                runInstrumentationScenario(rule)
+                expectedData
             )
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)

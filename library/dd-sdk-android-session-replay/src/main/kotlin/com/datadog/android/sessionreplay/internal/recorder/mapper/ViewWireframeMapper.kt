@@ -7,15 +7,18 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal class ViewWireframeMapper :
     BaseWireframeMapper<View, MobileSegment.Wireframe.ShapeWireframe>() {
 
-    override fun map(view: View, systemInformation: SystemInformation):
+    override fun map(view: View, mappingContext: MappingContext):
         List<MobileSegment.Wireframe.ShapeWireframe> {
-        val viewGlobalBounds = resolveViewGlobalBounds(view, systemInformation.screenDensity)
+        val viewGlobalBounds = resolveViewGlobalBounds(
+            view,
+            mappingContext.systemInformation.screenDensity
+        )
         val (shapeStyle, border) = view.background?.resolveShapeStyleAndBorder(view.alpha)
             ?: (null to null)
         return listOf(

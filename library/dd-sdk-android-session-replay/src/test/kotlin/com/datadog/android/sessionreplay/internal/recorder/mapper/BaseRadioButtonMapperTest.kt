@@ -51,7 +51,7 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
     lateinit var mockuniqueIdentifierGenerator: UniqueIdentifierGenerator
 
     @Mock
-    lateinit var mockTextWireframeMapper: TextWireframeMapper
+    lateinit var mockTextWireframeMapper: TextViewMapper
 
     @Forgery
     lateinit var fakeTextWireframes: List<MobileSegment.Wireframe.TextWireframe>
@@ -88,12 +88,12 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
                 CheckableTextViewMapper.CHECKABLE_KEY_NAME
             )
         ).thenReturn(fakeGeneratedIdentifier)
-        whenever(mockTextWireframeMapper.map(mockRadioButton, fakeSystemInformation))
+        whenever(mockTextWireframeMapper.map(mockRadioButton, fakeMappingContext))
             .thenReturn(fakeTextWireframes)
         whenever(
             mockViewUtils.resolveViewGlobalBounds(
                 mockRadioButton,
-                fakeSystemInformation.screenDensity
+                fakeMappingContext.systemInformation.screenDensity
             )
         )
             .thenReturn(fakeViewGlobalBounds)
@@ -138,7 +138,7 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
-                .densityNormalized(fakeSystemInformation.screenDensity),
+                .densityNormalized(fakeMappingContext.systemInformation.screenDensity),
             y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - checkBoxSize) / 2,
             width = checkBoxSize,
             height = checkBoxSize,
@@ -152,7 +152,7 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedRadioButtonMapper.map(
             mockRadioButton,
-            fakeSystemInformation
+            fakeMappingContext
         )
 
         // Then
@@ -177,7 +177,7 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
-                .densityNormalized(fakeSystemInformation.screenDensity),
+                .densityNormalized(fakeMappingContext.systemInformation.screenDensity),
             y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - checkBoxSize) / 2,
             width = checkBoxSize,
             height = checkBoxSize,
@@ -191,7 +191,7 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedRadioButtonMapper.map(
             mockRadioButton,
-            fakeSystemInformation
+            fakeMappingContext
         )
 
         // Then
@@ -211,7 +211,7 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
-                .densityNormalized(fakeSystemInformation.screenDensity),
+                .densityNormalized(fakeMappingContext.systemInformation.screenDensity),
             y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - checkBoxSize) / 2,
             width = checkBoxSize,
             height = checkBoxSize,
@@ -225,7 +225,7 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedRadioButtonMapper.map(
             mockRadioButton,
-            fakeSystemInformation
+            fakeMappingContext
         )
 
         // Then
@@ -245,7 +245,7 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
-                .densityNormalized(fakeSystemInformation.screenDensity),
+                .densityNormalized(fakeMappingContext.systemInformation.screenDensity),
             y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - checkBoxSize) / 2,
             width = checkBoxSize,
             height = checkBoxSize,
@@ -259,7 +259,7 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedRadioButtonMapper.map(
             mockRadioButton,
-            fakeSystemInformation
+            fakeMappingContext
         )
 
         // Then
@@ -279,7 +279,7 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedRadioButtonMapper.map(
             mockRadioButton,
-            fakeSystemInformation
+            fakeMappingContext
         )
 
         // Then
@@ -291,10 +291,9 @@ internal abstract class BaseRadioButtonMapperTest : BaseWireframeMapperTest() {
     // region Internal
 
     private fun resolveRadioBoxSize(radioSize: Long): Long {
-        val density = fakeSystemInformation.screenDensity
-        val textSize = fakeTextSize.toLong()
+        val density = fakeMappingContext.systemInformation.screenDensity
         val size = radioSize - 2 * CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
-        return (size * (textSize - 1) / textSize).densityNormalized(density)
+        return size.densityNormalized(density)
     }
 
     // endregion
