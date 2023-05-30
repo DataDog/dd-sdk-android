@@ -105,6 +105,7 @@ dependencies {
 
     // Android Instrumentation
     implementation(libs.androidXCore)
+    implementation(libs.androidXMetrics)
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXRecyclerView)
 

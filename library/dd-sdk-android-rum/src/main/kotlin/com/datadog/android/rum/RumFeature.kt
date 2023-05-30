@@ -11,8 +11,8 @@ import android.content.Context
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.view.Choreographer
 import androidx.annotation.FloatRange
+import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
@@ -42,9 +42,9 @@ import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.CPUVitalReader
+import com.datadog.android.rum.internal.vitals.JankStatsActivityLifecycleListener
 import com.datadog.android.rum.internal.vitals.MemoryVitalReader
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
-import com.datadog.android.rum.internal.vitals.VitalFrameCallback
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalObserver
 import com.datadog.android.rum.internal.vitals.VitalReader
@@ -112,6 +112,7 @@ class RumFeature internal constructor(
     internal var frameRateVitalMonitor: VitalMonitor = NoOpVitalMonitor()
 
     internal var debugActivityLifecycleListener: Application.ActivityLifecycleCallbacks? = null
+    internal var jankStatsActivityLifecycleListener: Application.ActivityLifecycleCallbacks? = null
 
     internal var vitalExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
     internal lateinit var anrDetectorExecutorService: ExecutorService
@@ -350,29 +351,14 @@ class RumFeature internal constructor(
             periodInMs
         )
 
-        val vitalFrameCallback = VitalFrameCallback(
+        jankStatsActivityLifecycleListener = JankStatsActivityLifecycleListener(
             frameRateVitalMonitor,
+            DefaultBuildSdkVersionProvider(),
             sdkCore._internalLogger
-        ) {
-            initialized.get()
-        }
-        try {
-            Choreographer.getInstance().postFrameCallback(vitalFrameCallback)
-        } catch (e: IllegalStateException) {
-            // This can happen if the SDK is initialized on a Thread with no looper
-            sdkCore._internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                "Unable to initialize the Choreographer FrameCallback",
-                e
-            )
-            sdkCore._internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                "It seems you initialized the SDK on a thread without a Looper: " +
-                    "we won't be able to track your Views' refresh rate."
-            )
-        }
+        )
+        (appContext as? Application)?.registerActivityLifecycleCallbacks(
+            jankStatsActivityLifecycleListener
+        )
     }
 
     private fun initializeVitalMonitor(

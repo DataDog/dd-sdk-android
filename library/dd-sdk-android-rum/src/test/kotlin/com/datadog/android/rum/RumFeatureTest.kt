@@ -22,8 +22,8 @@ import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
+import com.datadog.android.rum.internal.vitals.JankStatsActivityLifecycleListener
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
-import com.datadog.android.rum.internal.vitals.VitalFrameCallback
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
@@ -66,10 +66,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -473,10 +471,11 @@ internal class RumFeatureTest {
             .isInstanceOf(AggregatingVitalMonitor::class.java)
         assertThat(testedFeature.frameRateVitalMonitor)
             .isInstanceOf(AggregatingVitalMonitor::class.java)
-        argumentCaptor<Choreographer.FrameCallback> {
-            verify(mockChoreographer).postFrameCallback(capture())
-            assertThat(firstValue).isInstanceOf(VitalFrameCallback::class.java)
-        }
+        assertThat(testedFeature.jankStatsActivityLifecycleListener)
+            .isInstanceOf(JankStatsActivityLifecycleListener::class.java)
+        verify(appContext.mockInstance).registerActivityLifecycleCallbacks(
+            testedFeature.jankStatsActivityLifecycleListener
+        )
     }
 
     @Test
@@ -503,53 +502,8 @@ internal class RumFeatureTest {
             .isInstanceOf(NoOpVitalMonitor::class.java)
         assertThat(testedFeature.vitalExecutorService)
             .isInstanceOf(NoOpScheduledExecutorService::class.java)
-    }
-
-    @ParameterizedTest
-    @EnumSource(VitalsUpdateFrequency::class, names = ["NEVER"], mode = EnumSource.Mode.EXCLUDE)
-    fun `𝕄 register choreographer callback safely 𝕎 initialize { frequency != NEVER }()`(
-        fakeFrequency: VitalsUpdateFrequency,
-        @StringForgery message: String
-    ) {
-        // Given
-        doThrow(IllegalStateException(message)).whenever(mockChoreographer).postFrameCallback(any())
-        fakeConfiguration = fakeConfiguration.copy(vitalsMonitorUpdateFrequency = fakeFrequency)
-        testedFeature = RumFeature(
-            fakeApplicationId.toString(),
-            fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
-        )
-
-        // When
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
-
-        // Then
-        argumentCaptor<Choreographer.FrameCallback> {
-            verify(mockChoreographer).postFrameCallback(capture())
-            assertThat(firstValue).isInstanceOf(VitalFrameCallback::class.java)
-        }
-    }
-
-    @Test
-    fun `𝕄 not register choreographer callback 𝕎 initialize { frequency = NEVER }()`(
-        @StringForgery message: String
-    ) {
-        // Given
-        doThrow(IllegalStateException(message)).whenever(mockChoreographer).postFrameCallback(any())
-        fakeConfiguration = fakeConfiguration.copy(
-            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER
-        )
-        testedFeature = RumFeature(
-            fakeApplicationId.toString(),
-            fakeConfiguration,
-            ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
-        )
-
-        // When
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
-
-        // Then
-        verifyNoInteractions(mockChoreographer)
+        assertThat(testedFeature.jankStatsActivityLifecycleListener)
+            .isNull()
     }
 
     @Test

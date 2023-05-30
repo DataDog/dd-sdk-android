@@ -6,17 +6,10 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Context
-import android.os.Build
-import android.view.WindowManager
 import androidx.annotation.WorkerThread
-import androidx.fragment.app.Fragment
 import androidx.navigation.NavController
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
@@ -33,7 +26,6 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.rum.utils.hasUserData
 import com.datadog.android.rum.utils.resolveViewUrl
 import com.datadog.android.v2.api.Feature
@@ -61,7 +53,6 @@ internal open class RumViewScope(
     internal val cpuVitalMonitor: VitalMonitor,
     internal val memoryVitalMonitor: VitalMonitor,
     internal val frameRateVitalMonitor: VitalMonitor,
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate(),
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
     internal val type: RumViewType = RumViewType.FOREGROUND,
@@ -103,7 +94,7 @@ internal open class RumViewScope(
     private var version: Long = 1
     private var loadingTime: Long? = null
     private var loadingType: ViewEvent.LoadingType? = null
-    private val customTimings: MutableMap<String, Long> = mutableMapOf()
+    internal val customTimings: MutableMap<String, Long> = mutableMapOf()
     internal val featureFlags: MutableMap<String, Any?> = mutableMapOf()
 
     internal var stopped: Boolean = false
@@ -130,7 +121,6 @@ internal open class RumViewScope(
         }
     }
 
-    private var refreshRateScale: Double = 1.0
     private var lastFrameRateInfo: VitalInfo? = null
     private var frameRateVitalListener: VitalListener = object : VitalListener {
         override fun onVitalUpdate(info: VitalInfo) {
@@ -151,8 +141,6 @@ internal open class RumViewScope(
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
         frameRateVitalMonitor.register(frameRateVitalListener)
-
-        detectRefreshRateScale(key)
     }
 
     // region RumScope
@@ -470,6 +458,8 @@ internal open class RumViewScope(
         event: RumRawEvent.AddCustomTiming,
         writer: DataWriter<Any>
     ) {
+        if (stopped) return
+
         customTimings[event.name] = max(event.eventTime.nanoTime - startedNanos, 1L)
         sendViewUpdate(event, writer)
     }
@@ -694,8 +684,6 @@ internal open class RumViewScope(
         val eventJsRefreshRate = performanceMetrics[RumPerformanceMetric.JS_FRAME_TIME]
             ?.toInversePerformanceMetric()
 
-        val eventRefreshRateScale = refreshRateScale
-
         val updatedDurationNs = resolveViewDuration(event)
         val rumContext = getRumContext()
 
@@ -735,8 +723,8 @@ internal open class RumViewScope(
                         },
                         memoryAverage = memoryInfo?.meanValue,
                         memoryMax = memoryInfo?.maxValue,
-                        refreshRateAverage = refreshRateInfo?.meanValue?.let { it * eventRefreshRateScale },
-                        refreshRateMin = refreshRateInfo?.minValue?.let { it * eventRefreshRateScale },
+                        refreshRateAverage = refreshRateInfo?.meanValue,
+                        refreshRateMin = refreshRateInfo?.minValue,
                         isSlowRendered = isSlowRendered,
                         frustration = ViewEvent.Frustration(eventFrustrationCount.toLong()),
                         flutterBuildTime = eventFlutterBuildTime,
@@ -1000,6 +988,8 @@ internal open class RumViewScope(
         event: RumRawEvent.AddFeatureFlagEvaluation,
         writer: DataWriter<Any>
     ) {
+        if (stopped) return
+
         featureFlags[event.name] = event.value
         sendViewUpdate(event, writer)
         sendViewChanged()
@@ -1024,62 +1014,6 @@ internal open class RumViewScope(
         // we use <= 0 for pending counter as a safety measure to make sure this ViewScope will
         // be closed.
         return stopped && activeResourceScopes.isEmpty() && (pending <= 0L)
-    }
-
-    /*
-     * The refresh rate needs to be computed with each view because:
-     * - it requires a context with a UI (we can't get this from the application context);
-     * - it can change between different activities (based on window configuration)
-     */
-    @SuppressLint("NewApi")
-    @Suppress("DEPRECATION")
-    private fun detectRefreshRateScale(key: Any) {
-        val activity = when (key) {
-            is Activity -> key
-            is Fragment -> key.activity
-            is android.app.Fragment -> key.activity
-            is NavigationViewTrackingStrategy.NavigationKey -> {
-                if (navControllerActivityField == null) {
-                    sdkCore._internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.TELEMETRY,
-                        "Unable to retrieve the activity field from the navigationController"
-                    )
-                    null
-                } else {
-                    navControllerActivityField.isAccessible = true
-                    try {
-                        navControllerActivityField.get(key.controller) as? Activity
-                    } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-                        sdkCore._internalLogger.log(
-                            InternalLogger.Level.WARN,
-                            InternalLogger.Target.TELEMETRY,
-                            "Unable to retrieve the activity value from the navigationController",
-                            t
-                        )
-                        null
-                    }
-                }
-            }
-            else -> null
-        }
-
-        if (activity == null) {
-            sdkCore._internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                "Unable to retrieve the activity from $key, " +
-                    "the frame rate might be reported with the wrong scale"
-            )
-            return
-        }
-
-        val display = if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.R) {
-            activity.display
-        } else {
-            (activity.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.defaultDisplay
-        } ?: return
-        refreshRateScale = STANDARD_FPS / display.refreshRate
     }
 
     enum class RumViewType {
