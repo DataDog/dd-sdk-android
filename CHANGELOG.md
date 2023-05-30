@@ -1,3 +1,8 @@
+# 1.19.1 / 2023-05-30
+
+* [IMPROVEMENT] RUM: Force new session at SDK initialization. See [#1399](https://github.com/DataDog/dd-sdk-android/pull/1399)
+* [BUGFIX] RUM: Ignore adding custom timings and feature flags for the stopped view. See [#1433](https://github.com/DataDog/dd-sdk-android/pull/1433)
+
 # 1.19.0 / 2023-04-24
 
 * [FEATURE] RUM: Allow users to stop a RUM session. See [#1356](https://github.com/DataDog/dd-sdk-android/pull/1356)

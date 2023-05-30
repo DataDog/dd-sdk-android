@@ -146,7 +146,9 @@ internal class RumSessionScope(
         val isInteraction = (event is RumRawEvent.StartView) || (event is RumRawEvent.StartAction)
         val isBackgroundEvent = (event.javaClass in RumViewManagerScope.validBackgroundEventTypes)
 
-        if (isInteraction) {
+        if (event is RumRawEvent.SdkInit && isNewSession) {
+            renewSession(nanoTime)
+        } else if (isInteraction) {
             if (isNewSession || isExpired || isTimedOut) {
                 renewSession(nanoTime)
             }
