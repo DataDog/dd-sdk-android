@@ -99,7 +99,8 @@ internal class SessionReplayFeatureTest {
         testedFeature = SessionReplayFeature(
             customEndpointUrl = forge.aNullable { sessionReplayEndpointUrl },
             privacy = fakePrivacy,
-            customMappers = emptyMap()
+            customMappers = emptyList(),
+            customOptionSelectorDetectors = emptyList()
         )
 
         // When
@@ -118,7 +119,8 @@ internal class SessionReplayFeatureTest {
         testedFeature = SessionReplayFeature(
             customEndpointUrl = forge.aNullable { sessionReplayEndpointUrl },
             privacy = fakePrivacy,
-            customMappers = emptyMap()
+            customMappers = emptyList(),
+            customOptionSelectorDetectors = emptyList()
         )
 
         // When

@@ -22,20 +22,19 @@ internal class ViewUtilsInternal {
         }
     }
 
-    internal fun checkIfNotVisible(view: View): Boolean {
+    internal fun isNotVisible(view: View): Boolean {
         return !view.isShown || view.width <= 0 || view.height <= 0
     }
 
-    internal fun checkIfSystemNoise(view: View): Boolean {
+    internal fun isSystemNoise(view: View): Boolean {
         return view.id in systemViewIds ||
             view is ViewStub ||
             view is ActionBarContextView
     }
 
-    internal fun checkIsToolbar(view: View): Boolean {
+    internal fun isToolbar(view: View): Boolean {
         return (
-            Toolbar::class.java.isAssignableFrom(view::class.java) &&
-                view.id == androidx.appcompat.R.id.action_bar
+            Toolbar::class.java.isAssignableFrom(view::class.java)
             ) ||
             (
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&

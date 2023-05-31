@@ -16,6 +16,7 @@
     <string name="title_unknown">"?"</string>
     <string name="title_data_list">Data List</string>
     <string name="title_view_pager">View Pager</string>
+    <string name="title_unsupported_views">Unsupported views</string>
     <string name="title_snackbar">Snackbar</string>
     <string name="title_foreground_service">Foreground service</string>
     <string name="title_picture">Picture loading</string>
@@ -81,6 +82,8 @@
     <string name="load_picture">Load picture</string>
     <string name="widget_description">Datadog Sample Widget</string>
     <string name="add_widget">Add widget</string>
+    <string name="legacy_toolbar_title">Legacy toolbar</string>
+    <string name="appcompat_toolbar_title">Appcompat toolbar</string>
     <string name="loading">Loading…</string>
     <string name="load_resource">Perform http request</string>
     <string name="set_tracking_consent">Set tracking consent</string>
@@ -116,4 +119,18 @@
     <string name="dropdowns_and_switchers_components">Dropdowns and Switchers Components</string>
     <string name="planet">Planet</string>
     <string name="sliders_and_steppers_components">Sliders and Steppers Components</string>
+    <string name="random_text_value">Pellentesque pretium non urna ut laoreet. Vestibulum finibus porttitor sem, id dictum elit.</string>
+    <string name="different_fonts">Different Fonts</string>
+    <string name="default_typeface_label">Default Typeface</string>
+    <string name="sans_serif_typeface_label">Sans Serif Typeface</string>
+    <string name="monospace_typeface_label">Monospace Typeface</string>
+    <string name="sans_typeface_label">Sans Typeface</string>
+    <string name="password_input_components">Password input components</string>
+    <string name="postal_address_label">Postal Address</string>
+    <string name="web_email_label">Web Email</string>
+    <string name="email_label">Email</string>
+    <string name="web_password_label">Web Password</string>
+    <string name="number_password_label">Number Password</string>
+    <string name="visible_password_label">Visible Password</string>
+    <string name="default_password_label">Default password</string>
 </resources>

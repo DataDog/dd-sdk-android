@@ -34,7 +34,7 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
     lateinit var mockuniqueIdentifierGenerator: UniqueIdentifierGenerator
 
     @Mock
-    lateinit var mockTextWireframeMapper: TextWireframeMapper
+    lateinit var mockTextWireframeMapper: TextViewMapper
 
     lateinit var fakeTextWireframes: List<MobileSegment.Wireframe.TextWireframe>
 
@@ -90,17 +90,17 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
     fun `set up`(forge: Forge) {
         fakeTextWireframes = forge.aList(size = 1) { getForgery() }
         normalizedThumbHeight = fakeThumbHeight.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         normalizedThumbWidth = fakeThumbWidth.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         normalizedTrackWidth = fakeTrackWidth.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         normalizedTrackHeight = fakeTrackHeight.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         normalizedThumbLeftPadding = fakeThumbLeftPadding.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         normalizedThumbRightPadding = fakeThumbRightPadding.toLong()
-            .densityNormalized(fakeSystemInformation.screenDensity)
+            .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
         whenever(mockThumbDrawable.intrinsicHeight).thenReturn(fakeThumbHeight)
         whenever(mockThumbDrawable.intrinsicWidth).thenReturn(fakeThumbWidth)
         whenever(mockTrackDrawable.intrinsicHeight).thenReturn(fakeTrackHeight)
@@ -128,12 +128,12 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
                 SwitchCompatMapper.THUMB_KEY_NAME
             )
         ).thenReturn(fakeThumbIdentifier)
-        whenever(mockTextWireframeMapper.map(mockSwitch, fakeSystemInformation))
+        whenever(mockTextWireframeMapper.map(mockSwitch, fakeMappingContext))
             .thenReturn(fakeTextWireframes)
         whenever(
             mockViewUtils.resolveViewGlobalBounds(
                 mockSwitch,
-                fakeSystemInformation.screenDensity
+                fakeMappingContext.systemInformation.screenDensity
             )
         ).thenReturn(fakeViewGlobalBounds)
         testedSwitchCompatMapper = setupTestedMapper()
@@ -150,7 +150,7 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeSystemInformation
+            fakeMappingContext
         )
 
         // Then
@@ -166,7 +166,7 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeSystemInformation
+            fakeMappingContext
         )
 
         // Then
@@ -189,7 +189,7 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedSwitchCompatMapper.map(
             mockSwitch,
-            fakeSystemInformation
+            fakeMappingContext
         )
 
         // Then

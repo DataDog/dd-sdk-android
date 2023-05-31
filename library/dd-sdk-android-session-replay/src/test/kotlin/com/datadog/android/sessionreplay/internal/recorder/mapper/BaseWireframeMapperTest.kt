@@ -11,7 +11,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.StringUtils
@@ -26,7 +26,7 @@ import java.util.stream.Stream
 internal abstract class BaseWireframeMapperTest {
 
     @Forgery
-    lateinit var fakeSystemInformation: SystemInformation
+    lateinit var fakeMappingContext: MappingContext
 
     protected fun mockNonDecorView(): View {
         return mock {
@@ -46,16 +46,17 @@ internal abstract class BaseWireframeMapperTest {
 
     protected fun View.toShapeWireframes(): List<MobileSegment.Wireframe.ShapeWireframe> {
         val coordinates = IntArray(2)
+        val screenDensity = fakeMappingContext.systemInformation.screenDensity
         this.getLocationOnScreen(coordinates)
-        val x = coordinates[0].densityNormalized(fakeSystemInformation.screenDensity).toLong()
-        val y = coordinates[1].densityNormalized(fakeSystemInformation.screenDensity).toLong()
+        val x = coordinates[0].densityNormalized(screenDensity).toLong()
+        val y = coordinates[1].densityNormalized(screenDensity).toLong()
         return listOf(
             MobileSegment.Wireframe.ShapeWireframe(
                 System.identityHashCode(this).toLong(),
                 x = x,
                 y = y,
-                width = width.toLong().densityNormalized(fakeSystemInformation.screenDensity),
-                height = height.toLong().densityNormalized(fakeSystemInformation.screenDensity)
+                width = width.toLong().densityNormalized(screenDensity),
+                height = height.toLong().densityNormalized(screenDensity)
             )
         )
     }
@@ -63,8 +64,9 @@ internal abstract class BaseWireframeMapperTest {
     protected fun TextView.toTextWireframes(): List<MobileSegment.Wireframe.TextWireframe> {
         val coordinates = IntArray(2)
         this.getLocationOnScreen(coordinates)
-        val x = coordinates[0].densityNormalized(fakeSystemInformation.screenDensity).toLong()
-        val y = coordinates[1].densityNormalized(fakeSystemInformation.screenDensity).toLong()
+        val screenDensity = fakeMappingContext.systemInformation.screenDensity
+        val x = coordinates[0].densityNormalized(screenDensity).toLong()
+        val y = coordinates[1].densityNormalized(screenDensity).toLong()
         val textColor = StringUtils.formatColorAndAlphaAsHexa(currentTextColor, OPAQUE_ALPHA_VALUE)
         return listOf(
             MobileSegment.Wireframe.TextWireframe(
@@ -72,11 +74,11 @@ internal abstract class BaseWireframeMapperTest {
                 x = x,
                 y = y,
                 text = resolveTextValue(this),
-                width = width.toLong().densityNormalized(fakeSystemInformation.screenDensity),
-                height = height.toLong().densityNormalized(fakeSystemInformation.screenDensity),
+                width = width.toLong().densityNormalized(screenDensity),
+                height = height.toLong().densityNormalized(screenDensity),
                 textStyle = MobileSegment.TextStyle(
-                    "sans-serif",
-                    textSize.toLong().densityNormalized(fakeSystemInformation.screenDensity),
+                    TextViewMapper.SANS_SERIF_FAMILY_NAME,
+                    textSize.toLong().densityNormalized(screenDensity),
                     textColor
                 ),
                 textPosition = MobileSegment.TextPosition(
@@ -109,12 +111,12 @@ internal abstract class BaseWireframeMapperTest {
             Typeface::class.java.setStaticValue("SERIF", mock<Typeface>())
             Typeface::class.java.setStaticValue("SANS_SERIF", mock<Typeface>())
             return listOf(
-                Arguments.of(Typeface.DEFAULT, TextWireframeMapper.SANS_SERIF_FAMILY_NAME),
-                Arguments.of(Typeface.DEFAULT_BOLD, TextWireframeMapper.SANS_SERIF_FAMILY_NAME),
-                Arguments.of(Typeface.MONOSPACE, TextWireframeMapper.MONOSPACE_FAMILY_NAME),
-                Arguments.of(Typeface.SERIF, TextWireframeMapper.SERIF_FAMILY_NAME),
-                Arguments.of(mock<Typeface>(), TextWireframeMapper.SANS_SERIF_FAMILY_NAME),
-                Arguments.of(null, TextWireframeMapper.SANS_SERIF_FAMILY_NAME)
+                Arguments.of(Typeface.DEFAULT, TextViewMapper.SANS_SERIF_FAMILY_NAME),
+                Arguments.of(Typeface.DEFAULT_BOLD, TextViewMapper.SANS_SERIF_FAMILY_NAME),
+                Arguments.of(Typeface.MONOSPACE, TextViewMapper.MONOSPACE_FAMILY_NAME),
+                Arguments.of(Typeface.SERIF, TextViewMapper.SERIF_FAMILY_NAME),
+                Arguments.of(mock<Typeface>(), TextViewMapper.SANS_SERIF_FAMILY_NAME),
+                Arguments.of(null, TextViewMapper.SANS_SERIF_FAMILY_NAME)
             )
                 .stream()
         }

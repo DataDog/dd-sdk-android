@@ -4,14 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.mapper
+package com.datadog.android.sessionreplay.internal.recorder.obfuscator
 
 import android.os.Build
 import androidx.annotation.RequiresApi
 
-internal class StringObfuscator {
+internal class DefaultStringObfuscator : StringObfuscator {
 
-    fun obfuscate(stringValue: String): String {
+    override fun obfuscate(stringValue: String): String {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             obfuscateUsingCodeStream(stringValue)
         } else {

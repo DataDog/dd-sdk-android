@@ -51,7 +51,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
     lateinit var mockuniqueIdentifierGenerator: UniqueIdentifierGenerator
 
     @Mock
-    lateinit var mockTextWireframeMapper: TextWireframeMapper
+    lateinit var mockTextWireframeMapper: TextViewMapper
 
     @Forgery
     lateinit var fakeTextWireframes: List<MobileSegment.Wireframe.TextWireframe>
@@ -88,12 +88,12 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
                 CheckableTextViewMapper.CHECKABLE_KEY_NAME
             )
         ).thenReturn(fakeGeneratedIdentifier)
-        whenever(mockTextWireframeMapper.map(mockCheckBox, fakeSystemInformation))
+        whenever(mockTextWireframeMapper.map(mockCheckBox, fakeMappingContext))
             .thenReturn(fakeTextWireframes)
         whenever(
             mockViewUtils.resolveViewGlobalBounds(
                 mockCheckBox,
-                fakeSystemInformation.screenDensity
+                fakeMappingContext.systemInformation.screenDensity
             )
         )
             .thenReturn(fakeViewGlobalBounds)
@@ -129,7 +129,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
-                .densityNormalized(fakeSystemInformation.screenDensity),
+                .densityNormalized(fakeMappingContext.systemInformation.screenDensity),
             y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - checkBoxSize) / 2,
             width = checkBoxSize,
             height = checkBoxSize,
@@ -143,7 +143,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
-            fakeSystemInformation
+            fakeMappingContext
         )
 
         // Then
@@ -168,7 +168,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
-                .densityNormalized(fakeSystemInformation.screenDensity),
+                .densityNormalized(fakeMappingContext.systemInformation.screenDensity),
             y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - checkBoxSize) / 2,
             width = checkBoxSize,
             height = checkBoxSize,
@@ -182,7 +182,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
-            fakeSystemInformation
+            fakeMappingContext
         )
 
         // Then
@@ -202,7 +202,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
-                .densityNormalized(fakeSystemInformation.screenDensity),
+                .densityNormalized(fakeMappingContext.systemInformation.screenDensity),
             y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - checkBoxSize) / 2,
             width = checkBoxSize,
             height = checkBoxSize,
@@ -216,7 +216,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
-            fakeSystemInformation
+            fakeMappingContext
         )
 
         // Then
@@ -236,7 +236,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         val expectedCheckBoxWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeViewGlobalBounds.x + CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
-                .densityNormalized(fakeSystemInformation.screenDensity),
+                .densityNormalized(fakeMappingContext.systemInformation.screenDensity),
             y = fakeViewGlobalBounds.y + (fakeViewGlobalBounds.height - checkBoxSize) / 2,
             width = checkBoxSize,
             height = checkBoxSize,
@@ -250,7 +250,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
-            fakeSystemInformation
+            fakeMappingContext
         )
 
         // Then
@@ -270,7 +270,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
         // When
         val resolvedWireframes = testedCheckBoxMapper.map(
             mockCheckBox,
-            fakeSystemInformation
+            fakeMappingContext
         )
 
         // Then
@@ -282,10 +282,9 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
     // region Internal
 
     private fun resolveCheckBoxSize(checkBoxSize: Long): Long {
-        val density = fakeSystemInformation.screenDensity
-        val textSize = fakeTextSize.toLong()
+        val density = fakeMappingContext.systemInformation.screenDensity
         val size = checkBoxSize - 2 * CheckableCompoundButtonMapper.MIN_PADDING_IN_PX
-        return (size * (textSize - 1) / textSize).densityNormalized(density)
+        return size.densityNormalized(density)
     }
 
     // endregion

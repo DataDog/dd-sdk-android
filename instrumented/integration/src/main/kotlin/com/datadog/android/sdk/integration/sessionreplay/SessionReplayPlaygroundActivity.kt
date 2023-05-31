@@ -67,6 +67,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
     fun getExpectedSrData(): ExpectedSrData {
         val density = resources.displayMetrics.density
         val decorView = window.decorView
+
         val decorWidth = decorView.width.toLong()
             .densityNormalized(density)
         val decorHeight = decorView.height.toLong()
@@ -108,6 +109,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
             height = decorHeight,
             shapeStyle = decorViewShapeStyle
         )
+
         val titleViewScreenCoordinates = titleTextView.getViewAbsoluteCoordinates()
         val titleWireframe = MobileSegment.Wireframe.TextWireframe(
             id = titleTextView.resolveId(),
@@ -117,7 +119,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
             height = titleTextView.height.toLong().densityNormalized(density),
             text = "${titleTextView.text}",
             textStyle = MobileSegment.TextStyle(
-                family = "sans-serif",
+                family = SANS_SERIF_FAMILY_NAME,
                 size = titleTextView.textSize.toLong().densityNormalized(density),
                 color = StringUtils.formatColorAndAlphaAsHexa(
                     titleTextView.currentTextColor,
@@ -148,7 +150,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
                 )
             ),
             textStyle = MobileSegment.TextStyle(
-                family = "sans-serif",
+                family = SANS_SERIF_FAMILY_NAME,
                 size = clickMeButton.textSize.toLong().densityNormalized(density),
                 color = StringUtils.formatColorAndAlphaAsHexa(
                     clickMeButton.currentTextColor,
@@ -175,26 +177,41 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
         fullSnapshotRecordWireframes.add(rootWireframe)
         fullSnapshotRecordWireframes.add(titleWireframe)
         fullSnapshotRecordWireframes.add(buttonWireframe)
-        // one shape wireframe for action bar container and one for toolbar
-        // probably these will be changed later as we decide how to handle the action bars
+
         decorView.findViewByType(ActionBarContainer::class.java)?.let {
             (it.getChildAt(0) as? Toolbar)?.let { toolbar ->
                 val toolbarScreenCoordinates = toolbar.getViewAbsoluteCoordinates()
-                val actionBarToolbarWireframe = MobileSegment.Wireframe.ShapeWireframe(
+
+                val toolbarWireframe = MobileSegment.Wireframe.TextWireframe(
                     id = toolbar.resolveId(),
-                    width = toolbar.width.toLong().densityNormalized(density),
-                    height = toolbar.height.toLong().densityNormalized(density),
                     x = toolbarScreenCoordinates[0].toLong().densityNormalized(density),
                     y = toolbarScreenCoordinates[1].toLong().densityNormalized(density),
+                    width = toolbar.width.toLong().densityNormalized(density),
+                    height = toolbar.height.toLong().densityNormalized(density),
+                    shapeStyle = MobileSegment.ShapeStyle(
+                        backgroundColor = "#F1F1F3FF",
+                        opacity = toolbar.alpha,
+                        cornerRadius = 4
+                    ),
                     border = MobileSegment.ShapeBorder(
-                        color = StringUtils.formatColorAndAlphaAsHexa(
-                            BLACK_COLOR_AS_HEXA,
-                            FULL_OPACITY_AS_HEXA
-                        ),
-                        width = 1
+                        color = "#D3D3D3FF",
+                        width = 1L
+                    ),
+                    text = UNSUPPORTED_VIEW_TITLE,
+                    textStyle = MobileSegment.TextStyle(
+                        family = SANS_SERIF_FAMILY_NAME,
+                        size = 10,
+                        color = "#FF0000FF"
+                    ),
+                    textPosition = MobileSegment.TextPosition(
+                        alignment = MobileSegment.Alignment(
+                            horizontal = MobileSegment.Horizontal.CENTER,
+                            vertical = MobileSegment.Vertical.CENTER
+                        )
                     )
                 )
-                fullSnapshotRecordWireframes.add(actionBarToolbarWireframe)
+
+                fullSnapshotRecordWireframes.add(toolbarWireframe)
             }
         }
 
@@ -242,5 +259,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
     companion object {
         private const val BLACK_COLOR_AS_HEXA = 0
         private const val FULL_OPACITY_AS_HEXA = 255
+        private const val SANS_SERIF_FAMILY_NAME = "roboto, sans-serif"
+        private const val UNSUPPORTED_VIEW_TITLE = "Toolbar"
     }
 }

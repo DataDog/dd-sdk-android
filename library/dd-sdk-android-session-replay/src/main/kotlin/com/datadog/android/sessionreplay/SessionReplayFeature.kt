@@ -8,7 +8,6 @@ package com.datadog.android.sessionreplay
 
 import android.app.Application
 import android.content.Context
-import android.view.View
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
 import com.datadog.android.sessionreplay.internal.NoOpLifecycleCallback
@@ -17,7 +16,8 @@ import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayRecordCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
-import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
@@ -43,7 +43,8 @@ class SessionReplayFeature internal constructor(
     internal constructor(
         customEndpointUrl: String?,
         privacy: SessionReplayPrivacy,
-        customMappers: Map<Class<*>, WireframeMapper<View, *>>
+        customMappers: List<MapperTypeWrapper>,
+        customOptionSelectorDetectors: List<OptionSelectorDetector>
     ) : this(
         customEndpointUrl,
         privacy,
@@ -54,7 +55,8 @@ class SessionReplayFeature internal constructor(
                 recordWriter = recordWriter,
                 timeProvider = SessionReplayTimeProvider(sdkCore),
                 recordCallback = SessionReplayRecordCallback(sdkCore),
-                customMappers = customMappers
+                customMappers = customMappers,
+                customOptionSelectorDetectors = customOptionSelectorDetectors
             )
         }
     )
@@ -237,13 +239,16 @@ class SessionReplayFeature internal constructor(
             return this
         }
 
-        internal fun customMappers(): Map<Class<*>, WireframeMapper<View, *>> {
+        internal fun customMappers(): List<MapperTypeWrapper> {
             extensionSupport.getCustomViewMappers().entries.forEach {
                 if (it.key.name == privacy.name) {
                     return it.value
+                        .map { typeMapperPair ->
+                            MapperTypeWrapper(typeMapperPair.key, typeMapperPair.value)
+                        }
                 }
             }
-            return emptyMap()
+            return emptyList()
         }
 
         /**
@@ -253,7 +258,8 @@ class SessionReplayFeature internal constructor(
             return SessionReplayFeature(
                 customEndpointUrl = customEndpointUrl,
                 privacy = privacy,
-                customMappers = customMappers()
+                customMappers = customMappers(),
+                customOptionSelectorDetectors = extensionSupport.getOptionSelectorDetectors()
             )
         }
     }

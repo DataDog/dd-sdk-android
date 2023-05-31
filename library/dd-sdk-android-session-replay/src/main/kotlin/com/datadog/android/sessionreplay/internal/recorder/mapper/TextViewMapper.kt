@@ -9,16 +9,38 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.Typeface
 import android.view.Gravity
 import android.widget.TextView
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.AllowAllObfuscationRule
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.TextValueObfuscationRule
 import com.datadog.android.sessionreplay.model.MobileSegment
 
-internal open class TextWireframeMapper :
-    BaseWireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe>() {
+/**
+ * A [WireframeMapper] implementation to map a [TextView] component.
+ * In this case any [TextView] for which the input type is considered sensible (password, email
+ * address, postal address, numeric password) will be masked with the static mask: [***].
+ * All the other text fields will not be masked.
+ */
+@Suppress("TooManyFunctions")
+open class TextViewMapper :
+    BaseWireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe> {
 
-    override fun map(view: TextView, systemInformation: SystemInformation):
+    internal val textValueObfuscationRule: TextValueObfuscationRule
+
+    constructor() {
+        textValueObfuscationRule = AllowAllObfuscationRule()
+    }
+
+    internal constructor(textValueObfuscationRule: TextValueObfuscationRule) {
+        this.textValueObfuscationRule = textValueObfuscationRule
+    }
+
+    override fun map(view: TextView, mappingContext: MappingContext):
         List<MobileSegment.Wireframe.TextWireframe> {
-        val viewGlobalBounds = resolveViewGlobalBounds(view, systemInformation.screenDensity)
+        val viewGlobalBounds = resolveViewGlobalBounds(
+            view,
+            mappingContext.systemInformation.screenDensity
+        )
         val (shapeStyle, border) = view.background?.resolveShapeStyleAndBorder(view.alpha)
             ?: (null to null)
         return listOf(
@@ -30,19 +52,14 @@ internal open class TextWireframeMapper :
                 height = viewGlobalBounds.height,
                 shapeStyle = shapeStyle,
                 border = border,
-                text = resolveTextValue(view),
-                textStyle = resolveTextStyle(view, systemInformation.screenDensity),
-                textPosition = resolveTextPosition(view, systemInformation.screenDensity)
+                text = textValueObfuscationRule.resolveObfuscatedValue(view, mappingContext),
+                textStyle = resolveTextStyle(view, mappingContext.systemInformation.screenDensity),
+                textPosition = resolveTextPosition(
+                    view,
+                    mappingContext.systemInformation.screenDensity
+                )
             )
         )
-    }
-
-    protected open fun resolveTextValue(textView: TextView): String {
-        return if (textView.text.isNullOrEmpty()) {
-            textView.hint?.toString() ?: ""
-        } else {
-            textView.text?.toString() ?: ""
-        }
     }
 
     // region Internal
@@ -147,7 +164,8 @@ internal open class TextWireframeMapper :
     // endregion
 
     companion object {
-        internal const val SANS_SERIF_FAMILY_NAME = "sans-serif"
+        internal const val STATIC_MASK = "***"
+        internal const val SANS_SERIF_FAMILY_NAME = "roboto, sans-serif"
         internal const val SERIF_FAMILY_NAME = "serif"
         internal const val MONOSPACE_FAMILY_NAME = "monospace"
     }

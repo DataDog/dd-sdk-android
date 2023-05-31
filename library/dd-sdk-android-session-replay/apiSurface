@@ -1,5 +1,6 @@
 interface com.datadog.android.sessionreplay.ExtensionSupport
   fun getCustomViewMappers(): Map<SessionReplayPrivacy, Map<Class<*>, com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper<android.view.View, *>>>
+  fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector>
 class com.datadog.android.sessionreplay.SessionReplayFeature : com.datadog.android.v2.api.StorageBackedFeature, com.datadog.android.v2.api.FeatureEventReceiver
   override val name: String
   override fun onInitialize(com.datadog.android.v2.api.SdkCore, android.content.Context)
@@ -17,13 +18,32 @@ class com.datadog.android.sessionreplay.SessionReplayFeature : com.datadog.andro
 enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - ALLOW_ALL
   - MASK_ALL
+  - MASK_USER_INPUT
 data class com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
   constructor(Long, Long, Long, Long)
+data class com.datadog.android.sessionreplay.internal.recorder.MappingContext
+  constructor(SystemInformation, Boolean = false)
+interface com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
+  fun isOptionSelector(android.view.ViewGroup): Boolean
 data class com.datadog.android.sessionreplay.internal.recorder.SystemInformation
   constructor(GlobalBounds, Int = Configuration.ORIENTATION_UNDEFINED, Float, String? = null)
-typealias MapperCondition = (android.view.View) -> Boolean
+abstract class com.datadog.android.sessionreplay.internal.recorder.mapper.BaseWireframeMapper<T: android.view.View, S: com.datadog.android.sessionreplay.model.MobileSegment.Wireframe> : WireframeMapper<T, S>
+  constructor(com.datadog.android.sessionreplay.utils.StringUtils = StringUtils, com.datadog.android.sessionreplay.utils.ViewUtils = ViewUtils)
+  protected fun resolveViewId(android.view.View): Long
+  protected fun colorAndAlphaAsStringHexa(Int, Int): String
+  protected fun resolveViewGlobalBounds(android.view.View, Float): com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
+  protected fun android.graphics.drawable.Drawable.resolveShapeStyleAndBorder(Float): Pair<com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle?, com.datadog.android.sessionreplay.model.MobileSegment.ShapeBorder?>?
+  companion object 
+class com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllTextViewMapper : TextViewMapper
+  constructor()
+class com.datadog.android.sessionreplay.internal.recorder.mapper.MaskInputTextViewMapper : TextViewMapper
+  constructor()
+open class com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper : BaseWireframeMapper<android.widget.TextView, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.TextWireframe>
+  constructor()
+  override fun map(android.widget.TextView, com.datadog.android.sessionreplay.internal.recorder.MappingContext): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.TextWireframe>
+  companion object 
 interface com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper<T: android.view.View, S: com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
-  fun map(T, com.datadog.android.sessionreplay.internal.recorder.SystemInformation): List<S>
+  fun map(T, com.datadog.android.sessionreplay.internal.recorder.MappingContext): List<S>
 object com.datadog.android.sessionreplay.utils.StringUtils
   fun formatColorAndAlphaAsHexa(Int, Int): String
 object com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator

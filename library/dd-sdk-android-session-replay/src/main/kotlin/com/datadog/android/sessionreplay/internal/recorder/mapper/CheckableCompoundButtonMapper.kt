@@ -15,7 +15,7 @@ import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
 internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
-    textWireframeMapper: TextWireframeMapper,
+    textWireframeMapper: TextViewMapper,
     stringUtils: StringUtils = StringUtils,
     uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
     viewUtils: ViewUtils = ViewUtils
@@ -38,12 +38,7 @@ internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
         }
         // minus the padding
         checkBoxHeight -= MIN_PADDING_IN_PX * 2
-        val textSize = view.textSize.toLong()
-        // to solve the current font issues on the player side we lower the original font
-        // size with 1 unit. We will need to normalize the current checkbox size
-        // to this new size
-        checkBoxHeight = (checkBoxHeight * (textSize - 1) / textSize)
-            .densityNormalized(pixelsDensity)
+        checkBoxHeight = checkBoxHeight.densityNormalized(pixelsDensity)
         return GlobalBounds(
             x = viewGlobalBounds.x + MIN_PADDING_IN_PX.densityNormalized(pixelsDensity),
             y = viewGlobalBounds.y + (viewGlobalBounds.height - checkBoxHeight) / 2,

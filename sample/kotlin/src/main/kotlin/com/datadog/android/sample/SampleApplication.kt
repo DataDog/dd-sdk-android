@@ -39,7 +39,6 @@ import com.datadog.android.sample.picture.FrescoImageLoader
 import com.datadog.android.sample.picture.PicassoImageLoader
 import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.sessionreplay.SessionReplayFeature
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.AndroidTracer
@@ -121,7 +120,6 @@ class SampleApplication : Application() {
                 }
             }
             .addExtensionSupport(MaterialExtensionSupport())
-            .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
             .build()
         sdkCore.registerFeature(sessionReplayFeature)
 

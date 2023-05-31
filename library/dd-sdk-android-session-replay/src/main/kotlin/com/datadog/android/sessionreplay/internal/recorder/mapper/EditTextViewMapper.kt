@@ -6,42 +6,44 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.content.res.ColorStateList
 import android.os.Build
-import android.view.View
 import android.widget.EditText
-import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
+/**
+ * A [WireframeMapper] implementation to map a [EditText] component in case the
+ * [SessionReplayPrivacy.ALLOW_ALL] rule was used in the configuration.
+ * In this case the mapper will use the provided [textViewMapper] used for the current privacy
+ * level and will only mask the [EditText] for which the input type is considered sensible
+ * (password, email, address, postal address, numeric password) with the static mask: [***].
+ */
 internal open class EditTextViewMapper(
-    private val textWireframeMapper: TextWireframeMapper,
+    internal val textViewMapper: TextViewMapper,
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    viewUtils: ViewUtils = ViewUtils
-) : BaseWireframeMapper<EditText, MobileSegment.Wireframe>(viewUtils = viewUtils) {
+    viewUtils: ViewUtils = ViewUtils,
+    stringUtils: StringUtils = StringUtils
+) : BaseWireframeMapper<EditText, MobileSegment.Wireframe>(
+    viewUtils = viewUtils,
+    stringUtils = stringUtils
+) {
 
-    override fun map(view: EditText, systemInformation: SystemInformation):
+    override fun map(view: EditText, mappingContext: MappingContext):
         List<MobileSegment.Wireframe> {
-        val mainWireframeList = textWireframeMapper.map(view, systemInformation)
-        resolveUnderlineWireframe(view, systemInformation.screenDensity)?.let { wireframe ->
-            return mainWireframeList + wireframe
-        }
+        val mainWireframeList = textViewMapper.map(view, mappingContext)
+        resolveUnderlineWireframe(view, mappingContext.systemInformation.screenDensity)
+            ?.let { wireframe ->
+                return mainWireframeList + wireframe
+            }
         return mainWireframeList
     }
 
-    private fun resolveUnderlineWireframe(parent: View, pixelsDensity: Float): MobileSegment.Wireframe? {
-        val backgroundTintList = resolveBackgroundTintList(parent)
-        return if (backgroundTintList != null) {
-            resolveUnderlineWireframe(backgroundTintList, parent, pixelsDensity)
-        } else {
-            null
-        }
-    }
-
     private fun resolveUnderlineWireframe(
-        backgroundTintList: ColorStateList,
-        parent: View,
+        parent: EditText,
         pixelsDensity: Float
     ): MobileSegment.Wireframe? {
         val identifier = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
@@ -49,10 +51,7 @@ internal open class EditTextViewMapper(
             UNDERLINE_KEY_NAME
         ) ?: return null
         val viewGlobalBounds = resolveViewGlobalBounds(parent, pixelsDensity)
-        val fieldUnderlineColor = colorAndAlphaAsStringHexa(
-            backgroundTintList.defaultColor,
-            OPAQUE_ALPHA_VALUE
-        )
+        val fieldUnderlineColor = resolveUnderlineColor(parent)
         return MobileSegment.Wireframe.ShapeWireframe(
             identifier,
             viewGlobalBounds.x,
@@ -66,12 +65,16 @@ internal open class EditTextViewMapper(
         )
     }
 
-    private fun resolveBackgroundTintList(view: View): ColorStateList? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            view.backgroundTintList
-        } else {
-            null
+    private fun resolveUnderlineColor(view: EditText): String {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            view.backgroundTintList?.let {
+                return colorAndAlphaAsStringHexa(
+                    it.defaultColor,
+                    OPAQUE_ALPHA_VALUE
+                )
+            }
         }
+        return colorAndAlphaAsStringHexa(view.currentTextColor, OPAQUE_ALPHA_VALUE)
     }
 
     companion object {

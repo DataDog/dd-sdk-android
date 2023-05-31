@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.forge
+package com.datadog.android.sessionreplay.material.forge
 
 import android.content.res.Configuration
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds

@@ -15,7 +15,7 @@ import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
 internal open class CheckedTextViewMapper(
-    textWireframeMapper: TextWireframeMapper,
+    textWireframeMapper: TextViewMapper,
     private val stringUtils: StringUtils = StringUtils,
     uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
     viewUtils: ViewUtils = ViewUtils
@@ -50,11 +50,7 @@ internal open class CheckedTextViewMapper(
             val height = checkMarkDrawable.intrinsicHeight -
                 view.totalPaddingTop -
                 view.totalPaddingBottom
-            // to solve the current font issues on the player side we lower the original font
-            // size with 1 unit. We will need to normalize the current checkbox size
-            // to this new size
-            checkBoxHeight = (height * (view.textSize - 1) / view.textSize)
-                .toLong().densityNormalized(pixelsDensity)
+            checkBoxHeight = height.toLong().densityNormalized(pixelsDensity)
         }
 
         return GlobalBounds(
