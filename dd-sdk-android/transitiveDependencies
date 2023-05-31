@@ -1,14 +1,14 @@
 Dependencies List
 
 androidx.annotation:annotation-experimental:1.1.0               :   16 Kb
-androidx.annotation:annotation:1.2.0                            :   28 Kb
+androidx.annotation:annotation:1.3.0                            :   30 Kb
 androidx.arch.core:core-common:2.1.0                            :   10 Kb
 androidx.arch.core:core-runtime:2.1.0                           :    5 Kb
 androidx.lifecycle:lifecycle-common:2.1.0                       :   21 Kb
 androidx.lifecycle:lifecycle-livedata-core:2.1.0                :    8 Kb
 androidx.lifecycle:lifecycle-livedata:2.1.0                     :   10 Kb
 androidx.startup:startup-runtime:1.0.0                          :   18 Kb
-androidx.work:work-runtime:2.7.0                                : 1493 Kb
+androidx.work:work-runtime:2.8.1                                : 1626 Kb
 com.google.code.gson:gson:2.8.8                                 :  236 Kb
 com.google.guava:listenablefuture:1.0                           :    3 Kb
 com.lyft.kronos:kronos-android:0.0.1-alpha11                    :    5 Kb

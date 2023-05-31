@@ -87,11 +87,11 @@ repositories {
 
 dependencies {
     implementation(project(":dd-sdk-android"))
-    implementation(project(":dd-sdk-android-okhttp"))
-    implementation(project(":library:dd-sdk-android-session-replay"))
-    implementation(project(":library:dd-sdk-android-logs"))
-    implementation(project(":library:dd-sdk-android-trace"))
-    implementation(project(":library:dd-sdk-android-rum"))
+    implementation(project(":integrations:dd-sdk-android-okhttp"))
+    implementation(project(":features:dd-sdk-android-session-replay"))
+    implementation(project(":features:dd-sdk-android-logs"))
+    implementation(project(":features:dd-sdk-android-trace"))
+    implementation(project(":features:dd-sdk-android-rum"))
 
     implementation(libs.gson)
     implementation(libs.kotlin)

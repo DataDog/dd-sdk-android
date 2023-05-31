@@ -4,14 +4,14 @@
 
 API_SURFACE_PATHS = [
     "dd-sdk-android/apiSurface",
-    "dd-sdk-android-okhttp/apiSurface",
-    "library/dd-sdk-android-logs/apiSurface",
-    "library/dd-sdk-android-session-replay/apiSurface",
-    "library/dd-sdk-android-logs/apiSurface",
-    "library/dd-sdk-android-ndk/apiSurface",
-    "library/dd-sdk-android-trace/apiSurface",
-    "library/dd-sdk-android-webview/apiSurface",
-    "library/dd-sdk-android-rum/apiSurface"
+    "integrations/dd-sdk-android-okhttp/apiSurface",
+    "features/dd-sdk-android-logs/apiSurface",
+    "features/dd-sdk-android-session-replay/apiSurface",
+    "features/dd-sdk-android-logs/apiSurface",
+    "features/dd-sdk-android-ndk/apiSurface",
+    "features/dd-sdk-android-trace/apiSurface",
+    "features/dd-sdk-android-webview/apiSurface",
+    "features/dd-sdk-android-rum/apiSurface"
 ]
 NIGHTLY_TESTS_DIRECTORY_PATH = "instrumented/nightly-tests/src/androidTest/kotlin"
 NIGHTLY_TESTS_PACKAGE = "com/datadog/android/nightly"
