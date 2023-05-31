@@ -46,6 +46,10 @@ android {
         versionName = AndroidConfig.VERSION.name
         multiDexEnabled = true
 
+        buildFeatures {
+            buildConfig = true
+        }
+
         vectorDrawables.useSupportLibrary = true
         externalNativeBuild {
             cmake {
@@ -55,6 +59,10 @@ android {
     }
 
     namespace = "com.datadog.android.sample"
+
+    compileOptions {
+        java11()
+    }
 
     buildFeatures {
         compose = true
@@ -95,7 +103,7 @@ android {
         java11()
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += "META-INF/*"
         }

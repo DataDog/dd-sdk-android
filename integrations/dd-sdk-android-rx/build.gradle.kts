@@ -11,7 +11,6 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
-import com.datadog.gradle.config.setLibraryVersion
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -40,7 +39,6 @@ android {
     defaultConfig {
         minSdk = AndroidConfig.MIN_SDK
         targetSdk = AndroidConfig.TARGET_SDK
-        setLibraryVersion()
     }
 
     namespace = "com.datadog.android.rx"

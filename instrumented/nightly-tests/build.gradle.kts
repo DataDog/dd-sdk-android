@@ -27,6 +27,10 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
+        buildFeatures {
+            buildConfig = true
+        }
+
         buildConfigField(
             "String",
             nightlyTestsTokenKey,
@@ -57,7 +61,7 @@ android {
         java17()
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += "META-INF/*"
         }
@@ -70,6 +74,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            testProguardFile("test-proguard-rules.pro")
         }
         getByName("debug") {
             isMinifyEnabled = true
@@ -77,6 +82,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            testProguardFile("test-proguard-rules.pro")
         }
     }
 
@@ -116,10 +122,6 @@ dependencies {
     implementation(libs.bundles.ktor)
 
     androidTestImplementation(project(":tools:unit")) {
-        // We need to exclude this otherwise R8 will fail while trying to desugar a function
-        // available only for API 26 and above
-        exclude(group = "org.junit.jupiter")
-        exclude(group = "org.mockito")
         attributes {
             attribute(
                 com.android.build.api.attributes.ProductFlavorAttr.of("platform"),

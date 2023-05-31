@@ -55,6 +55,9 @@ android {
         minSdk = AndroidConfig.MIN_SDK
         targetSdk = AndroidConfig.TARGET_SDK
 
+        buildFeatures {
+            buildConfig = true
+        }
         setLibraryVersion()
     }
 
@@ -105,7 +108,7 @@ android {
         )
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += listOf(
                 "META-INF/jvm.kotlin_module",

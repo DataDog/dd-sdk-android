@@ -11,7 +11,6 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
-import com.datadog.gradle.config.setLibraryVersion
 import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -44,7 +43,6 @@ android {
     defaultConfig {
         minSdk = AndroidConfig.MIN_SDK_FOR_COMPOSE
         targetSdk = AndroidConfig.TARGET_SDK
-        setLibraryVersion()
     }
 
     namespace = "com.datadog.android.compose"

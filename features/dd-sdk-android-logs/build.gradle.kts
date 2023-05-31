@@ -11,7 +11,6 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
-import com.datadog.gradle.config.setLibraryVersion
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.nio.file.Paths
 
@@ -47,8 +46,6 @@ android {
         targetSdk = AndroidConfig.TARGET_SDK
 
         consumerProguardFiles(Paths.get(rootDir.path, "consumer-rules.pro").toString())
-
-        setLibraryVersion()
     }
 
     namespace = "com.datadog.android.log"
@@ -79,7 +76,7 @@ android {
         )
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += listOf(
                 "META-INF/jvm.kotlin_module",
