@@ -189,7 +189,7 @@ publish:release-coil:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-coil:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-coil:publishToSonatype --stacktrace --no-daemon
 
 publish:release-compose:
   tags: [ "runner:main" ]
@@ -206,7 +206,7 @@ publish:release-compose:
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
     - git fetch --depth=1 origin master
-    - ./gradlew :dd-sdk-android-compose:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-compose:publishToSonatype --stacktrace --no-daemon
 
 publish:release-fresco:
   tags: [ "runner:main" ]
@@ -222,7 +222,7 @@ publish:release-fresco:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-fresco:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-fresco:publishToSonatype --stacktrace --no-daemon
 
 publish:release-glide:
   tags: [ "runner:main" ]
@@ -238,7 +238,7 @@ publish:release-glide:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-glide:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-glide:publishToSonatype --stacktrace --no-daemon
 
 publish:release-ktx:
   tags: [ "runner:main" ]
@@ -254,7 +254,7 @@ publish:release-ktx:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-ktx:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-ktx:publishToSonatype --stacktrace --no-daemon
 
 publish:release-ndk:
   tags: [ "runner:main" ]
@@ -270,7 +270,7 @@ publish:release-ndk:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :library:dd-sdk-android-ndk:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-ndk:publishToSonatype --stacktrace --no-daemon
 
 publish:release-rx:
   tags: [ "runner:main" ]
@@ -286,7 +286,7 @@ publish:release-rx:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-rx:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-rx:publishToSonatype --stacktrace --no-daemon
 
 publish:release-sqldelight:
   tags: [ "runner:main" ]
@@ -302,7 +302,7 @@ publish:release-sqldelight:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-sqldelight:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-sqldelight:publishToSonatype --stacktrace --no-daemon
 
 publish:release-timber:
   tags: [ "runner:main" ]
@@ -318,7 +318,7 @@ publish:release-timber:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-timber:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-timber:publishToSonatype --stacktrace --no-daemon
 
 publish:release-android-tv:
   tags: [ "runner:main" ]
@@ -334,7 +334,7 @@ publish:release-android-tv:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-tv:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-tv:publishToSonatype --stacktrace --no-daemon
 
 publish:release-session-replay:
   tags: [ "runner:main" ]
@@ -350,7 +350,7 @@ publish:release-session-replay:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :library:dd-sdk-android-session-replay:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-session-replay:publishToSonatype --stacktrace --no-daemon
 
 publish:release-session-replay-material:
   tags: [ "runner:main" ]
@@ -366,7 +366,7 @@ publish:release-session-replay-material:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :library:dd-sdk-android-session-replay-material:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-session-replay-material:publishToSonatype --stacktrace --no-daemon
 
 publish:release-logs:
   tags: [ "runner:main" ]
@@ -382,7 +382,7 @@ publish:release-logs:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :library:dd-sdk-android-logs:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-logs:publishToSonatype --stacktrace --no-daemon
 
 publish:release-okhttp:
   tags: [ "runner:main" ]
@@ -398,7 +398,7 @@ publish:release-okhttp:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :dd-sdk-android-okhttp:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-okhttp:publishToSonatype --stacktrace --no-daemon
 
 publish:release-trace:
   tags: [ "runner:main" ]
@@ -414,7 +414,7 @@ publish:release-trace:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :library:dd-sdk-android-trace:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-trace:publishToSonatype --stacktrace --no-daemon
 
 publish:release-webview:
   tags: [ "runner:main" ]
@@ -430,7 +430,7 @@ publish:release-webview:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :library:dd-sdk-android-webview:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-webview:publishToSonatype --stacktrace --no-daemon
 
 publish:release-rum:
   tags: [ "runner:main" ]
@@ -446,7 +446,7 @@ publish:release-rum:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :library:dd-sdk-android-rum:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-rum:publishToSonatype --stacktrace --no-daemon
 
 # SLACK NOTIFICATIONS
 

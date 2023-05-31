@@ -16,25 +16,25 @@ See the dedicated [Datadog Android RUM Collection documentation](https://docs.da
 
 ### Timber
 
-If your existing codebase is using Timber, you can forward all those logs to  Datadog automatically by using the [dedicated library](dd-sdk-android-timber/README.md).
+If your existing codebase is using Timber, you can forward all those logs to  Datadog automatically by using the [dedicated library](integrations/dd-sdk-android-timber/README.md).
 
 ## RUM Integrations
 
 ### Coil
 
-If you use Coil to load images in your application, take a look at Datadog's [dedicated library](dd-sdk-android-coil/README.md).
+If you use Coil to load images in your application, take a look at Datadog's [dedicated library](integrations/dd-sdk-android-coil/README.md).
 
 ### Fresco
 
-If you use Fresco to load images in your application, take a look at Datadog's [dedicated library](dd-sdk-android-fresco/README.md).
+If you use Fresco to load images in your application, take a look at Datadog's [dedicated library](integrations/dd-sdk-android-fresco/README.md).
 
 ### Glide
 
-If you use Glide to load images in your application, take a look at Datadog's [dedicated library](dd-sdk-android-glide/README.md).
+If you use Glide to load images in your application, take a look at Datadog's [dedicated library](integrations/dd-sdk-android-glide/README.md).
 
 ### Jetpack Compose
 
-If you use Jetpack Compose in your application, take a look at Datadog's [dedicated library](dd-sdk-android-compose/README.md).
+If you use Jetpack Compose in your application, take a look at Datadog's [dedicated library](integrations/dd-sdk-android-compose/README.md).
 
 ### Picasso
 
