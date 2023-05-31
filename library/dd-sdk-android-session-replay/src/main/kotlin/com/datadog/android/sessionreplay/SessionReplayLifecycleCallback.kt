@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import androidx.annotation.MainThread
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.sessionreplay.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.recorder.Recorder
@@ -55,6 +56,7 @@ class SessionReplayLifecycleCallback(
 
     // region callback
 
+    @MainThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         // No Op
         if (activity is FragmentActivity) {
@@ -65,30 +67,36 @@ class SessionReplayLifecycleCallback(
         }
     }
 
+    @MainThread
     override fun onActivityStarted(activity: Activity) {
         // No Op
     }
 
+    @MainThread
     override fun onActivityResumed(activity: Activity) {
         activity.window?.let {
             recorder.startRecording(listOf(it), activity)
         }
     }
 
+    @MainThread
     override fun onActivityPaused(activity: Activity) {
         activity.window?.let {
             recorder.stopRecording(listOf(it))
         }
     }
 
+    @MainThread
     override fun onActivityStopped(activity: Activity) {
         // No Op
     }
 
+    @MainThread
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
         // No Op
     }
 
+    @MainThread
     override fun onActivityDestroyed(activity: Activity) {
         // No Op
     }

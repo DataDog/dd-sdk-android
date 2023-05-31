@@ -11,6 +11,12 @@ To setup your environment, make sure you installed [Android Studio](https://deve
 
 **Note**: you can also compile and develop using only the Android SDK and your IDE of choice, e.g.: IntelliJ Idea, Vim, etc.
 
+In addition, to be able to run the static analysis tools locally, you should run the `local-ci.sh` script locally as follow.
+
+```shell
+./local_ci.sh --setup
+```
+
 ### Modules
 
 This project hosts the following modules:
@@ -36,31 +42,20 @@ You can build the SDK using the following Gradle command:
 
 ### Running the tests
 
-The whole project is covered by a set of static analysis tools, linters and tests, each triggered by a custom global Gradle task, as follows:
+The whole project is covered by a set of static analysis tools, linters and tests. To mimic the steps taken by our CI, you can run the `local_ci.sh` script:
 
 ```shell script
-# launches the debug and release unit tests for all modules 
-./gradlew unitTestAll
+# cleans the repo
+./local_ci.sh --clean
 
-# launches the instrumented tests for all modules
-./gradlew instrumentTestAll
+# runs the static analysis
+./local_ci.sh --analysis
 
-# launches the detekt static analysis for all modules
-# the detekt client needs to be installed on your machine as stated in the official documentation
-# https://detekt.dev/docs/gettingstarted/cli
-# the configuration files are stored in Datadog's dd-source repository
-detekt --config {dd-source}/domains/mobile/config/android/gitlab/detekt/detekt-common.yml
-detekt --config {dd-source}/domains/mobile/config/android/gitlab/detekt/detekt-public-api.yml
+# compiles all the different library modules and tools
+./local_ci.sh --compile
 
-# launches the ktlint check and formatter for all Kotlin files 
-# the ktlint client needs to be installed on your machine 
-ktlint -F "**/*.kt" "**/*.kts" '!**/build/generated/**' '!**/build/kspCaches/**'
-
-# launches the Android linter for all modules
-./gradlew lintCheckAll
-
-# launches all the tests described above
-./gradlew checkAll
+# Runs the unit tests
+./local_ci.sh --test
 ```
 
 ## Submitting Issues

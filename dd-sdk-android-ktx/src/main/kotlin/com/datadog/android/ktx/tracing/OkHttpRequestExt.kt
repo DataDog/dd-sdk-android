@@ -14,6 +14,7 @@ import okhttp3.Request
  * @param span the parent [Span]
  */
 fun Request.Builder.parentSpan(span: Span): Request.Builder {
+    @Suppress("UnsafeThirdPartyFunctionCall") // Span can't be null
     tag(Span::class.java, span)
     return this
 }

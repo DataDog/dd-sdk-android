@@ -8,6 +8,7 @@ package com.datadog.android.rum.tracking
 
 import android.app.Activity
 import android.os.Build
+import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.Datadog
@@ -83,6 +84,7 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
 
     // region ActivityLifecycleTrackingStrategy
 
+    @MainThread
     override fun onActivityStarted(activity: Activity) {
         super.onActivityStarted(activity)
         if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
@@ -93,6 +95,7 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
         }
     }
 
+    @MainThread
     override fun onActivityStopped(activity: Activity) {
         super.onActivityStopped(activity)
         if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {

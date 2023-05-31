@@ -92,6 +92,7 @@ class _InternalProxy internal constructor(
     }
 
     fun consumeWebviewEvent(event: String) {
+        @Suppress("ThreadSafety") // Assumed to be on a background thread
         _webview.webViewEventConsumer.consume(event)
     }
 
