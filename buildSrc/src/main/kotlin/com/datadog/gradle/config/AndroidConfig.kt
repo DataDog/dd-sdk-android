@@ -30,6 +30,11 @@ fun CompileOptions.java11() {
     targetCompatibility = JavaVersion.VERSION_11
 }
 
+fun CompileOptions.java17() {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
 @Suppress("UnstableApiUsage")
 fun LibraryDefaultConfig.setLibraryVersion(
     versionCode: Int = AndroidConfig.VERSION.code,

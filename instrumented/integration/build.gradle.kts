@@ -5,7 +5,7 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.java11
+import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.kotlinConfig
 
 plugins {
@@ -48,7 +48,7 @@ android {
     }
 
     compileOptions {
-        java11()
+        java17()
     }
 
     packagingOptions {

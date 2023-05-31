@@ -13,6 +13,7 @@ import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.config.setLibraryVersion
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Build
@@ -136,7 +137,7 @@ dependencies {
     // TODO MTG-12 detekt(libs.detektCli)
 }
 
-kotlinConfig()
+kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()

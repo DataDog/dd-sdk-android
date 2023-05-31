@@ -4,11 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `kotlin-dsl`
-    @Suppress("DSL_SCOPE_VIOLATION", "UnstableApiUsage")
     alias(libs.plugins.versionsGradlePlugin)
 }
 
@@ -79,8 +79,9 @@ gradlePlugin {
 }
 
 tasks.withType<KotlinCompile>().configureEach {
-    // TODO RUMM-3263 Switch to Java 17 bytecode
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_11.toString()
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
 }
 
 tasks {

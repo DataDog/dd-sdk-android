@@ -13,6 +13,7 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.taskConfig
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
@@ -183,10 +184,10 @@ dependencies {
     api("com.facebook.stetho:stetho:1.6.0")
 }
 
-kotlinConfig(evaluateWarningsAsErrors = false)
+kotlinConfig(evaluateWarningsAsErrors = false, jvmBytecodeTarget = JvmTarget.JVM_11)
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
+    compilerOptions {
+        freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
     }
 }
 junitConfig()

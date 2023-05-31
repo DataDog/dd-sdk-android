@@ -13,6 +13,7 @@ import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.config.setLibraryVersion
 import com.datadog.gradle.config.taskConfig
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Build
@@ -110,10 +111,10 @@ unMock {
     keep("android.os.Bundle")
 }
 
-kotlinConfig()
+kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
+    compilerOptions {
+        freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
     }
 }
 junitConfig()

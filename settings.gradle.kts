@@ -4,8 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-enableFeaturePreview("VERSION_CATALOGS")
-
 include(":dd-sdk-android")
 include(":integrations:dd-sdk-android-coil")
 include(":integrations:dd-sdk-android-compose")

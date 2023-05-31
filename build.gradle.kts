@@ -8,6 +8,7 @@ import com.android.build.gradle.LibraryExtension
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.nightlyTestsCoverageConfig
 import org.gradle.api.internal.file.UnionFileTree
+import org.gradle.api.internal.tasks.DefaultTaskDependencyFactory
 import java.util.Properties
 
 plugins {
@@ -45,7 +46,7 @@ allprojects {
 }
 
 nexusPublishing {
-    repositories {
+    this.repositories {
         sonatype {
             val sonatypeUsername = System.getenv("OSSRH_USERNAME")
             val sonatypePassword = System.getenv("OSSRH_PASSWORD")
@@ -288,7 +289,8 @@ kover {
 }
 
 tasks.register("printSdkDebugRuntimeClasspath") {
-    val fileTreeClassPathCollector = UnionFileTree()
+    val fileTreeClassPathCollector =
+        UnionFileTree(DefaultTaskDependencyFactory.withNoAssociatedProject())
     val nonFileTreeClassPathCollector = mutableListOf<FileCollection>()
 
     allprojects.minus(project).forEach { subproject ->
