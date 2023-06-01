@@ -70,7 +70,11 @@ internal open class RumViewScope(
 
     private var sessionId: String = parentScope.getRumContext().sessionId
     internal var viewId: String = UUID.randomUUID().toString()
-        private set
+        set(value) {
+            oldViewIds += field
+            field = value
+        }
+    private val oldViewIds = mutableSetOf<String>()
     private val startedNanos: Long = eventTime.nanoTime
 
     internal val serverTimeOffsetInMs = sdkCore.time.serverTimeOffsetMs
@@ -575,7 +579,7 @@ internal open class RumViewScope(
         event: RumRawEvent.ResourceSent,
         writer: DataWriter<Any>
     ) {
-        if (event.viewId == viewId) {
+        if (event.viewId == viewId || event.viewId in oldViewIds) {
             pendingResourceCount--
             resourceCount++
             sendViewUpdate(event, writer)
@@ -587,7 +591,7 @@ internal open class RumViewScope(
         event: RumRawEvent.ActionSent,
         writer: DataWriter<Any>
     ) {
-        if (event.viewId == viewId) {
+        if (event.viewId == viewId || event.viewId in oldViewIds) {
             pendingActionCount--
             actionCount++
             frustrationCount += event.frustrationCount
@@ -600,7 +604,7 @@ internal open class RumViewScope(
         event: RumRawEvent.LongTaskSent,
         writer: DataWriter<Any>
     ) {
-        if (event.viewId == viewId) {
+        if (event.viewId == viewId || event.viewId in oldViewIds) {
             pendingLongTaskCount--
             longTaskCount++
             if (event.isFrozenFrame) {
@@ -616,7 +620,7 @@ internal open class RumViewScope(
         event: RumRawEvent.ErrorSent,
         writer: DataWriter<Any>
     ) {
-        if (event.viewId == viewId) {
+        if (event.viewId == viewId || event.viewId in oldViewIds) {
             pendingErrorCount--
             errorCount++
             sendViewUpdate(event, writer)
@@ -624,25 +628,25 @@ internal open class RumViewScope(
     }
 
     private fun onResourceDropped(event: RumRawEvent.ResourceDropped) {
-        if (event.viewId == viewId) {
+        if (event.viewId == viewId || event.viewId in oldViewIds) {
             pendingResourceCount--
         }
     }
 
     private fun onActionDropped(event: RumRawEvent.ActionDropped) {
-        if (event.viewId == viewId) {
+        if (event.viewId == viewId || event.viewId in oldViewIds) {
             pendingActionCount--
         }
     }
 
     private fun onErrorDropped(event: RumRawEvent.ErrorDropped) {
-        if (event.viewId == viewId) {
+        if (event.viewId == viewId || event.viewId in oldViewIds) {
             pendingErrorCount--
         }
     }
 
     private fun onLongTaskDropped(event: RumRawEvent.LongTaskDropped) {
-        if (event.viewId == viewId) {
+        if (event.viewId == viewId || event.viewId in oldViewIds) {
             pendingLongTaskCount--
             if (event.isFrozenFrame) {
                 pendingFrozenFrameCount--
