@@ -72,12 +72,23 @@ if [[ $CLEANUP == 1 ]]; then
   echo "---- Clean repository"
   ./gradlew clean
   rm -rf dd-sdk-android/build/
-  rm -rf library/dd-sdk-android-logs/build/
-  rm -rf library/dd-sdk-android-ndk/build/
-  rm -rf library/dd-sdk-android-rum/build/
-  rm -rf library/dd-sdk-android-session-replay/build/
-  rm -rf library/dd-sdk-android-trace/build/
-  rm -rf library/dd-sdk-android-webview/build/
+  rm -rf features/dd-sdk-android-logs/build/
+  rm -rf features/dd-sdk-android-ndk/build/
+  rm -rf features/dd-sdk-android-rum/build/
+  rm -rf features/dd-sdk-android-session-replay/build/
+  rm -rf features/dd-sdk-android-session-material/build/
+  rm -rf features/dd-sdk-android-trace/build/
+  rm -rf features/dd-sdk-android-webview/build/
+  rm -rf integrations/dd-sdk-android-coil/build/
+  rm -rf integrations/dd-sdk-android-compose/build/
+  rm -rf integrations/dd-sdk-android-fresco/build/
+  rm -rf integrations/dd-sdk-android-glide/build/
+  rm -rf integrations/dd-sdk-android-ktx/build/
+  rm -rf integrations/dd-sdk-android-okhttp/build/
+  rm -rf integrations/dd-sdk-android-rx/build/
+  rm -rf integrations/dd-sdk-android-sqldelight/build/
+  rm -rf integrations/dd-sdk-android-timber/build/
+  rm -rf integrations/dd-sdk-android-tv/build/
 
 fi
 
