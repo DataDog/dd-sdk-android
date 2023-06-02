@@ -31,7 +31,7 @@ internal class RumSessionScope(
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
-    internal val viewChangedListener: RumViewChangedListener?,
+    viewChangedListener: RumViewChangedListener?,
     internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
@@ -148,6 +148,8 @@ internal class RumSessionScope(
 
         if (event is RumRawEvent.SdkInit && isNewSession) {
             renewSession(nanoTime)
+            // fake user interaction to avoid re-creating session when next real event arrives
+            lastUserInteractionNs.set(nanoTime)
         } else if (isInteraction) {
             if (isNewSession || isExpired || isTimedOut) {
                 renewSession(nanoTime)
