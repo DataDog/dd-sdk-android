@@ -1947,6 +1947,74 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `𝕄 send event 𝕎 handleEvent(ErrorSent) on active view {viewId changed}`(
+        @LongForgery(1) pending: Long,
+        @Forgery fakeNewViewId: UUID
+    ) {
+        // Given
+        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId)
+        testedScope.pendingErrorCount = pending
+        testedScope.viewId = fakeNewViewId.toString()
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(1)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasFrustrationCount(0)
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    isSlowRendered(false)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    // TODO RUMM-3316 if viewId changes, we need to relink replay as well.
+                    hasReplay(false)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingErrorCount).isEqualTo(pending - 1)
+    }
+
+    @Test
     fun `𝕄 do nothing 𝕎 handleEvent(ErrorSent) on active view {unknown viewId}`(
         @Forgery viewUuid: UUID,
         @LongForgery(1) pending: Long
@@ -2006,6 +2074,74 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingResourceCount).isEqualTo(pending - 1)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(ResourceSent) on active view {viewId changed}`(
+        @LongForgery(1) pending: Long,
+        @Forgery fakeNewViewId: UUID
+    ) {
+        // Given
+        testedScope.pendingResourceCount = pending
+        fakeEvent = RumRawEvent.ResourceSent(testedScope.viewId)
+        testedScope.viewId = fakeNewViewId.toString()
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(1)
+                    hasActionCount(0)
+                    hasFrustrationCount(0)
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    isSlowRendered(false)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    // TODO RUMM-3316 if viewId changes, we need to relink replay as well.
+                    hasReplay(false)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -2092,6 +2228,75 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingActionCount).isEqualTo(pending - 1)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(ActionSent) on active view {viewId changed}`(
+        @LongForgery(1) pending: Long,
+        @IntForgery(0) frustrationCount: Int,
+        @Forgery fakeNewViewId: UUID
+    ) {
+        // Given
+        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount)
+        testedScope.pendingActionCount = pending
+        testedScope.viewId = fakeNewViewId.toString()
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(1)
+                    hasFrustrationCount(frustrationCount.toLong())
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    isSlowRendered(false)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    // TODO RUMM-3316 if viewId changes, we need to relink replay as well.
+                    hasReplay(false)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -2207,6 +2412,77 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `𝕄 send event 𝕎 handleEvent(LongTaskSent) on active view {not frozen, viewId changed}`(
+        @LongForgery(1) pendingLongTask: Long,
+        @LongForgery(1) pendingFrozenFrame: Long,
+        @Forgery fakeNewViewId: UUID
+    ) {
+        // Given
+        fakeEvent = RumRawEvent.LongTaskSent(testedScope.viewId)
+        testedScope.pendingLongTaskCount = pendingLongTask
+        testedScope.pendingFrozenFrameCount = pendingFrozenFrame
+        testedScope.viewId = fakeNewViewId.toString()
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasFrustrationCount(0)
+                    hasLongTaskCount(1)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    isSlowRendered(false)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    // TODO RUMM-3316 if viewId changes, we need to relink replay as well.
+                    hasReplay(false)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pendingLongTask - 1)
+        assertThat(testedScope.pendingFrozenFrameCount).isEqualTo(pendingFrozenFrame)
+    }
+
+    @Test
     fun `𝕄 send event 𝕎 handleEvent(LongTaskSent) on active view {frozen}`(
         @LongForgery(1) pendingLongTask: Long,
         @LongForgery(1) pendingFrozenFrame: Long
@@ -2248,6 +2524,77 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pendingLongTask - 1)
+        assertThat(testedScope.pendingFrozenFrameCount).isEqualTo(pendingFrozenFrame - 1)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(LongTaskSent) on active view {frozen, viewId changed}`(
+        @LongForgery(1) pendingLongTask: Long,
+        @LongForgery(1) pendingFrozenFrame: Long,
+        @Forgery fakeNewViewId: UUID
+    ) {
+        // Given
+        fakeEvent = RumRawEvent.LongTaskSent(testedScope.viewId, true)
+        testedScope.pendingLongTaskCount = pendingLongTask
+        testedScope.pendingFrozenFrameCount = pendingFrozenFrame
+        testedScope.viewId = fakeNewViewId.toString()
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasFrustrationCount(0)
+                    hasLongTaskCount(1)
+                    hasFrozenFrameCount(1)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    isSlowRendered(false)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    // TODO RUMM-3316 if viewId changes, we need to relink replay as well.
+                    hasReplay(false)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -3335,11 +3682,43 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `𝕄 decrease pending Action 𝕎 handleEvent(ActionDropped) on active view {viewId changed}`(
+        @LongForgery(1) pending: Long,
+        @Forgery fakeNewViewId: UUID
+    ) {
+        // Given
+        testedScope.pendingActionCount = pending
+        fakeEvent = RumRawEvent.ActionDropped(testedScope.viewId)
+        testedScope.viewId = fakeNewViewId.toString()
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingActionCount).isEqualTo(pending - 1)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
     fun `𝕄 decrease pending Action 𝕎 handleEvent(ActionDropped) on stopped view`() {
         // Given
         testedScope.pendingActionCount = 1
         fakeEvent = RumRawEvent.ActionDropped(testedScope.viewId)
         testedScope.stopped = true
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingActionCount).isEqualTo(0)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 decrease pending Action 𝕎 handleEvent(ActionDropped) on stopped view {viewId changed}`(
+        @Forgery fakeNewViewId: UUID
+    ) {
+        // Given
+        testedScope.pendingActionCount = 1
+        fakeEvent = RumRawEvent.ActionDropped(testedScope.viewId)
+        testedScope.stopped = true
+        testedScope.viewId = fakeNewViewId.toString()
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
@@ -3538,11 +3917,43 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `𝕄 decrease pending Resource 𝕎 handleEvent(ResourceDropped) on active view {viewId changed}`(
+        @LongForgery(1) pending: Long,
+        @Forgery fakeNewViewId: UUID
+    ) {
+        // Given
+        testedScope.pendingResourceCount = pending
+        fakeEvent = RumRawEvent.ResourceDropped(testedScope.viewId)
+        testedScope.viewId = fakeNewViewId.toString()
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingResourceCount).isEqualTo(pending - 1)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
     fun `𝕄 decrease pending Resource 𝕎 handleEvent(ResourceDropped) on stopped view`() {
         // Given
         testedScope.pendingResourceCount = 1
         fakeEvent = RumRawEvent.ResourceDropped(testedScope.viewId)
         testedScope.stopped = true
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingResourceCount).isEqualTo(0)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 decrease pending Resource 𝕎 handleEvent(ResourceDropped) on stopped view {viewId changed}`(
+        @Forgery fakeNewViewId: UUID
+    ) {
+        // Given
+        testedScope.pendingResourceCount = 1
+        fakeEvent = RumRawEvent.ResourceDropped(testedScope.viewId)
+        testedScope.stopped = true
+        testedScope.viewId = fakeNewViewId.toString()
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
@@ -4809,11 +5220,43 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `𝕄 decrease pending Error 𝕎 handleEvent(ErrorDropped) on active view {viewId changed}`(
+        @LongForgery(1) pending: Long,
+        @Forgery fakeNewViewId: UUID
+    ) {
+        // Given
+        testedScope.pendingErrorCount = pending
+        fakeEvent = RumRawEvent.ErrorDropped(testedScope.viewId)
+        testedScope.viewId = fakeNewViewId.toString()
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingErrorCount).isEqualTo(pending - 1)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
     fun `𝕄 decrease pending Error 𝕎 handleEvent(ErrorDropped) on stopped view`() {
         // Given
         testedScope.pendingErrorCount = 1
         fakeEvent = RumRawEvent.ErrorDropped(testedScope.viewId)
         testedScope.stopped = true
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        assertThat(testedScope.pendingErrorCount).isEqualTo(0)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 decrease pending Error 𝕎 handleEvent(ErrorDropped) on stopped view {viewId changed}`(
+        @Forgery fakeNewViewId: UUID
+    ) {
+        // Given
+        testedScope.pendingErrorCount = 1
+        fakeEvent = RumRawEvent.ErrorDropped(testedScope.viewId)
+        testedScope.stopped = true
+        testedScope.viewId = fakeNewViewId.toString()
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
@@ -5157,6 +5600,27 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `𝕄 decrease pending Long Task 𝕎 handleEvent(LongTaskDropped) on active view {not frozen, viewId changed}`(
+        @LongForgery(1) pendingLongTask: Long,
+        @LongForgery(1) pendingFrozenFrame: Long,
+        @Forgery fakeNewViewId: UUID
+    ) {
+        // Given
+        testedScope.pendingLongTaskCount = pendingLongTask
+        testedScope.pendingFrozenFrameCount = pendingFrozenFrame
+        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, false)
+        testedScope.viewId = fakeNewViewId.toString()
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pendingLongTask - 1)
+        assertThat(testedScope.pendingFrozenFrameCount).isEqualTo(pendingFrozenFrame)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
     fun `𝕄 decrease pending LT and FF 𝕎 handleEvent(LongTaskDropped) on active view {frozen}`(
         @LongForgery(1) pendingLongTask: Long,
         @LongForgery(1) pendingFrozenFrame: Long
@@ -5165,6 +5629,27 @@ internal class RumViewScopeTest {
         testedScope.pendingLongTaskCount = pendingLongTask
         testedScope.pendingFrozenFrameCount = pendingFrozenFrame
         fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, true)
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pendingLongTask - 1)
+        assertThat(testedScope.pendingFrozenFrameCount).isEqualTo(pendingFrozenFrame - 1)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 decrease pending LT and FF 𝕎 handleEvent(LongTaskDropped) on active view {frozen, viewId changed}`(
+        @LongForgery(1) pendingLongTask: Long,
+        @LongForgery(1) pendingFrozenFrame: Long,
+        @Forgery fakeNewViewId: UUID
+    ) {
+        // Given
+        testedScope.pendingLongTaskCount = pendingLongTask
+        testedScope.pendingFrozenFrameCount = pendingFrozenFrame
+        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, true)
+        testedScope.viewId = fakeNewViewId.toString()
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -5193,12 +5678,52 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `𝕄 decrease pending LT 𝕎 handleEvent(LongTaskDropped) on stopped view {not frozen, viewId changed}`(
+        @Forgery fakeNewViewId: UUID
+    ) {
+        // Given
+        testedScope.pendingLongTaskCount = 1
+        testedScope.pendingFrozenFrameCount = 0
+        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, false)
+        testedScope.stopped = true
+        testedScope.viewId = fakeNewViewId.toString()
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(0)
+        assertThat(testedScope.pendingFrozenFrameCount).isEqualTo(0)
+        assertThat(result).isNull()
+    }
+
+    @Test
     fun `𝕄 decrease pending LT and FF 𝕎 handleEvent(LongTaskDropped) on stopped view {frozen}`() {
         // Given
         testedScope.pendingLongTaskCount = 1
         testedScope.pendingFrozenFrameCount = 1
         fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, true)
         testedScope.stopped = true
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(0)
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(0)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 decrease pending LT and FF 𝕎 handleEvent(LongTaskDropped) on stopped view {frozen, viewId changed}`(
+        @Forgery fakeNewViewId: UUID
+    ) {
+        // Given
+        testedScope.pendingLongTaskCount = 1
+        testedScope.pendingFrozenFrameCount = 1
+        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, true)
+        testedScope.stopped = true
+        testedScope.viewId = fakeNewViewId.toString()
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)

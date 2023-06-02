@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import androidx.annotation.MainThread
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
@@ -70,6 +71,7 @@ internal class SessionReplayLifecycleCallback(
 
     // region callback
 
+    @MainThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         // No Op
         if (activity is FragmentActivity) {
@@ -80,10 +82,12 @@ internal class SessionReplayLifecycleCallback(
         }
     }
 
+    @MainThread
     override fun onActivityStarted(activity: Activity) {
         // No Op
     }
 
+    @MainThread
     override fun onActivityResumed(activity: Activity) {
         activity.window?.let {
             viewOnDrawInterceptor.intercept(listOf(it.decorView), activity)
@@ -91,6 +95,7 @@ internal class SessionReplayLifecycleCallback(
         }
     }
 
+    @MainThread
     override fun onActivityPaused(activity: Activity) {
         activity.window?.let {
             viewOnDrawInterceptor.stopIntercepting(listOf(it.decorView))
@@ -98,14 +103,17 @@ internal class SessionReplayLifecycleCallback(
         }
     }
 
+    @MainThread
     override fun onActivityStopped(activity: Activity) {
         // No Op
     }
 
+    @MainThread
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
         // No Op
     }
 
+    @MainThread
     override fun onActivityDestroyed(activity: Activity) {
         // No Op
     }

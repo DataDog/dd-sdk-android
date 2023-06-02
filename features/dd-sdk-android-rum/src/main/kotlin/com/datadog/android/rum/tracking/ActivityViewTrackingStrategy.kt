@@ -8,6 +8,7 @@ package com.datadog.android.rum.tracking
 
 import android.app.Activity
 import android.os.Bundle
+import androidx.annotation.MainThread
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -36,6 +37,7 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
 
     // region ActivityLifecycleTrackingStrategy
 
+    @MainThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         super.onActivityCreated(activity, savedInstanceState)
         componentPredicate.runIfValid(activity, internalLogger) {
@@ -43,6 +45,7 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
         }
     }
 
+    @MainThread
     override fun onActivityStarted(activity: Activity) {
         super.onActivityStarted(activity)
         componentPredicate.runIfValid(activity, internalLogger) {
@@ -50,6 +53,7 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
         }
     }
 
+    @MainThread
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
         componentPredicate.runIfValid(activity, internalLogger) {
@@ -66,6 +70,7 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
         }
     }
 
+    @MainThread
     override fun onActivityPostResumed(activity: Activity) {
         // this method doesn't call super, because having super call creates a crash
         // during DD SDK initialization on KitKat with ProGuard enabled, default super is
@@ -76,6 +81,7 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
         }
     }
 
+    @MainThread
     override fun onActivityPaused(activity: Activity) {
         super.onActivityPaused(activity)
         componentPredicate.runIfValid(activity, internalLogger) {
@@ -85,6 +91,7 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
         }
     }
 
+    @MainThread
     override fun onActivityDestroyed(activity: Activity) {
         super.onActivityDestroyed(activity)
         componentPredicate.runIfValid(activity, internalLogger) {

@@ -18,6 +18,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.annotation.AnyThread
+import androidx.annotation.MainThread
 import androidx.annotation.UiThread
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
@@ -57,14 +58,17 @@ internal class UiRumDebugListener(private val sdkCore: SdkCore) :
 
     // region Application.ActivityLifecycleCallbacks
 
+    @MainThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         // no-op
     }
 
+    @MainThread
     override fun onActivityStarted(activity: Activity) {
         // no-op
     }
 
+    @MainThread
     override fun onActivityResumed(activity: Activity) {
         if (advancedRumMonitor is NoOpAdvancedRumMonitor) {
             return
@@ -98,6 +102,7 @@ internal class UiRumDebugListener(private val sdkCore: SdkCore) :
         advancedRumMonitor.setDebugListener(this)
     }
 
+    @MainThread
     override fun onActivityPaused(activity: Activity) {
         if (advancedRumMonitor is NoOpAdvancedRumMonitor) {
             return
@@ -108,14 +113,17 @@ internal class UiRumDebugListener(private val sdkCore: SdkCore) :
         viewsSnapshot.clear()
     }
 
+    @MainThread
     override fun onActivityStopped(activity: Activity) {
         // no-op
     }
 
+    @MainThread
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
         // no-op
     }
 
+    @MainThread
     override fun onActivityDestroyed(activity: Activity) {
         // no-op
     }

@@ -9,6 +9,7 @@ package com.datadog.android.rum.tracking
 import android.app.Activity
 import android.content.Context
 import android.os.Bundle
+import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
 import com.datadog.android.v2.api.SdkCore
 
@@ -63,36 +64,42 @@ class MixedViewTrackingStrategy internal constructor(
 
     // region ActivityLifecycleTrackingStrategy
 
+    @MainThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         super.onActivityCreated(activity, savedInstanceState)
         activityViewTrackingStrategy.onActivityCreated(activity, savedInstanceState)
         fragmentViewTrackingStrategy.onActivityCreated(activity, savedInstanceState)
     }
 
+    @MainThread
     override fun onActivityStarted(activity: Activity) {
         super.onActivityStarted(activity)
         activityViewTrackingStrategy.onActivityStarted(activity)
         fragmentViewTrackingStrategy.onActivityStarted(activity)
     }
 
+    @MainThread
     override fun onActivityResumed(activity: Activity) {
         super.onActivityResumed(activity)
         activityViewTrackingStrategy.onActivityResumed(activity)
         fragmentViewTrackingStrategy.onActivityResumed(activity)
     }
 
+    @MainThread
     override fun onActivityPaused(activity: Activity) {
         super.onActivityPaused(activity)
         activityViewTrackingStrategy.onActivityPaused(activity)
         fragmentViewTrackingStrategy.onActivityPaused(activity)
     }
 
+    @MainThread
     override fun onActivityStopped(activity: Activity) {
         super.onActivityStopped(activity)
         activityViewTrackingStrategy.onActivityStopped(activity)
         fragmentViewTrackingStrategy.onActivityStopped(activity)
     }
 
+    @MainThread
     override fun onActivityDestroyed(activity: Activity) {
         super.onActivityDestroyed(activity)
         activityViewTrackingStrategy.onActivityDestroyed(activity)

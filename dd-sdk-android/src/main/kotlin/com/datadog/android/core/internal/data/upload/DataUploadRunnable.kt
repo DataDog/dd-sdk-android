@@ -96,6 +96,7 @@ internal class DataUploadRunnable(
         }
     }
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // rounded Double isn't NaN
     private fun decreaseInterval() {
         currentDelayIntervalMs = max(
             minDelayMs,
@@ -104,6 +105,7 @@ internal class DataUploadRunnable(
         )
     }
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // rounded Double isn't NaN
     private fun increaseInterval() {
         currentDelayIntervalMs = min(
             maxDelayMs,

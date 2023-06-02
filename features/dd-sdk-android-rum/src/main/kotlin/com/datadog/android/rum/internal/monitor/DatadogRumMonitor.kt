@@ -482,11 +482,11 @@ internal class DatadogRumMonitor(
     @Suppress("unused")
     private fun waitForPendingEvents() {
         if (!executorService.isShutdown) {
-            @Suppress("UnsafeThirdPartyFunctionCall") // constructor argument is valid
+            @Suppress("UnsafeThirdPartyFunctionCall") // 1 cannot be negative
             val latch = CountDownLatch(1)
-            // Submit an empty task, and wait for it to complete
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             try {
+                // Submit an empty task, and wait for it to complete
+                @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
                 executorService.submit {
                     latch.countDown()
                 }

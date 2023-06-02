@@ -145,6 +145,8 @@ internal class RumSessionScope(
 
         if (event is RumRawEvent.SdkInit && isNewSession) {
             renewSession(nanoTime)
+            // fake user interaction to avoid re-creating session when next real event arrives
+            lastUserInteractionNs.set(nanoTime)
         } else if (isInteraction) {
             if (isNewSession || isExpired || isTimedOut) {
                 renewSession(nanoTime)

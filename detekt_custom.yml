@@ -77,7 +77,7 @@ style:
 
 datadog:
   active: true
-  excludes: ['**/build/**', '**/test/**', '**/androidTest/**', '**/buildSrc/**']
+  excludes: ['**/build/**', '**/test/**', '**/testDebug/**','**/testRelease/**', '**/androidTest/**', '**/buildSrc/**', '**/*.kts', '**/instrumented/**', '**/sample/**', '**/tools/**']
   UnsafeThirdPartyFunctionCall:
     active: true
     internalPackagePrefix: 'com.datadog'
@@ -104,6 +104,7 @@ datadog:
       - "androidx.work.WorkManager.enqueueUniqueWork(kotlin.String, androidx.work.ExistingWorkPolicy, androidx.work.OneTimeWorkRequest):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "android.content.res.Resources.getResourceName(kotlin.Int):android.content.res.Resources.NotFoundException"
       - "android.content.res.Resources.openRawResource(kotlin.Int):android.content.res.Resources.NotFoundException"
+      - "androidx.metrics.performance.JankStats.createAndTrack(android.view.Window, androidx.metrics.performance.JankStats.OnFrameListener):java.lang.IllegalStateException"
       # endregion
       # region Java File
       - "java.io.ByteArrayOutputStream.write(kotlin.ByteArray, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
@@ -195,6 +196,8 @@ datadog:
       - "kotlin.String.substring(kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "kotlin.String.takeLast(kotlin.Int):kotlin.IllegalArgumentException"
       - "kotlin.String.toLong():java.lang.NumberFormatException"
+      - "kotlin.String.format(kotlin.Array):java.util.IllegalFormatException"
+      - "kotlin.String.takeLast(kotlin.Int):java.lang.IllegalArgumentException"
       - "kotlin.ByteArray.copyOf(kotlin.Int):java.lang.NegativeArraySizeException"
       - "kotlin.ByteArray.copyOfRange(kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException,java.lang.IllegalArgumentException"
       - "kotlin.ByteArray.get(kotlin.Int):java.lang.IndexOutOfBoundsException"
@@ -223,6 +226,7 @@ datadog:
       - "okhttp3.Request.Builder.url(kotlin.String):java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "okhttp3.Request.Builder.post(okhttp3.RequestBody):java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "okhttp3.Request.Builder.method(kotlin.String, okhttp3.RequestBody?):java.lang.NullPointerException,java.lang.IllegalArgumentException"
+      - "okhttp3.Request.Builder.tag(java.lang.Class, io.opentracing.Span?):java.lang.NullPointerException"
       - "okhttp3.Request.Builder.url(kotlin.String):java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "okhttp3.Interceptor.Chain.proceed(okhttp3.Request):java.io.IOException"
       - "okhttp3.RequestBody.writeTo(okio.BufferedSink):java.io.IOException"
@@ -262,9 +266,11 @@ datadog:
       - "android.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentStarted(android.app.FragmentManager, android.app.Fragment)"
       - "android.app.FragmentManager.registerFragmentLifecycleCallbacks(android.app.FragmentManager.FragmentLifecycleCallbacks, kotlin.Boolean)"
       - "android.app.FragmentManager.unregisterFragmentLifecycleCallbacks(android.app.FragmentManager.FragmentLifecycleCallbacks)"
+      - "android.content.Context.createDeviceProtectedStorageContext()"
       - "android.content.Context.getSystemService(kotlin.String)"
       - "android.content.Context.registerReceiver(android.content.BroadcastReceiver?, android.content.IntentFilter)"
       - "android.content.Context.unregisterReceiver(android.content.BroadcastReceiver)"
+      - "android.content.Intent.getBooleanExtra(kotlin.String, kotlin.Boolean)"
       - "android.content.Intent.getIntExtra(kotlin.String, kotlin.Int)"
       - "android.content.IntentFilter.addAction(kotlin.String)"
       - "android.content.IntentFilter.constructor()"
@@ -272,6 +278,7 @@ datadog:
       - "android.content.pm.PackageManager.hasSystemFeature(kotlin.String)"
       - "android.content.pm.PackageManager.PackageInfoFlags.of(kotlin.Long)"
       - "android.content.res.AssetManager.open(kotlin.String, kotlin.Int)"
+      - "android.content.res.Resources.Theme.resolveAttribute(kotlin.Int, android.util.TypedValue, kotlin.Boolean)"
       - "android.database.DatabaseErrorHandler.onCorruption(android.database.sqlite.SQLiteDatabase)"
       - "android.database.DefaultDatabaseErrorHandler.constructor()"
       - "android.graphics.Color.argb(kotlin.Int, kotlin.Int, kotlin.Int, kotlin.Int)"
@@ -296,9 +303,12 @@ datadog:
       - "android.util.Log.e(kotlin.String?, kotlin.String)"
       - "android.util.Log.e(kotlin.String?, kotlin.String?, kotlin.Throwable?)"
       - "android.util.Log.getStackTraceString(kotlin.Throwable?)"
+      - "android.util.TypedValue.constructor()"
       - "android.view.Choreographer.postFrameCallback(android.view.Choreographer.FrameCallback)"
       - "android.view.MotionEvent.recycle()"
       - "android.view.MotionEvent.getPointerId(kotlin.Int)"
+      - "android.view.MotionEvent.getRawX(kotlin.Int)"
+      - "android.view.MotionEvent.getRawY(kotlin.Int)"
       - "android.view.MotionEvent.PointerCoords.constructor()"
       - "android.view.MotionEvent.getPointerCoords(kotlin.Int, android.view.MotionEvent.PointerCoords)"
       - "android.view.ViewGroup.findViewById(kotlin.Int)"
@@ -401,6 +411,7 @@ datadog:
       - "com.google.gson.JsonObject.remove(kotlin.String)"
       - "com.google.gson.JsonObject.toString()"
       - "com.google.gson.JsonParseException.constructor(kotlin.String)"
+      - "com.google.gson.JsonParseException.constructor(kotlin.String, kotlin.Throwable)"
       - "com.google.gson.JsonPrimitive.constructor(kotlin.Boolean)"
       - "com.google.gson.JsonPrimitive.constructor(kotlin.Number)"
       - "com.google.gson.JsonPrimitive.constructor(kotlin.String)"
@@ -545,6 +556,7 @@ datadog:
       - "java.util.WeakHashMap.clear()"
       - "java.util.WeakHashMap.remove(android.app.Activity)"
       - "java.util.WeakHashMap.remove(kotlin.Any)"
+      - "java.util.WeakHashMap.remove(android.view.Window)"
       # endregion
       # region Java Zip
       - "java.util.zip.Deflater.constructor(kotlin.Int)"
@@ -560,6 +572,7 @@ datadog:
       - "kotlin.Array.contentHashCode()"
       - "kotlin.Array.filter(kotlin.Function1)"
       - "kotlin.Array.filterNotNull(kotlin.Function1)"
+      - "kotlin.Array.first(kotlin.Function1)"
       - "kotlin.Array.firstOrNull(kotlin.Function1)"
       - "kotlin.Array.forEach(kotlin.Function1)"
       - "kotlin.Array.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
@@ -585,11 +598,13 @@ datadog:
       - "kotlin.collections.List.associateWith(kotlin.Function1)"
       - "kotlin.collections.List.contains(kotlin.String)"
       - "kotlin.collections.List.count()"
+      - "kotlin.collections.List.contains(kotlin.String)"
       - "kotlin.collections.List.drop(kotlin.Int)"
       - "kotlin.collections.List.filter(kotlin.Function1)"
       - "kotlin.collections.List.filterIndexed(kotlin.Function2)"
       - "kotlin.collections.List.filterNotNull(kotlin.Function1)"
       - "kotlin.collections.List.firstOrNull()"
+      - "kotlin.collections.List.flatMap(kotlin.Function1)"
       - "kotlin.collections.List.firstOrNull(kotlin.Function1)"
       - "kotlin.collections.List.flatMap(kotlin.Function1)"
       - "kotlin.collections.List.fold(kotlin.Long, kotlin.Function2)"
@@ -598,6 +613,7 @@ datadog:
       - "kotlin.collections.List.forEach(java.util.function.Consumer)"
       - "kotlin.collections.List.forEach(kotlin.Function1)"
       - "kotlin.collections.List.forEachIndexed(kotlin.Function2)"
+      - "kotlin.collections.List.forEach(java.util.function.Consumer)"
       - "kotlin.collections.List.getOrNull(kotlin.Int)"
       - "kotlin.collections.List.groupBy(kotlin.Function1)"
       - "kotlin.collections.List.isEmpty()"
@@ -635,6 +651,7 @@ datadog:
       - "kotlin.collections.Map.orEmpty()"
       - "kotlin.collections.Map.toMap()"
       - "kotlin.collections.Map.toMutableMap()"
+      - "kotlin.collections.Map.toMap()"
       - "kotlin.collections.MutableCollection.flatMap(kotlin.Function1)"
       - "kotlin.collections.MutableCollection.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableCollection.toList()"
@@ -747,6 +764,7 @@ datadog:
       - "kotlin.Double.toLong()"
       - "kotlin.Float.toInt()"
       - "kotlin.Float.toLong()"
+      - "kotlin.Float.toFloat()"
       - "kotlin.Int.inv()"
       - "kotlin.Int.toChar()"
       - "kotlin.Int.toLong()"
@@ -763,11 +781,12 @@ datadog:
       - "kotlin.Number.toFloat()"
       - "kotlin.Number.toLong()"
       # endregion
-      # region Kotlin Pair
+      # region Kotlin Tuples
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext, com.google.gson.JsonArray)"
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.model.MobileSegment, com.google.gson.JsonObject)"
       - "kotlin.Pair.constructor(com.google.gson.JsonObject, kotlin.Long)"
       - "kotlin.Triple.constructor(kotlin.String, kotlin.String, kotlin.String)"
+      - "kotlin.Triple.constructor(kotlin.Nothing?, kotlin.Nothing?, kotlin.Nothing?)"
       # endregion
       # region Kotlin String
       - "kotlin.String.all(kotlin.Function1)"

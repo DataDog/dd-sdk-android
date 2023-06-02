@@ -32,10 +32,10 @@ internal class BatchFileOrchestrator(
 
     // Offset the recent threshold for read and write to avoid conflicts
     // Arbitrary offset as ±5% of the threshold
-    @Suppress("UnsafeThirdPartyFunctionCall") // not a NaN
+    @Suppress("UnsafeThirdPartyFunctionCall") // rounded Double isn't NaN
     private val recentReadDelayMs = (config.recentDelayMs * INCREASE_PERCENT).roundToLong()
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // not a NaN
+    @Suppress("UnsafeThirdPartyFunctionCall") // rounded Double isn't NaN
     private val recentWriteDelayMs = (config.recentDelayMs * DECREASE_PERCENT).roundToLong()
 
     // keep track of how many items were written in the last known file
