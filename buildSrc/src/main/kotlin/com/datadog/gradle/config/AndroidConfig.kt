@@ -19,7 +19,7 @@ object AndroidConfig {
     // this is temporary, until we bump min sdk. Compose requires min sdk 21.
     const val MIN_SDK_FOR_COMPOSE = 21
     const val MIN_SDK_FOR_WEAR = 23
-    const val BUILD_TOOLS_VERSION = "33.0.0"
+    const val BUILD_TOOLS_VERSION = "33.0.2"
 
     val VERSION = Version(1, 20, 0, Version.Type.Snapshot)
 }
@@ -28,6 +28,11 @@ object AndroidConfig {
 fun CompileOptions.java11() {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
+}
+
+fun CompileOptions.java17() {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 @Suppress("UnstableApiUsage")

@@ -11,8 +11,8 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
-import com.datadog.gradle.config.setLibraryVersion
 import com.datadog.gradle.config.taskConfig
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Build
@@ -43,7 +43,6 @@ android {
     defaultConfig {
         minSdk = AndroidConfig.MIN_SDK_FOR_COMPOSE
         targetSdk = AndroidConfig.TARGET_SDK
-        setLibraryVersion()
     }
 
     namespace = "com.datadog.android.compose"
@@ -110,10 +109,10 @@ unMock {
     keep("android.os.Bundle")
 }
 
-kotlinConfig()
+kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
+    compilerOptions {
+        freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
     }
 }
 junitConfig()

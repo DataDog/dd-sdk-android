@@ -13,6 +13,7 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.taskConfig
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
@@ -45,6 +46,10 @@ android {
         versionName = AndroidConfig.VERSION.name
         multiDexEnabled = true
 
+        buildFeatures {
+            buildConfig = true
+        }
+
         vectorDrawables.useSupportLibrary = true
         externalNativeBuild {
             cmake {
@@ -54,6 +59,10 @@ android {
     }
 
     namespace = "com.datadog.android.sample"
+
+    compileOptions {
+        java11()
+    }
 
     buildFeatures {
         compose = true
@@ -94,7 +103,7 @@ android {
         java11()
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += "META-INF/*"
         }
@@ -183,10 +192,10 @@ dependencies {
     api("com.facebook.stetho:stetho:1.6.0")
 }
 
-kotlinConfig(evaluateWarningsAsErrors = false)
+kotlinConfig(evaluateWarningsAsErrors = false, jvmBytecodeTarget = JvmTarget.JVM_11)
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
+    compilerOptions {
+        freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
     }
 }
 junitConfig()

@@ -5,7 +5,7 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.java11
+import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.kotlinConfig
 
 plugins {
@@ -24,6 +24,10 @@ android {
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = 42
         versionName = "4.2.13"
+
+        buildFeatures {
+            buildConfig = true
+        }
 
         multiDexEnabled = true
         vectorDrawables.useSupportLibrary = true
@@ -48,10 +52,10 @@ android {
     }
 
     compileOptions {
-        java11()
+        java17()
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += listOf(
                 "META-INF/jvm.kotlin_module",
@@ -68,6 +72,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            testProguardFile("test-proguard-rules.pro")
         }
         getByName("debug") {
             isMinifyEnabled = true
@@ -75,6 +80,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            testProguardFile("test-proguard-rules.pro")
         }
     }
 }
@@ -100,10 +106,6 @@ dependencies {
     implementation(libs.elmyr)
 
     androidTestImplementation(project(":tools:unit")) {
-        // We need to exclude this otherwise R8 will fail while trying to desugar a function
-        // available only for API 26 and above
-        exclude(group = "org.junit.jupiter")
-        exclude(group = "org.mockito")
         attributes {
             attribute(
                 com.android.build.api.attributes.ProductFlavorAttr.of("platform"),

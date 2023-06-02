@@ -6,11 +6,12 @@
 
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
+import com.datadog.gradle.config.java11
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
-import com.datadog.gradle.config.setLibraryVersion
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Build
@@ -42,7 +43,6 @@ android {
     defaultConfig {
         minSdk = AndroidConfig.MIN_SDK
         targetSdk = AndroidConfig.TARGET_SDK
-        setLibraryVersion()
     }
 
     namespace = "com.datadog.android.okhttp"
@@ -58,8 +58,7 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        java11()
     }
 
     testOptions {
@@ -73,7 +72,7 @@ android {
         )
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += listOf(
                 "META-INF/jvm.kotlin_module",
@@ -124,7 +123,7 @@ unMock {
     keepStartingWith("org.json")
 }
 
-kotlinConfig()
+kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()

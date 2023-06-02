@@ -22,6 +22,10 @@ android {
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
+
+        buildFeatures {
+            buildConfig = true
+        }
     }
 
     namespace = "com.datadog.android.wear.sample"

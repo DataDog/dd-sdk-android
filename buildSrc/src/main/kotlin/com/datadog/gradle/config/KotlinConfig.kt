@@ -7,19 +7,22 @@
 package com.datadog.gradle.config
 
 import com.android.build.gradle.tasks.factory.AndroidUnitTest
-import org.gradle.api.JavaVersion
 import org.gradle.api.Project
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.File
 
-fun Project.kotlinConfig(evaluateWarningsAsErrors: Boolean = true) {
+fun Project.kotlinConfig(
+    evaluateWarningsAsErrors: Boolean = true,
+    jvmBytecodeTarget: JvmTarget = JvmTarget.JVM_17
+) {
     taskConfig<KotlinCompile> {
-        kotlinOptions {
-            // TODO RUMM-3263 Switch to Java 17 bytecode
-            jvmTarget = JavaVersion.VERSION_11.toString()
-            allWarningsAsErrors = evaluateWarningsAsErrors
-            apiVersion = "1.6"
-            languageVersion = "1.6"
+        compilerOptions {
+            jvmTarget.set(jvmBytecodeTarget)
+            allWarningsAsErrors.set(evaluateWarningsAsErrors)
+            apiVersion.set(KotlinVersion.KOTLIN_1_6)
+            languageVersion.set(KotlinVersion.KOTLIN_1_6)
         }
     }
 

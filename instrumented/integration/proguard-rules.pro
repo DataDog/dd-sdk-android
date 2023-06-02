@@ -25,3 +25,6 @@
 -keepnames class com.datadog.android.rum.internal.monitor.DatadogRumMonitor {
     *;
 }
+
+-dontwarn kotlin.Experimental$Level
+-dontwarn kotlin.Experimental
