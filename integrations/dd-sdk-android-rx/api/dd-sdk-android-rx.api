@@ -1,0 +1,18 @@
+public final class com/datadog/android/rx/DatadogRumErrorConsumer : io/reactivex/rxjava3/functions/Consumer {
+	public static final field Companion Lcom/datadog/android/rx/DatadogRumErrorConsumer$Companion;
+	public fun <init> (Lcom/datadog/android/v2/api/SdkCore;)V
+	public synthetic fun accept (Ljava/lang/Object;)V
+	public fun accept (Ljava/lang/Throwable;)V
+}
+
+public final class com/datadog/android/rx/DatadogRumErrorConsumer$Companion {
+}
+
+public final class com/datadog/android/rx/DatadogRxExtKt {
+	public static final fun sendErrorToDatadog (Lio/reactivex/rxjava3/core/Completable;Lcom/datadog/android/v2/api/SdkCore;)Lio/reactivex/rxjava3/core/Completable;
+	public static final fun sendErrorToDatadog (Lio/reactivex/rxjava3/core/Flowable;Lcom/datadog/android/v2/api/SdkCore;)Lio/reactivex/rxjava3/core/Flowable;
+	public static final fun sendErrorToDatadog (Lio/reactivex/rxjava3/core/Maybe;Lcom/datadog/android/v2/api/SdkCore;)Lio/reactivex/rxjava3/core/Maybe;
+	public static final fun sendErrorToDatadog (Lio/reactivex/rxjava3/core/Observable;Lcom/datadog/android/v2/api/SdkCore;)Lio/reactivex/rxjava3/core/Observable;
+	public static final fun sendErrorToDatadog (Lio/reactivex/rxjava3/core/Single;Lcom/datadog/android/v2/api/SdkCore;)Lio/reactivex/rxjava3/core/Single;
+}
+

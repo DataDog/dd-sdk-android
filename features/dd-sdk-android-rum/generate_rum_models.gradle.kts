@@ -20,7 +20,7 @@ tasks.register(
 }
 
 afterEvaluate {
-    tasks.findByName(ApiSurfacePlugin.TASK_GEN_API_SURFACE)
+    tasks.findByName(ApiSurfacePlugin.TASK_GEN_KOTLIN_API_SURFACE)
         ?.dependsOn(generateRumModelsTaskName)
     tasks.withType(KotlinCompile::class.java).configureEach {
         dependsOn(generateRumModelsTaskName)

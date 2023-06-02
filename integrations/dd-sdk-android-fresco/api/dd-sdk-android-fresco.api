@@ -1,0 +1,16 @@
+public final class com/datadog/android/fresco/DatadogFrescoCacheListener : com/facebook/cache/common/CacheEventListener {
+	public static final field Companion Lcom/datadog/android/fresco/DatadogFrescoCacheListener$Companion;
+	public fun <init> (Lcom/datadog/android/v2/api/SdkCore;)V
+	public fun onCleared ()V
+	public fun onEviction (Lcom/facebook/cache/common/CacheEvent;)V
+	public fun onHit (Lcom/facebook/cache/common/CacheEvent;)V
+	public fun onMiss (Lcom/facebook/cache/common/CacheEvent;)V
+	public fun onReadException (Lcom/facebook/cache/common/CacheEvent;)V
+	public fun onWriteAttempt (Lcom/facebook/cache/common/CacheEvent;)V
+	public fun onWriteException (Lcom/facebook/cache/common/CacheEvent;)V
+	public fun onWriteSuccess (Lcom/facebook/cache/common/CacheEvent;)V
+}
+
+public final class com/datadog/android/fresco/DatadogFrescoCacheListener$Companion {
+}
+

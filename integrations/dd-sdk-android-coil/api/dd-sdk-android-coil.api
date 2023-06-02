@@ -1,0 +1,12 @@
+public final class com/datadog/android/coil/DatadogCoilRequestListener : coil/request/ImageRequest$Listener {
+	public static final field Companion Lcom/datadog/android/coil/DatadogCoilRequestListener$Companion;
+	public fun <init> (Lcom/datadog/android/v2/api/SdkCore;)V
+	public fun onCancel (Lcoil/request/ImageRequest;)V
+	public fun onError (Lcoil/request/ImageRequest;Ljava/lang/Throwable;)V
+	public fun onStart (Lcoil/request/ImageRequest;)V
+	public fun onSuccess (Lcoil/request/ImageRequest;Lcoil/request/ImageResult$Metadata;)V
+}
+
+public final class com/datadog/android/coil/DatadogCoilRequestListener$Companion {
+}
+

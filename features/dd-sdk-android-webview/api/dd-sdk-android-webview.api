@@ -1,0 +1,16 @@
+public final class com/datadog/android/webview/DatadogEventBridge {
+	public static final field Companion Lcom/datadog/android/webview/DatadogEventBridge$Companion;
+	public fun <init> (Lcom/datadog/android/v2/api/SdkCore;Ljava/util/List;)V
+	public final fun getAllowedWebViewHosts ()Ljava/lang/String;
+	public final fun send (Ljava/lang/String;)V
+}
+
+public final class com/datadog/android/webview/DatadogEventBridge$Companion {
+	public final fun setup (Lcom/datadog/android/v2/api/SdkCore;Landroid/webkit/WebView;Ljava/util/List;)V
+}
+
+public final class com/datadog/android/webview/DatadogEventBridge$_InternalWebViewProxy {
+	public fun <init> (Lcom/datadog/android/v2/api/SdkCore;)V
+	public final fun consumeWebviewEvent (Ljava/lang/String;)V
+}
+
