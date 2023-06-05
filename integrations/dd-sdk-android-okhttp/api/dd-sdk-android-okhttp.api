@@ -6,8 +6,6 @@ public final class com/datadog/android/okhttp/DatadogEventListener : okhttp3/Eve
 	public fun connectStart (Lokhttp3/Call;Ljava/net/InetSocketAddress;Ljava/net/Proxy;)V
 	public fun dnsEnd (Lokhttp3/Call;Ljava/lang/String;Ljava/util/List;)V
 	public fun dnsStart (Lokhttp3/Call;Ljava/lang/String;)V
-	public final fun getKey ()Ljava/lang/String;
-	public final fun getSdkCore ()Lcom/datadog/android/v2/api/SdkCore;
 	public fun responseBodyEnd (Lokhttp3/Call;J)V
 	public fun responseBodyStart (Lokhttp3/Call;)V
 	public fun responseHeadersEnd (Lokhttp3/Call;Lokhttp3/Response;)V

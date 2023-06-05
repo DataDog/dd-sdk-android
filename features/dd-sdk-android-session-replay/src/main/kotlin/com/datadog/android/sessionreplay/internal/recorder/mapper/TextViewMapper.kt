@@ -163,7 +163,7 @@ open class TextViewMapper :
 
     // endregion
 
-    companion object {
+    internal companion object {
         internal const val STATIC_MASK = "***"
         internal const val SANS_SERIF_FAMILY_NAME = "roboto, sans-serif"
         internal const val SERIF_FAMILY_NAME = "serif"

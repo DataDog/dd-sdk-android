@@ -1,10 +1,6 @@
 public final class com/datadog/android/sqldelight/DatadogSqliteCallback : com/squareup/sqldelight/android/AndroidSqliteDriver$Callback {
-	public static final field Companion Lcom/datadog/android/sqldelight/DatadogSqliteCallback$Companion;
 	public fun <init> (Lcom/squareup/sqldelight/db/SqlDriver$Schema;Lcom/datadog/android/v2/api/SdkCore;)V
 	public fun onCorruption (Landroidx/sqlite/db/SupportSQLiteDatabase;)V
-}
-
-public final class com/datadog/android/sqldelight/DatadogSqliteCallback$Companion {
 }
 
 public final class com/datadog/android/sqldelight/SqlDelightExtKt {

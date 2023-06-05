@@ -115,7 +115,7 @@ public final class com/datadog/android/rum/RumFeature$Builder {
 }
 
 public abstract interface class com/datadog/android/rum/RumMonitor {
-	public abstract fun _getInternal ()Lcom/datadog/android/rum/_RumInternalProxy;
+	public abstract synthetic fun _getInternal ()Lcom/datadog/android/rum/_RumInternalProxy;
 	public abstract fun addAttribute (Ljava/lang/String;Ljava/lang/Object;)V
 	public abstract fun addError (Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/Throwable;Ljava/util/Map;)V
 	public abstract fun addErrorWithStacktrace (Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/String;Ljava/util/Map;)V

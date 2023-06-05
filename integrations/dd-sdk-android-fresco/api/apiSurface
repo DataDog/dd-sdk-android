@@ -8,4 +8,3 @@ class com.datadog.android.fresco.DatadogFrescoCacheListener : com.facebook.cache
   override fun onWriteAttempt(com.facebook.cache.common.CacheEvent)
   override fun onWriteSuccess(com.facebook.cache.common.CacheEvent)
   override fun onWriteException(com.facebook.cache.common.CacheEvent)
-  companion object 
