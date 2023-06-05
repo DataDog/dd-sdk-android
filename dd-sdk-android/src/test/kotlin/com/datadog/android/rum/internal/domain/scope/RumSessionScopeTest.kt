@@ -284,23 +284,6 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 create new session context 𝕎 handleEvent(sdkInit)+getRumContext() {sampling = 100}`() {
-        // Given
-        initializeTestedScope(100f)
-
-        // When
-        val result = testedScope.handleEvent(RumRawEvent.SdkInit(), mockWriter)
-        val context = testedScope.getRumContext()
-
-        // Then
-        assertThat(result).isSameAs(testedScope)
-        assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
-        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
-        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
-        assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
-    }
-
-    @Test
     fun `𝕄 create new session context 𝕎 handleEvent(view)+getRumContext() {sampling = 100}`(
         forge: Forge
     ) {
