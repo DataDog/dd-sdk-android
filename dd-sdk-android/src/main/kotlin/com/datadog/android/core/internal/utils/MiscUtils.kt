@@ -94,7 +94,7 @@ internal fun Any?.fromJsonElement(): Any? {
                 this
             }
         }
-        is JsonObject -> this.asMap()
+        is JsonObject -> this.asDeepMap()
         else -> this
     }
 }
@@ -133,7 +133,7 @@ internal fun JSONArray.toJsonArray(): JsonElement {
     return obj
 }
 
-internal fun JsonObject.asMap(): Map<String, Any?> {
+internal fun JsonObject.asDeepMap(): Map<String, Any?> {
     val map = mutableMapOf<String, Any?>()
     entrySet().forEach {
         map[it.key] = it.value.fromJsonElement()
@@ -141,9 +141,9 @@ internal fun JsonObject.asMap(): Map<String, Any?> {
     return map
 }
 
-internal fun JsonElement?.asMap(): Map<String, Any?> {
+internal fun JsonElement?.asDeepMap(): Map<String, Any?> {
     return if (this is JsonObject) {
-        this.asMap()
+        this.asDeepMap()
     } else {
         emptyMap()
     }

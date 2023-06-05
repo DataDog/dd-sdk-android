@@ -155,7 +155,7 @@ class ModelValidationTest(
             is JsonObject -> v1.asJsonObject.toString() != v2.toString()
             is JsonArray -> v1.asJsonArray != v2
             is Iterable<*> -> v1.asJsonArray.toList() != v2
-            is Map<*, *> -> mapTypeComparator.compare(v1.asJsonObject.asMap(), v2) == 0
+            is Map<*, *> -> mapTypeComparator.compare(v1.asJsonObject.asDeepMap(), v2) == 0
             else -> v1.asString != v2.toString()
         }
     }
@@ -166,7 +166,7 @@ class ModelValidationTest(
         }
     }
 
-    internal fun JsonObject.asMap(): Map<String, Any?> {
+    internal fun JsonObject.asDeepMap(): Map<String, Any?> {
         val map = mutableMapOf<String, Any?>()
         entrySet().forEach {
             map[it.key] = it.value.fromJsonElement()
