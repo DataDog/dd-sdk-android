@@ -54,6 +54,7 @@ detekt = "1.22.0"
 dokka = "1.6.10"
 unmock = "0.7.9"
 robolectric = "4.4_r1-robolectric-r2"
+androidLint = "31.0.2"
 
 fuzzyWuzzy = "1.2.0"
 mavenModel = "3.6.3"
@@ -167,6 +168,7 @@ mockitoKotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "m
 kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kover = { module = "org.jetbrains.kotlinx:kover", version.ref = "kover" }
 kspTesting = { module = "com.github.tschuchortdev:kotlin-compile-testing-ksp", version.ref = "kspTesting" }
+androidLintTests = { module = "com.android.tools.lint:lint-tests", version.ref = "androidLint" }
 
 # Tools
 detektCli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }
@@ -174,6 +176,8 @@ detektApi = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = "
 detektTest = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }
 okHttpMock = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okHttp" }
 robolectric = { module = "org.robolectric:android-all", version.ref = "robolectric" }
+androidLintApi = { module = "com.android.tools.lint:lint-api", version.ref = "androidLint" }
+androidLintChecks = { module = "com.android.tools.lint:lint-checks", version.ref = "androidLint" }
 
 fuzzyWuzzy = { module = "me.xdrop:fuzzywuzzy", version.ref = "fuzzyWuzzy" }
 mavenModel = { module = "org.apache.maven:maven-model", version.ref = "mavenModel" }

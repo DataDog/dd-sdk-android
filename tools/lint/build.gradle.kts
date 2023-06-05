@@ -7,24 +7,31 @@
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
+import com.datadog.gradle.config.taskConfig
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
     id("com.github.ben-manes.versions")
+    id("com.android.lint")
 }
 
 dependencies {
-    implementation(libs.kotlin)
-    implementation(libs.kotlinReflect)
-    implementation(libs.androidXAnnotation)
-    compileOnly(libs.detektApi)
+    compileOnly(libs.kotlin)
+    compileOnly(libs.androidLintApi)
+    compileOnly(libs.androidLintChecks)
 
+    testImplementation(libs.androidLintTests)
+    testImplementation(libs.androidLintApi)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
-    testImplementation(libs.detektTest)
-    testImplementation(libs.robolectric)
 }
 
 kotlinConfig()
 junitConfig()
 dependencyUpdateConfig()
+
+taskConfig<Jar> {
+    manifest {
+        attributes("Lint-Registry-v2" to "com.datadog.android.lint.DatadogIssueRegistry")
+    }
+}
