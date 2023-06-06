@@ -6,7 +6,10 @@
 
 package com.datadog.android.core.internal.sampling
 
-internal interface Sampler {
+/**
+ * Interface representing the sampling.
+ */
+interface Sampler {
 
     /**
      * Sampling method.

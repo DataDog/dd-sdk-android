@@ -9,92 +9,68 @@ package com.datadog.android.sessionreplay.internal
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import android.view.Window
+import androidx.annotation.UiThread
 import androidx.fragment.app.FragmentActivity
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
-import com.datadog.android.sessionreplay.internal.recorder.ComposedOptionSelectorDetector
-import com.datadog.android.sessionreplay.internal.recorder.DefaultOptionSelectorDetector
-import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
-import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
-import com.datadog.android.sessionreplay.internal.recorder.TreeViewTraversal
-import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
-import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
+import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 import com.datadog.android.sessionreplay.internal.recorder.callback.RecorderFragmentLifecycleCallback
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
-import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
-import com.datadog.android.sessionreplay.internal.utils.TimeProvider
-import java.util.concurrent.LinkedBlockingDeque
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
+import java.util.WeakHashMap
 
-/**
- * The SessionReplay implementation of the [LifecycleCallback].
- */
 internal class SessionReplayLifecycleCallback(
-    rumContextProvider: RumContextProvider,
-    privacy: SessionReplayPrivacy,
-    recordWriter: RecordWriter,
-    timeProvider: TimeProvider,
-    recordCallback: RecordCallback = NoOpRecordCallback(),
-    customMappers: List<MapperTypeWrapper> = emptyList(),
-    customOptionSelectorDetectors: List<OptionSelectorDetector> = emptyList()
-) : LifecycleCallback {
+    private val onWindowRefreshedCallback: OnWindowRefreshedCallback
+) : LifecycleCallback, OnWindowRefreshedCallback {
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // workQueue can't be null
-    private val processorExecutorService = ThreadPoolExecutor(
-        CORE_DEFAULT_POOL_SIZE,
-        Runtime.getRuntime().availableProcessors(),
-        THREAD_POOL_MAX_KEEP_ALIVE_MS,
-        TimeUnit.MILLISECONDS,
-        LinkedBlockingDeque()
-    )
-    internal val processor = RecordedDataProcessor(
-        rumContextProvider,
-        timeProvider,
-        processorExecutorService,
-        recordWriter,
-        recordCallback
-    )
-    internal var viewOnDrawInterceptor = ViewOnDrawInterceptor(
-        processor,
-        SnapshotProducer(
-            TreeViewTraversal(customMappers + privacy.mappers()),
-            ComposedOptionSelectorDetector(
-                customOptionSelectorDetectors + DefaultOptionSelectorDetector()
-            )
-        )
-    )
+    private val currentActiveWindows = WeakHashMap<Window, Any?>()
 
-    internal var windowCallbackInterceptor =
-        WindowCallbackInterceptor(processor, viewOnDrawInterceptor, timeProvider)
+    override fun onWindowsAdded(windows: List<Window>) {
+        windows.forEach {
+            currentActiveWindows[it] = null
+        }
+        onWindowRefreshedCallback.onWindowsAdded(windows)
+    }
 
-    // region callback
+    override fun onWindowsRemoved(windows: List<Window>) {
+        windows.forEach {
+            currentActiveWindows.remove(it)
+        }
+        onWindowRefreshedCallback.onWindowsRemoved(windows)
+    }
 
+    override fun getCurrentActiveWindows(): List<Window> {
+        return currentActiveWindows.keys.toList()
+    }
+
+    @UiThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-        // No Op
         if (activity is FragmentActivity) {
+            // we need to register before the activity resumes to catch all the fragments
+            // added even before the activity resumes
+            val lifecycleCallback = RecorderFragmentLifecycleCallback(this)
             activity.supportFragmentManager.registerFragmentLifecycleCallbacks(
-                RecorderFragmentLifecycleCallback(windowCallbackInterceptor),
+                lifecycleCallback,
                 true
             )
         }
     }
 
+    @UiThread
     override fun onActivityStarted(activity: Activity) {
         // No Op
     }
 
+    @UiThread
     override fun onActivityResumed(activity: Activity) {
         activity.window?.let {
-            viewOnDrawInterceptor.intercept(listOf(it.decorView), activity)
-            windowCallbackInterceptor.intercept(listOf(it), activity)
+            currentActiveWindows[it] = null
+            onWindowRefreshedCallback.onWindowsAdded(listOf(it))
         }
     }
 
+    @UiThread
     override fun onActivityPaused(activity: Activity) {
         activity.window?.let {
-            viewOnDrawInterceptor.stopIntercepting(listOf(it.decorView))
-            windowCallbackInterceptor.stopIntercepting(listOf(it))
+            currentActiveWindows.remove(it)
+            onWindowRefreshedCallback.onWindowsRemoved(listOf(it))
         }
     }
 
@@ -110,24 +86,7 @@ internal class SessionReplayLifecycleCallback(
         // No Op
     }
 
-    // endregion
-
-    // region Api
-
     override fun register(appContext: Application) {
         appContext.registerActivityLifecycleCallbacks(this)
-    }
-
-    override fun unregisterAndStopRecorders(appContext: Application) {
-        appContext.unregisterActivityLifecycleCallbacks(this)
-        viewOnDrawInterceptor.stopIntercepting()
-        windowCallbackInterceptor.stopIntercepting()
-    }
-
-    // endregion
-
-    companion object {
-        private val THREAD_POOL_MAX_KEEP_ALIVE_MS = TimeUnit.SECONDS.toMillis(5)
-        private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
     }
 }

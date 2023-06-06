@@ -16,7 +16,6 @@ import androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
-import com.datadog.android.sessionreplay.internal.recorder.callback.RecorderFragmentLifecycleCallback
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -187,7 +186,7 @@ internal class SessionReplayLifecycleCallbackTest {
         val mockApplication: Application = mock()
 
         // When
-        testedCallback.register(mockApplication)
+        testedCallback.resumeRecorders()
 
         // Then
         verify(mockApplication).registerActivityLifecycleCallbacks(testedCallback)
@@ -199,7 +198,7 @@ internal class SessionReplayLifecycleCallbackTest {
         val mockApplication: Application = mock()
 
         // When
-        testedCallback.unregisterAndStopRecorders(mockApplication)
+        testedCallback.stopRecorders()
 
         // Then
         verify(mockApplication).unregisterActivityLifecycleCallbacks(testedCallback)
@@ -221,7 +220,7 @@ internal class SessionReplayLifecycleCallbackTest {
         testedCallback.onActivityResumed(mockActivity2)
 
         // When
-        testedCallback.unregisterAndStopRecorders(mockApplication)
+        testedCallback.stopRecorders()
 
         // Then
         verify(mockWindowCallbackInterceptor).stopIntercepting()

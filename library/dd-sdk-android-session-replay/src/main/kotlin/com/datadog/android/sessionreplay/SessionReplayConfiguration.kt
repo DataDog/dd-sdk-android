@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay
 
+import androidx.annotation.FloatRange
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
@@ -18,7 +19,8 @@ data class SessionReplayConfiguration
 internal constructor(
     internal val endpointUrl: String,
     internal val privacy: SessionReplayPrivacy,
-    internal val extensionSupport: ExtensionSupport
+    internal val extensionSupport: ExtensionSupport,
+    internal val samplingRate: Float
 ) {
 
     /**
@@ -28,6 +30,7 @@ internal constructor(
         private var endpointUrl = DatadogEndpoint.SESSION_REPLAY_US1
         private var privacy = SessionReplayPrivacy.MASK_ALL
         private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
+        private var samplingRate: Float = 0f
 
         /**
          * Adds an extension support implementation. This is mostly used when you want to provide
@@ -68,13 +71,27 @@ internal constructor(
         }
 
         /**
+         * Sets the sampling rate for Session Replay recorded Sessions. Please note that this
+         * sampling rate will be applied on top of already
+         *
+         * @param samplingRate the sampling rate must be a value between 0 and 100. A value of 0
+         * means no session will be recorded, 100 means all sessions will be recorded.
+         */
+        fun sessionReplaySampleRate(@FloatRange(from = 0.0, to = 100.0) samplingRate: Float):
+            Builder {
+            this.samplingRate = samplingRate
+            return this
+        }
+
+        /**
          * Builds a [Configuration] based on the current state of this Builder.
          */
         fun build(): SessionReplayConfiguration {
             return SessionReplayConfiguration(
                 endpointUrl = endpointUrl,
                 privacy = privacy,
-                extensionSupport = extensionSupport
+                extensionSupport = extensionSupport,
+                samplingRate = samplingRate
             )
         }
     }

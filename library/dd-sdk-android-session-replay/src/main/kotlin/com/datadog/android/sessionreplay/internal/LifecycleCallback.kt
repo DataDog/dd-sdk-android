@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
+import android.view.Window
 
 /**
  * The Session Replay related LifecycleCallback interface.
@@ -16,15 +17,7 @@ import android.app.Application
  */
 internal interface LifecycleCallback : Application.ActivityLifecycleCallbacks {
 
-    /**
-     * Registers the callback on the Application lifecycle.
-     * @param appContext
-     */
     fun register(appContext: Application)
 
-    /**
-     * Unregister the callback and stops any related recorders that were previously started.
-     * @param appContext
-     */
-    fun unregisterAndStopRecorders(appContext: Application)
+    fun getCurrentActiveWindows(): List<Window>
 }

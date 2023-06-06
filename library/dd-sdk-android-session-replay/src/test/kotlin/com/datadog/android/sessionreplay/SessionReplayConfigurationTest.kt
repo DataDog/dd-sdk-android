@@ -13,6 +13,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMappe
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -38,6 +39,9 @@ internal class SessionReplayConfigurationTest {
 
     @StringForgery
     lateinit var fakeEndpoint: String
+
+    @FloatForgery
+    var fakeSamplingRate: Float = 0f
 
     @Mock
     lateinit var mockExtensionSupport: ExtensionSupport
@@ -68,7 +72,8 @@ internal class SessionReplayConfigurationTest {
         testSessionReplayConfiguration = SessionReplayConfiguration(
             fakeEndpoint,
             SessionReplayPrivacy.ALLOW_ALL,
-            mockExtensionSupport
+            mockExtensionSupport,
+            fakeSamplingRate
         )
 
         // Then
@@ -82,7 +87,8 @@ internal class SessionReplayConfigurationTest {
         testSessionReplayConfiguration = SessionReplayConfiguration(
             fakeEndpoint,
             SessionReplayPrivacy.MASK_ALL,
-            mockExtensionSupport
+            mockExtensionSupport,
+            fakeSamplingRate
         )
 
         // Then
@@ -98,7 +104,8 @@ internal class SessionReplayConfigurationTest {
         testSessionReplayConfiguration = SessionReplayConfiguration(
             fakeEndpoint,
             fakePrivacy,
-            mockExtensionSupport
+            mockExtensionSupport,
+            fakeSamplingRate
         )
 
         // Then

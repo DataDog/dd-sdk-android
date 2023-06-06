@@ -119,7 +119,7 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(mockSessionReplayLifecycleCallback)
-            .register(appContext.mockInstance)
+            .resumeRecorders()
     }
 
     @Test
@@ -132,7 +132,7 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(mockSessionReplayLifecycleCallback)
-            .unregisterAndStopRecorders(appContext.mockInstance)
+            .stopRecorders()
     }
 
     @Test
@@ -158,7 +158,7 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(mockSessionReplayLifecycleCallback)
-            .unregisterAndStopRecorders(appContext.mockInstance)
+            .stopRecorders()
     }
 
     @Test
@@ -178,9 +178,9 @@ internal class SessionReplayFeatureTest {
         // Then
         countDownLatch.await(5, TimeUnit.SECONDS)
         verify(mockSessionReplayLifecycleCallback)
-            .register(appContext.mockInstance)
+            .resumeRecorders()
         verify(mockSessionReplayLifecycleCallback)
-            .unregisterAndStopRecorders(appContext.mockInstance)
+            .stopRecorders()
         verifyNoMoreInteractions(mockSessionReplayLifecycleCallback)
     }
 
@@ -195,9 +195,9 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(mockSessionReplayLifecycleCallback)
-            .register(appContext.mockInstance)
+            .resumeRecorders()
         verify(mockSessionReplayLifecycleCallback)
-            .unregisterAndStopRecorders(appContext.mockInstance)
+            .stopRecorders()
         verifyNoMoreInteractions(mockSessionReplayLifecycleCallback)
     }
 
@@ -224,7 +224,7 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(mockSessionReplayLifecycleCallback, times(2))
-            .register(appContext.mockInstance)
+            .resumeRecorders()
     }
 
     @Test
@@ -243,7 +243,7 @@ internal class SessionReplayFeatureTest {
 
         // Then
         countDownLatch.await(5, TimeUnit.SECONDS)
-        verify(mockSessionReplayLifecycleCallback).register(appContext.mockInstance)
+        verify(mockSessionReplayLifecycleCallback).resumeRecorders()
         verifyNoMoreInteractions(mockSessionReplayLifecycleCallback)
     }
 
@@ -257,7 +257,7 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(mockSessionReplayLifecycleCallback)
-            .register(appContext.mockInstance)
+            .resumeRecorders()
     }
 
     @Test
@@ -303,9 +303,9 @@ internal class SessionReplayFeatureTest {
 
         // Then
         inOrder(mockSessionReplayLifecycleCallback) {
-            verify(mockSessionReplayLifecycleCallback).register(appContext.mockInstance)
+            verify(mockSessionReplayLifecycleCallback).resumeRecorders()
             verify(mockSessionReplayLifecycleCallback)
-                .unregisterAndStopRecorders(appContext.mockInstance)
+                .stopRecorders()
         }
         verifyNoMoreInteractions(mockSessionReplayLifecycleCallback)
     }
@@ -327,10 +327,10 @@ internal class SessionReplayFeatureTest {
 
         // Then
         inOrder(mockSessionReplayLifecycleCallback) {
-            verify(mockSessionReplayLifecycleCallback).register(appContext.mockInstance)
+            verify(mockSessionReplayLifecycleCallback).resumeRecorders()
             verify(mockSessionReplayLifecycleCallback)
-                .unregisterAndStopRecorders(appContext.mockInstance)
-            verify(mockSessionReplayLifecycleCallback).register(appContext.mockInstance)
+                .stopRecorders()
+            verify(mockSessionReplayLifecycleCallback).resumeRecorders()
         }
         verifyNoMoreInteractions(mockSessionReplayLifecycleCallback)
     }

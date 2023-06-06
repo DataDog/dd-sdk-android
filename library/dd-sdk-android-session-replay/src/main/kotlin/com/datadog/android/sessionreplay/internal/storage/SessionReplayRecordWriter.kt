@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.storage
 
+import android.util.Log
 import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.RecordWriter
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
@@ -18,6 +19,7 @@ internal class SessionReplayRecordWriter(private val sdkCore: SdkCore) : RecordW
         sdkCore.getFeature(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME)
             ?.withWriteContext(forceNewBatch) { _, eventBatchWriter ->
                 val serializedRecord = record.toJson().toByteArray(Charsets.UTF_8)
+                Log.v("SRWriter", "${record.toJson()}")
                 synchronized(this) {
                     @Suppress("ThreadSafety") // called from the worker thread
                     eventBatchWriter.write(serializedRecord, null)
