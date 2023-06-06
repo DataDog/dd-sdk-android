@@ -1,3 +1,7 @@
+# 1.19.2 / 2023-06-05
+
+* [REVERT] RUM: Force new session at SDK initialization. See [#1399](https://github.com/DataDog/dd-sdk-android/pull/1399)
+
 # 1.19.1 / 2023-05-30
 
 * [IMPROVEMENT] RUM: Force new session at SDK initialization. See [#1399](https://github.com/DataDog/dd-sdk-android/pull/1399)
