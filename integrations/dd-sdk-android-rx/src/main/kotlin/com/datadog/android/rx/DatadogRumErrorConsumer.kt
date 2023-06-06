@@ -28,7 +28,7 @@ class DatadogRumErrorConsumer(
         GlobalRum.get(sdkCore).addError(REQUEST_ERROR_MESSAGE, RumErrorSource.SOURCE, error, emptyMap())
     }
 
-    companion object {
+    internal companion object {
         internal const val REQUEST_ERROR_MESSAGE = "RxJava stream error"
     }
 }

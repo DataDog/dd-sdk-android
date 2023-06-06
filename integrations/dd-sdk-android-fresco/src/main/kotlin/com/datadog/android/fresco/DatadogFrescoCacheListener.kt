@@ -93,7 +93,7 @@ class DatadogFrescoCacheListener(
 
     // endregion
 
-    companion object {
+    internal companion object {
         internal const val CACHE_ENTRY_URI_TAG: String = "cache_entry_uri"
         internal const val CACHE_ERROR_READ_MESSAGE = "Fresco Disk Cache Read error"
         internal const val CACHE_ERROR_WRITE_MESSAGE = "Fresco Disk Cache Write error"

@@ -10,7 +10,7 @@ public final class com/datadog/android/BuildConfig {
 
 public final class com/datadog/android/Datadog {
 	public static final field INSTANCE Lcom/datadog/android/Datadog;
-	public final fun _internalProxy (Ljava/lang/String;)Lcom/datadog/android/_InternalProxy;
+	public final synthetic fun _internalProxy (Ljava/lang/String;)Lcom/datadog/android/_InternalProxy;
 	public static synthetic fun _internalProxy$default (Lcom/datadog/android/Datadog;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/_InternalProxy;
 	public static final fun getInstance ()Lcom/datadog/android/v2/api/SdkCore;
 	public static final fun getInstance (Ljava/lang/String;)Lcom/datadog/android/v2/api/SdkCore;
@@ -36,13 +36,13 @@ public final class com/datadog/android/DatadogSite : java/lang/Enum {
 	public static final field US3 Lcom/datadog/android/DatadogSite;
 	public static final field US5 Lcom/datadog/android/DatadogSite;
 	public final fun getIntakeEndpoint ()Ljava/lang/String;
-	public final fun getSiteName ()Ljava/lang/String;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/DatadogSite;
 	public static fun values ()[Lcom/datadog/android/DatadogSite;
 }
 
 public final class com/datadog/android/SdkReference {
 	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;)V
 	public fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 	public synthetic fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun get ()Lcom/datadog/android/v2/api/SdkCore;
@@ -145,7 +145,6 @@ public final class com/datadog/android/core/constraints/DataConstraints$DefaultI
 
 public final class com/datadog/android/core/constraints/DatadogDataConstraints : com/datadog/android/core/constraints/DataConstraints {
 	public fun <init> (Lcom/datadog/android/v2/api/InternalLogger;)V
-	public final fun getInternalLogger ()Lcom/datadog/android/v2/api/InternalLogger;
 	public fun validateAttributes (Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;Ljava/util/Set;)Ljava/util/Map;
 	public fun validateTags (Ljava/util/List;)Ljava/util/List;
 	public fun validateTimings (Ljava/util/Map;)Ljava/util/Map;

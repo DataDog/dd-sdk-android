@@ -71,7 +71,7 @@ class DatadogCoilRequestListener(
 
     // endregion
 
-    companion object {
+    internal companion object {
         internal const val REQUEST_ERROR_MESSAGE = "Coil request error"
         internal const val REQUEST_PATH_TAG = "request_path"
     }

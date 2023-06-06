@@ -78,7 +78,7 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
         }
     }
 
-    companion object {
+    internal companion object {
         internal const val OPAQUE_ALPHA_VALUE: Int = 255
     }
 }

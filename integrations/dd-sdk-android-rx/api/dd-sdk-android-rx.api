@@ -1,11 +1,7 @@
 public final class com/datadog/android/rx/DatadogRumErrorConsumer : io/reactivex/rxjava3/functions/Consumer {
-	public static final field Companion Lcom/datadog/android/rx/DatadogRumErrorConsumer$Companion;
 	public fun <init> (Lcom/datadog/android/v2/api/SdkCore;)V
 	public synthetic fun accept (Ljava/lang/Object;)V
 	public fun accept (Ljava/lang/Throwable;)V
-}
-
-public final class com/datadog/android/rx/DatadogRumErrorConsumer$Companion {
 }
 
 public final class com/datadog/android/rx/DatadogRxExtKt {

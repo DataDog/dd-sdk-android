@@ -290,6 +290,7 @@ interface RumMonitor {
      * @see _RumInternalProxy
      */
     @Suppress("FunctionName")
+    @JvmSynthetic
     fun _getInternal(): _RumInternalProxy?
 
     // region Builder

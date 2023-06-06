@@ -46,8 +46,8 @@ import java.net.Proxy
  */
 class DatadogEventListener
 internal constructor(
-    val sdkCore: SdkCore,
-    val key: String
+    internal val sdkCore: SdkCore,
+    internal val key: String
 ) : EventListener() {
 
     private var callStart = 0L

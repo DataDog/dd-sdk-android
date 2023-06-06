@@ -17,7 +17,7 @@ internal typealias StringTransform = (String) -> String?
  *
  * @param internalLogger Internal logger.
  */
-class DatadogDataConstraints(val internalLogger: InternalLogger) : DataConstraints {
+class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataConstraints {
 
     // region DataConstraints
 

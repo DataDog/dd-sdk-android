@@ -242,6 +242,7 @@ object Datadog {
      * @see _InternalProxy
      */
     @Suppress("FunctionNaming", "FunctionName")
+    @JvmSynthetic
     fun _internalProxy(instanceName: String? = null): _InternalProxy {
         return _InternalProxy(getInstance(instanceName))
     }
