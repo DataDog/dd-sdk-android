@@ -2,7 +2,7 @@
 # Commons
 kotlin = "1.8.10"
 kotlinSP = "1.8.10-1.0.9"
-gson = "2.8.8"
+gson = "2.10.1"
 okHttp = "3.12.13"
 kronosNTP = "0.0.1-alpha11"
 

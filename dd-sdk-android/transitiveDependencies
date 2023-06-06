@@ -32,7 +32,7 @@ androidx.startup:startup-runtime:1.0.0                          :   18 Kb
 androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
 androidx.viewpager:viewpager:1.0.0                              :   52 Kb
 androidx.work:work-runtime:2.7.0                                : 1493 Kb
-com.google.code.gson:gson:2.8.8                                 :  236 Kb
+com.google.code.gson:gson:2.10.1                                :  276 Kb
 com.google.guava:listenablefuture:1.0                           :    3 Kb
 com.lyft.kronos:kronos-android:0.0.1-alpha11                    :    5 Kb
 com.lyft.kronos:kronos-java:0.0.1-alpha11                       :   29 Kb
