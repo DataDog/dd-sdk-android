@@ -1,3 +1,102 @@
+# 1.19.2 / 2023-06-05
+
+* [REVERT] RUM: Force new session at SDK initialization. See [#1399](https://github.com/DataDog/dd-sdk-android/pull/1399)
+
+# 1.19.1 / 2023-05-30
+
+* [IMPROVEMENT] RUM: Force new session at SDK initialization. See [#1399](https://github.com/DataDog/dd-sdk-android/pull/1399)
+* [BUGFIX] RUM: Ignore adding custom timings and feature flags for the stopped view. See [#1433](https://github.com/DataDog/dd-sdk-android/pull/1433)
+
+# 1.19.0 / 2023-04-24
+
+* [FEATURE] RUM: Allow users to stop a RUM session. See [#1356](https://github.com/DataDog/dd-sdk-android/pull/1356)
+* [FEATURE] APM: Add tracer sampling rate. See [#1393](https://github.com/DataDog/dd-sdk-android/pull/1393)
+* [IMPROVEMENT] Create a minimal WearOS sample to test compatibility. See [#1384](https://github.com/DataDog/dd-sdk-android/pull/1384)
+* [BUGFIX] RUM: Fix stopped `RUMViewManager` from being able to start new views. See [#1381](https://github.com/DataDog/dd-sdk-android/pull/1381)
+* [MAINTENANCE] Update RUM Event Schema. See [#1383](https://github.com/DataDog/dd-sdk-android/pull/1383)
+* [DOCS] Delete referenced docs and update README. See [#1376](https://github.com/DataDog/dd-sdk-android/pull/1376)
+
+# 1.18.1 / 2023-03-30
+
+* [IMPROVEMENT] RUM: Remove extra telemetry sent when detecting refresh rate scale. See [#1358](https://github.com/DataDog/dd-sdk-android/pull/1358)
+
+# 1.18.0 / 2023-03-21
+
+* [FEATURE] RUM: Add `addFeatureFlagEvaluation` function for RUM. See [#1265](https://github.com/DataDog/dd-sdk-android/pull/1265)
+* [FEATURE] RUM: Implement webview proxy for cross platform. See [#1290](https://github.com/DataDog/dd-sdk-android/pull/1290)
+* [IMPROVEMENT] RUM: Add support to `AP1`. See [#1268](https://github.com/DataDog/dd-sdk-android/pull/1268)
+* [IMPROVEMENT] RUM `ApplicationLaunch` logic changes. See [#1278](https://github.com/DataDog/dd-sdk-android/pull/1278)
+* [IMPROVEMENT] RUM: Add internal telemetry configuration sampling rate. See [#1310](https://github.com/DataDog/dd-sdk-android/pull/1310)
+* [BUGFIX] RUM: Prevent reporting invalid cpu ticks per seconds. See [#1308](https://github.com/DataDog/dd-sdk-android/pull/1308)
+* [BUGFIX] RUM: Fix timing of `ApplicationLaunch` view and `application_start` events. See [#1305](https://github.com/DataDog/dd-sdk-android/pull/1305)
+* [BUGFIX] RUM: Fix telemetry sampling internal configuration for Flutter. See [#1326](https://github.com/DataDog/dd-sdk-android/pull/1326)
+* [MAINTENANCE] Make tests more accurate with url case sensitivity. See [#1263](https://github.com/DataDog/dd-sdk-android/pull/1263)
+* [MAINTENANCE] Update E2E tests with valid resource (as to not get 404). See [#1266](https://github.com/DataDog/dd-sdk-android/pull/1266)
+* [MAINTENANCE] Update RUM Telemetry event schema to latest. See [#1319](https://github.com/DataDog/dd-sdk-android/pull/1319)
+* [MAINTENANCE] Stabilize integration tests. See [#1329](https://github.com/DataDog/dd-sdk-android/pull/1329)
+* [MAINTENANCE] Update static analysis dependency. See [#1342](https://github.com/DataDog/dd-sdk-android/pull/1342)
+* [DOCS] Fix numbering in Android tracing instructions markdown. See [#1227](https://github.com/DataDog/dd-sdk-android/pull/1227)
+* [DOCS] Updated privacy controls in application setup. See [#1281](https://github.com/DataDog/dd-sdk-android/pull/1281)
+* [DOCS] Add app variant definition in docs. See [#1296](https://github.com/DataDog/dd-sdk-android/pull/1296)
+* [DOCS] Add link explaining how to stop collecting geolocation data. See [#1327](https://github.com/DataDog/dd-sdk-android/pull/1327)
+* [DOCS] Note about how to stop collecting geolocation data. See [#1328](https://github.com/DataDog/dd-sdk-android/pull/1328)
+
+# 1.17.2 / 2023-03-06
+
+* [BUGFIX] Global: Handle devices not reported properly their power source. See [#1315](https://github.com/DataDog/dd-sdk-android/pull/1315)
+* [BUGFIX] RUM: Detect device's refresh rate with NavigationViewTrackingStrategy. See [#1312](https://github.com/DataDog/dd-sdk-android/pull/1312)
+
+# 1.17.1 / 2023-02-20
+
+* [BUGFIX] RUM: Revert: Detect device's refresh rate from vital monitor. See [#1251](https://github.com/DataDog/dd-sdk-android/pull/1251)
+* [BUGFIX] RUM: The `RumEventMapper` checks `ViewEvent`s by reference. See [#1279](https://github.com/DataDog/dd-sdk-android/pull/1279)
+* [BUGFIX] Global: Remove `okhttp3.internal` package usage. See [#1288](https://github.com/DataDog/dd-sdk-android/pull/1288)
+
+# 1.17.0 / 2023-01-30
+
+* [FEATURE] Tracing: Allow the usage of OTel headers in distributed tracing. See [#1229](https://github.com/DataDog/dd-sdk-android/pull/1229)
+* [IMPROVEMENT] RUM: Remove cross platform duplicates crashes. See [#1215](https://github.com/DataDog/dd-sdk-android/pull/1215)
+* [IMPROVEMENT] RUM: Prevent reporting ANR when app is in background. See [#1239](https://github.com/DataDog/dd-sdk-android/pull/1239)
+* [BUGFIX] Use lazy initialization of network-related properties in SampleApplication to be able to pick global first party hosts. See [#1218](https://github.com/DataDog/dd-sdk-android/pull/1218)
+* [BUGFIX] Detect device's refresh rate from vital monitor. See [#1251](https://github.com/DataDog/dd-sdk-android/pull/1251)
+* [SDK v2] Remove unused `PayloadFormat` and `SdkEndpoint` classes from SDK v2 APIs. See [#1161](https://github.com/DataDog/dd-sdk-android/pull/1161)
+* [SDK v2] Make a local copy of tags before creating `LogEvent`. See [#1171](https://github.com/DataDog/dd-sdk-android/pull/1171)
+* [SDK v2] Remove duplication of `UserInfo` and `NetworkInfo` classes. See [#1170](https://github.com/DataDog/dd-sdk-android/pull/1170)
+* [SDK v2] Use message bus to report Java crashes to RUM. See [#1173](https://github.com/DataDog/dd-sdk-android/pull/1173)
+* [SDK v2] Add the `forceNewBatch` option into the `FeatureScope`. See [#1174](https://github.com/DataDog/dd-sdk-android/pull/1174)
+* [SDK v2] Use message bus to report NDK crashes to RUM. See [#1177](https://github.com/DataDog/dd-sdk-android/pull/1177)
+* [SDK v2] Remove site property from `DatadogContext`. See [#1181](https://github.com/DataDog/dd-sdk-android/pull/1181)
+* [SDK v2] Delete obsolete feature-specific uploaders. See [#1199](https://github.com/DataDog/dd-sdk-android/pull/1199)
+* [SDK v2] Use `InternalLogger`. See [#1200](https://github.com/DataDog/dd-sdk-android/pull/1200)
+* [SDK v2] Remove `Companion` objects with non-public member from Public API. See [#1207](https://github.com/DataDog/dd-sdk-android/pull/1207)
+* [SDK v2] Send logs for `Span` using message bus. See [#1211](https://github.com/DataDog/dd-sdk-android/pull/1211)
+* [SDK v2] `RequestFactory` can throw exceptions. See [#1214](https://github.com/DataDog/dd-sdk-android/pull/1214)
+* [SESSION REPLAY] Fix NPE in `ScreenRecorder` when wrapping a null `window.callback`. See [#1164](https://github.com/DataDog/dd-sdk-android/pull/1164)
+* [SESSION REPLAY] Handle SR requests through `SessionReplayRequestsFactory`. See [#1176](https://github.com/DataDog/dd-sdk-android/pull/1176)
+* [SESSION REPLAY] Provide SR touch data following the new proposed format. See [#1187](https://github.com/DataDog/dd-sdk-android/pull/1187)
+* [SESSION REPLAY] Drop the covered wireframes only if top ones have a background. See [#1198](https://github.com/DataDog/dd-sdk-android/pull/1198)
+* [SESSION REPLAY] Fix flaky `WireframeUtils` test. See [#1208](https://github.com/DataDog/dd-sdk-android/pull/1208)
+* [SESSION REPLAY] Add dialogs recording support. See [#1206](https://github.com/DataDog/dd-sdk-android/pull/1206)
+* [SESSION REPLAY] `RequestFactory` allow to throw exceptions. See [#1217](https://github.com/DataDog/dd-sdk-android/pull/1217)
+* [SESSION REPLAY] Use case insensitive when checking wireframe background color opacity. See [#1223](https://github.com/DataDog/dd-sdk-android/pull/1223)
+* [SESSION REPLAY] Resolve view snapshot background from theme color. See [#1230](https://github.com/DataDog/dd-sdk-android/pull/1230)
+* [MAINTENANCE] Merge `develop` branch into SDK v2 branch. See [#1168](https://github.com/DataDog/dd-sdk-android/pull/1168)
+* [MAINTENANCE] Next dev version 1.17.0. See [#1190](https://github.com/DataDog/dd-sdk-android/pull/1190)
+* [MAINTENANCE] Upgrade detekt pipeline version. See [#1192](https://github.com/DataDog/dd-sdk-android/pull/1192)
+* [MAINTENANCE] Update `apiSurface`. See [#1193](https://github.com/DataDog/dd-sdk-android/pull/1193)
+* [MAINTENANCE] Fix flaky `rum_rummonitor_add_background_custom_action_with_outcome` nightly test. See [#1195](https://github.com/DataDog/dd-sdk-android/pull/1195)
+* [MAINTENANCE] Merge `release/1.16.0` branch into develop branch. See [#1194](https://github.com/DataDog/dd-sdk-android/pull/1194)
+* [MAINTENANCE] Merge `develop` branch into SDK v2 branch. See [#1196](https://github.com/DataDog/dd-sdk-android/pull/1196)
+* [MAINTENANCE] Fix flaky telemetry test. See [#1197](https://github.com/DataDog/dd-sdk-android/pull/1197)
+* [MAINTENANCE] Use latest version of shared pipeline. See [#1201](https://github.com/DataDog/dd-sdk-android/pull/1201)
+* [MAINTENANCE] Enable CodeQL analysis. See [#1204](https://github.com/DataDog/dd-sdk-android/pull/1204)
+* [MAINTENANCE] Speed up build of sample app for CodeQL scan. See [#1221](https://github.com/DataDog/dd-sdk-android/pull/1221)
+* [MAINTENANCE] Merge release 1.16.0 branch into develop. See [#1228](https://github.com/DataDog/dd-sdk-android/pull/1228)
+* [MAINTENANCE] Merge develop into SDK v2 branch. See [#1224](https://github.com/DataDog/dd-sdk-android/pull/1224)
+* [MAINTENANCE] Gradle 7.6 & AGP 7.4.0. See [#1232](https://github.com/DataDog/dd-sdk-android/pull/1232)
+* [MAINTENANCE] Merge SDK v2 branch into develop branch. See [#1237](https://github.com/DataDog/dd-sdk-android/pull/1237)
+* [MAINTENANCE] Use custom detekt rule. See [#1233](https://github.com/DataDog/dd-sdk-android/pull/1233)
+
 # 1.16.0 / 2023-01-10
 
 * [BUGFIX] Global: Use safe context for directBootAware host apps. See [#1209](https://github.com/DataDog/dd-sdk-android/pull/1209)

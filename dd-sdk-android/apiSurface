@@ -10,30 +10,25 @@ object com.datadog.android.Datadog
   fun registerFeature(com.datadog.android.v2.api.Feature)
   val _internal: _InternalProxy
 object com.datadog.android.DatadogEndpoint
-  const val LOGS_US1: String
-  const val LOGS_US3: String
-  const val LOGS_US5: String
-  const val LOGS_US1_FED: String
-  const val LOGS_EU1: String
-  const val TRACES_US1: String
-  const val TRACES_US3: String
-  const val TRACES_US5: String
-  const val TRACES_US1_FED: String
-  const val TRACES_EU1: String
-  const val RUM_US1: String
-  const val RUM_US3: String
-  const val RUM_US5: String
-  const val RUM_US1_FED: String
-  const val RUM_EU1: String
+  DEPRECATED const val LOGS_US1: String
+  DEPRECATED const val LOGS_US3: String
+  DEPRECATED const val LOGS_US5: String
+  DEPRECATED const val LOGS_US1_FED: String
+  DEPRECATED const val LOGS_EU1: String
+  DEPRECATED const val TRACES_US1: String
+  DEPRECATED const val TRACES_US3: String
+  DEPRECATED const val TRACES_US5: String
+  DEPRECATED const val TRACES_US1_FED: String
+  DEPRECATED const val TRACES_EU1: String
+  DEPRECATED const val RUM_US1: String
+  DEPRECATED const val RUM_US3: String
+  DEPRECATED const val RUM_US5: String
+  DEPRECATED const val RUM_US1_FED: String
+  DEPRECATED const val RUM_EU1: String
   const val NTP_0: String
   const val NTP_1: String
   const val NTP_2: String
   const val NTP_3: String
-  const val SESSION_REPLAY_US1: String
-  const val SESSION_REPLAY_US3: String
-  const val SESSION_REPLAY_US5: String
-  const val SESSION_REPLAY_US1_FED: String
-  const val SESSION_REPLAY_EU1: String
 class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   override fun callStart(okhttp3.Call)
   override fun dnsStart(okhttp3.Call, String)
@@ -51,29 +46,32 @@ class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   class Factory : okhttp3.EventListener.Factory
     override fun create(okhttp3.Call): okhttp3.EventListener
 open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.TracingInterceptor
+  constructor(Map<String, Set<com.datadog.android.tracing.TracingHeaderType>>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
   constructor(List<String>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
   constructor(com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   override fun canSendSpan(): Boolean
 enum com.datadog.android.DatadogSite
-  constructor(String)
+  constructor(String, String)
   - US1
   - US3
   - US5
-  - US1_FED
   - EU1
-  fun logsEndpoint(): String
-  fun tracesEndpoint(): String
-  fun rumEndpoint(): String
-  fun sessionReplayEndpoint(): String
+  - AP1
+  - US1_FED
+  - STAGING
+  constructor(String)
+  val intakeEndpoint: String
 class com.datadog.android._InternalProxy
   class _TelemetryProxy
     fun debug(String)
     fun error(String, Throwable? = null)
     fun error(String, String?, String?)
+  class _WebviewProxy
   val _telemetry: _TelemetryProxy
   fun setCustomAppVersion(String)
+  fun consumeWebviewEvent(String)
   companion object 
     fun setTelemetryConfigurationEventMapper(com.datadog.android.core.configuration.Configuration.Builder, com.datadog.android.event.EventMapper<com.datadog.android.telemetry.model.TelemetryConfigurationEvent>): com.datadog.android.core.configuration.Configuration.Builder
 enum com.datadog.android.core.configuration.BatchSize
@@ -87,6 +85,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun build(): Configuration
     fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
     fun setFirstPartyHosts(List<String>): Builder
+    fun setFirstPartyHostsWithHeaderType(Map<String, Set<com.datadog.android.tracing.TracingHeaderType>>): Builder
     fun setWebViewTrackingHosts(List<String>): Builder
     fun useSite(com.datadog.android.DatadogSite): Builder
     fun useCustomLogsEndpoint(String): Builder
@@ -315,6 +314,8 @@ interface com.datadog.android.rum.RumMonitor
   fun addError(String, RumErrorSource, Throwable?, Map<String, Any?>)
   fun addErrorWithStacktrace(String, RumErrorSource, String?, Map<String, Any?>)
   fun addTiming(String)
+  fun addFeatureFlagEvaluation(String, Any)
+  fun stopSession()
   fun _getInternal(): _RumInternalProxy?
   class Builder
     fun sampleRumSessions(Float): Builder
@@ -457,17 +458,26 @@ class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTrac
   class Builder
     constructor()
     fun build(): AndroidTracer
+    fun setTracingHeaderTypes(Set<TracingHeaderType>): Builder
     fun setServiceName(String): Builder
     fun setPartialFlushThreshold(Int): Builder
     fun addGlobalTag(String, String): Builder
     fun setBundleWithRumEnabled(Boolean): Builder
+    fun setSamplingRate(Double): Builder
   companion object 
     fun logThrowable(io.opentracing.Span, Throwable)
     fun logErrorMessage(io.opentracing.Span, String)
 interface com.datadog.android.tracing.TracedRequestListener
   fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
+enum com.datadog.android.tracing.TracingHeaderType
+  constructor(String)
+  - DATADOG
+  - B3
+  - B3MULTI
+  - TRACECONTEXT
 open class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
   constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+  constructor(Map<String, Set<TracingHeaderType>>, TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
   constructor(TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   protected open fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
@@ -902,7 +912,7 @@ data class com.datadog.android.rum.model.ActionEvent
     companion object 
       fun fromJson(kotlin.String): Type
 data class com.datadog.android.rum.model.ErrorEvent
-  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, ErrorEventSession, ErrorEventSource? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Action? = null, Error)
+  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, ErrorEventSession, ErrorEventSource? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Action? = null, Error, Context? = null)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
@@ -1585,7 +1595,7 @@ data class com.datadog.android.rum.model.RumPerfMetric
     fun fromJson(kotlin.String): RumPerfMetric
     fun fromJsonObject(com.google.gson.JsonObject): RumPerfMetric
 data class com.datadog.android.rum.model.ViewEvent
-  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, ViewEventSession, Source? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null)
+  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, ViewEventSession, Source? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Context? = null)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
@@ -1598,7 +1608,7 @@ data class com.datadog.android.rum.model.ViewEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class ViewEventSession
-    constructor(kotlin.String, ViewEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.String, ViewEventSessionType, kotlin.Boolean? = null, StartReason? = null, kotlin.Boolean? = true)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ViewEventSession
@@ -1761,6 +1771,16 @@ data class com.datadog.android.rum.model.ViewEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ViewEventSessionType
+  enum StartReason
+    constructor(kotlin.String)
+    - APP_START
+    - INACTIVITY_TIMEOUT
+    - MAX_DURATION
+    - STOP_API
+    - BACKGROUND_EVENT
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): StartReason
   enum LoadingType
     constructor(kotlin.String)
     - INITIAL_LOAD
@@ -1857,7 +1877,7 @@ data class com.datadog.android.telemetry.model.TelemetryConfigurationEvent
       fun fromJson(kotlin.String): Telemetry
       fun fromJsonObject(com.google.gson.JsonObject): Telemetry
   data class Configuration
-    constructor(kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.Boolean? = null, ViewTrackingStrategy? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Long? = null)
+    constructor(kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.collections.List<SelectedTracingPropagator>? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.Boolean? = null, ViewTrackingStrategy? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Configuration
@@ -1872,6 +1892,15 @@ data class com.datadog.android.telemetry.model.TelemetryConfigurationEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Source
+  enum SelectedTracingPropagator
+    constructor(kotlin.String)
+    - DATADOG
+    - B3
+    - B3MULTI
+    - TRACECONTEXT
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): SelectedTracingPropagator
   enum ViewTrackingStrategy
     constructor(kotlin.String)
     - ACTIVITYVIEWTRACKINGSTRATEGY

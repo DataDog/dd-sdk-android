@@ -69,7 +69,7 @@ class SampleApplication : Application() {
         "datadoghq.dev"
     )
 
-    // TODO RUMM-0000 lazy is needed here, because without it global first party host detector is
+    // TODO RUMM-0000 lazy is needed here, because without it global first party host resolver is
     //  not available yet at the interceptor construction time
     private val okHttpClient by lazy {
         OkHttpClient.Builder()

@@ -17,7 +17,7 @@ internal data class ExpectedRumContext(
     val viewId: String
 )
 
-internal data class ExpectedApplicationStart(
+internal data class ExpectedApplicationStartActionEvent(
     override val rumContext: ExpectedRumContext = resolvedRumContext()
 ) : ExpectedEvent
 
@@ -32,6 +32,16 @@ internal data class ExpectedGestureEvent(
 internal data class ExpectedViewEvent(
     val viewUrl: String,
     val docVersion: Int = 1,
+    val viewArguments: Map<String, Any?> = mapOf(),
+    val extraAttributes: Map<String, Any?> = mapOf(),
+    val extraViewAttributes: Map<String, Any?> = mapOf(),
+    val extraViewAttributesWithPredicate: Map<String, (JsonElement) -> Boolean> = mapOf(),
+    val sessionIsActive: Boolean = true,
+    override val rumContext: ExpectedRumContext = resolvedRumContext()
+) : ExpectedEvent
+
+internal data class ExpectedApplicationLaunchViewEvent(
+    val docVersion: Int = 0,
     val viewArguments: Map<String, Any?> = mapOf(),
     val extraAttributes: Map<String, Any?> = mapOf(),
     val extraViewAttributes: Map<String, Any?> = mapOf(),

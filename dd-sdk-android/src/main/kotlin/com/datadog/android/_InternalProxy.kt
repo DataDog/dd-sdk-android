@@ -7,10 +7,16 @@
 package com.datadog.android
 
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.event.EventMapper
 import com.datadog.android.telemetry.internal.Telemetry
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.webview.internal.MixedWebViewEventConsumer
+import com.datadog.android.webview.internal.NoOpWebViewEventConsumer
+import com.datadog.android.webview.internal.WebViewEventConsumer
+import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
+import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
+import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
 
 /**
  * This class exposes internal methods that are used by other Datadog modules and cross platform
@@ -33,7 +39,7 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 class _InternalProxy internal constructor(
     telemetry: Telemetry,
     // TODO RUMM-0000 Shouldn't be nullable
-    private val coreFeature: CoreFeature?
+    private val datadogCore: DatadogCore?
 ) {
     class _TelemetryProxy internal constructor(private val telemetry: Telemetry) {
 
@@ -50,10 +56,43 @@ class _InternalProxy internal constructor(
         }
     }
 
+    class _WebviewProxy internal constructor(private val datadogCore: DatadogCore?) {
+        private fun buildWebViewEventConsumer(): WebViewEventConsumer<String> {
+            val core = datadogCore
+            val webViewRumFeature = core?.webViewRumFeature
+            val webViewLogsFeature = core?.webViewLogsFeature
+            val contextProvider = WebViewRumEventContextProvider()
+
+            if (webViewLogsFeature == null || webViewRumFeature == null) {
+                return NoOpWebViewEventConsumer()
+            } else {
+                return MixedWebViewEventConsumer(
+                    WebViewRumEventConsumer(
+                        sdkCore = core,
+                        dataWriter = webViewRumFeature.dataWriter,
+                        contextProvider = contextProvider
+                    ),
+                    WebViewLogEventConsumer(
+                        sdkCore = core,
+                        userLogsWriter = webViewLogsFeature.dataWriter,
+                        rumContextProvider = contextProvider
+                    )
+                )
+            }
+        }
+
+        internal val webViewEventConsumer: WebViewEventConsumer<String> = buildWebViewEventConsumer()
+    }
+
+    private val _webview: _WebviewProxy = _WebviewProxy(datadogCore)
     val _telemetry: _TelemetryProxy = _TelemetryProxy(telemetry)
 
     fun setCustomAppVersion(version: String) {
-        coreFeature?.packageVersionProvider?.version = version
+        datadogCore?.coreFeature?.packageVersionProvider?.version = version
+    }
+
+    fun consumeWebviewEvent(event: String) {
+        _webview.webViewEventConsumer.consume(event)
     }
 
     companion object {

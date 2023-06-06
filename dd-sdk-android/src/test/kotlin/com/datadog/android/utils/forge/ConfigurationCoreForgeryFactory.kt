@@ -9,6 +9,7 @@ package com.datadog.android.utils.forge
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.security.NoOpEncryption
+import com.datadog.android.tracing.TracingHeaderType
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -28,7 +29,13 @@ internal class ConfigurationCoreForgeryFactory :
         return Configuration.Core(
             needsClearTextHttp = forge.aBool(),
             enableDeveloperModeWhenDebuggable = forge.aBool(),
-            firstPartyHosts = forge.aList { getForgery<URL>().host },
+            firstPartyHostsWithHeaderTypes = forge.aMap {
+                getForgery<URL>().host to aList {
+                    aValueFrom(
+                        TracingHeaderType::class.java
+                    )
+                }.toSet()
+            },
             batchSize = forge.getForgery(),
             uploadFrequency = forge.getForgery(),
             proxy = proxy,

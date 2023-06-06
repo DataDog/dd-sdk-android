@@ -14,6 +14,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.tracing.NoOpTracedRequestListener
+import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorNotSendingSpanTest
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
@@ -76,14 +77,14 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     private lateinit var fakeAttributes: Map<String, Any?>
 
     override fun instantiateTestedInterceptor(
-        tracedHosts: List<String>,
-        factory: () -> Tracer
+        tracedHosts: Map<String, Set<TracingHeaderType>>,
+        factory: (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         whenever((Datadog.globalSdkCore as DatadogCore).rumFeature) doReturn mock()
         return DatadogInterceptor(
             tracedHosts = tracedHosts,
             tracedRequestListener = mockRequestListener,
-            firstPartyHostDetector = mockDetector,
+            firstPartyHostResolver = mockResolver,
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler,
             localTracerFactory = factory
@@ -151,7 +152,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val interceptor = DatadogInterceptor(hosts)
 
         // Then
-        assertThat(interceptor.tracedHosts).containsAll(hosts)
+        assertThat(interceptor.tracedHosts.keys).containsAll(hosts)
         assertThat(interceptor.rumResourceAttributesProvider)
             .isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
         assertThat(interceptor.tracedRequestListener)

@@ -87,10 +87,11 @@ internal class BroadcastReceiverSystemInfoProvider(
         val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, DEFAULT_BATTERY_SCALE)
         val pluggedStatus = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, BATTERY_UNPLUGGED)
         val batteryStatus = SystemInfo.BatteryStatus.fromAndroidStatus(status)
+        val batteryPresent = intent.getBooleanExtra(BatteryManager.EXTRA_PRESENT, true)
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Not a NaN here
         val batteryLevel = ((level * DEFAULT_BATTERY_SCALE.toFloat()) / scale).roundToInt()
-        val onExternalPowerSource = pluggedStatus in PLUGGED_IN_STATUS_VALUES
+        val onExternalPowerSource = pluggedStatus in PLUGGED_IN_STATUS_VALUES || !batteryPresent
         val batteryFullOrCharging = batteryStatus in batteryFullOrChargingStatus
         systemInfo = systemInfo.copy(
             batteryFullOrCharging = batteryFullOrCharging,

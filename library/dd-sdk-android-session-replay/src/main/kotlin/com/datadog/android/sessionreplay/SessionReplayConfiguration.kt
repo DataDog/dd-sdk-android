@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay
 
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
@@ -25,7 +24,7 @@ internal constructor(
      * A Builder class for a [SessionReplayConfiguration].
      */
     class Builder {
-        private var endpointUrl = DatadogEndpoint.SESSION_REPLAY_US1
+        private var endpointUrl = DatadogSite.US1.intakeEndpoint
         private var privacy = SessionReplayPrivacy.MASK_ALL
         private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
 
@@ -44,7 +43,7 @@ internal constructor(
          * Let the Session Replay target your preferred Datadog's site.
          */
         fun useSite(site: DatadogSite): Builder {
-            endpointUrl = site.sessionReplayEndpoint()
+            endpointUrl = site.intakeEndpoint
             return this
         }
 
