@@ -61,8 +61,7 @@ internal class DatadogRumMonitor(
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener?,
-    private val executorService: ExecutorService = Executors.newSingleThreadExecutor(),
-    sendSdkInit: Boolean = true
+    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -92,9 +91,6 @@ internal class DatadogRumMonitor(
 
     init {
         handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
-        if (sendSdkInit) {
-            sendSdkInitEvent()
-        }
     }
 
     private val globalAttributes: MutableMap<String, Any?> = ConcurrentHashMap()
@@ -548,12 +544,6 @@ internal class DatadogRumMonitor(
             "flutter" -> RumErrorSourceType.FLUTTER
             else -> RumErrorSourceType.ANDROID
         }
-    }
-
-    private fun sendSdkInitEvent() {
-        handleEvent(
-            RumRawEvent.SdkInit()
-        )
     }
 
     // endregion

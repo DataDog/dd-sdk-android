@@ -9,7 +9,7 @@ androidx.lifecycle:lifecycle-livedata-core:2.1.0                :    8 Kb
 androidx.lifecycle:lifecycle-livedata:2.1.0                     :   10 Kb
 androidx.startup:startup-runtime:1.0.0                          :   18 Kb
 androidx.work:work-runtime:2.8.1                                : 1626 Kb
-com.google.code.gson:gson:2.8.8                                 :  236 Kb
+com.google.code.gson:gson:2.10.1                                :  276 Kb
 com.google.guava:listenablefuture:1.0                           :    3 Kb
 com.lyft.kronos:kronos-android:0.0.1-alpha11                    :    5 Kb
 com.lyft.kronos:kronos-java:0.0.1-alpha11                       :   29 Kb

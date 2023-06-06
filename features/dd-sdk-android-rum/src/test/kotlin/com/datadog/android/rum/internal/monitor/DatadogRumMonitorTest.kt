@@ -155,8 +155,7 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockSessionListener,
-            sendSdkInit = false
+            mockSessionListener
         )
         testedMonitor.rootScope = mockScope
     }
@@ -1127,38 +1126,6 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate SdkInit event to rootScope W init()`() {
-        // When
-        testedMonitor = DatadogRumMonitor(
-            fakeApplicationId,
-            mockSdkCore,
-            fakeSampleRate,
-            fakeBackgroundTrackingEnabled,
-            fakeTrackFrustrations,
-            mockWriter,
-            mockHandler,
-            mockTelemetryEventHandler,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockSessionListener,
-            sendSdkInit = true
-        )
-        testedMonitor.rootScope = mockScope
-
-        Thread.sleep(PROCESSING_DELAY)
-
-        // Then
-        verify(mockScope).handleEvent(
-            argThat { this is RumRawEvent.SdkInit },
-            same(mockWriter)
-        )
-
-        verifyNoMoreInteractions(mockScope, mockWriter)
-    }
-
-    @Test
     fun `delays keep alive runnable on other event`() {
         val mockEvent: RumRawEvent = mock()
         val runnable = testedMonitor.keepAliveRunnable
@@ -1283,8 +1250,7 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            mockExecutorService,
-            false
+            mockExecutorService
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -1595,8 +1561,7 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            executorService = mockExecutorService,
-            false
+            executorService = mockExecutorService
         )
 
         var isMethodOccupied = false

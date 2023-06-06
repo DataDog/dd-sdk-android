@@ -30,7 +30,7 @@ androidx.recyclerview:recyclerview:1.1.0                        :  349 Kb
 androidx.savedstate:savedstate:1.0.0                            :    9 Kb
 androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
 androidx.viewpager:viewpager:1.0.0                              :   52 Kb
-com.google.code.gson:gson:2.8.8                                 :  236 Kb
+com.google.code.gson:gson:2.10.1                                :  276 Kb
 com.squareup.okhttp3:okhttp:3.12.13                             :  417 Kb
 com.squareup.okio:okio:1.15.0                                   :   86 Kb
 org.jetbrains.kotlin:kotlin-stdlib-common:1.8.10                :  212 Kb
