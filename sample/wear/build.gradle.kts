@@ -6,6 +6,7 @@
 
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.configureFlavorForSampleApp
+import com.datadog.gradle.config.java17
 
 plugins {
     id("com.android.application")
@@ -29,6 +30,10 @@ android {
     }
 
     namespace = "com.datadog.android.wear.sample"
+
+    compileOptions {
+        java17()
+    }
 
     flavorDimensions += listOf("site")
     productFlavors {

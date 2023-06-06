@@ -8,12 +8,11 @@ import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.configureFlavorForSampleApp
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.java11
+import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.taskConfig
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
@@ -61,7 +60,7 @@ android {
     namespace = "com.datadog.android.sample"
 
     compileOptions {
-        java11()
+        java17()
     }
 
     buildFeatures {
@@ -97,10 +96,6 @@ android {
     }
     sourceSets.named("androidTest") {
         java.srcDir("src/androidTest/kotlin")
-    }
-
-    compileOptions {
-        java11()
     }
 
     packaging {
@@ -192,7 +187,7 @@ dependencies {
     api("com.facebook.stetho:stetho:1.6.0")
 }
 
-kotlinConfig(evaluateWarningsAsErrors = false, jvmBytecodeTarget = JvmTarget.JVM_11)
+kotlinConfig(evaluateWarningsAsErrors = false)
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     compilerOptions {
         freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
