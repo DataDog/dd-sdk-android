@@ -1,0 +1,28 @@
+public abstract interface annotation class com/datadog/android/compose/ExperimentalTrackingApi : java/lang/annotation/Annotation {
+}
+
+public final class com/datadog/android/compose/InteractionTrackingKt {
+	public static final fun TrackInteractionEffect (Lcom/datadog/android/v2/api/SdkCore;Ljava/lang/String;Landroidx/compose/foundation/interaction/InteractionSource;Lcom/datadog/android/compose/InteractionType;Ljava/util/Map;Landroidx/compose/runtime/Composer;II)V
+	public static final fun trackClick (Lcom/datadog/android/v2/api/SdkCore;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function0;Landroidx/compose/runtime/Composer;II)Lkotlin/jvm/functions/Function0;
+}
+
+public abstract class com/datadog/android/compose/InteractionType {
+	public static final field $stable I
+}
+
+public final class com/datadog/android/compose/InteractionType$Scroll : com/datadog/android/compose/InteractionType {
+	public static final field $stable I
+	public fun <init> (Landroidx/compose/foundation/gestures/ScrollableState;Landroidx/compose/foundation/gestures/Orientation;Z)V
+	public synthetic fun <init> (Landroidx/compose/foundation/gestures/ScrollableState;Landroidx/compose/foundation/gestures/Orientation;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
+public final class com/datadog/android/compose/InteractionType$Swipe : com/datadog/android/compose/InteractionType {
+	public static final field $stable I
+	public fun <init> (Landroidx/compose/material/SwipeableState;Landroidx/compose/foundation/gestures/Orientation;Z)V
+	public synthetic fun <init> (Landroidx/compose/material/SwipeableState;Landroidx/compose/foundation/gestures/Orientation;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
+public final class com/datadog/android/compose/NavigationKt {
+	public static final fun NavigationViewTrackingEffect (Landroidx/navigation/NavController;Lcom/datadog/android/v2/api/SdkCore;ZLcom/datadog/android/rum/tracking/ComponentPredicate;Landroidx/compose/runtime/Composer;II)V
+}
+

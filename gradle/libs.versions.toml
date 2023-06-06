@@ -64,6 +64,7 @@ nexusPublishGradlePlugin = "1.1.0"
 kotlinPoet = "1.11.0"
 kotlinGrammarParser = "9b264ee"
 jsonSchemaValidator = "1.12.1"
+binaryCompatibility = "0.13.2"
 
 # Integrations
 realm = "10.16.0"
@@ -91,6 +92,7 @@ dokkaGradlePlugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", versio
 unmockGradlePlugin = { module = "com.github.bjoernq:unmockplugin", version.ref = "unmock" }
 realmGradlePlugin = { module = "io.realm:realm-gradle-plugin", version.ref = "realm" }
 sqlDelightGradlePlugin = { module = "com.squareup.sqldelight:gradle-plugin", version.ref = "sqlDelight" }
+binaryCompatibilityGradlePlugin = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "binaryCompatibility" }
 
 versionsGradlePlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versionsGradlePlugin" }
 

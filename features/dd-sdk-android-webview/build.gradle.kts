@@ -34,6 +34,7 @@ plugins {
     id("thirdPartyLicences")
     id("apiSurface")
     id("transitiveDependencies")
+    id("binary-compatibility-validator")
 }
 
 android {
