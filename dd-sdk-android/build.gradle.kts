@@ -143,6 +143,9 @@ dependencies {
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
 
+    // Lint rules
+    lintPublish(project(":tools:lint"))
+
     // Testing
     testImplementation(project(":tools:unit")) {
         attributes {

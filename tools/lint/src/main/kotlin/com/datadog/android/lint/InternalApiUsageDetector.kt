@@ -20,6 +20,7 @@ import com.android.tools.lint.detector.api.SourceCodeScanner
 import org.jetbrains.uast.UElement
 import org.jetbrains.uast.getContainingUFile
 
+// note that this check will skip synthetic methods (elements annotated with JvmSynthetic).
 @Suppress("UndocumentedPublicClass") // used only by Lint tool
 class InternalApiUsageDetector : Detector(), SourceCodeScanner {
 
@@ -44,7 +45,7 @@ class InternalApiUsageDetector : Detector(), SourceCodeScanner {
                 issue = ISSUE,
                 scope = element,
                 location = context.getLocation(usageInfo.usage),
-                message = "Symbols annotated with `com.datadog.android.InternalApi` shouldn't" +
+                message = "Symbols annotated with `com.datadog.android.lint.InternalApi` shouldn't" +
                     " be used outside of Datadog SDK packages."
             )
         }
@@ -56,7 +57,7 @@ class InternalApiUsageDetector : Detector(), SourceCodeScanner {
             id = "DatadogInternalApiUsage",
             briefDescription = "Prohibits usages of Datadog SDK internal API",
             explanation = "Usages of classes and methods annotated" +
-                " with `com.datadog.android.InternalApi` are prohibited",
+                " with `com.datadog.android.lint.InternalApi` are prohibited",
             category = Category.CORRECTNESS,
             severity = Severity.ERROR,
             implementation = Implementation(

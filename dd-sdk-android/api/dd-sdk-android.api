@@ -10,7 +10,7 @@ public final class com/datadog/android/BuildConfig {
 
 public final class com/datadog/android/Datadog {
 	public static final field INSTANCE Lcom/datadog/android/Datadog;
-	public final synthetic fun _internalProxy (Ljava/lang/String;)Lcom/datadog/android/_InternalProxy;
+	public final fun _internalProxy (Ljava/lang/String;)Lcom/datadog/android/_InternalProxy;
 	public static synthetic fun _internalProxy$default (Lcom/datadog/android/Datadog;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/_InternalProxy;
 	public static final fun getInstance ()Lcom/datadog/android/v2/api/SdkCore;
 	public static final fun getInstance (Ljava/lang/String;)Lcom/datadog/android/v2/api/SdkCore;
@@ -265,6 +265,9 @@ public final class com/datadog/android/event/NoOpEventMapper : com/datadog/andro
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun map (Ljava/lang/Object;)Ljava/lang/Object;
+}
+
+public abstract interface annotation class com/datadog/android/lint/InternalApi : java/lang/annotation/Annotation {
 }
 
 public final class com/datadog/android/log/LogAttributes {
