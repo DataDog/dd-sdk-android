@@ -185,6 +185,12 @@
             }
           },
           "readOnly": true
+        },
+        "feature_flags": {
+          "type": "object",
+          "description": "Feature flags properties",
+          "additionalProperties": true,
+          "readOnly": true
         }
       }
     }

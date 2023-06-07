@@ -244,6 +244,25 @@ interface RumMonitor {
     )
 
     /**
+     * Adds result of evaluating a feature flag to the view.
+     * Feature flag evaluations are local to the active view and are cleared when the view is stopped.
+     * @param name the name of the feature flag
+     * @param value the value the feature flag evaluated to
+     */
+    fun addFeatureFlagEvaluation(
+        name: String,
+        value: Any
+    )
+
+    /**
+     * Stops the current session.
+     * A new session will start in response to a call to `startView`, `addUserAction`, or
+     * `startUserAction`. If the session is started because of a call to `addUserAction`,
+     * or `startUserAction`, the last know view is restarted in the new session.
+     */
+    fun stopSession()
+
+    /**
      * For Datadog internal use only.
      *
      * @see _RumInternalProxy
@@ -314,9 +333,12 @@ interface RumMonitor {
                     handler = Handler(Looper.getMainLooper()),
                     telemetryEventHandler = TelemetryEventHandler(
                         sdkCore = datadogCore,
-                        eventSampler = RateBasedSampler(rumFeature.telemetrySamplingRate.percent())
+                        eventSampler = RateBasedSampler(rumFeature.telemetrySamplingRate.percent()),
+                        configurationExtraSampler = RateBasedSampler(
+                            rumFeature.telemetryConfigurationSamplingRate.percent()
+                        )
                     ),
-                    firstPartyHostDetector = coreFeature.firstPartyHostDetector,
+                    firstPartyHostHeaderTypeResolver = coreFeature.firstPartyHostHeaderTypeResolver,
                     cpuVitalMonitor = rumFeature.cpuVitalMonitor,
                     memoryVitalMonitor = rumFeature.memoryVitalMonitor,
                     frameRateVitalMonitor = rumFeature.frameRateVitalMonitor,

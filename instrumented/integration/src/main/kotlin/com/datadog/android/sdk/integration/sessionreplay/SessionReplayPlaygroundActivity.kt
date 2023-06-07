@@ -212,7 +212,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
             data = MobileSegment.Data(wireframes = fullSnapshotRecordWireframes)
         )
 
-        // TODO - RUMM[2991] sessionId, applicationId, viewId will be assessed in a future iteration
+        // TODO RUMM-2991 sessionId, applicationId, viewId will be assessed in a future iteration
         return ExpectedSrData(
             "",
             "",

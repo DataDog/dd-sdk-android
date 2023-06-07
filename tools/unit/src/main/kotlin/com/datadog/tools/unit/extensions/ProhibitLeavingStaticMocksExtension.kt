@@ -68,7 +68,7 @@ class ProhibitLeavingStaticMocksExtension : AfterEachCallback {
         queue.addAll(roots.map { VisitEntry(it, emptyList()) })
 
         while (!queue.isEmpty()) {
-            val visitEntry = queue.pollFirst()!!
+            val visitEntry = queue.pollFirst() ?: continue
 
             val visitedClass = visitEntry.clazz
             visited.add(visitedClass)
@@ -118,7 +118,7 @@ class ProhibitLeavingStaticMocksExtension : AfterEachCallback {
             visitedClass.companionObjectInstance != null
         ) {
             findTargetFieldsInKotlin(
-                visitedClass.companionObject!!,
+                visitedClass.companionObject,
                 visitedClass.companionObjectInstance
             )
         } else {
@@ -139,6 +139,7 @@ class ProhibitLeavingStaticMocksExtension : AfterEachCallback {
         }
     }
 
+    @Suppress("ThrowingInternalException") // not an issue in unit tests
     private fun reportViolation(
         fieldDescriptor: FieldDescriptor,
         hostClass: KClass<*>,
@@ -164,9 +165,10 @@ class ProhibitLeavingStaticMocksExtension : AfterEachCallback {
     }
 
     private fun findTargetFieldsInKotlin(
-        clazz: KClass<*>,
+        clazz: KClass<*>?,
         hostInstance: Any?
     ): List<FieldCallSpec> {
+        if (clazz == null) return emptyList()
         return clazz.memberProperties
             .filterNot { it.isConst }
             .map {

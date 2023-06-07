@@ -147,8 +147,8 @@ internal class RumMonitorBuilderTest {
         check(monitor is DatadogRumMonitor)
         assertThat(monitor.rootScope).isInstanceOf(RumApplicationScope::class.java)
         val appScope = monitor.rootScope as RumApplicationScope
-        assertThat(appScope.childScope).isInstanceOf(RumSessionScope::class.java)
-        val sessionScope = appScope.childScope as RumSessionScope
+        assertThat(appScope.activeSession).isInstanceOf(RumSessionScope::class.java)
+        val sessionScope = appScope.activeSession as RumSessionScope
         assertThat(sessionScope.sessionListener).isSameAs(monitor.telemetryEventHandler)
     }
 
@@ -164,8 +164,8 @@ internal class RumMonitorBuilderTest {
         check(monitor is DatadogRumMonitor)
         assertThat(monitor.rootScope).isInstanceOf(RumApplicationScope::class.java)
         val appScope = monitor.rootScope as RumApplicationScope
-        assertThat(appScope.childScope).isInstanceOf(RumSessionScope::class.java)
-        val sessionScope = appScope.childScope as RumSessionScope
+        assertThat(appScope.activeSession).isInstanceOf(RumSessionScope::class.java)
+        val sessionScope = appScope.activeSession as RumSessionScope
         assertThat(sessionScope.sessionListener)
             .isInstanceOf(CombinedRumSessionListener::class.java)
         val sessionListenerWrapper = sessionScope.sessionListener as CombinedRumSessionListener

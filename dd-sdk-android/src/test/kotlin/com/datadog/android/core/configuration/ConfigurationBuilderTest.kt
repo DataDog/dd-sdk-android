@@ -9,7 +9,6 @@
 package com.datadog.android.core.configuration
 
 import android.os.Build
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android._InternalProxy
 import com.datadog.android.core.internal.event.NoOpEventMapper
@@ -37,6 +36,7 @@ import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.security.Encryption
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
@@ -100,7 +100,7 @@ internal class ConfigurationBuilderTest {
             Configuration.Core(
                 needsClearTextHttp = false,
                 enableDeveloperModeWhenDebuggable = false,
-                firstPartyHosts = emptyList(),
+                firstPartyHostsWithHeaderTypes = emptyMap(),
                 batchSize = BatchSize.MEDIUM,
                 uploadFrequency = UploadFrequency.AVERAGE,
                 proxy = null,
@@ -112,7 +112,7 @@ internal class ConfigurationBuilderTest {
         )
         assertThat(config.logsConfig).isEqualTo(
             Configuration.Feature.Logs(
-                endpointUrl = DatadogEndpoint.LOGS_US1,
+                endpointUrl = DatadogSite.US1.intakeEndpoint,
                 plugins = emptyList(),
                 logsEventMapper = NoOpEventMapper()
             )
@@ -122,7 +122,7 @@ internal class ConfigurationBuilderTest {
             .ignoringFields("spanEventMapper")
             .isEqualTo(
                 Configuration.Feature.Tracing(
-                    endpointUrl = DatadogEndpoint.TRACES_US1,
+                    endpointUrl = DatadogSite.US1.intakeEndpoint,
                     plugins = emptyList(),
                     spanEventMapper = NoOpSpanEventMapper()
                 )
@@ -131,16 +131,17 @@ internal class ConfigurationBuilderTest {
             .isInstanceOf(NoOpSpanEventMapper::class.java)
         assertThat(config.crashReportConfig).isEqualTo(
             Configuration.Feature.CrashReport(
-                endpointUrl = DatadogEndpoint.LOGS_US1,
+                endpointUrl = DatadogSite.US1.intakeEndpoint,
                 plugins = emptyList()
             )
         )
         assertThat(config.rumConfig).isEqualTo(
             Configuration.Feature.RUM(
-                endpointUrl = DatadogEndpoint.RUM_US1,
+                endpointUrl = DatadogSite.US1.intakeEndpoint,
                 plugins = emptyList(),
                 samplingRate = Configuration.DEFAULT_SAMPLING_RATE,
                 telemetrySamplingRate = Configuration.DEFAULT_TELEMETRY_SAMPLING_RATE,
+                telemetryConfigurationSamplingRate = Configuration.DEFAULT_TELEMETRY_CONFIGURATION_SAMPLING_RATE,
                 userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
                     DatadogGesturesTracker(
                         arrayOf(JetpackViewAttributesProvider()),
@@ -254,16 +255,16 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_CORE_CONFIG.copy(site = site)
         )
         assertThat(config.logsConfig).isEqualTo(
-            Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = site.logsEndpoint())
+            Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = site.intakeEndpoint)
         )
         assertThat(config.tracesConfig).isEqualTo(
-            Configuration.DEFAULT_TRACING_CONFIG.copy(endpointUrl = site.tracesEndpoint())
+            Configuration.DEFAULT_TRACING_CONFIG.copy(endpointUrl = site.intakeEndpoint)
         )
         assertThat(config.crashReportConfig).isEqualTo(
-            Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = site.logsEndpoint())
+            Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = site.intakeEndpoint)
         )
         assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = site.rumEndpoint())
+            Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = site.intakeEndpoint)
         )
         assertThat(config.additionalConfig).isEmpty()
     }
@@ -1322,7 +1323,10 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = hosts)
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                firstPartyHostsWithHeaderTypes =
+                hosts.associateWith { setOf(TracingHeaderType.DATADOG) }
+            )
         )
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
@@ -1354,7 +1358,13 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = hosts)
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                firstPartyHostsWithHeaderTypes = hosts.associateWith {
+                    setOf(
+                        TracingHeaderType.DATADOG
+                    )
+                }
+            )
         )
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
@@ -1376,7 +1386,10 @@ internal class ConfigurationBuilderTest {
 
         // THEN
         assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = hosts.map { URL(it).host })
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                firstPartyHostsWithHeaderTypes =
+                hosts.associate { URL(it).host to setOf(TracingHeaderType.DATADOG) }
+            )
         )
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
@@ -1405,6 +1418,34 @@ internal class ConfigurationBuilderTest {
                 hosts,
                 Configuration.NETWORK_REQUESTS_TRACKING_FEATURE_NAME
             )
+    }
+
+    @Test
+    fun `𝕄 build config with first party hosts and header types 𝕎 setFirstPartyHostsWithHeaderType() { host names }`(
+        @StringForgery(
+            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) hosts: List<String>,
+        forge: Forge
+    ) {
+        val hostWithHeaderTypes = hosts.associateWith {
+            forge.aList { aValueFrom(TracingHeaderType::class.java) }.toSet()
+        }
+
+        // When
+        val config = testedBuilder
+            .setFirstPartyHostsWithHeaderType(hostWithHeaderTypes)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHostsWithHeaderTypes = hostWithHeaderTypes)
+        )
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.additionalConfig).isEmpty()
     }
 
     @Test

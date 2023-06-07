@@ -109,7 +109,19 @@
                 },
                 "use_allowed_tracing_origins": {
                   "type": "boolean",
-                  "description": "Whether the allowed tracing origins list is used"
+                  "description": "Whether the allowed tracing origins list is used (deprecated in favor of use_allowed_tracing_urls)"
+                },
+                "use_allowed_tracing_urls": {
+                  "type": "boolean",
+                  "description": "Whether the allowed tracing urls list is used"
+                },
+                "selected_tracing_propagators": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": ["datadog", "b3", "b3multi", "tracecontext"]
+                  },
+                  "description": "A list of selected tracing propagators"
                 },
                 "default_privacy_level": {
                   "type": "string",
@@ -131,6 +143,11 @@
                   "readOnly": false
                 },
                 "track_interactions": {
+                  "type": "boolean",
+                  "description": "Whether user actions are tracked (deprecated in favor of track_user_interactions)",
+                  "readOnly": false
+                },
+                "track_user_interactions": {
                   "type": "boolean",
                   "description": "Whether user actions are tracked",
                   "readOnly": false
@@ -249,6 +266,21 @@
                 "batch_upload_frequency": {
                   "type": "integer",
                   "description": "The upload frequency of batches (in milliseconds)"
+                },
+                "react_version": {
+                  "type": "string",
+                  "description": "The version of React used in a ReactNative application",
+                  "readOnly": false
+                },
+                "react_native_version": {
+                  "type": "string",
+                  "description": "The version of ReactNative used in a ReactNative application",
+                  "readOnly": false
+                },
+                "dart_version": {
+                  "type": "string",
+                  "description": "The version of Dart used in a Flutter application",
+                  "readOnly": false
                 }
               }
             }

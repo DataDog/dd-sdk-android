@@ -7,6 +7,7 @@
 package com.datadog.android
 
 import com.datadog.android.rum.RumResourceAttributesProvider
+import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorTest
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
@@ -49,13 +50,13 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
     lateinit var mockRumAttributesProvider: RumResourceAttributesProvider
 
     override fun instantiateTestedInterceptor(
-        tracedHosts: List<String>,
-        factory: () -> Tracer
+        tracedHosts: Map<String, Set<TracingHeaderType>>,
+        factory: (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return DatadogInterceptor(
             tracedHosts = tracedHosts,
             tracedRequestListener = mockRequestListener,
-            firstPartyHostDetector = mockDetector,
+            firstPartyHostResolver = mockResolver,
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler,
             localTracerFactory = factory

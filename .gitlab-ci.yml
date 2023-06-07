@@ -55,6 +55,17 @@ create_key:
 
 # STATIC ANALYSIS
 
+static-analysis:
+  stage: analysis
+  variables:
+    DETEKT_PUBLIC_API: "true"
+    DETEKT_CUSTOM_RULES_BUILD_TASK: ":tools:detekt:jar"
+    DETEKT_CUSTOM_RULES_JAR_PATH: "tools/detekt/build/libs/detekt.jar"
+    DETEKT_CUSTOM_RULES_YML_PATH: "detekt_custom.yml"
+  trigger:
+    include: "https://gitlab-templates.ddbuild.io/mobile/v13971524-c0282e65/static-analysis.yml"
+    strategy: depend
+
 analysis:android-lint:
   tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
@@ -71,14 +82,6 @@ analysis:licenses:
   script:
     - GRADLE_OPTS="-Xmx2560m" ./gradlew checkThirdPartyLicensesAll --stacktrace --no-daemon
 
-static-analysis:
-  stage: analysis
-  variables:
-    DETEKT_PUBLIC_API: "true"
-  trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v11982331-054cb5d6/static-analysis.yml"
-    strategy: depend
-
 analysis:nightly-tests-coverage:
   tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
@@ -86,14 +89,6 @@ analysis:nightly-tests-coverage:
   timeout: 30m
   script:
     - GRADLE_OPTS="-Xmx2560m" ./gradlew checkNightlyTestsCoverage --stacktrace --no-daemon
-
-analysis:woke:
-  tags: [ "runner:main" ]
-  image: $CI_IMAGE_DOCKER
-  stage: analysis
-  timeout: 30m
-  script:
-    - /usr/bin/woke --exit-1-on-failure
 
 # TESTS
 

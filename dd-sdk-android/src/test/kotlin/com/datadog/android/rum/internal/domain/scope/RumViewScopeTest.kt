@@ -11,7 +11,9 @@ import android.os.Build
 import android.view.Display
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import androidx.navigation.NavController
+import androidx.navigation.NavDestination
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
@@ -36,6 +38,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -122,7 +125,7 @@ internal class RumViewScopeTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockDetector: FirstPartyHostDetector
+    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockCpuVitalMonitor: VitalMonitor
@@ -184,6 +187,9 @@ internal class RumViewScopeTest {
 
     @Mock
     lateinit var mockFeaturesContextResolver: FeaturesContextResolver
+
+    @Mock
+    lateinit var mockViewChangedListener: RumViewChangedListener
 
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
@@ -263,7 +269,8 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockViewChangedListener,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -369,7 +376,8 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockViewChangedListener,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -485,7 +493,8 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockViewChangedListener,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -686,7 +695,8 @@ internal class RumViewScopeTest {
             name,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockViewChangedListener,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -743,7 +753,8 @@ internal class RumViewScopeTest {
             name,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockViewChangedListener,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -852,6 +863,7 @@ internal class RumViewScopeTest {
                 hasConnectivityInfo(fakeDatadogContext.networkInfo)
                 hasServiceName(fakeDatadogContext.service)
                 hasVersion(fakeDatadogContext.version)
+                hasSessionActive(fakeParentContext.isSessionActive)
             }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -921,6 +933,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -990,6 +1003,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1065,6 +1079,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1137,6 +1152,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1209,6 +1225,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1268,6 +1285,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1294,7 +1312,8 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockViewChangedListener,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -1362,6 +1381,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1433,6 +1453,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1456,7 +1477,8 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockViewChangedListener,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -1527,6 +1549,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1552,7 +1575,8 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockViewChangedListener,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -1623,6 +1647,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1695,6 +1720,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1766,6 +1792,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1830,6 +1857,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1937,6 +1965,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2021,6 +2050,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2106,6 +2136,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2193,6 +2224,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2260,6 +2292,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2295,8 +2328,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val eventTime = Time()
-        val startedNanos = eventTime.nanoTime - duration
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         GlobalRum.globalAttributes.putAll(attributes)
 
@@ -2401,6 +2433,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2485,6 +2518,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2571,6 +2605,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2656,6 +2691,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2692,8 +2728,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope.stopped = true
         val eventTime = Time()
-        val startedNanos = eventTime.nanoTime - duration
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         val fakeActionSent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount)
 
         // When
@@ -2749,8 +2784,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope.stopped = true
         val eventTime = Time()
-        val startedNanos = eventTime.nanoTime - duration
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         val fakeActionSent = RumRawEvent.ActionDropped(testedScope.viewId)
 
         // When
@@ -2869,6 +2903,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3095,8 +3130,6 @@ internal class RumViewScopeTest {
                 (fakeEvent as RumRawEvent.StartAction).name
             )
         )
-
-        verifyNoMoreInteractions(logger.mockInternalLogger)
     }
 
     @Test
@@ -3129,8 +3162,6 @@ internal class RumViewScopeTest {
                 (fakeEvent as RumRawEvent.StartAction).name
             )
         )
-
-        verifyNoMoreInteractions(logger.mockInternalLogger)
     }
 
     @Test
@@ -3307,8 +3338,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val eventTime = Time()
-        val startedNanos = eventTime.nanoTime - duration
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         testedScope.activeActionScope = null
         testedScope.pendingActionCount = 0
 
@@ -3416,7 +3446,7 @@ internal class RumViewScopeTest {
         assertThat(resourceScope.method).isSameAs(method)
         assertThat(resourceScope.eventTimestamp)
             .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-        assertThat(resourceScope.firstPartyHostDetector).isSameAs(mockDetector)
+        assertThat(resourceScope.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
     }
 
     @Test
@@ -3449,7 +3479,7 @@ internal class RumViewScopeTest {
         assertThat(resourceScope.method).isSameAs(method)
         assertThat(resourceScope.eventTimestamp)
             .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-        assertThat(resourceScope.firstPartyHostDetector).isSameAs(mockDetector)
+        assertThat(resourceScope.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
     }
 
     @Test
@@ -4138,6 +4168,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4322,6 +4353,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4351,13 +4383,26 @@ internal class RumViewScopeTest {
             sourceType = sourceType
         )
 
+        // Sending a second crash should not trigger a view update
+        val fakeNativeCrashEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            null,
+            true,
+            attributes,
+            sourceType = sourceType
+        )
+
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope
+            .handleEvent(fakeEvent, mockWriter)
+            ?.handleEvent(fakeNativeCrashEvent, mockWriter)
 
         // Then
         val expectedMessage = "$message: ${throwable.message}"
         argumentCaptor<Any> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue as ErrorEvent)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
@@ -4391,6 +4436,53 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                }
+            assertThat(lastValue as ViewEvent)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasLoadingTime(null)
+                    hasLoadingType(null)
+                    hasVersion(2)
+                    hasErrorCount(1)
+                    hasCrashCount(1)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasFrustrationCount(0)
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    isSlowRendered(false)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4647,6 +4739,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5247,6 +5340,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5316,6 +5410,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5403,6 +5498,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5525,9 +5621,29 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `𝕄 not add custom timing 𝕎 handleEvent(AddCustomTiming) on stopped view`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.stopped = true
+        val fakeTimingKey = forge.anAlphabeticalString()
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.AddCustomTiming(fakeTimingKey),
+            mockWriter
+        )
+
+        // Then
+        assertThat(testedScope.customTimings).isEmpty()
+        verifyZeroInteractions(mockWriter)
     }
 
     // endregion
@@ -5607,6 +5723,79 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send View update 𝕎 onVitalUpdate()+handleEvent(KeepAlive) {CPU short timespan}`(
+        @DoubleForgery(1024.0, 65536.0) cpuTicks: Double
+    ) {
+        // Given
+        // cpu ticks should be received in ascending order
+        val listenerCaptor = argumentCaptor<VitalListener> {
+            verify(mockCpuVitalMonitor).register(capture())
+        }
+        val listener = listenerCaptor.firstValue
+
+        // When
+        listener.onVitalUpdate(VitalInfo(1, 0.0, 0.0, 0.0))
+        listener.onVitalUpdate(VitalInfo(1, 0.0, cpuTicks, cpuTicks / 2.0))
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(fakeEventTime),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasFrustrationCount(0)
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(cpuTicks)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    isSlowRendered(false)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5677,6 +5866,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5757,6 +5947,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5837,6 +6028,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5864,7 +6056,8 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockViewChangedListener,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -5935,6 +6128,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5962,7 +6156,8 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockViewChangedListener,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -6033,6 +6228,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6062,7 +6258,8 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockViewChangedListener,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -6133,6 +6330,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6162,7 +6360,8 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockViewChangedListener,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -6233,6 +6432,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6263,7 +6463,8 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockViewChangedListener,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -6334,6 +6535,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6364,7 +6566,8 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockViewChangedListener,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -6435,6 +6638,104 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 detect slow refresh rate 𝕎 init()+onVitalUpdate()+handleEvent(KeepAlive) {Navigation}`(
+        @FloatForgery(120.0f, 240.0f) deviceRefreshRate: Float,
+        @DoubleForgery(30.0, 55.0) meanRefreshRate: Double,
+        @DoubleForgery(0.0, 30.0) minRefreshRate: Double
+    ) {
+        // Given
+        val mockActivity = mock<Activity>()
+        val mockDisplay = mock<Display>()
+        whenever(mockActivity.display) doReturn mockDisplay
+        whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
+        reset(mockFrameRateVitalMonitor)
+        val navController = NavController(mockActivity)
+        val mockDestination = mock<NavDestination>()
+
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
+        val testedScope = RumViewScope(
+            mockParentScope,
+            mockSdkCore,
+            NavigationViewTrackingStrategy.NavigationKey(navController, mockDestination),
+            fakeName,
+            fakeEventTime,
+            fakeAttributes,
+            mockViewChangedListener,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockContextProvider,
+            mockBuildSdkVersionProvider,
+            featuresContextResolver = mockFeaturesContextResolver,
+            viewUpdatePredicate = mockViewUpdatePredicate,
+            trackFrustrations = fakeTrackFrustrations
+        )
+        val listenerCaptor = argumentCaptor<VitalListener> {
+            verify(mockFrameRateVitalMonitor).register(capture())
+        }
+        val listener = listenerCaptor.firstValue
+
+        // When
+        listener.onVitalUpdate(VitalInfo(1, minRefreshRate, meanRefreshRate * 2, meanRefreshRate))
+        val result = testedScope.handleEvent(RumRawEvent.KeepAlive(), mockWriter)
+
+        // Then
+        val expectedAverage = (meanRefreshRate * 60.0) / deviceRefreshRate
+        val expectedMinimum = (minRefreshRate * 60.0) / deviceRefreshRate
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasFrustrationCount(0)
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(expectedAverage, expectedMinimum)
+                    isActive(true)
+                    isSlowRendered(true)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6693,6 +6994,119 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region Feature Flags
+
+    @Test
+    fun `M send event W handleEvent(AddFeatureFlagEvaluation) on active view`(
+        @StringForgery flagName: String,
+        @StringForgery flagValue: String
+    ) {
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name = flagName,
+                value = flagValue
+            ),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).hasFeatureFlag(flagName, flagValue)
+        }
+    }
+
+    @Test
+    fun `M not add feature flag W handleEvent(AddFeatureFlagEvaluation) on stopped view`(
+        @StringForgery flagName: String,
+        @StringForgery flagValue: String
+    ) {
+        // GIVEN
+        testedScope.stopped = true
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name = flagName,
+                value = flagValue
+            ),
+            mockWriter
+        )
+
+        // THEN
+        assertThat(testedScope.featureFlags).isEmpty()
+        verifyZeroInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M modify flag W handleEvent(AddFeatureFlagEvaluation) on active view { existing feature flag }`(
+        @StringForgery flagName: String,
+        @BoolForgery oldFlagValue: Boolean,
+        @StringForgery flagValue: String
+    ) {
+        // GIVEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name = flagName,
+                value = oldFlagValue
+            ),
+            mockWriter
+        )
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name = flagName,
+                value = flagValue
+            ),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).hasFeatureFlag(flagName, flagValue)
+        }
+    }
+
+    @Test
+    fun `M send flags on ErrorEvent W handleEvent(AddError) on active view { existing feature flags }`(
+        forge: Forge,
+        @StringForgery flagName: String,
+        @StringForgery flagValue: String
+    ) {
+        // GIVEN
+        testedScope.handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name = flagName,
+                value = flagValue
+            ),
+            mockWriter
+        )
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.AddError(
+                forge.anAlphabeticalString(),
+                forge.aValueFrom(RumErrorSource::class.java),
+                null,
+                null,
+                false,
+                mapOf()
+            ),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue).hasFeatureFlag(flagName, flagValue)
+        }
+    }
+
+    // endregion
+
     // region ViewUpdatePredicate
 
     @Test
@@ -6702,8 +7116,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val eventTime = Time()
-        val startedNanos = eventTime.nanoTime - duration
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         GlobalRum.globalAttributes.putAll(attributes)
         whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(false)
@@ -6874,6 +7287,34 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region Stopping Sessions
+
+    @Test
+    fun `M set view to inactive and send update W handleEvent { StopSession }`() {
+        // Given
+        whenever(mockParentScope.getRumContext())
+            .doReturn(fakeParentContext.copy(isSessionActive = false))
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(),
+            mockWriter
+        )
+
+        // Then
+        assertThat(testedScope.isActive()).isFalse()
+
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasSessionActive(false)
+                }
+        }
+    }
+
+    // endregion
+
     // region Misc
 
     @ParameterizedTest
@@ -6889,7 +7330,8 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockViewChangedListener,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,

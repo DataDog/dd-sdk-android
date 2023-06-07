@@ -24,6 +24,7 @@ import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.tracing.model.SpanEvent
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import io.opentracing.util.GlobalTracer
@@ -304,6 +305,29 @@ class SpanConfigE2ETests {
                 tracerProvider = {
                     AndroidTracer.Builder()
                         .setServiceName("service-$testMethodName")
+                        .build()
+                }
+            )
+        }
+        GlobalTracer.get()
+            .buildSpan(testMethodName)
+            .start()
+            .finish()
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
+     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setTracingHeaderTypes(Set<TracingHeaderType>): Builder
+     */
+    @Test
+    fun trace_config_set_tracing_header_type() {
+        val testMethodName = "trace_config_set_tracing_header_type"
+        measureSdkInitialize {
+            initializeSdk(
+                InstrumentationRegistry.getInstrumentation().targetContext,
+                tracerProvider = {
+                    AndroidTracer.Builder()
+                        .setTracingHeaderTypes(setOf(TracingHeaderType.TRACECONTEXT))
                         .build()
                 }
             )
