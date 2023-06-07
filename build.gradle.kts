@@ -143,7 +143,9 @@ tasks.register("unitTestDebug") {
 tasks.register("unitTestTools") {
     dependsOn(
         ":sample:kotlin:assembleUs1Release",
-        ":tools:unit:testJvmReleaseUnitTest"
+        ":tools:unit:testJvmReleaseUnitTest",
+        ":tools:detekt:test",
+        ":tools:lint:test"
     )
 }
 
@@ -174,7 +176,8 @@ tasks.register("lintCheckAll") {
         ":features:dd-sdk-android-ndk:lintRelease",
         ":features:dd-sdk-android-trace:lintRelease",
         ":features:dd-sdk-android-webview:lintRelease",
-        ":features:dd-sdk-android-rum:lintRelease"
+        ":features:dd-sdk-android-rum:lintRelease",
+        ":tools:lint:lint"
     )
 }
 
@@ -284,7 +287,8 @@ kover {
         "detekt",
         "javabackport",
         "noopfactory",
-        "unit"
+        "unit",
+        "lint"
     )
     instrumentAndroidPackage = false
 }

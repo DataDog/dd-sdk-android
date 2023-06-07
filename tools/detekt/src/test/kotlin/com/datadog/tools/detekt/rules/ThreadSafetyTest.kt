@@ -6,6 +6,8 @@
 
 package com.datadog.tools.detekt.rules
 
+import android.webkit.JavascriptInterface
+import androidx.annotation.MainThread
 import io.github.detekt.test.utils.KotlinCoreEnvironmentWrapper
 import io.github.detekt.test.utils.createEnvironment
 import io.gitlab.arturbosch.detekt.test.assertThat
@@ -13,6 +15,7 @@ import io.gitlab.arturbosch.detekt.test.compileAndLintWithContext
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.io.File
 
 class ThreadSafetyTest {
 
@@ -20,7 +23,19 @@ class ThreadSafetyTest {
 
     @BeforeEach
     fun setup() {
-        kotlinEnv = createEnvironment()
+        kotlinEnv = createEnvironment(
+            // by some reason all Android-related classes are not discovered by DetektKt compiler,
+            // so need to add them explicitly
+            additionalRootPaths = listOf(
+                MainThread::class,
+                // alternatively we could get it by reading sdk.dir property and pulling android.jar
+                // for the right API, but since we need only a single annotation symbol, let's just
+                // import robolectric instead
+                JavascriptInterface::class
+            ).map {
+                File(it.java.protectionDomain.codeSource.location.path)
+            }
+        )
     }
 
     @AfterEach
@@ -146,7 +161,7 @@ class ThreadSafetyTest {
     fun `detekt call from unknown thread to javascript interface`() {
         val code =
             """
-            import androidx.annotation.JavascriptInterface
+            import android.webkit.JavascriptInterface
 
             class Foo {
                 @JavascriptInterface
