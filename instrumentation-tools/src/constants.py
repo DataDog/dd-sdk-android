@@ -7,7 +7,7 @@ API_SURFACE_PATHS = [
     "integrations/dd-sdk-android-okhttp/api/apiSurface",
     "features/dd-sdk-android-logs/api/apiSurface",
     "features/dd-sdk-android-session-replay/api/apiSurface",
-    "features/dd-sdk-android-logs/api/apiSurface",
+    "features/dd-sdk-android-session-replay-material/api/apiSurface",
     "features/dd-sdk-android-ndk/api/apiSurface",
     "features/dd-sdk-android-trace/api/apiSurface",
     "features/dd-sdk-android-webview/api/apiSurface",
