@@ -6679,6 +6679,12 @@ internal class RumViewScopeTest {
             viewUpdatePredicate = mockViewUpdatePredicate,
             trackFrustrations = fakeTrackFrustrations
         )
+        whenever(
+            mockFeaturesContextResolver.resolveHasReplay(
+                fakeDatadogContext,
+                testedScope.viewId
+            )
+        ) doReturn fakeHasReplay
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
         }
