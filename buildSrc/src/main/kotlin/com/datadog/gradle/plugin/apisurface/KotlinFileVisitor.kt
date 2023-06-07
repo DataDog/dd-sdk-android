@@ -92,6 +92,7 @@ class KotlinFileVisitor {
         when {
             node.hasChildTerminal("INTERFACE") -> description.append("interface ")
             node.isEnum() -> description.append("enum ")
+            node.isAnnotation() -> description.append("annotation ")
             else -> description.append("$type ")
         }
 
@@ -340,6 +341,10 @@ class KotlinFileVisitor {
 
     private fun AstNode.isEnum(): Boolean {
         return hasModifier("classModifier", "ENUM")
+    }
+
+    private fun AstNode.isAnnotation(): Boolean {
+        return hasModifier("classModifier", "ANNOTATION")
     }
 
     private fun AstNode.isProtected(): Boolean {

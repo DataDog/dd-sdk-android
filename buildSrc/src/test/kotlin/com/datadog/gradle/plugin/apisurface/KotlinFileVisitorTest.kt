@@ -122,6 +122,28 @@ internal class KotlinFileVisitorTest {
     }
 
     @Test
+    fun `describes public annotation`() {
+        tempFile.writeText(
+            """
+            package foo.bar
+            annotation class Spam(
+                val A: String,
+                val B: String,
+                val C: String
+            )
+            """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "annotation foo.bar.Spam\n" +
+                "  constructor(String, String, String)\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
     fun `describes public sealed class`() {
         tempFile.writeText(
             """
