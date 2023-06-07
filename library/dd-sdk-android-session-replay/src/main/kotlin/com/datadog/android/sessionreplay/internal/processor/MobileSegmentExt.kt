@@ -13,5 +13,6 @@ internal fun MobileSegment.Wireframe.copy(clip: MobileSegment.WireframeClip?):
     return when (this) {
         is MobileSegment.Wireframe.ShapeWireframe -> this.copy(clip = clip)
         is MobileSegment.Wireframe.TextWireframe -> this.copy(clip = clip)
+        is MobileSegment.Wireframe.ImageWireframe -> this.copy(clip = clip)
     }
 }
