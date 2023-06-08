@@ -12,7 +12,7 @@
       "$ref": "../common/_common-segment-metadata-schema.json"
     },
     {
-      "required": ["source", "has_full_snapshot_record"],
+      "required": ["source"],
       "properties": {
         "source": {
           "type": "string",

@@ -244,6 +244,7 @@ internal class RecordedDataProcessor(
         return when (this) {
             is MobileSegment.Wireframe.ShapeWireframe -> bounds()
             is MobileSegment.Wireframe.TextWireframe -> bounds()
+            is MobileSegment.Wireframe.ImageWireframe -> bounds()
         }
     }
 
@@ -252,6 +253,10 @@ internal class RecordedDataProcessor(
     }
 
     private fun MobileSegment.Wireframe.TextWireframe.bounds(): Bounds {
+        return Bounds(x, y, width, height)
+    }
+
+    private fun MobileSegment.Wireframe.ImageWireframe.bounds(): Bounds {
         return Bounds(x, y, width, height)
     }
 

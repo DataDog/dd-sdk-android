@@ -197,6 +197,13 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
       companion object 
         fun fromJson(kotlin.String): TextWireframe
         fun fromJsonObject(com.google.gson.JsonObject): TextWireframe
+    data class ImageWireframe : Wireframe
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): ImageWireframe
+        fun fromJsonObject(com.google.gson.JsonObject): ImageWireframe
     companion object 
       fun fromJson(kotlin.String): Wireframe
       fun fromJsonObject(com.google.gson.JsonObject): Wireframe
@@ -228,6 +235,13 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
       companion object 
         fun fromJson(kotlin.String): ShapeWireframeUpdate
         fun fromJsonObject(com.google.gson.JsonObject): ShapeWireframeUpdate
+    data class ImageWireframeUpdate : WireframeUpdateMutation
+      constructor(kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): ImageWireframeUpdate
+        fun fromJsonObject(com.google.gson.JsonObject): ImageWireframeUpdate
     companion object 
       fun fromJson(kotlin.String): WireframeUpdateMutation
       fun fromJsonObject(com.google.gson.JsonObject): WireframeUpdateMutation
