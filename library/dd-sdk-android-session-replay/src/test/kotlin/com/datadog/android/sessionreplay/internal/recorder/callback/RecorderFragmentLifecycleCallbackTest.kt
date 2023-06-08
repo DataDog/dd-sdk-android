@@ -10,9 +10,7 @@ import android.app.Activity
 import android.app.Dialog
 import android.view.Window
 import androidx.fragment.app.DialogFragment
-import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
 import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -36,9 +34,6 @@ internal class RecorderFragmentLifecycleCallbackTest {
     lateinit var testedCallback: RecorderFragmentLifecycleCallback
 
     @Mock
-    lateinit var mockWindowCallbackInterceptor: WindowCallbackInterceptor
-
-    @Mock
     lateinit var mockDialogFragment: DialogFragment
 
     @Mock
@@ -53,6 +48,9 @@ internal class RecorderFragmentLifecycleCallbackTest {
     @Mock
     lateinit var mockDialog: Dialog
 
+    @Mock
+    lateinit var mockOnWindowRefreshedCallback: OnWindowRefreshedCallback
+
     @BeforeEach
     fun `set up`() {
         whenever(mockDialogFragment.context).thenReturn(mock())
@@ -60,30 +58,30 @@ internal class RecorderFragmentLifecycleCallbackTest {
         whenever(mockDialog.ownerActivity).thenReturn(mockOwnerActivity)
         whenever(mockOwnerActivity.window).thenReturn(mockActivityWindow)
         whenever(mockDialog.window).thenReturn(mockDialogWindow)
-        testedCallback = RecorderFragmentLifecycleCallback(mockWindowCallbackInterceptor)
+        testedCallback = RecorderFragmentLifecycleCallback(mockOnWindowRefreshedCallback)
     }
 
     // region Different Window from Activity
 
     @Test
-    fun `M start intercepting the dialog window W onFragmentResumed{different windows}`() {
+    fun `M call onWindowsAdded W onFragmentResumed{different windows}`() {
         // When
         testedCallback.onFragmentResumed(mock(), mockDialogFragment)
 
         // Then
         val captor = argumentCaptor<List<Window>>()
-        verify(mockWindowCallbackInterceptor).intercept(captor.capture(), eq(mockOwnerActivity))
+        verify(mockOnWindowRefreshedCallback).onWindowsAdded(captor.capture())
         assertThat(captor.firstValue).containsExactlyElementsOf(listOf(mockDialogWindow))
     }
 
     @Test
-    fun `M stop intercepting the dialog window W onFragmentPaused{different windows}`() {
+    fun `M call onWindowsRemoved FragmentPaused{different windows}`() {
         // When
         testedCallback.onFragmentPaused(mock(), mockDialogFragment)
 
         // Then
         val captor = argumentCaptor<List<Window>>()
-        verify(mockWindowCallbackInterceptor).stopIntercepting(captor.capture())
+        verify(mockOnWindowRefreshedCallback).onWindowsRemoved(captor.capture())
         assertThat(captor.firstValue).containsExactlyElementsOf(listOf(mockDialogWindow))
     }
 
@@ -98,7 +96,7 @@ internal class RecorderFragmentLifecycleCallbackTest {
         testedCallback.onFragmentResumed(mock(), mockDialogFragment)
 
         // Then
-        verifyZeroInteractions(mockWindowCallbackInterceptor)
+        verifyZeroInteractions(mockOnWindowRefreshedCallback)
     }
 
     @Test
@@ -108,7 +106,7 @@ internal class RecorderFragmentLifecycleCallbackTest {
         testedCallback.onFragmentPaused(mock(), mockDialogFragment)
 
         // Then
-        verifyZeroInteractions(mockWindowCallbackInterceptor)
+        verifyZeroInteractions(mockOnWindowRefreshedCallback)
     }
 
     // endregion
@@ -121,7 +119,7 @@ internal class RecorderFragmentLifecycleCallbackTest {
         testedCallback.onFragmentResumed(mock(), mock())
 
         // Then
-        verifyZeroInteractions(mockWindowCallbackInterceptor)
+        verifyZeroInteractions(mockOnWindowRefreshedCallback)
     }
 
     @Test
@@ -133,7 +131,7 @@ internal class RecorderFragmentLifecycleCallbackTest {
         testedCallback.onFragmentResumed(mock(), mockDialogFragment)
 
         // Then
-        verifyZeroInteractions(mockWindowCallbackInterceptor)
+        verifyZeroInteractions(mockOnWindowRefreshedCallback)
     }
 
     @Test
@@ -145,7 +143,7 @@ internal class RecorderFragmentLifecycleCallbackTest {
         testedCallback.onFragmentResumed(mock(), mockDialogFragment)
 
         // Then
-        verifyZeroInteractions(mockWindowCallbackInterceptor)
+        verifyZeroInteractions(mockOnWindowRefreshedCallback)
     }
 
     @Test
@@ -157,7 +155,7 @@ internal class RecorderFragmentLifecycleCallbackTest {
         testedCallback.onFragmentResumed(mock(), mockDialogFragment)
 
         // Then
-        verifyZeroInteractions(mockWindowCallbackInterceptor)
+        verifyZeroInteractions(mockOnWindowRefreshedCallback)
     }
 
     @Test
@@ -169,7 +167,7 @@ internal class RecorderFragmentLifecycleCallbackTest {
         testedCallback.onFragmentResumed(mock(), mockDialogFragment)
 
         // Then
-        verifyZeroInteractions(mockWindowCallbackInterceptor)
+        verifyZeroInteractions(mockOnWindowRefreshedCallback)
     }
 
     @Test
@@ -178,7 +176,7 @@ internal class RecorderFragmentLifecycleCallbackTest {
         testedCallback.onFragmentPaused(mock(), mock())
 
         // Then
-        verifyZeroInteractions(mockWindowCallbackInterceptor)
+        verifyZeroInteractions(mockOnWindowRefreshedCallback)
     }
 
     @Test
@@ -190,7 +188,7 @@ internal class RecorderFragmentLifecycleCallbackTest {
         testedCallback.onFragmentPaused(mock(), mockDialogFragment)
 
         // Then
-        verifyZeroInteractions(mockWindowCallbackInterceptor)
+        verifyZeroInteractions(mockOnWindowRefreshedCallback)
     }
 
     @Test
@@ -202,7 +200,7 @@ internal class RecorderFragmentLifecycleCallbackTest {
         testedCallback.onFragmentPaused(mock(), mockDialogFragment)
 
         // Then
-        verifyZeroInteractions(mockWindowCallbackInterceptor)
+        verifyZeroInteractions(mockOnWindowRefreshedCallback)
     }
 
     @Test
@@ -214,7 +212,7 @@ internal class RecorderFragmentLifecycleCallbackTest {
         testedCallback.onFragmentPaused(mock(), mockDialogFragment)
 
         // Then
-        verifyZeroInteractions(mockWindowCallbackInterceptor)
+        verifyZeroInteractions(mockOnWindowRefreshedCallback)
     }
 
     @Test
@@ -226,7 +224,7 @@ internal class RecorderFragmentLifecycleCallbackTest {
         testedCallback.onFragmentPaused(mock(), mockDialogFragment)
 
         // Then
-        verifyZeroInteractions(mockWindowCallbackInterceptor)
+        verifyZeroInteractions(mockOnWindowRefreshedCallback)
     }
 
     // endregion

@@ -7,25 +7,20 @@
 package com.datadog.android.sessionreplay.internal
 
 import android.app.Activity
-import android.app.Application
 import android.view.View
 import android.view.Window
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
-import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
+import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 import com.datadog.android.sessionreplay.internal.recorder.callback.RecorderFragmentLifecycleCallback
-import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
-import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -47,27 +42,6 @@ internal class SessionReplayLifecycleCallbackTest {
     lateinit var testedCallback: SessionReplayLifecycleCallback
 
     @Mock
-    private lateinit var mockWindowCallbackInterceptor: WindowCallbackInterceptor
-
-    @Mock
-    private lateinit var mockViewOnDrawInterceptor: ViewOnDrawInterceptor
-
-    @Mock
-    private lateinit var mockRumContextProvider: RumContextProvider
-
-    @Mock
-    private lateinit var mockRecordWriter: RecordWriter
-
-    @Forgery
-    private lateinit var fakePrivacy: SessionReplayPrivacy
-
-    @Mock
-    private lateinit var mockRecordCallback: RecordCallback
-
-    @Mock
-    private lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
     private lateinit var mockActivity: Activity
 
     @Mock
@@ -76,19 +50,16 @@ internal class SessionReplayLifecycleCallbackTest {
     @Mock
     private lateinit var mockDecorView: View
 
+    @Mock
+    private lateinit var mockOnWindowRefreshedCallback: OnWindowRefreshedCallback
+
     @BeforeEach
     fun `set up`() {
         whenever(mockActivity.window).thenReturn(mockWindow)
         whenever(mockWindow.decorView).thenReturn(mockDecorView)
         testedCallback = SessionReplayLifecycleCallback(
-            mockRumContextProvider,
-            fakePrivacy,
-            mockRecordWriter,
-            mockTimeProvider,
-            mockRecordCallback
+            mockOnWindowRefreshedCallback
         )
-        testedCallback.viewOnDrawInterceptor = mockViewOnDrawInterceptor
-        testedCallback.windowCallbackInterceptor = mockWindowCallbackInterceptor
     }
 
     @Test
@@ -122,109 +93,96 @@ internal class SessionReplayLifecycleCallbackTest {
     }
 
     @Test
-    fun `M intercept activity window callback W onActivityResumed()`() {
+    fun `M keep window as active callback W onActivityResumed()`() {
         // When
         testedCallback.onActivityResumed(mockActivity)
 
         // Then
-        verify(mockWindowCallbackInterceptor).intercept(listOf(mockWindow), mockActivity)
+        assertThat(testedCallback.getCurrentWindows()).isEqualTo(listOf(mockWindow))
     }
 
     @Test
-    fun `M intercept activity decorView onDraw W onActivityResumed()`() {
+    fun `M notify callback W onActivityResumed()`() {
         // When
         testedCallback.onActivityResumed(mockActivity)
 
         // Then
-        verify(mockViewOnDrawInterceptor).intercept(listOf(mockDecorView), mockActivity)
+        verify(mockOnWindowRefreshedCallback).onWindowsAdded(eq(listOf(mockWindow)))
     }
 
     @Test
-    fun `M stop intercepting window callback W onActivityPaused() {activity previously resumed}`() {
+    fun `M keep windows as active callback W onActivityResumed { multiple times }()`(forge: Forge) {
         // Given
-        testedCallback.onActivityResumed(mockActivity)
-
-        // When
-        testedCallback.onActivityPaused(mockActivity)
-
-        // Then
-        verify(mockWindowCallbackInterceptor).stopIntercepting(listOf(mockWindow))
-    }
-
-    @Test
-    fun `M stop intercepting window callback W onActivityPaused() {not previously resumed}`() {
-        // When
-        testedCallback.onActivityPaused(mockActivity)
-
-        // Then
-        verify(mockWindowCallbackInterceptor).stopIntercepting(listOf(mockWindow))
-    }
-
-    @Test
-    fun `M stop intercepting decorView onDraw W onActivityPaused(){activity previously resumed}`() {
-        // Given
-        testedCallback.onActivityResumed(mockActivity)
-
-        // When
-        testedCallback.onActivityPaused(mockActivity)
-
-        // Then
-        verify(mockViewOnDrawInterceptor).stopIntercepting(listOf(mockDecorView))
-    }
-
-    @Test
-    fun `M stop intercepting decorView onDraw W onActivityPaused() {not previously resumed}`() {
-        // When
-        testedCallback.onActivityPaused(mockActivity)
-
-        // Then
-        verify(mockViewOnDrawInterceptor).stopIntercepting(listOf(mockDecorView))
-    }
-
-    @Test
-    fun `M register lifecycle callback W register()`() {
-        // Given
-        val mockApplication: Application = mock()
-
-        // When
-        testedCallback.register(mockApplication)
-
-        // Then
-        verify(mockApplication).registerActivityLifecycleCallbacks(testedCallback)
-    }
-
-    @Test
-    fun `M unregister lifecycle callback W unregisterAndStopRecorders()`() {
-        // Given
-        val mockApplication: Application = mock()
-
-        // When
-        testedCallback.unregisterAndStopRecorders(mockApplication)
-
-        // Then
-        verify(mockApplication).unregisterActivityLifecycleCallbacks(testedCallback)
-    }
-
-    @Test
-    fun `M stop recording all resumed activities W unregisterAndStopRecorders()`() {
-        // Given
-        val mockApplication: Application = mock()
-        val mockWindow1: Window = mock()
-        val mockWindow2: Window = mock()
-        val mockActivity1: Activity = mock {
-            whenever(it.window).thenReturn(mockWindow1)
+        val mockActivities = forge.aList {
+            mock<Activity> {
+                whenever(it.window).thenReturn(mock())
+            }
         }
-        val mockActivity2: Activity = mock {
-            whenever(it.window).thenReturn(mockWindow2)
-        }
-        testedCallback.onActivityResumed(mockActivity1)
-        testedCallback.onActivityResumed(mockActivity2)
+        val expectedWindows = mockActivities.map { it.window }
 
         // When
-        testedCallback.unregisterAndStopRecorders(mockApplication)
+        mockActivities.forEach {
+            testedCallback.onActivityResumed(it)
+        }
 
         // Then
-        verify(mockWindowCallbackInterceptor).stopIntercepting()
-        verify(mockViewOnDrawInterceptor).stopIntercepting()
+        assertThat(testedCallback.getCurrentWindows())
+            .containsExactlyInAnyOrder(*expectedWindows.toTypedArray())
+    }
+
+    @Test
+    fun `M drop Window from currentlyActive onActivityPaused() {activity previously resumed}`() {
+        // Given
+        testedCallback.onActivityResumed(mockActivity)
+
+        // When
+        testedCallback.onActivityPaused(mockActivity)
+
+        // Then
+        assertThat(testedCallback.getCurrentWindows()).isEmpty()
+    }
+
+    @Test
+    fun `M drop Window from currentlyActive onActivityPaused() {multiple activities}`(
+        forge: Forge
+    ) {
+        // Given
+        val mockActivities = forge.aList {
+            mock<Activity> {
+                whenever(it.window).thenReturn(mock())
+            }
+        }
+        mockActivities.forEach {
+            testedCallback.onActivityResumed(it)
+        }
+
+        // When
+        mockActivities.forEach {
+            testedCallback.onActivityPaused(it)
+        }
+
+        // Then
+        assertThat(testedCallback.getCurrentWindows()).isEmpty()
+    }
+
+    @Test
+    fun `M notify callback W onActivityPaused()`() {
+        // When
+        testedCallback.onActivityPaused(mockActivity)
+
+        // Then
+        verify(mockOnWindowRefreshedCallback).onWindowsRemoved(listOf(mockWindow))
+    }
+
+    @Test
+    fun `M do nothing onActivityResumed {activity has no window}`() {
+        // Given
+        whenever(mockActivity.window).thenReturn(null)
+
+        // When
+        testedCallback.onActivityResumed(mockActivity)
+
+        // Then
+        verifyZeroInteractions(mockOnWindowRefreshedCallback)
     }
 }
