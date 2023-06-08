@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.monitor
 
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 
 /**
@@ -14,9 +15,12 @@ import com.datadog.android.rum.internal.domain.event.ResourceTiming
 @SuppressWarnings("UndocumentedPublicFunction")
 interface AdvancedNetworkRumMonitor {
 
+    @InternalApi
     fun waitForResourceTiming(key: String)
 
+    @InternalApi
     fun addResourceTiming(key: String, timing: ResourceTiming)
 
+    @InternalApi
     fun notifyInterceptorInstantiated()
 }

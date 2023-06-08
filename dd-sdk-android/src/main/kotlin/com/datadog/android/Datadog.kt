@@ -10,6 +10,7 @@ import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.utils.unboundInternalLogger
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
@@ -241,8 +242,8 @@ object Datadog {
      *
      * @see _InternalProxy
      */
+    @InternalApi
     @Suppress("FunctionNaming", "FunctionName")
-    @JvmSynthetic
     fun _internalProxy(instanceName: String? = null): _InternalProxy {
         return _InternalProxy(getInstance(instanceName))
     }

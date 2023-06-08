@@ -55,7 +55,7 @@ internal class InternalApiUsageDetectorTest {
             .expectErrorCount(1)
             .expect(
                 """
-                    src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.java:8: Error: Symbols annotated with com.datadog.android.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
+                    src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.java:8: Error: Symbols annotated with com.datadog.android.lint.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
                            InternalSdkClass instance = new InternalSdkClass();
                                                        ~~~~~~~~~~~~~~~~~~~~~~
                     1 errors, 0 warnings
@@ -91,7 +91,7 @@ internal class InternalApiUsageDetectorTest {
             .expectErrorCount(1)
             .expect(
                 """
-                    src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.java:9: Error: Symbols annotated with com.datadog.android.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
+                    src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.java:9: Error: Symbols annotated with com.datadog.android.lint.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
                            instance.internalMethod();
                            ~~~~~~~~~~~~~~~~~~~~~~~~~
                     1 errors, 0 warnings
@@ -127,7 +127,7 @@ internal class InternalApiUsageDetectorTest {
             .expectErrorCount(1)
             .expect(
                 """
-                    src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.java:9: Error: Symbols annotated with com.datadog.android.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
+                    src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.java:9: Error: Symbols annotated with com.datadog.android.lint.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
                            instance.getInternalProperty();
                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                     1 errors, 0 warnings
@@ -164,7 +164,7 @@ internal class InternalApiUsageDetectorTest {
             .expectErrorCount(1)
             .expect(
                 """
-                    src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.java:9: Error: Symbols annotated with com.datadog.android.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
+                    src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.java:9: Error: Symbols annotated with com.datadog.android.lint.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
                            instance.internalMethod();
                            ~~~~~~~~~~~~~~~~~~~~~~~~~
                     1 errors, 0 warnings
@@ -199,9 +199,44 @@ internal class InternalApiUsageDetectorTest {
             .expectErrorCount(1)
             .expect(
                 """
-                    src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.java:8: Error: Symbols annotated with com.datadog.android.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
+                    src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.java:8: Error: Symbols annotated with com.datadog.android.lint.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
                            TestKt.internalMethod("something");
                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                    1 errors, 0 warnings
+                """
+            )
+    }
+
+    @Test
+    fun `𝕄 report issue 𝕎 internal method in object class is used from non-Datadog package { java }`() {
+        lint()
+            .files(
+                internalApiAnnotationStub,
+                internalMethodInObjectClassKotlinStub,
+                java(
+                    """
+                package $nonDatadogPackage;
+                
+                import com.datadog.android.Datadog;
+                
+                public class ClassUnderTest { 
+                
+                    public void testMethod() {
+                       Datadog._internalProxy();
+                    }
+                
+                }
+                    """
+                ).indented()
+            )
+            .issues(InternalApiUsageDetector.ISSUE)
+            .run()
+            .expectErrorCount(1)
+            .expect(
+                """
+                    src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.java:8: Error: Symbols annotated with com.datadog.android.lint.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
+                           Datadog._internalProxy();
+                           ~~~~~~~~~~~~~~~~~~~~~~~~
                     1 errors, 0 warnings
                 """
             )
@@ -234,7 +269,7 @@ internal class InternalApiUsageDetectorTest {
             .expectErrorCount(1)
             .expect(
                 """
-                   src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.kt:8: Error: Symbols annotated with com.datadog.android.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
+                   src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.kt:8: Error: Symbols annotated with com.datadog.android.lint.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
                           val instance = InternalSdkClass()
                                          ~~~~~~~~~~~~~~~~~~
                    1 errors, 0 warnings
@@ -270,7 +305,7 @@ internal class InternalApiUsageDetectorTest {
             .expectErrorCount(1)
             .expect(
                 """
-                   src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.kt:9: Error: Symbols annotated with com.datadog.android.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
+                   src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.kt:9: Error: Symbols annotated with com.datadog.android.lint.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
                           instance.internalMethod()
                           ~~~~~~~~~~~~~~~~~~~~~~~~~
                    1 errors, 0 warnings
@@ -306,7 +341,7 @@ internal class InternalApiUsageDetectorTest {
             .expectErrorCount(1)
             .expect(
                 """
-                   src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.kt:9: Error: Symbols annotated with com.datadog.android.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
+                   src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.kt:9: Error: Symbols annotated with com.datadog.android.lint.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
                           instance.internalProperty
                                    ~~~~~~~~~~~~~~~~
                    1 errors, 0 warnings
@@ -346,8 +381,43 @@ internal class InternalApiUsageDetectorTest {
             .expectErrorCount(1)
             .expect(
                 """
-                   src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.kt:13: Error: Symbols annotated with com.datadog.android.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
+                   src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.kt:13: Error: Symbols annotated with com.datadog.android.lint.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
                           literal.internalMethod()
+                          ~~~~~~~~~~~~~~~~~~~~~~~~
+                   1 errors, 0 warnings
+                """
+            )
+    }
+
+    @Test
+    fun `𝕄 report issue 𝕎 internal method in object class is used from non-Datadog package { kotlin }`() {
+        lint()
+            .files(
+                internalApiAnnotationStub,
+                internalMethodInObjectClassKotlinStub,
+                kotlin(
+                    """
+                package $nonDatadogPackage
+                
+                import com.datadog.android.Datadog
+                
+                class ClassUnderTest { 
+                
+                    fun testMethod() {
+                       Datadog._internalProxy()
+                    }
+                
+                }
+                    """
+                ).indented()
+            )
+            .issues(InternalApiUsageDetector.ISSUE)
+            .run()
+            .expectErrorCount(1)
+            .expect(
+                """
+                   src/${nonDatadogPackage.packageToPath()}/ClassUnderTest.kt:8: Error: Symbols annotated with com.datadog.android.lint.InternalApi shouldn't be used outside of Datadog SDK packages. [DatadogInternalApiUsage]
+                          Datadog._internalProxy()
                           ~~~~~~~~~~~~~~~~~~~~~~~~
                    1 errors, 0 warnings
                 """
@@ -479,6 +549,33 @@ internal class InternalApiUsageDetectorTest {
                 
                     public void testMethod() {
                        TestKt.internalMethod("something");
+                    }
+                
+                }
+                    """
+                ).indented()
+            )
+            .issues(InternalApiUsageDetector.ISSUE)
+            .run()
+            .expectClean()
+    }
+
+    @Test
+    fun `𝕄 not report issue 𝕎 internal method in object class is used from Datadog package { java }`() {
+        lint()
+            .files(
+                internalApiAnnotationStub,
+                internalMethodInObjectClassKotlinStub,
+                java(
+                    """
+                package $datadogPackage;
+                
+                import com.datadog.android.Datadog;
+                
+                public class ClassUnderTest { 
+                
+                    public void testMethod() {
+                       Datadog._internalProxy();
                     }
                 
                 }
@@ -630,6 +727,33 @@ internal class InternalApiUsageDetectorTest {
     }
 
     @Test
+    fun `𝕄 not report issue 𝕎 internal method in object class is used from Datadog package { kotlin }`() {
+        lint()
+            .files(
+                internalApiAnnotationStub,
+                internalMethodInObjectClassKotlinStub,
+                kotlin(
+                    """
+                package $datadogPackage
+                
+                import com.datadog.android.Datadog
+                
+                class ClassUnderTest { 
+                
+                    fun testMethod() {
+                       Datadog._internalProxy()
+                    }
+                
+                }
+                    """
+                ).indented()
+            )
+            .issues(InternalApiUsageDetector.ISSUE)
+            .run()
+            .expectClean()
+    }
+
+    @Test
     fun `𝕄 not report issue 𝕎 non-int method called from int interface impl from non-Datadog package { kotlin }`() {
         lint()
             .files(
@@ -663,6 +787,7 @@ internal class InternalApiUsageDetectorTest {
             """
                 package com.datadog.android.lint
                 
+                @Retention(AnnotationRetention.BINARY)
                 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
                 annotation class InternalApi
             """
@@ -688,6 +813,23 @@ internal class InternalApiUsageDetectorTest {
                 interface InternalSdkCore {
                   @InternalApi
                   fun internalMethod()
+                }
+
+            """
+        ).indented()
+
+        val internalMethodInObjectClassKotlinStub: TestFile = kotlin(
+            """
+                package com.datadog.android
+
+                import com.datadog.android.lint.InternalApi;
+                import kotlin.jvm.JvmStatic;
+
+                object Datadog {
+
+                  @JvmStatic
+                  @InternalApi
+                  fun _internalProxy() = Unit
                 }
 
             """

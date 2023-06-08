@@ -7,6 +7,7 @@
 package com.datadog.android.rum
 
 import com.datadog.android.event.EventMapper
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 
@@ -20,6 +21,7 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
  * Methods, members, and functionality of this class  are subject to change without notice, as they
  * are not considered part of the public interface of the Datadog SDK.
  */
+@InternalApi
 @Suppress(
     "UndocumentedPublicClass",
     "UndocumentedPublicFunction",

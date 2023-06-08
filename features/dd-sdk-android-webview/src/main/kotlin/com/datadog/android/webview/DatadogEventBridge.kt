@@ -10,6 +10,7 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.annotation.MainThread
 import com.datadog.android.core.configuration.HostsSanitizer
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
@@ -85,6 +86,7 @@ internal constructor(
 
     // endregion
 
+    @InternalApi
     @Suppress(
         "UndocumentedPublicClass",
         "UndocumentedPublicFunction",

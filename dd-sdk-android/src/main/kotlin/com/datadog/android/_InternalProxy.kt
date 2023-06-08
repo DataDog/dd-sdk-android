@@ -7,6 +7,7 @@
 package com.datadog.android
 
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.SdkCore
@@ -22,6 +23,7 @@ import com.datadog.android.v2.core.DatadogCore
  * Methods, members, and functionality of this class  are subject to change without notice, as they
  * are not considered part of the public interface of the Datadog SDK.
  */
+@InternalApi
 @Suppress(
     "UndocumentedPublicClass",
     "UndocumentedPublicFunction",

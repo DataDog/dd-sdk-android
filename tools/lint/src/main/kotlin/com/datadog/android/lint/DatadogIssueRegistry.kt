@@ -16,7 +16,7 @@ class DatadogIssueRegistry : IssueRegistry() {
     override val api = CURRENT_API
 
     // probably works with even lower APIs, but it needs to be checked
-    override val minApi = ANDROID_STUDIO_8_API
+    override val minApi = ANDROID_STUDIO_7_3_API
 
     override val issues = listOf(
         InternalApiUsageDetector.ISSUE
@@ -28,6 +28,6 @@ class DatadogIssueRegistry : IssueRegistry() {
     )
 
     private companion object {
-        const val ANDROID_STUDIO_8_API = 14
+        const val ANDROID_STUDIO_7_3_API = 13
     }
 }

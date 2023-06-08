@@ -8,6 +8,7 @@ package com.datadog.android.v2.core
 
 import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.SdkCore
@@ -24,22 +25,26 @@ interface InternalSdkCore : SdkCore {
     /**
      * Returns current state of network connection.
      */
+    @InternalApi
     val networkInfo: NetworkInfo
 
     /**
      * Current tracking consent.
      */
+    @InternalApi
     val trackingConsent: TrackingConsent
 
     /**
      * Root folder for the hosting SDK instance.
      */
+    @InternalApi
     val rootStorageDir: File
 
     /**
      * Shows if core is running in developer mode (some settings are overwritten to simplify
      * debugging during app development).
      */
+    @InternalApi
     val isDeveloperModeEnabled: Boolean
 
     /**
@@ -47,6 +52,7 @@ interface InternalSdkCore : SdkCore {
      *
      * @param data Serialized RUM view event.
      */
+    @InternalApi
     @WorkerThread
     fun writeLastViewEvent(data: ByteArray)
 
@@ -54,16 +60,19 @@ interface InternalSdkCore : SdkCore {
      * Get an executor service for persistence purposes.
      * @return the persistence executor to use for this SDK
      */
+    @InternalApi
     @AnyThread
     fun getPersistenceExecutorService(): ExecutorService
 
     /**
      * @return all the registered features.
      */
+    @InternalApi
     fun getAllFeatures(): List<FeatureScope>
 
     /**
      * @return the current DatadogContext, or null
      */
+    @InternalApi
     fun getDatadogContext(): DatadogContext?
 }
