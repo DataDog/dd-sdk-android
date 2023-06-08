@@ -129,7 +129,7 @@ class com.datadog.android.event.NoOpEventMapper<T: Any> : EventMapper<T>
   override fun map(T): T
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
-class com.datadog.android.lint.InternalApi
+annotation com.datadog.android.lint.InternalApi
 object com.datadog.android.log.LogAttributes
   const val APPLICATION_PACKAGE: String
   const val APPLICATION_VERSION: String
@@ -314,4 +314,4 @@ interface com.datadog.android.v2.core.InternalSdkCore : com.datadog.android.v2.a
   fun getDatadogContext(): com.datadog.android.v2.api.context.DatadogContext?
 interface com.datadog.android.v2.core.storage.DataWriter<T>
   fun write(com.datadog.android.v2.api.EventBatchWriter, T): Boolean
-class com.datadog.tools.annotation.NoOpImplementation
+annotation com.datadog.tools.annotation.NoOpImplementation

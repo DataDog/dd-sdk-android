@@ -1,4 +1,4 @@
-class com.datadog.android.compose.ExperimentalTrackingApi
+annotation com.datadog.android.compose.ExperimentalTrackingApi
 fun trackClick(com.datadog.android.v2.api.SdkCore, String, Map<String, Any?> = remember { emptyMap() }, () -> Unit): () -> Unit
 fun TrackInteractionEffect(com.datadog.android.v2.api.SdkCore, String, androidx.compose.foundation.interaction.InteractionSource, InteractionType, Map<String, Any?> = emptyMap())
 sealed class com.datadog.android.compose.InteractionType

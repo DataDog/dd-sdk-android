@@ -11,7 +11,7 @@ EXTEND_SEPARATOR = ":"
 TESTABLE_API_REGEX = re.compile("^(\\s*)(?<!deprecated)(\\s*)(constructor|fun)(.+)")
 TYPE_REGEX = re.compile("(\\s*)(.*)(class|interface|enum|object)(\\s)(.*)$")
 DEFAULT_IGNORED_TYPE_ATTRS = ["companion", "data"]
-DEFAULT_IGNORED_TYPES = ["enum", "interface"]
+DEFAULT_IGNORED_TYPES = ["enum", "interface", "annotation"]
 INDENT_SIZE = 2
 
 """
