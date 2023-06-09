@@ -72,7 +72,7 @@ analysis:android-lint:
   stage: analysis
   timeout: 30m
   script:
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew :lintCheckAll --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :lintCheckAll --stacktrace --no-daemon
 
 analysis:licenses:
   tags: [ "runner:main" ]
@@ -80,7 +80,7 @@ analysis:licenses:
   stage: analysis
   timeout: 30m
   script:
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew checkThirdPartyLicensesAll --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew checkThirdPartyLicensesAll --stacktrace --no-daemon
 
 analysis:nightly-tests-coverage:
   tags: [ "runner:main" ]
@@ -88,7 +88,7 @@ analysis:nightly-tests-coverage:
   stage: analysis
   timeout: 30m
   script:
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew checkNightlyTestsCoverage --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew checkNightlyTestsCoverage --stacktrace --no-daemon
 
 # TESTS
 
@@ -105,7 +105,7 @@ test:debug:
     policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew :unitTestDebug --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :unitTestDebug --stacktrace --no-daemon --build-cache --gradle-user-home cache/
 
 test:release:
   tags: [ "runner:main" ]
@@ -120,7 +120,7 @@ test:release:
     policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew :unitTestRelease --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :unitTestRelease --stacktrace --no-daemon --build-cache --gradle-user-home cache/
 
 test:tools:
   tags: [ "runner:main" ]
@@ -135,7 +135,7 @@ test:tools:
     policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew :unitTestTools --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :unitTestTools --stacktrace --no-daemon --build-cache --gradle-user-home cache/
 
 test:kover:
   tags: [ "runner:main" ]
@@ -153,7 +153,7 @@ test:kover:
     - export DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.api_key --with-decryption --query "Parameter.Value" --out text)
     - export DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.app_key --with-decryption --query "Parameter.Value" --out text)
     - CODECOV_TOKEN=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.codecov-token  --with-decryption --query "Parameter.Value" --out text)
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew :koverReportAll --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :koverReportAll --stacktrace --no-daemon --build-cache --gradle-user-home cache/
     - python3 ddcoverage.py --prefix dd-sdk-android
     - bash <(cat ./codecov.sh) -t $CODECOV_TOKEN
 
