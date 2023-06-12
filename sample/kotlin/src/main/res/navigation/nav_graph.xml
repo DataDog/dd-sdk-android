@@ -109,4 +109,8 @@
         android:name="com.datadog.android.sample.sessionreplay.UnsupportedViewsFragment"
         android:label="@string/title_unsupported_views"/>
 
+    <fragment android:id="@+id/fragment_image_components"
+        android:name="com.datadog.android.sample.sessionreplay.ImageComponentsFragment"
+        android:label="@string/title_image_components"/>
+
 </navigation>

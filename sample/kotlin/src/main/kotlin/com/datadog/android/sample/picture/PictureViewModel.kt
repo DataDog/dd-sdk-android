@@ -40,7 +40,7 @@ internal class PictureViewModel : ViewModel() {
     }
 
     companion object {
-        private const val RANDOM_URL = "https://source.unsplash.com/random/800x450"
-        private const val FAILING_URL = "https://s0urce.unsplash.com/random/800x450"
+        private const val RANDOM_URL = "https://picsum.photos/800/450"
+        private const val FAILING_URL = "https://p1csum.photos/800/450"
     }
 }
