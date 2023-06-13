@@ -29,7 +29,6 @@ internal class SampledOutSrTest : SrSnapshotTest<SessionReplaySampledOutPlaygrou
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
         val expectedData = runInstrumentationScenario(rule)
         ConditionWatcher {
-            // verify the captured log events into the MockedWebServer
             verifyExpectedSrData(
                 rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl),
                 expectedData

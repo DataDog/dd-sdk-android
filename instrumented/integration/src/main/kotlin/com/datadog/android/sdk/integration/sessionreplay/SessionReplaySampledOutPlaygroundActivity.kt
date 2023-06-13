@@ -15,6 +15,7 @@ internal class SessionReplaySampledOutPlaygroundActivity : SessionReplayPlaygrou
     override fun sessionReplayConfiguration(): SessionReplayConfiguration =
         RuntimeConfig.sessionReplayConfigBuilder()
             .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
+            .setSessionReplaySampleRate(0f)
             .build()
 
     @Suppress("LongMethod")

@@ -19,7 +19,7 @@ internal constructor(
     internal val endpointUrl: String,
     internal val privacy: SessionReplayPrivacy,
     internal val extensionSupport: ExtensionSupport,
-    internal val samplingRate: Float
+    internal val sampleRate: Float
 ) {
 
     /**
@@ -29,7 +29,7 @@ internal constructor(
         private var endpointUrl = DatadogSite.US1.intakeEndpoint
         private var privacy = SessionReplayPrivacy.MASK_ALL
         private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
-        private var samplingRate: Float = DEFAULT_SAMPLING_RATE
+        private var sampleRate: Float = DEFAULT_SAMPLE_RATE
 
         /**
          * Adds an extension support implementation. This is mostly used when you want to provide
@@ -71,14 +71,16 @@ internal constructor(
 
         /**
          * Sets the sampling rate for Session Replay recorded Sessions. Please note that this
-         * sampling rate will be applied on top of already
+         * sampling rate will be applied on top of the already sampled in RUM session.
          *
-         * @param samplingRate the sampling rate must be a value between 0 and 100. A value of 0
+         * @param sampleRate must be a value between 0 and 100. A value of 0
          * means no session will be recorded, 100 means all sessions will be recorded.
+         * The default value for the sample rate will be 0 meaning that no session replay will be
+         * recorded if the sample rate will not be explicitly set.
          */
-        fun sessionReplaySampleRate(@FloatRange(from = 0.0, to = 100.0) samplingRate: Float):
+        fun setSessionReplaySampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float):
             Builder {
-            this.samplingRate = samplingRate
+            this.sampleRate = sampleRate
             return this
         }
 
@@ -90,7 +92,7 @@ internal constructor(
                 endpointUrl = endpointUrl,
                 privacy = privacy,
                 extensionSupport = extensionSupport,
-                samplingRate = samplingRate
+                sampleRate = sampleRate
             )
         }
     }
@@ -111,7 +113,7 @@ internal constructor(
 
     // endregion
 
-    companion object {
-        internal const val DEFAULT_SAMPLING_RATE = 0f
+    internal companion object {
+        internal const val DEFAULT_SAMPLE_RATE = 0f
     }
 }

@@ -55,7 +55,7 @@ internal open class SessionReplayPlaygroundActivity : AppCompatActivity() {
 
     internal open fun sessionReplayConfiguration() = RuntimeConfig.sessionReplayConfigBuilder()
         .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
-        .sessionReplaySampleRate(100f)
+        .setSessionReplaySampleRate(SAMPLE_IN_ALL_SESSIONS)
         .build()
 
     @Suppress("LongMethod")
@@ -252,6 +252,7 @@ internal open class SessionReplayPlaygroundActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val SAMPLE_IN_ALL_SESSIONS = 100f
         private const val BLACK_COLOR_AS_HEXA = 0
         private const val FULL_OPACITY_AS_HEXA = 255
         private const val SANS_SERIF_FAMILY_NAME = "roboto, sans-serif"

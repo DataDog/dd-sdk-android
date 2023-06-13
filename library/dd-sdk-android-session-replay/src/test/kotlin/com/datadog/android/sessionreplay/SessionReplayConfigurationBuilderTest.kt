@@ -41,7 +41,7 @@ internal class SessionReplayConfigurationBuilderTest {
         // Then
         assertThat(config.endpointUrl).isEqualTo(DatadogSite.US1.intakeEndpoint)
         assertThat(config.privacy).isEqualTo(SessionReplayPrivacy.MASK_ALL)
-        assertThat(config.samplingRate).isEqualTo(SessionReplayConfiguration.DEFAULT_SAMPLING_RATE)
+        assertThat(config.sampleRate).isEqualTo(SessionReplayConfiguration.DEFAULT_SAMPLE_RATE)
         assertThat(config.extensionSupport).isInstanceOf(NoOpExtensionSupport::class.java)
     }
 
@@ -95,9 +95,9 @@ internal class SessionReplayConfigurationBuilderTest {
         @FloatForgery fakeSampleRate: Float
     ) {
         // When
-        val config = testedBuilder.sessionReplaySampleRate(fakeSampleRate).build()
+        val config = testedBuilder.setSessionReplaySampleRate(fakeSampleRate).build()
 
         // Then
-        assertThat(config.samplingRate).isEqualTo(fakeSampleRate)
+        assertThat(config.sampleRate).isEqualTo(fakeSampleRate)
     }
 }

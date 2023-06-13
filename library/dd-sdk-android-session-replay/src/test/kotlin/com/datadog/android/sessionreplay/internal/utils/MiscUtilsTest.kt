@@ -34,6 +34,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -54,15 +55,42 @@ internal class MiscUtilsTest {
     @Mock
     lateinit var mockTheme: Theme
 
+    var fakeThemeColor: Int = 0
+
+    var fakeOrientation: Int = 0
+
+    lateinit var fakeConfiguration: Configuration
+
+    var fakeDensity: Float = 0f
+
+    lateinit var fakeDisplayMetrics: DisplayMetrics
+
+    lateinit var mockResources: Resources
+
+    @BeforeEach
+    fun `set up`(forge: Forge) {
+        fakeOrientation = forge.anElementFrom(
+            intArrayOf(
+                Configuration.ORIENTATION_UNDEFINED,
+                Configuration.ORIENTATION_LANDSCAPE,
+                Configuration.ORIENTATION_PORTRAIT
+            )
+        )
+        fakeThemeColor = forge.forgeThemeColor(mockTheme)
+        fakeConfiguration = Configuration().apply { orientation = fakeOrientation }
+        fakeDensity = forge.aPositiveFloat()
+        fakeDisplayMetrics = DisplayMetrics().apply {
+            density = fakeDensity
+        }
+        mockResources = mockResources(fakeConfiguration, fakeDisplayMetrics)
+    }
+
     // region Theme color
 
     @Test
-    fun `M resolve theme color W resolveThemeColor{ theme has color }`(forge: Forge) {
-        // Given
-        val fakeColor = forge.forgeThemeColor(mockTheme)
-
+    fun `M resolve theme color W resolveThemeColor{ theme has color }`() {
         // Then
-        assertThat(MiscUtils.resolveThemeColor(mockTheme)).isEqualTo(fakeColor)
+        assertThat(MiscUtils.resolveThemeColor(mockTheme)).isEqualTo(fakeThemeColor)
     }
 
     @Test
@@ -82,12 +110,10 @@ internal class MiscUtilsTest {
     @Test
     fun `M resolve system information W resolveSystemInformation`(forge: Forge) {
         // Given
-        val fakeThemeColor = forge.forgeThemeColor(mockTheme)
         val expectedThemeColorAsHexa = StringUtils.formatColorAndAlphaAsHexa(
             fakeThemeColor,
             MiscUtils.OPAQUE_ALPHA_VALUE
         )
-        val fakeDensity = forge.aPositiveFloat()
         val fakeScreenWidth = forge.aPositiveInt()
         val fakeScreenHeight = forge.aPositiveInt()
         val expectedScreenWidth = fakeScreenWidth.toLong().densityNormalized(fakeDensity)
@@ -103,18 +129,6 @@ internal class MiscUtilsTest {
         val mockWindowManager: WindowManager = mock {
             whenever(it.defaultDisplay).thenReturn(mockDisplay)
         }
-        val fakeOrientation = forge.anElementFrom(
-            intArrayOf(
-                Configuration.ORIENTATION_UNDEFINED,
-                Configuration.ORIENTATION_LANDSCAPE,
-                Configuration.ORIENTATION_PORTRAIT
-            )
-        )
-        val fakeConfiguration = Configuration().apply { orientation = fakeOrientation }
-        val fakeDisplayMetrics = DisplayMetrics().apply {
-            density = fakeDensity
-        }
-        val mockResources: Resources = mockResources(fakeConfiguration, fakeDisplayMetrics)
         val mockContext: Context = mockContext(mockWindowManager, mockResources, mockTheme)
 
         // When
@@ -135,12 +149,10 @@ internal class MiscUtilsTest {
     @Test
     fun `M resolve system information W resolveSystemInformation{ R and above }`(forge: Forge) {
         // Given
-        val fakeThemeColor = forge.forgeThemeColor(mockTheme)
         val expectedThemeColorAsHexa = StringUtils.formatColorAndAlphaAsHexa(
             fakeThemeColor,
             MiscUtils.OPAQUE_ALPHA_VALUE
         )
-        val fakeDensity = forge.aPositiveFloat()
         val fakeScreenWidth = forge.aPositiveInt(strict = true)
         val fakeScreenHeight = forge.aPositiveInt(strict = true)
         val fakeScreenBoundsTop = forge.aPositiveInt(strict = true)
@@ -161,18 +173,6 @@ internal class MiscUtilsTest {
         val mockWindowManager: WindowManager = mock {
             whenever(it.currentWindowMetrics).thenReturn(mockWindowMetrics)
         }
-        val fakeOrientation = forge.anElementFrom(
-            intArrayOf(
-                Configuration.ORIENTATION_UNDEFINED,
-                Configuration.ORIENTATION_LANDSCAPE,
-                Configuration.ORIENTATION_PORTRAIT
-            )
-        )
-        val fakeConfiguration = Configuration().apply { orientation = fakeOrientation }
-        val fakeDisplayMetrics = DisplayMetrics().apply {
-            density = fakeDensity
-        }
-        val mockResources: Resources = mockResources(fakeConfiguration, fakeDisplayMetrics)
         val mockContext: Context = mockContext(mockWindowManager, mockResources, mockTheme)
 
         // When
@@ -190,28 +190,12 @@ internal class MiscUtilsTest {
     }
 
     @Test
-    fun `M return empty screen bounds W resolveSystemInformation{windowManager was null}`(
-        forge: Forge
-    ) {
+    fun `M return empty screen bounds W resolveSystemInformation{windowManager was null}`() {
         // Given
-        val fakeThemeColor = forge.forgeThemeColor(mockTheme)
-        val fakeDensity = forge.aPositiveFloat()
         val expectedThemeColorAsHexa = StringUtils.formatColorAndAlphaAsHexa(
             fakeThemeColor,
             MiscUtils.OPAQUE_ALPHA_VALUE
         )
-        val fakeOrientation = forge.anElementFrom(
-            intArrayOf(
-                Configuration.ORIENTATION_UNDEFINED,
-                Configuration.ORIENTATION_LANDSCAPE,
-                Configuration.ORIENTATION_PORTRAIT
-            )
-        )
-        val fakeConfiguration = Configuration().apply { orientation = fakeOrientation }
-        val fakeDisplayMetrics = DisplayMetrics().apply {
-            density = fakeDensity
-        }
-        val mockResources: Resources = mockResources(fakeConfiguration, fakeDisplayMetrics)
         val mockContext: Context = mockContext(null, mockResources, mockTheme)
 
         // When
@@ -234,19 +218,6 @@ internal class MiscUtilsTest {
     ) {
         // Given
         forge.forgeThemeInvalidNoColor(mockTheme)
-        val fakeDensity = forge.aPositiveFloat()
-        val fakeOrientation = forge.anElementFrom(
-            intArrayOf(
-                Configuration.ORIENTATION_UNDEFINED,
-                Configuration.ORIENTATION_LANDSCAPE,
-                Configuration.ORIENTATION_PORTRAIT
-            )
-        )
-        val fakeConfiguration = Configuration().apply { orientation = fakeOrientation }
-        val fakeDisplayMetrics = DisplayMetrics().apply {
-            density = fakeDensity
-        }
-        val mockResources: Resources = mockResources(fakeConfiguration, fakeDisplayMetrics)
         val mockContext: Context = mockContext(null, mockResources, mockTheme)
 
         // When

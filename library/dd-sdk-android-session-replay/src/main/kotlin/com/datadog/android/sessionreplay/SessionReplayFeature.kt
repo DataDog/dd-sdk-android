@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class SessionReplayFeature internal constructor(
     configuration: SessionReplayConfiguration,
     private val sessionReplayRecorderProvider: (SdkCore, RecordWriter, Application) -> Recorder,
-    private val rateBasedSampler: Sampler = RateBasedSampler(configuration.samplingRate)
+    private val rateBasedSampler: Sampler = RateBasedSampler(configuration.sampleRate)
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     /**
