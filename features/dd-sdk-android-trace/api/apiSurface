@@ -15,7 +15,7 @@ class com.datadog.android.trace.AndroidTracer : com.datadog.opentracing.DDTracer
     fun logErrorMessage(io.opentracing.Span, String)
 class com.datadog.android.trace.TracingFeature : com.datadog.android.v2.api.StorageBackedFeature
   override val name: String
-  override fun onInitialize(com.datadog.android.v2.api.SdkCore, android.content.Context)
+  override fun onInitialize(com.datadog.android.v2.api.FeatureSdkCore, android.content.Context)
   override val requestFactory: com.datadog.android.v2.api.RequestFactory
   override val storageConfiguration: com.datadog.android.v2.api.FeatureStorageConfiguration
   override fun onStop()

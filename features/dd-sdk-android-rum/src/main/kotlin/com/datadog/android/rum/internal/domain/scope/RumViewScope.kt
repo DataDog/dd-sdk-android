@@ -266,7 +266,7 @@ internal open class RumViewScope(
                     currentRumContext.clear()
                     currentRumContext.putAll(newRumContext.toMap())
                 } else {
-                    sdkCore._internalLogger.log(
+                    sdkCore.internalLogger.log(
                         InternalLogger.Level.DEBUG,
                         targets = listOf(
                             InternalLogger.Target.MAINTAINER,
@@ -308,7 +308,7 @@ internal open class RumViewScope(
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
                 return
             } else {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     ACTION_DROPPED_WARNING.format(Locale.US, event.type, event.name)
@@ -422,7 +422,7 @@ internal open class RumViewScope(
                     ),
                     source = ErrorEvent.ErrorEventSource.tryFromSource(
                         datadogContext.source,
-                        sdkCore._internalLogger
+                        sdkCore.internalLogger
                     ),
                     os = ErrorEvent.Os(
                         name = datadogContext.deviceInfo.osName,
@@ -548,7 +548,7 @@ internal open class RumViewScope(
                 currentRumContext.clear()
                 currentRumContext.putAll(newRumContext.toMap())
             } else {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.DEBUG,
                     targets = listOf(
                         InternalLogger.Target.MAINTAINER,
@@ -754,7 +754,7 @@ internal open class RumViewScope(
                     ),
                     source = ViewEvent.Source.tryFromSource(
                         datadogContext.source,
-                        sdkCore._internalLogger
+                        sdkCore.internalLogger
                     ),
                     os = ViewEvent.Os(
                         name = datadogContext.deviceInfo.osName,
@@ -786,7 +786,7 @@ internal open class RumViewScope(
     private fun resolveViewDuration(event: RumRawEvent): Long {
         val duration = event.eventTime.nanoTime - startedNanos
         return if (duration <= 0) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, name)
@@ -880,7 +880,7 @@ internal open class RumViewScope(
                     ),
                     source = ActionEvent.Source.tryFromSource(
                         datadogContext.source,
-                        sdkCore._internalLogger
+                        sdkCore.internalLogger
                     ),
                     os = ActionEvent.Os(
                         name = datadogContext.deviceInfo.osName,
@@ -958,7 +958,7 @@ internal open class RumViewScope(
                     ),
                     source = LongTaskEvent.Source.tryFromSource(
                         datadogContext.source,
-                        sdkCore._internalLogger
+                        sdkCore.internalLogger
                     ),
                     os = LongTaskEvent.Os(
                         name = datadogContext.deviceInfo.osName,

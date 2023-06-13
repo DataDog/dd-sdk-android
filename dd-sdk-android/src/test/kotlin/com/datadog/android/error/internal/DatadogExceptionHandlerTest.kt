@@ -97,7 +97,7 @@ internal class DatadogExceptionHandlerTest {
     fun `set up`() {
         whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn mockLogsFeatureScope
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
         CoreFeature.disableKronosBackgroundSync = true
 

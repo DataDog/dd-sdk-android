@@ -19,6 +19,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 
@@ -31,11 +32,11 @@ internal open class AndroidXFragmentLifecycleCallbacks(
     private val advancedRumMonitor: AdvancedRumMonitor
 ) : FragmentLifecycleCallbacks<FragmentActivity>, FragmentManager.FragmentLifecycleCallbacks() {
 
-    protected lateinit var sdkCore: SdkCore
+    protected lateinit var sdkCore: FeatureSdkCore
 
     private val internalLogger: InternalLogger
         get() = if (this::sdkCore.isInitialized) {
-            sdkCore._internalLogger
+            sdkCore.internalLogger
         } else {
             InternalLogger.UNBOUND
         }
@@ -43,7 +44,7 @@ internal open class AndroidXFragmentLifecycleCallbacks(
     // region FragmentLifecycleCallbacks
 
     override fun register(activity: FragmentActivity, sdkCore: SdkCore) {
-        this.sdkCore = sdkCore
+        this.sdkCore = sdkCore as FeatureSdkCore
         activity.supportFragmentManager.registerFragmentLifecycleCallbacks(this, true)
     }
 

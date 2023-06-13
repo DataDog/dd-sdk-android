@@ -41,7 +41,7 @@ public class com/datadog/android/okhttp/DatadogInterceptor : com/datadog/android
 	public fun <init> (Ljava/util/List;)V
 	public fun <init> (Ljava/util/Map;)V
 	public fun intercept (Lokhttp3/Interceptor$Chain;)Lokhttp3/Response;
-	protected fun onRequestIntercepted (Lcom/datadog/android/v2/api/SdkCore;Lokhttp3/Request;Lio/opentracing/Span;Lokhttp3/Response;Ljava/lang/Throwable;)V
+	protected fun onRequestIntercepted (Lcom/datadog/android/v2/api/FeatureSdkCore;Lokhttp3/Request;Lio/opentracing/Span;Lokhttp3/Response;Ljava/lang/Throwable;)V
 }
 
 public abstract interface class com/datadog/android/okhttp/trace/TracedRequestListener {
@@ -65,6 +65,6 @@ public class com/datadog/android/okhttp/trace/TracingInterceptor : okhttp3/Inter
 	public fun <init> (Ljava/util/List;)V
 	public fun <init> (Ljava/util/Map;)V
 	public fun intercept (Lokhttp3/Interceptor$Chain;)Lokhttp3/Response;
-	protected fun onRequestIntercepted (Lcom/datadog/android/v2/api/SdkCore;Lokhttp3/Request;Lio/opentracing/Span;Lokhttp3/Response;Ljava/lang/Throwable;)V
+	protected fun onRequestIntercepted (Lcom/datadog/android/v2/api/FeatureSdkCore;Lokhttp3/Request;Lio/opentracing/Span;Lokhttp3/Response;Ljava/lang/Throwable;)V
 }
 

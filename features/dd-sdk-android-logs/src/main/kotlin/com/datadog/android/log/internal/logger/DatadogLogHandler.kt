@@ -11,8 +11,8 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.storage.DataWriter
 import android.util.Log as AndroidLog
@@ -20,7 +20,7 @@ import android.util.Log as AndroidLog
 internal class DatadogLogHandler(
     internal val loggerName: String,
     internal val logGenerator: LogGenerator,
-    internal val sdkCore: SdkCore,
+    internal val sdkCore: FeatureSdkCore,
     internal val writer: DataWriter<LogEvent>,
     internal val attachNetworkInfo: Boolean,
     internal val bundleWithTraces: Boolean = true,
@@ -65,7 +65,7 @@ internal class DatadogLogHandler(
                     }
                 }
             } else {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
                     "Requested to write log, but Logs feature is not registered."
@@ -85,7 +85,7 @@ internal class DatadogLogHandler(
                     )
                 )
             } else {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
                     RUM_FEATURE_NOT_REGISTERED_FOR_ERROR_FORWARD_INFO
@@ -132,7 +132,7 @@ internal class DatadogLogHandler(
                     }
                 }
             } else {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
                     LOGS_FEATURE_NOT_REGISTERED_INFO
@@ -152,7 +152,7 @@ internal class DatadogLogHandler(
                     )
                 )
             } else {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
                     RUM_FEATURE_NOT_REGISTERED_FOR_ERROR_FORWARD_INFO

@@ -8,10 +8,10 @@ package com.datadog.android.sessionreplay.internal.time
 
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.FeatureSdkCore
 
 internal class SessionReplayTimeProvider(
-    private val sdkCore: SdkCore,
+    private val sdkCore: FeatureSdkCore,
     private val currentTimeProvider: () -> Long =
         { System.currentTimeMillis() }
 ) : TimeProvider {

@@ -12,6 +12,7 @@ import androidx.annotation.MainThread
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
@@ -51,7 +52,7 @@ internal constructor(
      * WebView (e.g.: `listOf("example.com", "example.net")`).
      */
     constructor(sdkCore: SdkCore, allowedHosts: List<String>) : this(
-        buildWebViewEventConsumer(sdkCore),
+        buildWebViewEventConsumer(sdkCore as FeatureSdkCore),
         allowedHosts
     )
 
@@ -94,8 +95,7 @@ internal constructor(
         "ClassNaming"
     )
     class _InternalWebViewProxy(sdkCore: SdkCore) {
-
-        private val consumer = buildWebViewEventConsumer(sdkCore)
+        private val consumer = buildWebViewEventConsumer(sdkCore as FeatureSdkCore)
 
         fun consumeWebviewEvent(event: String) {
             consumer.consume(event)
@@ -137,7 +137,7 @@ internal constructor(
         @MainThread
         fun setup(sdkCore: SdkCore, webView: WebView, allowedHosts: List<String>) {
             if (!webView.settings.javaScriptEnabled) {
-                sdkCore._internalLogger.log(
+                (sdkCore as FeatureSdkCore).internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE
@@ -149,7 +149,9 @@ internal constructor(
             )
         }
 
-        private fun buildWebViewEventConsumer(sdkCore: SdkCore): WebViewEventConsumer<String> {
+        private fun buildWebViewEventConsumer(
+            sdkCore: FeatureSdkCore
+        ): WebViewEventConsumer<String> {
             val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
                 ?.unwrap<StorageBackedFeature>()
             val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
@@ -159,7 +161,7 @@ internal constructor(
                 WebViewRumFeature(rumFeature.requestFactory)
                     .apply { sdkCore.registerFeature(this) }
             } else {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
                     RUM_FEATURE_MISSING_INFO
@@ -171,7 +173,7 @@ internal constructor(
                 WebViewLogsFeature(logsFeature.requestFactory)
                     .apply { sdkCore.registerFeature(this) }
             } else {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
                     LOGS_FEATURE_MISSING_INFO
@@ -179,7 +181,7 @@ internal constructor(
                 null
             }
 
-            val contextProvider = WebViewRumEventContextProvider(sdkCore._internalLogger)
+            val contextProvider = WebViewRumEventContextProvider(sdkCore.internalLogger)
 
             if (webViewLogsFeature == null && webViewRumFeature == null) {
                 return NoOpWebViewEventConsumer()
@@ -195,7 +197,7 @@ internal constructor(
                         userLogsWriter = webViewLogsFeature?.dataWriter ?: NoOpDataWriter(),
                         rumContextProvider = contextProvider
                     ),
-                    sdkCore._internalLogger
+                    sdkCore.internalLogger
                 )
             }
         }

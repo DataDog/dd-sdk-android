@@ -17,8 +17,8 @@ import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.storage.DataWriter
@@ -60,7 +60,7 @@ internal class DatadogNdkCrashEventHandlerTest {
     private lateinit var testedHandler: NdkCrashEventHandler
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: FeatureSdkCore
 
     @Mock
     lateinit var mockRumFeatureScope: FeatureScope

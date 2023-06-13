@@ -246,7 +246,7 @@ internal class RumActionScope(
                     ),
                     source = ActionEvent.Source.tryFromSource(
                         datadogContext.source,
-                        sdkCore._internalLogger
+                        sdkCore.internalLogger
                     ),
                     usr = if (user.hasUserData()) {
                         ActionEvent.Usr(

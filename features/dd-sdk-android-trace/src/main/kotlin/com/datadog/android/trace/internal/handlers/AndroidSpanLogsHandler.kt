@@ -9,8 +9,8 @@ package com.datadog.android.trace.internal.handlers
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
 import com.datadog.trace.api.DDTags
@@ -18,7 +18,7 @@ import io.opentracing.log.Fields
 import java.util.concurrent.TimeUnit
 
 internal class AndroidSpanLogsHandler(
-    private val sdkCore: SdkCore
+    private val sdkCore: FeatureSdkCore
 ) : LogHandler {
 
     // region Span
@@ -80,7 +80,7 @@ internal class AndroidSpanLogsHandler(
                 )
             )
         } else {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 MISSING_LOG_FEATURE_INFO

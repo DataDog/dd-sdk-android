@@ -143,7 +143,6 @@ unMock {
     keep("android.os.Looper")
     keep("android.os.MessageQueue")
     keep("android.os.SystemProperties")
-    keep("android.view.Choreographer")
     keep("android.view.DisplayEventReceiver")
     keepStartingWith("org.json")
 }

@@ -10,11 +10,11 @@ import android.util.Log
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 
 internal class SdkInternalLogger(
-    private val sdkCore: SdkCore?,
+    private val sdkCore: FeatureSdkCore?,
     devLogHandlerFactory: () -> LogcatLogHandler = {
         LogcatLogHandler(DEV_LOG_TAG) { level ->
             level >= Datadog.getVerbosity()

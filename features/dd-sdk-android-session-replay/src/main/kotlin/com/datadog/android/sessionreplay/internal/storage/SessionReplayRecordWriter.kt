@@ -9,9 +9,9 @@ package com.datadog.android.sessionreplay.internal.storage
 import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.RecordWriter
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
-import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.FeatureSdkCore
 
-internal class SessionReplayRecordWriter(private val sdkCore: SdkCore) : RecordWriter {
+internal class SessionReplayRecordWriter(private val sdkCore: FeatureSdkCore) : RecordWriter {
     private var lastRumContextId: String = ""
     override fun write(record: EnrichedRecord) {
         val forceNewBatch = resolveForceNewBatch(record)

@@ -158,7 +158,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         ) { _, _ -> mockLocalTracer }
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
-        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver
 
         fakeResourceAttributes = forge.exhaustiveAttributes()

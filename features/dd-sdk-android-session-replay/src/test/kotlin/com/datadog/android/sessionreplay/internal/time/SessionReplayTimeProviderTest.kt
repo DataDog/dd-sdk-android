@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.internal.time
 
 import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.FeatureSdkCore
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -31,7 +31,7 @@ import org.mockito.quality.Strictness
 internal class SessionReplayTimeProviderTest {
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: FeatureSdkCore
 
     lateinit var testedTimeProvider: SessionReplayTimeProvider
 

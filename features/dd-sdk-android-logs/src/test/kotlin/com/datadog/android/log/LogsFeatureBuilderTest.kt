@@ -12,8 +12,8 @@ import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.log.internal.net.LogsRequestFactory
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -41,14 +41,14 @@ internal class LogsFeatureBuilderTest {
     private val testedBuilder: LogsFeature.Builder = LogsFeature.Builder()
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: FeatureSdkCore
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
     }
 
     @Test

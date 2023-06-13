@@ -10,6 +10,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
 
@@ -40,7 +41,7 @@ class _InternalProxy internal constructor(
 
         private val rumFeature: FeatureScope?
             get() {
-                return sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+                return (sdkCore as? FeatureSdkCore)?.getFeature(Feature.RUM_FEATURE_NAME)
             }
 
         fun debug(message: String) {

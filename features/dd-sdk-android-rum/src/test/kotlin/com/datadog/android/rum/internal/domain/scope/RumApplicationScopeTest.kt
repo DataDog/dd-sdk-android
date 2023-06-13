@@ -106,7 +106,7 @@ internal class RumApplicationScopeTest {
     fun `set up`() {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
-        whenever(mockSdkCore._internalLogger) doReturn mock()
+        whenever(mockSdkCore.internalLogger) doReturn mock()
 
         testedScope = RumApplicationScope(
             fakeApplicationId,

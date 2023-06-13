@@ -11,7 +11,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
 import java.io.File
@@ -20,7 +20,7 @@ import java.util.concurrent.ExecutorService
 /**
  * FOR INTERNAL USAGE ONLY. THIS INTERFACE CONTENT MAY CHANGE WITHOUT NOTICE.
  */
-interface InternalSdkCore : SdkCore {
+interface InternalSdkCore : FeatureSdkCore {
 
     /**
      * Returns current state of network connection.

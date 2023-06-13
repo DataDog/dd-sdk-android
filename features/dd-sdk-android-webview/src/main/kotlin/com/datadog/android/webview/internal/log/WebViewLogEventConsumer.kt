@@ -7,8 +7,8 @@
 package com.datadog.android.webview.internal.log
 
 import com.datadog.android.log.LogAttributes
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.android.webview.internal.WebViewEventConsumer
@@ -17,7 +17,7 @@ import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonObject
 
 internal class WebViewLogEventConsumer(
-    private val sdkCore: SdkCore,
+    private val sdkCore: FeatureSdkCore,
     internal val userLogsWriter: DataWriter<JsonObject>,
     private val rumContextProvider: WebViewRumEventContextProvider
 ) : WebViewEventConsumer<Pair<JsonObject, String>> {
@@ -57,28 +57,28 @@ internal class WebViewLogEventConsumer(
                 )
             }
         } catch (e: ClassCastException) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 JSON_PARSING_ERROR_MESSAGE,
                 e
             )
         } catch (e: IllegalStateException) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 JSON_PARSING_ERROR_MESSAGE,
                 e
             )
         } catch (e: NumberFormatException) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 JSON_PARSING_ERROR_MESSAGE,
                 e
             )
         } catch (e: UnsupportedOperationException) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 JSON_PARSING_ERROR_MESSAGE,
@@ -94,21 +94,21 @@ internal class WebViewLogEventConsumer(
         try {
             eventDdTags = event.get(DDTAGS_KEY_NAME)?.asString
         } catch (e: ClassCastException) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 JSON_PARSING_ERROR_MESSAGE,
                 e
             )
         } catch (e: IllegalStateException) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 JSON_PARSING_ERROR_MESSAGE,
                 e
             )
         } catch (e: UnsupportedOperationException) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 JSON_PARSING_ERROR_MESSAGE,

@@ -30,7 +30,7 @@ internal class RumSessionScope(
     internal val sampleRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
-    internal val viewChangedListener: RumViewChangedListener?,
+    viewChangedListener: RumViewChangedListener?,
     internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,

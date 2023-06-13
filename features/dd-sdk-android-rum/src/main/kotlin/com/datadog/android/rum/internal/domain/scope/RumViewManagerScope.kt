@@ -138,7 +138,7 @@ internal class RumViewManagerScope(
         } else {
             val isSilentOrphanEvent = event.javaClass in silentOrphanEventTypes
             if (!isSilentOrphanEvent) {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     MESSAGE_MISSING_VIEW
@@ -192,7 +192,7 @@ internal class RumViewManagerScope(
             viewScope.handleEvent(event, writer)
             childrenScopes.add(viewScope)
         } else if (!isSilentOrphanEvent) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 MESSAGE_MISSING_VIEW

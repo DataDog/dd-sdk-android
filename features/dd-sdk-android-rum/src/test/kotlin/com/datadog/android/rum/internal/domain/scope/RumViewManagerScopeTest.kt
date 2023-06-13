@@ -117,7 +117,7 @@ internal class RumViewManagerScopeTest {
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         whenever(mockChildScope.isActive()) doReturn true
         whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn fakeTime.deviceTimeNs
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
         testedScope = RumViewManagerScope(
             mockParentScope,

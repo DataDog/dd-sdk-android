@@ -17,8 +17,8 @@ import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -48,7 +48,7 @@ import org.mockito.quality.Strictness
 internal class LoggerBuilderTest {
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: FeatureSdkCore
 
     @Mock
     lateinit var mockLogsFeatureScope: FeatureScope
@@ -73,7 +73,7 @@ internal class LoggerBuilderTest {
         whenever(mockLogsFeature.packageName) doReturn fakePackageName
         whenever(mockLogsFeature.dataWriter) doReturn mockDataWriter
         whenever(mockSdkCore.service) doReturn fakeServiceName
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
         whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn mockLogsFeatureScope
         whenever(mockLogsFeatureScope.unwrap<LogsFeature>()) doReturn mockLogsFeature

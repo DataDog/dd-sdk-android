@@ -165,7 +165,7 @@ internal class RumResourceScopeTest {
         mockEvent = mockEvent()
 
         whenever(rumMonitor.mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
-        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         doAnswer { false }.whenever(mockResolver).isFirstPartyUrl(any<String>())
         whenever(

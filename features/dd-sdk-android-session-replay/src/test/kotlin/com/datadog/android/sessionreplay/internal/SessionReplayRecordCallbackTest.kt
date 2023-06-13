@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal
 
 import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.FeatureSdkCore
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -35,7 +35,7 @@ import java.util.UUID
 internal class SessionReplayRecordCallbackTest {
 
     @Mock
-    lateinit var mockDatadogCore: SdkCore
+    lateinit var mockDatadogCore: FeatureSdkCore
     lateinit var testedRecordCallback: SessionReplayRecordCallback
 
     @BeforeEach

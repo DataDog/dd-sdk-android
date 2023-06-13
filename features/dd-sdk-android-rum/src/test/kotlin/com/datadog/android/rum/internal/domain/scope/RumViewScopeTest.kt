@@ -239,7 +239,7 @@ internal class RumViewScopeTest {
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(rumMonitor.mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
         whenever(rumMonitor.mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
-        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)

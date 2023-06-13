@@ -460,7 +460,7 @@ internal class DatadogRumMonitor(
                         handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
                     }
                 } catch (e: RejectedExecutionException) {
-                    sdkCore._internalLogger.log(
+                    sdkCore.internalLogger.log(
                         InternalLogger.Level.ERROR,
                         InternalLogger.Target.USER,
                         "Unable to handle a RUM event, task was rejected",
@@ -487,7 +487,7 @@ internal class DatadogRumMonitor(
                     latch.countDown()
                 }
             } catch (e: RejectedExecutionException) {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     "Rejected waiting for the pending events",
@@ -497,7 +497,7 @@ internal class DatadogRumMonitor(
             try {
                 latch.await(1, TimeUnit.SECONDS)
             } catch (_: InterruptedException) {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.MAINTAINER,
                     "Waiting for pending RUM events was interrupted"

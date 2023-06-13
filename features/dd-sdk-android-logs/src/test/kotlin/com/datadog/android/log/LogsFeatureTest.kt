@@ -18,9 +18,9 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
@@ -70,7 +70,7 @@ internal class LogsFeatureTest {
     private lateinit var testedFeature: LogsFeature
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: FeatureSdkCore
 
     @Mock
     lateinit var mockLogsFeatureScope: FeatureScope
@@ -129,7 +129,7 @@ internal class LogsFeatureTest {
         val now = System.currentTimeMillis()
         fakeServerTimeOffset = forge.aLong(min = -now, max = Long.MAX_VALUE - now)
 
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
         whenever(mockApplicationContext.packageName) doReturn fakePackageName
         whenever(

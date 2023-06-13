@@ -79,7 +79,7 @@ internal class UiRumDebugListenerTest {
     fun setUp() {
         testedListener = UiRumDebugListener(rumMonitor.mockSdkCore)
 
-        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockDecorView.findViewById<View>(android.R.id.content)) doReturn mockContentView
         whenever(mockWindow.decorView) doReturn mockDecorView
         whenever(mockActivity.window) doReturn mockWindow

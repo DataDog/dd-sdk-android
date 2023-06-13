@@ -15,6 +15,7 @@ import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.InternalSdkCore
@@ -330,7 +331,7 @@ interface RumMonitor {
          */
         fun build(): RumMonitor {
             if (sdkCore !is InternalSdkCore) {
-                sdkCore._internalLogger.log(
+                (sdkCore as FeatureSdkCore).internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     UNEXPECTED_SDK_CORE_TYPE
@@ -341,14 +342,14 @@ interface RumMonitor {
             val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
                 ?.unwrap<RumFeature>()
             return if (rumFeature == null) {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     RUM_NOT_ENABLED_ERROR_MESSAGE
                 )
                 NoOpRumMonitor()
             } else if (rumFeature.applicationId.isBlank()) {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     INVALID_APPLICATION_ID_ERROR_MESSAGE

@@ -74,7 +74,7 @@ internal class RumDataWriterTest {
         fakeSerializedData = fakeSerializedEvent.toByteArray(Charsets.UTF_8)
 
         whenever(mockEventBatchWriter.write(fakeSerializedData, null)) doReturn true
-        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
 
         testedWriter = RumDataWriter(
             mockSerializer,

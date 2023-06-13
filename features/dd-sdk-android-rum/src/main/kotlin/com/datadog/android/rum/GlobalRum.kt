@@ -8,6 +8,7 @@ package com.datadog.android.rum
 
 import com.datadog.android.rum.GlobalRum.get
 import com.datadog.android.rum.GlobalRum.registerIfAbsent
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import java.util.concurrent.Callable
@@ -79,7 +80,7 @@ object GlobalRum {
     fun registerIfAbsent(sdkCore: SdkCore, provider: Callable<RumMonitor>): Boolean {
         return synchronized(registeredMonitors) {
             if (registeredMonitors.containsKey(sdkCore)) {
-                sdkCore._internalLogger.log(
+                (sdkCore as FeatureSdkCore).internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     "A RumMonitor has already been registered for this SDK instance"

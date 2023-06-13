@@ -25,7 +25,7 @@ interface Feature {
      * @param appContext Application context.
      */
     fun onInitialize(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         appContext: Context
     )
 

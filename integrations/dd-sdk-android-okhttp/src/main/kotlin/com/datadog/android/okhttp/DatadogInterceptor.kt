@@ -26,6 +26,7 @@ import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import io.opentracing.Span
@@ -205,7 +206,7 @@ internal constructor(
 
     /** @inheritdoc */
     override fun intercept(chain: Interceptor.Chain): Response {
-        val sdkCore = sdkCoreReference.get()
+        val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
         if (rumFeature != null) {
             val request = chain.request()
@@ -215,7 +216,7 @@ internal constructor(
 
             GlobalRum.get(sdkCore).startResource(requestId, method, url)
         } else {
-            sdkCore?._internalLogger?.log(
+            sdkCore?.internalLogger?.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 WARN_RUM_DISABLED
@@ -230,7 +231,7 @@ internal constructor(
 
     /** @inheritdoc */
     override fun onRequestIntercepted(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         request: Request,
         span: Span?,
         response: Response?,
@@ -249,7 +250,8 @@ internal constructor(
 
     /** @inheritdoc */
     override fun canSendSpan(): Boolean {
-        val rumFeature = sdkCoreReference.get()?.getFeature(Feature.RUM_FEATURE_NAME)
+        val rumFeature = (sdkCoreReference.get() as? FeatureSdkCore)
+            ?.getFeature(Feature.RUM_FEATURE_NAME)
         return rumFeature == null
     }
 
@@ -263,7 +265,7 @@ internal constructor(
     // region Internal
 
     private fun handleResponse(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         request: Request,
         response: Response,
         span: Span?,
@@ -287,7 +289,7 @@ internal constructor(
         GlobalRum.get(sdkCore).stopResource(
             requestId,
             statusCode,
-            getBodyLength(response, sdkCore._internalLogger),
+            getBodyLength(response, sdkCore.internalLogger),
             kind,
             attributes + rumResourceAttributesProvider.onProvideAttributes(request, response, null)
         )

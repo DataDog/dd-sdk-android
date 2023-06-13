@@ -195,7 +195,7 @@ internal class RumResourceScope(
                         type = kind.toSchemaType(),
                         url = url,
                         duration = duration,
-                        method = method.toMethod(sdkCore._internalLogger),
+                        method = method.toMethod(sdkCore.internalLogger),
                         statusCode = statusCode,
                         size = size,
                         dns = finalTiming?.dns(),
@@ -230,7 +230,7 @@ internal class RumResourceScope(
                     ),
                     source = ResourceEvent.Source.tryFromSource(
                         datadogContext.source,
-                        sdkCore._internalLogger
+                        sdkCore.internalLogger
                     ),
                     os = ResourceEvent.Os(
                         name = datadogContext.deviceInfo.osName,
@@ -265,7 +265,7 @@ internal class RumResourceScope(
     private fun resolveResourceDuration(eventTime: Time): Long {
         val duration = eventTime.nanoTime - startedNanos
         return if (duration <= 0) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, url)
@@ -316,7 +316,7 @@ internal class RumResourceScope(
                         isCrash = false,
                         resource = ErrorEvent.Resource(
                             url = url,
-                            method = method.toErrorMethod(sdkCore._internalLogger),
+                            method = method.toErrorMethod(sdkCore.internalLogger),
                             statusCode = statusCode ?: 0,
                             provider = resolveErrorProvider()
                         ),
@@ -348,7 +348,7 @@ internal class RumResourceScope(
                     ),
                     source = ErrorEvent.ErrorEventSource.tryFromSource(
                         datadogContext.source,
-                        sdkCore._internalLogger
+                        sdkCore.internalLogger
                     ),
                     os = ErrorEvent.Os(
                         name = datadogContext.deviceInfo.osName,

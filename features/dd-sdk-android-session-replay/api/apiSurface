@@ -3,7 +3,7 @@ interface com.datadog.android.sessionreplay.ExtensionSupport
   fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector>
 class com.datadog.android.sessionreplay.SessionReplayFeature : com.datadog.android.v2.api.StorageBackedFeature, com.datadog.android.v2.api.FeatureEventReceiver
   override val name: String
-  override fun onInitialize(com.datadog.android.v2.api.SdkCore, android.content.Context)
+  override fun onInitialize(com.datadog.android.v2.api.FeatureSdkCore, android.content.Context)
   override val requestFactory: com.datadog.android.v2.api.RequestFactory
   override val storageConfiguration: com.datadog.android.v2.api.FeatureStorageConfiguration
   override fun onStop()

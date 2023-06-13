@@ -13,6 +13,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.annotation.MainThread
 import com.datadog.android.rum.RumFeature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 
@@ -24,11 +25,11 @@ abstract class ActivityLifecycleTrackingStrategy :
     Application.ActivityLifecycleCallbacks,
     TrackingStrategy {
 
-    private lateinit var sdkCore: SdkCore
+    private lateinit var sdkCore: FeatureSdkCore
 
     internal val internalLogger: InternalLogger
         get() = if (this::sdkCore.isInitialized) {
-            sdkCore._internalLogger
+            sdkCore.internalLogger
         } else {
             InternalLogger.UNBOUND
         }
@@ -37,10 +38,10 @@ abstract class ActivityLifecycleTrackingStrategy :
 
     override fun register(sdkCore: SdkCore, context: Context) {
         if (context is Application) {
-            this.sdkCore = sdkCore
+            this.sdkCore = sdkCore as FeatureSdkCore
             context.registerActivityLifecycleCallbacks(this)
         } else {
-            sdkCore._internalLogger.log(
+            (sdkCore as FeatureSdkCore).internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
                 "In order to use the RUM automatic tracking feature you will have" +
@@ -155,7 +156,7 @@ abstract class ActivityLifecycleTrackingStrategy :
      * @param block the block to run accepting the current SDK instance
      * @return the result of the block, or null if no SDK instance is available yet
      */
-    protected fun <T> withSdkCore(block: (SdkCore) -> T): T? {
+    protected fun <T> withSdkCore(block: (FeatureSdkCore) -> T): T? {
         return if (this::sdkCore.isInitialized) {
             block(sdkCore)
         } else {

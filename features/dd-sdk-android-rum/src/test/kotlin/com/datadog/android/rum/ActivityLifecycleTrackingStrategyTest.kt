@@ -66,7 +66,7 @@ internal abstract class ActivityLifecycleTrackingStrategyTest<T> : ObjectTest<T>
     open fun `set up`(forge: Forge) {
         whenever(mockActivity.intent).thenReturn(mockIntent)
         whenever(mockActivity.window).thenReturn(mockWindow)
-        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mock()
+        whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mock()
     }
 
     @Test

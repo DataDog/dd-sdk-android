@@ -49,7 +49,7 @@ You can create a `Logger` instance using the dedicated builder, as follows:
             .setLogcatLogsEnabled(true)
             .setDatadogLogsEnabled(true)
             .setLoggerName("name")
-            .build();
+            .build()
 ```
 
 ### Logging

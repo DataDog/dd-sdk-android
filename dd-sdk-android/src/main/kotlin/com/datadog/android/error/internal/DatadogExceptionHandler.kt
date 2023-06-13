@@ -11,14 +11,14 @@ import androidx.work.WorkManager
 import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.InternalSdkCore
 import java.lang.ref.WeakReference
 import java.util.concurrent.ThreadPoolExecutor
 
 internal class DatadogExceptionHandler(
-    private val sdkCore: SdkCore,
+    private val sdkCore: FeatureSdkCore,
     appContext: Context
 ) : Thread.UncaughtExceptionHandler {
 
@@ -42,7 +42,7 @@ internal class DatadogExceptionHandler(
                 )
             )
         } else {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 MISSING_LOGS_FEATURE_INFO
@@ -60,7 +60,7 @@ internal class DatadogExceptionHandler(
                 )
             )
         } else {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 MISSING_RUM_FEATURE_INFO
@@ -72,9 +72,9 @@ internal class DatadogExceptionHandler(
         // give some time to the persistence executor service to finish its tasks
         if (sdkCore is InternalSdkCore) {
             val idled = (sdkCore.getPersistenceExecutorService() as? ThreadPoolExecutor)
-                ?.waitToIdle(MAX_WAIT_FOR_IDLE_TIME_IN_MS, sdkCore._internalLogger) ?: true
+                ?.waitToIdle(MAX_WAIT_FOR_IDLE_TIME_IN_MS, sdkCore.internalLogger) ?: true
             if (!idled) {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     EXECUTOR_NOT_IDLED_WARNING_MESSAGE
@@ -85,7 +85,7 @@ internal class DatadogExceptionHandler(
         // trigger a task to send the logs ASAP
         contextRef.get()?.let {
             if (WorkManager.isInitialized()) {
-                triggerUploadWorker(it, sdkCore._internalLogger)
+                triggerUploadWorker(it, sdkCore.internalLogger)
             }
         }
 

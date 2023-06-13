@@ -12,9 +12,9 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
@@ -65,7 +65,7 @@ internal class DatadogEventBridgeTest {
     lateinit var mockWebViewEventConsumer: MixedWebViewEventConsumer
 
     @Mock
-    lateinit var mockCore: SdkCore
+    lateinit var mockCore: FeatureSdkCore
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -103,7 +103,7 @@ internal class DatadogEventBridgeTest {
         whenever(
             mockLogsFeatureScope.unwrap<StorageBackedFeature>()
         ) doReturn mockLogsFeature
-        whenever(mockCore._internalLogger) doReturn mockInternalLogger
+        whenever(mockCore.internalLogger) doReturn mockInternalLogger
 
         whenever(mockRumFeature.requestFactory) doReturn mockRumRequestFactory
         whenever(mockLogsFeature.requestFactory) doReturn mockLogsRequestFactory

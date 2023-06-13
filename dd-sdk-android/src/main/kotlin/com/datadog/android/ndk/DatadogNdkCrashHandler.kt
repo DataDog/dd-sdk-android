@@ -16,8 +16,8 @@ import com.datadog.android.core.internal.persistence.file.readTextSafe
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.google.gson.JsonObject
@@ -68,7 +68,10 @@ internal class DatadogNdkCrashHandler(
         }
     }
 
-    override fun handleNdkCrash(sdkCore: SdkCore, reportTarget: NdkCrashHandler.ReportTarget) {
+    override fun handleNdkCrash(
+        sdkCore: FeatureSdkCore,
+        reportTarget: NdkCrashHandler.ReportTarget
+    ) {
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             dataPersistenceExecutorService.submit {
@@ -158,7 +161,7 @@ internal class DatadogNdkCrashHandler(
 
     @WorkerThread
     private fun checkAndHandleNdkCrashReport(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         reportTarget: NdkCrashHandler.ReportTarget
     ) {
         if (lastNdkCrashLog != null) {
@@ -191,7 +194,7 @@ internal class DatadogNdkCrashHandler(
 
     @WorkerThread
     private fun handleNdkCrashLog(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         ndkCrashLog: NdkCrashLog?,
         lastViewEvent: JsonObject?,
         lastUserInfo: UserInfo?,
@@ -274,7 +277,7 @@ internal class DatadogNdkCrashHandler(
     @Suppress("StringLiteralDuplication")
     @WorkerThread
     private fun sendCrashRumEvent(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         errorLogMessage: String,
         ndkCrashLog: NdkCrashLog,
         lastViewEvent: JsonObject
@@ -303,7 +306,7 @@ internal class DatadogNdkCrashHandler(
     @Suppress("StringLiteralDuplication")
     @WorkerThread
     private fun sendCrashLogEvent(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         errorLogMessage: String,
         logAttributes: Map<String, String>,
         ndkCrashLog: NdkCrashLog,

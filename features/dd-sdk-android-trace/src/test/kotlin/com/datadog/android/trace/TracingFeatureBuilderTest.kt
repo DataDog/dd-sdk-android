@@ -10,8 +10,8 @@ import com.datadog.android.trace.internal.domain.event.NoOpSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapper
 import com.datadog.android.trace.internal.net.TracesRequestFactory
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -39,14 +39,14 @@ internal class TracingFeatureBuilderTest {
     private val testedBuilder: TracingFeature.Builder = TracingFeature.Builder()
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: FeatureSdkCore
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
     }
 
     @Test

@@ -169,7 +169,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         fakeUrl = forgeUrlWithQueryParams(forge)
         fakeRequest = forgeRequest(forge)
         whenever(datadogCore.mockInstance.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
-        whenever(datadogCore.mockInstance._internalLogger) doReturn mockInternalLogger
+        whenever(datadogCore.mockInstance.internalLogger) doReturn mockInternalLogger
         whenever(datadogCore.mockInstance.firstPartyHostResolver) doReturn mockResolver
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ ->
             mockLocalTracer
