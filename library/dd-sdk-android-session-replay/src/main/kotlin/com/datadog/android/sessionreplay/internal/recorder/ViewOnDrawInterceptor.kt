@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
-import android.app.Activity
+import android.content.Context
 import android.view.View
 import android.view.ViewTreeObserver.OnDrawListener
 import com.datadog.android.sessionreplay.internal.processor.Processor
@@ -16,7 +16,7 @@ import java.util.WeakHashMap
 internal class ViewOnDrawInterceptor(
     private val processor: Processor,
     private val snapshotProducer: SnapshotProducer,
-    private val onDrawListenerProducer: (Activity, List<View>) -> OnDrawListener =
+    private val onDrawListenerProducer: (Context, List<View>) -> OnDrawListener =
         { activity, decorViews ->
             WindowsOnDrawListener(
                 activity,
@@ -29,9 +29,9 @@ internal class ViewOnDrawInterceptor(
     internal val decorOnDrawListeners: WeakHashMap<View, OnDrawListener> =
         WeakHashMap()
 
-    fun intercept(decorViews: List<View>, ownerActivity: Activity) {
+    fun intercept(decorViews: List<View>, appContext: Context) {
         stopInterceptingAndRemove(decorViews)
-        val onDrawListener = onDrawListenerProducer(ownerActivity, decorViews)
+        val onDrawListener = onDrawListenerProducer(appContext, decorViews)
         decorViews.forEach { decorView ->
             decorOnDrawListeners[decorView] = onDrawListener
             decorView.viewTreeObserver?.addOnDrawListener(onDrawListener)

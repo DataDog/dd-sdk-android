@@ -11,29 +11,31 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks
-import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
 
 internal class RecorderFragmentLifecycleCallback(
-    private val windowCallbackInterceptor: WindowCallbackInterceptor
-) : FragmentLifecycleCallbacks() {
+    private val onWindowRefreshedCallback: OnWindowRefreshedCallback
+) :
+    FragmentLifecycleCallbacks() {
 
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
-        f.asValidDialogFragment {
-            val ownerActivity = it.dialog?.ownerActivity ?: return@asValidDialogFragment
-            it.getWindowsToRecord()?.let { windows ->
-                windowCallbackInterceptor.intercept(windows, ownerActivity)
-            }
+        getWindowsToRecord(f)?.let {
+            onWindowRefreshedCallback.onWindowsAdded(it)
         }
     }
 
     override fun onFragmentPaused(fm: FragmentManager, f: Fragment) {
-        f.asValidDialogFragment {
-            it.getWindowsToRecord()?.let { windows ->
-                windowCallbackInterceptor.stopIntercepting(windows)
-            }
+        getWindowsToRecord(f)?.let {
+            onWindowRefreshedCallback.onWindowsRemoved(it)
         }
         super.onFragmentPaused(fm, f)
+    }
+
+    private fun getWindowsToRecord(f: Fragment): List<Window>? {
+        if (f is DialogFragment && f.context != null) {
+            return f.getWindowsToRecord()
+        }
+        return null
     }
 
     private fun DialogFragment.getWindowsToRecord(): List<Window>? {
@@ -51,16 +53,9 @@ internal class RecorderFragmentLifecycleCallback(
             return null
         }
         return if (dialogWindow != ownerActivityWindow) {
-            // the order is very important here as it must have the activity window at the bottom
             listOf(dialogWindow)
         } else {
             null
-        }
-    }
-
-    private fun Fragment.asValidDialogFragment(block: (DialogFragment) -> Unit) {
-        if (this is DialogFragment && context != null) {
-            block(this)
         }
     }
 }

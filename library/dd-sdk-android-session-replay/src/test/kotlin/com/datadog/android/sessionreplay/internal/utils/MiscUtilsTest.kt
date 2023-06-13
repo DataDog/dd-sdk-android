@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.utils
 
-import android.app.Activity
+import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.content.res.Resources.Theme
@@ -118,14 +118,14 @@ internal class MiscUtilsTest {
             whenever(it.configuration).thenReturn(fakeConfiguration)
             whenever(it.displayMetrics).thenReturn(fakeDisplayMetrics)
         }
-        val mockActivity: Activity = mock {
-            whenever(it.windowManager).thenReturn(mockWindowManager)
+        val mockContext: Context = mock {
+            whenever(it.getSystemService(Context.WINDOW_SERVICE)).thenReturn(mockWindowManager)
             whenever(it.resources).thenReturn(mockResources)
             whenever(it.theme).thenReturn(mockTheme)
         }
 
         // When
-        val systemInformation = MiscUtils.resolveSystemInformation(mockActivity)
+        val systemInformation = MiscUtils.resolveSystemInformation(mockContext)
 
         // Then
         assertThat(systemInformation).isEqualTo(
@@ -183,14 +183,14 @@ internal class MiscUtilsTest {
             whenever(it.configuration).thenReturn(fakeConfiguration)
             whenever(it.displayMetrics).thenReturn(fakeDisplayMetrics)
         }
-        val mockActivity: Activity = mock {
-            whenever(it.windowManager).thenReturn(mockWindowManager)
+        val mockContext: Context = mock {
+            whenever(it.getSystemService(Context.WINDOW_SERVICE)).thenReturn(mockWindowManager)
             whenever(it.resources).thenReturn(mockResources)
             whenever(it.theme).thenReturn(mockTheme)
         }
 
         // When
-        val systemInformation = MiscUtils.resolveSystemInformation(mockActivity)
+        val systemInformation = MiscUtils.resolveSystemInformation(mockContext)
 
         // Then
         assertThat(systemInformation).isEqualTo(
@@ -229,14 +229,14 @@ internal class MiscUtilsTest {
             whenever(it.configuration).thenReturn(fakeConfiguration)
             whenever(it.displayMetrics).thenReturn(fakeDisplayMetrics)
         }
-        val mockActivity: Activity = mock {
-            whenever(it.windowManager).thenReturn(null)
+        val mockContext: Context = mock {
+            whenever(it.getSystemService(Context.WINDOW_SERVICE)).thenReturn(null)
             whenever(it.resources).thenReturn(mockResources)
             whenever(it.theme).thenReturn(mockTheme)
         }
 
         // When
-        val systemInformation = MiscUtils.resolveSystemInformation(mockActivity)
+        val systemInformation = MiscUtils.resolveSystemInformation(mockContext)
 
         // Then
         assertThat(systemInformation).isEqualTo(
@@ -271,14 +271,14 @@ internal class MiscUtilsTest {
             whenever(it.configuration).thenReturn(fakeConfiguration)
             whenever(it.displayMetrics).thenReturn(fakeDisplayMetrics)
         }
-        val mockActivity: Activity = mock {
-            whenever(it.windowManager).thenReturn(null)
+        val mockContext: Context = mock {
+            whenever(it.getSystemService(Context.WINDOW_SERVICE)).thenReturn(null)
             whenever(it.resources).thenReturn(mockResources)
             whenever(it.theme).thenReturn(mockTheme)
         }
 
         // When
-        val systemInformation = MiscUtils.resolveSystemInformation(mockActivity)
+        val systemInformation = MiscUtils.resolveSystemInformation(mockContext)
 
         // Then
         assertThat(systemInformation).isEqualTo(
