@@ -114,15 +114,8 @@ internal class MiscUtilsTest {
         val fakeDisplayMetrics = DisplayMetrics().apply {
             density = fakeDensity
         }
-        val mockResources: Resources = mock {
-            whenever(it.configuration).thenReturn(fakeConfiguration)
-            whenever(it.displayMetrics).thenReturn(fakeDisplayMetrics)
-        }
-        val mockContext: Context = mock {
-            whenever(it.getSystemService(Context.WINDOW_SERVICE)).thenReturn(mockWindowManager)
-            whenever(it.resources).thenReturn(mockResources)
-            whenever(it.theme).thenReturn(mockTheme)
-        }
+        val mockResources: Resources = mockResources(fakeConfiguration, fakeDisplayMetrics)
+        val mockContext: Context = mockContext(mockWindowManager, mockResources, mockTheme)
 
         // When
         val systemInformation = MiscUtils.resolveSystemInformation(mockContext)
@@ -179,15 +172,8 @@ internal class MiscUtilsTest {
         val fakeDisplayMetrics = DisplayMetrics().apply {
             density = fakeDensity
         }
-        val mockResources: Resources = mock {
-            whenever(it.configuration).thenReturn(fakeConfiguration)
-            whenever(it.displayMetrics).thenReturn(fakeDisplayMetrics)
-        }
-        val mockContext: Context = mock {
-            whenever(it.getSystemService(Context.WINDOW_SERVICE)).thenReturn(mockWindowManager)
-            whenever(it.resources).thenReturn(mockResources)
-            whenever(it.theme).thenReturn(mockTheme)
-        }
+        val mockResources: Resources = mockResources(fakeConfiguration, fakeDisplayMetrics)
+        val mockContext: Context = mockContext(mockWindowManager, mockResources, mockTheme)
 
         // When
         val systemInformation = MiscUtils.resolveSystemInformation(mockContext)
@@ -225,15 +211,8 @@ internal class MiscUtilsTest {
         val fakeDisplayMetrics = DisplayMetrics().apply {
             density = fakeDensity
         }
-        val mockResources: Resources = mock {
-            whenever(it.configuration).thenReturn(fakeConfiguration)
-            whenever(it.displayMetrics).thenReturn(fakeDisplayMetrics)
-        }
-        val mockContext: Context = mock {
-            whenever(it.getSystemService(Context.WINDOW_SERVICE)).thenReturn(null)
-            whenever(it.resources).thenReturn(mockResources)
-            whenever(it.theme).thenReturn(mockTheme)
-        }
+        val mockResources: Resources = mockResources(fakeConfiguration, fakeDisplayMetrics)
+        val mockContext: Context = mockContext(null, mockResources, mockTheme)
 
         // When
         val systemInformation = MiscUtils.resolveSystemInformation(mockContext)
@@ -267,15 +246,8 @@ internal class MiscUtilsTest {
         val fakeDisplayMetrics = DisplayMetrics().apply {
             density = fakeDensity
         }
-        val mockResources: Resources = mock {
-            whenever(it.configuration).thenReturn(fakeConfiguration)
-            whenever(it.displayMetrics).thenReturn(fakeDisplayMetrics)
-        }
-        val mockContext: Context = mock {
-            whenever(it.getSystemService(Context.WINDOW_SERVICE)).thenReturn(null)
-            whenever(it.resources).thenReturn(mockResources)
-            whenever(it.theme).thenReturn(mockTheme)
-        }
+        val mockResources: Resources = mockResources(fakeConfiguration, fakeDisplayMetrics)
+        val mockContext: Context = mockContext(null, mockResources, mockTheme)
 
         // When
         val systemInformation = MiscUtils.resolveSystemInformation(mockContext)
@@ -294,6 +266,25 @@ internal class MiscUtilsTest {
     // endregion
 
     // region Internal
+
+    private fun mockResources(
+        configuration: Configuration,
+        displayMetrics: DisplayMetrics
+    ): Resources =
+        mock {
+            whenever(it.configuration).thenReturn(configuration)
+            whenever(it.displayMetrics).thenReturn(displayMetrics)
+        }
+
+    private fun mockContext(
+        windowManager: WindowManager?,
+        resources: Resources,
+        theme: Theme
+    ): Context = mock {
+        whenever(it.getSystemService(Context.WINDOW_SERVICE)).thenReturn(windowManager)
+        whenever(it.resources).thenReturn(resources)
+        whenever(it.theme).thenReturn(theme)
+    }
 
     private fun Forge.forgeThemeColor(theme: Theme): Int {
         val fakeColor = aPositiveInt()

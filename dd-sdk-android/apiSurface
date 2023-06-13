@@ -129,6 +129,14 @@ enum com.datadog.android.core.configuration.VitalsUpdateFrequency
   - AVERAGE
   - RARE
   - NEVER
+class com.datadog.android.core.internal.sampling.RateBasedSampler : Sampler
+  constructor(Float)
+  constructor(Double)
+  override fun sample(): Boolean
+  override fun getSamplingRate(): Float?
+interface com.datadog.android.core.internal.sampling.Sampler
+  fun sample(): Boolean
+  fun getSamplingRate(): Float?
 var internalLogger: com.datadog.android.v2.api.InternalLogger
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?

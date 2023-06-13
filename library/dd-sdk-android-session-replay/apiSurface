@@ -7,7 +7,9 @@ data class com.datadog.android.sessionreplay.SessionReplayConfiguration
     fun useSite(com.datadog.android.DatadogSite): Builder
     fun useCustomEndpoint(String): Builder
     fun setPrivacy(SessionReplayPrivacy): Builder
+    fun sessionReplaySampleRate(Float): Builder
     fun build(): SessionReplayConfiguration
+  companion object 
 class com.datadog.android.sessionreplay.SessionReplayFeature : com.datadog.android.v2.api.StorageBackedFeature, com.datadog.android.v2.api.FeatureEventReceiver
   constructor(SessionReplayConfiguration)
   override val name: String

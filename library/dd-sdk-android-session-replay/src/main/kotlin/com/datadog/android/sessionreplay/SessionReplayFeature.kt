@@ -8,6 +8,8 @@ package com.datadog.android.sessionreplay
 
 import android.app.Application
 import android.content.Context
+import com.datadog.android.core.internal.sampling.RateBasedSampler
+import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.sessionreplay.internal.RecordWriter
 import com.datadog.android.sessionreplay.internal.SessionReplayRecordCallback
@@ -31,7 +33,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class SessionReplayFeature internal constructor(
     configuration: SessionReplayConfiguration,
-    private val sessionReplayRecorderProvider: (SdkCore, RecordWriter, Application) -> Recorder
+    private val sessionReplayRecorderProvider: (SdkCore, RecordWriter, Application) -> Recorder,
+    private val rateBasedSampler: Sampler = RateBasedSampler(configuration.samplingRate)
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     /**
@@ -119,38 +122,53 @@ class SessionReplayFeature internal constructor(
             return
         }
 
-        if (event[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY] == RUM_SESSION_RENEWED_BUS_MESSAGE) {
-            val keepSession = event[RUM_KEEP_SESSION_BUS_MESSAGE_KEY] as? Boolean
+        handleRumSession(event)
+    }
 
-            if (keepSession == null) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    EVENT_MISSING_MANDATORY_FIELDS
-                )
-                return
-            }
+    // endregion
 
-            if (keepSession) {
-                startRecording()
-            } else {
-                stopRecording()
-            }
+    // region Internal
+
+    private fun handleRumSession(sessionMetadata: Map<*, *>) {
+        if (sessionMetadata[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY] ==
+            RUM_SESSION_RENEWED_BUS_MESSAGE
+        ) {
+            checkStatusAndApplySample(sessionMetadata)
         } else {
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(
                     Locale.US,
-                    event[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY]
+                    sessionMetadata[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY]
                 )
             )
         }
     }
 
-    // endregion
+    private fun checkStatusAndApplySample(sessionMetadata: Map<*, *>) {
+        val keepSession = sessionMetadata[RUM_KEEP_SESSION_BUS_MESSAGE_KEY] as? Boolean
 
-    // region Internal
+        if (keepSession == null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                EVENT_MISSING_MANDATORY_FIELDS
+            )
+            return
+        }
+
+        if (keepSession && rateBasedSampler.sample()) {
+            startRecording()
+        } else {
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                SESSION_SAMPLED_OUT_MESSAGE
+            )
+            stopRecording()
+        }
+    }
 
     internal fun startRecording() {
         if (!initialized.get()) {
@@ -181,6 +199,8 @@ class SessionReplayFeature internal constructor(
     internal companion object {
         internal const val REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE = "Session Replay could not " +
             "be initialized without the Application context."
+        internal const val SESSION_SAMPLED_OUT_MESSAGE = "This session was sampled out from" +
+            " recording. No replay will be provided for it."
         internal const val UNSUPPORTED_EVENT_TYPE =
             "Session Replay feature receive an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =
