@@ -27,7 +27,7 @@ import com.datadog.android.sessionreplay.SessionReplayFeature
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 
-internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
+internal open class SessionReplayPlaygroundActivity : AppCompatActivity() {
     lateinit var titleTextView: TextView
     lateinit var clickMeButton: Button
 
@@ -43,9 +43,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
             .build()
         val trackingConsent = intent.getTrackingConsent()
         Datadog.initialize(this, credentials, config, trackingConsent)
-        val sessionReplayConfig = RuntimeConfig.sessionReplayConfigBuilder()
-            .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
-            .build()
+        val sessionReplayConfig = sessionReplayConfiguration()
         val sessionReplayFeature = SessionReplayFeature(sessionReplayConfig)
         Datadog.registerFeature(sessionReplayFeature)
         Datadog.setVerbosity(Log.VERBOSE)
@@ -55,8 +53,13 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
         clickMeButton = findViewById(R.id.button)
     }
 
+    internal open fun sessionReplayConfiguration() = RuntimeConfig.sessionReplayConfigBuilder()
+        .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
+        .sessionReplaySampleRate(100f)
+        .build()
+
     @Suppress("LongMethod")
-    fun getExpectedSrData(): ExpectedSrData {
+    open fun getExpectedSrData(): ExpectedSrData {
         val density = resources.displayMetrics.density
         val decorView = window.decorView
 
