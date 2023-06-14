@@ -113,7 +113,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     null
                 },
                 config = defaultConfigurationBuilder(
@@ -129,7 +129,7 @@ class RumConfigE2ETests {
     // region ViewEventMapper
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setViewEventMapper(com.datadog.android.rum.event.ViewEventMapper): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setViewEventMapper(com.datadog.android.rum.event.ViewEventMapper): Builder
      */
     @Test
     fun rum_config_set_rum_view_event_mapper() {
@@ -139,7 +139,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setViewEventMapper(
                         eventMapper = object : ViewEventMapper {
                             override fun map(event: ViewEvent): ViewEvent {
@@ -167,7 +167,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setViewEventMapper(com.datadog.android.rum.event.ViewEventMapper): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setViewEventMapper(com.datadog.android.rum.event.ViewEventMapper): Builder
      */
     @Test
     fun rum_config_set_rum_view_event_mapper_map_to_copy() {
@@ -177,7 +177,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setViewEventMapper(
                         eventMapper = object : ViewEventMapper {
                             override fun map(event: ViewEvent): ViewEvent {
@@ -207,7 +207,7 @@ class RumConfigE2ETests {
     // region ResourceEventMapper
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_resource_event_mapper_map_to_null() {
@@ -217,7 +217,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setResourceEventMapper(
                         eventMapper = object : EventMapper<ResourceEvent> {
                             override fun map(event: ResourceEvent): ResourceEvent? {
@@ -236,7 +236,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_resource_event_mapper_map_to_copy() {
@@ -246,7 +246,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setResourceEventMapper(
                         eventMapper = object : EventMapper<ResourceEvent> {
                             override fun map(event: ResourceEvent): ResourceEvent {
@@ -265,7 +265,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_resource_event_mapper() {
@@ -275,7 +275,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setResourceEventMapper(
                         eventMapper = object : EventMapper<ResourceEvent> {
                             override fun map(event: ResourceEvent): ResourceEvent {
@@ -299,7 +299,7 @@ class RumConfigE2ETests {
     // region ActionEventMapper
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_action_event_mapper_map_to_null() {
@@ -309,7 +309,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setActionEventMapper(
                         eventMapper = object : EventMapper<ActionEvent> {
                             override fun map(event: ActionEvent): ActionEvent? {
@@ -328,7 +328,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_action_event_mapper_map_to_copy() {
@@ -338,7 +338,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setActionEventMapper(
                         eventMapper = object : EventMapper<ActionEvent> {
                             override fun map(event: ActionEvent): ActionEvent {
@@ -357,7 +357,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_action_event_mapper() {
@@ -367,7 +367,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setActionEventMapper(
                         eventMapper = object : EventMapper<ActionEvent> {
                             override fun map(event: ActionEvent): ActionEvent {
@@ -391,7 +391,7 @@ class RumConfigE2ETests {
     // region ErrorEventMapper
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_error_event_mapper_map_to_null() {
@@ -401,7 +401,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setErrorEventMapper(
                         eventMapper = object : EventMapper<ErrorEvent> {
                             override fun map(event: ErrorEvent): ErrorEvent? {
@@ -420,7 +420,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_error_event_mapper_map_to_copy() {
@@ -430,7 +430,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setErrorEventMapper(
                         eventMapper = object : EventMapper<ErrorEvent> {
                             override fun map(event: ErrorEvent): ErrorEvent {
@@ -449,7 +449,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_error_event_mapper() {
@@ -459,7 +459,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setErrorEventMapper(
                         eventMapper = object : EventMapper<ErrorEvent> {
                             override fun map(event: ErrorEvent): ErrorEvent {
@@ -483,8 +483,8 @@ class RumConfigE2ETests {
     // region LongTaskEventMapper
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_longtask_event_mapper_map_to_null() {
@@ -494,7 +494,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setLongTaskEventMapper(
                         eventMapper = object : EventMapper<LongTaskEvent> {
                             override fun map(event: LongTaskEvent): LongTaskEvent? {
@@ -513,8 +513,8 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_longtask_event_mapper_map_to_copy() {
@@ -524,7 +524,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setLongTaskEventMapper(
                         eventMapper = object : EventMapper<LongTaskEvent> {
                             override fun map(event: LongTaskEvent): LongTaskEvent {
@@ -543,8 +543,8 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_longtask_event_mapper() {
@@ -554,7 +554,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setLongTaskEventMapper(
                         eventMapper = object : EventMapper<LongTaskEvent> {
                             override fun map(event: LongTaskEvent): LongTaskEvent {
@@ -578,7 +578,7 @@ class RumConfigE2ETests {
     // region Session Sample
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setSessionSampleRate(Float): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setSessionSampleRate(Float): Builder
      */
     @Test
     fun rum_config_sample_rum_sessions_all_in() {
@@ -588,7 +588,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setSessionSampleRate(100f).build()
                 },
                 config = defaultConfigurationBuilder(
@@ -601,7 +601,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setSessionSampleRate(Float): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setSessionSampleRate(Float): Builder
      */
     @Test
     fun rum_config_sample_rum_sessions_all_out() {
@@ -611,7 +611,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setSessionSampleRate(0f).build()
                 },
                 config = defaultConfigurationBuilder(
@@ -624,7 +624,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setSessionSampleRate(Float): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setSessionSampleRate(Float): Builder
      */
     @Test
     fun rum_config_sample_rum_sessions_75_percent_in() {
@@ -635,7 +635,7 @@ class RumConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.setSessionSampleRate(75f).build()
                 },
                 config = defaultConfigurationBuilder(
@@ -677,7 +677,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
      */
     @Test
     fun rum_config_set_vitals_update_frequency_never() {
@@ -704,7 +704,7 @@ class RumConfigE2ETests {
                 initializeSdk(
                     InstrumentationRegistry.getInstrumentation().targetContext,
                     forgeSeed = forge.seed,
-                    rumFeatureProvider = {
+                    rumConfigProvider = {
                         it.useViewTrackingStrategy(strategy)
                             .setVitalsUpdateFrequency(VitalsUpdateFrequency.NEVER).build()
                     },
@@ -724,7 +724,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
      */
     @Test
     fun rum_config_set_vitals_update_frequency() {
@@ -755,7 +755,7 @@ class RumConfigE2ETests {
                 initializeSdk(
                     InstrumentationRegistry.getInstrumentation().targetContext,
                     forgeSeed = forge.seed,
-                    rumFeatureProvider = {
+                    rumConfigProvider = {
                         it.useViewTrackingStrategy(strategy).setVitalsUpdateFrequency(fakeFrequency)
                             .build()
                     },

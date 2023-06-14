@@ -12,18 +12,21 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
-import com.datadog.android.log.LogsFeature
+import com.datadog.android.log.Logs
+import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.nightly.BuildConfig
 import com.datadog.android.nightly.ENV_NAME
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.Rum
+import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.RumFeature
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.trace.AndroidTracer
-import com.datadog.android.trace.TracingFeature
+import com.datadog.android.trace.Traces
+import com.datadog.android.trace.TracesConfiguration
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.getStaticValue
@@ -94,9 +97,9 @@ fun initializeSdk(
     forgeSeed: Long,
     consent: TrackingConsent = TrackingConsent.GRANTED,
     config: Configuration = createDatadogDefaultConfiguration(),
-    logsFeatureProvider: () -> LogsFeature? = { LogsFeature.Builder().build() },
-    tracingFeatureProvider: () -> TracingFeature? = { TracingFeature.Builder().build() },
-    rumFeatureProvider: (RumFeature.Builder) -> RumFeature? = {
+    logsConfigProvider: () -> LogsConfiguration? = { LogsConfiguration.Builder().build() },
+    tracesConfigProvider: () -> TracesConfiguration? = { TracesConfiguration.Builder().build() },
+    rumConfigProvider: (RumConfiguration.Builder) -> RumConfiguration? = {
         it.build()
     },
     tracerProvider: (SdkCore) -> Tracer = { createDefaultAndroidTracer(it) },
@@ -111,17 +114,24 @@ fun initializeSdk(
     )
     checkNotNull(sdkCore)
     mutableListOf(
-        rumFeatureProvider(
-            RumFeature.Builder(BuildConfig.NIGHTLY_TESTS_RUM_APP_ID)
+        rumConfigProvider(
+            RumConfiguration.Builder(BuildConfig.NIGHTLY_TESTS_RUM_APP_ID)
                 .setTelemetrySampleRate(100f)
         ),
-        logsFeatureProvider(),
-        tracingFeatureProvider()
+        logsConfigProvider(),
+        tracesConfigProvider()
     )
         .filterNotNull()
         .shuffled(Random(forgeSeed))
         .forEach {
-            sdkCore.registerFeature(it)
+            when (it) {
+                is RumConfiguration -> Rum.enable(it, sdkCore)
+                is LogsConfiguration -> Logs.enable(it, sdkCore)
+                is TracesConfiguration -> Traces.enable(it, sdkCore)
+                else -> throw IllegalArgumentException(
+                    "Unknown configuration of type ${it::class.qualifiedName}"
+                )
+            }
         }
     GlobalTracer.registerIfAbsent(tracerProvider.invoke(sdkCore))
     GlobalRum.registerIfAbsent(sdkCore, rumMonitorProvider.invoke(sdkCore))

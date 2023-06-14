@@ -39,7 +39,7 @@ internal class RumResourceTrackingE2ETests {
     val forge = ForgeRule()
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, List<String>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE))
      */
@@ -49,7 +49,7 @@ internal class RumResourceTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                         .build()
                 },
@@ -62,7 +62,7 @@ internal class RumResourceTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, List<String>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE))
      */
@@ -72,7 +72,7 @@ internal class RumResourceTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                         .build()
                 },
@@ -85,7 +85,7 @@ internal class RumResourceTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      * apiMethodSignature: com.datadog.android.okhttp.trace.TracingInterceptor#constructor(String? = null, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE))
      * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE))
@@ -106,7 +106,7 @@ internal class RumResourceTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true)).build()
                 },
                 config = config
@@ -116,7 +116,7 @@ internal class RumResourceTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      * apiMethodSignature: com.datadog.android.okhttp.trace.TracingInterceptor#constructor(String? = null, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE))
      * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE))
@@ -143,7 +143,7 @@ internal class RumResourceTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                         .build()
                 },
@@ -154,7 +154,7 @@ internal class RumResourceTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, List<String>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE))
      * apiMethodSignature: com.datadog.android.okhttp.trace.TracingInterceptor#constructor(String? = null, List<String>, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE))
@@ -168,7 +168,7 @@ internal class RumResourceTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                         .build()
                 },
@@ -181,7 +181,7 @@ internal class RumResourceTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, List<String>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE))
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setFirstPartyHosts(List<String>): Builder
@@ -195,7 +195,7 @@ internal class RumResourceTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                         .build()
                 },
@@ -208,7 +208,7 @@ internal class RumResourceTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      * apiMethodSignature: com.datadog.android.okhttp.DatadogInterceptor#constructor(String? = null, List<String>, com.datadog.android.okhttp.trace.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), com.datadog.android.core.sampling.Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE))
      */
@@ -221,7 +221,7 @@ internal class RumResourceTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                         .build()
                 },

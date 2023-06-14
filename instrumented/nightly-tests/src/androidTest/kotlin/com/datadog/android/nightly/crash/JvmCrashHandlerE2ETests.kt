@@ -37,8 +37,8 @@ class JvmCrashHandlerE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#constructor(String)
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun build(): RumFeature
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#constructor(String)
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun build(): RumConfiguration
      */
     @Test
     fun crash_reports_rum_enabled() {

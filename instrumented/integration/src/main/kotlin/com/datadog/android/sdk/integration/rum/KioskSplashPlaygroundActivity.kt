@@ -11,13 +11,16 @@ import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
+import com.datadog.android.log.Logs
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getForgeSeed
+import com.datadog.android.trace.Traces
 import java.util.Random
 
 internal class KioskSplashPlaygroundActivity : AppCompatActivity() {
@@ -36,18 +39,19 @@ internal class KioskSplashPlaygroundActivity : AppCompatActivity() {
             TrackingConsent.GRANTED
         )
         checkNotNull(sdkCore)
-        val features = mutableListOf(
-            RuntimeConfig.rumFeatureBuilder()
-                .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
-                .disableUserInteractionTracking()
-                .build(),
-            RuntimeConfig.logsFeatureBuilder().build(),
-            RuntimeConfig.tracingFeatureBuilder().build()
+        val featureActivations = mutableListOf(
+            {
+                val rumConfig = RuntimeConfig.rumConfigBuilder()
+                    .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
+                    .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
+                    .disableUserInteractionTracking()
+                    .build()
+                Rum.enable(rumConfig, sdkCore)
+            },
+            { Logs.enable(RuntimeConfig.logsConfigBuilder().build(), sdkCore) },
+            { Traces.enable(RuntimeConfig.tracesConfigBuilder().build(), sdkCore) }
         )
-        features.shuffled(Random(intent.getForgeSeed())).forEach {
-            sdkCore.registerFeature(it)
-        }
+        featureActivations.shuffled(Random(intent.getForgeSeed())).forEach { it() }
 
         GlobalRum.registerIfAbsent(sdkCore, RumMonitor.Builder(sdkCore).build())
 

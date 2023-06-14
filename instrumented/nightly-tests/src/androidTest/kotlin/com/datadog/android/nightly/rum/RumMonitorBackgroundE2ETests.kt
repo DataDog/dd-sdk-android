@@ -49,10 +49,10 @@ class RumMonitorBackgroundE2ETests {
      * apiMethodSignature: com.datadog.android.Datadog#fun initialize(String?, android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.v2.api.SdkCore?
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#constructor(String)
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun build(): RumFeature
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun trackBackgroundEvents(Boolean): Builder
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun trackFrustrations(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#constructor(String)
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun build(): RumConfiguration
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun trackBackgroundEvents(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun trackFrustrations(Boolean): Builder
      * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun get(com.datadog.android.v2.api.SdkCore): RumMonitor
      * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun isRegistered(com.datadog.android.v2.api.SdkCore): Boolean
      * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun registerIfAbsent(com.datadog.android.v2.api.SdkCore, RumMonitor): Boolean
@@ -62,7 +62,7 @@ class RumMonitorBackgroundE2ETests {
         sdkCore = initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
             forgeSeed = forge.seed,
-            rumFeatureProvider = {
+            rumConfigProvider = {
                 it.trackBackgroundEvents(true)
                     .trackFrustrations(true)
                     .build()

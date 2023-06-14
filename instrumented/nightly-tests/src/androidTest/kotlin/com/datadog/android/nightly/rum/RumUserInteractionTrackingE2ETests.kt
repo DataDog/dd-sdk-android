@@ -37,7 +37,7 @@ internal class RumUserInteractionTrackingE2ETests {
     val forge = ForgeRule()
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun trackUserInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun trackUserInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
      */
     @Test
     fun rum_user_interaction_tracking_strategy() {
@@ -45,7 +45,7 @@ internal class RumUserInteractionTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.trackUserInteractions().build()
                 },
                 config = defaultConfigurationBuilder(
@@ -59,7 +59,7 @@ internal class RumUserInteractionTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun trackUserInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun trackUserInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
      */
     @Test
     fun rum_user_interaction_tracking_strategy_custom_target_name() {
@@ -67,7 +67,7 @@ internal class RumUserInteractionTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.trackUserInteractions(
                         interactionPredicate = object : InteractionPredicate {
                             override fun getTargetName(target: Any): String {

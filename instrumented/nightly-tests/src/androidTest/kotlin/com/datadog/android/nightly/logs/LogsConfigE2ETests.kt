@@ -13,7 +13,7 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.Logger
-import com.datadog.android.log.LogsFeature
+import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.TestEncryption
@@ -98,7 +98,7 @@ class LogsConfigE2ETests {
                 defaultConfigurationBuilder(
                     crashReportsEnabled = true
                 ).build(),
-                logsFeatureProvider = { null }
+                logsConfigProvider = { null }
             )
         }
         measureLoggerInitialize {
@@ -108,7 +108,7 @@ class LogsConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.LogsFeature$Builder#fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
+     * apiMethodSignature: com.datadog.android.log.LogsConfiguration$Builder#fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
      */
     @Test
     fun logs_config_set_event_mapper() {
@@ -121,8 +121,8 @@ class LogsConfigE2ETests {
                 defaultConfigurationBuilder(
                     crashReportsEnabled = true
                 ).build(),
-                logsFeatureProvider = {
-                    LogsFeature.Builder()
+                logsConfigProvider = {
+                    LogsConfiguration.Builder()
                         .setLogEventMapper(
                             object : EventMapper<LogEvent> {
                                 override fun map(event: LogEvent): LogEvent {
@@ -144,7 +144,7 @@ class LogsConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.LogsFeature$Builder#fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
+     * apiMethodSignature: com.datadog.android.log.LogsConfiguration$Builder#fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
      */
     @Test
     fun logs_config_set_event_mapper_with_drop_event() {
@@ -157,8 +157,8 @@ class LogsConfigE2ETests {
                 defaultConfigurationBuilder(
                     crashReportsEnabled = true
                 ).build(),
-                logsFeatureProvider = {
-                    LogsFeature.Builder()
+                logsConfigProvider = {
+                    LogsConfiguration.Builder()
                         .setLogEventMapper(
                             object : EventMapper<LogEvent> {
                                 override fun map(event: LogEvent): LogEvent? {

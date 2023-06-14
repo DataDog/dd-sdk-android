@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
@@ -35,13 +36,12 @@ internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
         val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
         checkNotNull(sdkCore)
 
-        sdkCore.registerFeature(
-            RuntimeConfig.rumFeatureBuilder()
-                .trackUserInteractions()
-                .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-                .build()
-        )
+        val rumConfig = RuntimeConfig.rumConfigBuilder()
+            .trackUserInteractions()
+            .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
+            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+            .build()
+        Rum.enable(rumConfig, sdkCore)
 
         DdRumContentProvider::class.java.declaredMethods.firstOrNull() {
             it.name == "overrideProcessImportance"

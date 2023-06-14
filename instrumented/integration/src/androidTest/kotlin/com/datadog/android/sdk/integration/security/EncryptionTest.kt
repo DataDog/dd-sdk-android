@@ -13,17 +13,21 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.log.Logger
-import com.datadog.android.log.LogsFeature
+import com.datadog.android.log.Logs
+import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumActionType
-import com.datadog.android.rum.RumFeature
+import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.security.Encryption
-import com.datadog.android.sessionreplay.SessionReplayFeature
+import com.datadog.android.sessionreplay.SessionReplay
+import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.trace.AndroidTracer
-import com.datadog.android.trace.TracingFeature
+import com.datadog.android.trace.Traces
+import com.datadog.android.trace.TracesConfiguration
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import io.opentracing.Tracer
@@ -57,17 +61,20 @@ internal class EncryptionTest {
         val credentials = createCredentials()
 
         Datadog.setVerbosity(Log.VERBOSE)
-        val sdkCore = Datadog.initialize(targetContext, credentials, configuration, TrackingConsent.PENDING)
+        val sdkCore =
+            Datadog.initialize(targetContext, credentials, configuration, TrackingConsent.PENDING)
         checkNotNull(sdkCore)
-        val features = mutableListOf(
-            RumFeature.Builder(applicationId = forge.anAlphaNumericalString()).build(),
-            LogsFeature.Builder().build(),
-            TracingFeature.Builder().build(),
-            SessionReplayFeature.Builder().build()
+        val featureActivations = mutableListOf(
+            {
+                val rumConfig =
+                    RumConfiguration.Builder(applicationId = forge.anAlphaNumericalString()).build()
+                Rum.enable(rumConfig, sdkCore)
+            },
+            { Logs.enable(LogsConfiguration.Builder().build(), sdkCore) },
+            { Traces.enable(TracesConfiguration.Builder().build(), sdkCore) },
+            { SessionReplay.enable(SessionReplayConfiguration.Builder().build(), sdkCore) }
         )
-        features.shuffled(Random(forge.seed)).forEach {
-            sdkCore.registerFeature(it)
-        }
+        featureActivations.shuffled(Random(forge.seed)).forEach { it() }
         val rumMonitor = RumMonitor.Builder(sdkCore).build()
         GlobalRum.registerIfAbsent(sdkCore, rumMonitor)
 

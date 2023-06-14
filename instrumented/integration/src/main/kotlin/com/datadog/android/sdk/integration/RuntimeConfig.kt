@@ -12,11 +12,11 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.log.Logger
-import com.datadog.android.log.LogsFeature
-import com.datadog.android.rum.RumFeature
-import com.datadog.android.sessionreplay.SessionReplayFeature
+import com.datadog.android.log.LogsConfiguration
+import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.trace.AndroidTracer
-import com.datadog.android.trace.TracingFeature
+import com.datadog.android.trace.TracesConfiguration
 import com.datadog.android.v2.api.SdkCore
 import java.util.UUID
 
@@ -76,23 +76,23 @@ internal object RuntimeConfig {
             .setUploadFrequency(UploadFrequency.FREQUENT)
     }
 
-    fun rumFeatureBuilder(): RumFeature.Builder {
-        return RumFeature.Builder(APP_ID)
+    fun rumConfigBuilder(): RumConfiguration.Builder {
+        return RumConfiguration.Builder(APP_ID)
             .useCustomEndpoint(rumEndpointUrl)
     }
 
-    fun sessionReplayFeatureBuilder(): SessionReplayFeature.Builder {
-        return SessionReplayFeature.Builder()
+    fun sessionReplayConfigBuilder(): SessionReplayConfiguration.Builder {
+        return SessionReplayConfiguration.Builder()
             .useCustomEndpoint(sessionReplayEndpointUrl)
     }
 
-    fun logsFeatureBuilder(): LogsFeature.Builder {
-        return LogsFeature.Builder()
+    fun logsConfigBuilder(): LogsConfiguration.Builder {
+        return LogsConfiguration.Builder()
             .useCustomEndpoint(logsEndpointUrl)
     }
 
-    fun tracingFeatureBuilder(): TracingFeature.Builder {
-        return TracingFeature.Builder()
+    fun tracesConfigBuilder(): TracesConfiguration.Builder {
+        return TracesConfiguration.Builder()
             .useCustomEndpoint(tracesEndpointUrl)
     }
 

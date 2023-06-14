@@ -23,7 +23,7 @@ import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.trace.AndroidTracer
-import com.datadog.android.trace.TracingFeature
+import com.datadog.android.trace.TracesConfiguration
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.internal.domain.event.SpanEventMapper
 import com.datadog.android.trace.model.SpanEvent
@@ -96,7 +96,7 @@ class SpanConfigE2ETests {
                 config = defaultConfigurationBuilder(
                     crashReportsEnabled = true
                 ).build(),
-                tracingFeatureProvider = { null }
+                tracesConfigProvider = { null }
             )
         }
         GlobalTracer.get().buildSpan(testMethodName).start().finish()
@@ -104,7 +104,7 @@ class SpanConfigE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.v2.api.SdkCore)
-     * apiMethodSignature: com.datadog.android.trace.TracingFeature$Builder#fun setSpanEventMapper(com.datadog.android.trace.internal.domain.event.SpanEventMapper): Builder
+     * apiMethodSignature: com.datadog.android.trace.TracesConfiguration$Builder#fun setSpanEventMapper(com.datadog.android.trace.internal.domain.event.SpanEventMapper): Builder
      */
     @Test
     fun trace_config_set_span_event_mapper() {
@@ -117,8 +117,8 @@ class SpanConfigE2ETests {
                 config = defaultConfigurationBuilder(
                     crashReportsEnabled = true
                 ).build(),
-                tracingFeatureProvider = {
-                    TracingFeature.Builder().setSpanEventMapper(object : SpanEventMapper {
+                tracesConfigProvider = {
+                    TracesConfiguration.Builder().setSpanEventMapper(object : SpanEventMapper {
                         override fun map(event: SpanEvent): SpanEvent {
                             if (event.resource == fakeResourceName) {
                                 event.name = testMethodName

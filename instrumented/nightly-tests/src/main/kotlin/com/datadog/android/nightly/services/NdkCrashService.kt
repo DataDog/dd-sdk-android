@@ -13,14 +13,17 @@ import android.os.Looper
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.log.LogsFeature
-import com.datadog.android.ndk.NdkCrashReportsFeature
+import com.datadog.android.log.Logs
+import com.datadog.android.log.LogsConfiguration
+import com.datadog.android.ndk.NdkCrashReports
 import com.datadog.android.nightly.activities.CRASH_DELAY_MS
 import com.datadog.android.nightly.activities.HUNDRED_PERCENT
 import com.datadog.android.nightly.utils.NeverUseThatEncryption
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.RumFeature
-import com.datadog.android.trace.TracingFeature
+import com.datadog.android.rum.Rum
+import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.trace.Traces
+import com.datadog.android.trace.TracesConfiguration
 import com.datadog.android.v2.api.SdkCore
 
 internal open class NdkCrashService : CrashService() {
@@ -87,17 +90,15 @@ internal open class NdkCrashService : CrashService() {
         )
         checkNotNull(sdkCore)
         if (rumEnabled) {
-            sdkCore.registerFeature(
-                RumFeature.Builder(rumApplicationId)
-                    .setTelemetrySampleRate(HUNDRED_PERCENT)
-                    .build()
-            )
+            val rumConfig = RumConfiguration.Builder(rumApplicationId)
+                .setTelemetrySampleRate(HUNDRED_PERCENT)
+                .build()
+            Rum.enable(rumConfig, sdkCore)
         }
-        sdkCore.registerFeature(LogsFeature.Builder().build())
-        sdkCore.registerFeature(TracingFeature.Builder().build())
+        Logs.enable(LogsConfiguration.Builder().build(), sdkCore)
+        Traces.enable(TracesConfiguration.Builder().build(), sdkCore)
         if (ndkCrashReportsEnabled) {
-            val ndkCrashReportsFeature = NdkCrashReportsFeature()
-            sdkCore.registerFeature(ndkCrashReportsFeature)
+            NdkCrashReports.enable(sdkCore)
         }
         return sdkCore
     }
