@@ -48,6 +48,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(GlobalBoundsForgeryFactory())
         forge.addFactory(SystemInformationForgeryFactory())
         forge.addFactory(MappingContextForgeryFactory())
+        forge.addFactory(RumContextDataForgeryFactory())
 
         forge.useJvmFactories()
     }

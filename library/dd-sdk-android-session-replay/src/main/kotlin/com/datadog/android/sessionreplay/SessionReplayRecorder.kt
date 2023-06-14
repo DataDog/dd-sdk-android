@@ -18,6 +18,7 @@ import com.datadog.android.sessionreplay.internal.RecordCallback
 import com.datadog.android.sessionreplay.internal.RecordWriter
 import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
+import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.ComposedOptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.DefaultOptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
@@ -72,6 +73,11 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         customOptionSelectorDetectors: List<OptionSelectorDetector> = emptyList(),
         windowInspector: WindowInspector = WindowInspector
     ) {
+        val rumContextDataHandler = RumContextDataHandler(
+            rumContextProvider,
+            timeProvider
+        )
+
         this.appContext = appContext
         this.rumContextProvider = rumContextProvider
         this.privacy = privacy
@@ -82,8 +88,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.customOptionSelectorDetectors = customOptionSelectorDetectors
         this.windowInspector = windowInspector
         this.processor = RecordedDataProcessor(
-            rumContextProvider,
-            timeProvider,
+            rumContextDataHandler,
             processorExecutorService,
             recordWriter,
             recordCallback
