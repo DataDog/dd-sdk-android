@@ -4,17 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay
+package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
 import android.content.Context
-import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.sessionreplay.internal.LifecycleCallback
-import com.datadog.android.sessionreplay.internal.NoOpLifecycleCallback
-import com.datadog.android.sessionreplay.internal.RecordWriter
-import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
-import com.datadog.android.sessionreplay.internal.SessionReplayRecordCallback
-import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
@@ -34,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * Session Replay feature class, which needs to be registered with Datadog SDK instance.
  */
-class SessionReplayFeature internal constructor(
+internal class SessionReplayFeature constructor(
     customEndpointUrl: String?,
     internal val privacy: SessionReplayPrivacy,
     private val sessionReplayCallbackProvider: (FeatureSdkCore, RecordWriter) -> LifecycleCallback
@@ -200,69 +194,6 @@ class SessionReplayFeature internal constructor(
     }
 
     // endregion
-
-    /**
-     * A Builder class for a [SessionReplayFeature].
-     */
-    class Builder {
-        private var customEndpointUrl: String? = null
-        private var privacy = SessionReplayPrivacy.MASK_ALL
-        private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
-
-        /**
-         * Adds an extension support implementation. This is mostly used when you want to provide
-         * different behaviour of the Session Replay when using other Android UI frameworks
-         * than the default ones.
-         * @see [ExtensionSupport.getCustomViewMappers]
-         */
-        fun addExtensionSupport(extensionSupport: ExtensionSupport): Builder {
-            this.extensionSupport = extensionSupport
-            return this
-        }
-
-        /**
-         * Let the Session Replay target a custom server.
-         */
-        fun useCustomEndpoint(endpoint: String): Builder {
-            customEndpointUrl = endpoint
-            return this
-        }
-
-        /**
-         * Sets the privacy rule for the Session Replay feature.
-         * If not specified all the elements will be masked by default (MASK_ALL).
-         * @see SessionReplayPrivacy.ALLOW_ALL
-         * @see SessionReplayPrivacy.MASK_ALL
-         */
-        fun setPrivacy(privacy: SessionReplayPrivacy): Builder {
-            this.privacy = privacy
-            return this
-        }
-
-        internal fun customMappers(): List<MapperTypeWrapper> {
-            extensionSupport.getCustomViewMappers().entries.forEach {
-                if (it.key.name == privacy.name) {
-                    return it.value
-                        .map { typeMapperPair ->
-                            MapperTypeWrapper(typeMapperPair.key, typeMapperPair.value)
-                        }
-                }
-            }
-            return emptyList()
-        }
-
-        /**
-         * Builds a [Configuration] based on the current state of this Builder.
-         */
-        fun build(): SessionReplayFeature {
-            return SessionReplayFeature(
-                customEndpointUrl = customEndpointUrl,
-                privacy = privacy,
-                customMappers = customMappers(),
-                customOptionSelectorDetectors = extensionSupport.getOptionSelectorDetectors()
-            )
-        }
-    }
 
     internal companion object {
         internal const val UNSUPPORTED_EVENT_TYPE =

@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.rum.RumFeature
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy

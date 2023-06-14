@@ -15,9 +15,9 @@ import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.RumFeature
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
@@ -44,7 +44,7 @@ import java.util.Locale
  * For RUM integration: this interceptor will log the request as a RUM Resource, and fill the
  * request information (url, method, status code, optional error). Note that RUM Resources are only
  * tracked when a view is active. You can use one of the existing [ViewTrackingStrategy] when
- * configuring the SDK (see [RumFeature.Builder.useViewTrackingStrategy]) or start a view
+ * configuring the SDK (see [Rum.Builder.useViewTrackingStrategy]) or start a view
  * manually (see [RumMonitor.startView]).
  *
  * For APM integration: This interceptor will create a [Span] around the request and fill the

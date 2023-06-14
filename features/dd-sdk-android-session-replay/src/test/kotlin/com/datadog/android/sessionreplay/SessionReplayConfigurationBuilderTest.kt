@@ -8,7 +8,6 @@ package com.datadog.android.sessionreplay
 
 import android.view.View
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import fr.xgouchet.elmyr.Forge
@@ -34,9 +33,10 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(value = ForgeConfigurator::class)
-internal class SessionReplayBuilderTest {
+internal class SessionReplayConfigurationBuilderTest {
 
-    private var testedBuilder: SessionReplayFeature.Builder = SessionReplayFeature.Builder()
+    private var testedBuilder: SessionReplayConfiguration.Builder =
+        SessionReplayConfiguration.Builder()
 
     @Mock
     lateinit var mockExtensionSupport: ExtensionSupport
@@ -53,7 +53,8 @@ internal class SessionReplayBuilderTest {
         fakeAllowAllCustomMappers = fakeExpectedAllowAllCustomMappers.associate {
             it.type to it.mapper
         }
-        fakeMaskAllCustomMappers = fakeExpectedMaskAllCustomMappers.associate { it.type to it.mapper }
+        fakeMaskAllCustomMappers =
+            fakeExpectedMaskAllCustomMappers.associate { it.type to it.mapper }
         fakeCustomMappers = mapOf(
             SessionReplayPrivacy.ALLOW_ALL to fakeAllowAllCustomMappers,
             SessionReplayPrivacy.MASK_ALL to fakeMaskAllCustomMappers
@@ -64,13 +65,13 @@ internal class SessionReplayBuilderTest {
     @Test
     fun `𝕄 use sensible defaults 𝕎 build()`() {
         // When
-        val feature = testedBuilder.build()
+        val sessionReplayConfiguration = testedBuilder.build()
 
         // Then
-        assertThat(feature.requestFactory).isInstanceOf(SessionReplayRequestFactory::class.java)
-        assertThat((feature.requestFactory as SessionReplayRequestFactory).customEndpointUrl)
-            .isNull()
-        assertThat(feature.privacy).isEqualTo(SessionReplayPrivacy.MASK_ALL)
+        assertThat(sessionReplayConfiguration.customEndpointUrl).isNull()
+        assertThat(sessionReplayConfiguration.privacy).isEqualTo(SessionReplayPrivacy.MASK_ALL)
+        assertThat(sessionReplayConfiguration.customMappers).isEmpty()
+        assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
     }
 
     @Test
@@ -78,11 +79,14 @@ internal class SessionReplayBuilderTest {
         @StringForgery(regex = "https://[a-z]+\\.com") sessionReplayUrl: String
     ) {
         // When
-        val feature = testedBuilder.useCustomEndpoint(sessionReplayUrl).build()
+        val sessionReplayConfiguration = testedBuilder.useCustomEndpoint(sessionReplayUrl).build()
 
         // Then
-        assertThat((feature.requestFactory as SessionReplayRequestFactory).customEndpointUrl)
+        assertThat(sessionReplayConfiguration.customEndpointUrl)
             .isEqualTo(sessionReplayUrl)
+        assertThat(sessionReplayConfiguration.privacy).isEqualTo(SessionReplayPrivacy.MASK_ALL)
+        assertThat(sessionReplayConfiguration.customMappers).isEmpty()
+        assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
     }
 
     @Test
@@ -90,46 +94,52 @@ internal class SessionReplayBuilderTest {
         @Forgery fakePrivacy: SessionReplayPrivacy
     ) {
         // When
-        val feature = testedBuilder.setPrivacy(fakePrivacy).build()
+        val sessionReplayConfiguration = testedBuilder.setPrivacy(fakePrivacy).build()
 
         // Then
-        assertThat(feature.privacy).isEqualTo(fakePrivacy)
+        assertThat(sessionReplayConfiguration.customEndpointUrl).isNull()
+        assertThat(sessionReplayConfiguration.privacy).isEqualTo(fakePrivacy)
+        assertThat(sessionReplayConfiguration.customMappers).isEmpty()
+        assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
     }
 
     @Test
-    fun `M resolve the correct custom Mappers W customMappers { ALLOW_ALL }`() {
+    fun `M resolve the correct custom Mappers W addExtensionSupport { ALLOW_ALL }`() {
         // Given
-        testedBuilder = testedBuilder
+        val sessionReplayConfiguration = testedBuilder
             .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
             .addExtensionSupport(mockExtensionSupport)
+            .build()
 
         // Then
-        assertThat(testedBuilder.customMappers())
+        assertThat(sessionReplayConfiguration.customMappers)
             .isEqualTo(fakeExpectedAllowAllCustomMappers)
     }
 
     @Test
-    fun `M resolve the correct custom Mappers W customMappers { MASK_ALL }`() {
+    fun `M resolve the correct custom Mappers W addExtensionSupport { MASK_ALL }`() {
         // Given
-        testedBuilder = testedBuilder
+        val sessionReplayConfiguration = testedBuilder
             .setPrivacy(SessionReplayPrivacy.MASK_ALL)
             .addExtensionSupport(mockExtensionSupport)
+            .build()
 
         // Then
-        assertThat(testedBuilder.customMappers())
+        assertThat(sessionReplayConfiguration.customMappers)
             .isEqualTo(fakeExpectedMaskAllCustomMappers)
     }
 
     @Test
-    fun `M return empty map W customMappers { no mappers provided }`(forge: Forge) {
+    fun `M return empty map W addExtensionSupport { no mappers provided }`(forge: Forge) {
         // Given
         val fakePrivacy = forge.aValueFrom(SessionReplayPrivacy::class.java)
         whenever(mockExtensionSupport.getCustomViewMappers()).thenReturn(emptyMap())
-        testedBuilder = testedBuilder
+        val sessionReplayConfiguration = testedBuilder
             .setPrivacy(fakePrivacy)
             .addExtensionSupport(mockExtensionSupport)
+            .build()
 
         // Then
-        assertThat(testedBuilder.customMappers()).isEmpty()
+        assertThat(sessionReplayConfiguration.customMappers).isEmpty()
     }
 }

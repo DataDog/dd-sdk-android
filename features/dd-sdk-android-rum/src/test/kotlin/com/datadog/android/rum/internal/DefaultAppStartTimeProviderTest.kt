@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.Process
 import android.os.SystemClock
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.rum.RumFeature
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat

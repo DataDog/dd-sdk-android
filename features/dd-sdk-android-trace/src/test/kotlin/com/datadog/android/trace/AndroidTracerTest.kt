@@ -7,6 +7,7 @@
 package com.datadog.android.trace
 
 import com.datadog.android.log.LogAttributes
+import com.datadog.android.trace.internal.TracingFeature
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope

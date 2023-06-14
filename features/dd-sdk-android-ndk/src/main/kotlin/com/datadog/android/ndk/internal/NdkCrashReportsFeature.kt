@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.ndk
+package com.datadog.android.ndk.internal
 
 import android.content.Context
 import com.datadog.android.privacy.TrackingConsent
@@ -20,7 +20,7 @@ import java.lang.NullPointerException
  * An implementation of the [Feature] which will allow to intercept and report the
  * NDK crashes to our logs dashboard.
  */
-class NdkCrashReportsFeature : Feature, TrackingConsentProviderCallback {
+internal class NdkCrashReportsFeature : Feature, TrackingConsentProviderCallback {
     private var nativeLibraryLoaded = false
 
     override val name: String = "ndk-crash-reporting"

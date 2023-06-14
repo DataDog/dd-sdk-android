@@ -20,6 +20,8 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(UserInfoForgeryFactory())
         forge.addFactory(NetworkInfoForgeryFactory())
 
+        forge.addFactory(LogsConfigurationForgeryFactory())
+
         forge.useJvmFactories()
     }
 }

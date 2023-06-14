@@ -4,10 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.ndk.com.datadog.android.ndk
+package com.datadog.android.ndk.internal
 
 import android.content.Context
-import com.datadog.android.ndk.NdkCrashReportsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.setFieldValue
@@ -35,7 +34,7 @@ import java.io.File
 @MockitoSettings(strictness = Strictness.LENIENT)
 class NdkCrashReportsFeatureTest {
 
-    lateinit var testedFeature: NdkCrashReportsFeature
+    private lateinit var testedFeature: NdkCrashReportsFeature
 
     @TempDir
     lateinit var tempDir: File

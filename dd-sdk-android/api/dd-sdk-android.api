@@ -524,7 +524,6 @@ public abstract interface class com/datadog/android/v2/api/SdkCore {
 	public abstract fun getName ()Ljava/lang/String;
 	public abstract fun getService ()Ljava/lang/String;
 	public abstract fun getTime ()Lcom/datadog/android/v2/api/context/TimeInfo;
-	public abstract fun registerFeature (Lcom/datadog/android/v2/api/Feature;)V
 	public abstract fun setTrackingConsent (Lcom/datadog/android/privacy/TrackingConsent;)V
 	public abstract fun setUserInfo (Lcom/datadog/android/v2/api/context/UserInfo;)V
 }

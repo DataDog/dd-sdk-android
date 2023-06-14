@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.rum.RumFeature
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker

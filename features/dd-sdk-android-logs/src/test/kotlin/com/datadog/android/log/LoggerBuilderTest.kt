@@ -7,6 +7,7 @@
 package com.datadog.android.log
 
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
