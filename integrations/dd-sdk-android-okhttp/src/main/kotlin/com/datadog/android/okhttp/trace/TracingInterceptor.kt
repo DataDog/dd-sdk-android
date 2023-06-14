@@ -58,8 +58,8 @@ import java.util.concurrent.atomic.AtomicReference
  *     val okHttpClient = OkHttpClient.Builder()
  *         .addInterceptor(TracingInterceptor(tracedHosts)))
  *         // Optionally to get information about redirections and retries
- *         // .addNetworkInterceptor(new TracingInterceptor(tracedHosts))
- *         .build();
+ *         // .addNetworkInterceptor(TracingInterceptor(tracedHosts))
+ *         .build()
  * ```
  */
 @Suppress("TooManyFunctions", "StringLiteralDuplication")

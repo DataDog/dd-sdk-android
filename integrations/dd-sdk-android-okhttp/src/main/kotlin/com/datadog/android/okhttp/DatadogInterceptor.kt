@@ -57,11 +57,11 @@ import java.util.Locale
  * To use:
  * ```
  *     val tracedHosts = listOf("example.com", "example.eu")
- *     OkHttpClient client = new OkHttpClient.Builder()
- *         .addInterceptor(new DatadogInterceptor(tracedHosts))
+ *     val client = OkHttpClient.Builder()
+ *         .addInterceptor(DatadogInterceptor(tracedHosts))
  *         // Optionally to get information about redirections and retries
- *         // .addNetworkInterceptor(new TracingInterceptor(tracedHosts))
- *         .build();
+ *         // .addNetworkInterceptor(TracingInterceptor(tracedHosts))
+ *         .build()
  * ```
  */
 open class DatadogInterceptor
