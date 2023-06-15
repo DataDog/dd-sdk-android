@@ -78,7 +78,7 @@ internal class ConcurrencyExtTest {
         verify(service).execute(runnable)
         verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             "Unable to schedule $name task on the executor",
             exception
         )
@@ -125,7 +125,50 @@ internal class ConcurrencyExtTest {
         verify(service).schedule(runnable, delay, unit)
         verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            "Unable to schedule $name task on the executor",
+            exception
+        )
+    }
+
+    @Test
+    fun `M submit task W submitSafe()`(
+        @StringForgery name: String
+    ) {
+        // Given
+        val service: ExecutorService = mock()
+        val runnable: Runnable = mock()
+        val future: ScheduledFuture<*> = mock()
+        whenever(service.submit(runnable)) doReturn future
+
+        // When
+        val result: Any? = service.submitSafe(name, mockInternalLogger, runnable)
+
+        // Then
+        assertThat(result).isSameAs(future)
+        verify(service).submit(runnable)
+    }
+
+    @Test
+    fun `M not throw W submitSafe() {rejected exception}`(
+        @StringForgery name: String,
+        @StringForgery message: String
+    ) {
+        // Given
+        val service: ExecutorService = mock()
+        val runnable: Runnable = mock()
+        val exception = RejectedExecutionException(message)
+        doThrow(exception).whenever(service).submit(runnable)
+
+        // When
+        val result: Any? = service.submitSafe(name, mockInternalLogger, runnable)
+
+        // Then
+        assertThat(result).isNull()
+        verify(service).submit(runnable)
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             "Unable to schedule $name task on the executor",
             exception
         )

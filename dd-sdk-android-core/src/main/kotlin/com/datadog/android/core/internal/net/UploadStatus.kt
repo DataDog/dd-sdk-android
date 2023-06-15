@@ -34,14 +34,14 @@ internal enum class UploadStatus(val shouldRetry: Boolean) {
         }
         when (this) {
             NETWORK_ERROR -> logger.log(
-                InternalLogger.Level.ERROR,
+                InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 "$batchInfo failed because of a network error; we will retry later."
             )
             INVALID_TOKEN_ERROR -> logger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                "$batchInfo failed because your token is invalid. " +
+                "$batchInfo failed because your token is invalid; the batch was dropped. " +
                     "Make sure that the provided token still exists " +
                     "and you're targeting the relevant Datadog site."
             )
@@ -55,15 +55,15 @@ internal enum class UploadStatus(val shouldRetry: Boolean) {
                     "the batch was dropped."
                 logger.log(
                     InternalLogger.Level.ERROR,
-                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                    listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                     message
                 )
             }
             HTTP_CLIENT_RATE_LIMITING -> {
-                val message = "$batchInfo failed because of a request error; we will retry later."
+                val message = "$batchInfo not uploaded due to rate limitation; we will retry later."
                 logger.log(
-                    InternalLogger.Level.ERROR,
-                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                    InternalLogger.Level.WARN,
+                    listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                     message
                 )
             }
@@ -84,7 +84,7 @@ internal enum class UploadStatus(val shouldRetry: Boolean) {
                     "the batch was dropped."
             )
             SUCCESS -> logger.log(
-                InternalLogger.Level.VERBOSE,
+                InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 "$batchInfo sent successfully."
             )

@@ -58,6 +58,8 @@ import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.core.internal.user.UserInfoDeserializer
+import com.datadog.android.core.internal.utils.submitSafe
+import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.ndk.DatadogNdkCrashHandler
 import com.datadog.android.ndk.NdkCrashHandler
 import com.datadog.android.ndk.NdkCrashLogDeserializer
@@ -142,7 +144,7 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
         readApplicationInformation(appContext, credentials)
         resolveProcessInfo(appContext)
         setupExecutors()
-        persistenceExecutorService.submit {
+        persistenceExecutorService.submitSafe("NTP Sync initialization", unboundInternalLogger) {
             // Kronos performs I/O operation on startup, it needs to run in background
             @Suppress("ThreadSafety") // we are in the worker thread context
             initializeClockSync(appContext)
@@ -188,7 +190,7 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
                 // this may be called from the test
                 // when Kronos is already shut down
                 internalLogger.log(
-                    InternalLogger.Level.ERROR,
+                    InternalLogger.Level.WARN,
                     InternalLogger.Target.MAINTAINER,
                     "Trying to shut down Kronos when it is already not running",
                     ise
@@ -279,7 +281,7 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
                     internalLogger.log(
                         InternalLogger.Level.ERROR,
                         InternalLogger.Target.MAINTAINER,
-                        "Cannot launch time sync",
+                        "Unable to launch a synchronize local time with an NTP server.",
                         ise
                     )
                 }

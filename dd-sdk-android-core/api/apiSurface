@@ -100,6 +100,7 @@ class com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecuto
 fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.v2.api.InternalLogger): ByteArray
 fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.v2.api.InternalLogger, Runnable)
 fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.v2.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
+fun java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.v2.api.InternalLogger, Runnable): java.util.concurrent.Future<*>?
 val NULL_MAP_VALUE: Object
 fun Any?.toJsonElement(): com.google.gson.JsonElement
 fun Int.toHexString(): String

@@ -387,7 +387,7 @@ internal class WindowCallbackWrapperTest {
                     InternalLogger.Target.MAINTAINER,
                     InternalLogger.Target.TELEMETRY
                 ),
-                "Received KeyEvent=null",
+                "Received null KeyEvent",
                 null
             )
         verifyNoMoreInteractions(rumMonitor.mockInstance)

@@ -28,7 +28,7 @@ internal fun String.toMethod(internalLogger: InternalLogger): ResourceEvent.Meth
     } catch (e: IllegalArgumentException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             "Unable to convert [$this] to a valid http method",
             e
         )
@@ -42,7 +42,7 @@ internal fun String.toErrorMethod(internalLogger: InternalLogger): ErrorEvent.Me
     } catch (e: IllegalArgumentException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             "Unable to convert [$this] to a valid http method",
             e
         )

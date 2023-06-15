@@ -26,7 +26,7 @@ internal class FileMover(val internalLogger: InternalLogger) {
         } catch (e: FileNotFoundException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_DELETE.format(Locale.US, target.path),
                 e
             )
@@ -34,7 +34,7 @@ internal class FileMover(val internalLogger: InternalLogger) {
         } catch (e: SecurityException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_DELETE.format(Locale.US, target.path),
                 e
             )
@@ -59,7 +59,7 @@ internal class FileMover(val internalLogger: InternalLogger) {
         if (!srcDir.isDirectorySafe(internalLogger)) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_MOVE_NOT_DIR.format(Locale.US, srcDir.path)
             )
             return false
@@ -68,7 +68,7 @@ internal class FileMover(val internalLogger: InternalLogger) {
             if (!destDir.mkdirsSafe(internalLogger)) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
-                    targets = listOf(
+                    listOf(
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),
@@ -79,7 +79,7 @@ internal class FileMover(val internalLogger: InternalLogger) {
         } else if (!destDir.isDirectorySafe(internalLogger)) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_MOVE_NOT_DIR.format(Locale.US, destDir.path)
             )
             return false

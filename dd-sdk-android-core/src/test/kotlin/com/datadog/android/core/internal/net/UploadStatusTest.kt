@@ -56,7 +56,7 @@ internal class UploadStatusTest {
         // Then
         verify(mockLogger)
             .log(
-                InternalLogger.Level.VERBOSE,
+                InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 "Batch [$fakeByteSize bytes] ($fakeContext) sent successfully."
             )
@@ -75,7 +75,7 @@ internal class UploadStatusTest {
         // Then
         verify(mockLogger)
             .log(
-                InternalLogger.Level.ERROR,
+                InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                     "because of a network error; we will retry later."
@@ -98,7 +98,8 @@ internal class UploadStatusTest {
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
                 "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                    "because your token is invalid. Make sure that the provided token still " +
+                    "because your token is invalid; the batch was dropped. " +
+                    "Make sure that the provided token still " +
                     "exists and you're targeting the relevant Datadog site."
             )
         verifyNoMoreInteractions(mockLogger)
@@ -137,7 +138,7 @@ internal class UploadStatusTest {
         verify(mockLogger)
             .log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                     "because of a processing error or invalid data; " +
                     "the batch was dropped."
@@ -157,10 +158,10 @@ internal class UploadStatusTest {
         // Then
         verify(mockLogger)
             .log(
-                InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                    "because of a request error; we will retry later."
+                InternalLogger.Level.WARN,
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                "Batch [$fakeByteSize bytes] ($fakeContext) not uploaded due to rate limitation; " +
+                    "we will retry later."
             )
     }
 

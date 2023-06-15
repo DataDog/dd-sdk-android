@@ -85,7 +85,7 @@ internal class SpanEventMapperWrapperTest {
 
         // THEN
         verify(mockInternalLogger).log(
-            InternalLogger.Level.WARN,
+            InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             SpanEventMapperWrapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(
                 Locale.US,

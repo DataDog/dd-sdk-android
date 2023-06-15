@@ -58,28 +58,28 @@ internal class WebViewRumEventConsumer(
         } catch (e: ClassCastException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 JSON_PARSING_ERROR_MESSAGE,
                 e
             )
         } catch (e: NumberFormatException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 JSON_PARSING_ERROR_MESSAGE,
                 e
             )
         } catch (e: IllegalStateException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 JSON_PARSING_ERROR_MESSAGE,
                 e
             )
         } catch (e: UnsupportedOperationException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 JSON_PARSING_ERROR_MESSAGE,
                 e
             )
@@ -108,7 +108,7 @@ internal class WebViewRumEventConsumer(
                 // it should not happen but just in case.
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
-                    targets = listOf(
+                    listOf(
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),

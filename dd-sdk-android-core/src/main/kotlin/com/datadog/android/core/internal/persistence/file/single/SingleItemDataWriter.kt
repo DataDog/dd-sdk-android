@@ -60,9 +60,11 @@ internal open class SingleItemDataWriter<T : Any>(
 
     private fun checkEventSize(eventSize: Int): Boolean {
         if (eventSize > filePersistenceConfig.maxItemSize) {
+            // DISCUSS? send a RUM/Log Error event here to the org so they get visibility
+            // about this in their own org?
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 ERROR_LARGE_DATA.format(
                     Locale.US,
                     eventSize,

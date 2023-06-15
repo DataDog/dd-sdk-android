@@ -56,6 +56,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.reset
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -299,13 +300,14 @@ internal class DatadogCoreTest {
     ) {
         // Given
         val fakeReceiver = FeatureEventReceiver { }
+        reset(mockInternalLogger)
 
         // When
         testedCore.setEventReceiver(feature, fakeReceiver)
 
         // Then
         verify(mockInternalLogger).log(
-            InternalLogger.Level.INFO,
+            InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             DatadogCore.MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, feature)
         )
@@ -321,15 +323,15 @@ internal class DatadogCoreTest {
         whenever(mockFeature.eventReceiver) doReturn mockEventReceiverRef
         whenever(mockEventReceiverRef.get()) doReturn mock()
         testedCore.features[feature] = mockFeature
-
         val fakeReceiver = FeatureEventReceiver { }
+        reset(mockInternalLogger)
 
         // When
         testedCore.setEventReceiver(feature, fakeReceiver)
 
         // Then
         verify(mockInternalLogger).log(
-            InternalLogger.Level.INFO,
+            InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             DatadogCore.EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, feature)
         )
@@ -531,8 +533,8 @@ internal class DatadogCoreTest {
         )
         val mockCoreFeature = mock<CoreFeature>()
         whenever(mockCoreFeature.storageDir) doReturn tempStorageDir
-
         testedCore.coreFeature = mockCoreFeature
+        reset(mockInternalLogger)
 
         // When
         testedCore.writeLastViewEvent(viewEvent.toByteArray())
@@ -540,7 +542,7 @@ internal class DatadogCoreTest {
         // Then
         assertThat(ndkReportsFolder).doesNotExist()
         verify(mockInternalLogger).log(
-            InternalLogger.Level.INFO,
+            InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
             DatadogCore.LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(
                 Locale.US,

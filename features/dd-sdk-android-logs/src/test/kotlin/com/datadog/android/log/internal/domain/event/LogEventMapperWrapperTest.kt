@@ -88,7 +88,7 @@ internal class LogEventMapperWrapperTest {
 
         // THEN
         verify(mockInternalLogger).log(
-            InternalLogger.Level.WARN,
+            InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             LogEventMapperWrapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(
                 Locale.US,
@@ -120,7 +120,7 @@ internal class LogEventMapperWrapperTest {
 
         // THEN
         verify(mockInternalLogger).log(
-            InternalLogger.Level.WARN,
+            InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             LogEventMapperWrapper.EVENT_NULL_WARNING_MESSAGE.format(
                 Locale.US,

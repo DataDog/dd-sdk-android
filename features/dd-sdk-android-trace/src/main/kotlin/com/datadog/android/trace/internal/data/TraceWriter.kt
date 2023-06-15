@@ -72,7 +72,7 @@ internal class TraceWriter(
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 ERROR_SERIALIZING.format(Locale.US, mapped.javaClass.simpleName),
                 e
             )

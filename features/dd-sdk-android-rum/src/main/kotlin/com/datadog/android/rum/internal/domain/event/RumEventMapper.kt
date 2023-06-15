@@ -87,14 +87,14 @@ internal data class RumEventMapper(
         // log a warning and we will use the original event.
         return if (event is ViewEvent && (mappedEvent == null || mappedEvent !== event)) {
             internalLogger.log(
-                InternalLogger.Level.WARN,
+                InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
                 VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event)
             )
             event
         } else if (mappedEvent == null) {
             internalLogger.log(
-                InternalLogger.Level.WARN,
+                InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event)
             )

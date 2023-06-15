@@ -22,6 +22,8 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.same
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -93,10 +95,10 @@ internal class ScheduledWriterTest {
         // Then
         verifyNoInteractions(mockDelegateWriter)
         verify(mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            ScheduledWriter.ERROR_REJECTED,
-            throwable = exception
+            eq(InternalLogger.Level.ERROR),
+            eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
+            any(),
+            same(exception)
         )
     }
 
@@ -135,10 +137,10 @@ internal class ScheduledWriterTest {
         // Then
         verifyNoInteractions(mockDelegateWriter)
         verify(mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            ScheduledWriter.ERROR_REJECTED,
-            throwable = exception
+            eq(InternalLogger.Level.ERROR),
+            eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
+            any(),
+            same(exception)
         )
     }
 }

@@ -76,7 +76,7 @@ internal fun loggingAfterExecute(task: Runnable?, t: Throwable?, logger: Interna
     if (throwable != null) {
         logger.log(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
             throwable
         )

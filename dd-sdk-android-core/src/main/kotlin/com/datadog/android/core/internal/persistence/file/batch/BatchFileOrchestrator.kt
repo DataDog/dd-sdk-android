@@ -107,7 +107,7 @@ internal class BatchFileOrchestrator(
             // just in case.
             internalLogger.log(
                 InternalLogger.Level.DEBUG,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 DEBUG_DIFFERENT_ROOT.format(Locale.US, file.path, rootDir.path)
             )
         }
@@ -117,7 +117,7 @@ internal class BatchFileOrchestrator(
         } else {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_NOT_BATCH_FILE.format(Locale.US, file.path)
             )
             null
@@ -137,7 +137,7 @@ internal class BatchFileOrchestrator(
                 } else {
                     internalLogger.log(
                         InternalLogger.Level.ERROR,
-                        targets = listOf(
+                        listOf(
                             InternalLogger.Target.MAINTAINER,
                             InternalLogger.Target.TELEMETRY
                         ),
@@ -148,7 +148,7 @@ internal class BatchFileOrchestrator(
             } else {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
-                    targets = listOf(
+                    listOf(
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),
@@ -169,7 +169,7 @@ internal class BatchFileOrchestrator(
                 } else {
                     internalLogger.log(
                         InternalLogger.Level.ERROR,
-                        targets = listOf(
+                        listOf(
                             InternalLogger.Target.MAINTAINER,
                             InternalLogger.Target.TELEMETRY
                         ),
@@ -245,7 +245,7 @@ internal class BatchFileOrchestrator(
         if (sizeToFree > 0) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_DISK_FULL.format(Locale.US, sizeOnDisk, maxDiskSpace, sizeToFree)
             )
             files.fold(sizeToFree) { remainingSizeToFree, file ->
@@ -300,7 +300,7 @@ internal class BatchFileOrchestrator(
         private val batchFileNameRegex = Regex("\\d+")
         internal const val ERROR_ROOT_NOT_WRITABLE = "The provided root dir is not writable: %s"
         internal const val ERROR_ROOT_NOT_DIR = "The provided root file is not a directory: %s"
-        internal const val ERROR_CANT_CREATE_ROOT = "The provided root file can't be created: %s"
+        internal const val ERROR_CANT_CREATE_ROOT = "The provided root dir can't be created: %s"
         internal const val ERROR_DISK_FULL = "Too much disk space used (%d/%d): " +
             "cleaning up to free %d bytes…"
         internal const val ERROR_NOT_BATCH_FILE = "The file provided is not a batch file: %s"

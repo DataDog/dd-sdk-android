@@ -50,10 +50,7 @@ internal class WindowCallbackWrapper(
             } catch (e: Exception) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
-                    targets = listOf(
-                        InternalLogger.Target.MAINTAINER,
-                        InternalLogger.Target.TELEMETRY
-                    ),
+                    listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                     "Error processing MotionEvent",
                     e
                 )
@@ -63,8 +60,8 @@ internal class WindowCallbackWrapper(
         } else {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                "Received MotionEvent=null"
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                "Received null MotionEvent"
             )
         }
 
@@ -73,7 +70,7 @@ internal class WindowCallbackWrapper(
         } catch (e: Exception) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 "Wrapped callback failed processing MotionEvent",
                 e
             )
@@ -98,7 +95,7 @@ internal class WindowCallbackWrapper(
         } catch (e: Exception) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 "Wrapped callback failed processing MenuItem selection",
                 e
             )
@@ -110,8 +107,8 @@ internal class WindowCallbackWrapper(
         if (event == null) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                "Received KeyEvent=null"
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                "Received null KeyEvent"
             )
         } else if (event.keyCode == KeyEvent.KEYCODE_BACK &&
             event.action == KeyEvent.ACTION_UP
@@ -127,7 +124,7 @@ internal class WindowCallbackWrapper(
         } catch (e: Exception) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 "Wrapped callback failed processing KeyEvent",
                 e
             )

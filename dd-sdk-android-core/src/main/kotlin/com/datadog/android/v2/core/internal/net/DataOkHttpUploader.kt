@@ -40,8 +40,8 @@ internal class DataOkHttpUploader(
         } catch (e: Exception) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                "Unable to create the request due to probably bad data format." +
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                "Unable to create the request, probably due to bad data format." +
                     " The batch will be dropped.",
                 e
             )
@@ -53,14 +53,8 @@ internal class DataOkHttpUploader(
         } catch (e: Throwable) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                "Unable to upload batch data.",
-                e
-            )
-            internalLogger.log(
-                InternalLogger.Level.DEBUG,
-                InternalLogger.Target.USER,
-                "Unable to upload batch data.",
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                "Unable to execute the request; we will retry later.",
                 e
             )
             UploadStatus.NETWORK_ERROR
@@ -108,7 +102,7 @@ internal class DataOkHttpUploader(
         val call = callFactory.newCall(okHttpRequest)
         val response = call.execute()
         response.close()
-        return responseCodeToUploadStatus(response.code())
+        return responseCodeToUploadStatus(response.code(), request)
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
@@ -151,7 +145,10 @@ internal class DataOkHttpUploader(
         return c == '\t' || c in '\u0020' until '\u007F'
     }
 
-    private fun responseCodeToUploadStatus(code: Int): UploadStatus {
+    private fun responseCodeToUploadStatus(
+        code: Int,
+        request: com.datadog.android.v2.api.Request
+    ): UploadStatus {
         return when (code) {
             HTTP_ACCEPTED -> UploadStatus.SUCCESS
             HTTP_BAD_REQUEST -> UploadStatus.HTTP_CLIENT_ERROR
@@ -162,7 +159,14 @@ internal class DataOkHttpUploader(
             HTTP_TOO_MANY_REQUESTS -> UploadStatus.HTTP_CLIENT_RATE_LIMITING
             HTTP_INTERNAL_ERROR -> UploadStatus.HTTP_SERVER_ERROR
             HTTP_UNAVAILABLE -> UploadStatus.HTTP_SERVER_ERROR
-            else -> UploadStatus.UNKNOWN_ERROR
+            else -> {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                    "Unexpected status code $code on upload request: ${request.description}"
+                )
+                UploadStatus.UNKNOWN_ERROR
+            }
         }
     }
 

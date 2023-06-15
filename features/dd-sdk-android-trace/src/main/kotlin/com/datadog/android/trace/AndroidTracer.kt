@@ -142,7 +142,7 @@ class AndroidTracer internal constructor(
 
             if (bundleWithRumEnabled && rumFeature == null) {
                 sdkCore.internalLogger.log(
-                    InternalLogger.Level.ERROR,
+                    InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     RUM_NOT_ENABLED_ERROR_MESSAGE
                 )

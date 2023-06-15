@@ -74,6 +74,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -485,6 +486,7 @@ internal class RumViewScopeTest {
             type = expectedViewType,
             trackFrustrations = fakeTrackFrustrations
         )
+        reset(mockInternalLogger)
 
         // When
         testedScope.handleEvent(
@@ -518,10 +520,9 @@ internal class RumViewScopeTest {
             assertThat(rumContext["action_id"])
                 .isEqualTo(anotherScope.getRumContext().actionId)
         }
-
         verify(mockInternalLogger).log(
             InternalLogger.Level.DEBUG,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            InternalLogger.Target.MAINTAINER,
             RumViewScope.RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE
         )
     }
@@ -573,9 +574,9 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockChildScope
-
         val stopActionEvent = RumRawEvent.StopAction(rumActionType, actionName, emptyMap())
         whenever(mockChildScope.handleEvent(stopActionEvent, mockWriter)) doReturn null
+        reset(mockInternalLogger)
 
         // When
         testedScope.handleEvent(
@@ -615,7 +616,7 @@ internal class RumViewScopeTest {
 
         verify(mockInternalLogger).log(
             InternalLogger.Level.DEBUG,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            InternalLogger.Target.MAINTAINER,
             RumViewScope.RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE
         )
     }
@@ -7144,7 +7145,7 @@ internal class RumViewScopeTest {
         }
         verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             RumViewScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, testedScope.name)
         )
     }

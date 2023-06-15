@@ -208,7 +208,7 @@ internal class UiRumDebugListener(private val sdkCore: FeatureSdkCore) :
 
     companion object {
         const val CANNOT_FIND_CONTENT_VIEW_MESSAGE =
-            "Cannot enable RUM debugging, because cannot find root content view"
+            "Cannot enable RUM debugging, because root content view can't be found"
         const val MISSING_RUM_MONITOR_TYPE =
             "Cannot enable RUM debugging, because global RUM monitor" +
                 " doesn't implement %s"

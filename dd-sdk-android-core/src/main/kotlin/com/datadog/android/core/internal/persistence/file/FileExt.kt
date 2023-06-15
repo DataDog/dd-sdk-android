@@ -37,7 +37,7 @@ private fun <T> File.safeCall(
     } catch (e: SecurityException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             "Security exception was thrown for file ${this.path}",
             e
         )
@@ -45,7 +45,7 @@ private fun <T> File.safeCall(
     } catch (e: Exception) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             "Unexpected exception was thrown for file ${this.path}",
             e
         )
@@ -164,7 +164,10 @@ internal fun File.readBytesSafe(internalLogger: InternalLogger): ByteArray? {
 /**
  * Non-throwing version of [File.readLines]. If exception happens, null is returned.
  */
-fun File.readLinesSafe(charset: Charset = Charsets.UTF_8, internalLogger: InternalLogger): List<String>? {
+fun File.readLinesSafe(
+    charset: Charset = Charsets.UTF_8,
+    internalLogger: InternalLogger
+): List<String>? {
     return if (existsSafe(internalLogger) && canReadSafe(internalLogger)) {
         safeCall(default = null, internalLogger) {
             @Suppress("UnsafeThirdPartyFunctionCall")

@@ -446,7 +446,7 @@ internal class AndroidSpanLogsHandlerTest {
         // Then
         verify(mockInternalLogger)
             .log(
-                InternalLogger.Level.INFO,
+                InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 AndroidSpanLogsHandler.MISSING_LOG_FEATURE_INFO
             )
