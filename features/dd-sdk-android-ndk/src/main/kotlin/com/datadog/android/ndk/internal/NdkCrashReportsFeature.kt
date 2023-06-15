@@ -20,16 +20,15 @@ import java.lang.NullPointerException
  * An implementation of the [Feature] which will allow to intercept and report the
  * NDK crashes to our logs dashboard.
  */
-internal class NdkCrashReportsFeature : Feature, TrackingConsentProviderCallback {
+internal class NdkCrashReportsFeature(private val sdkCore: FeatureSdkCore) :
+    Feature,
+    TrackingConsentProviderCallback {
     private var nativeLibraryLoaded = false
 
     override val name: String = "ndk-crash-reporting"
 
     // region Feature
-    override fun onInitialize(
-        sdkCore: FeatureSdkCore,
-        appContext: Context
-    ) {
+    override fun onInitialize(appContext: Context) {
         loadNativeLibrary(sdkCore.internalLogger)
         if (!nativeLibraryLoaded) {
             return

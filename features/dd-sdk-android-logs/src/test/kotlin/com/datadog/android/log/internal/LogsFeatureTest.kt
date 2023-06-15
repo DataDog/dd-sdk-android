@@ -168,15 +168,13 @@ internal class LogsFeatureTest {
             }
         )
 
-        testedFeature = LogsFeature(fakeEndpointUrl, mockEventMapper).apply {
-            sdkCore = mockSdkCore
-        }
+        testedFeature = LogsFeature(mockSdkCore, fakeEndpointUrl, mockEventMapper)
     }
 
     @Test
     fun `𝕄 initialize data writer 𝕎 initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, mockApplicationContext)
+        testedFeature.onInitialize(mockApplicationContext)
 
         // Then
         assertThat(testedFeature.dataWriter)
@@ -186,7 +184,7 @@ internal class LogsFeatureTest {
     @Test
     fun `𝕄 use the eventMapper 𝕎 initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, mockApplicationContext)
+        testedFeature.onInitialize(mockApplicationContext)
 
         // Then
         val dataWriter = testedFeature.dataWriter as? LogsDataWriter
@@ -200,7 +198,7 @@ internal class LogsFeatureTest {
     @Test
     fun `𝕄 initialize packageName 𝕎 initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, mockApplicationContext)
+        testedFeature.onInitialize(mockApplicationContext)
 
         // Then
         assertThat(testedFeature.packageName).isEqualTo(fakePackageName)
@@ -338,7 +336,6 @@ internal class LogsFeatureTest {
     ) {
         // Given
         testedFeature.dataWriter = mockDataWriter
-        testedFeature.sdkCore = mockSdkCore
         val fakeThrowable = forge.aThrowable()
         val event = mapOf(
             "type" to "jvm_crash",
@@ -411,7 +408,6 @@ internal class LogsFeatureTest {
             }
         }
         testedFeature.dataWriter = mockDataWriter
-        testedFeature.sdkCore = mockSdkCore
         val fakeThrowable = forge.aThrowable()
         val event = mapOf(
             "type" to "jvm_crash",
@@ -477,7 +473,6 @@ internal class LogsFeatureTest {
             }
         }
         testedFeature.dataWriter = mockDataWriter
-        testedFeature.sdkCore = mockSdkCore
         val fakeThrowable = forge.aThrowable()
         val event = mapOf(
             "type" to "jvm_crash",
@@ -556,7 +551,6 @@ internal class LogsFeatureTest {
     ) {
         // Given
         testedFeature.dataWriter = mockDataWriter
-        testedFeature.sdkCore = mockSdkCore
         val fakeAttributes = forge.exhaustiveAttributes()
         val event = mutableMapOf<String, Any?>(
             "type" to "ndk_crash",
@@ -605,7 +599,6 @@ internal class LogsFeatureTest {
     ) {
         // Given
         testedFeature.dataWriter = mockDataWriter
-        testedFeature.sdkCore = mockSdkCore
         val fakeAttributes = forge.exhaustiveAttributes()
         val event = mutableMapOf<String, Any?>(
             "type" to "ndk_crash",
@@ -655,7 +648,6 @@ internal class LogsFeatureTest {
     ) {
         // Given
         testedFeature.dataWriter = mockDataWriter
-        testedFeature.sdkCore = mockSdkCore
         val fakeAttributes = forge.exhaustiveAttributes()
         val event = mutableMapOf<String, Any?>(
             "type" to "ndk_crash",
@@ -755,7 +747,6 @@ internal class LogsFeatureTest {
     ) {
         // Given
         testedFeature.dataWriter = mockDataWriter
-        testedFeature.sdkCore = mockSdkCore
         val fakeAttributes = forge.exhaustiveAttributes()
         val event = mutableMapOf<String, Any?>(
             "type" to "span_log",

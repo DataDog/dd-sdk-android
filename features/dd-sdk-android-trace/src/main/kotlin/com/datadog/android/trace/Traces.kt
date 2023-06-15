@@ -27,10 +27,11 @@ object Traces {
     @JvmStatic
     fun enable(tracesConfiguration: TracesConfiguration, sdkCore: SdkCore = Datadog.getInstance()) {
         val tracingFeature = TracingFeature(
+            sdkCore = sdkCore as FeatureSdkCore,
             customEndpointUrl = tracesConfiguration.customEndpointUrl,
             spanEventMapper = tracesConfiguration.eventMapper
         )
 
-        (sdkCore as FeatureSdkCore).registerFeature(tracingFeature)
+        sdkCore.registerFeature(tracingFeature)
     }
 }

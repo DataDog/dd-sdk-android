@@ -58,7 +58,6 @@ internal class SessionReplayTest {
             verify(mockSdkCore).registerFeature(capture())
 
             lastValue.onInitialize(
-                mockSdkCore,
                 appContext = mock { whenever(it.packageName) doReturn fakePackageName }
             )
             assertThat(lastValue.privacy).isEqualTo(fakeSessionReplayConfiguration.privacy)

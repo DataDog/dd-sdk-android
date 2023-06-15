@@ -29,11 +29,12 @@ object Rum {
     @JvmStatic
     fun enable(rumConfiguration: RumConfiguration, sdkCore: SdkCore = Datadog.getInstance()) {
         val rumFeature = RumFeature(
+            sdkCore = sdkCore as FeatureSdkCore,
             applicationId = rumConfiguration.applicationId,
             configuration = rumConfiguration.featureConfiguration
         )
 
-        (sdkCore as FeatureSdkCore).registerFeature(rumFeature)
+        sdkCore.registerFeature(rumFeature)
     }
 
     /**

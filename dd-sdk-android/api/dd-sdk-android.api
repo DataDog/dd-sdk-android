@@ -366,7 +366,7 @@ public abstract interface class com/datadog/android/v2/api/Feature {
 	public static final field SESSION_REPLAY_FEATURE_NAME Ljava/lang/String;
 	public static final field TRACING_FEATURE_NAME Ljava/lang/String;
 	public abstract fun getName ()Ljava/lang/String;
-	public abstract fun onInitialize (Lcom/datadog/android/v2/api/FeatureSdkCore;Landroid/content/Context;)V
+	public abstract fun onInitialize (Landroid/content/Context;)V
 	public abstract fun onStop ()V
 }
 

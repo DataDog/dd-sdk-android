@@ -142,7 +142,7 @@ internal class DatadogCoreTest {
 
         // Then
         assertThat(testedCore.features).containsKey(fakeFeatureName)
-        verify(mockFeature).onInitialize(testedCore, appContext.mockInstance)
+        verify(mockFeature).onInitialize(appContext.mockInstance)
     }
 
     @Test

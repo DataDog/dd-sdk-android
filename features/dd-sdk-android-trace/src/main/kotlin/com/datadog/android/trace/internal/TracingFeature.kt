@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Tracing feature class, which needs to be registered with Datadog SDK instance.
  */
 internal class TracingFeature constructor(
+    private val sdkCore: FeatureSdkCore,
     customEndpointUrl: String?,
     internal val spanEventMapper: SpanEventMapper
 ) : StorageBackedFeature {
@@ -37,13 +38,7 @@ internal class TracingFeature constructor(
 
     override val name: String = Feature.TRACING_FEATURE_NAME
 
-    private lateinit var sdkCore: FeatureSdkCore
-
-    override fun onInitialize(
-        sdkCore: FeatureSdkCore,
-        appContext: Context
-    ) {
-        this.sdkCore = sdkCore
+    override fun onInitialize(appContext: Context) {
         dataWriter = createDataWriter(sdkCore)
         initialized.set(true)
     }

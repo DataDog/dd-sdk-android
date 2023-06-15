@@ -201,7 +201,7 @@ interface com.datadog.android.v2.api.EventBatchWriter
   fun write(ByteArray, ByteArray?): Boolean
 interface com.datadog.android.v2.api.Feature
   val name: String
-  fun onInitialize(FeatureSdkCore, android.content.Context)
+  fun onInitialize(android.content.Context)
   fun onStop()
   companion object 
     const val LOGS_FEATURE_NAME: String

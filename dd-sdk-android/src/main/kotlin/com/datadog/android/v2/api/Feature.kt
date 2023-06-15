@@ -21,13 +21,9 @@ interface Feature {
     /**
      * This method is called during feature initialization. At this stage feature should setup itself.
      *
-     * @param sdkCore Instance of [SdkCore] this feature is registering with.
      * @param appContext Application context.
      */
-    fun onInitialize(
-        sdkCore: FeatureSdkCore,
-        appContext: Context
-    )
+    fun onInitialize(appContext: Context)
 
     /**
      * This method is called during feature de-initialization. At this stage feature should stop

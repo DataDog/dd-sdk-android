@@ -25,7 +25,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -75,15 +74,16 @@ internal class SessionReplayFeatureTest {
     fun `set up`(forge: Forge) {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         testedFeature = SessionReplayFeature(
+            sdkCore = mockSdkCore,
             customEndpointUrl = forge.aNullable { sessionReplayEndpointUrl },
             privacy = fakePrivacy
-        ) { _, _ -> mockSessionReplayLifecycleCallback }
+        ) { mockSessionReplayLifecycleCallback }
     }
 
     @Test
     fun `𝕄 initialize writer 𝕎 initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        testedFeature.onInitialize(appContext.mockInstance)
 
         // Then
         assertThat(testedFeature.dataWriter)
@@ -96,6 +96,7 @@ internal class SessionReplayFeatureTest {
     ) {
         // Given
         testedFeature = SessionReplayFeature(
+            sdkCore = mockSdkCore,
             customEndpointUrl = forge.aNullable { sessionReplayEndpointUrl },
             privacy = fakePrivacy,
             customMappers = emptyList(),
@@ -103,7 +104,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // When
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        testedFeature.onInitialize(appContext.mockInstance)
 
         // Then
         assertThat(testedFeature.sessionReplayCallback)
@@ -116,6 +117,7 @@ internal class SessionReplayFeatureTest {
     ) {
         // Given
         testedFeature = SessionReplayFeature(
+            sdkCore = mockSdkCore,
             customEndpointUrl = forge.aNullable { sessionReplayEndpointUrl },
             privacy = fakePrivacy,
             customMappers = emptyList(),
@@ -123,7 +125,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // When
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        testedFeature.onInitialize(appContext.mockInstance)
 
         // Then
         verify(mockSdkCore).setEventReceiver(
@@ -135,7 +137,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M register the Session Replay lifecycle callback W initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        testedFeature.onInitialize(appContext.mockInstance)
 
         // Then
         verify(mockSessionReplayLifecycleCallback)
@@ -145,7 +147,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M unregister the Session Replay lifecycle callback W onStop()`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        testedFeature.onInitialize(appContext.mockInstance)
 
         // When
         testedFeature.onStop()
@@ -158,7 +160,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M reset the Session Replay lifecycle callback W onStop()`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        testedFeature.onInitialize(appContext.mockInstance)
 
         // When
         testedFeature.onStop()
@@ -171,7 +173,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M unregister the SessionReplayCallback W stopRecording() { was recording }`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        testedFeature.onInitialize(appContext.mockInstance)
 
         // When
         testedFeature.stopRecording()
@@ -185,7 +187,7 @@ internal class SessionReplayFeatureTest {
     fun `M unregister only once the SessionReplayCallback W stopRecording() { multi threads }`() {
         // Given
         val countDownLatch = CountDownLatch(3)
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        testedFeature.onInitialize(appContext.mockInstance)
 
         // When
         repeat(3) {
@@ -207,7 +209,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M do nothing W stopRecording() { was already stopped }`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        testedFeature.onInitialize(appContext.mockInstance)
         testedFeature.stopRecording()
 
         // When
@@ -224,7 +226,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M do nothing W stopRecording() { initialize without Application context }`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, mock())
+        testedFeature.onInitialize(mock())
 
         // When
         testedFeature.stopRecording()
@@ -236,7 +238,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M register the SessionReplayCallback W startRecording() { was stopped before }`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        testedFeature.onInitialize(appContext.mockInstance)
         testedFeature.stopRecording()
 
         // When
@@ -251,7 +253,7 @@ internal class SessionReplayFeatureTest {
     fun `M register only once the SessionReplayCallback W startRecording() { multi threads }`() {
         // Given
         val countDownLatch = CountDownLatch(3)
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        testedFeature.onInitialize(appContext.mockInstance)
 
         // When
         repeat(3) {
@@ -270,7 +272,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M do nothing W startRecording() { was already started before }`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        testedFeature.onInitialize(appContext.mockInstance)
 
         // When
         testedFeature.startRecording()
@@ -283,7 +285,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M do nothing W startRecording() { initialize without Application context }`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, mock())
+        testedFeature.onInitialize(mock())
 
         // When
         testedFeature.startRecording()
@@ -292,8 +294,6 @@ internal class SessionReplayFeatureTest {
         verifyNoInteractions(mockSessionReplayLifecycleCallback)
     }
 
-    // TODO RUMM-0000 Mock InternalLogger.UNBOUND
-    @Disabled("Needs mock of InternalLogger.UNBOUND")
     @Test
     fun `M log warning and do nothing W startRecording() { feature is not initialized }`() {
         // When
@@ -312,7 +312,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M stopRecording W rum session updated { session not tracked }`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        testedFeature.onInitialize(appContext.mockInstance)
         val rumSessionUpdateBusMessage = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                 SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
@@ -335,7 +335,7 @@ internal class SessionReplayFeatureTest {
     @Test
     fun `M startRecording W rum session updated { session tracked }`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
+        testedFeature.onInitialize(appContext.mockInstance)
         testedFeature.stopRecording()
         val rumSessionUpdateBusMessage = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -359,9 +359,6 @@ internal class SessionReplayFeatureTest {
 
     @Test
     fun `𝕄 log warning and do nothing 𝕎 onReceive() { unknown event type }`() {
-        // Given
-        testedFeature.sdkCore = mockSdkCore
-
         // When
         testedFeature.onReceive(Any())
 
@@ -388,7 +385,6 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                 forge.anAlphabeticalString()
         )
-        testedFeature.sdkCore = mockSdkCore
 
         // When
         testedFeature.onReceive(event)
@@ -413,7 +409,6 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                 SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE
         )
-        testedFeature.sdkCore = mockSdkCore
 
         // When
         testedFeature.onReceive(event)
@@ -440,7 +435,6 @@ internal class SessionReplayFeatureTest {
             SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
                 forge.anAlphabeticalString()
         )
-        testedFeature.sdkCore = mockSdkCore
 
         // When
         testedFeature.onReceive(event)

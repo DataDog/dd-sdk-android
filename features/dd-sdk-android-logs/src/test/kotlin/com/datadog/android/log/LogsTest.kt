@@ -58,7 +58,6 @@ internal class LogsTest {
             verify(mockSdkCore).registerFeature(capture())
 
             lastValue.onInitialize(
-                mockSdkCore,
                 appContext = mock { whenever(it.packageName) doReturn fakePackageName }
             )
             assertThat(lastValue.eventMapper).isEqualTo(fakeLogsConfiguration.eventMapper)

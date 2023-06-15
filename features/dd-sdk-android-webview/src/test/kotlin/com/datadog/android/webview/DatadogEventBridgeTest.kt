@@ -122,7 +122,7 @@ internal class DatadogEventBridgeTest {
         val fakeHosts = fakeUrls.map { it.host }
         whenever(mockCore.registerFeature(any())) doAnswer {
             val feature = it.getArgument<Feature>(0)
-            feature.onInitialize(mockCore, mock())
+            feature.onInitialize(mock())
         }
 
         // When
@@ -159,7 +159,7 @@ internal class DatadogEventBridgeTest {
         whenever(mockCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
         whenever(mockCore.registerFeature(any())) doAnswer {
             val feature = it.getArgument<Feature>(0)
-            feature.onInitialize(mockCore, mock())
+            feature.onInitialize(mock())
         }
 
         // When
@@ -204,7 +204,7 @@ internal class DatadogEventBridgeTest {
         whenever(mockCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
         whenever(mockCore.registerFeature(any())) doAnswer {
             val feature = it.getArgument<Feature>(0)
-            feature.onInitialize(mockCore, mock())
+            feature.onInitialize(mock())
         }
 
         // When
@@ -372,7 +372,7 @@ internal class DatadogEventBridgeTest {
 
         whenever(mockCore.registerFeature(any())) doAnswer {
             val feature = it.getArgument<Feature>(0)
-            feature.onInitialize(mockCore, mock())
+            feature.onInitialize(mock())
         }
 
         val mockDatadogContext = mock<DatadogContext>()

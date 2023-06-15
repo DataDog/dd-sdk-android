@@ -47,14 +47,14 @@ internal class WebViewRumFeatureTest {
 
     @BeforeEach
     fun `set up`() {
-        testedFeature = WebViewRumFeature(mockRequestFactory)
+        testedFeature = WebViewRumFeature(mockSdkCore, mockRequestFactory)
         whenever(mockSdkCore.internalLogger) doReturn mock()
     }
 
     @Test
     fun `𝕄 initialize data writer 𝕎 initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, mock())
+        testedFeature.onInitialize(mock())
 
         // Then
         assertThat(testedFeature.dataWriter)
@@ -85,7 +85,7 @@ internal class WebViewRumFeatureTest {
     @Test
     fun `𝕄 reset data writer 𝕎 onStop()`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, mock())
+        testedFeature.onInitialize(mock())
 
         // When
         testedFeature.onStop()
