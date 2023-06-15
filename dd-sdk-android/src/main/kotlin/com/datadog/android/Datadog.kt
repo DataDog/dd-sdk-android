@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
@@ -224,7 +225,7 @@ object Datadog {
         // we need to drain, execute and flush from a background thread or ensure we're
         // not in the main thread!
         synchronized(registry) {
-            val sdkCore = registry.getInstance()
+            val sdkCore = registry.getInstance() as? FeatureSdkCore
             if (sdkCore != null) {
                 sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
                     ?.sendEvent(

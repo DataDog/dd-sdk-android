@@ -11,6 +11,7 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.data.NoOpWriter
 import com.datadog.android.trace.internal.handlers.AndroidSpanLogsHandler
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDTracer
@@ -33,7 +34,7 @@ import java.util.Random
  *
  */
 class AndroidTracer internal constructor(
-    private val sdkCore: SdkCore,
+    private val sdkCore: FeatureSdkCore,
     config: Config,
     writer: Writer,
     random: Random,
@@ -84,7 +85,7 @@ class AndroidTracer internal constructor(
      */
     class Builder
     internal constructor(
-        private val sdkCore: SdkCore,
+        private val sdkCore: FeatureSdkCore,
         private val logsHandler: LogHandler
     ) {
 
@@ -98,7 +99,7 @@ class AndroidTracer internal constructor(
                 return field.ifEmpty {
                     val service = sdkCore.service
                     if (service.isEmpty()) {
-                        sdkCore._internalLogger.log(
+                        sdkCore.internalLogger.log(
                             InternalLogger.Level.ERROR,
                             InternalLogger.Target.USER,
                             DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
@@ -116,7 +117,7 @@ class AndroidTracer internal constructor(
          * @param sdkCore SDK instance to bind to.
          */
         constructor(sdkCore: SdkCore) : this(
-            sdkCore,
+            sdkCore as FeatureSdkCore,
             AndroidSpanLogsHandler(sdkCore)
         )
 
@@ -131,7 +132,7 @@ class AndroidTracer internal constructor(
             val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
 
             if (tracingFeature == null) {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     TRACING_NOT_ENABLED_ERROR_MESSAGE
@@ -139,7 +140,7 @@ class AndroidTracer internal constructor(
             }
 
             if (bundleWithRumEnabled && rumFeature == null) {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     RUM_NOT_ENABLED_ERROR_MESSAGE

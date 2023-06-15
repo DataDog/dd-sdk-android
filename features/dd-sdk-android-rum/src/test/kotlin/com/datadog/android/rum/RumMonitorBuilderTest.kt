@@ -16,8 +16,8 @@ import com.datadog.android.rum.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -85,7 +85,7 @@ internal class RumMonitorBuilderTest {
         whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
         testedBuilder = RumMonitor.Builder(mockSdkCore)
     }
@@ -192,8 +192,8 @@ internal class RumMonitorBuilderTest {
     @Test
     fun `𝕄 builds nothing 𝕎 build() and SDK instance doesn't implement InternalSdkCore`() {
         // Given
-        val wrongSdkCore = mock<SdkCore>()
-        whenever(wrongSdkCore._internalLogger) doReturn mockInternalLogger
+        val wrongSdkCore = mock<FeatureSdkCore>()
+        whenever(wrongSdkCore.internalLogger) doReturn mockInternalLogger
 
         // When
         val monitor = RumMonitor.Builder(wrongSdkCore).build()

@@ -366,7 +366,7 @@ public abstract interface class com/datadog/android/v2/api/Feature {
 	public static final field SESSION_REPLAY_FEATURE_NAME Ljava/lang/String;
 	public static final field TRACING_FEATURE_NAME Ljava/lang/String;
 	public abstract fun getName ()Ljava/lang/String;
-	public abstract fun onInitialize (Lcom/datadog/android/v2/api/SdkCore;Landroid/content/Context;)V
+	public abstract fun onInitialize (Lcom/datadog/android/v2/api/FeatureSdkCore;Landroid/content/Context;)V
 	public abstract fun onStop ()V
 }
 
@@ -393,6 +393,16 @@ public abstract interface class com/datadog/android/v2/api/FeatureScope {
 
 public final class com/datadog/android/v2/api/FeatureScope$DefaultImpls {
 	public static synthetic fun withWriteContext$default (Lcom/datadog/android/v2/api/FeatureScope;ZLkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
+}
+
+public abstract interface class com/datadog/android/v2/api/FeatureSdkCore : com/datadog/android/v2/api/SdkCore {
+	public abstract fun getFeature (Ljava/lang/String;)Lcom/datadog/android/v2/api/FeatureScope;
+	public abstract fun getFeatureContext (Ljava/lang/String;)Ljava/util/Map;
+	public abstract fun getInternalLogger ()Lcom/datadog/android/v2/api/InternalLogger;
+	public abstract fun registerFeature (Lcom/datadog/android/v2/api/Feature;)V
+	public abstract fun removeEventReceiver (Ljava/lang/String;)V
+	public abstract fun setEventReceiver (Ljava/lang/String;Lcom/datadog/android/v2/api/FeatureEventReceiver;)V
+	public abstract fun updateFeatureContext (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 }
 
 public final class com/datadog/android/v2/api/FeatureStorageConfiguration {
@@ -510,19 +520,13 @@ public final class com/datadog/android/v2/api/RequestFactory$Companion {
 public abstract interface class com/datadog/android/v2/api/SdkCore {
 	public abstract fun addUserProperties (Ljava/util/Map;)V
 	public abstract fun clearAllData ()V
-	public abstract fun getFeature (Ljava/lang/String;)Lcom/datadog/android/v2/api/FeatureScope;
-	public abstract fun getFeatureContext (Ljava/lang/String;)Ljava/util/Map;
 	public abstract fun getFirstPartyHostResolver ()Lcom/datadog/android/core/internal/net/FirstPartyHostHeaderTypeResolver;
 	public abstract fun getName ()Ljava/lang/String;
 	public abstract fun getService ()Ljava/lang/String;
 	public abstract fun getTime ()Lcom/datadog/android/v2/api/context/TimeInfo;
-	public abstract fun get_internalLogger ()Lcom/datadog/android/v2/api/InternalLogger;
 	public abstract fun registerFeature (Lcom/datadog/android/v2/api/Feature;)V
-	public abstract fun removeEventReceiver (Ljava/lang/String;)V
-	public abstract fun setEventReceiver (Ljava/lang/String;Lcom/datadog/android/v2/api/FeatureEventReceiver;)V
 	public abstract fun setTrackingConsent (Lcom/datadog/android/privacy/TrackingConsent;)V
 	public abstract fun setUserInfo (Lcom/datadog/android/v2/api/context/UserInfo;)V
-	public abstract fun updateFeatureContext (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 }
 
 public abstract interface class com/datadog/android/v2/api/StorageBackedFeature : com/datadog/android/v2/api/Feature {
@@ -713,7 +717,7 @@ public final class com/datadog/android/v2/api/context/UserInfo {
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract interface class com/datadog/android/v2/core/InternalSdkCore : com/datadog/android/v2/api/SdkCore {
+public abstract interface class com/datadog/android/v2/core/InternalSdkCore : com/datadog/android/v2/api/FeatureSdkCore {
 	public abstract fun getAllFeatures ()Ljava/util/List;
 	public abstract fun getDatadogContext ()Lcom/datadog/android/v2/api/context/DatadogContext;
 	public abstract fun getNetworkInfo ()Lcom/datadog/android/v2/api/context/NetworkInfo;

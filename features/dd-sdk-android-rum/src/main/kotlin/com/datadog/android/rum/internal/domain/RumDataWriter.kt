@@ -32,7 +32,7 @@ internal class RumDataWriter(
     override fun write(writer: EventBatchWriter, element: Any): Boolean {
         val byteArray = serializer.serializeToByteArray(
             element,
-            sdkCore._internalLogger
+            sdkCore.internalLogger
         ) ?: return false
 
         synchronized(this) {

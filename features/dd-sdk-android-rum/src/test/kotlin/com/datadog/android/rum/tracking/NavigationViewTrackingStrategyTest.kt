@@ -119,7 +119,7 @@ internal class NavigationViewTrackingStrategyTest {
         whenever(
             rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         ) doReturn mockRumFeatureScope
-        whenever(rumMonitor.mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
 
         mockNavigationKey =
             NavigationViewTrackingStrategy.NavigationKey(mockNavController, mockNavDestination)

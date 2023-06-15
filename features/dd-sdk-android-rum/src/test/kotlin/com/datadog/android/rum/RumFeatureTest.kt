@@ -8,7 +8,6 @@ package com.datadog.android.rum
 
 import android.app.Application
 import android.os.Build
-import android.view.Choreographer
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.rum.assertj.RumFeatureAssert
@@ -34,7 +33,6 @@ import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.rum.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
-import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -65,8 +63,6 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -97,9 +93,6 @@ internal class RumFeatureTest {
     lateinit var fakeConfiguration: RumFeature.Configuration
 
     @Mock
-    lateinit var mockChoreographer: Choreographer
-
-    @Mock
     lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
@@ -113,9 +106,7 @@ internal class RumFeatureTest {
 
     @BeforeEach
     fun `set up`() {
-        doNothing().whenever(mockChoreographer).postFrameCallback(any())
-        mockChoreographerInstance(mockChoreographer)
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
         testedFeature = RumFeature(
             fakeApplicationId.toString(),
@@ -159,7 +150,7 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.sampleRate).isEqualTo(RumFeature.ALL_IN_SAMPLE_RATE)
-        verify(mockSdkCore._internalLogger)
+        verify(mockSdkCore.internalLogger)
             .log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,

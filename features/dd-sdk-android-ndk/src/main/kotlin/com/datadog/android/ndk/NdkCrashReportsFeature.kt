@@ -10,8 +10,8 @@ import android.content.Context
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.InternalSdkCore
 import java.io.File
 import java.lang.NullPointerException
@@ -27,10 +27,10 @@ class NdkCrashReportsFeature : Feature, TrackingConsentProviderCallback {
 
     // region Feature
     override fun onInitialize(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         appContext: Context
     ) {
-        loadNativeLibrary(sdkCore._internalLogger)
+        loadNativeLibrary(sdkCore.internalLogger)
         if (!nativeLibraryLoaded) {
             return
         }
@@ -42,7 +42,7 @@ class NdkCrashReportsFeature : Feature, TrackingConsentProviderCallback {
         try {
             ndkCrashesDirs.mkdirs()
         } catch (e: SecurityException) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
                 "Unable to create NDK Crash Report folder $ndkCrashesDirs",

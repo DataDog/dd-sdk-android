@@ -16,6 +16,7 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDTracer
@@ -186,7 +187,7 @@ internal constructor(
 
     /** @inheritdoc */
     override fun intercept(chain: Interceptor.Chain): Response {
-        val sdkCore = sdkCoreReference.get()
+        val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
         if (sdkCore == null) {
             val prefix = if (sdkInstanceName == null) {
                 "Default SDK instance"
@@ -228,7 +229,7 @@ internal constructor(
      * @param throwable the error which occurred during the [Request] (or null)
      */
     protected open fun onRequestIntercepted(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         request: Request,
         span: Span?,
         response: Response?,
@@ -254,7 +255,7 @@ internal constructor(
         if (localFirstPartyHostHeaderTypeResolver.isEmpty() &&
             sdkCore.firstPartyHostResolver.isEmpty()
         ) {
-            sdkCore._internalLogger.log(
+            (sdkCore as FeatureSdkCore).internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 WARNING_TRACING_NO_HOSTS
@@ -270,7 +271,7 @@ internal constructor(
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
     private fun interceptAndTrace(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         chain: Interceptor.Chain,
         request: Request,
         tracer: Tracer
@@ -281,7 +282,7 @@ internal constructor(
         val updatedRequest = try {
             updateRequest(sdkCore, request, tracer, span, isSampled).build()
         } catch (e: IllegalStateException) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 "Failed to update intercepted OkHttp request",
@@ -302,7 +303,7 @@ internal constructor(
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
     private fun intercept(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         chain: Interceptor.Chain,
         request: Request
     ): Response {
@@ -317,10 +318,10 @@ internal constructor(
     }
 
     @Synchronized
-    private fun resolveTracer(sdkCore: SdkCore): Tracer? {
+    private fun resolveTracer(sdkCore: FeatureSdkCore): Tracer? {
         val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         return if (tracingFeature == null) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 WARNING_TRACING_DISABLED
@@ -336,7 +337,7 @@ internal constructor(
         }
     }
 
-    private fun resolveLocalTracer(sdkCore: SdkCore): Tracer {
+    private fun resolveLocalTracer(sdkCore: FeatureSdkCore): Tracer {
         // only register once
         if (localTracerReference.get() == null) {
             @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
@@ -344,7 +345,7 @@ internal constructor(
             val globalHeaderTypes = sdkCore.firstPartyHostResolver.getAllHeaderTypes()
             val allHeaders = localHeaderTypes.plus(globalHeaderTypes)
             localTracerReference.compareAndSet(null, localTracerFactory(sdkCore, allHeaders))
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 WARNING_DEFAULT_TRACER
@@ -541,7 +542,7 @@ internal constructor(
     }
 
     private fun handleResponse(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         request: Request,
         response: Response,
         span: Span?,
@@ -568,7 +569,7 @@ internal constructor(
     }
 
     private fun handleThrowable(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         request: Request,
         throwable: Throwable,
         span: Span?,

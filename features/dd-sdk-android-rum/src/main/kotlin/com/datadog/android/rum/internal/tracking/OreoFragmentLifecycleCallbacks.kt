@@ -19,6 +19,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 
@@ -34,11 +35,11 @@ internal class OreoFragmentLifecycleCallbacks(
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
 ) : FragmentLifecycleCallbacks<Activity>, FragmentManager.FragmentLifecycleCallbacks() {
 
-    private lateinit var sdkCore: SdkCore
+    private lateinit var sdkCore: FeatureSdkCore
 
     private val internalLogger: InternalLogger
         get() = if (this::sdkCore.isInitialized) {
-            sdkCore._internalLogger
+            sdkCore.internalLogger
         } else {
             InternalLogger.UNBOUND
         }
@@ -46,7 +47,7 @@ internal class OreoFragmentLifecycleCallbacks(
     // region FragmentLifecycleCallbacks
 
     override fun register(activity: Activity, sdkCore: SdkCore) {
-        this.sdkCore = sdkCore
+        this.sdkCore = sdkCore as FeatureSdkCore
         if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.O) {
             activity.fragmentManager.registerFragmentLifecycleCallbacks(this, true)
         }

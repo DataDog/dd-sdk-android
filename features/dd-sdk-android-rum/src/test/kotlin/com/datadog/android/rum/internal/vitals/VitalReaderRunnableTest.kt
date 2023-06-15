@@ -9,8 +9,8 @@ package com.datadog.android.rum.internal.vitals
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -57,7 +57,7 @@ internal class VitalReaderRunnableTest {
     lateinit var mockObserver: VitalObserver
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: FeatureSdkCore
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -71,7 +71,7 @@ internal class VitalReaderRunnableTest {
             "view_type" to RumViewScope.RumViewType.FOREGROUND
         )
         whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn rumContext
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         testedRunnable = VitalReaderRunnable(
             mockSdkCore,
             mockReader,

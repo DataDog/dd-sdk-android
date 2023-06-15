@@ -67,10 +67,10 @@ import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
@@ -119,17 +119,17 @@ class RumFeature internal constructor(
     internal lateinit var anrDetectorRunnable: ANRDetectorRunnable
     internal lateinit var anrDetectorHandler: Handler
     internal lateinit var appContext: Context
-    internal lateinit var sdkCore: SdkCore
+    internal lateinit var sdkCore: FeatureSdkCore
     internal lateinit var telemetry: Telemetry
 
-    private val ndkCrashEventHandler by lazy { ndkCrashEventHandlerFactory(sdkCore._internalLogger) }
+    private val ndkCrashEventHandler by lazy { ndkCrashEventHandlerFactory(sdkCore.internalLogger) }
 
     // region Feature
 
     override val name: String = Feature.RUM_FEATURE_NAME
 
     override fun onInitialize(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         appContext: Context
     ) {
         this.sdkCore = sdkCore
@@ -142,7 +142,7 @@ class RumFeature internal constructor(
         )
 
         sampleRate = if (sdkCore.isDeveloperModeEnabled) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE
@@ -161,7 +161,7 @@ class RumFeature internal constructor(
             provideUserTrackingStrategy(
                 configuration.touchTargetExtraAttributesProviders.toTypedArray(),
                 configuration.interactionPredicate,
-                sdkCore._internalLogger
+                sdkCore.internalLogger
             )
         } else {
             NoOpUserActionTrackingStrategy()
@@ -180,7 +180,7 @@ class RumFeature internal constructor(
     }
 
     override val requestFactory: RequestFactory by lazy {
-        RumRequestFactory(configuration.customEndpointUrl, sdkCore._internalLogger)
+        RumRequestFactory(configuration.customEndpointUrl, sdkCore.internalLogger)
     }
 
     override val storageConfiguration: FeatureStorageConfiguration =
@@ -223,9 +223,9 @@ class RumFeature internal constructor(
                     actionEventMapper = configuration.actionEventMapper,
                     longTaskEventMapper = configuration.longTaskEventMapper,
                     telemetryConfigurationMapper = configuration.telemetryConfigurationMapper,
-                    internalLogger = sdkCore._internalLogger
+                    internalLogger = sdkCore.internalLogger
                 ),
-                RumEventSerializer(sdkCore._internalLogger)
+                RumEventSerializer(sdkCore.internalLogger)
             ),
             sdkCore = sdkCore
         )
@@ -235,7 +235,7 @@ class RumFeature internal constructor(
 
     override fun onReceive(event: Any) {
         if (event !is Map<*, *>) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName)
@@ -261,7 +261,7 @@ class RumFeature internal constructor(
                 }
             }
             else -> {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"])
@@ -338,15 +338,15 @@ class RumFeature internal constructor(
 
     private fun initializeVitalReaders(periodInMs: Long) {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
-        vitalExecutorService = LoggingScheduledThreadPoolExecutor(1, sdkCore._internalLogger)
+        vitalExecutorService = LoggingScheduledThreadPoolExecutor(1, sdkCore.internalLogger)
 
         initializeVitalMonitor(
-            CPUVitalReader(internalLogger = sdkCore._internalLogger),
+            CPUVitalReader(internalLogger = sdkCore.internalLogger),
             cpuVitalMonitor,
             periodInMs
         )
         initializeVitalMonitor(
-            MemoryVitalReader(internalLogger = sdkCore._internalLogger),
+            MemoryVitalReader(internalLogger = sdkCore.internalLogger),
             memoryVitalMonitor,
             periodInMs
         )
@@ -354,7 +354,7 @@ class RumFeature internal constructor(
         jankStatsActivityLifecycleListener = JankStatsActivityLifecycleListener(
             frameRateVitalMonitor,
             DefaultBuildSdkVersionProvider(),
-            sdkCore._internalLogger
+            sdkCore.internalLogger
         )
         (appContext as? Application)?.registerActivityLifecycleCallbacks(
             jankStatsActivityLifecycleListener
@@ -377,7 +377,7 @@ class RumFeature internal constructor(
             "Vitals monitoring",
             periodInMs,
             TimeUnit.MILLISECONDS,
-            sdkCore._internalLogger,
+            sdkCore.internalLogger,
             readerRunnable
         )
     }
@@ -388,7 +388,7 @@ class RumFeature internal constructor(
         anrDetectorExecutorService = Executors.newSingleThreadExecutor()
         anrDetectorExecutorService.executeSafe(
             "ANR detection",
-            sdkCore._internalLogger,
+            sdkCore.internalLogger,
             anrDetectorRunnable
         )
     }
@@ -398,7 +398,7 @@ class RumFeature internal constructor(
         val message = crashEvent[EVENT_MESSAGE_PROPERTY] as? String
 
         if (throwable == null || message == null) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS
@@ -421,7 +421,7 @@ class RumFeature internal constructor(
         val attributes = loggerErrorEvent[EVENT_ATTRIBUTES_PROPERTY] as? Map<String, Any?>
 
         if (message == null) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS
@@ -445,7 +445,7 @@ class RumFeature internal constructor(
         val attributes = loggerErrorEvent[EVENT_ATTRIBUTES_PROPERTY] as? Map<String, Any?>
 
         if (message == null) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS
@@ -464,7 +464,7 @@ class RumFeature internal constructor(
     private fun logTelemetryError(telemetryEvent: Map<*, *>) {
         val message = telemetryEvent[EVENT_MESSAGE_PROPERTY] as? String
         if (message == null) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 TELEMETRY_MISSING_MESSAGE_FIELD
@@ -485,7 +485,7 @@ class RumFeature internal constructor(
     private fun logTelemetryDebug(telemetryEvent: Map<*, *>) {
         val message = telemetryEvent[EVENT_MESSAGE_PROPERTY] as? String
         if (message == null) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 TELEMETRY_MISSING_MESSAGE_FIELD
@@ -496,7 +496,7 @@ class RumFeature internal constructor(
     }
 
     private fun logTelemetryConfiguration(event: Map<*, *>) {
-        TelemetryCoreConfiguration.fromEvent(event, sdkCore._internalLogger)?.let {
+        TelemetryCoreConfiguration.fromEvent(event, sdkCore.internalLogger)?.let {
             (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)
                 ?.sendConfigurationTelemetryEvent(it)
         }

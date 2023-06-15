@@ -16,6 +16,7 @@ import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import java.util.concurrent.ConcurrentHashMap
@@ -197,7 +198,9 @@ internal constructor(internal var handler: LogHandler) {
      *
      * @param sdkCore SDK instance to bind to.
      */
-    class Builder(private val sdkCore: SdkCore) {
+    class Builder(sdkCore: SdkCore) {
+
+        private val sdkCore: FeatureSdkCore = sdkCore as FeatureSdkCore
 
         private var serviceName: String? = null
         private var loggerName: String? = null
@@ -331,11 +334,11 @@ internal constructor(internal var handler: LogHandler) {
         }
 
         private fun buildDatadogHandler(
-            sdkCore: SdkCore,
+            sdkCore: FeatureSdkCore,
             logsFeature: LogsFeature?
         ): LogHandler {
             if (logsFeature == null) {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     SDK_NOT_INITIALIZED_WARNING_MESSAGE

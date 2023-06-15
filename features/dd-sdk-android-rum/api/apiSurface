@@ -63,7 +63,7 @@ enum com.datadog.android.rum.RumErrorSource
   - WEBVIEW
 class com.datadog.android.rum.RumFeature : com.datadog.android.v2.api.StorageBackedFeature, com.datadog.android.v2.api.FeatureEventReceiver
   override val name: String
-  override fun onInitialize(com.datadog.android.v2.api.SdkCore, android.content.Context)
+  override fun onInitialize(com.datadog.android.v2.api.FeatureSdkCore, android.content.Context)
   override val requestFactory: com.datadog.android.v2.api.RequestFactory
   override val storageConfiguration: com.datadog.android.v2.api.FeatureStorageConfiguration
   override fun onStop()
@@ -199,7 +199,7 @@ abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrateg
   override fun onActivityResumed(android.app.Activity)
   protected fun convertToRumAttributes(android.content.Intent?): Map<String, Any?>
   protected fun convertToRumAttributes(android.os.Bundle?): Map<String, Any?>
-  protected fun <T> withSdkCore((com.datadog.android.v2.api.SdkCore) -> T): T?
+  protected fun <T> withSdkCore((com.datadog.android.v2.api.FeatureSdkCore) -> T): T?
 class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
   constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)

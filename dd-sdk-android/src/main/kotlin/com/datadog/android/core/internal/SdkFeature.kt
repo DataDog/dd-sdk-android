@@ -20,10 +20,10 @@ import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.NoOpContextProvider
@@ -56,7 +56,7 @@ internal class SdkFeature(
 
     // region SDK Feature
 
-    fun initialize(sdkCore: SdkCore, context: Context) {
+    fun initialize(sdkCore: FeatureSdkCore, context: Context) {
         if (initialized.get()) {
             return
         }

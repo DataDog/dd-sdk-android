@@ -7,7 +7,7 @@
 package com.datadog.android.sdk.integration.rum
 
 import com.datadog.android.Datadog
-import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.google.gson.JsonElement
 
 internal data class ExpectedRumContext(
@@ -85,7 +85,8 @@ private val registryGetInstanceMethod = registryField.type.getMethod(
 )
 
 private fun rumContextValues(): Triple<String, String, String> {
-    val sdkCore: SdkCore? = registryGetInstanceMethod.invoke(registryField.get(null), null) as? SdkCore
+    val sdkCore: FeatureSdkCore? = registryGetInstanceMethod
+        .invoke(registryField.get(null), null) as? FeatureSdkCore
     checkNotNull(sdkCore)
     val rumContext: Map<String, Any?> = sdkCore.getFeatureContext("rum")
     val appId: String = rumContext["application_id"] as String

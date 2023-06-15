@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum
 
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
 import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
@@ -36,13 +37,13 @@ internal class GlobalRumTest {
     lateinit var mockRumMonitor: RumMonitor
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: FeatureSdkCore
 
     lateinit var fakeRumMonitorProvider: Callable<RumMonitor>
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockSdkCore._internalLogger) doReturn mock()
+        whenever(mockSdkCore.internalLogger) doReturn mock()
         fakeRumMonitorProvider = Callable<RumMonitor> { mockRumMonitor }
     }
 

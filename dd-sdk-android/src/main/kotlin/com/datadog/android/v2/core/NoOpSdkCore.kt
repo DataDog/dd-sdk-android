@@ -12,6 +12,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.TimeInfo
@@ -21,7 +22,7 @@ import java.util.concurrent.TimeUnit
 /**
  * A no-op implementation of [SdkCore].
  */
-internal class NoOpSdkCore : SdkCore {
+internal class NoOpSdkCore : FeatureSdkCore {
 
     override val name: String = "no-op"
 
@@ -40,7 +41,7 @@ internal class NoOpSdkCore : SdkCore {
     override val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver
         get() = DefaultFirstPartyHostHeaderTypeResolver(emptyMap())
 
-    override val _internalLogger: InternalLogger
+    override val internalLogger: InternalLogger
         get() = SdkInternalLogger(this)
 
     override fun registerFeature(feature: Feature) = Unit
@@ -57,7 +58,7 @@ internal class NoOpSdkCore : SdkCore {
 
     override fun updateFeatureContext(
         featureName: String,
-        updateCallback: Function1<MutableMap<String, Any?>, Unit>
+        updateCallback: (MutableMap<String, Any?>) -> Unit
     ) = Unit
 
     override fun getFeatureContext(featureName: String): Map<String, Any?> = emptyMap()

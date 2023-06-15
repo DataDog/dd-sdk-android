@@ -19,9 +19,9 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.NoOpContextProvider
@@ -78,7 +78,7 @@ internal class SdkFeatureTest {
     lateinit var mockWrappedFeature: StorageBackedFeature
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: FeatureSdkCore
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -431,7 +431,7 @@ internal class SdkFeatureTest {
     class FakeFeature(override val name: String) : Feature {
 
         override fun onInitialize(
-            sdkCore: SdkCore,
+            sdkCore: FeatureSdkCore,
             appContext: Context
         ) {
             // no-op
@@ -445,7 +445,7 @@ internal class SdkFeatureTest {
     class AnotherFakeFeature(override val name: String) : Feature {
 
         override fun onInitialize(
-            sdkCore: SdkCore,
+            sdkCore: FeatureSdkCore,
             appContext: Context
         ) {
             // no-op
@@ -461,7 +461,7 @@ internal class SdkFeatureTest {
         TrackingConsentProviderCallback {
 
         override fun onInitialize(
-            sdkCore: SdkCore,
+            sdkCore: FeatureSdkCore,
             appContext: Context
         ) {
             // no-op

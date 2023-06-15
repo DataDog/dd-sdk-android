@@ -41,7 +41,7 @@ internal class DatadogGesturesTracker(
             gesturesDetector,
             interactionPredicate,
             targetAttributesProviders = targetAttributesProviders,
-            internalLogger = sdkCore._internalLogger
+            internalLogger = internalLogger
         )
     }
 
@@ -106,7 +106,7 @@ internal class DatadogGesturesTracker(
                 targetAttributesProviders,
                 interactionPredicate,
                 WeakReference(context),
-                sdkCore._internalLogger
+                internalLogger
             )
         )
     }

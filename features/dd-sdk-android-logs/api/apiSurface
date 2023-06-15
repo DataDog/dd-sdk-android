@@ -27,7 +27,7 @@ class com.datadog.android.log.Logger
   fun removeTagsWithKey(String)
 class com.datadog.android.log.LogsFeature : com.datadog.android.v2.api.StorageBackedFeature, com.datadog.android.v2.api.FeatureEventReceiver
   override val name: String
-  override fun onInitialize(com.datadog.android.v2.api.SdkCore, android.content.Context)
+  override fun onInitialize(com.datadog.android.v2.api.FeatureSdkCore, android.content.Context)
   override val requestFactory: com.datadog.android.v2.api.RequestFactory
   override val storageConfiguration: com.datadog.android.v2.api.FeatureStorageConfiguration
   override fun onStop()

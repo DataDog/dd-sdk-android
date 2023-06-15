@@ -12,8 +12,8 @@ import android.view.Window
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.ObjectTest
 import fr.xgouchet.elmyr.Forge
 import org.assertj.core.api.Assertions.assertThat
@@ -58,14 +58,14 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
     lateinit var mockGestureDetector: GesturesDetectorWrapper
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: FeatureSdkCore
 
     @BeforeEach
     fun `set up`() {
         testedTracker =
             DatadogGesturesTracker(emptyArray(), mockInteractionPredicate, mockInternalLogger)
         whenever(mockActivity.window).thenReturn(mockWindow)
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
     }
 
     override fun createInstance(forge: Forge): DatadogGesturesTracker {

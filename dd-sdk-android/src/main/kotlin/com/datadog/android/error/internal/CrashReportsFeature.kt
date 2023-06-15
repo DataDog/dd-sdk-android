@@ -8,21 +8,21 @@ package com.datadog.android.error.internal
 
 import android.content.Context
 import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.FeatureSdkCore
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class CrashReportsFeature : Feature {
 
     internal val initialized = AtomicBoolean(false)
     internal var originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
-    private lateinit var sdkCore: SdkCore
+    private lateinit var sdkCore: FeatureSdkCore
 
     // region Feature
 
     override val name: String = CRASH_FEATURE_NAME
 
     override fun onInitialize(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         appContext: Context
     ) {
         this.sdkCore = sdkCore

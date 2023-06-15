@@ -32,6 +32,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
@@ -58,7 +59,7 @@ internal class DatadogCore(
     internal val credentials: Credentials,
     internal val instanceId: String,
     override val name: String,
-    internalLoggerProvider: (SdkCore) -> InternalLogger = { SdkInternalLogger(it) }
+    internalLoggerProvider: (FeatureSdkCore) -> InternalLogger = { SdkInternalLogger(it) }
 ) : InternalSdkCore {
 
     internal lateinit var coreFeature: CoreFeature
@@ -81,7 +82,7 @@ internal class DatadogCore(
 
     private val ndkLastViewEventFileWriter: FileWriter by lazy {
         BatchFileReaderWriter.create(
-            internalLogger = _internalLogger,
+            internalLogger = internalLogger,
             encryption = coreFeature.localDataEncryption
         )
     }
@@ -120,7 +121,7 @@ internal class DatadogCore(
         get() = coreFeature.firstPartyHostHeaderTypeResolver
 
     /** @inheritDoc */
-    override val _internalLogger: InternalLogger = internalLoggerProvider(this)
+    override val internalLogger: InternalLogger = internalLoggerProvider(this)
 
     /** @inheritDoc */
     override var isDeveloperModeEnabled: Boolean = false
@@ -131,7 +132,7 @@ internal class DatadogCore(
         val sdkFeature = SdkFeature(
             coreFeature,
             feature,
-            _internalLogger
+            internalLogger
         )
         features[feature.name] = sdkFeature
         sdkFeature.initialize(
@@ -203,14 +204,14 @@ internal class DatadogCore(
     override fun setEventReceiver(featureName: String, receiver: FeatureEventReceiver) {
         val feature = features[featureName]
         if (feature == null) {
-            _internalLogger.log(
+            internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, featureName)
             )
         } else {
             if (feature.eventReceiver.get() != null) {
-                _internalLogger.log(
+                internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
                     EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, featureName)
@@ -244,10 +245,10 @@ internal class DatadogCore(
         // folder, so if NDK reporting plugin is not initialized, this NDK reports dir won't exist
         // as well (and no need to write).
         val lastViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
-        if (lastViewEventFile.parentFile?.existsSafe(_internalLogger) == true) {
+        if (lastViewEventFile.parentFile?.existsSafe(internalLogger) == true) {
             ndkLastViewEventFileWriter.writeData(lastViewEventFile, data, false)
         } else {
-            _internalLogger.log(
+            internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.MAINTAINER,
                 LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(Locale.US, lastViewEventFile.parent)
@@ -282,7 +283,7 @@ internal class DatadogCore(
         }
 
         // always initialize Core Features first
-        coreFeature = CoreFeature(_internalLogger)
+        coreFeature = CoreFeature(internalLogger)
         coreFeature.initialize(
             context,
             instanceId,
@@ -349,7 +350,7 @@ internal class DatadogCore(
             val callback = ProcessLifecycleCallback(
                 coreFeature.networkInfoProvider,
                 appContext,
-                _internalLogger
+                internalLogger
             )
             appContext.registerActivityLifecycleCallbacks(ProcessLifecycleMonitor(callback))
         }
@@ -375,7 +376,7 @@ internal class DatadogCore(
             Runtime.getRuntime().addShutdownHook(hook)
         } catch (e: IllegalStateException) {
             // Most probably Runtime is already shutting down
-            _internalLogger.log(
+            internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
                 "Unable to add shutdown hook, Runtime is already shutting down",
@@ -384,14 +385,14 @@ internal class DatadogCore(
             stop()
         } catch (e: IllegalArgumentException) {
             // can only happen if hook is already added, or already running
-            _internalLogger.log(
+            internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
                 "Shutdown hook was rejected",
                 e
             )
         } catch (e: SecurityException) {
-            _internalLogger.log(
+            internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
                 "Security Manager denied adding shutdown hook ",
@@ -418,7 +419,7 @@ internal class DatadogCore(
             "Configuration telemetry",
             CONFIGURATION_TELEMETRY_DELAY_MS,
             TimeUnit.MILLISECONDS,
-            _internalLogger,
+            internalLogger,
             runnable
         )
     }

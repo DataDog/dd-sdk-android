@@ -13,8 +13,8 @@ import com.datadog.android.rum.internal.domain.scope.tryFromSource
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.storage.DataWriter
 import com.google.gson.JsonObject
@@ -26,7 +26,7 @@ internal class DatadogNdkCrashEventHandler(
 ) : NdkCrashEventHandler {
 
     @Suppress("ComplexCondition")
-    override fun handleEvent(event: Map<*, *>, sdkCore: SdkCore, rumWriter: DataWriter<Any>) {
+    override fun handleEvent(event: Map<*, *>, sdkCore: FeatureSdkCore, rumWriter: DataWriter<Any>) {
         val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
 
         if (rumFeature == null) {

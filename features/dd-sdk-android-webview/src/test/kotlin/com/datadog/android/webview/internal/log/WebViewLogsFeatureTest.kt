@@ -7,9 +7,9 @@
 package com.datadog.android.webview.internal.log
 
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.webview.internal.storage.NoOpDataWriter
 import com.datadog.android.webview.internal.storage.WebViewDataWriter
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -43,12 +43,12 @@ internal class WebViewLogsFeatureTest {
     lateinit var mockRequestFactory: RequestFactory
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: FeatureSdkCore
 
     @BeforeEach
     fun `set up`() {
         testedFeature = WebViewLogsFeature(mockRequestFactory)
-        whenever(mockSdkCore._internalLogger) doReturn mock()
+        whenever(mockSdkCore.internalLogger) doReturn mock()
     }
 
     @Test

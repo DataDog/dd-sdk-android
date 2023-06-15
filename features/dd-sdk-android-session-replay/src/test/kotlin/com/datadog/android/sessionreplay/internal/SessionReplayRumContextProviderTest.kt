@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.FeatureSdkCore
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -36,7 +36,7 @@ internal class SessionReplayRumContextProviderTest {
     lateinit var testedSessionReplayContextProvider: SessionReplayRumContextProvider
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: FeatureSdkCore
 
     @BeforeEach
     fun `set up`() {

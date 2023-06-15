@@ -10,8 +10,8 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
 import com.datadog.opentracing.scopemanager.ScopeTestHelper
@@ -82,7 +82,7 @@ internal class AndroidTracerTest {
     lateinit var mockTraceWriter: Writer
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: FeatureSdkCore
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -115,7 +115,7 @@ internal class AndroidTracerTest {
         whenever(mockTracingFeatureScope.unwrap<TracingFeature>()) doReturn mockTracingFeature
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
         whenever(mockSdkCore.service) doReturn fakeServiceName
-        whenever(mockSdkCore._internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
         whenever(mockTracingFeature.dataWriter) doReturn mockTraceWriter
 

@@ -136,7 +136,7 @@ internal class RumApplicationScope(
                     )
                     newSession.handleEvent(startViewEvent, writer)
                 } else {
-                    sdkCore._internalLogger.log(
+                    sdkCore.internalLogger.log(
                         InternalLogger.Level.WARN,
                         InternalLogger.Target.USER,
                         LAST_ACTIVE_VIEW_GONE_WARNING_MESSAGE.format(Locale.US, it.name)
@@ -147,7 +147,7 @@ internal class RumApplicationScope(
 
         // Confidence telemetry, only end up with one active session
         if (childScopes.filter { it.isActive() }.size > 1) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.TELEMETRY,
                 MULTIPLE_ACTIVE_SESSIONS_ERROR

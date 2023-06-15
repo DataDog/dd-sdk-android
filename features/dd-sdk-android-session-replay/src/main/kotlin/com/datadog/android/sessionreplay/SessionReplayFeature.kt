@@ -23,10 +23,10 @@ import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWri
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class SessionReplayFeature internal constructor(
     customEndpointUrl: String?,
     internal val privacy: SessionReplayPrivacy,
-    private val sessionReplayCallbackProvider: (SdkCore, RecordWriter) -> LifecycleCallback
+    private val sessionReplayCallbackProvider: (FeatureSdkCore, RecordWriter) -> LifecycleCallback
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     internal constructor(
@@ -62,7 +62,7 @@ class SessionReplayFeature internal constructor(
     )
 
     internal lateinit var appContext: Context
-    internal lateinit var sdkCore: SdkCore
+    internal lateinit var sdkCore: FeatureSdkCore
     private var isRecording = AtomicBoolean(false)
     internal var sessionReplayCallback: LifecycleCallback = NoOpLifecycleCallback()
 
@@ -74,7 +74,7 @@ class SessionReplayFeature internal constructor(
     override val name: String = Feature.SESSION_REPLAY_FEATURE_NAME
 
     override fun onInitialize(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         appContext: Context
     ) {
         this.sdkCore = sdkCore
@@ -146,7 +146,7 @@ class SessionReplayFeature internal constructor(
 
     override fun onReceive(event: Any) {
         if (event !is Map<*, *>) {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName)
@@ -158,7 +158,7 @@ class SessionReplayFeature internal constructor(
             val keepSession = event[RUM_KEEP_SESSION_BUS_MESSAGE_KEY] as? Boolean
 
             if (keepSession == null) {
-                sdkCore._internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     EVENT_MISSING_MANDATORY_FIELDS
@@ -172,7 +172,7 @@ class SessionReplayFeature internal constructor(
                 stopRecording()
             }
         } else {
-            sdkCore._internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(

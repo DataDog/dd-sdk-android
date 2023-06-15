@@ -16,9 +16,9 @@ import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.domain.event.SpanEventSerializer
 import com.datadog.android.trace.internal.net.TracesRequestFactory
 import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.trace.common.writer.Writer
 import java.util.concurrent.atomic.AtomicBoolean
@@ -38,10 +38,10 @@ class TracingFeature internal constructor(
 
     override val name: String = Feature.TRACING_FEATURE_NAME
 
-    private lateinit var sdkCore: SdkCore
+    private lateinit var sdkCore: FeatureSdkCore
 
     override fun onInitialize(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         appContext: Context
     ) {
         this.sdkCore = sdkCore
@@ -52,7 +52,7 @@ class TracingFeature internal constructor(
     override val requestFactory: RequestFactory by lazy {
         TracesRequestFactory(
             customEndpointUrl,
-            sdkCore._internalLogger
+            sdkCore.internalLogger
         )
     }
 
@@ -67,9 +67,9 @@ class TracingFeature internal constructor(
     // endregion
 
     private fun createDataWriter(
-        sdkCore: SdkCore
+        sdkCore: FeatureSdkCore
     ): Writer {
-        val internalLogger = sdkCore._internalLogger
+        val internalLogger = sdkCore.internalLogger
         return TraceWriter(
             sdkCore,
             legacyMapper = DdSpanToSpanEventMapper(),

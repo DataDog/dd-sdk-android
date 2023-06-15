@@ -7,10 +7,10 @@
 package com.datadog.android.webview.internal.rum
 
 import android.content.Context
+import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.android.webview.internal.storage.NoOpDataWriter
@@ -31,10 +31,10 @@ internal class WebViewRumFeature(
     override val name: String = WEB_RUM_FEATURE_NAME
 
     override fun onInitialize(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         appContext: Context
     ) {
-        dataWriter = createDataWriter(sdkCore._internalLogger)
+        dataWriter = createDataWriter(sdkCore.internalLogger)
         initialized.set(true)
     }
 
