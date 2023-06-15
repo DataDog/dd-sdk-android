@@ -14,7 +14,7 @@ import com.datadog.tools.unit.ConditionWatcher
 import org.junit.Rule
 import org.junit.Test
 
-internal class ConsentGrantedSrTest : SrSnapshotTest() {
+internal class ConsentGrantedSrTest : SrSnapshotTest<SessionReplayPlaygroundActivity>() {
 
     @get:Rule
     val rule = SessionReplayTestRule(

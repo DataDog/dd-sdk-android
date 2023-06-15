@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -41,6 +41,7 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import java.util.Locale
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
@@ -57,7 +58,7 @@ internal class DatadogRumMonitor(
     private val writer: DataWriter<Any>,
     internal val handler: Handler,
     internal val telemetryEventHandler: TelemetryEventHandler,
-    firstPartyHostDetector: FirstPartyHostDetector,
+    firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
@@ -72,7 +73,7 @@ internal class DatadogRumMonitor(
         samplingRate,
         backgroundTrackingEnabled,
         trackFrustrations,
-        firstPartyHostDetector,
+        firstPartyHostHeaderTypeResolver,
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
@@ -247,6 +248,21 @@ internal class DatadogRumMonitor(
                 errorType,
                 errorSourceType
             )
+        )
+    }
+
+    override fun addFeatureFlagEvaluation(name: String, value: Any) {
+        handleEvent(
+            RumRawEvent.AddFeatureFlagEvaluation(
+                name,
+                value
+            )
+        )
+    }
+
+    override fun stopSession() {
+        handleEvent(
+            RumRawEvent.StopSession()
         )
     }
 
@@ -427,6 +443,30 @@ internal class DatadogRumMonitor(
         }
     }
 
+    /**
+     * Wait for any pending events. This is mostly for integration tests to ensure that the
+     * RUM context is in the correct state before proceeding.
+     */
+    @Suppress("unused")
+    private fun waitForPendingEvents() {
+        if (!executorService.isShutdown) {
+            val latch = CountDownLatch(1)
+            // Submit an empty task, and wait for it to complete
+            executorService.submit {
+                latch.countDown()
+            }
+            try {
+                latch.await(1, TimeUnit.SECONDS)
+            } catch (_: InterruptedException) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.MAINTAINER,
+                    "Waiting for pending RUM events was interrupted"
+                )
+            }
+        }
+    }
+
     internal fun stopKeepAliveCallback() {
         handler.removeCallbacks(keepAliveRunnable)
     }
@@ -434,7 +474,7 @@ internal class DatadogRumMonitor(
     internal fun notifyDebugListenerWithState() {
         debugListener?.let {
             val applicationScope = rootScope as? RumApplicationScope
-            val sessionScope = applicationScope?.childScope as? RumSessionScope
+            val sessionScope = applicationScope?.activeSession as? RumSessionScope
             val viewManagerScope = sessionScope?.childScope as? RumViewManagerScope
             if (viewManagerScope != null) {
                 it.onReceiveRumActiveViews(

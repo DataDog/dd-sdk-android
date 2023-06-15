@@ -12,7 +12,6 @@ import android.os.Build
 import android.os.Looper
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogInterceptor
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.event.NoOpEventMapper
@@ -46,6 +45,7 @@ import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.security.Encryption
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.v2.api.InternalLogger
 import okhttp3.Authenticator
 import java.net.Proxy
@@ -70,7 +70,7 @@ internal constructor(
     internal data class Core(
         val needsClearTextHttp: Boolean,
         val enableDeveloperModeWhenDebuggable: Boolean,
-        val firstPartyHosts: List<String>,
+        val firstPartyHostsWithHeaderTypes: Map<String, Set<TracingHeaderType>>,
         val batchSize: BatchSize,
         val uploadFrequency: UploadFrequency,
         val proxy: Proxy?,
@@ -106,6 +106,7 @@ internal constructor(
             override val plugins: List<DatadogPlugin>,
             val samplingRate: Float,
             val telemetrySamplingRate: Float,
+            val telemetryConfigurationSamplingRate: Float,
             val userActionTrackingStrategy: UserActionTrackingStrategy?,
             val viewTrackingStrategy: ViewTrackingStrategy?,
             val longTaskTrackingStrategy: TrackingStrategy?,
@@ -176,16 +177,39 @@ internal constructor(
          * Sets the list of first party hosts.
          * Requests made to a URL with any one of these hosts (or any subdomain) will:
          * - be considered a first party resource and categorised as such in your RUM dashboard;
-         * - be wrapped in a Span and have trace id injected to get a full flame-graph in APM.
+         * - be wrapped in a Span and have DataDog trace id injected to get a full flame-graph in APM.
          * @param hosts a list of all the hosts that you own.
          * See [DatadogInterceptor]
          */
         fun setFirstPartyHosts(hosts: List<String>): Builder {
+            val sanitizedHosts = hostsSanitizer.sanitizeHosts(
+                hosts,
+                NETWORK_REQUESTS_TRACKING_FEATURE_NAME
+            )
             coreConfig = coreConfig.copy(
-                firstPartyHosts = hostsSanitizer.sanitizeHosts(
-                    hosts,
-                    NETWORK_REQUESTS_TRACKING_FEATURE_NAME
-                )
+                firstPartyHostsWithHeaderTypes = sanitizedHosts.associateWith { setOf(TracingHeaderType.DATADOG) }
+            )
+            return this
+        }
+
+        /**
+         * Sets the list of first party hosts and specifies the type of HTTP headers used for
+         * distributed tracing.
+         * Requests made to a URL with any one of these hosts (or any subdomain) will:
+         * - be considered a first party resource and categorised as such in your RUM dashboard;
+         * - be wrapped in a Span and have trace id of the specified types injected to get a
+         * full flame-graph in APM. Multiple header types are supported for each host.
+         * @param hostsWithHeaderType a list of all the hosts that you own and the tracing headers
+         * to be used for each host.
+         * See [DatadogInterceptor]
+         */
+        fun setFirstPartyHostsWithHeaderType(hostsWithHeaderType: Map<String, Set<TracingHeaderType>>): Builder {
+            val sanitizedHosts = hostsSanitizer.sanitizeHosts(
+                hostsWithHeaderType.keys.toList(),
+                NETWORK_REQUESTS_TRACKING_FEATURE_NAME
+            )
+            coreConfig = coreConfig.copy(
+                firstPartyHostsWithHeaderTypes = hostsWithHeaderType.filterKeys { sanitizedHosts.contains(it) }
             )
             return this
         }
@@ -212,10 +236,10 @@ internal constructor(
          * Let the SDK target your preferred Datadog's site.
          */
         fun useSite(site: DatadogSite): Builder {
-            logsConfig = logsConfig.copy(endpointUrl = site.logsEndpoint())
-            tracesConfig = tracesConfig.copy(endpointUrl = site.tracesEndpoint())
-            crashReportConfig = crashReportConfig.copy(endpointUrl = site.logsEndpoint())
-            rumConfig = rumConfig.copy(endpointUrl = site.rumEndpoint())
+            logsConfig = logsConfig.copy(endpointUrl = site.intakeEndpoint)
+            tracesConfig = tracesConfig.copy(endpointUrl = site.intakeEndpoint)
+            crashReportConfig = crashReportConfig.copy(endpointUrl = site.intakeEndpoint)
+            rumConfig = rumConfig.copy(endpointUrl = site.intakeEndpoint)
             coreConfig = coreConfig.copy(needsClearTextHttp = false, site = site)
             return this
         }
@@ -663,6 +687,7 @@ internal constructor(
     internal companion object {
         internal const val DEFAULT_SAMPLING_RATE: Float = 100f
         internal const val DEFAULT_TELEMETRY_SAMPLING_RATE: Float = 20f
+        internal const val DEFAULT_TELEMETRY_CONFIGURATION_SAMPLING_RATE: Float = 20f
         internal const val DEFAULT_LONG_TASK_THRESHOLD_MS = 100L
         internal const val PLUGINS_DEPRECATED_WARN_MESSAGE =
             "Datadog Plugins will be removed in SDK v2.0.0. You will then need to" +
@@ -671,7 +696,7 @@ internal constructor(
         internal val DEFAULT_CORE_CONFIG = Core(
             needsClearTextHttp = false,
             enableDeveloperModeWhenDebuggable = false,
-            firstPartyHosts = emptyList(),
+            firstPartyHostsWithHeaderTypes = emptyMap(),
             batchSize = BatchSize.MEDIUM,
             uploadFrequency = UploadFrequency.AVERAGE,
             proxy = null,
@@ -681,24 +706,25 @@ internal constructor(
             site = DatadogSite.US1
         )
         internal val DEFAULT_LOGS_CONFIG = Feature.Logs(
-            endpointUrl = DatadogEndpoint.LOGS_US1,
+            endpointUrl = DatadogSite.US1.intakeEndpoint,
             plugins = emptyList(),
             logsEventMapper = NoOpEventMapper()
         )
         internal val DEFAULT_CRASH_CONFIG = Feature.CrashReport(
-            endpointUrl = DatadogEndpoint.LOGS_US1,
+            endpointUrl = DatadogSite.US1.intakeEndpoint,
             plugins = emptyList()
         )
         internal val DEFAULT_TRACING_CONFIG = Feature.Tracing(
-            endpointUrl = DatadogEndpoint.TRACES_US1,
+            endpointUrl = DatadogSite.US1.intakeEndpoint,
             plugins = emptyList(),
             spanEventMapper = NoOpSpanEventMapper()
         )
         internal val DEFAULT_RUM_CONFIG = Feature.RUM(
-            endpointUrl = DatadogEndpoint.RUM_US1,
+            endpointUrl = DatadogSite.US1.intakeEndpoint,
             plugins = emptyList(),
             samplingRate = DEFAULT_SAMPLING_RATE,
             telemetrySamplingRate = DEFAULT_TELEMETRY_SAMPLING_RATE,
+            telemetryConfigurationSamplingRate = DEFAULT_TELEMETRY_CONFIGURATION_SAMPLING_RATE,
             userActionTrackingStrategy = provideUserTrackingStrategy(
                 emptyArray(),
                 NoOpInteractionPredicate()

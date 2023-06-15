@@ -297,6 +297,32 @@
           },
           "readOnly": true
         },
+        "session": {
+          "type": "object",
+          "description": "Session properties",
+          "required": [],
+          "properties": {
+            "start_reason": {
+              "type": "string",
+              "description": "The precondition that led to the creation of the session",
+              "enum": ["app_start", "inactivity_timeout", "max_duration", "stop_api", "background_event"],
+              "readOnly": true
+            },
+            "is_active": {
+              "type": "boolean",
+              "description": "Whether this session is currently active. Set to false to manually stop a session",
+              "default": true,
+              "readOnly": true
+            }
+          },
+          "readOnly": true
+        },
+        "feature_flags": {
+          "type": "object",
+          "description": "Feature flags properties",
+          "additionalProperties": true,
+          "readOnly": true
+        },
         "_dd": {
           "type": "object",
           "description": "Internal properties",

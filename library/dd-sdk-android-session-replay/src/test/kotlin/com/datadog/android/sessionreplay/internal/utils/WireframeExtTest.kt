@@ -135,6 +135,7 @@ internal class WireframeExtTest {
         return when (this) {
             is MobileSegment.Wireframe.TextWireframe -> this.copy(shapeStyle = shapeStyle)
             is MobileSegment.Wireframe.ShapeWireframe -> this.copy(shapeStyle = shapeStyle)
+            is MobileSegment.Wireframe.ImageWireframe -> this.copy(shapeStyle = shapeStyle)
         }
     }
 

@@ -240,23 +240,6 @@ internal class RecordedDataProcessor(
             newContext.viewId != currentContext.viewId
     }
 
-    private fun MobileSegment.Wireframe.bounds(): Bounds {
-        return when (this) {
-            is MobileSegment.Wireframe.ShapeWireframe -> bounds()
-            is MobileSegment.Wireframe.TextWireframe -> bounds()
-        }
-    }
-
-    private fun MobileSegment.Wireframe.ShapeWireframe.bounds(): Bounds {
-        return Bounds(x, y, width, height)
-    }
-
-    private fun MobileSegment.Wireframe.TextWireframe.bounds(): Bounds {
-        return Bounds(x, y, width, height)
-    }
-
-    private data class Bounds(val x: Long, val y: Long, val width: Long, val height: Long)
-
     // endregion
 
     companion object {

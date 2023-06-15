@@ -76,6 +76,7 @@ internal class RumFeature(
 
     internal var samplingRate: Float = 0f
     internal var telemetrySamplingRate: Float = 0f
+    internal var telemetryConfigurationSamplingRate: Float = 0f
     internal var backgroundEventTracking: Boolean = false
     internal var trackFrustrations: Boolean = false
 
@@ -110,6 +111,7 @@ internal class RumFeature(
 
         samplingRate = configuration.samplingRate
         telemetrySamplingRate = configuration.telemetrySamplingRate
+        telemetryConfigurationSamplingRate = configuration.telemetryConfigurationSamplingRate
         backgroundEventTracking = configuration.backgroundEventTracking
         trackFrustrations = configuration.trackFrustrations
         rumEventMapper = configuration.rumEventMapper

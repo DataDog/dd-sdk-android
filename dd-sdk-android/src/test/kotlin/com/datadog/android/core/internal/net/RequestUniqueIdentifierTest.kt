@@ -13,13 +13,17 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.MediaType
 import okhttp3.Request
 import okhttp3.RequestBody
+import okio.BufferedSink
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.io.IOException
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -171,5 +175,41 @@ internal class RequestUniqueIdentifierTest {
         val contentLength = fakeBody.length
         assertThat(id)
             .isEqualTo("DELETE•$fakeUrl•$contentLength•$fakeContentType; charset=utf-8")
+    }
+
+    @ValueSource(strings = ["POST", "PUT", "PATCH", "DELETE"])
+    @ParameterizedTest
+    fun `identify request { body#contentLength throws exception }`(
+        method: String
+    ) {
+        val body = object : RequestBody() {
+            override fun contentLength(): Long {
+                throw IOException("")
+            }
+
+            override fun contentType(): MediaType? {
+                return MediaType.parse(fakeContentType)
+            }
+
+            override fun writeTo(sink: BufferedSink) {
+                // no-op
+            }
+        }
+        val request = Request.Builder()
+            .apply {
+                when (method) {
+                    "POST" -> post(body)
+                    "PUT" -> put(body)
+                    "PATCH" -> patch(body)
+                    "DELETE" -> delete(body)
+                }
+            }
+            .url(fakeUrl)
+            .build()
+
+        val id = identifyRequest(request)
+
+        assertThat(id)
+            .isEqualTo("$method•$fakeUrl•0•$fakeContentType")
     }
 }

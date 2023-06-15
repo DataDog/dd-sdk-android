@@ -868,6 +868,7 @@ internal class MutationResolverTest {
         return when (this) {
             is MobileSegment.Wireframe.ShapeWireframe -> this.id
             is MobileSegment.Wireframe.TextWireframe -> this.id
+            is MobileSegment.Wireframe.ImageWireframe -> this.id
         }
     }
 

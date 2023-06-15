@@ -6,12 +6,11 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.listener
 
-import android.app.Activity
+import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.content.res.Resources.Theme
 import android.view.View
-import android.view.Window
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.processor.Processor
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
@@ -49,11 +48,7 @@ internal class WindowsOnDrawListenerTest {
     lateinit var testedListener: WindowsOnDrawListener
 
     @Mock
-    lateinit var mockActivity: Activity
-
-    @Mock
     lateinit var mockDecorView: View
-    lateinit var mockWindow: Window
     lateinit var mockResources: Resources
     lateinit var configuration: Configuration
 
@@ -85,13 +80,16 @@ internal class WindowsOnDrawListenerTest {
     @Forgery
     lateinit var fakeSystemInformation: SystemInformation
 
+    @Mock
+    lateinit var mockContext: Context
+
     @BeforeEach
     fun `set up`(forge: Forge) {
-        whenever(mockMiscUtils.resolveSystemInformation(mockActivity))
+        whenever(mockMiscUtils.resolveSystemInformation(mockContext))
             .thenReturn(fakeSystemInformation)
         fakeMockedDecorViews = forge.aMockedDecorViewList()
         fakeWindowsSnapshots = fakeMockedDecorViews.map { forge.getForgery() }
-        whenever(mockActivity.theme).thenReturn(mockTheme)
+        whenever(mockContext.theme).thenReturn(mockTheme)
         fakeMockedDecorViews.forEachIndexed { index, decorView ->
             whenever(mockSnapshotProducer.produce(decorView, fakeSystemInformation))
                 .thenReturn(fakeWindowsSnapshots[index])
@@ -104,17 +102,13 @@ internal class WindowsOnDrawListenerTest {
                 .ORIENTATION_LANDSCAPE,
             Configuration.ORIENTATION_PORTRAIT
         )
-        mockWindow = mock {
-            whenever(it.decorView).thenReturn(mockDecorView)
-        }
-        whenever(mockActivity.window).thenReturn(mockWindow)
         configuration.orientation = fakeOrientation
         mockResources = mock {
             whenever(it.configuration).thenReturn(configuration)
         }
-        whenever(mockActivity.resources).thenReturn(mockResources)
+        whenever(mockContext.resources).thenReturn(mockResources)
         testedListener = WindowsOnDrawListener(
-            mockActivity,
+            mockContext,
             fakeMockedDecorViews,
             mockProcessor,
             mockSnapshotProducer,
@@ -143,7 +137,7 @@ internal class WindowsOnDrawListenerTest {
         // Given
         stubDebouncer()
         testedListener = WindowsOnDrawListener(
-            mockActivity,
+            mockContext,
             emptyList(),
             mockProcessor,
             mockSnapshotProducer,
@@ -162,20 +156,6 @@ internal class WindowsOnDrawListenerTest {
     fun `M do nothing W onDraw(){ windows lost the strong reference }`() {
         // Given
         testedListener.weakReferencedDecorViews.forEach { it.clear() }
-        stubDebouncer()
-
-        // When
-        testedListener.onDraw()
-
-        // Then
-        verifyZeroInteractions(mockProcessor)
-        verifyZeroInteractions(mockSnapshotProducer)
-    }
-
-    @Test
-    fun `M do nothing W onDraw(){ owner activity lost the strong reference }`() {
-        // Given
-        testedListener.ownerActivityReference.clear()
         stubDebouncer()
 
         // When

@@ -8,8 +8,19 @@ package com.datadog.android.core.internal.sampling
 
 import java.security.SecureRandom
 
-internal class RateBasedSampler(internal val sampleRate: Float) : Sampler {
+/**
+ * [Sampler] with the given sample rate which can be fixed or dynamic.
+ *
+ * @param sampleRate Provider for the sample rate value which will be called each time
+ * the sampling decision needs to be made. All the values should be on the scale [0;100].
+ */
 
+class RateBasedSampler(internal val sampleRate: Float) : Sampler {
+
+    /**
+     * Creates a new instance of [RateBasedSampler] with the given sample rate.
+     * @param sampleRate Sample rate to use.
+     */
     constructor(sampleRate: Double) : this(sampleRate.toFloat())
 
     private val random by lazy { SecureRandom() }

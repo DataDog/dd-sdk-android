@@ -28,10 +28,20 @@ internal abstract class ActivityTrackingTest :
         )
 
         instrumentation.waitForIdleSync()
+        waitForPendingRUMEvents()
 
-        // one for the Application start action
+        expectedEvents.add(ExpectedApplicationStartActionEvent())
         expectedEvents.add(
-            ExpectedApplicationStart()
+            ExpectedApplicationLaunchViewEvent(
+                docVersion = 2
+            )
+        )
+
+        // Stop launch view
+        expectedEvents.add(
+            ExpectedApplicationLaunchViewEvent(
+                docVersion = 3
+            )
         )
 
         // one for view start
@@ -43,7 +53,7 @@ internal abstract class ActivityTrackingTest :
             )
         )
 
-        // one for view stopped
+        // one for view stop
         expectedEvents.add(
             ExpectedViewEvent(
                 viewUrl,

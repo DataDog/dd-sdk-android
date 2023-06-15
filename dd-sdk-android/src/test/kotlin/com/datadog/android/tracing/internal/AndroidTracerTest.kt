@@ -12,6 +12,7 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
@@ -38,6 +39,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -48,6 +50,7 @@ import io.opentracing.Span
 import io.opentracing.log.Fields
 import io.opentracing.util.GlobalTracer
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.offset
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -443,6 +446,24 @@ internal class AndroidTracerTest {
     }
 
     @Test
+    fun `it will build a valid Tracer with sampling rate`(
+        @DoubleForgery(0.0, 1.0) samplingRate: Double
+    ) {
+        // Given
+
+        // When
+        val tracer = testedTracerBuilder
+            .setSamplingRate(samplingRate * 100.0)
+            .build()
+        val properties = testedTracerBuilder.properties()
+
+        // Then
+        assertThat(tracer).isNotNull()
+        assertThat(properties.getProperty(Config.TRACE_SAMPLE_RATE).toDouble())
+            .isCloseTo(samplingRate, offset(0.005))
+    }
+
+    @Test
     fun `it will build a valid Tracer with global tags`(
         @StringForgery operation: String,
         @StringForgery key: String,
@@ -569,6 +590,29 @@ internal class AndroidTracerTest {
         val traceIdSpan1 = span1.traceId
         val traceIdSpan2 = span2.traceId
         assertThat(traceIdSpan1).isNotEqualTo(traceIdSpan2)
+    }
+
+    @Test
+    fun `M set correct propagating style W setting tracing header types`(forge: Forge) {
+        // Given
+        val tracingHeaderStyles = forge.aList { aValueFrom(TracingHeaderType::class.java) }.toSet()
+        // When
+        val tracer = testedTracerBuilder
+            .setServiceName(fakeServiceName)
+            .setTracingHeaderTypes(tracingHeaderStyles)
+            .build()
+        val properties = testedTracerBuilder.properties()
+
+        // Then
+        assertThat(tracer).isNotNull()
+
+        val injectionStyles =
+            properties.getProperty(Config.PROPAGATION_STYLE_INJECT).toString().split(",").toSet()
+        val extractionStyles =
+            properties.getProperty(Config.PROPAGATION_STYLE_EXTRACT).toString().split(",").toSet()
+
+        assertThat(injectionStyles).isEqualTo(tracingHeaderStyles.map { it.headerType }.toSet())
+        assertThat(extractionStyles).isEqualTo(tracingHeaderStyles.map { it.headerType }.toSet())
     }
 
     // endregion

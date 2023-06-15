@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("MethodOverloading")
+
 package com.datadog.android.sdk.integration.rum
 
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
@@ -34,9 +36,10 @@ internal fun List<JsonObject>.verifyEventMatches(
 
     this.forEachIndexed { index, event ->
         when (val expectedEvent = expected[index]) {
+            is ExpectedApplicationLaunchViewEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedViewEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedGestureEvent -> event.verifyEventMatches(expectedEvent)
-            is ExpectedApplicationStart -> event.verifyEventMatches(expectedEvent)
+            is ExpectedApplicationStartActionEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedResourceEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedErrorEvent -> event.verifyEventMatches(expectedEvent)
             else -> {
@@ -46,7 +49,35 @@ internal fun List<JsonObject>.verifyEventMatches(
     }
 }
 
-private fun JsonObject.verifyEventMatches(event: ExpectedApplicationStart) {
+private fun JsonObject.verifyEventMatches(event: ExpectedApplicationLaunchViewEvent) {
+    assertThat(this)
+        .hasField("application") {
+            hasField("id", event.rumContext.applicationId)
+        }
+        .hasField("session") {
+            hasField("id", event.rumContext.sessionId)
+        }
+        .hasField("view") {
+            hasField("url", "com/datadog/application-launch/view")
+        }
+        .hasField("_dd") {
+            hasField("document_version", event.docVersion)
+        }
+
+    assertThat(this).containsAttributes(event.extraAttributes)
+    val viewArguments = event.viewArguments
+        .map { "$VIEW_ARGUMENTS_PREFIX${it.key}" to it.value }
+        .toMap()
+    assertThat(this.getAsJsonObject("view"))
+        .containsAttributes(event.extraViewAttributes)
+    assertThat(this.getAsJsonObject("view"))
+        .containsAttributesMatchingPredicate(event.extraViewAttributesWithPredicate)
+    if (viewArguments.isNotEmpty()) {
+        assertThat(this.getAsJsonObject(CONTEXT_KEY)).containsAttributes(viewArguments)
+    }
+}
+
+private fun JsonObject.verifyEventMatches(event: ExpectedApplicationStartActionEvent) {
     assertThat(this)
         .hasField("application") {
             hasField("id", event.rumContext.applicationId)
@@ -92,6 +123,10 @@ private fun JsonObject.verifyEventMatches(event: ExpectedViewEvent) {
     if (viewArguments.isNotEmpty()) {
         assertThat(this.getAsJsonObject(CONTEXT_KEY)).containsAttributes(viewArguments)
     }
+    assertThat(this)
+        .hasField("session") {
+            hasField("is_active", event.sessionIsActive)
+        }
 }
 
 private fun JsonObject.verifyEventMatches(event: ExpectedResourceEvent) {

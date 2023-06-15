@@ -7,14 +7,14 @@
 package com.datadog.android.sessionreplay.internal
 
 import android.app.Activity
-import android.app.Application
 import android.os.Bundle
+import android.view.Window
 
 internal class NoOpLifecycleCallback : LifecycleCallback {
-    override fun register(appContext: Application) {}
 
-    override fun unregisterAndStopRecorders(appContext: Application) {}
-
+    override fun getCurrentWindows(): List<Window> {
+        return emptyList()
+    }
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
 
     override fun onActivityPaused(activity: Activity) {}
