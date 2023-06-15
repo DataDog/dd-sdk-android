@@ -13,9 +13,7 @@ import com.datadog.android.sessionreplay.internal.RecordCallback
 import com.datadog.android.sessionreplay.internal.RecordWriter
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
-import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
-import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.lang.NullPointerException
 import java.util.LinkedList
@@ -25,8 +23,7 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
 internal class RecordedDataProcessor(
-    private val rumContextProvider: RumContextProvider,
-    private val timeProvider: TimeProvider,
+    private val rumContextDataHandler: RumContextDataHandler,
     private val executorService: ExecutorService,
     private val writer: RecordWriter,
     private val recordCallback: RecordCallback,
@@ -34,7 +31,6 @@ internal class RecordedDataProcessor(
     private val nodeFlattener: NodeFlattener = NodeFlattener()
 ) : Processor {
 
-    internal var prevRumContext: SessionReplayRumContext = SessionReplayRumContext()
     private var prevSnapshot: List<MobileSegment.Wireframe> = emptyList()
     private var lastSnapshotTimestamp = 0L
     private var previousOrientation = Configuration.ORIENTATION_UNDEFINED
@@ -189,16 +185,7 @@ internal class RecordedDataProcessor(
             prevRumContext: SessionReplayRumContext
         ) -> Runnable
     ): Runnable? {
-        // we will make sure we get the timestamp on the UI thread to avoid time skewing
-        val timestamp = timeProvider.getDeviceTimestamp()
-
-        // TODO: RUMM-2426 Fetch the RumContext from the core SDKContext when available
-        val newRumContext = rumContextProvider.getRumContext()
-
-        if (newRumContext.isNotValid()) {
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
-            return null
-        }
+        val rumContextData = rumContextDataHandler.createRumContextData() ?: return null
 
         // Because the runnable will be executed in another thread it can happen in case there is
         // an exception in the chain that the record cannot be sent. In this case we will have
@@ -210,12 +197,13 @@ internal class RecordedDataProcessor(
         // completely differently. In any case have in mind that after a discussion with the
         // browser team it appears that this situation may arrive also on their end and was
         // accepted.
-        recordCallback.onRecordForViewSent(newRumContext.viewId)
-        val runnable = runnableFactory(timestamp, newRumContext.copy(), prevRumContext.copy())
+        recordCallback.onRecordForViewSent(rumContextData.newRumContext.viewId)
 
-        prevRumContext = newRumContext
-
-        return runnable
+        return runnableFactory(
+            rumContextData.timestamp,
+            rumContextData.newRumContext,
+            rumContextData.prevRumContext
+        )
     }
 
     private fun bundleRecordInEnrichedRecord(
