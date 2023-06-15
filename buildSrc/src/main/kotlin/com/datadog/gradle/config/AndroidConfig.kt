@@ -19,7 +19,7 @@ object AndroidConfig {
     const val MIN_SDK_FOR_WEAR = 23
     const val BUILD_TOOLS_VERSION = "33.0.0"
 
-    val VERSION = Version(1, 19, 0, Version.Type.SrBetaSnapshot(1))
+    val VERSION = Version(1, 20, 0, Version.Type.SrBetaSnapshot(1))
 }
 
 @Suppress("UnstableApiUsage")
