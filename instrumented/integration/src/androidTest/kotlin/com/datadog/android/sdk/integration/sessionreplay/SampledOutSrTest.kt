@@ -14,11 +14,11 @@ import com.datadog.tools.unit.ConditionWatcher
 import org.junit.Rule
 import org.junit.Test
 
-internal class ConsentGrantedSrTest : SrSnapshotTest<SessionReplayPlaygroundActivity>() {
+internal class SampledOutSrTest : SrSnapshotTest<SessionReplaySampledOutPlaygroundActivity>() {
 
     @get:Rule
     val rule = SessionReplayTestRule(
-        SessionReplayPlaygroundActivity::class.java,
+        SessionReplaySampledOutPlaygroundActivity::class.java,
         trackingConsent = TrackingConsent.GRANTED,
         keepRequests = true
     )
@@ -29,7 +29,6 @@ internal class ConsentGrantedSrTest : SrSnapshotTest<SessionReplayPlaygroundActi
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
         val expectedData = runInstrumentationScenario(rule)
         ConditionWatcher {
-            // verify the captured log events into the MockedWebServer
             verifyExpectedSrData(
                 rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl),
                 expectedData

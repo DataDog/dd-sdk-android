@@ -123,6 +123,7 @@ class SampleApplication : Application() {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
                 }
             }
+            .setSessionReplaySampleRate(SAMPLE_IN_ALL_SESSIONS)
             .addExtensionSupport(MaterialExtensionSupport())
             .build()
         val sessionReplayFeature = SessionReplayFeature(sessionReplayConfig)
@@ -262,6 +263,7 @@ class SampleApplication : Application() {
     }
 
     companion object {
+        private const val SAMPLE_IN_ALL_SESSIONS = 100f
         init {
             System.loadLibrary("datadog-native-sample-lib")
         }
