@@ -705,6 +705,13 @@ internal class WireframeUtilsTest {
                 height = height,
                 clip = clip
             )
+            is MobileSegment.Wireframe.ImageWireframe -> copy(
+                x = x,
+                y = y,
+                width = width,
+                height = height,
+                clip = clip
+            )
         }
     }
 
@@ -723,6 +730,12 @@ internal class WireframeUtilsTest {
                 width = width,
                 height = height
             )
+            is MobileSegment.Wireframe.ImageWireframe -> copy(
+                x = x,
+                y = y,
+                width = width,
+                height = height
+            )
         }
     }
 
@@ -731,6 +744,7 @@ internal class WireframeUtilsTest {
         return when (this) {
             is MobileSegment.Wireframe.ShapeWireframe -> copy(width = width)
             is MobileSegment.Wireframe.TextWireframe -> copy(width = width)
+            is MobileSegment.Wireframe.ImageWireframe -> copy(width = width)
         }
     }
 
@@ -739,6 +753,7 @@ internal class WireframeUtilsTest {
         return when (this) {
             is MobileSegment.Wireframe.ShapeWireframe -> copy(height = height)
             is MobileSegment.Wireframe.TextWireframe -> copy(height = height)
+            is MobileSegment.Wireframe.ImageWireframe -> copy(height = height)
         }
     }
 
@@ -746,6 +761,7 @@ internal class WireframeUtilsTest {
         return when (this) {
             is MobileSegment.Wireframe.ShapeWireframe -> clip
             is MobileSegment.Wireframe.TextWireframe -> clip
+            is MobileSegment.Wireframe.ImageWireframe -> clip
         }
     }
 
@@ -753,6 +769,7 @@ internal class WireframeUtilsTest {
         return when (this) {
             is MobileSegment.Wireframe.ShapeWireframe -> x
             is MobileSegment.Wireframe.TextWireframe -> x
+            is MobileSegment.Wireframe.ImageWireframe -> x
         }
     }
 
@@ -760,6 +777,7 @@ internal class WireframeUtilsTest {
         return when (this) {
             is MobileSegment.Wireframe.ShapeWireframe -> y
             is MobileSegment.Wireframe.TextWireframe -> y
+            is MobileSegment.Wireframe.ImageWireframe -> y
         }
     }
 
@@ -767,6 +785,7 @@ internal class WireframeUtilsTest {
         return when (this) {
             is MobileSegment.Wireframe.ShapeWireframe -> width
             is MobileSegment.Wireframe.TextWireframe -> width
+            is MobileSegment.Wireframe.ImageWireframe -> width
         }
     }
 
@@ -774,6 +793,7 @@ internal class WireframeUtilsTest {
         return when (this) {
             is MobileSegment.Wireframe.ShapeWireframe -> height
             is MobileSegment.Wireframe.TextWireframe -> height
+            is MobileSegment.Wireframe.ImageWireframe -> height
         }
     }
 
@@ -781,6 +801,7 @@ internal class WireframeUtilsTest {
         return when (this) {
             is MobileSegment.Wireframe.ShapeWireframe -> shapeStyle
             is MobileSegment.Wireframe.TextWireframe -> shapeStyle
+            is MobileSegment.Wireframe.ImageWireframe -> shapeStyle
         }
     }
 
@@ -795,6 +816,14 @@ internal class WireframeUtilsTest {
                 )
             }
             is MobileSegment.Wireframe.TextWireframe -> {
+                wireframe.copy(
+                    x = aLong(min = 1, max = 100),
+                    y = aLong(min = 1, max = 100),
+                    width = aLong(min = 1, max = 100),
+                    height = aLong(min = 1, max = 100)
+                )
+            }
+            is MobileSegment.Wireframe.ImageWireframe -> {
                 wireframe.copy(
                     x = aLong(min = 1, max = 100),
                     y = aLong(min = 1, max = 100),
@@ -849,6 +878,13 @@ internal class WireframeUtilsTest {
                     height = height,
                     clip = clip
                 )
+                is MobileSegment.Wireframe.ImageWireframe -> copy(
+                    x = x,
+                    y = y,
+                    width = width,
+                    height = height,
+                    clip = clip
+                )
             }
         }
 
@@ -869,6 +905,13 @@ internal class WireframeUtilsTest {
                     shapeStyle = shapeStyle
                 )
                 is MobileSegment.Wireframe.TextWireframe -> copy(
+                    x = x,
+                    y = y,
+                    width = width,
+                    height = height,
+                    shapeStyle = shapeStyle
+                )
+                is MobileSegment.Wireframe.ImageWireframe -> copy(
                     x = x,
                     y = y,
                     width = width,

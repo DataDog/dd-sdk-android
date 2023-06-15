@@ -69,7 +69,7 @@ class SampleApplication : Application() {
         "datadoghq.dev"
     )
 
-    // TODO RUMM-0000 lazy is needed here, because without it global first party host detector is
+    // TODO RUMM-0000 lazy is needed here, because without it global first party host resolver is
     //  not available yet at the interceptor construction time
     private val okHttpClient by lazy {
         OkHttpClient.Builder()
@@ -123,6 +123,7 @@ class SampleApplication : Application() {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
                 }
             }
+            .setSessionReplaySampleRate(SAMPLE_IN_ALL_SESSIONS)
             .addExtensionSupport(MaterialExtensionSupport())
             .build()
         val sessionReplayFeature = SessionReplayFeature(sessionReplayConfig)
@@ -262,6 +263,7 @@ class SampleApplication : Application() {
     }
 
     companion object {
+        private const val SAMPLE_IN_ALL_SESSIONS = 100f
         init {
             System.loadLibrary("datadog-native-sample-lib")
         }

@@ -36,6 +36,7 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -585,6 +586,28 @@ internal class DatadogCoreInitializationTest {
         assertThat(testedCore.coreFeature.packageVersionProvider.version).isEqualTo(
             appContext.fakeVersionName
         )
+    }
+
+    @Test
+    fun `𝕄 apply configuration telemety sample rate W applyAdditionalConfig(confic) { with sample rate }`(
+        @FloatForgery(0.0f, 100.0f) sampleRate: Float
+    ) {
+        // Given
+        val configuration = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .setAdditionalConfiguration(mapOf(Datadog.DD_TELEMETRY_CONFIG_SAMPLE_RATE_TAG to sampleRate))
+            .build()
+
+        // When
+        testedCore =
+            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+
+        // Then
+        assertThat(testedCore.rumFeature?.telemetryConfigurationSamplingRate).isEqualTo(sampleRate)
     }
 
     // endregion

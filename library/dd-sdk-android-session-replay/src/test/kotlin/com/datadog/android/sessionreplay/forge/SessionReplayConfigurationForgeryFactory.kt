@@ -18,7 +18,8 @@ internal class SessionReplayConfigurationForgeryFactory :
         return SessionReplayConfiguration(
             endpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
             privacy = forge.aValueFrom(SessionReplayPrivacy::class.java),
-            extensionSupport = NoOpExtensionSupport()
+            extensionSupport = NoOpExtensionSupport(),
+            sampleRate = forge.aFloat(min = 0f, max = 100f)
         )
     }
 }

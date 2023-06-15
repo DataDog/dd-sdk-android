@@ -11,6 +11,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
 import org.assertj.core.api.AbstractObjectAssert
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.assertj.core.data.Percentage
@@ -191,6 +192,14 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasSessionActive(expected: Boolean): ViewEventAssert {
+        assertThat(actual.session.isActive)
+            .overridingErrorMessage(
+                "Expected context to have session.isActive $expected but was ${actual.session.isActive}"
+            ).isEqualTo(expected)
+        return this
+    }
+
     fun hasLoadingTime(
         expected: Long?
     ): ViewEventAssert {
@@ -324,10 +333,12 @@ internal class ViewEventAssert(actual: ViewEvent) :
             )
             .isEqualTo(expectedTicks)
 
-        val expectedTicksPerSeconds = if (expectedTicks != null) {
-            (expectedTicks * ONE_SECOND_NS) / actual.view.timeSpent
-        } else {
+        val expectedTicksPerSeconds = if (expectedTicks == null) {
             null
+        } else if (actual.view.timeSpent < ONE_SECOND_NS) {
+            null
+        } else {
+            (expectedTicks * ONE_SECOND_NS) / actual.view.timeSpent
         }
         assertThat(actual.view.cpuTicksPerSecond)
             .overridingErrorMessage(
@@ -618,6 +629,14 @@ internal class ViewEventAssert(actual: ViewEvent) :
                     " but instead was: ${actual.version}"
             )
             .isEqualTo(version)
+        return this
+    }
+
+    fun hasFeatureFlag(flagName: String, flagValue: Any): ViewEventAssert {
+        assertThat(actual.featureFlags)
+            .isNotNull
+        assertThat(actual.featureFlags?.additionalProperties)
+            .contains(Assertions.entry(flagName, flagValue))
         return this
     }
 

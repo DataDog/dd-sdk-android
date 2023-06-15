@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.listener
 
-import android.app.Activity
+import android.content.Context
 import android.view.View
 import android.view.ViewTreeObserver
 import com.datadog.android.sessionreplay.internal.processor.Processor
@@ -16,7 +16,7 @@ import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import java.lang.ref.WeakReference
 
 internal class WindowsOnDrawListener(
-    ownerActivity: Activity,
+    private val appContext: Context,
     zOrderedDecorViews: List<View>,
     private val processor: Processor,
     private val snapshotProducer: SnapshotProducer,
@@ -24,7 +24,6 @@ internal class WindowsOnDrawListener(
     private val miscUtils: MiscUtils = MiscUtils
 ) : ViewTreeObserver.OnDrawListener {
 
-    internal val ownerActivityReference: WeakReference<Activity> = WeakReference(ownerActivity)
     internal val weakReferencedDecorViews: List<WeakReference<View>>
 
     init {
@@ -39,10 +38,9 @@ internal class WindowsOnDrawListener(
         if (weakReferencedDecorViews.isEmpty()) {
             return@Runnable
         }
-        val ownerActivity = ownerActivityReference.get() ?: return@Runnable
 
         // is is very important to have the windows sorted by their z-order
-        val systemInformation = miscUtils.resolveSystemInformation(ownerActivity)
+        val systemInformation = miscUtils.resolveSystemInformation(appContext)
         val nodes = weakReferencedDecorViews
             .mapNotNull { it.get() }
             .mapNotNull {

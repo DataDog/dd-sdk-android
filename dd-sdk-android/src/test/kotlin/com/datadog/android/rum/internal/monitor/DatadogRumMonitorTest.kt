@@ -8,7 +8,7 @@ package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -102,7 +102,7 @@ internal class DatadogRumMonitorTest {
     lateinit var mockHandler: Handler
 
     @Mock
-    lateinit var mockDetector: FirstPartyHostDetector
+    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockCpuVitalMonitor: VitalMonitor
@@ -154,7 +154,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -175,7 +175,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -1175,7 +1175,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -1220,7 +1220,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -1252,7 +1252,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -1306,7 +1306,7 @@ internal class DatadogRumMonitorTest {
         val otherScopes = forge.aList {
             forge.anElementFrom(mock(), mock<RumActionScope>(), mock<RumResourceScope>())
         }
-        whenever(mockRumApplicationScope.childScope) doReturn mockSessionScope
+        whenever(mockRumApplicationScope.activeSession) doReturn mockSessionScope
         whenever(mockSessionScope.childScope) doReturn mockViewManagerScope
         whenever(mockViewManagerScope.childrenScopes)
             .thenReturn((viewScopes + otherScopes).toMutableList())
@@ -1342,7 +1342,7 @@ internal class DatadogRumMonitorTest {
         val otherScopes = forge.aList {
             forge.anElementFrom(mock(), mock<RumActionScope>(), mock<RumResourceScope>())
         }
-        whenever(mockRumApplicationScope.childScope) doReturn mockSessionScope
+        whenever(mockRumApplicationScope.activeSession) doReturn mockSessionScope
         whenever(mockSessionScope.childScope) doReturn mockViewManagerScope
         whenever(mockViewManagerScope.childrenScopes)
             .thenReturn((viewScopes + otherScopes).toMutableList())
@@ -1365,7 +1365,7 @@ internal class DatadogRumMonitorTest {
         val listener = mock<RumDebugListener>()
         testedMonitor.debugListener = listener
 
-        whenever(mockRumApplicationScope.childScope) doReturn forge.anElementFrom(
+        whenever(mockRumApplicationScope.activeSession) doReturn forge.anElementFrom(
             mock(),
             mock<RumViewScope>(),
             mock<RumActionScope>(),
@@ -1564,7 +1564,7 @@ internal class DatadogRumMonitorTest {
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,

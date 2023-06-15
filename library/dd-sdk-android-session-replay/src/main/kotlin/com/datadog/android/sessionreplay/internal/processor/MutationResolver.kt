@@ -228,6 +228,49 @@ internal class MutationResolver {
         return mutation
     }
 
+    private fun resolveImageUpdateMutation(
+        prevWireframe: MobileSegment.Wireframe.ImageWireframe,
+        currentWireframe: MobileSegment.Wireframe.ImageWireframe
+    ): MobileSegment.WireframeUpdateMutation {
+        var mutation = MobileSegment.WireframeUpdateMutation
+            .ImageWireframeUpdate(currentWireframe.id)
+        if (prevWireframe.x != currentWireframe.x) {
+            mutation = mutation.copy(x = currentWireframe.x)
+        }
+        if (prevWireframe.y != currentWireframe.y) {
+            mutation = mutation.copy(y = currentWireframe.y)
+        }
+        if (prevWireframe.width != currentWireframe.width) {
+            mutation = mutation.copy(width = currentWireframe.width)
+        }
+        if (prevWireframe.height != currentWireframe.height) {
+            mutation = mutation.copy(height = currentWireframe.height)
+        }
+        if (prevWireframe.border != currentWireframe.border) {
+            mutation = mutation.copy(border = currentWireframe.border)
+        }
+        if (prevWireframe.shapeStyle != currentWireframe.shapeStyle) {
+            mutation = mutation.copy(shapeStyle = currentWireframe.shapeStyle)
+        }
+        if (prevWireframe.clip != currentWireframe.clip) {
+            mutation = mutation.copy(
+                clip = currentWireframe.clip
+                    ?: MobileSegment.WireframeClip(0, 0, 0, 0)
+            )
+        }
+        if (prevWireframe.base64 != currentWireframe.base64) {
+            mutation = mutation.copy(base64 = currentWireframe.base64)
+        }
+        if (prevWireframe.mimeType != currentWireframe.mimeType) {
+            mutation = mutation.copy(mimeType = currentWireframe.mimeType)
+        }
+        if (prevWireframe.isEmpty != currentWireframe.isEmpty) {
+            mutation = mutation.copy(isEmpty = currentWireframe.isEmpty)
+        }
+
+        return mutation
+    }
+
     private fun resolveUpdateMutation(
         currentWireframe: MobileSegment.Wireframe,
         prevWireframe: MobileSegment.Wireframe
@@ -246,6 +289,10 @@ internal class MutationResolver {
                 is MobileSegment.Wireframe.ShapeWireframe -> resolveShapeUpdateMutation(
                     prevWireframe,
                     currentWireframe as MobileSegment.Wireframe.ShapeWireframe
+                )
+                is MobileSegment.Wireframe.ImageWireframe -> resolveImageUpdateMutation(
+                    prevWireframe,
+                    currentWireframe as MobileSegment.Wireframe.ImageWireframe
                 )
             }
         }
@@ -301,6 +348,7 @@ internal class MutationResolver {
         return when (this) {
             is MobileSegment.Wireframe.ShapeWireframe -> this.id
             is MobileSegment.Wireframe.TextWireframe -> this.id
+            is MobileSegment.Wireframe.ImageWireframe -> this.id
         }
     }
 

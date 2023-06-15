@@ -26,8 +26,15 @@ public class RateByServiceSampler implements Sampler, PrioritySampler {
 
   private static final double DEFAULT_RATE = 1.0;
 
-  private volatile Map<String, RateSampler> serviceRates =
-      unmodifiableMap(singletonMap(DEFAULT_KEY, createRateSampler(DEFAULT_RATE)));
+  private volatile Map<String, RateSampler> serviceRates;
+
+  public RateByServiceSampler() {
+    this(DEFAULT_RATE);
+  }
+
+  public RateByServiceSampler(Double defaultSampleRate) {
+      this.serviceRates = singletonMap(DEFAULT_KEY, createRateSampler(defaultSampleRate));
+  }
 
   @Override
   public boolean sample(final DDSpan span) {
@@ -67,7 +74,6 @@ public class RateByServiceSampler implements Sampler, PrioritySampler {
   private static String getSpanEnv(final DDSpan span) {
     return null == span.getTags().get("env") ? "" : String.valueOf(span.getTags().get("env"));
   }
-
 
   private RateSampler createRateSampler(final double sampleRate) {
     final double sanitizedRate;

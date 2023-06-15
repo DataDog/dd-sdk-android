@@ -7,11 +7,11 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.AppStartTimeProvider
+import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.v2.api.Feature
@@ -31,19 +31,22 @@ internal class RumSessionScope(
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
-    internal val firstPartyHostDetector: FirstPartyHostDetector,
+    internal val viewChangedListener: RumViewChangedListener?,
+    internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     internal val sessionListener: RumSessionListener?,
     contextProvider: ContextProvider,
-    buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
+    applicationDisplayed: Boolean,
+    appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider(),
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
     internal var sessionState: State = State.NOT_TRACKED
+    internal var isActive: Boolean = true
     private val sessionStartNs = AtomicLong(System.nanoTime())
     private val lastUserInteractionNs = AtomicLong(0L)
 
@@ -52,17 +55,19 @@ internal class RumSessionScope(
     private val noOpWriter = NoOpDataWriter<Any>()
 
     @Suppress("LongParameterList")
-    internal var childScope: RumScope = RumViewManagerScope(
+    internal var childScope: RumScope? = RumViewManagerScope(
         this,
         sdkCore,
         backgroundTrackingEnabled,
         trackFrustrations,
-        firstPartyHostDetector,
+        viewChangedListener,
+        firstPartyHostHeaderTypeResolver,
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
-        buildSdkVersionProvider,
-        contextProvider
+        appStartTimeProvider,
+        contextProvider,
+        applicationDisplayed
     )
 
     init {
@@ -83,35 +88,50 @@ internal class RumSessionScope(
     override fun handleEvent(
         event: RumRawEvent,
         writer: DataWriter<Any>
-    ): RumScope {
+    ): RumScope? {
         if (event is RumRawEvent.ResetSession) {
             renewSession(System.nanoTime())
+        } else if (event is RumRawEvent.StopSession) {
+            stopSession()
         }
 
         updateSession(event)
 
         val actualWriter = if (sessionState == State.TRACKED) writer else noOpWriter
 
-        childScope.handleEvent(event, actualWriter)
+        childScope = childScope?.handleEvent(event, actualWriter)
 
-        return this
+        return if (isSessionComplete()) {
+            null
+        } else {
+            this
+        }
     }
 
     override fun getRumContext(): RumContext {
         val parentContext = parentScope.getRumContext()
         return parentContext.copy(
             sessionId = sessionId,
-            sessionState = sessionState
+            sessionState = sessionState,
+            isSessionActive = isActive
         )
     }
 
     override fun isActive(): Boolean {
-        return true
+        return isActive
     }
 
     // endregion
 
     // region Internal
+
+    private fun stopSession() {
+        isActive = false
+    }
+
+    private fun isSessionComplete(): Boolean {
+        return !isActive && childScope == null
+    }
 
     @Suppress("ComplexMethod")
     private fun updateSession(event: RumRawEvent) {
@@ -148,6 +168,9 @@ internal class RumSessionScope(
         sessionState = if (keepSession) State.TRACKED else State.NOT_TRACKED
         sessionId = UUID.randomUUID().toString()
         sessionStartNs.set(nanoTime)
+        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
+            it.putAll(getRumContext().toMap())
+        }
         sessionListener?.onSessionStarted(sessionId, !keepSession)
         sdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)?.sendEvent(
             mapOf(

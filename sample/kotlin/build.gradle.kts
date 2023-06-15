@@ -66,14 +66,14 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
-    flavorDimensions += listOf("version")
+    flavorDimensions += listOf("site")
     productFlavors {
-        val regions = arrayOf("us1", "us3", "us5", "us1_fed", "eu1", "staging")
+        val regions = arrayOf("us1", "us3", "us5", "us1_fed", "eu1", "ap1", "staging")
 
         regions.forEachIndexed { index, region ->
             register(region) {
                 isDefault = index == 0
-                dimension = "version"
+                dimension = "site"
                 configureFlavorForSampleApp(this, project.rootDir)
             }
         }

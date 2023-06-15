@@ -34,6 +34,14 @@
             android:label="@string/rum_activity_view_tracking_end_to_end"
             android:windowSoftInputMode="adjustResize"/>
         <activity
+            android:name=".rum.KioskSplashPlaygroundActivity"
+            android:label="@string/activity_kiosk_end_to_end"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
+            android:name=".rum.KioskTrackedPlaygroundActivity"
+            android:label="@string/activity_kiosk_session"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
             android:name=".rum.FragmentTrackingPlaygroundActivity"
             android:label="@string/rum_activity_view_tracking_end_to_end"
             android:windowSoftInputMode="adjustResize"/>
@@ -43,6 +51,10 @@
             android:windowSoftInputMode="adjustResize"/>
         <activity
             android:name=".sessionreplay.SessionReplayPlaygroundActivity"
+            android:label="@string/session_replay_end_to_end"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
+            android:name=".sessionreplay.SessionReplaySampledOutPlaygroundActivity"
             android:label="@string/session_replay_end_to_end"
             android:windowSoftInputMode="adjustResize"/>
         <activity

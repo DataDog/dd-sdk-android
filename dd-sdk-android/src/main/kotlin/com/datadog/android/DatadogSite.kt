@@ -11,14 +11,16 @@ package com.datadog.android
  *
  * @property siteName Explicit site name property introduced in order to have a consistent SDK
  * instance ID (because this value is used there) in case if enum values are renamed.
+ * @property intakeHostName the host name for the given site.
  */
 // TODO RUMM-0000 Remove logs, traces, rum endpoint methods, because this class is for core SDK v2
 // TODO RUMM-0000 Since it is used in SDK v2 context, what should be the value for custom endpoints?
-enum class DatadogSite(val siteName: String) {
+enum class DatadogSite(val siteName: String, private val intakeHostName: String) {
+
     /**
      *  The US1 site: [app.datadoghq.com](https://app.datadoghq.com).
      */
-    US1("us1"),
+    US1("us1", "browser-intake-datadoghq.com"),
 
     /**
      *  The US3 site: [us3.datadoghq.com](https://us3.datadoghq.com).
@@ -31,64 +33,35 @@ enum class DatadogSite(val siteName: String) {
     US5("us5"),
 
     /**
-     *  The US1_FED site (FedRAMP compatible): [app.ddog-gov.com](https://app.ddog-gov.com).
-     */
-    US1_FED("us1_fed"),
-
-    /**
      *  The EU1 site: [app.datadoghq.eu](https://app.datadoghq.eu).
      */
-    EU1("eu1");
+    EU1("eu1", "browser-intake-datadoghq.eu"),
 
     /**
-     * Returns the endpoint to use to upload Logs to this site.
+     *  The AP1 site: [ap1.datadoghq.com](https://ap1.datadoghq.com).
      */
-    fun logsEndpoint(): String {
-        return when (this) {
-            US1 -> DatadogEndpoint.LOGS_US1
-            US3 -> DatadogEndpoint.LOGS_US3
-            US5 -> DatadogEndpoint.LOGS_US5
-            US1_FED -> DatadogEndpoint.LOGS_US1_FED
-            EU1 -> DatadogEndpoint.LOGS_EU1
-        }
-    }
+    AP1("ap1"),
 
     /**
-     * Returns the endpoint to use to upload Spans to this site.
+     *  The US1_FED site (FedRAMP compatible): [app.ddog-gov.com](https://app.ddog-gov.com).
      */
-    fun tracesEndpoint(): String {
-        return when (this) {
-            US1 -> DatadogEndpoint.TRACES_US1
-            US3 -> DatadogEndpoint.TRACES_US3
-            US5 -> DatadogEndpoint.TRACES_US5
-            US1_FED -> DatadogEndpoint.TRACES_US1_FED
-            EU1 -> DatadogEndpoint.TRACES_EU1
-        }
-    }
+    US1_FED("us1_fed", "browser-intake-ddog-gov.com"),
 
     /**
-     * Returns the endpoint to use to upload RUM Events to this site.
+     *  The STAGING site (internal usage only): [app.datad0g.com](https://app.datad0g.com).
      */
-    fun rumEndpoint(): String {
-        return when (this) {
-            US1 -> DatadogEndpoint.RUM_US1
-            US3 -> DatadogEndpoint.RUM_US3
-            US5 -> DatadogEndpoint.RUM_US5
-            US1_FED -> DatadogEndpoint.RUM_US1_FED
-            EU1 -> DatadogEndpoint.RUM_EU1
-        }
-    }
+    STAGING("staging", "browser-intake-datad0g.com");
 
     /**
-     * Returns the endpoint to use to upload RUM Events to this site.
+     * Constructor using the generic way to build the intake endpoint host from the site name.
+     * @param siteName Explicit site name property introduced in order to have a consistent SDK
+     * instance ID (because this value is used there) in case if enum values are renamed.
      */
-    fun sessionReplayEndpoint(): String {
-        return when (this) {
-            US1 -> DatadogEndpoint.SESSION_REPLAY_US1
-            US3 -> DatadogEndpoint.SESSION_REPLAY_US3
-            US5 -> DatadogEndpoint.SESSION_REPLAY_US5
-            US1_FED -> DatadogEndpoint.SESSION_REPLAY_US1_FED
-            EU1 -> DatadogEndpoint.SESSION_REPLAY_EU1
-        }
-    }
+    constructor(siteName: String) : this(
+        siteName,
+        "browser-intake-$siteName-datadoghq.com"
+    )
+
+    /** The intake endpoint url. */
+    val intakeEndpoint: String = "https://$intakeHostName"
 }

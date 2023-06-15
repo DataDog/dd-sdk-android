@@ -291,13 +291,7 @@ class InvalidStringFormat : Rule() {
         private val SPECIFIER_REGEX = Regex(
             "%(\\d+\\$)?([flags]+)?(\\d+)?(\\.\\d+)?([sbhcdoxegfa])"
         )
-
         private const val INDEX_REF = 1
-
-        // TODO check flags, width and precision for invalid use?
-//        private const val INDEX_FLAGS = 2
-//        private const val INDEX_WIDTH = 3
-//        private const val INDEX_PRECISION = 4
         private const val INDEX_TYPE = 5
 
         private const val ERROR_UNKNOWN_FORMAT_STRING = "Unable to detect the format string value."

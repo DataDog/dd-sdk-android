@@ -12,12 +12,11 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.waitFor
 
-internal abstract class SrSnapshotTest :
-    SrTest<SessionReplayPlaygroundActivity,
-        SessionReplayTestRule<SessionReplayPlaygroundActivity>>() {
+internal abstract class SrSnapshotTest<T : SessionReplayPlaygroundActivity> :
+    SrTest<T, SessionReplayTestRule<T>>() {
 
     override fun runInstrumentationScenario(
-        mockServerRule: SessionReplayTestRule<SessionReplayPlaygroundActivity>
+        mockServerRule: SessionReplayTestRule<T>
     ): ExpectedSrData {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         // we need this to avoid the Bitrise flakiness and to force and to wait for
