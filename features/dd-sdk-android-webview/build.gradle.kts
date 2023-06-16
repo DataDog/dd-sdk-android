@@ -94,7 +94,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":dd-sdk-android"))
+    api(project(":dd-sdk-android"))
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
