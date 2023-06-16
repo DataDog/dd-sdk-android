@@ -86,6 +86,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 @Suppress("TooManyFunctions")
 internal class RumFeature constructor(
+    private val sdkCore: FeatureSdkCore,
     internal val applicationId: String,
     internal val configuration: Configuration,
     private val ndkCrashEventHandlerFactory: (InternalLogger) -> NdkCrashEventHandler = {
@@ -119,7 +120,6 @@ internal class RumFeature constructor(
     internal lateinit var anrDetectorRunnable: ANRDetectorRunnable
     internal lateinit var anrDetectorHandler: Handler
     internal lateinit var appContext: Context
-    internal lateinit var sdkCore: FeatureSdkCore
     internal lateinit var telemetry: Telemetry
 
     private val ndkCrashEventHandler by lazy { ndkCrashEventHandlerFactory(sdkCore.internalLogger) }
@@ -128,11 +128,7 @@ internal class RumFeature constructor(
 
     override val name: String = Feature.RUM_FEATURE_NAME
 
-    override fun onInitialize(
-        sdkCore: FeatureSdkCore,
-        appContext: Context
-    ) {
-        this.sdkCore = sdkCore
+    override fun onInitialize(appContext: Context) {
         this.appContext = appContext
         this.telemetry = Telemetry(sdkCore)
 

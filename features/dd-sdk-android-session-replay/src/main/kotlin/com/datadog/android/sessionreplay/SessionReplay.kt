@@ -30,12 +30,13 @@ object SessionReplay {
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
         val sessionReplayFeature = SessionReplayFeature(
+            sdkCore = sdkCore as FeatureSdkCore,
             customEndpointUrl = sessionReplayConfiguration.customEndpointUrl,
             privacy = sessionReplayConfiguration.privacy,
             customMappers = sessionReplayConfiguration.customMappers,
             customOptionSelectorDetectors = sessionReplayConfiguration.customOptionSelectorDetectors
         )
 
-        (sdkCore as FeatureSdkCore).registerFeature(sessionReplayFeature)
+        sdkCore.registerFeature(sessionReplayFeature)
     }
 }

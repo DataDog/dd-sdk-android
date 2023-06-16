@@ -158,7 +158,7 @@ internal constructor(
                 ?.unwrap<StorageBackedFeature>()
 
             val webViewRumFeature = if (rumFeature != null) {
-                WebViewRumFeature(rumFeature.requestFactory)
+                WebViewRumFeature(sdkCore, rumFeature.requestFactory)
                     .apply { sdkCore.registerFeature(this) }
             } else {
                 sdkCore.internalLogger.log(
@@ -170,7 +170,7 @@ internal constructor(
             }
 
             val webViewLogsFeature = if (logsFeature != null) {
-                WebViewLogsFeature(logsFeature.requestFactory)
+                WebViewLogsFeature(sdkCore, logsFeature.requestFactory)
                     .apply { sdkCore.registerFeature(this) }
             } else {
                 sdkCore.internalLogger.log(

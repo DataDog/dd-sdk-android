@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
@@ -36,12 +37,15 @@ class NdkCrashReportsFeatureTest {
 
     private lateinit var testedFeature: NdkCrashReportsFeature
 
+    @Mock
+    lateinit var mockSdkCore: InternalSdkCore
+
     @TempDir
     lateinit var tempDir: File
 
     @BeforeEach
     fun `set up`() {
-        testedFeature = NdkCrashReportsFeature()
+        testedFeature = NdkCrashReportsFeature(mockSdkCore)
     }
 
     @Test
@@ -71,7 +75,6 @@ class NdkCrashReportsFeatureTest {
         trackingConsent: TrackingConsent
     ) {
         // GIVEN
-        val mockSdkCore = mock<InternalSdkCore>()
         val mockContext: Context = mock()
         whenever(mockSdkCore.rootStorageDir) doReturn tempDir
         whenever(mockSdkCore.trackingConsent) doReturn trackingConsent
@@ -80,7 +83,7 @@ class NdkCrashReportsFeatureTest {
 
         // WHEN
         try {
-            testedFeature.onInitialize(mockSdkCore, mockContext)
+            testedFeature.onInitialize(mockContext)
         } catch (e: UnsatisfiedLinkError) {
             // Do nothing. Just to avoid the NDK linkage error.
         }
@@ -96,7 +99,6 @@ class NdkCrashReportsFeatureTest {
         trackingConsent: TrackingConsent
     ) {
         // GIVEN
-        val mockSdkCore = mock<InternalSdkCore>()
         val mockContext: Context = mock()
         whenever(mockSdkCore.rootStorageDir) doReturn tempDir
         whenever(mockSdkCore.trackingConsent) doReturn trackingConsent
@@ -104,7 +106,7 @@ class NdkCrashReportsFeatureTest {
 
         // WHEN
         try {
-            testedFeature.onInitialize(mockSdkCore, mockContext)
+            testedFeature.onInitialize(mockContext)
         } catch (e: UnsatisfiedLinkError) {
             // Do nothing. Just to avoid the NDK linkage error.
         }

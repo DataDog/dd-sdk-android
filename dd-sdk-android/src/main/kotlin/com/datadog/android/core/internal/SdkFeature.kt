@@ -20,7 +20,6 @@ import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
@@ -56,7 +55,7 @@ internal class SdkFeature(
 
     // region SDK Feature
 
-    fun initialize(sdkCore: FeatureSdkCore, context: Context) {
+    fun initialize(context: Context) {
         if (initialized.get()) {
             return
         }
@@ -65,7 +64,7 @@ internal class SdkFeature(
             storage = createStorage(wrappedFeature.name, wrappedFeature.storageConfiguration)
         }
 
-        wrappedFeature.onInitialize(sdkCore, context)
+        wrappedFeature.onInitialize(context)
 
         if (wrappedFeature is StorageBackedFeature) {
             setupUploader(wrappedFeature.requestFactory)

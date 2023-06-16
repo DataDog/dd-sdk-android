@@ -25,8 +25,8 @@ object NdkCrashReports {
     @JvmOverloads
     @JvmStatic
     fun enable(sdkCore: SdkCore = Datadog.getInstance()) {
-        val ndkCrashReportsFeature = NdkCrashReportsFeature()
+        val ndkCrashReportsFeature = NdkCrashReportsFeature(sdkCore as FeatureSdkCore)
 
-        (sdkCore as FeatureSdkCore).registerFeature(ndkCrashReportsFeature)
+        sdkCore.registerFeature(ndkCrashReportsFeature)
     }
 }

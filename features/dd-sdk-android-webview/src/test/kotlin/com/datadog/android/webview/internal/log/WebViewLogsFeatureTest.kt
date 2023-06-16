@@ -47,14 +47,14 @@ internal class WebViewLogsFeatureTest {
 
     @BeforeEach
     fun `set up`() {
-        testedFeature = WebViewLogsFeature(mockRequestFactory)
+        testedFeature = WebViewLogsFeature(mockSdkCore, mockRequestFactory)
         whenever(mockSdkCore.internalLogger) doReturn mock()
     }
 
     @Test
     fun `𝕄 initialize data writer 𝕎 initialize()`() {
         // When
-        testedFeature.onInitialize(mockSdkCore, mock())
+        testedFeature.onInitialize(mock())
 
         // Then
         assertThat(testedFeature.dataWriter)
@@ -64,7 +64,7 @@ internal class WebViewLogsFeatureTest {
     @Test
     fun `𝕄 reset data writer 𝕎 onStop()`() {
         // Given
-        testedFeature.onInitialize(mockSdkCore, mock())
+        testedFeature.onInitialize(mock())
 
         // When
         testedFeature.onStop()

@@ -20,6 +20,7 @@ import com.google.gson.JsonObject
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class WebViewRumFeature(
+    private val sdkCore: FeatureSdkCore,
     override val requestFactory: RequestFactory
 ) : StorageBackedFeature {
 
@@ -30,10 +31,7 @@ internal class WebViewRumFeature(
 
     override val name: String = WEB_RUM_FEATURE_NAME
 
-    override fun onInitialize(
-        sdkCore: FeatureSdkCore,
-        appContext: Context
-    ) {
+    override fun onInitialize(appContext: Context) {
         dataWriter = createDataWriter(sdkCore.internalLogger)
         initialized.set(true)
     }

@@ -62,7 +62,6 @@ internal class RumTest {
             verify(mockSdkCore).registerFeature(capture())
 
             lastValue.onInitialize(
-                mockSdkCore,
                 appContext = mock { whenever(it.packageName) doReturn fakePackageName }
             )
             assertThat(lastValue.sampleRate)

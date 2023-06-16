@@ -29,20 +29,23 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Session Replay feature class, which needs to be registered with Datadog SDK instance.
  */
 internal class SessionReplayFeature constructor(
+    private val sdkCore: FeatureSdkCore,
     customEndpointUrl: String?,
     internal val privacy: SessionReplayPrivacy,
-    private val sessionReplayCallbackProvider: (FeatureSdkCore, RecordWriter) -> LifecycleCallback
+    private val sessionReplayCallbackProvider: (RecordWriter) -> LifecycleCallback
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     internal constructor(
+        sdkCore: FeatureSdkCore,
         customEndpointUrl: String?,
         privacy: SessionReplayPrivacy,
         customMappers: List<MapperTypeWrapper>,
         customOptionSelectorDetectors: List<OptionSelectorDetector>
     ) : this(
+        sdkCore,
         customEndpointUrl,
         privacy,
-        { sdkCore, recordWriter ->
+        { recordWriter ->
             SessionReplayLifecycleCallback(
                 rumContextProvider = SessionReplayRumContextProvider(sdkCore),
                 privacy = privacy,
@@ -56,7 +59,6 @@ internal class SessionReplayFeature constructor(
     )
 
     internal lateinit var appContext: Context
-    internal lateinit var sdkCore: FeatureSdkCore
     private var isRecording = AtomicBoolean(false)
     internal var sessionReplayCallback: LifecycleCallback = NoOpLifecycleCallback()
 
@@ -67,16 +69,12 @@ internal class SessionReplayFeature constructor(
 
     override val name: String = Feature.SESSION_REPLAY_FEATURE_NAME
 
-    override fun onInitialize(
-        sdkCore: FeatureSdkCore,
-        appContext: Context
-    ) {
-        this.sdkCore = sdkCore
+    override fun onInitialize(appContext: Context) {
         this.appContext = appContext
 
         sdkCore.setEventReceiver(SESSION_REPLAY_FEATURE_NAME, this)
         dataWriter = createDataWriter()
-        sessionReplayCallback = sessionReplayCallbackProvider(sdkCore, dataWriter)
+        sessionReplayCallback = sessionReplayCallbackProvider(dataWriter)
         initialized.set(true)
         startRecording()
     }
@@ -122,7 +120,7 @@ internal class SessionReplayFeature constructor(
      */
     fun startRecording() {
         if (!initialized.get()) {
-            InternalLogger.UNBOUND.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 CANNOT_START_RECORDING_NOT_INITIALIZED

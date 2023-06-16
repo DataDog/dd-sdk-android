@@ -37,12 +37,12 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Logs feature class, which needs to be registered with Datadog SDK instance.
  */
 internal class LogsFeature constructor(
+    private val sdkCore: FeatureSdkCore,
     customEndpointUrl: String?,
     internal val eventMapper: EventMapper<LogEvent>
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     internal var dataWriter: DataWriter<LogEvent> = NoOpDataWriter()
-    internal lateinit var sdkCore: FeatureSdkCore
     internal val initialized = AtomicBoolean(false)
     internal var packageName = ""
     private val logGenerator = DatadogLogGenerator()
@@ -51,11 +51,7 @@ internal class LogsFeature constructor(
 
     override val name: String = Feature.LOGS_FEATURE_NAME
 
-    override fun onInitialize(
-        sdkCore: FeatureSdkCore,
-        appContext: Context
-    ) {
-        this.sdkCore = sdkCore
+    override fun onInitialize(appContext: Context) {
         sdkCore.setEventReceiver(name, this)
 
         packageName = appContext.packageName

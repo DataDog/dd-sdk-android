@@ -135,10 +135,7 @@ internal class DatadogCore(
             internalLogger
         )
         features[feature.name] = sdkFeature
-        sdkFeature.initialize(
-            this,
-            context
-        )
+        sdkFeature.initialize(context)
 
         when (feature.name) {
             Feature.LOGS_FEATURE_NAME -> {
@@ -304,7 +301,7 @@ internal class DatadogCore(
 
     private fun initializeCrashReportFeature(configuration: Configuration.Feature.CrashReport?) {
         if (configuration != null) {
-            val crashReportsFeature = CrashReportsFeature()
+            val crashReportsFeature = CrashReportsFeature(this)
             registerFeature(crashReportsFeature)
         }
     }

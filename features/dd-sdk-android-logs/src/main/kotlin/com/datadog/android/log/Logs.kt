@@ -27,10 +27,11 @@ object Logs {
     @JvmStatic
     fun enable(logsConfiguration: LogsConfiguration, sdkCore: SdkCore = Datadog.getInstance()) {
         val logsFeature = LogsFeature(
+            sdkCore = sdkCore as FeatureSdkCore,
             customEndpointUrl = logsConfiguration.customEndpointUrl,
             eventMapper = logsConfiguration.eventMapper
         )
 
-        (sdkCore as FeatureSdkCore).registerFeature(logsFeature)
+        sdkCore.registerFeature(logsFeature)
     }
 }
