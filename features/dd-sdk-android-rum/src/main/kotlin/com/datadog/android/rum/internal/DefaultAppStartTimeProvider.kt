@@ -12,7 +12,6 @@ import android.os.Process
 import android.os.SystemClock
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
-import com.datadog.android.rum.RumFeature
 import java.util.concurrent.TimeUnit
 
 internal class DefaultAppStartTimeProvider(

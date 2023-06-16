@@ -16,7 +16,7 @@ import java.util.Locale
 import java.util.UUID
 
 internal class RumRequestFactory(
-    private val customEndpointUrl: String?,
+    internal val customEndpointUrl: String?,
     private val internalLogger: InternalLogger
 ) : RequestFactory {
 

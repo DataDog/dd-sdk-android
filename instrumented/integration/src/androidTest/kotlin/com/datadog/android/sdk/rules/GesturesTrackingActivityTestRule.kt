@@ -13,6 +13,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.RuntimeConfig
@@ -35,15 +36,14 @@ internal class GesturesTrackingActivityTestRule<T : Activity>(
             trackingConsent
         )
         checkNotNull(sdkCore)
-        sdkCore.registerFeature( // attach the gestures tracker
-            // we will use a large long task threshold to make sure we will not have LongTask events
-            // noise in our integration tests.
-            RuntimeConfig.rumFeatureBuilder()
-                .trackUserInteractions()
-                .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
-                .build()
-        )
+        // we will use a large long task threshold to make sure we will not have LongTask events
+        // noise in our integration tests.
+        val rumConfig = RuntimeConfig.rumConfigBuilder()
+            .trackUserInteractions()
+            .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
+            .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
+            .build()
+        Rum.enable(rumConfig, sdkCore)
         DdRumContentProvider::class.java.declaredMethods.firstOrNull() {
             it.name == "overrideProcessImportance"
         }?.apply {

@@ -18,12 +18,14 @@ import androidx.appcompat.widget.ActionBarContainer
 import androidx.appcompat.widget.Toolbar
 import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
+import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.Random
@@ -41,22 +43,26 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
         Datadog.setVerbosity(Log.VERBOSE)
         val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
         checkNotNull(sdkCore)
-        val features = mutableListOf(
+        val featureActivations = mutableListOf(
             // we will use a large long task threshold to make sure we will not have LongTask events
             // noise in our integration tests.
-            RuntimeConfig.rumFeatureBuilder()
-                .trackUserInteractions()
-                .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-                .build(),
-            RuntimeConfig.sessionReplayFeatureBuilder()
-                .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
-                .build()
-        )
-        features.shuffled(Random(intent.getForgeSeed()))
-            .forEach {
-                sdkCore.registerFeature(it)
+            {
+                val rumConfig = RuntimeConfig.rumConfigBuilder()
+                    .trackUserInteractions()
+                    .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
+                    .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                    .build()
+                Rum.enable(rumConfig, sdkCore)
+            },
+            {
+                val sessionReplayConfig = RuntimeConfig.sessionReplayConfigBuilder()
+                    .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
+                    .build()
+                SessionReplay.enable(sessionReplayConfig, sdkCore)
             }
+        )
+        featureActivations.shuffled(Random(intent.getForgeSeed()))
+            .forEach { it() }
         GlobalRum.registerIfAbsent(sdkCore, RumMonitor.Builder(sdkCore).build())
         setContentView(R.layout.session_replay_layout)
         titleTextView = findViewById(R.id.title)

@@ -4,14 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log
+package com.datadog.android.log.internal
 
 import android.content.Context
 import android.util.Log
 import androidx.annotation.AnyThread
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
-import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.internal.domain.event.LogEventSerializer
@@ -37,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * Logs feature class, which needs to be registered with Datadog SDK instance.
  */
-class LogsFeature internal constructor(
+internal class LogsFeature constructor(
     customEndpointUrl: String?,
     internal val eventMapper: EventMapper<LogEvent>
 ) : StorageBackedFeature, FeatureEventReceiver {
@@ -274,44 +273,6 @@ class LogsFeature internal constructor(
     }
 
     // endregion
-
-    /**
-     * A Builder class for a [LogsFeature].
-     */
-    class Builder {
-        private var customEndpointUrl: String? = null
-        private var logsEventMapper: EventMapper<LogEvent> = NoOpEventMapper()
-
-        /**
-         * Let the Logs feature target a custom server.
-         */
-        fun useCustomEndpoint(endpoint: String): Builder {
-            customEndpointUrl = endpoint
-            return this
-        }
-
-        /**
-         * Sets the [EventMapper] for the [LogEvent].
-         * You can use this interface implementation to modify the
-         * [LogEvent] attributes before serialisation.
-         *
-         * @param eventMapper the [EventMapper] implementation.
-         */
-        fun setLogEventMapper(eventMapper: EventMapper<LogEvent>): Builder {
-            logsEventMapper = eventMapper
-            return this
-        }
-
-        /**
-         * Builds a [LogsFeature] based on the current state of this Builder.
-         */
-        fun build(): LogsFeature {
-            return LogsFeature(
-                customEndpointUrl = customEndpointUrl,
-                eventMapper = logsEventMapper
-            )
-        }
-    }
 
     internal companion object {
 

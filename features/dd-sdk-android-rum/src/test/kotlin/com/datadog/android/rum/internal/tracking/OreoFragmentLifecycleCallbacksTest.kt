@@ -16,8 +16,8 @@ import android.app.FragmentManager
 import android.os.Build
 import android.view.Window
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.rum.RumFeature
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.model.ViewEvent

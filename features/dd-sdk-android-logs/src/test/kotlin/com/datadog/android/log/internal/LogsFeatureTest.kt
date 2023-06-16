@@ -4,11 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log
+package com.datadog.android.log.internal
 
 import android.content.Context
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.internal.net.LogsRequestFactory
 import com.datadog.android.log.internal.storage.LogsDataWriter

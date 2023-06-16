@@ -3,27 +3,27 @@ public abstract interface class com/datadog/android/sessionreplay/ExtensionSuppo
 	public abstract fun getOptionSelectorDetectors ()Ljava/util/List;
 }
 
-public final class com/datadog/android/sessionreplay/SessionReplayFeature : com/datadog/android/v2/api/FeatureEventReceiver, com/datadog/android/v2/api/StorageBackedFeature {
-	public static final field RUM_KEEP_SESSION_BUS_MESSAGE_KEY Ljava/lang/String;
-	public static final field RUM_SESSION_RENEWED_BUS_MESSAGE Ljava/lang/String;
-	public static final field SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY Ljava/lang/String;
-	public static final field SESSION_REPLAY_FEATURE_NAME Ljava/lang/String;
-	public fun getName ()Ljava/lang/String;
-	public fun getRequestFactory ()Lcom/datadog/android/v2/api/RequestFactory;
-	public fun getStorageConfiguration ()Lcom/datadog/android/v2/api/FeatureStorageConfiguration;
-	public fun onInitialize (Lcom/datadog/android/v2/api/FeatureSdkCore;Landroid/content/Context;)V
-	public fun onReceive (Ljava/lang/Object;)V
-	public fun onStop ()V
-	public final fun startRecording ()V
-	public final fun stopRecording ()V
+public final class com/datadog/android/sessionreplay/SessionReplay {
+	public static final field INSTANCE Lcom/datadog/android/sessionreplay/SessionReplay;
+	public static final fun enable (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;)V
+	public static final fun enable (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Lcom/datadog/android/v2/api/SdkCore;)V
+	public static synthetic fun enable$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)V
 }
 
-public final class com/datadog/android/sessionreplay/SessionReplayFeature$Builder {
+public final class com/datadog/android/sessionreplay/SessionReplayConfiguration {
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/SessionReplayConfiguration$Builder {
 	public fun <init> ()V
-	public final fun addExtensionSupport (Lcom/datadog/android/sessionreplay/ExtensionSupport;)Lcom/datadog/android/sessionreplay/SessionReplayFeature$Builder;
-	public final fun build ()Lcom/datadog/android/sessionreplay/SessionReplayFeature;
-	public final fun setPrivacy (Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayFeature$Builder;
-	public final fun useCustomEndpoint (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/SessionReplayFeature$Builder;
+	public final fun addExtensionSupport (Lcom/datadog/android/sessionreplay/ExtensionSupport;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
+	public final fun build ()Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public final fun setPrivacy (Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
+	public final fun useCustomEndpoint (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 }
 
 public final class com/datadog/android/sessionreplay/SessionReplayPrivacy : java/lang/Enum {

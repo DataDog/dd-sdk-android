@@ -27,27 +27,32 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.core.sampling.RateBasedSampler#constructor(Double)
  * apiMethodSignature: com.datadog.android.core.sampling.RateBasedSampler#constructor(Float)
  * apiMethodSignature: com.datadog.android.event.MapperSerializer<T#constructor(EventMapper<T>, com.datadog.android.core.persistence.Serializer<T>)
+ * apiMethodSignature: com.datadog.android.log.Logs#fun enable(LogsConfiguration, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
  * apiMethodSignature: com.datadog.android.log.Logger#fun log(Int, String, Throwable? = null, Map<String, Any?> = emptyMap())
  * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setLogcatLogsEnabled(Boolean): Builder
- * apiMethodSignature: com.datadog.android.log.LogsFeature$Builder#fun useCustomEndpoint(String): Builder
+ * apiMethodSignature: com.datadog.android.log.LogsConfiguration$Builder#fun useCustomEndpoint(String): Builder
+ * apiMethodSignature: com.datadog.android.ndk.NdkCrashReports#fun enable(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
  * apiMethodSignature: com.datadog.android.rum._RumInternalProxy#fun addLongTask(Long, String)
  * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun registerIfAbsent(com.datadog.android.v2.api.SdkCore, java.util.concurrent.Callable<RumMonitor>): Boolean
  * apiMethodSignature: com.datadog.android.rum.resource.RumResourceInputStream#constructor(java.io.InputStream, String, com.datadog.android.v2.api.SdkCore)
- * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun disableUserInteractionTracking(): Builder
+ * apiMethodSignature: com.datadog.android.rum.Rum#fun enable(RumConfiguration, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+ * apiMethodSignature: com.datadog.android.rum.Rum#fun enableDebugging(Boolean, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+ * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun disableUserInteractionTracking(): Builder
  * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun setSessionListener(RumSessionListener): Builder
- * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setTelemetrySampleRate(Float): Builder
- * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useCustomEndpoint(String): Builder
- * apiMethodSignature: com.datadog.android.rum.RumFeature#fun enableRumDebugging(Boolean)
- * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun setAdditionalConfiguration(Map<String, Any>): Builder
+ * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setTelemetrySampleRate(Float): Builder
+ * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useCustomEndpoint(String): Builder
+ * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setAdditionalConfiguration(Map<String, Any>): Builder
  * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#fun startTracking()
  * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#fun stopTracking()
- * apiMethodSignature: com.datadog.android.trace.TracingFeature$Builder#fun useCustomEndpoint(String): Builder
+ * apiMethodSignature: com.datadog.android.trace.Traces#fun enable(TracesConfiguration, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+ * apiMethodSignature: com.datadog.android.trace.TracesConfiguration$Builder#fun useCustomEndpoint(String): Builder
  * apiMethodSignature: com.datadog.android.SdkReference#constructor(String? = null, (com.datadog.android.v2.api.SdkCore) -> Unit = {})
  * apiMethodSignature: com.datadog.android.SdkReference#fun get(): com.datadog.android.v2.api.SdkCore?
- * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayFeature$Builder#fun addExtensionSupport(ExtensionSupport): Builder
- * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayFeature$Builder#fun build(): SessionReplayFeature
- * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayFeature$Builder#fun setPrivacy(SessionReplayPrivacy): Builder
- * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayFeature$Builder#fun useCustomEndpoint(String): Builder
+ * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplay#fun enable(SessionReplayConfiguration, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+ * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun addExtensionSupport(ExtensionSupport): Builder
+ * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun build(): SessionReplayConfiguration
+ * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun setPrivacy(SessionReplayPrivacy): Builder
+ * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun useCustomEndpoint(String): Builder
  * apiMethodSignature: fun Any?.toJsonElement(): com.google.gson.JsonElement
  * apiMethodSignature: fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.v2.api.InternalLogger): ByteArray
  * apiMethodSignature: fun Float.percent(): Double

@@ -4,12 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum
+package com.datadog.android.rum.internal
 
 import android.app.Application
 import android.os.Build
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.domain.RumDataWriter
@@ -640,12 +642,12 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 enable RUM debugging 𝕎 enableRumDebugging(true)`() {
+    fun `𝕄 enable RUM debugging 𝕎 enableDebugging()`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
 
         // When
-        testedFeature.enableRumDebugging(true)
+        testedFeature.enableDebugging()
 
         // Then
         assertThat(testedFeature.debugActivityLifecycleListener).isNotNull
@@ -654,23 +656,23 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 enable RUM debugging 𝕎 enableRumDebugging(true){RUM feature is not yet initialized}`() {
+    fun `𝕄 enable RUM debugging 𝕎 enableDebugging(){RUM feature is not yet initialized}`() {
         // When
-        testedFeature.enableRumDebugging(true)
+        testedFeature.enableDebugging()
 
         // Then
         assertThat(testedFeature.debugActivityLifecycleListener).isNull()
     }
 
     @Test
-    fun `𝕄 disable RUM debugging 𝕎 enableRumDebugging(false)`() {
+    fun `𝕄 disable RUM debugging 𝕎 disableDebugging()`() {
         // Given
         testedFeature.onInitialize(mockSdkCore, appContext.mockInstance)
-        testedFeature.enableRumDebugging(true)
+        testedFeature.enableDebugging()
         val listener = testedFeature.debugActivityLifecycleListener
 
         // When
-        testedFeature.enableRumDebugging(false)
+        testedFeature.disableDebugging()
 
         // Then
         assertThat(testedFeature.debugActivityLifecycleListener).isNull()

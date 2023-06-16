@@ -12,7 +12,7 @@ import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumFeature
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks

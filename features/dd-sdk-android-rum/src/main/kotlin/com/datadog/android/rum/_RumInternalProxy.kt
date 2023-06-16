@@ -44,9 +44,9 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
 
         @Suppress("FunctionMaxLength")
         fun setTelemetryConfigurationEventMapper(
-            builder: RumFeature.Builder,
+            builder: RumConfiguration.Builder,
             eventMapper: EventMapper<TelemetryConfigurationEvent>
-        ): RumFeature.Builder {
+        ): RumConfiguration.Builder {
             return builder.setTelemetryConfigurationEventMapper(eventMapper)
         }
     }

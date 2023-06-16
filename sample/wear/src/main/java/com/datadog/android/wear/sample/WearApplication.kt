@@ -12,14 +12,17 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
-import com.datadog.android.log.LogsFeature
+import com.datadog.android.log.Logs
+import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumFeature
+import com.datadog.android.rum.Rum
+import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.trace.AndroidTracer
-import com.datadog.android.trace.TracingFeature
+import com.datadog.android.trace.Traces
+import com.datadog.android.trace.TracesConfiguration
 import com.datadog.android.v2.api.context.UserInfo
 import io.opentracing.util.GlobalTracer
 import timber.log.Timber
@@ -44,7 +47,7 @@ class WearApplication : Application() {
             TrackingConsent.GRANTED
         ) ?: return
 
-        val rumFeature = RumFeature.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
+        val rumConfig = RumConfiguration.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
             .setTelemetrySampleRate(100f)
             .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
             .trackUserInteractions()
@@ -55,25 +58,25 @@ class WearApplication : Application() {
                 }
             }
             .build()
-        sdkCore.registerFeature(rumFeature)
+        Rum.enable(rumConfig, sdkCore)
 
-        val logsFeature = LogsFeature.Builder()
+        val logsConfig = LogsConfiguration.Builder()
             .apply {
                 if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
                 }
             }
             .build()
-        sdkCore.registerFeature(logsFeature)
+        Logs.enable(logsConfig, sdkCore)
 
-        val tracingFeature = TracingFeature.Builder()
+        val tracesConfig = TracesConfiguration.Builder()
             .apply {
                 if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
                 }
             }
             .build()
-        sdkCore.registerFeature(tracingFeature)
+        Traces.enable(tracesConfig, sdkCore)
 
         sdkCore.setUserInfo(
             UserInfo(

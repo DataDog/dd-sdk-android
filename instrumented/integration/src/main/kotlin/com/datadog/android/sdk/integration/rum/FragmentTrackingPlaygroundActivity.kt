@@ -17,6 +17,7 @@ import androidx.fragment.app.FragmentPagerAdapter
 import androidx.viewpager.widget.ViewPager
 import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
@@ -38,13 +39,12 @@ internal class FragmentTrackingPlaygroundActivity : AppCompatActivity() {
         val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
         checkNotNull(sdkCore)
 
-        sdkCore.registerFeature(
-            RuntimeConfig.rumFeatureBuilder()
-                .trackUserInteractions()
-                .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
-                .useViewTrackingStrategy(FragmentViewTrackingStrategy(true))
-                .build()
-        )
+        val rumConfig = RuntimeConfig.rumConfigBuilder()
+            .trackUserInteractions()
+            .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
+            .useViewTrackingStrategy(FragmentViewTrackingStrategy(true))
+            .build()
+        Rum.enable(rumConfig, sdkCore)
         GlobalRum.registerIfAbsent(sdkCore, RumMonitor.Builder(sdkCore).build())
 
         setContentView(R.layout.fragment_tracking_layout)

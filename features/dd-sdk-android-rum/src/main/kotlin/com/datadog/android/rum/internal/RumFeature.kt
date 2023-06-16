@@ -4,14 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum
+package com.datadog.android.rum.internal
 
 import android.app.Application
 import android.content.Context
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import androidx.annotation.FloatRange
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.executeSafe
@@ -19,8 +18,9 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
-import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.RumDataWriter
@@ -85,7 +85,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * RUM feature class, which needs to be registered with Datadog SDK instance.
  */
 @Suppress("TooManyFunctions")
-class RumFeature internal constructor(
+internal class RumFeature constructor(
     internal val applicationId: String,
     internal val configuration: Configuration,
     private val ndkCrashEventHandlerFactory: (InternalLogger) -> NdkCrashEventHandler = {
@@ -272,25 +272,9 @@ class RumFeature internal constructor(
 
     // endregion
 
-    /**
-     * Utility setting to inspect the active RUM View.
-     * If set, a debugging outline will be displayed on top of the application, describing the name
-     * of the active RUM View in the default SDK instance (if any).
-     * May be used to debug issues with RUM instrumentation in your app.
-     *
-     * @param enable if enabled, then app will show an overlay describing the active RUM view.
-     */
-    fun enableRumDebugging(enable: Boolean) {
-        if (enable) {
-            enableDebugging()
-        } else {
-            disableDebugging()
-        }
-    }
-
     // region Internal
 
-    private fun enableDebugging() {
+    internal fun enableDebugging() {
         if (!initialized.get()) {
             InternalLogger.UNBOUND.log(
                 InternalLogger.Level.WARN,
@@ -306,7 +290,7 @@ class RumFeature internal constructor(
         }
     }
 
-    private fun disableDebugging() {
+    internal fun disableDebugging() {
         val context = appContext
         if (debugActivityLifecycleListener != null && context is Application) {
             context.unregisterActivityLifecycleCallbacks(debugActivityLifecycleListener)
@@ -503,245 +487,6 @@ class RumFeature internal constructor(
     }
 
     // endregion
-
-    /**
-     * A Builder class for a [RumFeature].
-     *
-     * @param applicationId your applicationId for RUM events
-     */
-    class Builder(private val applicationId: String) {
-
-        private var rumConfig = DEFAULT_RUM_CONFIG
-
-        /**
-         * Sets the sample rate for RUM Sessions.
-         *
-         * @param sampleRate the sample rate must be a value between 0 and 100. A value of 0
-         * means no RUM event will be sent, 100 means all sessions will be kept.
-         */
-        fun setSessionSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): Builder {
-            rumConfig = rumConfig.copy(sampleRate = sampleRate)
-            return this
-        }
-
-        /**
-         * Sets the sample rate for Internal Telemetry (info related to the work of the
-         * SDK internals). Default value is 20.
-         *
-         * @param sampleRate the sample rate must be a value between 0 and 100. A value of 0
-         * means no telemetry will be sent, 100 means all telemetry will be kept.
-         */
-        fun setTelemetrySampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): Builder {
-            rumConfig = rumConfig.copy(telemetrySampleRate = sampleRate)
-            return this
-        }
-
-        /**
-         * Enable the user interaction automatic tracker. By enabling this feature the SDK will intercept
-         * UI interaction events (e.g.: taps, scrolls, swipes) and automatically send those as RUM UserActions for you.
-         * @param touchTargetExtraAttributesProviders an array with your own implementation of the
-         * target attributes provider.
-         * @param interactionPredicate an interface to provide custom values for the
-         * actions events properties.
-         * @see [ViewAttributesProvider]
-         * @see [InteractionPredicate]
-         */
-        @JvmOverloads
-        fun trackUserInteractions(
-            touchTargetExtraAttributesProviders: Array<ViewAttributesProvider> = emptyArray(),
-            interactionPredicate: InteractionPredicate = NoOpInteractionPredicate()
-        ): Builder {
-            rumConfig = rumConfig.copy(
-                touchTargetExtraAttributesProviders = touchTargetExtraAttributesProviders.toList(),
-                interactionPredicate = interactionPredicate
-            )
-            return this
-        }
-
-        /**
-         * Disable the user interaction automatic tracker.
-         */
-        fun disableUserInteractionTracking(): Builder {
-            rumConfig = rumConfig.copy(userActionTracking = false)
-            return this
-        }
-
-        /**
-         * Sets the automatic view tracking strategy used by the SDK.
-         * By default [ActivityViewTrackingStrategy] will be used.
-         * @param strategy as the [ViewTrackingStrategy]
-         * Note: If [null] is passed, the RUM Monitor will let you handle View events manually.
-         * This means that you should call [RumMonitor.startView] and [RumMonitor.stopView]
-         * yourself. A view should be started when it becomes visible and interactive
-         * (equivalent to `onResume`) and be stopped when it's paused (equivalent to `onPause`).
-         * @see [com.datadog.android.rum.tracking.ActivityViewTrackingStrategy]
-         * @see [com.datadog.android.rum.tracking.FragmentViewTrackingStrategy]
-         * @see [com.datadog.android.rum.tracking.MixedViewTrackingStrategy]
-         * @see [com.datadog.android.rum.tracking.NavigationViewTrackingStrategy]
-         */
-        fun useViewTrackingStrategy(strategy: ViewTrackingStrategy?): Builder {
-            rumConfig = rumConfig.copy(viewTrackingStrategy = strategy)
-            return this
-        }
-
-        /**
-         * Enable long operations on the main thread to be tracked automatically.
-         * Any long running operation on the main thread will appear as Long Tasks in Datadog
-         * RUM Explorer
-         * @param longTaskThresholdMs the threshold in milliseconds above which a task running on
-         * the Main thread [Looper] is considered as a long task (default 100ms). Setting a
-         * value less than or equal to 0 disables the long task tracking
-         */
-        @JvmOverloads
-        fun trackLongTasks(longTaskThresholdMs: Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder {
-            val strategy = if (longTaskThresholdMs > 0) {
-                MainLooperLongTaskStrategy(longTaskThresholdMs)
-            } else {
-                null
-            }
-            rumConfig = rumConfig.copy(longTaskTrackingStrategy = strategy)
-            return this
-        }
-
-        /**
-         * Sets the [ViewEventMapper] for the RUM [ViewEvent]. You can use this interface implementation
-         * to modify the [ViewEvent] attributes before serialisation.
-         *
-         * @param eventMapper the [ViewEventMapper] implementation.
-         */
-        fun setViewEventMapper(eventMapper: ViewEventMapper): Builder {
-            rumConfig = rumConfig.copy(viewEventMapper = eventMapper)
-            return this
-        }
-
-        /**
-         * Sets the [EventMapper] for the RUM [ResourceEvent]. You can use this interface implementation
-         * to modify the [ResourceEvent] attributes before serialisation.
-         *
-         * @param eventMapper the [EventMapper] implementation.
-         */
-        fun setResourceEventMapper(eventMapper: EventMapper<ResourceEvent>): Builder {
-            rumConfig = rumConfig.copy(resourceEventMapper = eventMapper)
-            return this
-        }
-
-        /**
-         * Sets the [EventMapper] for the RUM [ActionEvent]. You can use this interface implementation
-         * to modify the [ActionEvent] attributes before serialisation.
-         *
-         * @param eventMapper the [EventMapper] implementation.
-         */
-        fun setActionEventMapper(eventMapper: EventMapper<ActionEvent>): Builder {
-            rumConfig = rumConfig.copy(actionEventMapper = eventMapper)
-            return this
-        }
-
-        /**
-         * Sets the [EventMapper] for the RUM [ErrorEvent]. You can use this interface implementation
-         * to modify the [ErrorEvent] attributes before serialisation.
-         *
-         * @param eventMapper the [EventMapper] implementation.
-         */
-        fun setErrorEventMapper(eventMapper: EventMapper<ErrorEvent>): Builder {
-            rumConfig = rumConfig.copy(errorEventMapper = eventMapper)
-            return this
-        }
-
-        /**
-         * Sets the [EventMapper] for the RUM [LongTaskEvent]. You can use this interface implementation
-         * to modify the [LongTaskEvent] attributes before serialisation.
-         *
-         * @param eventMapper the [EventMapper] implementation.
-         */
-        fun setLongTaskEventMapper(eventMapper: EventMapper<LongTaskEvent>): Builder {
-            rumConfig = rumConfig.copy(longTaskEventMapper = eventMapper)
-            return this
-        }
-
-        @Suppress("FunctionMaxLength")
-        internal fun setTelemetryConfigurationEventMapper(
-            eventMapper: EventMapper<TelemetryConfigurationEvent>
-        ): Builder {
-            rumConfig = rumConfig.copy(telemetryConfigurationMapper = eventMapper)
-            return this
-        }
-
-        /**
-         * Enables/Disables tracking RUM event when no Activity is in foreground.
-         *
-         * By default, background events are not tracked. Enabling this feature might increase the
-         * number of sessions tracked and impact your billing.
-         *
-         * @param enabled whether background events should be tracked in RUM.
-         */
-        fun trackBackgroundEvents(enabled: Boolean): Builder {
-            rumConfig = rumConfig.copy(backgroundEventTracking = enabled)
-            return this
-        }
-
-        /**
-         * Enables/Disables tracking of frustration signals.
-         *
-         * By default frustration signals are tracked. Currently the SDK supports detecting
-         * error taps which occur when an error follows a user action tap.
-         *
-         * @param enabled whether frustration signals should be tracked in RUM.
-         */
-        fun trackFrustrations(enabled: Boolean): Builder {
-            rumConfig = rumConfig.copy(trackFrustrations = enabled)
-            return this
-        }
-
-        /**
-         * Allows to specify the frequency at which to update the mobile vitals
-         * data provided in the RUM [ViewEvent].
-         * @param frequency as [VitalsUpdateFrequency]
-         * @see [VitalsUpdateFrequency]
-         */
-        fun setVitalsUpdateFrequency(frequency: VitalsUpdateFrequency): Builder {
-            rumConfig = rumConfig.copy(vitalsMonitorUpdateFrequency = frequency)
-            return this
-        }
-
-        /**
-         * Let the RUM feature target a custom server.
-         */
-        fun useCustomEndpoint(endpoint: String): Builder {
-            rumConfig = rumConfig.copy(customEndpointUrl = endpoint)
-            return this
-        }
-
-        /**
-         * Allows to provide additional configuration values which can be used by the RUM feature.
-         * @param additionalConfig Additional configuration values.
-         */
-        fun setAdditionalConfiguration(additionalConfig: Map<String, Any>): Builder {
-            rumConfig = rumConfig.copy(additionalConfig = additionalConfig)
-            return this
-        }
-
-        /**
-         * Builds a [RumFeature] based on the current state of this Builder.
-         */
-        fun build(): RumFeature {
-            val telemetryConfigurationSampleRate =
-                rumConfig.additionalConfig[DD_TELEMETRY_CONFIG_SAMPLE_RATE_TAG]?.let {
-                    if (it is Number) it.toFloat() else null
-                }
-            return RumFeature(
-                applicationId = applicationId,
-                configuration = rumConfig.let {
-                    if (telemetryConfigurationSampleRate != null) {
-                        rumConfig.copy(
-                            telemetryConfigurationSampleRate = telemetryConfigurationSampleRate
-                        )
-                    } else {
-                        rumConfig
-                    }
-                }
-            )
-        }
-    }
 
     internal data class Configuration(
         val customEndpointUrl: String?,

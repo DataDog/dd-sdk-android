@@ -18,7 +18,7 @@ import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
-import com.datadog.android.rum.RumFeature
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks

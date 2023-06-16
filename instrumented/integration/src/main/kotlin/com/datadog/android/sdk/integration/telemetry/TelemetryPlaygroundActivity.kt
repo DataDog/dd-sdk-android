@@ -13,6 +13,7 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
@@ -48,16 +49,14 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
         val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
         checkNotNull(sdkCore)
 
-        sdkCore.registerFeature(
-            // we will use a large long task threshold to make sure we will not have LongTask events
-            // noise in our integration tests.
-            RuntimeConfig.rumFeatureBuilder()
-                .setTelemetrySampleRate(HUNDRED_PERCENT)
-                .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
-                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-                .build()
-
-        )
+        // we will use a large long task threshold to make sure we will not have LongTask events
+        // noise in our integration tests.
+        val rumConfig = RuntimeConfig.rumConfigBuilder()
+            .setTelemetrySampleRate(HUNDRED_PERCENT)
+            .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
+            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+            .build()
+        Rum.enable(rumConfig, sdkCore)
 
         GlobalRum.registerIfAbsent(sdkCore, RumMonitor.Builder(sdkCore).build())
     }

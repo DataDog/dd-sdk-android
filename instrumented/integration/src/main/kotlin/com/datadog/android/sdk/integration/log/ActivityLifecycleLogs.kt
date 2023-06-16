@@ -11,10 +11,12 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
+import com.datadog.android.log.Logs
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
+import com.datadog.android.trace.Traces
 import fr.xgouchet.elmyr.Forge
 import java.util.Random
 
@@ -40,13 +42,11 @@ internal class ActivityLifecycleLogs : AppCompatActivity() {
         Datadog.setVerbosity(Log.VERBOSE)
         val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
         checkNotNull(sdkCore)
-        val features = mutableListOf(
-            RuntimeConfig.logsFeatureBuilder().build(),
-            RuntimeConfig.tracingFeatureBuilder().build()
+        val featureActivations = mutableListOf(
+            { Logs.enable(RuntimeConfig.logsConfigBuilder().build(), sdkCore) },
+            { Traces.enable(RuntimeConfig.tracesConfigBuilder().build(), sdkCore) }
         )
-        features.shuffled(Random(intent.getForgeSeed())).forEach {
-            sdkCore.registerFeature(it)
-        }
+        featureActivations.shuffled(Random(intent.getForgeSeed())).forEach { it() }
 
         logger = RuntimeConfig.logger(sdkCore)
         setContentView(R.layout.main_activity_layout)

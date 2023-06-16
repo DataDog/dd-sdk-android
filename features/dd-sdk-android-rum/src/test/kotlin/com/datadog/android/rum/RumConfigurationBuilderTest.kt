@@ -11,6 +11,7 @@ import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.assertj.ConfigurationRumAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -23,6 +24,7 @@ import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import com.datadog.android.v2.api.FeatureSdkCore
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -36,6 +38,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
@@ -48,25 +51,28 @@ import java.util.UUID
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class RumFeatureBuilderTest {
+internal class RumConfigurationBuilderTest {
 
-    private lateinit var testedBuilder: RumFeature.Builder
+    private lateinit var testedBuilder: RumConfiguration.Builder
+
+    @Mock
+    lateinit var mockSdkCore: FeatureSdkCore
 
     @Forgery
     lateinit var fakeApplicationId: UUID
 
     @BeforeEach
     fun `set up`() {
-        testedBuilder = RumFeature.Builder(fakeApplicationId.toString())
+        testedBuilder = RumConfiguration.Builder(fakeApplicationId.toString())
     }
 
     @Test
     fun `𝕄 use sensible defaults 𝕎 build()`() {
         // When
-        val rumFeature = testedBuilder.build()
+        val rumConfiguration = testedBuilder.build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.Configuration(
                 customEndpointUrl = null,
                 sampleRate = RumFeature.DEFAULT_SAMPLE_RATE,
@@ -94,10 +100,10 @@ internal class RumFeatureBuilderTest {
     @Test
     fun `𝕄 use applicationId provided 𝕎 build()`() {
         // When
-        val rumFeature = testedBuilder.build()
+        val rumConfiguration = testedBuilder.build()
 
         // Then
-        assertThat(rumFeature.applicationId).isEqualTo(fakeApplicationId.toString())
+        assertThat(rumConfiguration.applicationId).isEqualTo(fakeApplicationId.toString())
     }
 
     @Test
@@ -105,12 +111,12 @@ internal class RumFeatureBuilderTest {
         @StringForgery(regex = "https://[a-z]+\\.com") rumUrl: String
     ) {
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .useCustomEndpoint(rumUrl)
             .build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(customEndpointUrl = rumUrl)
         )
     }
@@ -120,12 +126,12 @@ internal class RumFeatureBuilderTest {
         // Given
 
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .disableUserInteractionTracking()
             .build()
 
         // Then
-        ConfigurationRumAssert.assertThat(rumFeature.configuration)
+        ConfigurationRumAssert.assertThat(rumConfiguration.featureConfiguration)
             .hasUserActionTrackingDisabled()
             .hasViewTrackingStrategy(RumFeature.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
             .hasLongTaskTrackingEnabled(RumFeature.DEFAULT_LONG_TASK_THRESHOLD_MS)
@@ -141,12 +147,12 @@ internal class RumFeatureBuilderTest {
         }
 
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .trackUserInteractions(mockProviders)
             .build()
 
         // Then
-        ConfigurationRumAssert.assertThat(rumFeature.configuration)
+        ConfigurationRumAssert.assertThat(rumConfiguration.featureConfiguration)
             .hasUserActionTrackingEnabled()
             .hasActionTargetAttributeProviders(mockProviders)
             .hasViewTrackingStrategy(RumFeature.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
@@ -159,12 +165,12 @@ internal class RumFeatureBuilderTest {
         val mockInteractionPredicate: InteractionPredicate = mock()
 
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .trackUserInteractions(interactionPredicate = mockInteractionPredicate)
             .build()
 
         // Then
-        ConfigurationRumAssert.assertThat(rumFeature.configuration)
+        ConfigurationRumAssert.assertThat(rumConfiguration.featureConfiguration)
             .hasUserActionTrackingEnabled()
             .hasInteractionPredicate(mockInteractionPredicate)
             .hasViewTrackingStrategy(RumFeature.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
@@ -174,12 +180,12 @@ internal class RumFeatureBuilderTest {
     @Test
     fun `𝕄 use the NoOpInteractionPredicate 𝕎 trackInteractions() { predicate not provided }`() {
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .trackUserInteractions()
             .build()
 
         // Then
-        ConfigurationRumAssert.assertThat(rumFeature.configuration)
+        ConfigurationRumAssert.assertThat(rumConfiguration.featureConfiguration)
             .hasUserActionTrackingEnabled()
             .hasInteractionPredicateOfType(NoOpInteractionPredicate::class.java)
             .hasViewTrackingStrategy(RumFeature.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
@@ -193,12 +199,12 @@ internal class RumFeatureBuilderTest {
         // Given
 
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .trackLongTasks(durationMs)
             .build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 longTaskTrackingStrategy = MainLooperLongTaskStrategy(durationMs)
             )
@@ -212,12 +218,12 @@ internal class RumFeatureBuilderTest {
         // Given
 
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .trackLongTasks(-durationMs)
             .build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 longTaskTrackingStrategy = null
             )
@@ -230,12 +236,12 @@ internal class RumFeatureBuilderTest {
         val strategy: ViewTrackingStrategy = mock()
 
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .useViewTrackingStrategy(strategy)
             .build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 userActionTracking = true,
                 touchTargetExtraAttributesProviders = emptyList(),
@@ -248,12 +254,12 @@ internal class RumFeatureBuilderTest {
     @Test
     fun `𝕄 build config without view strategy 𝕎 useViewTrackingStrategy(null) and build()`() {
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .useViewTrackingStrategy(null)
             .build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 viewTrackingStrategy = null
             )
@@ -265,12 +271,12 @@ internal class RumFeatureBuilderTest {
         @FloatForgery(min = 0f, max = 100f) sampling: Float
     ) {
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .setSessionSampleRate(sampling)
             .build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 sampleRate = sampling
             )
@@ -282,12 +288,12 @@ internal class RumFeatureBuilderTest {
         @FloatForgery(min = 0f, max = 100f) sampling: Float
     ) {
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .setTelemetrySampleRate(sampling)
             .build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 telemetrySampleRate = sampling
             )
@@ -299,12 +305,12 @@ internal class RumFeatureBuilderTest {
         @BoolForgery backgroundEventEnabled: Boolean
     ) {
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .trackBackgroundEvents(backgroundEventEnabled)
             .build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 backgroundEventTracking = backgroundEventEnabled
             )
@@ -317,12 +323,12 @@ internal class RumFeatureBuilderTest {
         val eventMapper: ViewEventMapper = mock()
 
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .setViewEventMapper(eventMapper)
             .build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 viewEventMapper = eventMapper
             )
@@ -335,12 +341,12 @@ internal class RumFeatureBuilderTest {
         val eventMapper: EventMapper<ResourceEvent> = mock()
 
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .setResourceEventMapper(eventMapper)
             .build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 resourceEventMapper = eventMapper
             )
@@ -353,12 +359,12 @@ internal class RumFeatureBuilderTest {
         val eventMapper: EventMapper<ActionEvent> = mock()
 
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .setActionEventMapper(eventMapper)
             .build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 actionEventMapper = eventMapper
             )
@@ -371,12 +377,12 @@ internal class RumFeatureBuilderTest {
         val eventMapper: EventMapper<ErrorEvent> = mock()
 
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .setErrorEventMapper(eventMapper)
             .build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 errorEventMapper = eventMapper
             )
@@ -389,12 +395,12 @@ internal class RumFeatureBuilderTest {
         val eventMapper: EventMapper<LongTaskEvent> = mock()
 
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .setLongTaskEventMapper(eventMapper)
             .build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 longTaskEventMapper = eventMapper
             )
@@ -406,12 +412,12 @@ internal class RumFeatureBuilderTest {
         @Forgery fakeFrequency: VitalsUpdateFrequency
     ) {
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .setVitalsUpdateFrequency(fakeFrequency)
             .build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(vitalsMonitorUpdateFrequency = fakeFrequency)
         )
     }
@@ -421,12 +427,12 @@ internal class RumFeatureBuilderTest {
         @BoolForgery fakeTrackFrustrations: Boolean
     ) {
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .trackFrustrations(fakeTrackFrustrations)
             .build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(trackFrustrations = fakeTrackFrustrations)
         )
     }
@@ -436,12 +442,12 @@ internal class RumFeatureBuilderTest {
         @BoolForgery fakeTrackFrustrations: Boolean
     ) {
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .trackFrustrations(fakeTrackFrustrations)
             .build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(trackFrustrations = fakeTrackFrustrations)
         )
     }
@@ -454,10 +460,10 @@ internal class RumFeatureBuilderTest {
         // When
         val builder = testedBuilder
         _RumInternalProxy.setTelemetryConfigurationEventMapper(builder, eventMapper)
-        val rumFeature = builder.build()
+        val rumConfiguration = builder.build()
 
         // Then
-        assertThat(rumFeature.configuration).isEqualTo(
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 telemetryConfigurationMapper = eventMapper
             )
@@ -469,14 +475,14 @@ internal class RumFeatureBuilderTest {
         @FloatForgery(0.0f, 100.0f) sampleRate: Float
     ) {
         // When
-        val rumFeature = testedBuilder
+        val rumConfiguration = testedBuilder
             .setAdditionalConfiguration(
                 mapOf(RumFeature.DD_TELEMETRY_CONFIG_SAMPLE_RATE_TAG to sampleRate)
             )
             .build()
 
         // Then
-        assertThat(rumFeature.configuration.telemetryConfigurationSampleRate)
+        assertThat(rumConfiguration.featureConfiguration.telemetryConfigurationSampleRate)
             .isEqualTo(sampleRate)
     }
 }

@@ -21,7 +21,7 @@ import androidx.navigation.R
 import androidx.navigation.fragment.DialogFragmentNavigator
 import androidx.navigation.fragment.FragmentNavigator
 import androidx.navigation.fragment.NavHostFragment
-import com.datadog.android.rum.RumFeature
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
 import com.datadog.android.rum.model.ViewEvent

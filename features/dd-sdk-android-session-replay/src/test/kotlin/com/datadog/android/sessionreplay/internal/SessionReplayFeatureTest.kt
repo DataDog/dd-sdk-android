@@ -4,12 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay
+package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.NoOpLifecycleCallback
-import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.utils.config.ApplicationContextTestConfiguration

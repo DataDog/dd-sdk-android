@@ -13,8 +13,8 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
-import com.datadog.android.rum.RumFeature
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.model.ViewEvent

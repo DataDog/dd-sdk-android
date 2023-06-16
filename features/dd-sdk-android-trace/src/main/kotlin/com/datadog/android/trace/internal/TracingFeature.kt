@@ -4,13 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.trace
+package com.datadog.android.trace.internal
 
 import android.content.Context
 import com.datadog.android.trace.internal.data.NoOpWriter
 import com.datadog.android.trace.internal.data.TraceWriter
 import com.datadog.android.trace.internal.domain.event.DdSpanToSpanEventMapper
-import com.datadog.android.trace.internal.domain.event.NoOpSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.domain.event.SpanEventSerializer
@@ -26,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * Tracing feature class, which needs to be registered with Datadog SDK instance.
  */
-class TracingFeature internal constructor(
+internal class TracingFeature constructor(
     customEndpointUrl: String?,
     internal val spanEventMapper: SpanEventMapper
 ) : StorageBackedFeature {
@@ -77,43 +76,5 @@ class TracingFeature internal constructor(
             serializer = SpanEventSerializer(internalLogger),
             internalLogger = internalLogger
         )
-    }
-
-    /**
-     * A Builder class for a [TracingFeature].
-     */
-    class Builder {
-        private var customEndpointUrl: String? = null
-        private var spanEventMapper: SpanEventMapper = NoOpSpanEventMapper()
-
-        /**
-         * Let the Tracing feature target a custom server.
-         */
-        fun useCustomEndpoint(endpoint: String): Builder {
-            customEndpointUrl = endpoint
-            return this
-        }
-
-        /**
-         * Sets the [SpanEventMapper] for the Trace [com.datadog.android.trace.model.SpanEvent].
-         * You can use this interface implementation to modify the
-         * [com.datadog.android.trace.model.SpanEvent] attributes before serialisation.
-         *
-         * @param eventMapper the [SpanEventMapper] implementation.
-         */
-        fun setSpanEventMapper(eventMapper: SpanEventMapper): Builder {
-            spanEventMapper = eventMapper
-            return this
-        }
-
-        /**
-         * Builds a [TracingFeature] based on the current state of this Builder.
-         */
-        fun build(): TracingFeature {
-            return TracingFeature(
-                customEndpointUrl = customEndpointUrl,
-                spanEventMapper = spanEventMapper
-            )
-        }
     }
 }

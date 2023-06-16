@@ -17,13 +17,15 @@ import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.Logger
-import com.datadog.android.log.LogsFeature
-import com.datadog.android.ndk.NdkCrashReportsFeature
+import com.datadog.android.log.Logs
+import com.datadog.android.log.LogsConfiguration
+import com.datadog.android.ndk.NdkCrashReports
 import com.datadog.android.okhttp.DatadogEventListener
 import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumFeature
+import com.datadog.android.rum.Rum
+import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.model.ActionEvent
@@ -38,11 +40,13 @@ import com.datadog.android.sample.picture.CoilImageLoader
 import com.datadog.android.sample.picture.FrescoImageLoader
 import com.datadog.android.sample.picture.PicassoImageLoader
 import com.datadog.android.sample.user.UserFragment
-import com.datadog.android.sessionreplay.SessionReplayFeature
+import com.datadog.android.sessionreplay.SessionReplay
+import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.AndroidTracer
-import com.datadog.android.trace.TracingFeature
+import com.datadog.android.trace.Traces
+import com.datadog.android.trace.TracesConfiguration
 import com.datadog.android.v2.api.context.UserInfo
 import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
@@ -109,11 +113,11 @@ class SampleApplication : Application() {
             preferences.getTrackingConsent()
         ) ?: return
 
-        val rumFeature = createRumFeature()
-        sdkCore.registerFeature(rumFeature)
-        rumFeature.enableRumDebugging(true)
+        val rumConfig = createRumConfiguration()
+        Rum.enable(rumConfig, sdkCore)
+        Rum.enableDebugging(true, sdkCore)
 
-        val sessionReplayFeature = SessionReplayFeature.Builder()
+        val sessionReplayConfig = SessionReplayConfiguration.Builder()
             .apply {
                 if (BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL.isNotBlank()) {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
@@ -121,24 +125,23 @@ class SampleApplication : Application() {
             }
             .addExtensionSupport(MaterialExtensionSupport())
             .build()
-        sdkCore.registerFeature(sessionReplayFeature)
+        SessionReplay.enable(sessionReplayConfig, sdkCore)
 
-        val logsFeature = LogsFeature.Builder().apply {
+        val logsConfig = LogsConfiguration.Builder().apply {
             if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
                 useCustomEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
             }
         }.build()
-        sdkCore.registerFeature(logsFeature)
+        Logs.enable(logsConfig, sdkCore)
 
-        val tracingFeature = TracingFeature.Builder().apply {
+        val tracesConfig = TracesConfiguration.Builder().apply {
             if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
                 useCustomEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
             }
         }.build()
-        sdkCore.registerFeature(tracingFeature)
+        Traces.enable(tracesConfig, sdkCore)
 
-        val ndkCrashReportsFeature = NdkCrashReportsFeature()
-        sdkCore.registerFeature(ndkCrashReportsFeature)
+        NdkCrashReports.enable(sdkCore)
 
         sdkCore.setUserInfo(
             UserInfo(
@@ -169,8 +172,8 @@ class SampleApplication : Application() {
         )
     }
 
-    private fun createRumFeature(): RumFeature {
-        return RumFeature.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
+    private fun createRumConfiguration(): RumConfiguration {
+        return RumConfiguration.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
             .apply {
                 if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)

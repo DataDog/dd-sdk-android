@@ -44,7 +44,7 @@ internal class RumViewTrackingE2ETests {
     val forge = ForgeRule()
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      */
     @Test
@@ -56,7 +56,7 @@ internal class RumViewTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
                         .build()
                 },
@@ -67,7 +67,7 @@ internal class RumViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      */
     @Test
@@ -79,7 +79,7 @@ internal class RumViewTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(
                         ActivityViewTrackingStrategy(
                             true,
@@ -102,7 +102,7 @@ internal class RumViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.ActivityViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
      */
     @Test
@@ -114,7 +114,7 @@ internal class RumViewTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(
                         ActivityViewTrackingStrategy(
                             true,
@@ -137,7 +137,7 @@ internal class RumViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.FragmentViewTrackingStrategy#constructor(Boolean, ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
      */
     @Test
@@ -149,7 +149,7 @@ internal class RumViewTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(FragmentViewTrackingStrategy(true))
                         .build()
                 },
@@ -160,7 +160,7 @@ internal class RumViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.FragmentViewTrackingStrategy#constructor(Boolean, ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
      */
     @Test
@@ -172,7 +172,7 @@ internal class RumViewTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(
                         FragmentViewTrackingStrategy(
                             true,
@@ -196,7 +196,7 @@ internal class RumViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.FragmentViewTrackingStrategy#constructor(Boolean, ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
      */
     @Test
@@ -208,7 +208,7 @@ internal class RumViewTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(
                         FragmentViewTrackingStrategy(
                             true,
@@ -232,7 +232,7 @@ internal class RumViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#constructor(Int, Boolean, ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())
      */
     @Test
@@ -244,7 +244,7 @@ internal class RumViewTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(
                         NavigationViewTrackingStrategy(
                             R.id.nav_host_fragment,
@@ -260,7 +260,7 @@ internal class RumViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#constructor(Int, Boolean, ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())
      */
     @Test
@@ -272,7 +272,7 @@ internal class RumViewTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(
                         NavigationViewTrackingStrategy(
                             R.id.nav_host_fragment,
@@ -296,7 +296,7 @@ internal class RumViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#constructor(Int, Boolean, ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())
      */
     @Test
@@ -308,7 +308,7 @@ internal class RumViewTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(
                         NavigationViewTrackingStrategy(
                             R.id.nav_host_fragment,
@@ -332,7 +332,7 @@ internal class RumViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.MixedViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities(), ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
      */
     @Test
@@ -344,7 +344,7 @@ internal class RumViewTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(MixedViewTrackingStrategy(true))
                         .build()
                 },
@@ -355,7 +355,7 @@ internal class RumViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumFeature$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
      * apiMethodSignature: com.datadog.android.rum.tracking.MixedViewTrackingStrategy#constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities(), ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
      */
     @Test
@@ -367,7 +367,7 @@ internal class RumViewTrackingE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
-                rumFeatureProvider = {
+                rumConfigProvider = {
                     it.useViewTrackingStrategy(MixedViewTrackingStrategy(true))
                         .build()
                 },

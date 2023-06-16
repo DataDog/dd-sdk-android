@@ -10,12 +10,13 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
+import com.datadog.android.log.Logs
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
 import com.datadog.android.trace.AndroidTracer
-import com.datadog.android.v2.api.Feature
+import com.datadog.android.trace.Traces
 import com.datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
 import io.opentracing.Scope
@@ -45,14 +46,12 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
         Datadog.setVerbosity(Log.VERBOSE)
         val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
         checkNotNull(sdkCore)
-        mutableListOf<Feature>(
-            RuntimeConfig.logsFeatureBuilder().build(),
-            RuntimeConfig.tracingFeatureBuilder().build()
+        mutableListOf(
+            { Logs.enable(RuntimeConfig.logsConfigBuilder().build(), sdkCore) },
+            { Traces.enable(RuntimeConfig.tracesConfigBuilder().build(), sdkCore) }
         )
             .shuffled(Random(intent.getForgeSeed()))
-            .forEach {
-                sdkCore.registerFeature(it)
-            }
+            .forEach { it() }
 
         tracer = RuntimeConfig.tracer(sdkCore)
         setContentView(R.layout.main_activity_layout)

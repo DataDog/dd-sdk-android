@@ -39,15 +39,6 @@ interface SdkCore {
     val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver
 
     /**
-     * Registers a feature to this instance of the Datadog SDK.
-     *
-     * @param feature the feature to be registered.
-     */
-    // TODO RUMM-0000 Temporary hanging here to make instrumented tests and sample apps compile
-    // will be removed in the next PRs
-    fun registerFeature(feature: Feature)
-
-    /**
      * Sets the tracking consent regarding the data collection for this instance of the Datadog SDK.
      *
      * @param consent which can take one of the values

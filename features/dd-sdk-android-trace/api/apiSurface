@@ -13,16 +13,13 @@ class com.datadog.android.trace.AndroidTracer : com.datadog.opentracing.DDTracer
   companion object 
     fun logThrowable(io.opentracing.Span, Throwable)
     fun logErrorMessage(io.opentracing.Span, String)
-class com.datadog.android.trace.TracingFeature : com.datadog.android.v2.api.StorageBackedFeature
-  override val name: String
-  override fun onInitialize(com.datadog.android.v2.api.FeatureSdkCore, android.content.Context)
-  override val requestFactory: com.datadog.android.v2.api.RequestFactory
-  override val storageConfiguration: com.datadog.android.v2.api.FeatureStorageConfiguration
-  override fun onStop()
+object com.datadog.android.trace.Traces
+  fun enable(TracesConfiguration, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+data class com.datadog.android.trace.TracesConfiguration
   class Builder
     fun useCustomEndpoint(String): Builder
     fun setSpanEventMapper(com.datadog.android.trace.internal.domain.event.SpanEventMapper): Builder
-    fun build(): TracingFeature
+    fun build(): TracesConfiguration
 interface com.datadog.android.trace.internal.domain.event.SpanEventMapper : com.datadog.android.event.EventMapper<com.datadog.android.trace.model.SpanEvent>
   override fun map(com.datadog.android.trace.model.SpanEvent): com.datadog.android.trace.model.SpanEvent
 data class com.datadog.android.trace.model.SpanEvent

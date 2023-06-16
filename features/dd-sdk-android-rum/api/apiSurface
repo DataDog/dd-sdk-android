@@ -10,6 +10,9 @@ object com.datadog.android.rum.GlobalRum
   fun registerIfAbsent(com.datadog.android.v2.api.SdkCore, RumMonitor): Boolean
   fun registerIfAbsent(com.datadog.android.v2.api.SdkCore, java.util.concurrent.Callable<RumMonitor>): Boolean
   fun get(com.datadog.android.v2.api.SdkCore): RumMonitor
+object com.datadog.android.rum.Rum
+  fun enable(RumConfiguration, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+  fun enableDebugging(Boolean, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
 enum com.datadog.android.rum.RumActionType
   - TAP
   - SCROLL
@@ -54,21 +57,7 @@ object com.datadog.android.rum.RumAttributes
   const val NETWORK_SIGNAL_STRENGTH: String
   const val NETWORK_UP_KBPS: String
   const val NETWORK_BYTES_READ: String
-enum com.datadog.android.rum.RumErrorSource
-  - NETWORK
-  - SOURCE
-  - CONSOLE
-  - LOGGER
-  - AGENT
-  - WEBVIEW
-class com.datadog.android.rum.RumFeature : com.datadog.android.v2.api.StorageBackedFeature, com.datadog.android.v2.api.FeatureEventReceiver
-  override val name: String
-  override fun onInitialize(com.datadog.android.v2.api.FeatureSdkCore, android.content.Context)
-  override val requestFactory: com.datadog.android.v2.api.RequestFactory
-  override val storageConfiguration: com.datadog.android.v2.api.FeatureStorageConfiguration
-  override fun onStop()
-  override fun onReceive(Any)
-  fun enableRumDebugging(Boolean)
+data class com.datadog.android.rum.RumConfiguration
   class Builder
     constructor(String)
     fun setSessionSampleRate(Float): Builder
@@ -76,7 +65,7 @@ class com.datadog.android.rum.RumFeature : com.datadog.android.v2.api.StorageBac
     fun trackUserInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
     fun disableUserInteractionTracking(): Builder
     fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
-    fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
+    fun trackLongTasks(Long = RumFeature.DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
     fun setViewEventMapper(com.datadog.android.rum.event.ViewEventMapper): Builder
     fun setResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
     fun setActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
@@ -87,7 +76,14 @@ class com.datadog.android.rum.RumFeature : com.datadog.android.v2.api.StorageBac
     fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
     fun useCustomEndpoint(String): Builder
     fun setAdditionalConfiguration(Map<String, Any>): Builder
-    fun build(): RumFeature
+    fun build(): RumConfiguration
+enum com.datadog.android.rum.RumErrorSource
+  - NETWORK
+  - SOURCE
+  - CONSOLE
+  - LOGGER
+  - AGENT
+  - WEBVIEW
 interface com.datadog.android.rum.RumMonitor
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
@@ -141,7 +137,7 @@ class com.datadog.android.rum._RumInternalProxy
   fun addLongTask(Long, String)
   fun updatePerformanceMetric(RumPerformanceMetric, Double)
   companion object 
-    fun setTelemetryConfigurationEventMapper(RumFeature.Builder, com.datadog.android.event.EventMapper<com.datadog.android.telemetry.model.TelemetryConfigurationEvent>): RumFeature.Builder
+    fun setTelemetryConfigurationEventMapper(RumConfiguration.Builder, com.datadog.android.event.EventMapper<com.datadog.android.telemetry.model.TelemetryConfigurationEvent>): RumConfiguration.Builder
 enum com.datadog.android.rum.configuration.VitalsUpdateFrequency
   constructor(Long)
   - FREQUENT

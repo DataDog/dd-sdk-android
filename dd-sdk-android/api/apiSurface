@@ -218,7 +218,7 @@ interface com.datadog.android.v2.api.FeatureScope
   fun <T: Feature> unwrap(): T
 interface com.datadog.android.v2.api.FeatureSdkCore : SdkCore
   val internalLogger: InternalLogger
-  override fun registerFeature(Feature)
+  fun registerFeature(Feature)
   fun getFeature(String): FeatureScope?
   fun updateFeatureContext(String, (MutableMap<String, Any?>) -> Unit)
   fun getFeatureContext(String): Map<String, Any?>
@@ -263,7 +263,6 @@ interface com.datadog.android.v2.api.SdkCore
   val time: com.datadog.android.v2.api.context.TimeInfo
   val service: String
   val firstPartyHostResolver: com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-  fun registerFeature(Feature)
   fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
   fun setUserInfo(com.datadog.android.v2.api.context.UserInfo)
   fun addUserProperties(Map<String, Any?>)

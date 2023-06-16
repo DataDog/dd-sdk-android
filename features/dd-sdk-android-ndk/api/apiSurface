@@ -1,5 +1,2 @@
-class com.datadog.android.ndk.NdkCrashReportsFeature : com.datadog.android.v2.api.Feature, com.datadog.android.privacy.TrackingConsentProviderCallback
-  override val name: String
-  override fun onInitialize(com.datadog.android.v2.api.FeatureSdkCore, android.content.Context)
-  override fun onStop()
-  override fun onConsentUpdated(com.datadog.android.privacy.TrackingConsent, com.datadog.android.privacy.TrackingConsent)
+object com.datadog.android.ndk.NdkCrashReports
+  fun enable(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())

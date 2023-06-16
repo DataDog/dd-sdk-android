@@ -26,6 +26,7 @@ internal class Configurator : BaseConfigurator() {
 
         // RUM
         forge.addFactory(ConfigurationRumForgeryFactory())
+        forge.addFactory(RumConfigurationForgeryFactory())
         forge.addFactory(ActionEventForgeryFactory())
         forge.addFactory(ErrorEventForgeryFactory())
         forge.addFactory(LongTaskEventForgeryFactory())

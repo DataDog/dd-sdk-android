@@ -23,7 +23,7 @@ interface FeatureSdkCore : SdkCore {
      *
      * @param feature the feature to be registered.
      */
-    override fun registerFeature(feature: Feature)
+    fun registerFeature(feature: Feature)
 
     /**
      * Retrieves a registered feature.
