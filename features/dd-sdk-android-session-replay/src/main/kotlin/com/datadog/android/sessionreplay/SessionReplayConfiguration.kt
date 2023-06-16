@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay
 
+import androidx.annotation.FloatRange
 import com.datadog.android.sessionreplay.internal.NoOpExtensionSupport
 import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
@@ -17,7 +18,8 @@ data class SessionReplayConfiguration internal constructor(
     internal val customEndpointUrl: String?,
     internal val privacy: SessionReplayPrivacy,
     internal val customMappers: List<MapperTypeWrapper>,
-    internal val customOptionSelectorDetectors: List<OptionSelectorDetector>
+    internal val customOptionSelectorDetectors: List<OptionSelectorDetector>,
+    internal val sampleRate: Float
 ) {
 
     /**
@@ -27,6 +29,7 @@ data class SessionReplayConfiguration internal constructor(
         private var customEndpointUrl: String? = null
         private var privacy = SessionReplayPrivacy.MASK_ALL
         private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
+        private var sampleRate: Float = DEFAULT_SAMPLE_RATE
 
         /**
          * Adds an extension support implementation. This is mostly used when you want to provide
@@ -58,6 +61,34 @@ data class SessionReplayConfiguration internal constructor(
             return this
         }
 
+        /**
+         * Sets the sampling rate for Session Replay recorded Sessions. Please note that this
+         * sampling rate will be applied on top of the already sampled in RUM session.
+         *
+         * @param sampleRate must be a value between 0 and 100. A value of 0
+         * means no session will be recorded, 100 means all sessions will be recorded.
+         * The default value for the sample rate will be 0 meaning that no session replay will be
+         * recorded if the sample rate will not be explicitly set.
+         */
+        fun setSessionReplaySampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float):
+            Builder {
+            this.sampleRate = sampleRate
+            return this
+        }
+
+        /**
+         * * Builds a [SessionReplayConfiguration] based on the current state of this Builder.
+         */
+        fun build(): SessionReplayConfiguration {
+            return SessionReplayConfiguration(
+                customEndpointUrl = customEndpointUrl,
+                privacy = privacy,
+                customMappers = customMappers(),
+                customOptionSelectorDetectors = extensionSupport.getOptionSelectorDetectors(),
+                sampleRate = sampleRate
+            )
+        }
+
         private fun customMappers(): List<MapperTypeWrapper> {
             extensionSupport.getCustomViewMappers().entries.forEach {
                 if (it.key == privacy) {
@@ -69,17 +100,9 @@ data class SessionReplayConfiguration internal constructor(
             }
             return emptyList()
         }
+    }
 
-        /**
-         * Builds a [SessionReplayConfiguration] based on the current state of this Builder.
-         */
-        fun build(): SessionReplayConfiguration {
-            return SessionReplayConfiguration(
-                customEndpointUrl = customEndpointUrl,
-                privacy = privacy,
-                customMappers = customMappers(),
-                customOptionSelectorDetectors = extensionSupport.getOptionSelectorDetectors()
-            )
-        }
+    internal companion object {
+        internal const val DEFAULT_SAMPLE_RATE = 0f
     }
 }

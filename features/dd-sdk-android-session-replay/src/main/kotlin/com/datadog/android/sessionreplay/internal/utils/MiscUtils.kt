@@ -6,11 +6,12 @@
 
 package com.datadog.android.sessionreplay.internal.utils
 
-import android.app.Activity
+import android.content.Context
 import android.content.res.Resources.Theme
 import android.graphics.Point
 import android.os.Build
 import android.util.TypedValue
+import android.view.WindowManager
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
@@ -33,22 +34,23 @@ internal object MiscUtils {
         }
     }
 
-    fun resolveSystemInformation(activity: Activity): SystemInformation {
-        val screenDensity = activity.resources.displayMetrics.density
-        val themeColorAsHexa = resolveThemeColor(activity.theme)?.let {
+    fun resolveSystemInformation(context: Context): SystemInformation {
+        val screenDensity = context.resources.displayMetrics.density
+        val themeColorAsHexa = resolveThemeColor(context.theme)?.let {
             StringUtils.formatColorAndAlphaAsHexa(it, OPAQUE_ALPHA_VALUE)
         }
         return SystemInformation(
-            screenBounds = resolveScreenBounds(activity, screenDensity),
-            screenOrientation = activity.resources.configuration.orientation,
+            screenBounds = resolveScreenBounds(context, screenDensity),
+            screenOrientation = context.resources.configuration.orientation,
             screenDensity = screenDensity,
             themeColor = themeColorAsHexa
         )
     }
 
     @Suppress("DEPRECATION")
-    private fun resolveScreenBounds(activity: Activity, screenDensity: Float): GlobalBounds {
-        val windowManager = activity.windowManager ?: return GlobalBounds(0, 0, 0, 0)
+    private fun resolveScreenBounds(context: Context, screenDensity: Float): GlobalBounds {
+        val windowManager = (context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)
+            ?: return GlobalBounds(0, 0, 0, 0)
         val screenHeight: Long
         val screenWidth: Long
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

@@ -79,6 +79,7 @@ internal class WireframeUtils {
         return when (this) {
             is MobileSegment.Wireframe.ShapeWireframe -> this.bounds()
             is MobileSegment.Wireframe.TextWireframe -> this.bounds()
+            is MobileSegment.Wireframe.ImageWireframe -> this.bounds()
         }
     }
 

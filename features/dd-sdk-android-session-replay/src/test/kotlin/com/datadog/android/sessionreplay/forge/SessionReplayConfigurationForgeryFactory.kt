@@ -18,7 +18,8 @@ class SessionReplayConfigurationForgeryFactory : ForgeryFactory<SessionReplayCon
             customEndpointUrl = forge.aNullable { aStringMatching("https://[a-z]+\\.com") },
             privacy = forge.aValueFrom(SessionReplayPrivacy::class.java),
             customMappers = forge.aList { mock() },
-            customOptionSelectorDetectors = forge.aList { mock() }
+            customOptionSelectorDetectors = forge.aList { mock() },
+            sampleRate = forge.aFloat(min = 0f, max = 100f)
         )
     }
 }

@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
-import android.app.Activity
+import android.content.Context
 import android.view.Window
 import com.datadog.android.sessionreplay.internal.processor.Processor
 import com.datadog.android.sessionreplay.internal.recorder.callback.NoOpWindowCallback
@@ -19,11 +19,11 @@ internal class WindowCallbackInterceptor(
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor,
     private val timeProvider: TimeProvider
 ) {
-    internal val wrappedWindows: WeakHashMap<Window, Any?> = WeakHashMap()
+    private val wrappedWindows: WeakHashMap<Window, Any?> = WeakHashMap()
 
-    fun intercept(windows: List<Window>, ownerActivity: Activity) {
+    fun intercept(windows: List<Window>, appContext: Context) {
         windows.forEach { window ->
-            wrapWindowCallback(window, ownerActivity)
+            wrapWindowCallback(window, appContext)
             wrappedWindows[window] = null
         }
     }
@@ -42,14 +42,14 @@ internal class WindowCallbackInterceptor(
         wrappedWindows.clear()
     }
 
-    private fun wrapWindowCallback(window: Window, ownerActivity: Activity) {
+    private fun wrapWindowCallback(window: Window, appContext: Context) {
         val toWrap = window.callback ?: NoOpWindowCallback()
         window.callback = RecorderWindowCallback(
+            appContext,
             processor,
             toWrap,
             timeProvider,
-            viewOnDrawInterceptor,
-            ownerActivity
+            viewOnDrawInterceptor
         )
     }
 

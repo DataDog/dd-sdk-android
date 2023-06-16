@@ -60,6 +60,8 @@ internal class SessionReplayFragment :
             R.id.navigation_different_fonts -> R.id.fragment_different_fonts
             R.id.navigation_password_edit_text_components -> R.id.fragment_password_edit_text_components
             R.id.navigation_unsupported_views -> R.id.fragment_unsupported_views
+            R.id.navigation_image_components -> R.id.fragment_image_components
+
             else -> null
         }
         if (destination != null) {

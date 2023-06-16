@@ -8,7 +8,12 @@ package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
 import android.content.Context
+import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.sessionreplay.NoOpRecorder
+import com.datadog.android.sessionreplay.Recorder
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
@@ -32,7 +37,8 @@ internal class SessionReplayFeature constructor(
     private val sdkCore: FeatureSdkCore,
     customEndpointUrl: String?,
     internal val privacy: SessionReplayPrivacy,
-    private val sessionReplayCallbackProvider: (RecordWriter) -> LifecycleCallback
+    private val rateBasedSampler: Sampler,
+    private val sessionReplayRecorderProvider: (RecordWriter, Application) -> Recorder
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     internal constructor(
@@ -40,13 +46,16 @@ internal class SessionReplayFeature constructor(
         customEndpointUrl: String?,
         privacy: SessionReplayPrivacy,
         customMappers: List<MapperTypeWrapper>,
-        customOptionSelectorDetectors: List<OptionSelectorDetector>
+        customOptionSelectorDetectors: List<OptionSelectorDetector>,
+        sampleRate: Float
     ) : this(
         sdkCore,
         customEndpointUrl,
         privacy,
-        { recordWriter ->
-            SessionReplayLifecycleCallback(
+        RateBasedSampler(sampleRate),
+        { recordWriter, application ->
+            SessionReplayRecorder(
+                application,
                 rumContextProvider = SessionReplayRumContextProvider(sdkCore),
                 privacy = privacy,
                 recordWriter = recordWriter,
@@ -60,8 +69,7 @@ internal class SessionReplayFeature constructor(
 
     internal lateinit var appContext: Context
     private var isRecording = AtomicBoolean(false)
-    internal var sessionReplayCallback: LifecycleCallback = NoOpLifecycleCallback()
-
+    internal var sessionReplayRecorder: Recorder = NoOpRecorder()
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
     internal val initialized = AtomicBoolean(false)
 
@@ -70,13 +78,22 @@ internal class SessionReplayFeature constructor(
     override val name: String = Feature.SESSION_REPLAY_FEATURE_NAME
 
     override fun onInitialize(appContext: Context) {
+        if (appContext !is Application) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE
+            )
+            return
+        }
+
         this.appContext = appContext
 
         sdkCore.setEventReceiver(SESSION_REPLAY_FEATURE_NAME, this)
         dataWriter = createDataWriter()
-        sessionReplayCallback = sessionReplayCallbackProvider(dataWriter)
+        sessionReplayRecorder = sessionReplayRecorderProvider(dataWriter, appContext)
+        sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
-        startRecording()
     }
 
     override val requestFactory: RequestFactory =
@@ -87,49 +104,10 @@ internal class SessionReplayFeature constructor(
 
     override fun onStop() {
         stopRecording()
+        sessionReplayRecorder.unregisterCallbacks()
         dataWriter = NoOpRecordWriter()
-        sessionReplayCallback = NoOpLifecycleCallback()
+        sessionReplayRecorder = NoOpRecorder()
         initialized.set(false)
-    }
-
-    // endregion
-
-    private fun createDataWriter(): RecordWriter {
-        return SessionReplayRecordWriter(sdkCore)
-    }
-
-    // region SessionReplayFeature
-
-    /**
-     * Stops the session recording.
-     *
-     * Session Replay feature will only work for recorded
-     * sessions.
-     */
-    fun stopRecording() {
-        if (isRecording.getAndSet(false)) {
-            unregisterCallback(appContext)
-        }
-    }
-
-    /**
-     * Starts/resumes the session recording.
-     *
-     * Session Replay feature will only work for recorded
-     * sessions.
-     */
-    fun startRecording() {
-        if (!initialized.get()) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                CANNOT_START_RECORDING_NOT_INITIALIZED
-            )
-            return
-        }
-        if (!isRecording.getAndSet(true)) {
-            registerCallback(appContext)
-        }
     }
 
     // endregion
@@ -146,54 +124,85 @@ internal class SessionReplayFeature constructor(
             return
         }
 
-        if (event[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY] == RUM_SESSION_RENEWED_BUS_MESSAGE) {
-            val keepSession = event[RUM_KEEP_SESSION_BUS_MESSAGE_KEY] as? Boolean
-
-            if (keepSession == null) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    EVENT_MISSING_MANDATORY_FIELDS
-                )
-                return
-            }
-
-            if (keepSession) {
-                startRecording()
-            } else {
-                stopRecording()
-            }
-        } else {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(
-                    Locale.US,
-                    event[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY]
-                )
-            )
-        }
+        handleRumSession(event)
     }
 
     // endregion
 
     // region Internal
 
-    private fun registerCallback(context: Context) {
-        if (context is Application) {
-            sessionReplayCallback.register(context)
+    private fun handleRumSession(sessionMetadata: Map<*, *>) {
+        if (sessionMetadata[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY] ==
+            RUM_SESSION_RENEWED_BUS_MESSAGE
+        ) {
+            checkStatusAndApplySample(sessionMetadata)
+        } else {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(
+                    Locale.US,
+                    sessionMetadata[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY]
+                )
+            )
         }
     }
 
-    private fun unregisterCallback(context: Context) {
-        if (context is Application) {
-            sessionReplayCallback.unregisterAndStopRecorders(context)
+    private fun checkStatusAndApplySample(sessionMetadata: Map<*, *>) {
+        val keepSession = sessionMetadata[RUM_KEEP_SESSION_BUS_MESSAGE_KEY] as? Boolean
+
+        if (keepSession == null) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                EVENT_MISSING_MANDATORY_FIELDS
+            )
+            return
+        }
+
+        if (keepSession && rateBasedSampler.sample()) {
+            startRecording()
+        } else {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                SESSION_SAMPLED_OUT_MESSAGE
+            )
+            stopRecording()
+        }
+    }
+
+    internal fun startRecording() {
+        if (!initialized.get()) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                CANNOT_START_RECORDING_NOT_INITIALIZED
+            )
+            return
+        }
+        if (!isRecording.getAndSet(true)) {
+            sessionReplayRecorder.resumeRecorders()
+        }
+    }
+
+    private fun createDataWriter(): RecordWriter {
+        return SessionReplayRecordWriter(sdkCore)
+    }
+
+    internal fun stopRecording() {
+        if (isRecording.getAndSet(false)) {
+            sessionReplayRecorder.stopRecorders()
         }
     }
 
     // endregion
 
     internal companion object {
+        internal const val REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE = "Session Replay could not " +
+            "be initialized without the Application context."
+        internal const val SESSION_SAMPLED_OUT_MESSAGE = "This session was sampled out from" +
+            " recording. No replay will be provided for it."
         internal const val UNSUPPORTED_EVENT_TYPE =
             "Session Replay feature receive an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =

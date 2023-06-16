@@ -17,6 +17,7 @@
     <string name="title_data_list">Data List</string>
     <string name="title_view_pager">View Pager</string>
     <string name="title_unsupported_views">Unsupported views</string>
+    <string name="title_image_components">Image Components</string>
     <string name="title_snackbar">Snackbar</string>
     <string name="title_foreground_service">Foreground service</string>
     <string name="title_picture">Picture loading</string>
@@ -26,6 +27,17 @@
     <string name="title_gdpr">GDPR</string>
     <string name="title_clear_all_data">Clear All Data</string>
     <string name="title_compose">Jetpack Compose</string>
+    <string name="title_textviews">TextViews</string>
+    <string name="title_buttons">Buttons</string>
+    <string name="title_imageviews">ImageViews</string>
+    <string name="title_imagebuttons">ImageButtons</string>
+    <string name="title_views">Views</string>
+
+    <string name="category_system">System</string>
+    <string name="category_bundled">Bundled</string>
+    <string name="category_ninepatch">Ninepatch</string>
+    <string name="category_remote">Remote</string>
+    <string name="category_multiple">Multiple</string>
 
     <string name="msg_native_crash">Native Crash</string>
     <string name="msg_java_crash">Java Crash</string>
