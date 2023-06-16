@@ -8,6 +8,8 @@ package com.datadog.android.rum
 
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.net.RumRequestFactory
+import com.datadog.android.rum.tracking.NoOpTrackingStrategy
+import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
@@ -74,10 +76,20 @@ internal class RumTest {
                 .isEqualTo(fakeRumConfiguration.featureConfiguration.backgroundEventTracking)
             assertThat(lastValue.trackFrustrations)
                 .isEqualTo(fakeRumConfiguration.featureConfiguration.trackFrustrations)
-            assertThat(lastValue.viewTrackingStrategy)
-                .isEqualTo(fakeRumConfiguration.featureConfiguration.viewTrackingStrategy)
-            assertThat(lastValue.longTaskTrackingStrategy)
-                .isEqualTo(fakeRumConfiguration.featureConfiguration.longTaskTrackingStrategy)
+            if (fakeRumConfiguration.featureConfiguration.viewTrackingStrategy != null) {
+                assertThat(lastValue.viewTrackingStrategy)
+                    .isEqualTo(fakeRumConfiguration.featureConfiguration.viewTrackingStrategy)
+            } else {
+                assertThat(lastValue.viewTrackingStrategy)
+                    .isInstanceOf(NoOpViewTrackingStrategy::class.java)
+            }
+            if (fakeRumConfiguration.featureConfiguration.longTaskTrackingStrategy != null) {
+                assertThat(lastValue.longTaskTrackingStrategy)
+                    .isEqualTo(fakeRumConfiguration.featureConfiguration.longTaskTrackingStrategy)
+            } else {
+                assertThat(lastValue.longTaskTrackingStrategy)
+                    .isInstanceOf(NoOpTrackingStrategy::class.java)
+            }
             assertThat((lastValue.requestFactory as RumRequestFactory).customEndpointUrl)
                 .isEqualTo(fakeRumConfiguration.featureConfiguration.customEndpointUrl)
         }

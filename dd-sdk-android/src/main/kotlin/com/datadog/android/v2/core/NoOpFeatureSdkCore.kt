@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 /**
  * A no-op implementation of [SdkCore].
  */
-internal class NoOpSdkCore : FeatureSdkCore {
+internal class NoOpFeatureSdkCore : FeatureSdkCore {
 
     override val name: String = "no-op"
 
