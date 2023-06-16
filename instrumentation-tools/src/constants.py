@@ -3,7 +3,7 @@
 #  Copyright 2016-Present Datadog, Inc.
 
 API_SURFACE_PATHS = [
-    "dd-sdk-android/api/apiSurface",
+    "dd-sdk-android-core/api/apiSurface",
     "integrations/dd-sdk-android-okhttp/api/apiSurface",
     "features/dd-sdk-android-logs/api/apiSurface",
     "features/dd-sdk-android-session-replay/api/apiSurface",

@@ -92,7 +92,7 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":dd-sdk-android"))
+    implementation(project(":dd-sdk-android-core"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":features:dd-sdk-android-session-replay"))
     implementation(project(":features:dd-sdk-android-logs"))

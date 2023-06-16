@@ -97,7 +97,7 @@ android {
 }
 
 dependencies {
-    api(project(":dd-sdk-android"))
+    api(project(":dd-sdk-android-core"))
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.okHttp)

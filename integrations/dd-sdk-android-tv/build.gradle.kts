@@ -71,7 +71,7 @@ android {
 }
 
 dependencies {
-    api(project(":dd-sdk-android"))
+    api(project(":dd-sdk-android-core"))
     api(project(":features:dd-sdk-android-rum"))
     implementation(libs.kotlin)
     implementation(libs.androidXLeanback)

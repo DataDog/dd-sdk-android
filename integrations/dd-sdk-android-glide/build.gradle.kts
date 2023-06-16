@@ -72,7 +72,7 @@ android {
 }
 
 dependencies {
-    api(project(":dd-sdk-android"))
+    api(project(":dd-sdk-android-core"))
     api(project(":integrations:dd-sdk-android-okhttp"))
     api(project(":features:dd-sdk-android-rum"))
     implementation(libs.kotlin)

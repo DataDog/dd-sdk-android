@@ -73,7 +73,7 @@ tasks.register("checkAll") {
 
 tasks.register("assembleAll") {
     dependsOn(
-        ":dd-sdk-android:assemble",
+        ":dd-sdk-android-core:assemble",
         ":integrations:dd-sdk-android-coil:assemble",
         ":integrations:dd-sdk-android-compose:assemble",
         ":integrations:dd-sdk-android-fresco:assemble",
@@ -96,7 +96,7 @@ tasks.register("assembleAll") {
 
 tasks.register("unitTestRelease") {
     dependsOn(
-        ":dd-sdk-android:testReleaseUnitTest",
+        ":dd-sdk-android-core:testReleaseUnitTest",
         ":integrations:dd-sdk-android-coil:testReleaseUnitTest",
         ":integrations:dd-sdk-android-compose:testReleaseUnitTest",
         ":integrations:dd-sdk-android-fresco:testReleaseUnitTest",
@@ -119,7 +119,7 @@ tasks.register("unitTestRelease") {
 
 tasks.register("unitTestDebug") {
     dependsOn(
-        ":dd-sdk-android:testDebugUnitTest",
+        ":dd-sdk-android-core:testDebugUnitTest",
         ":integrations:dd-sdk-android-coil:testDebugUnitTest",
         ":integrations:dd-sdk-android-compose:testDebugUnitTest",
         ":integrations:dd-sdk-android-fresco:testDebugUnitTest",
@@ -159,7 +159,7 @@ tasks.register("unitTestAll") {
 
 tasks.register("lintCheckAll") {
     dependsOn(
-        ":dd-sdk-android:lintRelease",
+        ":dd-sdk-android-core:lintRelease",
         ":integrations:dd-sdk-android-coil:lintRelease",
         ":integrations:dd-sdk-android-compose:lintRelease",
         ":integrations:dd-sdk-android-fresco:lintRelease",
@@ -183,7 +183,7 @@ tasks.register("lintCheckAll") {
 
 tasks.register("checkThirdPartyLicensesAll") {
     dependsOn(
-        ":dd-sdk-android:checkThirdPartyLicences",
+        ":dd-sdk-android-core:checkThirdPartyLicences",
         ":integrations:dd-sdk-android-coil:checkThirdPartyLicences",
         ":integrations:dd-sdk-android-compose:checkThirdPartyLicences",
         ":integrations:dd-sdk-android-fresco:checkThirdPartyLicences",
@@ -206,7 +206,7 @@ tasks.register("checkThirdPartyLicensesAll") {
 
 tasks.register("checkApiSurfaceChangesAll") {
     dependsOn(
-        "dd-sdk-android:checkApiSurfaceChanges",
+        "dd-sdk-android-core:checkApiSurfaceChanges",
         ":integrations:dd-sdk-android-coil:checkApiSurfaceChanges",
         ":integrations:dd-sdk-android-compose:checkApiSurfaceChanges",
         ":integrations:dd-sdk-android-fresco:checkApiSurfaceChanges",
@@ -233,7 +233,7 @@ tasks.register("checkGeneratedFiles") {
 
 tasks.register("koverReportAll") {
     dependsOn(
-        ":dd-sdk-android:koverXmlReport",
+        ":dd-sdk-android-core:koverXmlReport",
         ":integrations:dd-sdk-android-coil:koverXmlReport",
         ":integrations:dd-sdk-android-compose:koverXmlReport",
         ":integrations:dd-sdk-android-fresco:koverXmlReport",
