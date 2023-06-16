@@ -17,7 +17,7 @@ import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.NoOpSdkCore
+import com.datadog.android.v2.core.NoOpFeatureSdkCore
 import com.datadog.android.v2.core.internal.HashGenerator
 import com.datadog.android.v2.core.internal.SdkCoreRegistry
 import com.datadog.android.v2.core.internal.Sha256HashGenerator
@@ -145,7 +145,7 @@ object Datadog {
                     InternalLogger.Target.USER,
                     MESSAGE_SDK_NOT_INITIALIZED.format(Locale.US, sdkInstanceName)
                 )
-                NoOpSdkCore()
+                NoOpFeatureSdkCore()
             } else {
                 sdkInstance
             }
