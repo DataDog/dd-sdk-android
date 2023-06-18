@@ -11,7 +11,6 @@ import android.os.Handler
 import android.view.View
 import android.view.Window
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
-import com.datadog.android.sessionreplay.internal.RecordCallback
 import com.datadog.android.sessionreplay.internal.RecordWriter
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
@@ -60,9 +59,6 @@ internal class SessionReplayRecorderTest {
     private lateinit var fakePrivacy: SessionReplayPrivacy
 
     @Mock
-    private lateinit var mockRecordCallback: RecordCallback
-
-    @Mock
     private lateinit var mockTimeProvider: TimeProvider
 
     @Mock
@@ -98,7 +94,6 @@ internal class SessionReplayRecorderTest {
             fakePrivacy,
             mockRecordWriter,
             mockTimeProvider,
-            mockRecordCallback,
             mock(),
             mock(),
             mockWindowInspector,
