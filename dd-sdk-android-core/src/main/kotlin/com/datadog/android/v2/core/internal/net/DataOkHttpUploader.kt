@@ -147,7 +147,7 @@ internal class DataOkHttpUploader(
 
     private fun responseCodeToUploadStatus(
         code: Int,
-        request: com.datadog.android.v2.api.Request
+        request: DatadogRequest
     ): UploadStatus {
         return when (code) {
             HTTP_ACCEPTED -> UploadStatus.SUCCESS
