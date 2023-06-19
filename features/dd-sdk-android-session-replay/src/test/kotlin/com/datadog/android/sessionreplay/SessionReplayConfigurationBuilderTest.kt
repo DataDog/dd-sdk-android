@@ -11,6 +11,7 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -72,6 +73,8 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.privacy).isEqualTo(SessionReplayPrivacy.MASK_ALL)
         assertThat(sessionReplayConfiguration.customMappers).isEmpty()
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
+        assertThat(sessionReplayConfiguration.sampleRate)
+            .isEqualTo(SessionReplayConfiguration.DEFAULT_SAMPLE_RATE)
     }
 
     @Test
@@ -87,6 +90,8 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.privacy).isEqualTo(SessionReplayPrivacy.MASK_ALL)
         assertThat(sessionReplayConfiguration.customMappers).isEmpty()
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
+        assertThat(sessionReplayConfiguration.sampleRate)
+            .isEqualTo(SessionReplayConfiguration.DEFAULT_SAMPLE_RATE)
     }
 
     @Test
@@ -101,6 +106,24 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.privacy).isEqualTo(fakePrivacy)
         assertThat(sessionReplayConfiguration.customMappers).isEmpty()
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
+        assertThat(sessionReplayConfiguration.sampleRate)
+            .isEqualTo(SessionReplayConfiguration.DEFAULT_SAMPLE_RATE)
+    }
+
+    @Test
+    fun `M use the given sample rate W setSessionReplaySampleRate`(
+        @FloatForgery fakeSampleRate: Float
+    ) {
+        // When
+        val sessionReplayConfiguration =
+            testedBuilder.setSessionReplaySampleRate(fakeSampleRate).build()
+
+        // Then
+        assertThat(sessionReplayConfiguration.customEndpointUrl).isNull()
+        assertThat(sessionReplayConfiguration.privacy).isEqualTo(SessionReplayPrivacy.MASK_ALL)
+        assertThat(sessionReplayConfiguration.customMappers).isEmpty()
+        assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
+        assertThat(sessionReplayConfiguration.sampleRate).isEqualTo(fakeSampleRate)
     }
 
     @Test

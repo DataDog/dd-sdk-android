@@ -43,6 +43,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(SystemInformationForgeryFactory())
         forge.addFactory(MappingContextForgeryFactory())
         forge.addFactory(SessionReplayConfigurationForgeryFactory())
+        forge.addFactory(RumContextDataForgeryFactory())
 
         forge.useJvmFactories()
     }

@@ -12,7 +12,6 @@ import com.datadog.android.sessionreplay.internal.RecordCallback
 import com.datadog.android.sessionreplay.internal.RecordWriter
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
-import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -63,9 +62,6 @@ internal class RecordedDataProcessorTest {
     lateinit var mockTimeProvider: TimeProvider
 
     @Mock
-    lateinit var mockRumContextProvider: RumContextProvider
-
-    @Mock
     lateinit var mockExecutorService: ExecutorService
 
     @Mock
@@ -85,11 +81,42 @@ internal class RecordedDataProcessorTest {
     @Mock
     lateinit var mockRecordCallback: RecordCallback
 
+    @Mock
+    lateinit var mockRumContextDataHandler: RumContextDataHandler
+
     @Forgery
     lateinit var fakeSystemInformation: SystemInformation
 
+    private val invalidRumContext = SessionReplayRumContext()
+
+    private lateinit var sameViewRumContextData: RumContextData
+    private lateinit var invalidRumContextData: RumContextData
+    private lateinit var initialRumContextData: RumContextData
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        initialRumContextData = RumContextData(
+            fakeTimestamp,
+            fakeRumContext,
+            invalidRumContext
+        )
+
+        invalidRumContextData = RumContextData(
+            fakeTimestamp,
+            invalidRumContext,
+            invalidRumContext
+        )
+
+        sameViewRumContextData = RumContextData(
+            fakeTimestamp,
+            fakeRumContext,
+            fakeRumContext
+        )
+
+        whenever(mockRumContextDataHandler.createRumContextData())
+            .thenReturn(initialRumContextData)
+            .thenReturn(sameViewRumContextData)
+
         // we make sure the fullsnapshot was not triggered by a screen orientation change
         fakeSystemInformation = fakeSystemInformation
             .copy(screenOrientation = Configuration.ORIENTATION_UNDEFINED)
@@ -102,10 +129,8 @@ internal class RecordedDataProcessorTest {
             mock<Future<Boolean>>()
         }
         whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTimestamp)
-        whenever(mockRumContextProvider.getRumContext()).thenReturn(fakeRumContext)
         testedProcessor = RecordedDataProcessor(
-            mockRumContextProvider,
-            mockTimeProvider,
+            mockRumContextDataHandler,
             mockExecutorService,
             mockWriter,
             mockRecordCallback,
@@ -164,9 +189,17 @@ internal class RecordedDataProcessorTest {
     fun `M send FullSnapshot W process { new view }`(forge: Forge) {
         // Given
         val fakeRumContext2 = forge.getForgery<SessionReplayRumContext>()
-        whenever(mockRumContextProvider.getRumContext())
-            .thenReturn(fakeRumContext)
-            .thenReturn(fakeRumContext2)
+
+        val newerRumContextData = RumContextData(
+            fakeTimestamp,
+            fakeRumContext2,
+            initialRumContextData.newRumContext
+        )
+
+        whenever(mockRumContextDataHandler.createRumContextData())
+            .thenReturn(initialRumContextData)
+            .thenReturn(newerRumContextData)
+
         val fakeSnapshotView1 = forge.aList { aSingleLevelSnapshot() }
         val fakeSnapshotView2 = forge.aList { aSingleLevelSnapshot() }
         fakeSnapshotView1.forEach {
@@ -395,6 +428,19 @@ internal class RecordedDataProcessorTest {
     @Test
     fun `M send MetaRecord W process { snapshot 3 on new view }`(forge: Forge) {
         // Given
+        val fakeRumContext2: SessionReplayRumContext = forge.getForgery()
+
+        val newerRumContextData = RumContextData(
+            fakeTimestamp,
+            fakeRumContext2,
+            initialRumContextData.newRumContext
+        )
+
+        whenever(mockRumContextDataHandler.createRumContextData())
+            .thenReturn(initialRumContextData)
+            .thenReturn(sameViewRumContextData)
+            .thenReturn(newerRumContextData)
+
         val fakeSystemInformation2 = forge.getForgery<SystemInformation>().copy(
             screenOrientation = fakeSystemInformation.screenOrientation
         )
@@ -404,9 +450,6 @@ internal class RecordedDataProcessorTest {
 
         testedProcessor.processScreenSnapshots(fakeSnapshot1, fakeSystemInformation)
         testedProcessor.processScreenSnapshots(fakeSnapshot2, fakeSystemInformation)
-        val fakeRumContext2: SessionReplayRumContext = forge.getForgery()
-        whenever(mockRumContextProvider.getRumContext())
-            .thenReturn(fakeRumContext2)
 
         // When
         testedProcessor.processScreenSnapshots(fakeSnapshot3, fakeSystemInformation2)
@@ -430,13 +473,24 @@ internal class RecordedDataProcessorTest {
     @Test
     fun `M send FocusRecord W process { snapshot 3 on new view }`(forge: Forge) {
         // Given
+        val fakeRumContext2: SessionReplayRumContext = forge.getForgery()
+
+        val newerRumContextData = RumContextData(
+            fakeTimestamp,
+            fakeRumContext2,
+            initialRumContextData.newRumContext
+        )
+
+        whenever(mockRumContextDataHandler.createRumContextData())
+            .thenReturn(initialRumContextData)
+            .thenReturn(sameViewRumContextData)
+            .thenReturn(newerRumContextData)
+
         val fakeSnapshot1 = listOf(forge.aSingleLevelSnapshot())
         val fakeSnapshot2 = listOf(forge.aSingleLevelSnapshot())
         val fakeSnapshot3 = listOf(forge.aSingleLevelSnapshot())
         testedProcessor.processScreenSnapshots(fakeSnapshot1, fakeSystemInformation)
         testedProcessor.processScreenSnapshots(fakeSnapshot2, fakeSystemInformation)
-        val fakeRumContext2: SessionReplayRumContext = forge.getForgery()
-        whenever(mockRumContextProvider.getRumContext()).thenReturn(fakeRumContext2)
 
         // When
         testedProcessor.processScreenSnapshots(fakeSnapshot3, fakeSystemInformation)
@@ -459,13 +513,24 @@ internal class RecordedDataProcessorTest {
     @Test
     fun `M send ViewEndRecord on prev view W process { snapshot 3 on new view }`(forge: Forge) {
         // Given
+        val fakeRumContext2: SessionReplayRumContext = forge.getForgery()
+
+        val newRumContextData = RumContextData(
+            fakeTimestamp,
+            fakeRumContext2,
+            sameViewRumContextData.newRumContext
+        )
+
+        whenever(mockRumContextDataHandler.createRumContextData())
+            .thenReturn(initialRumContextData)
+            .thenReturn(sameViewRumContextData)
+            .thenReturn(newRumContextData)
+
         val fakeSnapshot1 = listOf(forge.aSingleLevelSnapshot())
         val fakeSnapshot2 = listOf(forge.aSingleLevelSnapshot())
         val fakeSnapshot3 = listOf(forge.aSingleLevelSnapshot())
         testedProcessor.processScreenSnapshots(fakeSnapshot1, fakeSystemInformation)
         testedProcessor.processScreenSnapshots(fakeSnapshot2, fakeSystemInformation)
-        val fakeRumContext2: SessionReplayRumContext = forge.getForgery()
-        whenever(mockRumContextProvider.getRumContext()).thenReturn(fakeRumContext2)
 
         // When
         testedProcessor.processScreenSnapshots(fakeSnapshot3, fakeSystemInformation)
@@ -721,6 +786,7 @@ internal class RecordedDataProcessorTest {
         )
         val fakeSnapshot1 = forge.aList { aSingleLevelSnapshot() }
         val fakeSnapshot2 = forge.aList { aSingleLevelSnapshot() }
+
         // When
         testedProcessor.processScreenSnapshots(fakeSnapshot1, fakeSystemInformation)
         testedProcessor.processScreenSnapshots(fakeSnapshot2, fakeSystemInformation2)
@@ -760,9 +826,17 @@ internal class RecordedDataProcessorTest {
         )
 
         val fakeRumContext2 = forge.getForgery<SessionReplayRumContext>()
-        whenever(mockRumContextProvider.getRumContext())
-            .thenReturn(fakeRumContext)
-            .thenReturn(fakeRumContext2)
+
+        val newerRumContextData = RumContextData(
+            fakeTimestamp,
+            fakeRumContext2,
+            fakeRumContext
+        )
+
+        whenever(mockRumContextDataHandler.createRumContextData())
+            .thenReturn(initialRumContextData)
+            .thenReturn(newerRumContextData)
+
         val fakeSnapshot1 = forge.aList { aSingleLevelSnapshot() }
         val fakeSnapshot2 = forge.aList { aSingleLevelSnapshot() }
 
@@ -800,26 +874,12 @@ internal class RecordedDataProcessorTest {
 
     // region Misc
 
-    @ParameterizedTest
-    @MethodSource("processorArguments")
-    fun `M do nothing W process { context is not invalid }`(argument: Any) {
-        // Given
-        whenever(mockRumContextProvider.getRumContext()).thenReturn(SessionReplayRumContext())
-
-        // When
-        processArgument(argument)
-
-        // Then
-        verifyNoInteractions(mockWriter)
-    }
-
     // TODO: RUMM-2397 When proper logs are added modify this test accordingly
     @ParameterizedTest
     @MethodSource("processorArguments")
     fun `M do nothing W process { executor was shutdown }`(argument: Any) {
         // Given
         whenever(mockExecutorService.submit(any())).thenThrow(RejectedExecutionException())
-        whenever(mockRumContextProvider.getRumContext()).thenReturn(SessionReplayRumContext())
 
         // When
         processArgument(argument)
@@ -834,32 +894,12 @@ internal class RecordedDataProcessorTest {
     fun `M do nothing W process { executor throws NPE }`(argument: Any) {
         // Given
         whenever(mockExecutorService.submit(any())).thenThrow(NullPointerException())
-        whenever(mockRumContextProvider.getRumContext()).thenReturn(SessionReplayRumContext())
 
         // When
         processArgument(argument)
 
         // Then
         verifyNoInteractions(mockWriter)
-    }
-
-    @ParameterizedTest
-    @MethodSource("processorArguments")
-    fun `M update current RUM context W process`(
-        argument: Any,
-        @Forgery
-        fakeRumContext2: SessionReplayRumContext
-    ) {
-        // Given
-        whenever(mockRumContextProvider.getRumContext())
-            .thenReturn(fakeRumContext)
-            .thenReturn(fakeRumContext2)
-
-        // When
-        processArgument(argument)
-        assertThat(testedProcessor.prevRumContext).isEqualTo(fakeRumContext)
-        processArgument(argument)
-        assertThat(testedProcessor.prevRumContext).isEqualTo(fakeRumContext2)
     }
 
     // endregion
@@ -892,6 +932,8 @@ internal class RecordedDataProcessorTest {
             is MobileSegment.Wireframe.ShapeWireframe ->
                 this.copy(id = id)
             is MobileSegment.Wireframe.TextWireframe ->
+                this.copy(id = id)
+            is MobileSegment.Wireframe.ImageWireframe ->
                 this.copy(id = id)
         }
     }

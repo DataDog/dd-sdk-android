@@ -26,11 +26,12 @@ import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
 import com.datadog.android.sessionreplay.SessionReplay
+import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.Random
 
-internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
+internal open class SessionReplayPlaygroundActivity : AppCompatActivity() {
     lateinit var titleTextView: TextView
     lateinit var clickMeButton: Button
 
@@ -55,9 +56,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
                 Rum.enable(rumConfig, sdkCore)
             },
             {
-                val sessionReplayConfig = RuntimeConfig.sessionReplayConfigBuilder()
-                    .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
-                    .build()
+                val sessionReplayConfig = sessionReplayConfiguration()
                 SessionReplay.enable(sessionReplayConfig, sdkCore)
             }
         )
@@ -69,8 +68,14 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
         clickMeButton = findViewById(R.id.button)
     }
 
+    open fun sessionReplayConfiguration(): SessionReplayConfiguration =
+        RuntimeConfig.sessionReplayConfigBuilder()
+            .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
+            .setSessionReplaySampleRate(SAMPLE_IN_ALL_SESSIONS)
+            .build()
+
     @Suppress("LongMethod")
-    fun getExpectedSrData(): ExpectedSrData {
+    open fun getExpectedSrData(): ExpectedSrData {
         val density = resources.displayMetrics.density
         val decorView = window.decorView
 
@@ -263,6 +268,7 @@ internal class SessionReplayPlaygroundActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val SAMPLE_IN_ALL_SESSIONS = 100f
         private const val BLACK_COLOR_AS_HEXA = 0
         private const val FULL_OPACITY_AS_HEXA = 255
         private const val SANS_SERIF_FAMILY_NAME = "roboto, sans-serif"

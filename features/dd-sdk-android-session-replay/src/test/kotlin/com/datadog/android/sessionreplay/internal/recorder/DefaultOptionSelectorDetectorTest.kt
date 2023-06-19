@@ -25,7 +25,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
 
-@Suppress("UNCHECKED_CAST")
 @Extensions(
     ExtendWith(MockitoExtension::class)
 )
