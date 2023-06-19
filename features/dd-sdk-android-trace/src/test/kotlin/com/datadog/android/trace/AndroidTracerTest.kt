@@ -164,7 +164,7 @@ internal class AndroidTracerTest {
 
         // THEN
         verify(mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
+            InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             AndroidTracer.RUM_NOT_ENABLED_ERROR_MESSAGE
         )

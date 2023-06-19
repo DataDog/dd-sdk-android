@@ -36,7 +36,7 @@ internal class PlainFileReaderWriter(
         } catch (e: IOException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_WRITE.format(Locale.US, file.path),
                 e
             )
@@ -44,7 +44,7 @@ internal class PlainFileReaderWriter(
         } catch (e: SecurityException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_WRITE.format(Locale.US, file.path),
                 e
             )
@@ -60,20 +60,14 @@ internal class PlainFileReaderWriter(
             if (!file.exists()) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
-                    targets = listOf(
-                        InternalLogger.Target.MAINTAINER,
-                        InternalLogger.Target.TELEMETRY
-                    ),
+                    listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                     ERROR_READ.format(Locale.US, file.path)
                 )
                 EMPTY_BYTE_ARRAY
             } else if (file.isDirectory) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
-                    targets = listOf(
-                        InternalLogger.Target.MAINTAINER,
-                        InternalLogger.Target.TELEMETRY
-                    ),
+                    listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                     ERROR_READ.format(Locale.US, file.path)
                 )
                 EMPTY_BYTE_ARRAY
@@ -84,7 +78,7 @@ internal class PlainFileReaderWriter(
         } catch (e: IOException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_READ.format(Locale.US, file.path),
                 e
             )
@@ -92,7 +86,7 @@ internal class PlainFileReaderWriter(
         } catch (e: SecurityException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_READ.format(Locale.US, file.path),
                 e
             )

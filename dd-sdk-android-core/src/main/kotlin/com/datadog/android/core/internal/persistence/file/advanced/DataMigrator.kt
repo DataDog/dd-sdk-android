@@ -18,8 +18,4 @@ internal interface DataMigrator<S : Any> {
         newState: S,
         newFileOrchestrator: FileOrchestrator
     )
-
-    companion object {
-        internal const val ERROR_REJECTED = "Unable to schedule migration on the executor"
-    }
 }

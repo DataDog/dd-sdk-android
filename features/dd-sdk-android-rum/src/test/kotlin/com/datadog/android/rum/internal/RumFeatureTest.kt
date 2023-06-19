@@ -768,7 +768,7 @@ internal class RumFeatureTest {
         verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 RumFeature.JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS
             )
 
@@ -891,7 +891,7 @@ internal class RumFeatureTest {
         verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 RumFeature.LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS
             )
 
@@ -949,7 +949,7 @@ internal class RumFeatureTest {
         verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 RumFeature.LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS
             )
 
@@ -1010,7 +1010,7 @@ internal class RumFeatureTest {
         verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
+                InternalLogger.Target.MAINTAINER,
                 RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
             )
 
@@ -1083,7 +1083,7 @@ internal class RumFeatureTest {
         verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
+                InternalLogger.Target.MAINTAINER,
                 RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
             )
 

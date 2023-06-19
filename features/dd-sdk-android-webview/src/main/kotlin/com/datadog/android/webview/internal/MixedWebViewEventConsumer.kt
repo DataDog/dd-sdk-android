@@ -28,7 +28,7 @@ internal class MixedWebViewEventConsumer(
             if (!webEvent.has(EVENT_TYPE_KEY)) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
-                    targets = listOf(
+                    listOf(
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),
@@ -39,7 +39,7 @@ internal class MixedWebViewEventConsumer(
             if (!webEvent.has(EVENT_KEY)) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
-                    targets = listOf(
+                    listOf(
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),
@@ -67,7 +67,7 @@ internal class MixedWebViewEventConsumer(
         } catch (e: JsonParseException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 WEB_EVENT_PARSING_ERROR_MESSAGE.format(US, event),
                 e
             )

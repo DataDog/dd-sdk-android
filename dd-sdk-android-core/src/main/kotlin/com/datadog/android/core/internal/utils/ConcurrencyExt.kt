@@ -9,6 +9,8 @@ package com.datadog.android.core.internal.utils
 import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 import java.util.concurrent.Executor
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
@@ -35,7 +37,7 @@ fun Executor.executeSafe(
     } catch (e: RejectedExecutionException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             ERROR_TASK_REJECTED.format(Locale.US, operationName),
             e
         )
@@ -65,7 +67,34 @@ fun ScheduledExecutorService.scheduleSafe(
     } catch (e: RejectedExecutionException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            ERROR_TASK_REJECTED.format(Locale.US, operationName),
+            e
+        )
+        null
+    }
+}
+
+/**
+ * Submit runnable without throwing [RejectedExecutionException] if it cannot be accepted
+ * for execution.
+ *
+ * @param operationName Name of the task.
+ * @param internalLogger Internal logger.
+ * @param runnable Task to run.
+ */
+fun ExecutorService.submitSafe(
+    operationName: String,
+    internalLogger: InternalLogger,
+    runnable: Runnable
+): Future<*>? {
+    return try {
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+        submit(runnable)
+    } catch (e: RejectedExecutionException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             ERROR_TASK_REJECTED.format(Locale.US, operationName),
             e
         )

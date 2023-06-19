@@ -262,8 +262,8 @@ internal class TelemetryEventHandler(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.TELEMETRY,
-                    "GlobalTracer class exists in the runtime classpath, but" +
-                        " there is an error invoking isRegistered method",
+                    "GlobalTracer class exists in the runtime classpath, " +
+                        "but there is an error invoking isRegistered method",
                     t
                 )
                 false

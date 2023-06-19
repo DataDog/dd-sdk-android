@@ -47,7 +47,7 @@ internal class PlainBatchFileReaderWriter(
         } catch (e: IOException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_WRITE.format(Locale.US, file.path),
                 e
             )
@@ -55,7 +55,7 @@ internal class PlainBatchFileReaderWriter(
         } catch (e: SecurityException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_WRITE.format(Locale.US, file.path),
                 e
             )
@@ -72,7 +72,7 @@ internal class PlainBatchFileReaderWriter(
         } catch (e: IOException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_READ.format(Locale.US, file.path),
                 e
             )
@@ -80,7 +80,7 @@ internal class PlainBatchFileReaderWriter(
         } catch (e: SecurityException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_READ.format(Locale.US, file.path),
                 e
             )
@@ -165,7 +165,7 @@ internal class PlainBatchFileReaderWriter(
             val message = WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 message
             )
         }

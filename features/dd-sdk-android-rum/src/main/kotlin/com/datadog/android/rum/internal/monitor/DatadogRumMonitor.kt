@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -42,7 +43,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -350,6 +350,7 @@ internal class DatadogRumMonitor(
                     event.frustrationCount
                 )
             )
+
             is StorageEvent.Resource -> handleEvent(RumRawEvent.ResourceSent(viewId))
             is StorageEvent.Error -> handleEvent(RumRawEvent.ErrorSent(viewId))
             is StorageEvent.LongTask -> handleEvent(RumRawEvent.LongTaskSent(viewId, false))
@@ -449,23 +450,13 @@ internal class DatadogRumMonitor(
             handler.removeCallbacks(keepAliveRunnable)
             // avoid trowing a RejectedExecutionException
             if (!executorService.isShutdown) {
-                try {
-                    @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-                    executorService.submit {
-                        @Suppress("ThreadSafety")
-                        synchronized(rootScope) {
-                            rootScope.handleEvent(event, writer)
-                            notifyDebugListenerWithState()
-                        }
-                        handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
+                executorService.submitSafe("Rum event handling", sdkCore.internalLogger) {
+                    @Suppress("ThreadSafety")
+                    synchronized(rootScope) {
+                        rootScope.handleEvent(event, writer)
+                        notifyDebugListenerWithState()
                     }
-                } catch (e: RejectedExecutionException) {
-                    sdkCore.internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.USER,
-                        "Unable to handle a RUM event, task was rejected",
-                        e
-                    )
+                    handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
                 }
             }
         }
@@ -480,19 +471,8 @@ internal class DatadogRumMonitor(
         if (!executorService.isShutdown) {
             @Suppress("UnsafeThirdPartyFunctionCall") // 1 cannot be negative
             val latch = CountDownLatch(1)
-            try {
-                // Submit an empty task, and wait for it to complete
-                @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-                executorService.submit {
-                    latch.countDown()
-                }
-            } catch (e: RejectedExecutionException) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.USER,
-                    "Rejected waiting for the pending events",
-                    e
-                )
+            executorService.submitSafe("pending event waiting", sdkCore.internalLogger) {
+                latch.countDown()
             }
             try {
                 latch.await(1, TimeUnit.SECONDS)

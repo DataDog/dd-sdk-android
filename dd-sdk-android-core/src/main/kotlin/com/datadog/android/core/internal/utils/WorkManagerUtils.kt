@@ -32,7 +32,7 @@ internal fun cancelUploadWorker(context: Context, internalLogger: InternalLogger
     } catch (e: IllegalStateException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             CANCEL_ERROR_MESSAGE,
             e
         )
@@ -64,7 +64,7 @@ internal fun triggerUploadWorker(context: Context, internalLogger: InternalLogge
     } catch (e: Exception) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             SETUP_ERROR_MESSAGE,
             e
         )

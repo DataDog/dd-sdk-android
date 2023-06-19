@@ -11,6 +11,29 @@ import com.datadog.tools.annotation.NoOpImplementation
 
 /**
  * A Logger used to log messages from the internal implementation of the Datadog SDKs.
+ *
+ * Rule of thumb to decide which level and target we're using for the Internal Logger usage:
+ *
+ * - Target.USER: the message needs to either be actionable or provide information about the main
+ *     steps in data processing (tracking, storage, upload).
+ *     - Level.ERROR: for any actionable error originated from a user's configuration, preventing
+ *         a feature from working, or for an issue resulting in unexpected data loss;
+ *     - Level.WARN: to inform of an actionable misconfiguration or missuses of the SDK, resulting
+ *         in delayed or incomplete data;
+ *     - Level.INFO: information about important expected event (e.g.: successful upload);
+ * - Target.TELEMETRY: any event that need to be tracked for usage monitoring or for error
+ *     diagnostic.
+ *     - Level.ERROR, Level.WARN: for any critical error that is unexpected enough and actionable;
+ *     - Level.INFO, Level.DEBUG, Level.VERBOSE: important information about critical parts of the
+ *         SDK we want to monitor;
+ * - Target.MAINTAINER: can be anything relevant about the moving parts of the core SDK or any
+ *     of the feature. Level is left to the discretion of the authors of a log.
+ *     - Level.ERROR: for any caught error or situation preventing the SDK from working as expected;
+ *     - Level.WARN: for any unexpected situation (e.g.: when one would use an IllegalStateException);
+ *     - Level.INFO: information about internal high level steps of the SDK core or features;
+ *     - Level.DEBUG: information about internal low level steps of the SDK core or features;
+ *     - Level.VERBOSE: information on currently debugged feature or open ticket;
+ *
  */
 @NoOpImplementation
 interface InternalLogger {

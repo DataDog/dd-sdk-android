@@ -21,7 +21,7 @@ internal class NdkCrashLogDeserializer(
         } catch (e: JsonParseException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
                 e
             )
@@ -29,7 +29,7 @@ internal class NdkCrashLogDeserializer(
         } catch (e: IllegalStateException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
                 e
             )
@@ -39,6 +39,6 @@ internal class NdkCrashLogDeserializer(
 
     companion object {
         const val DESERIALIZE_ERROR_MESSAGE_FORMAT =
-            "Error while trying to deserialize the serialized NDK Crash info: %s"
+            "Error while trying to deserialize the NDK Crash info: %s"
     }
 }

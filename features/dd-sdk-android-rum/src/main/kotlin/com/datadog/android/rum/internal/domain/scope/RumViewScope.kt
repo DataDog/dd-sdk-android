@@ -259,6 +259,7 @@ internal open class RumViewScope(
                         // not valid anyway
                         true
                     }
+
                     currentRumContext["view_id"] == this.viewId -> true
                     else -> false
                 }
@@ -268,10 +269,7 @@ internal open class RumViewScope(
                 } else {
                     sdkCore.internalLogger.log(
                         InternalLogger.Level.DEBUG,
-                        targets = listOf(
-                            InternalLogger.Target.MAINTAINER,
-                            InternalLogger.Target.TELEMETRY
-                        ),
+                        InternalLogger.Target.MAINTAINER,
                         RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE
                     )
                 }
@@ -550,10 +548,7 @@ internal open class RumViewScope(
             } else {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.DEBUG,
-                    targets = listOf(
-                        InternalLogger.Target.MAINTAINER,
-                        InternalLogger.Target.TELEMETRY
-                    ),
+                    InternalLogger.Target.MAINTAINER,
                     RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE
                 )
             }
@@ -788,7 +783,10 @@ internal open class RumViewScope(
         return if (duration <= 0) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
+                listOf(
+                    InternalLogger.Target.USER,
+                    InternalLogger.Target.TELEMETRY
+                ),
                 NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, name)
             )
             1
@@ -1045,7 +1043,7 @@ internal open class RumViewScope(
 
         internal val FROZEN_FRAME_THRESHOLD_NS = TimeUnit.MILLISECONDS.toNanos(700)
         internal const val SLOW_RENDERED_THRESHOLD_FPS = 55
-        internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +
+        internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for the " +
             "view: %s was 0 or negative. In order to keep the view we forced it to 1ns."
 
         val navControllerActivityField = NavController::class.java.declaredFields.firstOrNull {

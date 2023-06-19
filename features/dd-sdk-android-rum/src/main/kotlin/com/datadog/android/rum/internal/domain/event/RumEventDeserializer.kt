@@ -99,6 +99,6 @@ internal class RumEventDeserializer(private val internalLogger: InternalLogger) 
         const val TELEMETRY_TYPE_ERROR = "error"
 
         const val DESERIALIZE_ERROR_MESSAGE_FORMAT =
-            "Error while trying to deserialize the serialized RumEvent: %s"
+            "Error while trying to deserialize the RumEvent: %s"
     }
 }

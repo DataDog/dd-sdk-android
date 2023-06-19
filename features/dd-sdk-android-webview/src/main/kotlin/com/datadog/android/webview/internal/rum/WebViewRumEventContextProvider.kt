@@ -34,11 +34,6 @@ internal class WebViewRumEventContextProvider(private val internalLogger: Intern
                 InternalLogger.Target.USER,
                 RUM_NOT_INITIALIZED_WARNING_MESSAGE
             )
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                RUM_NOT_INITIALIZED_ERROR_MESSAGE
-            )
             null
         } else {
             RumContext(applicationId = rumApplicationId, sessionId = rumSessionId)
@@ -48,7 +43,5 @@ internal class WebViewRumEventContextProvider(private val internalLogger: Intern
     companion object {
         const val RUM_NOT_INITIALIZED_WARNING_MESSAGE = "You are trying to use the WebView " +
             "tracking API but the RUM feature was not properly initialized."
-        const val RUM_NOT_INITIALIZED_ERROR_MESSAGE = "Trying to consume a bundled rum event" +
-            " but the RUM feature was not yet initialized. Missing the RUM context."
     }
 }

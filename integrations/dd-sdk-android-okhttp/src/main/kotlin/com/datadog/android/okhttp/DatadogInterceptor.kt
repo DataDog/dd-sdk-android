@@ -216,10 +216,15 @@ internal constructor(
 
             GlobalRum.get(sdkCore).startResource(requestId, method, url)
         } else {
-            sdkCore?.internalLogger?.log(
+            val prefix = if (sdkInstanceName == null) {
+                "Default SDK instance"
+            } else {
+                "SDK instance with name=$sdkInstanceName"
+            }
+            (sdkCore?.internalLogger ?: InternalLogger.UNBOUND).log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                WARN_RUM_DISABLED
+                WARN_RUM_DISABLED.format(Locale.US, prefix)
             )
         }
         return super.intercept(chain)
@@ -243,7 +248,11 @@ internal constructor(
             if (response != null) {
                 handleResponse(sdkCore, request, response, span, span != null)
             } else {
-                handleThrowable(sdkCore, request, throwable ?: IllegalStateException(ERROR_NO_RESPONSE))
+                handleThrowable(
+                    sdkCore,
+                    request,
+                    throwable ?: IllegalStateException(ERROR_NO_RESPONSE)
+                )
             }
         }
     }
@@ -329,7 +338,7 @@ internal constructor(
         } catch (e: IllegalStateException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_PEEK_BODY,
                 e
             )
@@ -337,7 +346,7 @@ internal constructor(
         } catch (e: IllegalArgumentException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_PEEK_BODY,
                 e
             )
@@ -350,7 +359,7 @@ internal constructor(
     internal companion object {
 
         internal const val WARN_RUM_DISABLED =
-            "You set up a DatadogInterceptor, but RUM features are disabled. " +
+            "You set up a DatadogInterceptor for %s, but RUM features are disabled. " +
                 "Make sure you initialized the Datadog SDK with a valid Application Id, " +
                 "and that RUM features are enabled."
 

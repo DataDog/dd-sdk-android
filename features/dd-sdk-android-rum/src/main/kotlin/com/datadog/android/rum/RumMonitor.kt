@@ -332,7 +332,8 @@ interface RumMonitor {
          */
         fun build(): RumMonitor {
             if (sdkCore !is InternalSdkCore) {
-                (sdkCore as FeatureSdkCore).internalLogger.log(
+                val logger = (sdkCore as? FeatureSdkCore)?.internalLogger ?: InternalLogger.UNBOUND
+                logger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     UNEXPECTED_SDK_CORE_TYPE

@@ -22,7 +22,7 @@ internal class NetworkInfoDeserializer(
         } catch (e: JsonParseException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 DESERIALIZE_ERROR_MESSAGE_FORMAT.format(
                     Locale.US,
                     model
@@ -35,6 +35,6 @@ internal class NetworkInfoDeserializer(
 
     companion object {
         const val DESERIALIZE_ERROR_MESSAGE_FORMAT =
-            "Error while trying to deserialize the serialized NetworkInfo: %s"
+            "Error while trying to deserialize the NetworkInfo: %s"
     }
 }

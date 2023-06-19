@@ -20,7 +20,7 @@ internal class JsonObjectDeserializer(private val internalLogger: InternalLogger
         } catch (jpe: JsonParseException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
                 jpe
             )
@@ -28,7 +28,7 @@ internal class JsonObjectDeserializer(private val internalLogger: InternalLogger
         } catch (ise: IllegalStateException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
                 ise
             )
@@ -38,6 +38,6 @@ internal class JsonObjectDeserializer(private val internalLogger: InternalLogger
 
     companion object {
         const val DESERIALIZE_ERROR_MESSAGE_FORMAT =
-            "Error while trying to deserialize the serialized RumEvent: %s"
+            "Error while trying to deserialize the RumEvent: %s"
     }
 }

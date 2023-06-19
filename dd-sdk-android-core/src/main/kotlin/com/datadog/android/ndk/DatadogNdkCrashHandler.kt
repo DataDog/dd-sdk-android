@@ -14,6 +14,7 @@ import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
 import com.datadog.android.core.internal.utils.join
+import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureSdkCore
@@ -24,7 +25,6 @@ import com.google.gson.JsonObject
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.RejectedExecutionException
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class DatadogNdkCrashHandler(
@@ -52,19 +52,9 @@ internal class DatadogNdkCrashHandler(
     // region NdkCrashHandler
 
     override fun prepareData() {
-        try {
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            dataPersistenceExecutorService.submit {
-                @Suppress("ThreadSafety")
-                readCrashData()
-            }
-        } catch (e: RejectedExecutionException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_TASK_REJECTED,
-                e
-            )
+        dataPersistenceExecutorService.submitSafe("NDK crash check", internalLogger) {
+            @Suppress("ThreadSafety")
+            readCrashData()
         }
     }
 
@@ -72,19 +62,9 @@ internal class DatadogNdkCrashHandler(
         sdkCore: FeatureSdkCore,
         reportTarget: NdkCrashHandler.ReportTarget
     ) {
-        try {
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            dataPersistenceExecutorService.submit {
-                @Suppress("ThreadSafety")
-                checkAndHandleNdkCrashReport(sdkCore, reportTarget)
-            }
-        } catch (e: RejectedExecutionException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_TASK_REJECTED,
-                e
-            )
+        dataPersistenceExecutorService.submitSafe("NDK crash report ", internalLogger) {
+            @Suppress("ThreadSafety")
+            checkAndHandleNdkCrashReport(sdkCore, reportTarget)
         }
     }
 
@@ -107,18 +87,21 @@ internal class DatadogNdkCrashHandler(
                             file.readTextSafe(internalLogger = internalLogger)?.let {
                                 ndkCrashLogDeserializer.deserialize(it)
                             }
+
                     RUM_VIEW_EVENT_FILE_NAME ->
                         lastRumViewEvent =
                             readRumFileContent(
                                 file,
                                 rumFileReader
                             )?.let { rumEventDeserializer.deserialize(it) }
+
                     USER_INFO_FILE_NAME ->
                         lastUserInfo =
                             readFileContent(
                                 file,
                                 envFileReader
                             )?.let { userInfoDeserializer.deserialize(it) }
+
                     NETWORK_INFO_FILE_NAME ->
                         lastNetworkInfo =
                             readFileContent(
@@ -217,6 +200,7 @@ internal class DatadogNdkCrashHandler(
                     )
                 }
             }
+
             NdkCrashHandler.ReportTarget.LOGS -> {
                 sendCrashLogEvent(
                     sdkCore,
@@ -369,8 +353,6 @@ internal class DatadogNdkCrashHandler(
 
         internal const val LOG_CRASH_MSG = "NDK crash detected with signal: %s"
         internal const val ERROR_READ_NDK_DIR = "Error while trying to read the NDK crash directory"
-
-        internal const val ERROR_TASK_REJECTED = "Unable to schedule operation on the executor"
 
         internal const val WARN_CANNOT_READ_VIEW_INFO_DATA =
             "Cannot read application, session, view IDs data from view event."

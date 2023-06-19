@@ -66,9 +66,9 @@ internal class DatadogLogHandler(
                 }
             } else {
                 sdkCore.internalLogger.log(
-                    InternalLogger.Level.INFO,
+                    InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    "Requested to write log, but Logs feature is not registered."
+                    LOGS_FEATURE_NOT_REGISTERED
                 )
             }
         }
@@ -88,7 +88,7 @@ internal class DatadogLogHandler(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
-                    RUM_FEATURE_NOT_REGISTERED_FOR_ERROR_FORWARD_INFO
+                    RUM_FEATURE_NOT_REGISTERED
                 )
             }
         }
@@ -133,9 +133,9 @@ internal class DatadogLogHandler(
                 }
             } else {
                 sdkCore.internalLogger.log(
-                    InternalLogger.Level.INFO,
+                    InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    LOGS_FEATURE_NOT_REGISTERED_INFO
+                    LOGS_FEATURE_NOT_REGISTERED
                 )
             }
         }
@@ -155,7 +155,7 @@ internal class DatadogLogHandler(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
-                    RUM_FEATURE_NOT_REGISTERED_FOR_ERROR_FORWARD_INFO
+                    RUM_FEATURE_NOT_REGISTERED
                 )
             }
         }
@@ -227,9 +227,9 @@ internal class DatadogLogHandler(
 
     private companion object {
         const val DEFAULT_SAMPLE_RATE = 100f
-        const val LOGS_FEATURE_NOT_REGISTERED_INFO =
+        const val LOGS_FEATURE_NOT_REGISTERED =
             "Requested to write log, but Logs feature is not registered."
-        const val RUM_FEATURE_NOT_REGISTERED_FOR_ERROR_FORWARD_INFO =
-            "RUM feature is not registered, won't forward error log to RUM."
+        const val RUM_FEATURE_NOT_REGISTERED =
+            "Requested to forward error log to RUM, but RUM feature is not registered."
     }
 }

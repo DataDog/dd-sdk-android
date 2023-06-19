@@ -34,6 +34,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -78,7 +79,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            DatadogInterceptor.WARN_RUM_DISABLED
+            DatadogInterceptor.WARN_RUM_DISABLED.format(Locale.US, "Default SDK instance")
         )
     }
 

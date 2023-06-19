@@ -80,7 +80,7 @@ internal class ConsentAwareFileMigrator(
         else -> {
             internalLogger.log(
                 InternalLogger.Level.WARN,
-                targets = listOf(
+                listOf(
                     InternalLogger.Target.MAINTAINER,
                     InternalLogger.Target.TELEMETRY
                 ),

@@ -33,6 +33,7 @@ import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.telemetry.internal.TelemetryType
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.tools.unit.forge.aThrowable
@@ -122,6 +123,9 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -141,6 +145,8 @@ internal class DatadogRumMonitorTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+
         fakeAttributes = forge.exhaustiveAttributes()
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,

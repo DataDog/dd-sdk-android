@@ -19,7 +19,7 @@ internal class SpanEventMapperWrapper(
         val mappedEvent = wrappedEventMapper.map(event)
         if (mappedEvent !== event) {
             internalLogger.log(
-                InternalLogger.Level.WARN,
+                InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, event)
             )

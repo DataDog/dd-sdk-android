@@ -38,7 +38,7 @@ internal class BroadcastReceiverSystemInfoProvider(
             else -> {
                 internalLogger.log(
                     InternalLogger.Level.DEBUG,
-                    targets = listOf(
+                    listOf(
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),

@@ -202,14 +202,14 @@ internal class DatadogCore(
         val feature = features[featureName]
         if (feature == null) {
             internalLogger.log(
-                InternalLogger.Level.INFO,
+                InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, featureName)
             )
         } else {
             if (feature.eventReceiver.get() != null) {
                 internalLogger.log(
-                    InternalLogger.Level.INFO,
+                    InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, featureName)
                 )
@@ -246,7 +246,7 @@ internal class DatadogCore(
             ndkLastViewEventFileWriter.writeData(lastViewEventFile, data, false)
         } else {
             internalLogger.log(
-                InternalLogger.Level.INFO,
+                InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
                 LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(Locale.US, lastViewEventFile.parent)
             )

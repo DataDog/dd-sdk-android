@@ -65,7 +65,7 @@ import java.util.concurrent.atomic.AtomicReference
 @Suppress("TooManyFunctions", "StringLiteralDuplication")
 open class TracingInterceptor
 internal constructor(
-    private val sdkInstanceName: String?,
+    internal val sdkInstanceName: String?,
     internal val tracedHosts: Map<String, Set<TracingHeaderType>>,
     internal val tracedRequestListener: TracedRequestListener,
     internal val traceOrigin: String?,
@@ -197,7 +197,7 @@ internal constructor(
             InternalLogger.UNBOUND.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                "$prefix for OkHttp instrumentation is found, skipping" +
+                "$prefix for OkHttp instrumentation is not found, skipping" +
                     " tracking of request with url=${chain.request().url()}"
             )
             @Suppress("UnsafeThirdPartyFunctionCall") // we are in method which allows throwing IOException

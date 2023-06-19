@@ -247,6 +247,7 @@ internal class RumFeature constructor(
             "web_view_ingested_notification" -> {
                 (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)?.sendWebViewEvent()
             }
+
             "telemetry_error" -> logTelemetryError(event)
             "telemetry_debug" -> logTelemetryDebug(event)
             "telemetry_configuration" -> logTelemetryConfiguration(event)
@@ -256,6 +257,7 @@ internal class RumFeature constructor(
                     it.drainExecutorService()
                 }
             }
+
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -380,7 +382,7 @@ internal class RumFeature constructor(
         if (throwable == null || message == null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS
             )
             return
@@ -403,7 +405,7 @@ internal class RumFeature constructor(
         if (message == null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS
             )
             return
@@ -427,7 +429,7 @@ internal class RumFeature constructor(
         if (message == null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS
             )
             return
@@ -446,7 +448,7 @@ internal class RumFeature constructor(
         if (message == null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
+                InternalLogger.Target.MAINTAINER,
                 TELEMETRY_MISSING_MESSAGE_FIELD
             )
             return
@@ -467,7 +469,7 @@ internal class RumFeature constructor(
         if (message == null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
+                InternalLogger.Target.MAINTAINER,
                 TELEMETRY_MISSING_MESSAGE_FIELD
             )
             return

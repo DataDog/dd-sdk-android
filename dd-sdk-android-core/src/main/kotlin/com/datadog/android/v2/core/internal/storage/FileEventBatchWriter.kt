@@ -70,8 +70,11 @@ internal class FileEventBatchWriter(
 
     @WorkerThread
     private fun writeBatchMetadata(metadataFile: File, metadata: ByteArray) {
-        val result =
-            metadataReaderWriter.writeData(metadataFile, metadata, false)
+        val result = metadataReaderWriter.writeData(
+            metadataFile,
+            metadata,
+            false
+        )
         if (!result) {
             internalLogger.log(
                 InternalLogger.Level.WARN,

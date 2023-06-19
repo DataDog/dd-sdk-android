@@ -158,6 +158,7 @@ internal class CoreFeatureTest {
         )
 
         // Then
+        Thread.sleep(50)
         assertThat(testedFeature.timeProvider)
             .isInstanceOf(KronosTimeProvider::class.java)
     }

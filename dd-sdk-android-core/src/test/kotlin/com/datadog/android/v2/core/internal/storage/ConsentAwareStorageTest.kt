@@ -273,8 +273,8 @@ internal class ConsentAwareStorageTest {
         // Then
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.MAINTAINER),
-            eq(ConsentAwareStorage.ERROR_WRITE_CONTEXT_EXECUTION_REJECTED),
+            eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
+            any(),
             isA<RejectedExecutionException>()
         )
     }

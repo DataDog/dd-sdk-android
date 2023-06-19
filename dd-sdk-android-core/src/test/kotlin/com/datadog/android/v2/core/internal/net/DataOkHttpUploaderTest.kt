@@ -42,6 +42,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.same
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -532,11 +533,13 @@ internal class DataOkHttpUploaderTest {
 
         // Then
         verify(mockLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            "Unable to create the request due to probably bad data format." +
-                " The batch will be dropped.",
-            fakeException
+            eq(InternalLogger.Level.ERROR),
+            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
+            eq(
+                "Unable to create the request, probably due to bad data format. " +
+                    "The batch will be dropped."
+            ),
+            same(fakeException)
         )
     }
 

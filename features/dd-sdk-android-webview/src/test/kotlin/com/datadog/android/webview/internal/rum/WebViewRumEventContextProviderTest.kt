@@ -195,9 +195,9 @@ internal class WebViewRumEventContextProviderTest {
 
         // Then
         verify(mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_ERROR_MESSAGE
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
         )
     }
 
@@ -263,9 +263,9 @@ internal class WebViewRumEventContextProviderTest {
 
         // Then
         verify(mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_ERROR_MESSAGE
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
         )
     }
 
@@ -300,9 +300,9 @@ internal class WebViewRumEventContextProviderTest {
 
         // Then
         verify(mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_ERROR_MESSAGE
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
         )
     }
 
@@ -337,9 +337,9 @@ internal class WebViewRumEventContextProviderTest {
 
         // Then
         verify(mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_ERROR_MESSAGE
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
         )
     }
 
