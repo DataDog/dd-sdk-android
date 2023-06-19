@@ -23,7 +23,7 @@
         "resource": {
           "type": "object",
           "description": "Resource properties",
-          "required": ["type", "url", "duration"],
+          "required": ["type", "url"],
           "properties": {
             "id": {
               "type": "string",

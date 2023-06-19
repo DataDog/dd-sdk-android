@@ -152,7 +152,7 @@ internal class RumActionScopeTest {
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
         whenever(
-            mockFeaturesContextResolver.resolveHasReplay(
+            mockFeaturesContextResolver.resolveViewHasReplay(
                 fakeDatadogContext,
                 fakeParentContext.viewId.orEmpty()
             )
