@@ -97,8 +97,9 @@ internal class ScheduledWriterTest {
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
             eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-            any(),
-            same(exception)
+            any<String>(),
+            same(exception),
+            eq(false)
         )
     }
 
@@ -139,8 +140,9 @@ internal class ScheduledWriterTest {
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
             eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-            any(),
-            same(exception)
+            any<String>(),
+            same(exception),
+            eq(false)
         )
     }
 }

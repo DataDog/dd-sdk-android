@@ -258,7 +258,8 @@ internal constructor(
             (sdkCore as FeatureSdkCore).internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                WARNING_TRACING_NO_HOSTS
+                WARNING_TRACING_NO_HOSTS,
+                onlyOnce = true
             )
         }
     }
@@ -324,7 +325,8 @@ internal constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                WARNING_TRACING_DISABLED
+                WARNING_TRACING_DISABLED,
+                onlyOnce = true
             )
             null
         } else if (GlobalTracer.isRegistered()) {

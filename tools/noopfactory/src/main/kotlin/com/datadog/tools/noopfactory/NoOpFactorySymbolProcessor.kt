@@ -339,6 +339,7 @@ class NoOpFactorySymbolProcessor(
                     "emptyList"
                 )
             )
+
             rawTypeName == MAP -> funSpecBuilder.addStatement(
                 returnNewInstance,
                 MemberName(
@@ -346,6 +347,7 @@ class NoOpFactorySymbolProcessor(
                     "emptyMap"
                 )
             )
+
             rawTypeName == SET -> funSpecBuilder.addStatement(
                 returnNewInstance,
                 MemberName(
@@ -353,9 +355,11 @@ class NoOpFactorySymbolProcessor(
                     "emptySet"
                 )
             )
+
             matchingParamName != null && !returnTypeName.isNullable -> {
                 funSpecBuilder.addStatement("return %L", matchingParamName)
             }
+
             returnClassKind == ClassKind.ENUM_CLASS -> {
                 val firstValue = returnClassDeclaration.declarations.firstOrNull {
                     (it as? KSClassDeclaration)?.classKind == ClassKind.ENUM_ENTRY
@@ -372,6 +376,7 @@ class NoOpFactorySymbolProcessor(
                     )
                 }
             }
+
             returnClassKind == ClassKind.INTERFACE -> {
                 val packageName = returnClassDeclaration.qualifiedName
                     ?.asString()
@@ -382,6 +387,7 @@ class NoOpFactorySymbolProcessor(
                 )
                 funSpecBuilder.addStatement("return %T()", noOpReturnType)
             }
+
             else -> {
                 funSpecBuilder.addStatement("return %T()", returnTypeName)
             }

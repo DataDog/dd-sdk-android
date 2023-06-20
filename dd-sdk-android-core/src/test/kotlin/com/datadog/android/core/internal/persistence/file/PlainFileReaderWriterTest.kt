@@ -25,7 +25,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.io.File
@@ -181,9 +180,10 @@ internal class PlainFileReaderWriterTest {
         assertThat(file).doesNotExist()
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
-            targets = eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
+            eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
             eq(PlainFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path)),
-            any()
+            any(),
+            eq(false)
         )
     }
 
@@ -208,9 +208,10 @@ internal class PlainFileReaderWriterTest {
         assertThat(result).isFalse()
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
-            targets = eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
+            eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
             eq(PlainFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path)),
-            any()
+            any(),
+            eq(false)
         )
     }
 
@@ -233,10 +234,10 @@ internal class PlainFileReaderWriterTest {
         assertThat(result).isEmpty()
         assertThat(file).doesNotExist()
         verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            targets = eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-            eq(PlainFileReaderWriter.ERROR_READ.format(Locale.US, file.path)),
-            isNull()
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            PlainFileReaderWriter.ERROR_READ.format(Locale.US, file.path),
+            null
         )
     }
 
@@ -254,10 +255,10 @@ internal class PlainFileReaderWriterTest {
         // Then
         assertThat(result).isEmpty()
         verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            targets = eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-            eq(PlainFileReaderWriter.ERROR_READ.format(Locale.US, file.path)),
-            isNull()
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            PlainFileReaderWriter.ERROR_READ.format(Locale.US, file.path),
+            null
         )
     }
 

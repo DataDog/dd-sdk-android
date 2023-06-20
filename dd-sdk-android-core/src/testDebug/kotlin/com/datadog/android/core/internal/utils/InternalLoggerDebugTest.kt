@@ -35,7 +35,7 @@ internal class InternalLoggerDebugTest {
         val logger = SdkInternalLogger(forge.aNullable { mock() })
 
         // Then
-        val handler: LogcatLogHandler? = logger.sdkLogger
+        val handler: LogcatLogHandler? = logger.maintainerLogger
         assertThat(handler).isNotNull
         assertThat(handler?.tag).isEqualTo(SdkInternalLogger.SDK_LOG_TAG)
     }

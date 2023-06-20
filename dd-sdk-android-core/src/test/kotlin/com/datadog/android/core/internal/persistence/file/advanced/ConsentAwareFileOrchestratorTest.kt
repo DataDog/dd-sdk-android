@@ -31,9 +31,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.reset
-import org.mockito.kotlin.same
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -816,10 +814,10 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-            eq("Unable to schedule Data migration task on the executor"),
-            same(exception)
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            "Unable to schedule Data migration task on the executor",
+            exception
         )
     }
 

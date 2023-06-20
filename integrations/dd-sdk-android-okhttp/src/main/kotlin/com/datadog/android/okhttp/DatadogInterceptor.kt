@@ -224,7 +224,8 @@ internal constructor(
             (sdkCore?.internalLogger ?: InternalLogger.UNBOUND).log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                WARN_RUM_DISABLED.format(Locale.US, prefix)
+                WARN_RUM_DISABLED.format(Locale.US, prefix),
+                onlyOnce = true
             )
         }
         return super.intercept(chain)

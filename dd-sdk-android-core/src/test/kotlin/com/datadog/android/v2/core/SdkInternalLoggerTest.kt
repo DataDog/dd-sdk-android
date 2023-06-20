@@ -29,6 +29,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -41,10 +42,10 @@ import org.mockito.quality.Strictness
 internal class SdkInternalLoggerTest {
 
     @Mock
-    lateinit var mockDevLogHandler: LogcatLogHandler
+    lateinit var mockUserLogHandler: LogcatLogHandler
 
     @Mock
-    lateinit var mockSdkLogHandler: LogcatLogHandler
+    lateinit var mockMaintainerLogHandler: LogcatLogHandler
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
@@ -60,13 +61,34 @@ internal class SdkInternalLoggerTest {
 
         testedInternalLogger = SdkInternalLogger(
             sdkCore = mockSdkCore,
-            devLogHandlerFactory = { mockDevLogHandler },
-            sdkLogHandlerFactory = { mockSdkLogHandler }
+            userLogHandlerFactory = { mockUserLogHandler },
+            maintainerLogHandlerFactory = { mockMaintainerLogHandler }
         )
     }
 
+    fun callWithLambda(i: Int, lambda: () -> String) {
+        if (i == 0) {
+            print(lambda())
+        }
+    }
+
+    fun callWithString(i: Int, str: String) {
+        if (i == 0) {
+            print(str)
+        }
+    }
+
+//    Simple string
+//       withLambda:     3517458
+//    withoutLambda:     1570417
+//    String template
+//       withLambda:     4300250
+//    withoutLambda:    11746375
+
+    // region Target.USER
+
     @Test
-    fun `𝕄 send dev log 𝕎 log { USER target }`(
+    fun `𝕄 send user log 𝕎 log { USER target }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -83,7 +105,7 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        verify(mockDevLogHandler)
+        verify(mockUserLogHandler)
             .log(
                 fakeLevel.toLogLevel(),
                 "[$fakeInstanceName]: $fakeMessage",
@@ -92,7 +114,36 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `𝕄 send dev log with condition 𝕎 log { USER target }`(
+    fun `𝕄 send user log only once 𝕎 log { USER target, onlyOnce=true }`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
+        val fakeThrowable = forge.aNullable { forge.aThrowable() }
+
+        // When
+        repeat(10) {
+            testedInternalLogger.log(
+                fakeLevel,
+                InternalLogger.Target.USER,
+                fakeMessage,
+                fakeThrowable,
+                true
+            )
+        }
+
+        // Then
+        verify(mockUserLogHandler)
+            .log(
+                fakeLevel.toLogLevel(),
+                "[$fakeInstanceName]: $fakeMessage",
+                fakeThrowable
+            )
+    }
+
+    @Test
+    fun `𝕄 send user log with condition 𝕎 log { USER target }`(
         @IntForgery(min = Log.VERBOSE, max = (Log.ASSERT + 1)) sdkVerbosity: Int
     ) {
         // Given
@@ -101,11 +152,11 @@ internal class SdkInternalLoggerTest {
         // When
         testedInternalLogger = SdkInternalLogger(
             sdkCore = mockSdkCore,
-            sdkLogHandlerFactory = { mockSdkLogHandler }
+            maintainerLogHandlerFactory = { mockMaintainerLogHandler }
         )
 
         // Then
-        val predicate = testedInternalLogger.devLogger.predicate
+        val predicate = testedInternalLogger.userLogger.predicate
         for (i in 0..10) {
             if (i >= sdkVerbosity) {
                 Assertions.assertThat(predicate(i)).isTrue
@@ -115,8 +166,10 @@ internal class SdkInternalLoggerTest {
         }
     }
 
+    // endregion
+
     @Test
-    fun `𝕄 send sdk log 𝕎 log { MAINTAINER target }`(
+    fun `𝕄 send maintainer log 𝕎 log { MAINTAINER target }`(
         @StringForgery fakeMessage: String,
         forge: Forge
     ) {
@@ -133,7 +186,36 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        verify(mockSdkLogHandler)
+        verify(mockMaintainerLogHandler)
+            .log(
+                fakeLevel.toLogLevel(),
+                "[$fakeInstanceName]: $fakeMessage",
+                fakeThrowable
+            )
+    }
+
+    @Test
+    fun `𝕄 send maintainer log only once 𝕎 log { MAINTAINER target, onlyOnce=true }`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
+        val fakeThrowable = forge.aNullable { forge.aThrowable() }
+
+        // When
+        repeat(10) {
+            testedInternalLogger.log(
+                fakeLevel,
+                InternalLogger.Target.MAINTAINER,
+                fakeMessage,
+                fakeThrowable,
+                true
+            )
+        }
+
+        // Then
+        verify(mockMaintainerLogHandler)
             .log(
                 fakeLevel.toLogLevel(),
                 "[$fakeInstanceName]: $fakeMessage",
@@ -224,6 +306,37 @@ internal class SdkInternalLoggerTest {
                     "type" to "telemetry_error",
                     "message" to fakeMessage,
                     "throwable" to fakeThrowable
+                )
+            )
+    }
+
+    @Test
+    fun `𝕄 send telemetry log only once 𝕎 log { TELEMETRY target, onlyOnce=true}`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeLevel = forge.anElementFrom(InternalLogger.Level.INFO, InternalLogger.Level.DEBUG)
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+
+        // When
+        repeat(10) {
+            testedInternalLogger.log(
+                fakeLevel,
+                InternalLogger.Target.TELEMETRY,
+                fakeMessage,
+                null,
+                true
+            )
+        }
+
+        // Then
+        verify(mockRumFeatureScope)
+            .sendEvent(
+                mapOf(
+                    "type" to "telemetry_debug",
+                    "message" to fakeMessage
                 )
             )
     }

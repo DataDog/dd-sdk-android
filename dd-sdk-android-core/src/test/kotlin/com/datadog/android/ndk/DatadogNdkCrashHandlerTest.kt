@@ -171,7 +171,9 @@ internal class DatadogNdkCrashHandlerTest {
     ) {
         // Given
         fakeNdkCacheDir.mkdirs()
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(viewEventStr)
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(
+            viewEventStr
+        )
         val fakeViewEvent = forge.aFakeViewEvent()
         whenever(mockRumEventDeserializer.deserialize(viewEventStr)) doReturn fakeViewEvent.toJson()
 
@@ -405,9 +407,11 @@ internal class DatadogNdkCrashHandlerTest {
                 corruptedProperty,
                 forge.anElementFrom(JsonPrimitive(forge.anAlphabeticalString()), JsonArray())
             )
+
             "missing_id_property" -> fakeViewJson.get(corruptedProperty)
                 .asJsonObject
                 .remove("id")
+
             "wrong_id_type" -> fakeViewJson.get(corruptedProperty)
                 .asJsonObject.add(
                     "id",
@@ -430,7 +434,8 @@ internal class DatadogNdkCrashHandlerTest {
                 eq(InternalLogger.Level.WARN),
                 eq(InternalLogger.Target.MAINTAINER),
                 eq(DatadogNdkCrashHandler.WARN_CANNOT_READ_VIEW_INFO_DATA),
-                throwable = any()
+                any(),
+                eq(false)
             )
     }
 

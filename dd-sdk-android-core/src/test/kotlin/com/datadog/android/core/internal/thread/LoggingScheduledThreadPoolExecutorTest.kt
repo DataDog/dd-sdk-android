@@ -73,7 +73,7 @@ internal class LoggingScheduledThreadPoolExecutorTest :
         verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
                 throwable
             )
@@ -94,9 +94,10 @@ internal class LoggingScheduledThreadPoolExecutorTest :
         verify(mockInternalLogger)
             .log(
                 eq(InternalLogger.Level.ERROR),
-                targets = eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
+                eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
                 eq(ERROR_UNCAUGHT_EXECUTION_EXCEPTION),
-                isA<CancellationException>()
+                isA<CancellationException>(),
+                eq(false)
             )
     }
 }
