@@ -85,7 +85,7 @@ internal class WindowCallbackWrapper(
             RumAttributes.ACTION_TARGET_RESOURCE_ID to resourceId,
             RumAttributes.ACTION_TARGET_TITLE to item.title
         )
-        GlobalRum.get(sdkCore).addUserAction(
+        GlobalRum.get(sdkCore).addAction(
             RumActionType.TAP,
             resolveTargetName(interactionPredicate, item),
             attributes
@@ -148,7 +148,7 @@ internal class WindowCallbackWrapper(
                 provider.extractAttributes(it, attributes)
             }
             val targetName = resolveTargetName(interactionPredicate, it)
-            GlobalRum.get(sdkCore).addUserAction(RumActionType.CLICK, targetName, attributes)
+            GlobalRum.get(sdkCore).addAction(RumActionType.CLICK, targetName, attributes)
         }
     }
 
@@ -162,7 +162,7 @@ internal class WindowCallbackWrapper(
         } else {
             customTargetName
         }
-        GlobalRum.get(sdkCore).addUserAction(RumActionType.BACK, targetName, emptyMap())
+        GlobalRum.get(sdkCore).addAction(RumActionType.BACK, targetName, emptyMap())
     }
 
     // endregion

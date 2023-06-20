@@ -231,13 +231,13 @@ class LoggerBuilderE2ETests {
         val viewKey = forge.anAlphabeticalString()
         val actionName = forge.anAlphabeticalString()
         GlobalRum.get(sdkCore).startView(viewKey, forge.anAlphabeticalString())
-        GlobalRum.get(sdkCore).startUserAction(RumActionType.TAP, actionName, emptyMap())
+        GlobalRum.get(sdkCore).startAction(RumActionType.TAP, actionName, emptyMap())
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
         sendRandomActionOutcomeEvent(forge, sdkCore)
         // Give time to the View event to be propagated
         Thread.sleep(200)
         logger.sendRandomLog(testMethodName, forge)
-        GlobalRum.get(sdkCore).stopUserAction(RumActionType.TAP, actionName)
+        GlobalRum.get(sdkCore).stopAction(RumActionType.TAP, actionName)
         GlobalRum.get(sdkCore).stopView(viewKey)
     }
 

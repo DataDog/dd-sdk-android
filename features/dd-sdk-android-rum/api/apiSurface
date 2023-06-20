@@ -87,9 +87,9 @@ enum com.datadog.android.rum.RumErrorSource
 interface com.datadog.android.rum.RumMonitor
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
-  fun addUserAction(RumActionType, String, Map<String, Any?>)
-  fun startUserAction(RumActionType, String, Map<String, Any?>)
-  fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
+  fun addAction(RumActionType, String, Map<String, Any?>)
+  fun startAction(RumActionType, String, Map<String, Any?>)
+  fun stopAction(RumActionType, String, Map<String, Any?> = emptyMap())
   fun startResource(String, String, String, Map<String, Any?> = emptyMap())
   fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)
   fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable, Map<String, Any?> = emptyMap())

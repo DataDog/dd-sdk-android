@@ -227,11 +227,11 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W addUserAction()`(
+    fun `M delegate event to rootScope W addAction()`(
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
-        testedMonitor.addUserAction(type, name, fakeAttributes)
+        testedMonitor.addAction(type, name, fakeAttributes)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -247,11 +247,11 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W startUserAction()`(
+    fun `M delegate event to rootScope W startAction()`(
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
-        testedMonitor.startUserAction(type, name, fakeAttributes)
+        testedMonitor.startAction(type, name, fakeAttributes)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -267,11 +267,11 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W stopUserAction()`(
+    fun `M delegate event to rootScope W stopAction()`(
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
-        testedMonitor.stopUserAction(type, name, fakeAttributes)
+        testedMonitor.stopAction(type, name, fakeAttributes)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -651,13 +651,13 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope with timestamp W addUserAction()`(
+    fun `M delegate event to rootScope with timestamp W addAction()`(
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
-        testedMonitor.addUserAction(type, name, attributes)
+        testedMonitor.addAction(type, name, attributes)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -674,13 +674,13 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope with timestamp W startUserAction()`(
+    fun `M delegate event to rootScope with timestamp W startAction()`(
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
-        testedMonitor.startUserAction(type, name, attributes)
+        testedMonitor.startAction(type, name, attributes)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -697,13 +697,13 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope with timestamp W stopUserAction()`(
+    fun `M delegate event to rootScope with timestamp W stopAction()`(
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
-        testedMonitor.stopUserAction(type, name, attributes)
+        testedMonitor.stopAction(type, name, attributes)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {

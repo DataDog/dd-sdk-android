@@ -73,7 +73,7 @@ internal class TapActionTrackerTest {
         testedTracker.invoke()
 
         // Then
-        verify(mockRumMonitor).addUserAction(
+        verify(mockRumMonitor).addAction(
             RumActionType.TAP,
             fakeTargetName,
             fakeAttributes + mapOf(RumAttributes.ACTION_TARGET_TITLE to fakeTargetName)

@@ -40,7 +40,7 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
                     val clickedTargetName = intent.getStringExtra(WIDGET_CLICKED_TARGET_NAME)
                     if (clickedTargetName != null) {
                         GlobalRum.get()
-                            .addUserAction(RumActionType.CLICK, clickedTargetName, emptyMap())
+                            .addAction(RumActionType.CLICK, clickedTargetName, emptyMap())
                     }
                 }
 

@@ -799,7 +799,7 @@ class RumConfigE2ETests {
 
     private fun sendRandomActionEvent(sdkCore: SdkCore, testMethodName: String) {
         executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName, sdkCore) {
-            GlobalRum.get(sdkCore).addUserAction(
+            GlobalRum.get(sdkCore).addAction(
                 forge.aValueFrom(RumActionType::class.java),
                 forge.anActionName(),
                 defaultTestAttributes(testMethodName)

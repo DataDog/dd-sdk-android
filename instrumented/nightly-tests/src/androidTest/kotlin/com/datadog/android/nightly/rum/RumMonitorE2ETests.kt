@@ -157,7 +157,7 @@ class RumMonitorE2ETests {
             viewName,
             attributes
         )
-        GlobalRum.get(sdkCore).startUserAction(
+        GlobalRum.get(sdkCore).startAction(
             actionType,
             actionName,
             attributes = attributes
@@ -165,7 +165,7 @@ class RumMonitorE2ETests {
         measure(testMethodName) {
             GlobalRum.get(sdkCore).stopView(viewKey)
         }
-        GlobalRum.get(sdkCore).stopUserAction(
+        GlobalRum.get(sdkCore).stopAction(
             actionType,
             actionName,
             attributes
@@ -231,7 +231,7 @@ class RumMonitorE2ETests {
     // region Action
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun startUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun startAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_start_non_custom_action_with_no_outcome() {
@@ -246,7 +246,7 @@ class RumMonitorE2ETests {
         val attributes = defaultTestAttributes(testMethodName)
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             measure(testMethodName) {
-                GlobalRum.get(sdkCore).startUserAction(
+                GlobalRum.get(sdkCore).startAction(
                     actionType,
                     actionName,
                     attributes = attributes
@@ -258,7 +258,7 @@ class RumMonitorE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun startUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun startAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_start_custom_action_with_no_outcome() {
@@ -269,7 +269,7 @@ class RumMonitorE2ETests {
         val attributes = defaultTestAttributes(testMethodName)
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             measure(testMethodName) {
-                GlobalRum.get(sdkCore).startUserAction(
+                GlobalRum.get(sdkCore).startAction(
                     RumActionType.CUSTOM,
                     actionName,
                     attributes = attributes
@@ -279,7 +279,7 @@ class RumMonitorE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun startUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun startAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_start_action_with_outcome() {
@@ -294,7 +294,7 @@ class RumMonitorE2ETests {
             forge.aValueFrom(RumActionType::class.java, exclude = listOf(RumActionType.BACK))
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             measure(testMethodName) {
-                GlobalRum.get(sdkCore).startUserAction(
+                GlobalRum.get(sdkCore).startAction(
                     actionType,
                     actionName,
                     attributes = attributes
@@ -307,7 +307,7 @@ class RumMonitorE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopAction(RumActionType, String, Map<String, Any?> = emptyMap())
      */
     @Test
     fun rum_rummonitor_stop_non_custom_action_with_no_outcome() {
@@ -321,13 +321,13 @@ class RumMonitorE2ETests {
         )
         val stopActionAttributes = forge.exhaustiveAttributes()
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
-            GlobalRum.get(sdkCore).startUserAction(
+            GlobalRum.get(sdkCore).startAction(
                 actionType,
                 actionName,
                 attributes = defaultTestAttributes(testMethodName)
             )
             measure(testMethodName) {
-                GlobalRum.get(sdkCore).stopUserAction(actionType, actionName, stopActionAttributes)
+                GlobalRum.get(sdkCore).stopAction(actionType, actionName, stopActionAttributes)
             }
             // wait for the action to be inactive
             Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
@@ -335,7 +335,7 @@ class RumMonitorE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopAction(RumActionType, String, Map<String, Any?> = emptyMap())
      */
     @Test
     fun rum_rummonitor_stop_custom_action_with_no_outcome() {
@@ -345,13 +345,13 @@ class RumMonitorE2ETests {
         val actionName = forge.anActionName()
         val stopActionAttributes = forge.exhaustiveAttributes()
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
-            GlobalRum.get(sdkCore).startUserAction(
+            GlobalRum.get(sdkCore).startAction(
                 RumActionType.CUSTOM,
                 actionName,
                 attributes = defaultTestAttributes(testMethodName)
             )
             measure(testMethodName) {
-                GlobalRum.get(sdkCore).stopUserAction(
+                GlobalRum.get(sdkCore).stopAction(
                     RumActionType.CUSTOM,
                     actionName,
                     stopActionAttributes
@@ -363,7 +363,7 @@ class RumMonitorE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopAction(RumActionType, String, Map<String, Any?> = emptyMap())
      */
     @Test
     fun rum_rummonitor_stop_action_with_outcome() {
@@ -376,14 +376,14 @@ class RumMonitorE2ETests {
         val type = forge.aValueFrom(RumActionType::class.java, exclude = listOf(RumActionType.BACK))
         val stopActionAttributes = forge.exhaustiveAttributes()
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
-            GlobalRum.get(sdkCore).startUserAction(
+            GlobalRum.get(sdkCore).startAction(
                 type,
                 actionName,
                 attributes = defaultTestAttributes(testMethodName)
             )
             sendRandomActionOutcomeEvent(forge, sdkCore)
             measure(testMethodName) {
-                GlobalRum.get(sdkCore).stopUserAction(type, actionName, stopActionAttributes)
+                GlobalRum.get(sdkCore).stopAction(type, actionName, stopActionAttributes)
             }
             // wait for the action to be inactive
             Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
@@ -391,7 +391,7 @@ class RumMonitorE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_add_non_custom_action_with_no_outcome() {
@@ -406,7 +406,7 @@ class RumMonitorE2ETests {
         val attributes = defaultTestAttributes(testMethodName)
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             measure(testMethodName) {
-                GlobalRum.get(sdkCore).addUserAction(
+                GlobalRum.get(sdkCore).addAction(
                     actionType,
                     actionName,
                     attributes = attributes
@@ -418,7 +418,7 @@ class RumMonitorE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_add_custom_action_with_no_outcome() {
@@ -429,7 +429,7 @@ class RumMonitorE2ETests {
         val attributes = defaultTestAttributes(testMethodName)
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             measure(testMethodName) {
-                GlobalRum.get(sdkCore).addUserAction(
+                GlobalRum.get(sdkCore).addAction(
                     RumActionType.CUSTOM,
                     actionName,
                     attributes = attributes
@@ -441,7 +441,7 @@ class RumMonitorE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_add_action_with_outcome() {
@@ -458,7 +458,7 @@ class RumMonitorE2ETests {
         )
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             measure(testMethodName) {
-                GlobalRum.get(sdkCore).addUserAction(
+                GlobalRum.get(sdkCore).addAction(
                     actionType,
                     actionName,
                     attributes = attributes
@@ -471,7 +471,7 @@ class RumMonitorE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_add_custom_action_while_active_action() {
@@ -488,13 +488,13 @@ class RumMonitorE2ETests {
         )
         val attributes = defaultTestAttributes(testMethodName)
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
-            GlobalRum.get(sdkCore).startUserAction(
+            GlobalRum.get(sdkCore).startAction(
                 actionType,
                 activeActionName,
                 attributes = attributes
             )
             measure(testMethodName) {
-                GlobalRum.get(sdkCore).addUserAction(
+                GlobalRum.get(sdkCore).addAction(
                     RumActionType.CUSTOM,
                     customActionName,
                     attributes = attributes
@@ -503,7 +503,7 @@ class RumMonitorE2ETests {
             sendRandomActionOutcomeEvent(forge, sdkCore)
             // wait for the action to be inactive
             Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
-            GlobalRum.get(sdkCore).stopUserAction(
+            GlobalRum.get(sdkCore).stopAction(
                 actionType,
                 activeActionName,
                 forge.exhaustiveAttributes()
@@ -516,14 +516,14 @@ class RumMonitorE2ETests {
     // region Background Action
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopAction(RumActionType, String, Map<String, Any?> = emptyMap())
      */
     @Test
     fun rum_rummonitor_ignore_stop_background_action_with_outcome() {
         val testMethodName = "rum_rummonitor_ignore_stop_background_action_with_outcome"
         val actionName = forge.anActionName()
         val type = forge.aValueFrom(RumActionType::class.java)
-        GlobalRum.get(sdkCore).startUserAction(
+        GlobalRum.get(sdkCore).startAction(
             type,
             actionName,
             attributes = defaultTestAttributes(testMethodName)
@@ -538,12 +538,12 @@ class RumMonitorE2ETests {
         Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
         val stopActionAttributes = forge.exhaustiveAttributes()
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).stopUserAction(type, actionName, stopActionAttributes)
+            GlobalRum.get(sdkCore).stopAction(type, actionName, stopActionAttributes)
         }
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_ignore_add_background_non_custom_action_with_no_outcome() {
@@ -556,7 +556,7 @@ class RumMonitorE2ETests {
         )
         val attributes = defaultTestAttributes(testMethodName)
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).addUserAction(
+            GlobalRum.get(sdkCore).addAction(
                 actionType,
                 actionName,
                 attributes = attributes
@@ -565,7 +565,7 @@ class RumMonitorE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_ignore_add_background_custom_action_with_no_outcome() {
@@ -573,7 +573,7 @@ class RumMonitorE2ETests {
         val actionName = forge.anActionName()
         val attributes = defaultTestAttributes(testMethodName)
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).addUserAction(
+            GlobalRum.get(sdkCore).addAction(
                 RumActionType.CUSTOM,
                 actionName,
                 attributes = attributes
@@ -584,7 +584,7 @@ class RumMonitorE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_ignore_add_background_custom_action_with_outcome() {
@@ -592,7 +592,7 @@ class RumMonitorE2ETests {
         val actionName = forge.anActionName()
         val attributes = defaultTestAttributes(testMethodName)
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).addUserAction(
+            GlobalRum.get(sdkCore).addAction(
                 RumActionType.CUSTOM,
                 actionName,
                 attributes = attributes
@@ -607,7 +607,7 @@ class RumMonitorE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_ignore_add_background_non_custom_action_with_outcome() {
@@ -619,7 +619,7 @@ class RumMonitorE2ETests {
         )
         val attributes = defaultTestAttributes(testMethodName)
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).addUserAction(
+            GlobalRum.get(sdkCore).addAction(
                 actionType,
                 actionName,
                 attributes = attributes

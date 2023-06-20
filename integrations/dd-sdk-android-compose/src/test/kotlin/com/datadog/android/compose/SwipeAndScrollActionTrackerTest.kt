@@ -130,9 +130,9 @@ class SwipeAndScrollActionTrackerTest {
         // Then
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor)
-                .startUserAction(RumActionType.SWIPE, fakeTargetName, emptyMap())
+                .startAction(RumActionType.SWIPE, fakeTargetName, emptyMap())
             verify(mockRumMonitor)
-                .stopUserAction(RumActionType.SWIPE, fakeTargetName, expectedAttributes)
+                .stopAction(RumActionType.SWIPE, fakeTargetName, expectedAttributes)
         }
     }
 
@@ -185,9 +185,9 @@ class SwipeAndScrollActionTrackerTest {
         // Then
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor)
-                .startUserAction(RumActionType.SWIPE, fakeTargetName, emptyMap())
+                .startAction(RumActionType.SWIPE, fakeTargetName, emptyMap())
             verify(mockRumMonitor)
-                .stopUserAction(RumActionType.SWIPE, fakeTargetName, expectedAttributes)
+                .stopAction(RumActionType.SWIPE, fakeTargetName, expectedAttributes)
         }
     }
 
@@ -229,7 +229,7 @@ class SwipeAndScrollActionTrackerTest {
 
         // Then
         verify(mockRumMonitor, times(2))
-            .startUserAction(RumActionType.SWIPE, fakeTargetName, emptyMap())
+            .startAction(RumActionType.SWIPE, fakeTargetName, emptyMap())
         verifyNoMoreInteractions(mockRumMonitor)
     }
 
@@ -271,7 +271,7 @@ class SwipeAndScrollActionTrackerTest {
 
         // Then
         verify(mockRumMonitor)
-            .startUserAction(RumActionType.SWIPE, fakeTargetName, emptyMap())
+            .startAction(RumActionType.SWIPE, fakeTargetName, emptyMap())
         verifyNoMoreInteractions(mockRumMonitor)
     }
 
@@ -322,9 +322,9 @@ class SwipeAndScrollActionTrackerTest {
         // Then
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor)
-                .startUserAction(RumActionType.SCROLL, fakeTargetName, emptyMap())
+                .startAction(RumActionType.SCROLL, fakeTargetName, emptyMap())
             verify(mockRumMonitor)
-                .stopUserAction(RumActionType.SCROLL, fakeTargetName, expectedAttributes)
+                .stopAction(RumActionType.SCROLL, fakeTargetName, expectedAttributes)
         }
     }
 
@@ -375,9 +375,9 @@ class SwipeAndScrollActionTrackerTest {
         // Then
         inOrder(mockRumMonitor) {
             verify(mockRumMonitor)
-                .startUserAction(RumActionType.SCROLL, fakeTargetName, emptyMap())
+                .startAction(RumActionType.SCROLL, fakeTargetName, emptyMap())
             verify(mockRumMonitor)
-                .stopUserAction(RumActionType.SCROLL, fakeTargetName, expectedAttributes)
+                .stopAction(RumActionType.SCROLL, fakeTargetName, expectedAttributes)
         }
     }
 
@@ -415,7 +415,7 @@ class SwipeAndScrollActionTrackerTest {
 
         // Then
         verify(mockRumMonitor, times(2))
-            .startUserAction(RumActionType.SCROLL, fakeTargetName, emptyMap())
+            .startAction(RumActionType.SCROLL, fakeTargetName, emptyMap())
         verifyNoMoreInteractions(mockRumMonitor)
     }
 
@@ -453,7 +453,7 @@ class SwipeAndScrollActionTrackerTest {
 
         // Then
         verify(mockRumMonitor)
-            .startUserAction(RumActionType.SCROLL, fakeTargetName, emptyMap())
+            .startAction(RumActionType.SCROLL, fakeTargetName, emptyMap())
         verifyNoMoreInteractions(mockRumMonitor)
     }
 

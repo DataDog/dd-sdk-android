@@ -184,7 +184,7 @@ internal class WindowCallbackWrapperTest {
 
         // Then
         inOrder(mockCallback, rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).addUserAction(
+            verify(rumMonitor.mockInstance).addAction(
                 eq(RumActionType.TAP),
                 eq(customTargetName),
                 argThat {
@@ -228,7 +228,7 @@ internal class WindowCallbackWrapperTest {
 
         // Then
         inOrder(mockCallback, rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).addUserAction(
+            verify(rumMonitor.mockInstance).addAction(
                 eq(RumActionType.TAP),
                 eq(""),
                 argThat {
@@ -272,7 +272,7 @@ internal class WindowCallbackWrapperTest {
 
         // Then
         inOrder(mockCallback, rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).addUserAction(
+            verify(rumMonitor.mockInstance).addAction(
                 eq(RumActionType.TAP),
                 eq(""),
                 argThat {
@@ -414,7 +414,7 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.dispatchKeyEvent(keyEvent)
 
         // Then
-        verify(rumMonitor.mockInstance).addUserAction(
+        verify(rumMonitor.mockInstance).addAction(
             RumActionType.BACK,
             WindowCallbackWrapper.BACK_DEFAULT_TARGET_NAME,
             emptyMap()
@@ -442,7 +442,7 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.dispatchKeyEvent(keyEvent)
 
         // Then
-        verify(rumMonitor.mockInstance).addUserAction(
+        verify(rumMonitor.mockInstance).addAction(
             RumActionType.BACK,
             WindowCallbackWrapper.BACK_DEFAULT_TARGET_NAME,
             emptyMap()
@@ -471,7 +471,7 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.dispatchKeyEvent(keyEvent)
 
         // Then
-        verify(rumMonitor.mockInstance).addUserAction(
+        verify(rumMonitor.mockInstance).addAction(
             RumActionType.BACK,
             customTargetName,
             emptyMap()
@@ -540,7 +540,7 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.dispatchKeyEvent(mockKeyEvent)
 
         // Then
-        verify(rumMonitor.mockInstance).addUserAction(
+        verify(rumMonitor.mockInstance).addAction(
             RumActionType.CLICK,
             "",
             mapOf(
@@ -576,7 +576,7 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.dispatchKeyEvent(mockKeyEvent)
 
         // Then
-        verify(rumMonitor.mockInstance).addUserAction(
+        verify(rumMonitor.mockInstance).addAction(
             RumActionType.CLICK,
             fakeCustomTargetName,
             mapOf(

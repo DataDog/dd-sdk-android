@@ -494,7 +494,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verify(rumMonitor.mockInstance).addUserAction(
+        verify(rumMonitor.mockInstance).addAction(
             RumActionType.TAP,
             "",
             expectedAttributes
@@ -558,7 +558,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verify(rumMonitor.mockInstance).addUserAction(
+        verify(rumMonitor.mockInstance).addAction(
             RumActionType.TAP,
             "",
             expectedAttributes
@@ -610,7 +610,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verify(rumMonitor.mockInstance).addUserAction(
+        verify(rumMonitor.mockInstance).addAction(
             RumActionType.TAP,
             fakeCustomTargetName,
             expectedAttributes
@@ -661,7 +661,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verify(rumMonitor.mockInstance).addUserAction(
+        verify(rumMonitor.mockInstance).addAction(
             RumActionType.TAP,
             "",
             expectedAttributes
@@ -675,7 +675,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         expectedTargetName: String,
         expectedResourceName: String
     ) {
-        verify(rumMonitor.mockInstance).addUserAction(
+        verify(rumMonitor.mockInstance).addAction(
             eq(RumActionType.TAP),
             eq(expectedTargetName),
             argThat {

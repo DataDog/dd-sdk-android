@@ -111,21 +111,21 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun addUserAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
+    override fun addAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
             RumRawEvent.StartAction(type, name, false, attributes, eventTime)
         )
     }
 
-    override fun startUserAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
+    override fun startAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
             RumRawEvent.StartAction(type, name, true, attributes, eventTime)
         )
     }
 
-    override fun stopUserAction(
+    override fun stopAction(
         type: RumActionType,
         name: String,
         attributes: Map<String, Any?>

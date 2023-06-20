@@ -117,9 +117,9 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         inOrder(rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance)
-                .startUserAction(RumActionType.SCROLL, "", expectedStartAttributes)
+                .startAction(RumActionType.SCROLL, "", expectedStartAttributes)
             verify(rumMonitor.mockInstance)
-                .stopUserAction(RumActionType.SCROLL, "", expectedStopAttributes)
+                .stopAction(RumActionType.SCROLL, "", expectedStopAttributes)
         }
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
@@ -188,9 +188,9 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         inOrder(rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance)
-                .startUserAction(RumActionType.SCROLL, "", expectedStartAttributes)
+                .startAction(RumActionType.SCROLL, "", expectedStartAttributes)
             verify(rumMonitor.mockInstance)
-                .stopUserAction(RumActionType.SCROLL, "", expectedStopAttributes)
+                .stopAction(RumActionType.SCROLL, "", expectedStopAttributes)
         }
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
@@ -267,13 +267,13 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         inOrder(rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance)
-                .startUserAction(RumActionType.SCROLL, "", expectedStartAttributes1)
+                .startAction(RumActionType.SCROLL, "", expectedStartAttributes1)
             verify(rumMonitor.mockInstance)
-                .stopUserAction(RumActionType.SCROLL, "", expectedStopAttributes1)
+                .stopAction(RumActionType.SCROLL, "", expectedStopAttributes1)
             verify(rumMonitor.mockInstance)
-                .startUserAction(RumActionType.SCROLL, "", expectedStartAttributes2)
+                .startAction(RumActionType.SCROLL, "", expectedStartAttributes2)
             verify(rumMonitor.mockInstance)
-                .stopUserAction(RumActionType.SCROLL, "", expectedStopAttributes2)
+                .stopAction(RumActionType.SCROLL, "", expectedStopAttributes2)
         }
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
@@ -436,9 +436,9 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         inOrder(rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance)
-                .startUserAction(RumActionType.SCROLL, "", expectedStartAttributes)
+                .startAction(RumActionType.SCROLL, "", expectedStartAttributes)
             verify(rumMonitor.mockInstance)
-                .stopUserAction(RumActionType.SWIPE, "", expectedStopAttributes)
+                .stopAction(RumActionType.SWIPE, "", expectedStopAttributes)
         }
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
@@ -514,9 +514,9 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         inOrder(rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance)
-                .startUserAction(RumActionType.SCROLL, "", expectedStartAttributes)
+                .startAction(RumActionType.SCROLL, "", expectedStartAttributes)
             verify(rumMonitor.mockInstance)
-                .stopUserAction(RumActionType.SWIPE, "", expectedStopAttributes)
+                .stopAction(RumActionType.SWIPE, "", expectedStopAttributes)
         }
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
@@ -571,12 +571,12 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startUserAction(
+            verify(rumMonitor.mockInstance).startAction(
                 eq(RumActionType.SCROLL),
                 eq(fakeCustomTargetName),
                 any()
             )
-            verify(rumMonitor.mockInstance).stopUserAction(
+            verify(rumMonitor.mockInstance).stopAction(
                 eq(RumActionType.SCROLL),
                 eq(fakeCustomTargetName),
                 any()
@@ -634,12 +634,12 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startUserAction(
+            verify(rumMonitor.mockInstance).startAction(
                 eq(RumActionType.SCROLL),
                 eq(""),
                 any()
             )
-            verify(rumMonitor.mockInstance).stopUserAction(
+            verify(rumMonitor.mockInstance).stopAction(
                 eq(RumActionType.SCROLL),
                 eq(""),
                 any()
@@ -697,12 +697,12 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         // Then
         inOrder(rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).startUserAction(
+            verify(rumMonitor.mockInstance).startAction(
                 eq(RumActionType.SCROLL),
                 eq(""),
                 any()
             )
-            verify(rumMonitor.mockInstance).stopUserAction(
+            verify(rumMonitor.mockInstance).stopAction(
                 eq(RumActionType.SCROLL),
                 eq(""),
                 any()
@@ -786,13 +786,13 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         inOrder(rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance)
-                .startUserAction(RumActionType.SCROLL, "", expectedStartAttributes1)
+                .startAction(RumActionType.SCROLL, "", expectedStartAttributes1)
             verify(rumMonitor.mockInstance)
-                .stopUserAction(RumActionType.SWIPE, "", expectedStopAttributes1)
+                .stopAction(RumActionType.SWIPE, "", expectedStopAttributes1)
             verify(rumMonitor.mockInstance)
-                .startUserAction(RumActionType.SCROLL, "", expectedStartAttributes2)
+                .startAction(RumActionType.SCROLL, "", expectedStartAttributes2)
             verify(rumMonitor.mockInstance)
-                .stopUserAction(RumActionType.SWIPE, "", expectedStopAttributes2)
+                .stopAction(RumActionType.SWIPE, "", expectedStopAttributes2)
         }
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }

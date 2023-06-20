@@ -79,7 +79,7 @@ fun sendRandomRumEvent(
         }
         3 -> {
             executeInsideView(forge.aViewKey(), forge.aViewName(), parentViewEventName, sdkCore) {
-                GlobalRum.get(sdkCore).addUserAction(
+                GlobalRum.get(sdkCore).addAction(
                     forge.aValueFrom(RumActionType::class.java),
                     forge.anActionName(),
                     defaultTestAttributes(testMethodName)
@@ -140,7 +140,7 @@ private fun sendErrorEvent(forge: Forge, sdkCore: SdkCore, testMethodName: Strin
 }
 
 private fun sendActionEvent(forge: Forge, sdkCore: SdkCore, testMethodName: String) {
-    GlobalRum.get(sdkCore).addUserAction(
+    GlobalRum.get(sdkCore).addAction(
         forge.aValueFrom(RumActionType::class.java),
         forge.anActionName(),
         defaultTestAttributes(testMethodName)

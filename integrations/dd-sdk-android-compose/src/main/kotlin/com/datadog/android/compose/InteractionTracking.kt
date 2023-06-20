@@ -30,7 +30,6 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.v2.api.SdkCore
-import kotlinx.coroutines.flow.collect
 import java.lang.Exception
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.roundToInt
@@ -158,7 +157,7 @@ internal class TapActionTracker(
     private val rumMonitor: RumMonitor
 ) : () -> Unit {
     override fun invoke() {
-        rumMonitor.addUserAction(
+        rumMonitor.addAction(
             RumActionType.TAP,
             targetName,
             attributes + mapOf(
@@ -189,7 +188,7 @@ internal suspend fun trackSwipe(
                 @Suppress("UnsafeThirdPartyFunctionCall")
                 interactionType.swipeableState.offset.value.roundToInt()
             )
-            rumMonitor.startUserAction(RumActionType.SWIPE, targetName, emptyMap())
+            rumMonitor.startAction(RumActionType.SWIPE, targetName, emptyMap())
         },
         onStopOrCancel = { startProps ->
             reportSwipeInteraction(
@@ -220,7 +219,7 @@ internal suspend fun trackScroll(
                 ScrollStartProps(
                     interactionType.scrollableState.currentPosition
                 )
-            rumMonitor.startUserAction(RumActionType.SCROLL, targetName, emptyMap())
+            rumMonitor.startAction(RumActionType.SCROLL, targetName, emptyMap())
         },
         onStopOrCancel = { startProps ->
             reportScrollInteraction(
@@ -394,7 +393,7 @@ private fun reportSwipeInteraction(
     isRtl: Boolean,
     attributes: Map<String, Any?>
 ) {
-    rumMonitor.stopUserAction(
+    rumMonitor.stopAction(
         RumActionType.SWIPE,
         targetName,
         attributes.toMutableMap().apply {
@@ -421,7 +420,7 @@ private fun reportScrollInteraction(
     isRtl: Boolean,
     attributes: Map<String, Any?>
 ) {
-    rumMonitor.stopUserAction(
+    rumMonitor.stopAction(
         RumActionType.SCROLL,
         targetName,
         attributes.toMutableMap().apply {
