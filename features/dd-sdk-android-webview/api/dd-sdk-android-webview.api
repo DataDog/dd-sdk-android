@@ -1,12 +1,18 @@
 public final class com/datadog/android/webview/DatadogEventBridge {
 	public static final field Companion Lcom/datadog/android/webview/DatadogEventBridge$Companion;
 	public fun <init> (Lcom/datadog/android/v2/api/SdkCore;Ljava/util/List;)V
+	public synthetic fun <init> (Lcom/datadog/android/v2/api/SdkCore;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/util/List;)V
 	public final fun getAllowedWebViewHosts ()Ljava/lang/String;
 	public final fun send (Ljava/lang/String;)V
+	public static final fun setup (Landroid/webkit/WebView;Ljava/util/List;)V
+	public static final fun setup (Lcom/datadog/android/v2/api/SdkCore;Landroid/webkit/WebView;Ljava/util/List;)V
 }
 
 public final class com/datadog/android/webview/DatadogEventBridge$Companion {
+	public final fun setup (Landroid/webkit/WebView;Ljava/util/List;)V
 	public final fun setup (Lcom/datadog/android/v2/api/SdkCore;Landroid/webkit/WebView;Ljava/util/List;)V
+	public static synthetic fun setup$default (Lcom/datadog/android/webview/DatadogEventBridge$Companion;Lcom/datadog/android/v2/api/SdkCore;Landroid/webkit/WebView;Ljava/util/List;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/webview/DatadogEventBridge$_InternalWebViewProxy {

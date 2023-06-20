@@ -20,6 +20,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
+import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.AcceptAllNavDestinations
@@ -106,7 +107,7 @@ internal class ComposeNavigationObserver(
  * for Compose setup.
  *
  * @param navController [NavController] to watch
- * @param sdkCore the SDK instance to use.
+ * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  * @param trackArguments whether to track navigation arguments
  * @param destinationPredicate to accept the [NavDestination] that will be taken into account as
  * valid RUM View events.
@@ -116,7 +117,7 @@ internal class ComposeNavigationObserver(
 @NonRestartableComposable
 fun NavigationViewTrackingEffect(
     navController: NavController,
-    sdkCore: SdkCore,
+    sdkCore: SdkCore = Datadog.getInstance(),
     trackArguments: Boolean = true,
     destinationPredicate: ComponentPredicate<NavDestination> = AcceptAllNavDestinations()
 ) {

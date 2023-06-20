@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.resource
 
+import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -19,13 +20,14 @@ import java.io.InputStream
  *
  * @param delegate the actual [InputStream] to wrap
  * @param url the URL associated with the underlying resource, as you want it displayed in Datadog
- * @param sdkCore the [SdkCore] instance to report resources to
+ * @param sdkCore the [SdkCore] instance to report resources to. If not provided, default
+ * instance will be used.
  */
 @Suppress("ThrowingInternalException", "TooGenericExceptionCaught")
-class RumResourceInputStream(
+class RumResourceInputStream @JvmOverloads constructor(
     val delegate: InputStream,
     val url: String,
-    val sdkCore: SdkCore
+    val sdkCore: SdkCore = Datadog.getInstance()
 ) : InputStream() {
 
     internal val key: String = delegate.javaClass.simpleName +

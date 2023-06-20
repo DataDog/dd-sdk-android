@@ -11,6 +11,7 @@ import android.os.Handler
 import android.os.Looper
 import androidx.annotation.FloatRange
 import androidx.fragment.app.Fragment
+import com.datadog.android.Datadog
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
@@ -300,9 +301,9 @@ interface RumMonitor {
     /**
      * A Builder class for a [RumMonitor].
      *
-     * @param sdkCore SDK instance to bind to.
+     * @param sdkCore SDK instance to bind to. If not provided, default instance will be used.
      */
-    class Builder(private val sdkCore: SdkCore) {
+    class Builder @JvmOverloads constructor(private val sdkCore: SdkCore = Datadog.getInstance()) {
 
         private var sampleRate: Float? = null
         private var sessionListener: RumSessionListener? = null

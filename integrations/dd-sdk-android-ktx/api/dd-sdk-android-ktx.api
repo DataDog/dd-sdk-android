@@ -14,20 +14,24 @@ public abstract interface class com/datadog/android/ktx/coroutine/CoroutineScope
 
 public final class com/datadog/android/ktx/coroutine/FlowExtKt {
 	public static final fun sendErrorToDatadog (Lkotlinx/coroutines/flow/Flow;Lcom/datadog/android/v2/api/SdkCore;)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun sendErrorToDatadog$default (Lkotlinx/coroutines/flow/Flow;Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 }
 
-public final class com/datadog/android/ktx/rum/ClosableExtKt {
+public final class com/datadog/android/ktx/rum/CloseableExtKt {
 	public static final fun useMonitored (Ljava/io/Closeable;Lcom/datadog/android/v2/api/SdkCore;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun useMonitored$default (Ljava/io/Closeable;Lcom/datadog/android/v2/api/SdkCore;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class com/datadog/android/ktx/rum/ContextExtKt {
 	public static final fun getAssetAsRumResource (Landroid/content/Context;Ljava/lang/String;Lcom/datadog/android/v2/api/SdkCore;I)Ljava/io/InputStream;
 	public static synthetic fun getAssetAsRumResource$default (Landroid/content/Context;Ljava/lang/String;Lcom/datadog/android/v2/api/SdkCore;IILjava/lang/Object;)Ljava/io/InputStream;
 	public static final fun getRawResAsRumResource (Landroid/content/Context;ILcom/datadog/android/v2/api/SdkCore;)Ljava/io/InputStream;
+	public static synthetic fun getRawResAsRumResource$default (Landroid/content/Context;ILcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Ljava/io/InputStream;
 }
 
 public final class com/datadog/android/ktx/rum/InputStreamExtKt {
 	public static final fun asRumResource (Ljava/io/InputStream;Ljava/lang/String;Lcom/datadog/android/v2/api/SdkCore;)Ljava/io/InputStream;
+	public static synthetic fun asRumResource$default (Ljava/io/InputStream;Ljava/lang/String;Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Ljava/io/InputStream;
 }
 
 public final class com/datadog/android/ktx/sqlite/SqliteDatabaseExtKt {

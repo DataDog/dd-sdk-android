@@ -6,6 +6,7 @@
 
 package com.datadog.android.ktx.rum
 
+import com.datadog.android.Datadog
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.resource.RumResourceInputStream
 import com.datadog.android.v2.api.SdkCore
@@ -15,8 +16,8 @@ import java.io.InputStream
  * Allow the [RumMonitor] to track this [InputStream] as a RUM Resource.
  *
  * @param url the url to be associated with this resource
- * @param sdkCore the SDK instance to use.
+ * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  */
-fun InputStream.asRumResource(url: String, sdkCore: SdkCore): InputStream {
+fun InputStream.asRumResource(url: String, sdkCore: SdkCore = Datadog.getInstance()): InputStream {
     return RumResourceInputStream(this, url, sdkCore)
 }

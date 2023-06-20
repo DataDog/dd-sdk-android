@@ -7,6 +7,7 @@
 package com.datadog.android.trace
 
 import androidx.annotation.FloatRange
+import com.datadog.android.Datadog
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.TracingFeature
 import com.datadog.android.trace.internal.data.NoOpWriter
@@ -115,9 +116,10 @@ class AndroidTracer internal constructor(
         private val globalTags: MutableMap<String, String> = mutableMapOf()
 
         /**
-         * @param sdkCore SDK instance to bind to.
+         * @param sdkCore SDK instance to bind to. If not provided, default instance will be used.
          */
-        constructor(sdkCore: SdkCore) : this(
+        @JvmOverloads
+        constructor(sdkCore: SdkCore = Datadog.getInstance()) : this(
             sdkCore as FeatureSdkCore,
             AndroidSpanLogsHandler(sdkCore)
         )

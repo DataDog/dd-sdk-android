@@ -90,7 +90,6 @@ internal class RumEventMapperTest {
             telemetryConfigurationMapper = mockTelemetryConfigurationMapper,
             internalLogger = mockInternalLogger
         )
-        testedRumEventMapper.sdkCore = rumMonitor.mockSdkCore
     }
 
     @Test

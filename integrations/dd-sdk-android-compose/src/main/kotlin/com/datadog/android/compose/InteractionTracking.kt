@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -37,7 +38,7 @@ import kotlin.math.roundToInt
 /**
  * Creates a proxy around click listener, which will report clicks to Datadog.
  *
- * @param sdkCore the SDK instance to use.
+ * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  * @param targetName Name of the click target.
  * @param attributes Additional custom attributes to attach to the action. Attributes can be
  * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
@@ -46,7 +47,7 @@ import kotlin.math.roundToInt
 @ExperimentalTrackingApi
 @Composable
 fun trackClick(
-    sdkCore: SdkCore,
+    sdkCore: SdkCore = Datadog.getInstance(),
     targetName: String,
     attributes: Map<String, Any?> = remember { emptyMap() },
     onClick: () -> Unit
@@ -64,7 +65,7 @@ fun trackClick(
  *
  * For tracking clicks check [trackClick].
  *
- * @param sdkCore the SDK instance to use.
+ * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  * @param targetName Name of the tracking target.
  * @param interactionSource [InteractionSource] which hosts the flow of interactions happening.
  * @param interactionType Type of the interaction, either [InteractionType.Scroll]
@@ -75,7 +76,7 @@ fun trackClick(
 @ExperimentalTrackingApi
 @Composable
 fun TrackInteractionEffect(
-    sdkCore: SdkCore,
+    sdkCore: SdkCore = Datadog.getInstance(),
     targetName: String,
     interactionSource: InteractionSource,
     interactionType: InteractionType,

@@ -6,10 +6,10 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
   override fun delete(android.net.Uri, String?, Array<String>?): Int
   override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
 object com.datadog.android.rum.GlobalRum
-  fun isRegistered(com.datadog.android.v2.api.SdkCore): Boolean
-  fun registerIfAbsent(com.datadog.android.v2.api.SdkCore, RumMonitor): Boolean
-  fun registerIfAbsent(com.datadog.android.v2.api.SdkCore, java.util.concurrent.Callable<RumMonitor>): Boolean
-  fun get(com.datadog.android.v2.api.SdkCore): RumMonitor
+  fun isRegistered(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): Boolean
+  fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), RumMonitor): Boolean
+  fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), java.util.concurrent.Callable<RumMonitor>): Boolean
+  fun get(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): RumMonitor
 object com.datadog.android.rum.Rum
   fun enable(RumConfiguration, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
   fun enableDebugging(Boolean, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
@@ -105,7 +105,7 @@ interface com.datadog.android.rum.RumMonitor
   fun stopSession()
   fun _getInternal(): _RumInternalProxy?
   class Builder
-    constructor(com.datadog.android.v2.api.SdkCore)
+    constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
     fun setSessionSampleRate(Float): Builder
     fun setSessionListener(RumSessionListener): Builder
     fun build(): RumMonitor
@@ -153,7 +153,7 @@ interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
   fun addResourceTiming(String, com.datadog.android.rum.internal.domain.event.ResourceTiming)
   fun notifyInterceptorInstantiated()
 class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStream
-  constructor(java.io.InputStream, String, com.datadog.android.v2.api.SdkCore)
+  constructor(java.io.InputStream, String, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
   override fun read(): Int
   override fun read(ByteArray): Int
   override fun read(ByteArray, Int, Int): Int

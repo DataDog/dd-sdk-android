@@ -6,6 +6,7 @@
 
 package com.datadog.android.timber
 
+import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.android.v2.api.SdkCore
 import timber.log.Timber
@@ -26,11 +27,12 @@ class DatadogTree(
      *
      * See [Logger.Builder.setDatadogLogsMinPriority] for details.
      *
-     * @param sdkCore SDK instance to bind to.
+     * @param sdkCore SDK instance to bind to. If not provided, default instance will be used.
      * @param minLogPriority Minimum log priority to be sent to the Datadog servers.
      */
     @Suppress("unused")
-    constructor(sdkCore: SdkCore, minLogPriority: Int) :
+    @JvmOverloads
+    constructor(sdkCore: SdkCore = Datadog.getInstance(), minLogPriority: Int) :
         this(
             Logger.Builder(sdkCore)
                 .setDatadogLogsMinPriority(minLogPriority)

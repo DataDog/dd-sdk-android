@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum
 
+import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum.get
 import com.datadog.android.rum.GlobalRum.registerIfAbsent
 import com.datadog.android.v2.api.FeatureSdkCore
@@ -33,12 +34,14 @@ object GlobalRum {
      * This check is useful in scenarios where more than one component may be responsible
      * for registering a monitor.
      *
-     * @param sdkCore the [SdkCore] instance to check against
+     * @param sdkCore the [SdkCore] instance to check against. If not provided, default instance
+     * will be checked.
      * @return whether a monitor has been registered
      * @see [registerIfAbsent]
      */
+    @JvmOverloads
     @JvmStatic
-    fun isRegistered(sdkCore: SdkCore): Boolean {
+    fun isRegistered(sdkCore: SdkCore = Datadog.getInstance()): Boolean {
         return synchronized(registeredMonitors) {
             registeredMonitors.containsKey(sdkCore)
         }
@@ -53,12 +56,14 @@ object GlobalRum {
      * Every application intending to use the global monitor is responsible for registering it once
      * during its initialization.
      *
-     * @param sdkCore the instance to register the given monitor with
+     * @param sdkCore the instance to register the given monitor with. If not provided, default
+     * instance will be used.
      * @param monitor the monitor to use as global monitor.
      * @return `true` if the provided monitor was registered as a result of this call, `false` otherwise.
      */
+    @JvmOverloads
     @JvmStatic
-    fun registerIfAbsent(sdkCore: SdkCore, monitor: RumMonitor): Boolean {
+    fun registerIfAbsent(sdkCore: SdkCore = Datadog.getInstance(), monitor: RumMonitor): Boolean {
         return registerIfAbsent(sdkCore) { monitor }
     }
 
@@ -72,12 +77,17 @@ object GlobalRum {
      * Every application intending to use the global monitor is responsible for registering it once
      * during its initialization.
      *
-     * @param sdkCore the instance to register the given monitor with
+     * @param sdkCore the instance to register the given monitor with. If not provided, default
+     * instance will be used.
      * @param provider Provider for the monitor to use as global monitor.
      * @return `true` if the provided monitor was registered as a result of this call, `false` otherwise.
      */
+    @JvmOverloads
     @JvmStatic
-    fun registerIfAbsent(sdkCore: SdkCore, provider: Callable<RumMonitor>): Boolean {
+    fun registerIfAbsent(
+        sdkCore: SdkCore = Datadog.getInstance(),
+        provider: Callable<RumMonitor>
+    ): Boolean {
         return synchronized(registeredMonitors) {
             if (registeredMonitors.containsKey(sdkCore)) {
                 (sdkCore as FeatureSdkCore).internalLogger.log(
@@ -101,11 +111,13 @@ object GlobalRum {
      * Until a monitor is explicitly configured with [registerIfAbsent],
      * a no-op implementation is returned.
      *
-     * @return The monitor associated with the instance given instance, or a no-op monitor.
+     * @return The monitor associated with the instance given instance, or a no-op monitor. If SDK
+     * instance is not provided, default instance will be used.
      * @see [registerIfAbsent]
      */
+    @JvmOverloads
     @JvmStatic
-    fun get(sdkCore: SdkCore): RumMonitor {
+    fun get(sdkCore: SdkCore = Datadog.getInstance()): RumMonitor {
         return synchronized(registeredMonitors) {
             registeredMonitors[sdkCore] ?: NoOpRumMonitor()
         }

@@ -47,6 +47,7 @@ object Rum {
      * @param sdkCore SDK instance to enable RUM debugging in. If not provided, default SDK instance
      * will be used.
      */
+    @JvmOverloads
     @JvmStatic
     fun enableDebugging(enable: Boolean, sdkCore: SdkCore = Datadog.getInstance()) {
         val rumFeatureScope = (sdkCore as FeatureSdkCore)

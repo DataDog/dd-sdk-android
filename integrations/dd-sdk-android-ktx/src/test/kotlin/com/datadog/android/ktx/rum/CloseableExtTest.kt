@@ -86,7 +86,7 @@ class CloseableExtTest {
         // THEN
         assertThat(caughtException).isEqualTo(fakeException)
         verify(mockRumMonitor).addError(
-            CLOSABLE_ERROR_NESSAGE,
+            CLOSABLE_ERROR_MESSAGE,
             RumErrorSource.SOURCE,
             fakeException,
             emptyMap()
@@ -129,7 +129,7 @@ class CloseableExtTest {
         // THEN
         assertThat(caughtException).isNull()
         verify(mockRumMonitor).addError(
-            CLOSABLE_ERROR_NESSAGE,
+            CLOSABLE_ERROR_MESSAGE,
             RumErrorSource.SOURCE,
             fakeException,
             emptyMap()
