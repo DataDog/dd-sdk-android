@@ -17,4 +17,14 @@ interface GenericInterface<T : CharSequence> {
     fun doSomethingWithMapReturn(): Map<T, T>
 
     fun doSomethingWithSetReturn(): Set<T>
+
+    val immutableProperty: T?
+
+    var mutableProperty: T?
+
+    var listProperty: List<T>
+
+    val mapProperty: Map<T, T>
+
+    var setProperty: Set<T>
 }

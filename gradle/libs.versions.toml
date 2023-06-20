@@ -47,7 +47,7 @@ assertJ = "3.18.1"
 elmyr = "1.3.1"
 mockitoKotlin = "4.1.0"
 kover = "0.5.0"
-kspTesting = "1.4.7"
+kspTesting = "1.5.0"
 
 # Tools
 detekt = "1.22.0"

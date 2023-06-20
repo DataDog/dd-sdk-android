@@ -32,4 +32,16 @@ interface SimpleInterface {
     fun doSomethingWithMapReturn(): Map<String, String>
 
     fun doSomethingWithSetReturn(): Set<String>
+
+    val dateProperty: Date
+
+    var mutableStringProperty: String
+
+    val nullableDateProperty: Date?
+
+    var listProperty: List<String>
+
+    val mapProperty: Map<String, String>
+
+    var setProperty: Set<String>
 }
