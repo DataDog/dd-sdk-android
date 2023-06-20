@@ -30,10 +30,10 @@ class RumMonitorBuilderE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun setSessionSampleRate(Float): Builder
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun registerIfAbsent(com.datadog.android.v2.api.SdkCore, RumMonitor): Boolean
+     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), RumMonitor): Boolean
      */
     @Test
     fun rum_rummonitor_builder_sample_all_in() {
@@ -53,7 +53,7 @@ class RumMonitorBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun setSessionSampleRate(Float): Builder
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
      */
@@ -73,7 +73,7 @@ class RumMonitorBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun setSessionSampleRate(Float): Builder
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
      */
