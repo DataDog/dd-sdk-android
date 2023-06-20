@@ -40,12 +40,12 @@ class WearApplication : Application() {
     @Suppress("MagicNumber")
     private fun initializeDatadog() {
         Datadog.setVerbosity(Log.VERBOSE)
-        val sdkCore = Datadog.initialize(
+        Datadog.initialize(
             this,
             createDatadogCredentials(),
             createDatadogConfiguration(),
             TrackingConsent.GRANTED
-        ) ?: return
+        )
 
         val rumConfig = RumConfiguration.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
             .setTelemetrySampleRate(100f)
@@ -58,7 +58,7 @@ class WearApplication : Application() {
                 }
             }
             .build()
-        Rum.enable(rumConfig, sdkCore)
+        Rum.enable(rumConfig)
 
         val logsConfig = LogsConfiguration.Builder()
             .apply {
@@ -67,7 +67,7 @@ class WearApplication : Application() {
                 }
             }
             .build()
-        Logs.enable(logsConfig, sdkCore)
+        Logs.enable(logsConfig)
 
         val tracesConfig = TracesConfiguration.Builder()
             .apply {
@@ -76,9 +76,9 @@ class WearApplication : Application() {
                 }
             }
             .build()
-        Traces.enable(tracesConfig, sdkCore)
+        Traces.enable(tracesConfig)
 
-        sdkCore.setUserInfo(
+        Datadog.getInstance().setUserInfo(
             UserInfo(
                 id = "wear 42",
                 name = null,
@@ -87,11 +87,11 @@ class WearApplication : Application() {
         )
 
         GlobalTracer.registerIfAbsent(
-            AndroidTracer.Builder(sdkCore)
+            AndroidTracer.Builder()
                 .setService(BuildConfig.APPLICATION_ID)
                 .build()
         )
-        GlobalRum.registerIfAbsent(sdkCore, RumMonitor.Builder(sdkCore).build())
+        GlobalRum.registerIfAbsent(monitor = RumMonitor.Builder().build())
     }
 
     private fun createDatadogCredentials(): Credentials {
