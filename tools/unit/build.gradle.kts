@@ -62,6 +62,7 @@ dependencies {
     implementation(libs.bundles.jUnit5)
     implementation(libs.bundles.testTools)
     implementation(libs.gson)
+    implementation(libs.mockitoKotlin)
 
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)

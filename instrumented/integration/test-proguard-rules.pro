@@ -36,3 +36,8 @@
 -dontwarn java.lang.management.ThreadMXBean
 -dontwarn javax.lang.model.element.Modifier
 -dontwarn org.w3c.dom.bootstrap.DOMImplementationRegistry
+-dontwarn java.lang.StackWalker$Option
+-dontwarn java.lang.StackWalker$StackFrame
+-dontwarn java.lang.StackWalker
+-dontwarn org.apiguardian.api.API$Status
+-dontwarn org.apiguardian.api.API

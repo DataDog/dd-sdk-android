@@ -30,22 +30,22 @@ openTracing = "0.32.0"
 
 # JUnit
 jUnit4 = "4.13.2"
-jUnitJupiter = "5.7.1"
-jUnitPlatform = "1.7.1"
-jUnitVintage = "5.7.1"
-jUnitMockitoExt = "3.4.6"
+jUnitJupiter = "5.9.3"
+jUnitPlatform = "1.9.3"
+jUnitVintage = "5.9.3"
+jUnitMockitoExt = "5.4.0"
 
 # Android JUnit
 androidXJunitRunner = "1.5.0"
 androidXJunitRules = "1.5.0"
-androidXExtJunit = "1.1.4"
+androidXExtJunit = "1.1.5"
 androidXJunitCore = "1.5.0"
-espresso = "3.5.0"
+espresso = "3.5.1"
 
 # Tests Tools
 assertJ = "3.18.1"
 elmyr = "1.3.1"
-mockitoKotlin = "4.1.0"
+mockitoKotlin = "5.0.0"
 kover = "0.5.0"
 kspTesting = "1.5.0"
 
