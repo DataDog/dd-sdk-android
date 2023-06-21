@@ -24,37 +24,20 @@ import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import androidx.core.view.setPadding
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
-import java.util.Locale
 import kotlin.math.pow
 
-internal class UiRumDebugListener(private val sdkCore: FeatureSdkCore) :
-    Application.ActivityLifecycleCallbacks, RumDebugListener {
+internal class UiRumDebugListener(
+    private val sdkCore: FeatureSdkCore,
+    private val advancedRumMonitor: AdvancedRumMonitor
+) : Application.ActivityLifecycleCallbacks, RumDebugListener {
 
     internal var rumViewsContainer: LinearLayout? = null
 
     private val viewsSnapshot = mutableListOf<String>()
-
-    private val advancedRumMonitor by lazy {
-        val monitor = GlobalRum.get(sdkCore) as? AdvancedRumMonitor
-        if (monitor == null) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                MISSING_RUM_MONITOR_TYPE.format(
-                    Locale.US,
-                    AdvancedRumMonitor::class.qualifiedName
-                )
-            )
-            NoOpAdvancedRumMonitor()
-        } else {
-            monitor
-        }
-    }
 
     // region Application.ActivityLifecycleCallbacks
 

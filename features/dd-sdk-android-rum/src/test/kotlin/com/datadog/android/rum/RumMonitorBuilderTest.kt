@@ -14,6 +14,7 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.utils.config.DatadogSingletonTestConfiguration
+import com.datadog.android.rum.utils.config.MainLooperTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
@@ -246,11 +247,12 @@ internal class RumMonitorBuilderTest {
 
     companion object {
         val datadog = DatadogSingletonTestConfiguration()
+        private val mainLooper = MainLooperTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(datadog)
+            return listOf(datadog, mainLooper)
         }
     }
 }

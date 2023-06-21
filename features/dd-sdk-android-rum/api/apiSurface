@@ -12,7 +12,6 @@ object com.datadog.android.rum.GlobalRum
   fun get(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): RumMonitor
 object com.datadog.android.rum.Rum
   fun enable(RumConfiguration, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
-  fun enableDebugging(Boolean, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
 enum com.datadog.android.rum.RumActionType
   - TAP
   - SCROLL
@@ -103,6 +102,7 @@ interface com.datadog.android.rum.RumMonitor
   fun getAttributes(): Map<String, Any?>
   fun clearAttributes()
   fun stopSession()
+  var debug: Boolean
   fun _getInternal(): _RumInternalProxy?
   class Builder
     constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())

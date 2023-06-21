@@ -16,6 +16,7 @@ import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -33,6 +34,8 @@ import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.telemetry.internal.TelemetryType
+import com.datadog.android.v2.api.Feature
+import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
@@ -1709,6 +1712,55 @@ internal class DatadogRumMonitorTest {
 
         // Then
         assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 enable RUM debugging 𝕎 debug = true`() {
+        // Given
+        val mockRumScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
+        val mockRumFeature = mock<RumFeature>()
+        whenever(mockRumScope.unwrap<RumFeature>()) doReturn mockRumFeature
+
+        // When
+        testedMonitor.debug = true
+
+        // Then
+        verify(mockRumFeature).enableDebugging(testedMonitor)
+    }
+
+    @Test
+    fun `𝕄 disable RUM debugging 𝕎 debug = false`() {
+        // Given
+        val mockRumScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
+        val mockRumFeature = mock<RumFeature>()
+        whenever(mockRumScope.unwrap<RumFeature>()) doReturn mockRumFeature
+        testedMonitor.debug = true
+
+        // When
+        testedMonitor.debug = false
+
+        // Then
+        verify(mockRumFeature).disableDebugging()
+    }
+
+    @Test
+    fun `𝕄 log warn message 𝕎 debug = true() { no RUM feature registered }`() {
+        // Given
+        val mockInternalLogger = mock<InternalLogger>()
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
+
+        // When
+        testedMonitor.debug = true
+
+        // Then
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            DatadogRumMonitor.RUM_DEBUG_RUM_NOT_ENABLED_WARNING
+        )
     }
 
     companion object {

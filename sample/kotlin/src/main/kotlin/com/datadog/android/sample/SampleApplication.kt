@@ -115,7 +115,6 @@ class SampleApplication : Application() {
 
         val rumConfig = createRumConfiguration()
         Rum.enable(rumConfig)
-        Rum.enableDebugging(true)
 
         val sessionReplayConfig = SessionReplayConfiguration.Builder()
             .apply {
@@ -162,6 +161,7 @@ class SampleApplication : Application() {
                 .build()
         )
         GlobalRum.registerIfAbsent(monitor = RumMonitor.Builder().build())
+        GlobalRum.get().debug = true
         TracingRxJava3Utils.enableTracing(GlobalTracer.get())
     }
 

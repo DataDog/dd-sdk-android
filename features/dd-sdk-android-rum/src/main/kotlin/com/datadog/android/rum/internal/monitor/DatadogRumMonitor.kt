@@ -20,6 +20,7 @@ import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.asTime
@@ -35,6 +36,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.telemetry.internal.TelemetryType
+import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.android.v2.core.storage.DataWriter
@@ -45,6 +47,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("LongParameterList")
 internal class DatadogRumMonitor(
@@ -95,7 +98,34 @@ internal class DatadogRumMonitor(
 
     private val globalAttributes: MutableMap<String, Any?> = ConcurrentHashMap()
 
+    private val isDebugEnabled = AtomicBoolean(false)
+
     // region RumMonitor
+
+    override var debug: Boolean
+        get() = isDebugEnabled.get()
+        set(value) {
+            val isEnabled = isDebugEnabled.get()
+            if (value == isEnabled) return
+
+            val rumFeatureScope = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+                ?.unwrap<RumFeature>()
+            if (rumFeatureScope == null) {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    RUM_DEBUG_RUM_NOT_ENABLED_WARNING
+                )
+                return
+            }
+
+            if (value) {
+                rumFeatureScope.enableDebugging(this)
+            } else {
+                rumFeatureScope.disableDebugging()
+            }
+            isDebugEnabled.set(value)
+        }
 
     override fun startView(key: Any, name: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
@@ -533,5 +563,8 @@ internal class DatadogRumMonitor(
 
         // should be aligned with CoreFeature#DRAIN_WAIT_SECONDS, but not a requirement
         internal const val DRAIN_WAIT_SECONDS = 10L
+
+        internal const val RUM_DEBUG_RUM_NOT_ENABLED_WARNING =
+            "Cannot switch RUM debugging, because RUM feature is not enabled."
     }
 }

@@ -288,6 +288,16 @@ interface RumMonitor {
     fun stopSession()
 
     /**
+     * Utility setting to inspect the active RUM View.
+     * If set, a debugging outline will be displayed on top of the application, describing the name
+     * of the active RUM View in the default SDK instance (if any).
+     * May be used to debug issues with RUM instrumentation in your app.
+     *
+     * Default value is `false`.
+     */
+    var debug: Boolean
+
+    /**
      * For Datadog internal use only.
      *
      * @see _RumInternalProxy

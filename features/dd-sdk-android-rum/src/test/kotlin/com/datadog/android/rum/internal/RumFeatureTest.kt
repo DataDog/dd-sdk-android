@@ -33,6 +33,7 @@ import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.rum.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.rum.utils.config.MainLooperTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.v2.api.InternalLogger
@@ -663,35 +664,50 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(appContext.mockInstance)
 
         // When
-        testedFeature.enableDebugging()
+        testedFeature.enableDebugging(mockRumMonitor)
 
         // Then
-        assertThat(testedFeature.debugActivityLifecycleListener).isNotNull
+        assertThat(testedFeature.debugActivityLifecycleListener.get()).isNotNull
         verify(testedFeature.appContext as Application)
-            .registerActivityLifecycleCallbacks(testedFeature.debugActivityLifecycleListener)
+            .registerActivityLifecycleCallbacks(testedFeature.debugActivityLifecycleListener.get())
+    }
+
+    @Test
+    fun `𝕄 enable RUM debugging only once 𝕎 enableDebugging()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.enableDebugging(mockRumMonitor)
+        testedFeature.enableDebugging(mockRumMonitor)
+
+        // Then
+        assertThat(testedFeature.debugActivityLifecycleListener.get()).isNotNull
+        verify(testedFeature.appContext as Application)
+            .registerActivityLifecycleCallbacks(testedFeature.debugActivityLifecycleListener.get())
     }
 
     @Test
     fun `𝕄 enable RUM debugging 𝕎 enableDebugging(){RUM feature is not yet initialized}`() {
         // When
-        testedFeature.enableDebugging()
+        testedFeature.enableDebugging(mockRumMonitor)
 
         // Then
-        assertThat(testedFeature.debugActivityLifecycleListener).isNull()
+        assertThat(testedFeature.debugActivityLifecycleListener).hasValue(null)
     }
 
     @Test
     fun `𝕄 disable RUM debugging 𝕎 disableDebugging()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
-        testedFeature.enableDebugging()
-        val listener = testedFeature.debugActivityLifecycleListener
+        testedFeature.enableDebugging(mockRumMonitor)
+        val listener = testedFeature.debugActivityLifecycleListener.get()
 
         // When
         testedFeature.disableDebugging()
 
         // Then
-        assertThat(testedFeature.debugActivityLifecycleListener).isNull()
+        assertThat(testedFeature.debugActivityLifecycleListener).hasValue(null)
         verify(testedFeature.appContext as Application)
             .unregisterActivityLifecycleCallbacks(listener)
     }
@@ -1131,11 +1147,12 @@ internal class RumFeatureTest {
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
+        private val mainLooper = MainLooperTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext)
+            return listOf(appContext, mainLooper)
         }
     }
 }

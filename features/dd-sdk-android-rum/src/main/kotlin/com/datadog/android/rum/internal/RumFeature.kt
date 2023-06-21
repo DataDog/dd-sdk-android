@@ -11,6 +11,7 @@ import android.content.Context
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import androidx.annotation.AnyThread
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.executeSafe
@@ -80,6 +81,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * RUM feature class, which needs to be registered with Datadog SDK instance.
@@ -112,7 +114,8 @@ internal class RumFeature constructor(
     internal var memoryVitalMonitor: VitalMonitor = NoOpVitalMonitor()
     internal var frameRateVitalMonitor: VitalMonitor = NoOpVitalMonitor()
 
-    internal var debugActivityLifecycleListener: Application.ActivityLifecycleCallbacks? = null
+    internal var debugActivityLifecycleListener =
+        AtomicReference<Application.ActivityLifecycleCallbacks>(null)
     internal var jankStatsActivityLifecycleListener: Application.ActivityLifecycleCallbacks? = null
 
     internal var vitalExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
@@ -272,7 +275,8 @@ internal class RumFeature constructor(
 
     // region Internal
 
-    internal fun enableDebugging() {
+    @AnyThread
+    internal fun enableDebugging(advancedRumMonitor: AdvancedRumMonitor) {
         if (!initialized.get()) {
             InternalLogger.UNBOUND.log(
                 InternalLogger.Level.WARN,
@@ -282,17 +286,24 @@ internal class RumFeature constructor(
             return
         }
         val context = appContext
-        if (context is Application) {
-            debugActivityLifecycleListener = UiRumDebugListener(sdkCore)
-            context.registerActivityLifecycleCallbacks(debugActivityLifecycleListener)
+        synchronized(debugActivityLifecycleListener) {
+            if (context is Application && debugActivityLifecycleListener.get() == null) {
+                val listener = UiRumDebugListener(sdkCore, advancedRumMonitor)
+                debugActivityLifecycleListener.set(listener)
+                context.registerActivityLifecycleCallbacks(listener)
+            }
         }
     }
 
+    @AnyThread
     internal fun disableDebugging() {
         val context = appContext
-        if (debugActivityLifecycleListener != null && context is Application) {
-            context.unregisterActivityLifecycleCallbacks(debugActivityLifecycleListener)
-            debugActivityLifecycleListener = null
+        synchronized(debugActivityLifecycleListener) {
+            if (debugActivityLifecycleListener.get() != null && context is Application) {
+                val listener = debugActivityLifecycleListener.get()
+                context.unregisterActivityLifecycleCallbacks(listener)
+                debugActivityLifecycleListener.set(null)
+            }
         }
     }
 
