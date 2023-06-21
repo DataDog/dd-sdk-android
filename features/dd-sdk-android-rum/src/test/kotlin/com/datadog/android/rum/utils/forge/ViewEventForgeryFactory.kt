@@ -124,7 +124,7 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                 )
             },
             dd = ViewEvent.Dd(
-                session = forge.aNullable { ViewEvent.DdSession(getForgery()) },
+                session = forge.aNullable { ViewEvent.DdSession(aNullable { getForgery() }) },
                 browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") },
                 documentVersion = forge.aPositiveLong(strict = true)
             )

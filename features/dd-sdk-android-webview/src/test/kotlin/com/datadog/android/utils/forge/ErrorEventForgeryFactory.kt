@@ -112,7 +112,7 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                 ErrorEvent.Context(additionalProperties = forge.exhaustiveAttributes())
             },
             dd = ErrorEvent.Dd(
-                session = forge.aNullable { ErrorEvent.DdSession(getForgery()) },
+                session = forge.aNullable { ErrorEvent.DdSession(aNullable { getForgery() }) },
                 browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") }
             )
         )

@@ -30,7 +30,7 @@ internal class ResourceEventForgeryFactory :
                 id = forge.aNullable { getForgery<UUID>().toString() },
                 type = forge.getForgery(),
                 url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
-                duration = forge.aPositiveLong(),
+                duration = forge.aNullable { aPositiveLong() },
                 method = forge.aNullable(),
                 statusCode = forge.aNullable { aLong(200, 600) },
                 size = forge.aNullable { aPositiveLong() },
@@ -121,7 +121,7 @@ internal class ResourceEventForgeryFactory :
                 )
             },
             dd = ResourceEvent.Dd(
-                session = forge.aNullable { ResourceEvent.DdSession(getForgery()) },
+                session = forge.aNullable { ResourceEvent.DdSession(aNullable { getForgery() }) },
                 browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") },
                 spanId = forge.aNullable { aNumericalString() },
                 traceId = forge.aNullable { aNumericalString() }

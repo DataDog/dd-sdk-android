@@ -93,7 +93,7 @@ internal class LongTaskEventForgeryFactory :
                 )
             },
             dd = LongTaskEvent.Dd(
-                session = forge.aNullable { LongTaskEvent.DdSession(getForgery()) },
+                session = forge.aNullable { LongTaskEvent.DdSession(aNullable { getForgery() }) },
                 browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") }
             )
         )
