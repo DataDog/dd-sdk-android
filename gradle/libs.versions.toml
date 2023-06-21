@@ -76,7 +76,7 @@ glide = "4.11.0"
 picasso = "2.8"
 room = "2.5.1"
 rxJava3 = "3.0.0"
-timber = "4.7.1"
+timber = "5.0.1"
 coroutines = "1.4.2"
 
 # Local Server
