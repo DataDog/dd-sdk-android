@@ -98,8 +98,8 @@ internal class GesturesListener(
                 val targetId: String = contextRef.get().resourceIdName(scrollTarget.id)
                 val attributes = resolveAttributes(scrollTarget, targetId, null)
                 // although we report scroll here, while it can be swipe in the end, it is fine,
-                // because the final type is taken from stopUserAction call anyway
-                rumMonitor.startUserAction(
+                // because the final type is taken from stopAction call anyway
+                rumMonitor.startAction(
                     RumActionType.SCROLL,
                     resolveTargetName(interactionPredicate, scrollTarget),
                     attributes
@@ -134,7 +134,7 @@ internal class GesturesListener(
 
         val targetId: String = contextRef.get().resourceIdName(scrollTarget.id)
         val attributes = resolveAttributes(scrollTarget, targetId, onUpEvent)
-        registeredRumMonitor.stopUserAction(
+        registeredRumMonitor.stopAction(
             type,
             resolveTargetName(interactionPredicate, scrollTarget),
             attributes
@@ -180,7 +180,7 @@ internal class GesturesListener(
                 attributesProviders.forEach {
                     it.extractAttributes(target, attributes)
                 }
-                GlobalRum.get(sdkCore).addUserAction(
+                GlobalRum.get(sdkCore).addAction(
                     RumActionType.TAP,
                     resolveTargetName(interactionPredicate, target),
                     attributes

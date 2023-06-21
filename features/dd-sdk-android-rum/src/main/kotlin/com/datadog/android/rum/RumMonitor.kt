@@ -63,51 +63,51 @@ interface RumMonitor {
     )
 
     /**
-     * Notifies that a User Action happened.
-     * This is used to track discrete user actions (e.g.: tap).
+     * Notifies that an action happened.
+     * This is used to track discrete actions (e.g.: tap).
      * @param type the action type
      * @param name the action identifier
      * @param attributes additional custom attributes to attach to the action. Attributes can be
      * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
-     * @see [startUserAction]
-     * @see [stopUserAction]
+     * @see [startAction]
+     * @see [stopAction]
      */
-    fun addUserAction(
+    fun addAction(
         type: RumActionType,
         name: String,
         attributes: Map<String, Any?>
     )
 
     /**
-     * Notifies that a User Action started.
-     * This is used to track long running user actions (e.g.: scroll). Such a user action must
-     * be stopped with [stopUserAction], and will be stopped automatically if it lasts more than
+     * Notifies that an action started.
+     * This is used to track long running actions (e.g.: scroll). Such an action must
+     * be stopped with [stopAction], and will be stopped automatically if it lasts more than
      * 10 seconds.
      * @param type the action type
      * @param name the action identifier
      * @param attributes additional custom attributes to attach to the action. Attributes can be
      * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
-     * @see [stopUserAction]
-     * @see [addUserAction]
+     * @see [stopAction]
+     * @see [addAction]
      */
-    fun startUserAction(
+    fun startAction(
         type: RumActionType,
         name: String,
         attributes: Map<String, Any?>
     )
 
     /**
-     * Notifies that a User Action stopped, and update the action's type and name.
-     * This is used to stop tracking long running user actions (e.g.: scroll), started
-     * with [startUserAction].
+     * Notifies that an action stopped, and update the action's type and name.
+     * This is used to stop tracking long running actions (e.g.: scroll), started
+     * with [startAction].
      * @param type the action type (overriding the last started action)
      * @param name the action identifier (overriding the last started action)
      * @param attributes additional custom attributes to attach to the action. Attributes can be
      * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
-     * @see [addUserAction]
-     * @see [startUserAction]
+     * @see [addAction]
+     * @see [startAction]
      */
-    fun stopUserAction(
+    fun stopAction(
         type: RumActionType,
         name: String,
         attributes: Map<String, Any?> = emptyMap()
@@ -281,11 +281,21 @@ interface RumMonitor {
 
     /**
      * Stops the current session.
-     * A new session will start in response to a call to `startView`, `addUserAction`, or
-     * `startUserAction`. If the session is started because of a call to `addUserAction`,
-     * or `startUserAction`, the last know view is restarted in the new session.
+     * A new session will start in response to a call to `startView`, `addAction`, or
+     * `startAction`. If the session is started because of a call to `addAction`,
+     * or `startAction`, the last know view is restarted in the new session.
      */
     fun stopSession()
+
+    /**
+     * Utility setting to inspect the active RUM View.
+     * If set, a debugging outline will be displayed on top of the application, describing the name
+     * of the active RUM View in the default SDK instance (if any).
+     * May be used to debug issues with RUM instrumentation in your app.
+     *
+     * Default value is `false`.
+     */
+    var debug: Boolean
 
     /**
      * For Datadog internal use only.

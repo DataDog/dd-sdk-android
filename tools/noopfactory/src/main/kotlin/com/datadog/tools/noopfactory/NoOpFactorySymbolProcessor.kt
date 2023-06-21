@@ -16,13 +16,13 @@ import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
+import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.BOOLEAN
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.DOUBLE
-import com.squareup.kotlinpoet.DelicateKotlinPoetApi
 import com.squareup.kotlinpoet.FLOAT
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -34,6 +34,7 @@ import com.squareup.kotlinpoet.MAP
 import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.SET
 import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.TypeSpec
@@ -50,7 +51,8 @@ import java.io.OutputStreamWriter
  * A [SymbolProcessor] generating a no-op implementation of interfaces annotated with
  * @[NoOpImplementation].
  */
-@OptIn(KotlinPoetKspPreview::class, DelicateKotlinPoetApi::class)
+@Suppress("TooManyFunctions")
+@OptIn(KotlinPoetKspPreview::class)
 class NoOpFactorySymbolProcessor(
     private val codeGenerator: CodeGenerator,
     private val logger: KSPLogger
@@ -95,6 +97,11 @@ class NoOpFactorySymbolProcessor(
 
         val className = typeSpec.name.orEmpty()
         val fileSpec = FileSpec.builder(packageName, className)
+            .addAnnotation(
+                AnnotationSpec.builder(Suppress::class)
+                    .addMember("%S", "ktlint")
+                    .build()
+            )
             .addType(typeSpec)
             .indent("    ")
             .build()
@@ -217,24 +224,30 @@ class NoOpFactorySymbolProcessor(
     ) {
         val interfaces = mutableListOf(declaration)
         val functions: MutableMap<String, KSFunctionDeclaration> = mutableMapOf()
+        val properties = mutableMapOf<String, KSPropertyDeclaration>()
         while (interfaces.isNotEmpty()) {
-            generateFirstInterfaceImplementation(interfaces, functions)
+            generateFirstInterfaceImplementation(interfaces, functions, properties)
         }
 
         val typeParamResolver = declaration.typeParameters.toTypeParameterResolver()
         functions.values.forEach {
             typeSpecBuilder.addFunction(generateFunctionImplementation(it, typeParamResolver))
         }
+        properties.values.forEach {
+            typeSpecBuilder.addProperty(generatePropertyImplementation(it, typeParamResolver))
+        }
     }
 
     @Suppress("FunctionMaxLength")
     private fun generateFirstInterfaceImplementation(
         interfaces: MutableList<KSClassDeclaration>,
-        functions: MutableMap<String, KSFunctionDeclaration>
+        functions: MutableMap<String, KSFunctionDeclaration>,
+        properties: MutableMap<String, KSPropertyDeclaration>
     ) {
         val interfaceType = interfaces.removeAt(0)
         if (interfaceType.classKind == ClassKind.INTERFACE) {
             fetchInterfaceFunctions(interfaceType, functions)
+            fetchInterfaceProperties(interfaceType, properties)
 
             interfaceType.superTypes.forEach {
                 val superDeclaration = it.resolve().declaration
@@ -258,6 +271,22 @@ class NoOpFactorySymbolProcessor(
         declaration.getAllFunctions().forEach {
             val id = it.identifier()
             if ((id !in ignoredFunctions) && !executableElements.containsKey(id)) {
+                executableElements[id] = it
+            }
+        }
+    }
+
+    /**
+     * Updates the executable element map with the newly found enclosed executable elements
+     * in this interface avoiding the duplicates.
+     */
+    private fun fetchInterfaceProperties(
+        declaration: KSClassDeclaration,
+        executableElements: MutableMap<String, KSPropertyDeclaration>
+    ) {
+        declaration.getAllProperties().forEach {
+            val id = it.identifier()
+            if (!executableElements.containsKey(id)) {
                 executableElements[id] = it
             }
         }
@@ -294,6 +323,30 @@ class NoOpFactorySymbolProcessor(
     }
 
     /**
+     * Generates the implementation for a given property.
+     */
+    private fun generatePropertyImplementation(
+        propertyDeclaration: KSPropertyDeclaration,
+        typeParamResolver: TypeParameterResolver = TypeParameterResolver.EMPTY
+    ): PropertySpec {
+        val propertySpecBuilder = PropertySpec
+            .builder(
+                propertyDeclaration.simpleName.asString(),
+                propertyDeclaration.type.resolve().toTypeName(typeParamResolver)
+            )
+            .addModifiers(KModifier.OVERRIDE)
+            .mutable(propertyDeclaration.isMutable)
+
+        generatePropertyInitializerStatement(
+            propertySpecBuilder,
+            propertyDeclaration.type.resolve(),
+            typeParamResolver
+        )
+
+        return propertySpecBuilder.build()
+    }
+
+    /**
      * Generates the return statement for a given method.
      *
      * This will use sensible default values, using the following rules :
@@ -301,7 +354,7 @@ class NoOpFactorySymbolProcessor(
      *  - if the return type is a primitive, the method will return 0/false
      *  - if the return type is a String, the method will return an empty String
      *  - if the return type is an enum, the method will return the first enum constant
-     *  - if the return type is an interface, it will check if it known SDK collection interface
+     *  - if the return type is an interface, it will check if it is known SDK collection interface
      *  (one of [Map], [List], [Set]), otherwise assume a NoOp implementation exist
      *  - otherwise it will assume a default constructor for the given type exists.
      */
@@ -388,6 +441,92 @@ class NoOpFactorySymbolProcessor(
         }
     }
 
+    // TODO RUMM-0000 There is some duplication in the function vs property statement declaration code
+    /**
+     * Generates the initialization for a given property.
+     *
+     * This will use sensible default values, using the following rules :
+     *  - if the property type is nullable, the property will be null
+     *  - if the property type is a primitive, the property will be 0/false
+     *  - if the property type is a String, the property will be an empty String
+     *  - if the property type is an enum, the property will be the first enum constant
+     *  - if the property type is an interface, it will check if it is known SDK collection interface
+     *  (one of [Map], [List], [Set]), otherwise assume a NoOp implementation exist
+     *  - otherwise it will assume a default constructor for the given type exists.
+     */
+    @Suppress("LongMethod", "FunctionMaxLength")
+    private fun generatePropertyInitializerStatement(
+        propertySpecBuilder: PropertySpec.Builder,
+        propertyType: KSType,
+        typeParamResolver: TypeParameterResolver
+    ) {
+        val propertyTypeName = propertyType.toTypeName(typeParamResolver)
+        val propertyClassDeclaration = propertyType.declaration as? KSClassDeclaration
+        val propertyClassKind = propertyClassDeclaration?.classKind
+        val rawTypeName = (propertyTypeName as? ParameterizedTypeName)?.rawType ?: propertyTypeName
+
+        val newInstance = "%M()"
+        when {
+            propertyTypeName.isNullable -> propertySpecBuilder.initializer("null")
+            propertyTypeName == BOOLEAN -> propertySpecBuilder.initializer("false")
+            propertyTypeName == INT -> propertySpecBuilder.initializer("0")
+            propertyTypeName == LONG -> propertySpecBuilder.initializer("0L")
+            propertyTypeName == FLOAT -> propertySpecBuilder.initializer("0.0f")
+            propertyTypeName == DOUBLE -> propertySpecBuilder.initializer("0.0")
+            propertyTypeName == STRING -> propertySpecBuilder.initializer("\"\"")
+            rawTypeName == LIST -> propertySpecBuilder.initializer(
+                newInstance,
+                MemberName(
+                    KOTLIN_COLLECTIONS_PACKAGE,
+                    "emptyList"
+                )
+            )
+            rawTypeName == MAP -> propertySpecBuilder.initializer(
+                newInstance,
+                MemberName(
+                    KOTLIN_COLLECTIONS_PACKAGE,
+                    "emptyMap"
+                )
+            )
+            rawTypeName == SET -> propertySpecBuilder.initializer(
+                newInstance,
+                MemberName(
+                    KOTLIN_COLLECTIONS_PACKAGE,
+                    "emptySet"
+                )
+            )
+            propertyClassKind == ClassKind.ENUM_CLASS -> {
+                val firstValue = propertyClassDeclaration.declarations.firstOrNull {
+                    (it as? KSClassDeclaration)?.classKind == ClassKind.ENUM_ENTRY
+                }
+
+                if (firstValue != null) {
+                    propertySpecBuilder.initializer(
+                        "%T.${firstValue.simpleName.asString()}",
+                        propertyTypeName
+                    )
+                } else {
+                    logger.error(
+                        "Unable to find value for ${propertyClassDeclaration.simpleName.asString()}"
+                    )
+                }
+            }
+            propertyClassKind == ClassKind.INTERFACE -> {
+                val packageName = propertyClassDeclaration.qualifiedName
+                    ?.asString()
+                    ?.substringBeforeLast('.')
+                val noOpType = ClassName(
+                    packageName ?: "",
+                    "NoOp${propertyClassDeclaration.simpleName.getShortName()}"
+                )
+                propertySpecBuilder.initializer("%T()", noOpType)
+            }
+            else -> {
+                propertySpecBuilder.initializer("%T()", propertyTypeName)
+            }
+        }
+    }
+
     /**
      * @return the identifier name of the [KSFunctionDeclaration]
      */
@@ -396,6 +535,11 @@ class NoOpFactorySymbolProcessor(
             it.name?.asString() ?: "?"
         }
     }
+
+    /**
+     * @return the identifier name of the [KSPropertyDeclaration]
+     */
+    private fun KSPropertyDeclaration.identifier(): String = simpleName.asString()
 
     // endregion
 

@@ -47,7 +47,7 @@ class LogsForegroundService : Service() {
                 )
             }
             SEND_RUM_ACTION -> {
-                rumMonitor.addUserAction(
+                rumMonitor.addAction(
                     RumActionType.CUSTOM,
                     BACKGROUND_ACTION_KEY,
                     emptyMap()

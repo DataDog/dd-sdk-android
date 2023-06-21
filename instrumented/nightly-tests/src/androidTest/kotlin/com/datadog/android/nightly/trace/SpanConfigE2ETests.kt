@@ -155,14 +155,14 @@ class SpanConfigE2ETests {
         val actionName = "some-action-name"
         val rumMonitor = GlobalRum.get(sdkCore)
         rumMonitor.startView(viewKey, viewName)
-        rumMonitor.startUserAction(RumActionType.TAP, actionName, emptyMap())
+        rumMonitor.startAction(RumActionType.TAP, actionName, emptyMap())
         sendRandomActionOutcomeEvent(forge, sdkCore)
 
         // we need to wait a bit until RUM Context is updated
         Thread.sleep(2000)
         GlobalTracer.get().buildSpan(testMethodName).start().finish()
 
-        rumMonitor.stopUserAction(RumActionType.TAP, actionName)
+        rumMonitor.stopAction(RumActionType.TAP, actionName)
         rumMonitor.stopView(viewKey)
     }
 

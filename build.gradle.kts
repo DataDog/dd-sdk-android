@@ -145,7 +145,8 @@ tasks.register("unitTestTools") {
         ":sample:kotlin:assembleUs1Release",
         ":tools:unit:testJvmReleaseUnitTest",
         ":tools:detekt:test",
-        ":tools:lint:test"
+        ":tools:lint:test",
+        ":tools:noopfactory:test"
     )
 }
 

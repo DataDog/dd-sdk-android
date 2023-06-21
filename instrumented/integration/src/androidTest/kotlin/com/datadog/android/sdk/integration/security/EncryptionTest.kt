@@ -180,7 +180,7 @@ internal class EncryptionTest {
             "https://${forge.anAlphaNumericalString()}.com"
         )
 
-        rumMonitor.addUserAction(
+        rumMonitor.addAction(
             RumActionType.CUSTOM,
             "rumAction-${forge.aString()}",
             emptyMap()

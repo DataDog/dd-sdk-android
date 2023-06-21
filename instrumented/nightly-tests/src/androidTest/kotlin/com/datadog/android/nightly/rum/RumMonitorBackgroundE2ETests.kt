@@ -76,7 +76,7 @@ class RumMonitorBackgroundE2ETests {
     // region Background Action
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopAction(RumActionType, String, Map<String, Any?> = emptyMap())
      */
     @Test
     fun rum_rummonitor_stop_background_action_with_outcome() {
@@ -86,7 +86,7 @@ class RumMonitorBackgroundE2ETests {
             RumActionType::class.java,
             exclude = listOf(RumActionType.BACK)
         )
-        GlobalRum.get(sdkCore).startUserAction(
+        GlobalRum.get(sdkCore).startAction(
             type,
             actionName,
             attributes = defaultTestAttributes(testMethodName)
@@ -101,7 +101,7 @@ class RumMonitorBackgroundE2ETests {
         Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
         val attributes = forge.exhaustiveAttributes()
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).stopUserAction(type, actionName, attributes)
+            GlobalRum.get(sdkCore).stopAction(type, actionName, attributes)
         }
 
         Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
@@ -109,7 +109,7 @@ class RumMonitorBackgroundE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_add_background_non_custom_action_with_no_outcome() {
@@ -121,7 +121,7 @@ class RumMonitorBackgroundE2ETests {
         )
         val attributes = defaultTestAttributes(testMethodName)
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).addUserAction(
+            GlobalRum.get(sdkCore).addAction(
                 actionType,
                 actionName,
                 attributes = attributes
@@ -130,7 +130,7 @@ class RumMonitorBackgroundE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_add_background_custom_action_with_outcome() {
@@ -138,7 +138,7 @@ class RumMonitorBackgroundE2ETests {
         val actionName = forge.anActionName()
         val attributes = defaultTestAttributes(testMethodName)
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).addUserAction(
+            GlobalRum.get(sdkCore).addAction(
                 RumActionType.CUSTOM,
                 actionName,
                 attributes = attributes
@@ -153,7 +153,7 @@ class RumMonitorBackgroundE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_add_background_custom_action_with_no_outcome() {
@@ -161,7 +161,7 @@ class RumMonitorBackgroundE2ETests {
         val actionName = forge.anActionName()
         val attributes = defaultTestAttributes(testMethodName)
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).addUserAction(
+            GlobalRum.get(sdkCore).addAction(
                 RumActionType.CUSTOM,
                 actionName,
                 attributes = attributes
@@ -172,7 +172,7 @@ class RumMonitorBackgroundE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_add_background_non_custom_action_with_outcome() {
@@ -186,7 +186,7 @@ class RumMonitorBackgroundE2ETests {
             exclude = listOf(RumActionType.CUSTOM, RumActionType.BACK)
         )
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).addUserAction(
+            GlobalRum.get(sdkCore).addAction(
                 actionType,
                 actionName,
                 attributes = attributes

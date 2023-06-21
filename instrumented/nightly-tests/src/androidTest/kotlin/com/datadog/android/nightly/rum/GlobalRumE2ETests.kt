@@ -123,7 +123,7 @@ class GlobalRumE2ETests {
 
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             addAttributesMeasured(strAttrValue, intAttrValue)
-            GlobalRum.get(sdkCore).addUserAction(
+            GlobalRum.get(sdkCore).addAction(
                 RumActionType.CUSTOM,
                 actionName,
                 attributes = defaultTestAttributes(testMethodName)
@@ -149,7 +149,7 @@ class GlobalRumE2ETests {
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             addAttributes(strAttrValue, intAttrValue)
             removeAttributesMeasured()
-            GlobalRum.get(sdkCore).addUserAction(
+            GlobalRum.get(sdkCore).addAction(
                 RumActionType.CUSTOM,
                 actionName,
                 attributes = defaultTestAttributes(testMethodName)

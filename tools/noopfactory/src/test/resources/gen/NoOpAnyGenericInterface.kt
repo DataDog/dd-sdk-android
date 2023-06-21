@@ -1,3 +1,5 @@
+@file:Suppress("ktlint")
+
 package com.example
 
 import kotlin.Any
@@ -9,6 +11,10 @@ import kotlin.collections.emptyList
 
 @Suppress("RedundantUnitReturnType")
 internal class NoOpAnyGenericInterface<T : Any> : AnyGenericInterface<T> {
+    public override val immutableProperty: T? = null
+
+    public override var mutableProperty: T? = null
+
     public override fun doSomethingWithListReturn(models: List<T>): List<T> = emptyList()
 
     public override fun map(event: T): T = event

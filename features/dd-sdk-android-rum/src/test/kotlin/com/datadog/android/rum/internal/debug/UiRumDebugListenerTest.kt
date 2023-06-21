@@ -16,8 +16,6 @@ import android.view.Window
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
@@ -47,7 +45,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -77,7 +74,10 @@ internal class UiRumDebugListenerTest {
 
     @BeforeEach
     fun setUp() {
-        testedListener = UiRumDebugListener(rumMonitor.mockSdkCore)
+        testedListener = UiRumDebugListener(
+            rumMonitor.mockSdkCore,
+            rumMonitor.mockInstance as AdvancedRumMonitor
+        )
 
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockDecorView.findViewById<View>(android.R.id.content)) doReturn mockContentView
@@ -139,31 +139,6 @@ internal class UiRumDebugListenerTest {
         )
 
         verifyNoInteractions(rumMonitor.mockInstance, mockContentView)
-    }
-
-    @Test
-    fun `M log a warning W onActivityResumed() { RUM monitor is not AdvancedRumMonitor }`() {
-        // GIVEN
-        rumMonitor.mockInstance = NoOpRumMonitor()
-        GlobalRum.clear()
-        GlobalRum.registerIfAbsent(rumMonitor.mockSdkCore, rumMonitor.mockInstance)
-
-        testedListener = UiRumDebugListener(rumMonitor.mockSdkCore)
-
-        // WHEN
-        testedListener.onActivityResumed(mockActivity)
-
-        // THEN
-        verify(mockInternalLogger).log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            UiRumDebugListener.MISSING_RUM_MONITOR_TYPE.format(
-                Locale.US,
-                AdvancedRumMonitor::class.qualifiedName
-            )
-        )
-
-        verifyNoInteractions(mockContentView)
     }
 
     @Test

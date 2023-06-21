@@ -10,12 +10,12 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.net.RumRequestFactory
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
+import com.datadog.android.rum.utils.config.MainLooperTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.InternalSdkCore
-import fr.xgouchet.elmyr.annotation.BoolForgery
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -37,7 +37,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -95,53 +96,13 @@ internal class RumTest {
         }
     }
 
-    @Test
-    fun `𝕄 enable RUM debugging 𝕎 enableDebugging(true)`() {
-        // Given
-        val mockRumScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
-        val mockRumFeature = mock<RumFeature>()
-        whenever(mockRumScope.unwrap<RumFeature>()) doReturn mockRumFeature
+    companion object {
+        private val mainLooper = MainLooperTestConfiguration()
 
-        // When
-        Rum.enableDebugging(true, mockSdkCore)
-
-        // Then
-        verify(mockRumFeature).enableDebugging()
-    }
-
-    @Test
-    fun `𝕄 disable RUM debugging 𝕎 enableDebugging(false)`() {
-        // Given
-        val mockRumScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
-        val mockRumFeature = mock<RumFeature>()
-        whenever(mockRumScope.unwrap<RumFeature>()) doReturn mockRumFeature
-
-        // When
-        Rum.enableDebugging(false, mockSdkCore)
-
-        // Then
-        verify(mockRumFeature).disableDebugging()
-    }
-
-    @Test
-    fun `𝕄 log warn message 𝕎 enableDebugging() { no RUM feature registered }`(
-        @BoolForgery enable: Boolean
-    ) {
-        // Given
-        val mockInternalLogger = mock<InternalLogger>()
-        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
-
-        // When
-        Rum.enableDebugging(enable, mockSdkCore)
-
-        // Then
-        verify(mockInternalLogger).log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            Rum.RUM_DEBUG_RUM_NOT_ENABLED_WARNING
-        )
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(mainLooper)
+        }
     }
 }
