@@ -6,6 +6,7 @@
 
 package com.datadog.android.ktx.coroutine
 
+import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.v2.api.SdkCore
@@ -18,9 +19,15 @@ internal const val ERROR_FLOW: String = "Coroutine Flow error"
 /**
  *  Returns a [Flow] that will send a RUM Error event if this [Flow] emits an error.
  *  Note that the error will also be emitted by the returned [Flow].
+ *
+ *  @param T the type of data in the [Flow].
+ *  @param sdkCore SDK instance to use for reporting. If not provided, default instance will
+ *  be used.
+ *
+ *  @return the new [Flow] instance.
  */
 @Suppress("TooGenericExceptionCaught")
-fun <T> Flow<T>.sendErrorToDatadog(sdkCore: SdkCore): Flow<T> {
+fun <T> Flow<T>.sendErrorToDatadog(sdkCore: SdkCore = Datadog.getInstance()): Flow<T> {
     return flow {
         try {
             collect { value -> emit(value) }

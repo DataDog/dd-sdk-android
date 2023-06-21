@@ -14,7 +14,6 @@ import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.invokeMethod
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.v2.api.SdkCore
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.Rule
 import org.junit.Test
@@ -30,19 +29,17 @@ class RumMonitorBuilderE2ETests {
     @get:Rule
     val nightlyTestRule = NightlyTestRule()
 
-    lateinit var sdkCore: SdkCore
-
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun setSessionSampleRate(Float): Builder
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun registerIfAbsent(com.datadog.android.v2.api.SdkCore, RumMonitor): Boolean
+     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), RumMonitor): Boolean
      */
     @Test
     fun rum_rummonitor_builder_sample_all_in() {
         val testMethodName = "rum_rummonitor_builder_sample_all_in"
 
-        sdkCore = initializeSdk(
+        val sdkCore = initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
             forgeSeed = forge.seed,
             rumMonitorProvider = { sdkCore ->
@@ -56,14 +53,14 @@ class RumMonitorBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun setSessionSampleRate(Float): Builder
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
      */
     @Test
     fun rum_rummonitor_builder_sample_all_out() {
         val testMethodName = "rum_rummonitor_builder_sample_all_out"
-        initializeSdk(
+        val sdkCore = initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
             forgeSeed = forge.seed,
             rumMonitorProvider = { sdkCore ->
@@ -76,7 +73,7 @@ class RumMonitorBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun setSessionSampleRate(Float): Builder
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
      */
@@ -84,7 +81,7 @@ class RumMonitorBuilderE2ETests {
     fun rum_rummonitor_builder_sample_in_75_percent() {
         val testMethodName = "rum_rummonitor_builder_sample_in_75_percent"
         val eventsNumber = 100
-        initializeSdk(
+        val sdkCore = initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
             forgeSeed = forge.seed,
             rumMonitorProvider = { sdkCore ->

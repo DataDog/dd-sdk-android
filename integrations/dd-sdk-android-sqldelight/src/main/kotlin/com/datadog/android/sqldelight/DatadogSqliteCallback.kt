@@ -7,6 +7,7 @@
 package com.datadog.android.sqldelight
 
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -21,11 +22,12 @@ import java.util.Locale
  *
  * For more information [https://www.sqlite.org/howtocorrupt.html]
  * @param schema the SQL database schema
- * @param sdkCore the SDK instance to forward the errors to
+ * @param sdkCore the SDK instance to forward the errors to. If not provided, default instance
+ * will be used.
  */
-class DatadogSqliteCallback(
+class DatadogSqliteCallback @JvmOverloads constructor(
     schema: SqlDriver.Schema,
-    private val sdkCore: SdkCore
+    private val sdkCore: SdkCore = Datadog.getInstance()
 ) : AndroidSqliteDriver.Callback(schema) {
 
     /** @inheritDoc */

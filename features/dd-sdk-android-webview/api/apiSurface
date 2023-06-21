@@ -1,9 +1,9 @@
 class com.datadog.android.webview.DatadogEventBridge
-  constructor(com.datadog.android.v2.api.SdkCore, List<String>)
+  constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), List<String>)
   fun send(String)
   fun getAllowedWebViewHosts(): String
   class _InternalWebViewProxy
     constructor(com.datadog.android.v2.api.SdkCore)
     fun consumeWebviewEvent(String)
   companion object 
-    fun setup(com.datadog.android.v2.api.SdkCore, android.webkit.WebView, List<String>)
+    fun setup(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), android.webkit.WebView, List<String>)

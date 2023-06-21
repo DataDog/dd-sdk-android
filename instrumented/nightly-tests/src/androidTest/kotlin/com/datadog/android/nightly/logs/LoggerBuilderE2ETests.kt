@@ -50,7 +50,7 @@ class LoggerBuilderE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setSampleRate(Float): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
-     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
@@ -65,7 +65,7 @@ class LoggerBuilderE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setSampleRate(Float): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
-     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
@@ -80,7 +80,7 @@ class LoggerBuilderE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setSampleRate(Float): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
-     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
@@ -98,7 +98,7 @@ class LoggerBuilderE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setDatadogLogsEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
-     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
@@ -113,7 +113,7 @@ class LoggerBuilderE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setDatadogLogsEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
-     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
@@ -128,7 +128,7 @@ class LoggerBuilderE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setDatadogLogsMinPriority(Int): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
-     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
@@ -159,7 +159,7 @@ class LoggerBuilderE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setNetworkInfoEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
-     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
@@ -174,7 +174,7 @@ class LoggerBuilderE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setNetworkInfoEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
-     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
@@ -189,7 +189,7 @@ class LoggerBuilderE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setService(String): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
-     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
@@ -204,7 +204,7 @@ class LoggerBuilderE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setLoggerName(String): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
-     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
@@ -219,7 +219,7 @@ class LoggerBuilderE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setBundleWithRumEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
-     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
@@ -244,7 +244,7 @@ class LoggerBuilderE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setBundleWithTraceEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
-     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
@@ -264,7 +264,7 @@ class LoggerBuilderE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setBundleWithRumEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
-     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test
@@ -282,7 +282,7 @@ class LoggerBuilderE2ETests {
     /**
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setBundleWithTraceEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
-     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore?
      */
     @Test

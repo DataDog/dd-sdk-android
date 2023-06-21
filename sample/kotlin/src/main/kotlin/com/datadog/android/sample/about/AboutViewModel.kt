@@ -9,7 +9,6 @@ package com.datadog.android.sample.about
 import android.content.Context
 import android.os.AsyncTask
 import androidx.lifecycle.ViewModel
-import com.datadog.android.Datadog
 import com.datadog.android.ktx.rum.getAssetAsRumResource
 import com.datadog.android.ktx.rum.getRawResAsRumResource
 import com.datadog.android.ktx.tracing.withinSpan
@@ -52,9 +51,8 @@ internal class AboutViewModel : ViewModel() {
     ) : AsyncTask<Unit, Unit, String>() {
 
         override fun doInBackground(vararg params: Unit): String {
-            val sdkCore = Datadog.getInstance()
             return withinSpan("LoadResource") {
-                val inputStream = context.getRawResAsRumResource(id, sdkCore)
+                val inputStream = context.getRawResAsRumResource(id)
 
                 inputStream.bufferedReader().use(BufferedReader::readText)
             }
@@ -74,9 +72,8 @@ internal class AboutViewModel : ViewModel() {
     ) : AsyncTask<Unit, Unit, String>() {
 
         override fun doInBackground(vararg params: Unit): String {
-            val sdkCore = Datadog.getInstance()
             return withinSpan("LoadAsset") {
-                val inputStream = context.getAssetAsRumResource(fileName, sdkCore)
+                val inputStream = context.getAssetAsRumResource(fileName)
 
                 inputStream.bufferedReader().use(BufferedReader::readText)
             }

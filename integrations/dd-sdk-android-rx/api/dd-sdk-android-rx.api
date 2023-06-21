@@ -1,5 +1,7 @@
 public final class com/datadog/android/rx/DatadogRumErrorConsumer : io/reactivex/rxjava3/functions/Consumer {
+	public fun <init> ()V
 	public fun <init> (Lcom/datadog/android/v2/api/SdkCore;)V
+	public synthetic fun <init> (Lcom/datadog/android/v2/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun accept (Ljava/lang/Object;)V
 	public fun accept (Ljava/lang/Throwable;)V
 }
@@ -10,5 +12,10 @@ public final class com/datadog/android/rx/DatadogRxExtKt {
 	public static final fun sendErrorToDatadog (Lio/reactivex/rxjava3/core/Maybe;Lcom/datadog/android/v2/api/SdkCore;)Lio/reactivex/rxjava3/core/Maybe;
 	public static final fun sendErrorToDatadog (Lio/reactivex/rxjava3/core/Observable;Lcom/datadog/android/v2/api/SdkCore;)Lio/reactivex/rxjava3/core/Observable;
 	public static final fun sendErrorToDatadog (Lio/reactivex/rxjava3/core/Single;Lcom/datadog/android/v2/api/SdkCore;)Lio/reactivex/rxjava3/core/Single;
+	public static synthetic fun sendErrorToDatadog$default (Lio/reactivex/rxjava3/core/Completable;Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Lio/reactivex/rxjava3/core/Completable;
+	public static synthetic fun sendErrorToDatadog$default (Lio/reactivex/rxjava3/core/Flowable;Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Lio/reactivex/rxjava3/core/Flowable;
+	public static synthetic fun sendErrorToDatadog$default (Lio/reactivex/rxjava3/core/Maybe;Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Lio/reactivex/rxjava3/core/Maybe;
+	public static synthetic fun sendErrorToDatadog$default (Lio/reactivex/rxjava3/core/Observable;Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Lio/reactivex/rxjava3/core/Observable;
+	public static synthetic fun sendErrorToDatadog$default (Lio/reactivex/rxjava3/core/Single;Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Lio/reactivex/rxjava3/core/Single;
 }
 

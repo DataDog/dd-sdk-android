@@ -6,6 +6,7 @@
 
 package com.datadog.android.fresco
 
+import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.v2.api.SdkCore
@@ -18,10 +19,12 @@ import com.facebook.cache.common.CacheKey
  * to Datadog.
  *
  * It will automatically send RUM Error events whenever a read or write cache operation throws an exception.
+ *
+ * @param sdkCore SDK instance to use for reporting. If not provided, default instance will be used.
  */
 
-class DatadogFrescoCacheListener(
-    private val sdkCore: SdkCore
+class DatadogFrescoCacheListener @JvmOverloads constructor(
+    private val sdkCore: SdkCore = Datadog.getInstance()
 ) : CacheEventListener {
 
     // region CacheEventListener

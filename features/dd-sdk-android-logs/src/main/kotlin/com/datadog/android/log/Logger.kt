@@ -7,6 +7,7 @@
 package com.datadog.android.log
 
 import androidx.annotation.FloatRange
+import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.log.internal.LogsFeature
@@ -197,9 +198,9 @@ internal constructor(internal var handler: LogHandler) {
     /**
      * A Builder class for a [Logger].
      *
-     * @param sdkCore SDK instance to bind to.
+     * @param sdkCore SDK instance to bind to. If not provided, default instance will be used.
      */
-    class Builder(sdkCore: SdkCore) {
+    class Builder @JvmOverloads constructor(sdkCore: SdkCore = Datadog.getInstance()) {
 
         private val sdkCore: FeatureSdkCore = sdkCore as FeatureSdkCore
 

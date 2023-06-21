@@ -9,7 +9,6 @@ package com.datadog.android.sample.traces
 import android.os.AsyncTask
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.datadog.android.Datadog
 import com.datadog.android.ktx.coroutine.CoroutineScopeSpan
 import com.datadog.android.ktx.coroutine.asyncTraced
 import com.datadog.android.ktx.coroutine.awaitTraced
@@ -28,7 +27,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -151,7 +149,7 @@ internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewMod
             try {
                 setTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
                 val flow = getFlow()
-                flow.sendErrorToDatadog(Datadog.getInstance())
+                flow.sendErrorToDatadog()
                 flow.map {
                     it.replaceFirstChar { c ->
                         if (c.isLowerCase()) c.titlecase(Locale.US) else c.toString()
@@ -269,8 +267,7 @@ internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewMod
 
         @Suppress("CheckInternal")
         private val logger: Logger by lazy {
-            val sdkCore = Datadog.getInstance()
-            Logger.Builder(sdkCore)
+            Logger.Builder()
                 .setLoggerName("async_task")
                 .setLogcatLogsEnabled(true)
                 .build()

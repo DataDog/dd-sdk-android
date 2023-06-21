@@ -8,7 +8,7 @@ class com.datadog.android.log.Logger
   fun log(Int, String, Throwable? = null, Map<String, Any?> = emptyMap())
   fun log(Int, String, String?, String?, String?, Map<String, Any?> = emptyMap())
   class Builder
-    constructor(com.datadog.android.v2.api.SdkCore)
+    constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
     fun build(): Logger
     fun setService(String): Builder
     fun setDatadogLogsEnabled(Boolean): Builder

@@ -106,16 +106,16 @@ class SampleApplication : Application() {
         val preferences = Preferences.defaultPreferences(this)
 
         Datadog.setVerbosity(Log.VERBOSE)
-        val sdkCore = Datadog.initialize(
+        Datadog.initialize(
             this,
             createDatadogCredentials(),
             createDatadogConfiguration(),
             preferences.getTrackingConsent()
-        ) ?: return
+        )
 
         val rumConfig = createRumConfiguration()
-        Rum.enable(rumConfig, sdkCore)
-        Rum.enableDebugging(true, sdkCore)
+        Rum.enable(rumConfig)
+        Rum.enableDebugging(true)
 
         val sessionReplayConfig = SessionReplayConfiguration.Builder()
             .apply {
@@ -126,25 +126,25 @@ class SampleApplication : Application() {
             .setSessionReplaySampleRate(SAMPLE_IN_ALL_SESSIONS)
             .addExtensionSupport(MaterialExtensionSupport())
             .build()
-        SessionReplay.enable(sessionReplayConfig, sdkCore)
+        SessionReplay.enable(sessionReplayConfig)
 
         val logsConfig = LogsConfiguration.Builder().apply {
             if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
                 useCustomEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
             }
         }.build()
-        Logs.enable(logsConfig, sdkCore)
+        Logs.enable(logsConfig)
 
         val tracesConfig = TracesConfiguration.Builder().apply {
             if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
                 useCustomEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
             }
         }.build()
-        Traces.enable(tracesConfig, sdkCore)
+        Traces.enable(tracesConfig)
 
-        NdkCrashReports.enable(sdkCore)
+        NdkCrashReports.enable()
 
-        sdkCore.setUserInfo(
+        Datadog.getInstance().setUserInfo(
             UserInfo(
                 preferences.getUserId(),
                 preferences.getUserName(),
@@ -157,11 +157,11 @@ class SampleApplication : Application() {
         )
 
         GlobalTracer.registerIfAbsent(
-            AndroidTracer.Builder(sdkCore)
+            AndroidTracer.Builder()
                 .setService(BuildConfig.APPLICATION_ID)
                 .build()
         )
-        GlobalRum.registerIfAbsent(sdkCore, RumMonitor.Builder(sdkCore).build())
+        GlobalRum.registerIfAbsent(monitor = RumMonitor.Builder().build())
         TracingRxJava3Utils.enableTracing(GlobalTracer.get())
     }
 
@@ -243,8 +243,7 @@ class SampleApplication : Application() {
 
     @Suppress("TooGenericExceptionCaught", "CheckInternal")
     private fun initializeTimber() {
-        val sdkCore = Datadog.getInstance()
-        val logger = Logger.Builder(sdkCore)
+        val logger = Logger.Builder()
             .setLoggerName("timber")
             .setNetworkInfoEnabled(true)
             .build()

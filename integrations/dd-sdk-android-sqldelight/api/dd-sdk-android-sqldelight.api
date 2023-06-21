@@ -1,5 +1,7 @@
 public final class com/datadog/android/sqldelight/DatadogSqliteCallback : com/squareup/sqldelight/android/AndroidSqliteDriver$Callback {
+	public fun <init> (Lcom/squareup/sqldelight/db/SqlDriver$Schema;)V
 	public fun <init> (Lcom/squareup/sqldelight/db/SqlDriver$Schema;Lcom/datadog/android/v2/api/SdkCore;)V
+	public synthetic fun <init> (Lcom/squareup/sqldelight/db/SqlDriver$Schema;Lcom/datadog/android/v2/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun onCorruption (Landroidx/sqlite/db/SupportSQLiteDatabase;)V
 }
 

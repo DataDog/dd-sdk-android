@@ -8,6 +8,7 @@ package com.datadog.android.coil
 
 import android.net.Uri
 import coil.request.ImageRequest
+import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.v2.api.SdkCore
@@ -20,9 +21,12 @@ import java.io.File
  *
  * It will automatically send RUM error events whenever a Coil [ImageRequest]
  * throws any [Exception].
+ *
+ * @param sdkCore SDK instance to use for the reporting. If not provided, default instance
+ * will be used.
  */
-class DatadogCoilRequestListener(
-    private val sdkCore: SdkCore
+class DatadogCoilRequestListener @JvmOverloads constructor(
+    private val sdkCore: SdkCore = Datadog.getInstance()
 ) : ImageRequest.Listener {
 
     // region Listener

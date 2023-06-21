@@ -25,7 +25,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.datadog.android.Datadog
 import com.datadog.android.compose.ExperimentalTrackingApi
 import com.datadog.android.compose.NavigationViewTrackingEffect
 import com.datadog.android.compose.trackClick
@@ -40,8 +39,7 @@ internal fun NavigationSampleView() {
         NavigationViewTrackingEffect(
             navController = this,
             trackArguments = true,
-            destinationPredicate = AcceptAllNavDestinations(),
-            sdkCore = Datadog.getInstance()
+            destinationPredicate = AcceptAllNavDestinations()
         )
     }
     ViewNavigation(navController = navController)
@@ -65,11 +63,9 @@ internal fun SimpleView(
         modifier = Modifier.fillMaxSize()
     ) {
         Text("View $viewId")
-        val sdkCore = Datadog.getInstance()
         val onClick = trackClick(
             targetName = "Open View",
-            onClick = { onNavigate.invoke() },
-            sdkCore = sdkCore
+            onClick = { onNavigate.invoke() }
         )
         Button(
             onClick = onClick,

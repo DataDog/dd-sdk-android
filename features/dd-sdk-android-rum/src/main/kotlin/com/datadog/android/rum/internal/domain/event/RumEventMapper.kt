@@ -24,7 +24,7 @@ import com.datadog.android.v2.api.SdkCore
 import java.util.Locale
 
 internal data class RumEventMapper(
-    var sdkCore: SdkCore,
+    val sdkCore: SdkCore,
     val viewEventMapper: EventMapper<ViewEvent> = NoOpEventMapper(),
     val errorEventMapper: EventMapper<ErrorEvent> = NoOpEventMapper(),
     val resourceEventMapper: EventMapper<ResourceEvent> = NoOpEventMapper(),

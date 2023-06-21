@@ -6,12 +6,13 @@
 
 package com.datadog.android.ktx.rum
 
+import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.v2.api.SdkCore
 import java.io.Closeable
 
-internal const val CLOSABLE_ERROR_NESSAGE = "Error while using the closeable"
+internal const val CLOSABLE_ERROR_MESSAGE = "Error while using the closeable"
 
 /**
  * Executes the given [block] function on this [Closeable] instance
@@ -21,12 +22,12 @@ internal const val CLOSABLE_ERROR_NESSAGE = "Error while using the closeable"
  * any exception this will be intercepted and propagated as a Rum error event.
  * @param T a [Closeable] type
  * @param R the type returned by the block operation
- * @param sdkCore the SDK instance to use.
+ * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  * @param block a function to process this [Closeable] resource.
  * @return the result of [block] function invoked on this resource.
  */
 @Suppress("TooGenericExceptionCaught")
-fun <T : Closeable, R> T.useMonitored(sdkCore: SdkCore, block: (T) -> R): R {
+fun <T : Closeable, R> T.useMonitored(sdkCore: SdkCore = Datadog.getInstance(), block: (T) -> R): R {
     try {
         return block(this)
     } catch (e: Throwable) {
@@ -42,5 +43,5 @@ fun <T : Closeable, R> T.useMonitored(sdkCore: SdkCore, block: (T) -> R): R {
 }
 
 private fun handleError(throwable: Throwable, sdkCore: SdkCore) {
-    GlobalRum.get(sdkCore).addError(CLOSABLE_ERROR_NESSAGE, RumErrorSource.SOURCE, throwable, emptyMap())
+    GlobalRum.get(sdkCore).addError(CLOSABLE_ERROR_MESSAGE, RumErrorSource.SOURCE, throwable, emptyMap())
 }
