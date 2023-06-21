@@ -14,7 +14,6 @@ import java.util.Properties
 plugins {
     `maven-publish`
     id("io.github.gradle-nexus.publish-plugin")
-    id("org.jetbrains.kotlinx.kover")
 }
 
 version = AndroidConfig.VERSION.name
@@ -234,24 +233,24 @@ tasks.register("checkGeneratedFiles") {
 
 tasks.register("koverReportAll") {
     dependsOn(
-        ":dd-sdk-android-core:koverXmlReport",
-        ":integrations:dd-sdk-android-coil:koverXmlReport",
-        ":integrations:dd-sdk-android-compose:koverXmlReport",
-        ":integrations:dd-sdk-android-fresco:koverXmlReport",
-        ":integrations:dd-sdk-android-glide:koverXmlReport",
-        ":integrations:dd-sdk-android-ktx:koverXmlReport",
-        ":integrations:dd-sdk-android-rx:koverXmlReport",
-        ":integrations:dd-sdk-android-sqldelight:koverXmlReport",
-        ":integrations:dd-sdk-android-timber:koverXmlReport",
-        ":integrations:dd-sdk-android-tv:koverXmlReport",
-        ":integrations:dd-sdk-android-okhttp:koverXmlReport",
-        ":features:dd-sdk-android-session-replay:koverXmlReport",
-        ":features:dd-sdk-android-session-replay-material:koverXmlReport",
-        ":features:dd-sdk-android-logs:koverXmlReport",
-        ":features:dd-sdk-android-ndk:koverXmlReport",
-        ":features:dd-sdk-android-trace:koverXmlReport",
-        ":features:dd-sdk-android-webview:koverXmlReport",
-        ":features:dd-sdk-android-rum:koverXmlReport"
+        ":dd-sdk-android-core:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-coil:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-compose:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-fresco:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-glide:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-ktx:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-rx:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-sqldelight:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-timber:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-tv:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-okhttp:koverXmlReportRelease",
+        ":features:dd-sdk-android-session-replay:koverXmlReportRelease",
+        ":features:dd-sdk-android-session-replay-material:koverXmlReportRelease",
+        ":features:dd-sdk-android-logs:koverXmlReportRelease",
+        ":features:dd-sdk-android-ndk:koverXmlReportRelease",
+        ":features:dd-sdk-android-trace:koverXmlReportRelease",
+        ":features:dd-sdk-android-webview:koverXmlReportRelease",
+        ":features:dd-sdk-android-rum:koverXmlReportRelease"
     )
 }
 
@@ -276,23 +275,6 @@ tasks.register("buildNdkIntegrationTestsArtifacts") {
 }
 
 nightlyTestsCoverageConfig(threshold = 0.83f)
-kover {
-    isDisabled = false
-    disabledProjects = setOf(
-        "instrumented",
-        "sample",
-        "tools",
-        "integration",
-        "nightly-tests",
-        "kotlin",
-        "detekt",
-        "javabackport",
-        "noopfactory",
-        "unit",
-        "lint"
-    )
-    instrumentAndroidPackage = false
-}
 
 tasks.register("printSdkDebugRuntimeClasspath") {
     val fileTreeClassPathCollector =

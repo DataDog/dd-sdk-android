@@ -51,8 +51,7 @@ def report_coverage(module_name: str, report_file: str):
 def compute_coverage_module(module_name: str) -> int:
     print(f"Checking coverage for {module_name}")
 
-    report_file = os.path.join(module_name, 'build', 'reports', "kover", "project-xml",
-                               "report.xml")
+    report_file = os.path.join(module_name, 'build', 'reports', "kover", "reportRelease.xml")
 
     if os.path.exists(report_file):
         print(f"Found report at {report_file}")

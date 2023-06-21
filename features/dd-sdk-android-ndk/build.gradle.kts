@@ -27,6 +27,9 @@ plugins {
     // Analysis tools
     id("com.github.ben-manes.versions")
 
+    // Tests
+    id("org.jetbrains.kotlinx.kover")
+
     // Internal Generation
     id("thirdPartyLicences")
     id("apiSurface")

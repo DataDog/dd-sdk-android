@@ -46,7 +46,7 @@ espresso = "3.5.1"
 assertJ = "3.18.1"
 elmyr = "1.3.1"
 mockitoKotlin = "5.0.0"
-kover = "0.5.0"
+kover = "0.7.1"
 kspTesting = "1.5.0"
 
 # Tools
@@ -166,7 +166,7 @@ elmyrJUnit5 = { module = "com.github.xgouchet.Elmyr:junit5", version.ref = "elmy
 elmyrJVM = { module = "com.github.xgouchet.Elmyr:jvm", version.ref = "elmyr" }
 mockitoKotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
 kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
-kover = { module = "org.jetbrains.kotlinx:kover", version.ref = "kover" }
+kover = { module = "org.jetbrains.kotlinx:kover-gradle-plugin", version.ref = "kover" }
 kspTesting = { module = "com.github.tschuchortdev:kotlin-compile-testing-ksp", version.ref = "kspTesting" }
 androidLintTests = { module = "com.android.tools.lint:lint-tests", version.ref = "androidLint" }
 
