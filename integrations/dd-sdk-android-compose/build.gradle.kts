@@ -100,6 +100,7 @@ dependencies {
     }
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
+    unmock(libs.robolectric)
 
     // TODO MTG-12 detekt(project(":tools:detekt"))
     // TODO MTG-12 detekt(libs.detektCli)
@@ -108,6 +109,8 @@ dependencies {
 unMock {
     keep("android.os.BaseBundle")
     keep("android.os.Bundle")
+    keepStartingWith("android.util")
+    keepStartingWith("com.android.internal.util")
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
