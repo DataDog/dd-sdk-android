@@ -73,7 +73,7 @@ internal class RumEventSerializerTest {
             .hasField("resource") {
                 hasField("type", event.resource.type.name.lowercase(Locale.US))
                 hasField("url", event.resource.url)
-                hasField("duration", event.resource.duration)
+                hasNullableField("duration", event.resource.duration)
                 hasNullableField("method", event.resource.method?.name)
                 hasNullableField("status_code", event.resource.statusCode)
                 hasNullableField("size", event.resource.size)

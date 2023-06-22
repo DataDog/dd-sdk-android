@@ -3058,9 +3058,9 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeActionSent, mockWriter)
 
         // Then
-        argumentCaptor<ActionEvent> {
+        argumentCaptor<Any> {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
-            assertThat(firstValue)
+            assertThat(firstValue as ActionEvent)
                 .apply {
                     hasNonNullId()
                     hasTimestamp(testedScope.eventTimestamp)
@@ -6890,9 +6890,9 @@ internal class RumViewScopeTest {
         )
 
         // THEN
-        argumentCaptor<ErrorEvent> {
+        argumentCaptor<Any> {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
-            assertThat(lastValue).hasFeatureFlag(flagName, flagValue)
+            assertThat(lastValue as ErrorEvent).hasFeatureFlag(flagName, flagValue)
         }
     }
 

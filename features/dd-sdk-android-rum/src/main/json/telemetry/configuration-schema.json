@@ -68,6 +68,11 @@
                   "maximum": 100,
                   "readOnly": false
                 },
+                "start_session_replay_recording_manually": {
+                  "type": "boolean",
+                  "description": "Whether the session replay start is handled manually",
+                  "readOnly": false
+                },
                 "use_proxy": {
                   "type": "boolean",
                   "description": "Whether a proxy configured is used",

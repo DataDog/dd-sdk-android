@@ -883,6 +883,7 @@ internal class CoreFeatureTest {
             fakeConfig,
             fakeConsent
         )
+        Thread.sleep(50)
 
         // When
         testedFeature.stop()
