@@ -48,13 +48,13 @@ internal constructor(
      * Please note that the WebView events will not be tracked unless the web page's URL Host is part of
      * the list defined in this constructor.
      *
-     * @param sdkCore SDK instance on which to attach the bridge. If not provided, default
-     * instance will be used.
      * @param allowedHosts a list of all the hosts that you want to track when loaded in the
      * WebView (e.g.: `listOf("example.com", "example.net")`).
+     * @param sdkCore SDK instance on which to attach the bridge. If not provided, default
+     * instance will be used.
      */
     @JvmOverloads
-    constructor(sdkCore: SdkCore = Datadog.getInstance(), allowedHosts: List<String>) : this(
+    constructor(allowedHosts: List<String>, sdkCore: SdkCore = Datadog.getInstance()) : this(
         buildWebViewEventConsumer(sdkCore as FeatureSdkCore),
         allowedHosts
     )
@@ -131,19 +131,19 @@ internal constructor(
          * ```
          * webView.webViewClient = WebViewClient()
          * ```
-         * @param sdkCore SDK instance on which to attach the bridge.
          * @param webView the webView on which to attach the bridge.
          * @param allowedHosts a list of all the hosts that you want to track when loaded in the
          * WebView (e.g.: `listOf("example.com", "example.net")`).
+         * @param sdkCore SDK instance on which to attach the bridge.
          * [More here](https://developer.android.com/guide/webapps/webview#HandlingNavigation).
          */
         @MainThread
         @JvmOverloads
         @JvmStatic
         fun setup(
-            sdkCore: SdkCore = Datadog.getInstance(),
             webView: WebView,
-            allowedHosts: List<String>
+            allowedHosts: List<String>,
+            sdkCore: SdkCore = Datadog.getInstance()
         ) {
             if (!webView.settings.javaScriptEnabled) {
                 (sdkCore as FeatureSdkCore).internalLogger.log(
@@ -153,7 +153,7 @@ internal constructor(
                 )
             }
             webView.addJavascriptInterface(
-                DatadogEventBridge(sdkCore, allowedHosts),
+                DatadogEventBridge(allowedHosts, sdkCore),
                 DATADOG_EVENT_BRIDGE_NAME
             )
         }

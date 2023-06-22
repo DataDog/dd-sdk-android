@@ -58,7 +58,7 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
             .build()
         Rum.enable(rumConfig, sdkCore)
 
-        GlobalRumMonitor.registerIfAbsent(sdkCore, RumMonitor.Builder(sdkCore).build())
+        GlobalRumMonitor.registerIfAbsent(RumMonitor.Builder(sdkCore).build(), sdkCore)
     }
 
     override fun onPostResume() {

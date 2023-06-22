@@ -17,10 +17,10 @@ public final class com/datadog/android/rum/GlobalRumMonitor {
 	public static final fun isRegistered (Lcom/datadog/android/v2/api/SdkCore;)Z
 	public static synthetic fun isRegistered$default (Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Z
 	public static final fun registerIfAbsent (Lcom/datadog/android/rum/RumMonitor;)Z
-	public static final fun registerIfAbsent (Lcom/datadog/android/v2/api/SdkCore;Lcom/datadog/android/rum/RumMonitor;)Z
+	public static final fun registerIfAbsent (Lcom/datadog/android/rum/RumMonitor;Lcom/datadog/android/v2/api/SdkCore;)Z
 	public static final fun registerIfAbsent (Lcom/datadog/android/v2/api/SdkCore;Ljava/util/concurrent/Callable;)Z
 	public static final fun registerIfAbsent (Ljava/util/concurrent/Callable;)Z
-	public static synthetic fun registerIfAbsent$default (Lcom/datadog/android/v2/api/SdkCore;Lcom/datadog/android/rum/RumMonitor;ILjava/lang/Object;)Z
+	public static synthetic fun registerIfAbsent$default (Lcom/datadog/android/rum/RumMonitor;Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Z
 	public static synthetic fun registerIfAbsent$default (Lcom/datadog/android/v2/api/SdkCore;Ljava/util/concurrent/Callable;ILjava/lang/Object;)Z
 }
 

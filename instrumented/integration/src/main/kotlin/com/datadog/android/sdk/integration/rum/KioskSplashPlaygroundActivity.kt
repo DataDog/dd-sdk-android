@@ -53,7 +53,7 @@ internal class KioskSplashPlaygroundActivity : AppCompatActivity() {
         )
         featureActivations.shuffled(Random(intent.getForgeSeed())).forEach { it() }
 
-        GlobalRumMonitor.registerIfAbsent(sdkCore, RumMonitor.Builder(sdkCore).build())
+        GlobalRumMonitor.registerIfAbsent(RumMonitor.Builder(sdkCore).build(), sdkCore)
 
         setContentView(R.layout.kiosk_splash_layout)
 

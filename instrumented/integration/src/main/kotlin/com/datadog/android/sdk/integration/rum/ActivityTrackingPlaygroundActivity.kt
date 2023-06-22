@@ -49,7 +49,7 @@ internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
             isAccessible = true
             invoke(null, ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
         }
-        GlobalRumMonitor.registerIfAbsent(sdkCore, RumMonitor.Builder(sdkCore).build())
+        GlobalRumMonitor.registerIfAbsent(RumMonitor.Builder(sdkCore).build(), sdkCore)
         setContentView(R.layout.fragment_tracking_layout)
     }
 }

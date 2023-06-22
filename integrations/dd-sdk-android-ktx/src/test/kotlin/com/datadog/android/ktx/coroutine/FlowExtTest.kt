@@ -46,7 +46,7 @@ class FlowExtTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
     }
 
     @AfterEach

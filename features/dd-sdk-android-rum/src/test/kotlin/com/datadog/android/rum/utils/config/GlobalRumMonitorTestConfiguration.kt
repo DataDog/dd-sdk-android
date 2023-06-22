@@ -22,7 +22,7 @@ internal class GlobalRumMonitorTestConfiguration :
     override fun setUp(forge: Forge) {
         super.setUp(forge)
         mockSdkCore = mock()
-        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockInstance)
+        GlobalRumMonitor.registerIfAbsent(mockInstance, mockSdkCore)
     }
 
     override fun tearDown(forge: Forge) {

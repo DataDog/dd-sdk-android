@@ -48,7 +48,7 @@ internal class DatadogRUMUncaughtThrowableStrategyTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRumMonitor.registerIfAbsent(datadog.mockInstance, mockRumMonitor)
+        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, datadog.mockInstance)
 
         testedStrategy = DatadogRUMUncaughtThrowableStrategy(fakeName)
     }

@@ -62,7 +62,7 @@ internal open class SessionReplayPlaygroundActivity : AppCompatActivity() {
         )
         featureActivations.shuffled(Random(intent.getForgeSeed()))
             .forEach { it() }
-        GlobalRumMonitor.registerIfAbsent(sdkCore, RumMonitor.Builder(sdkCore).build())
+        GlobalRumMonitor.registerIfAbsent(RumMonitor.Builder(sdkCore).build(), sdkCore)
         setContentView(R.layout.session_replay_layout)
         titleTextView = findViewById(R.id.title)
         clickMeButton = findViewById(R.id.button)

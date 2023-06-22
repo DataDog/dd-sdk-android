@@ -8,7 +8,7 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
 typealias GlobalRum = GlobalRumMonitor
 object com.datadog.android.rum.GlobalRumMonitor
   fun isRegistered(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): Boolean
-  fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), RumMonitor): Boolean
+  fun registerIfAbsent(RumMonitor, com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): Boolean
   fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), java.util.concurrent.Callable<RumMonitor>): Boolean
   fun get(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): RumMonitor
 object com.datadog.android.rum.Rum

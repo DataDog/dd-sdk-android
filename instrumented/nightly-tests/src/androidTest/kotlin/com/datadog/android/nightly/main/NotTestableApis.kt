@@ -36,7 +36,6 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), java.util.concurrent.Callable<RumMonitor>): Boolean
  * apiMethodSignature: com.datadog.android.rum.resource.RumResourceInputStream#constructor(java.io.InputStream, String, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
  * apiMethodSignature: com.datadog.android.rum.Rum#fun enable(RumConfiguration, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
- * apiMethodSignature: com.datadog.android.rum.Rum#fun enableDebugging(Boolean, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
  * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun disableUserInteractionTracking(): Builder
  * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun setSessionListener(RumSessionListener): Builder
  * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setTelemetrySampleRate(Float): Builder

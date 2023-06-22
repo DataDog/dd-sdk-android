@@ -66,7 +66,7 @@ internal class DatadogFrescoCacheListenerTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
         fakeEventKey =
             BitmapMemoryCacheKey(
                 fakeCacheEventUri,

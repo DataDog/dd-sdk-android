@@ -6,7 +6,7 @@ fun <T: Any?> withContextTraced(String, kotlin.coroutines.CoroutineContext, Coro
 interface com.datadog.android.ktx.coroutine.CoroutineScopeSpan : kotlinx.coroutines.CoroutineScope, io.opentracing.Span
 fun <T> kotlinx.coroutines.flow.Flow<T>.sendErrorToDatadog(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): kotlinx.coroutines.flow.Flow<T>
 fun <T: java.io.Closeable, R> T.useMonitored(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), (T) -> R): R
-fun android.content.Context.getAssetAsRumResource(String, com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), Int = AssetManager.ACCESS_STREAMING): java.io.InputStream
+fun android.content.Context.getAssetAsRumResource(String, Int = AssetManager.ACCESS_STREAMING, com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun android.content.Context.getRawResAsRumResource(Int, com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun java.io.InputStream.asRumResource(String, com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun <T> android.database.sqlite.SQLiteDatabase.transactionTraced(String, Boolean = true, io.opentracing.Span.(android.database.sqlite.SQLiteDatabase) -> T): T

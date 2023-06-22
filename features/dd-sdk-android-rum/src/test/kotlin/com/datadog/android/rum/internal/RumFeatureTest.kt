@@ -117,7 +117,7 @@ internal class RumFeatureTest {
             fakeConfiguration,
             ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
         )
-        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
     }
 
     @AfterEach

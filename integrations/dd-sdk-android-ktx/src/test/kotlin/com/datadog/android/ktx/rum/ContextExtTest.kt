@@ -69,7 +69,7 @@ class ContextExtTest {
         whenever(mockAssetManager.open(fileName, accessMode)) doReturn mockIS
 
         // When
-        val result = mockContext.getAssetAsRumResource(fileName, mockSdkCore, accessMode)
+        val result = mockContext.getAssetAsRumResource(fileName, accessMode, mockSdkCore)
 
         // Then
         assertThat(result).isInstanceOf(RumResourceInputStream::class.java)
@@ -88,7 +88,7 @@ class ContextExtTest {
         whenever(mockAssetManager.open(fileName, AssetManager.ACCESS_STREAMING)) doReturn mockIS
 
         // When
-        val result = mockContext.getAssetAsRumResource(fileName, mockSdkCore)
+        val result = mockContext.getAssetAsRumResource(fileName, sdkCore = mockSdkCore)
 
         // Then
         assertThat(result).isInstanceOf(RumResourceInputStream::class.java)

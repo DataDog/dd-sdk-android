@@ -70,7 +70,7 @@ internal class DatadogDatabaseErrorHandlerTest {
         testedHandler = DatadogDatabaseErrorHandler(defaultErrorHandler = mockDefaultHandler)
         whenever(mockSqliteDatabase.path).thenReturn(fakeDbPath)
         whenever(mockSqliteDatabase.version).thenReturn(fakeDbVersion)
-        GlobalRumMonitor.registerIfAbsent(datadog.mockInstance, mockRumMonitor)
+        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, datadog.mockInstance)
     }
 
     @AfterEach
