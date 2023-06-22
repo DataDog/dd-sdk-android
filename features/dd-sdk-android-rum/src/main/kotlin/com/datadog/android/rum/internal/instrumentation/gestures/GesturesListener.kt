@@ -14,7 +14,7 @@ import android.view.ViewGroup
 import android.view.Window
 import android.widget.AbsListView
 import androidx.core.view.ScrollingView
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -86,7 +86,7 @@ internal class GesturesListener(
         distanceX: Float,
         distanceY: Float
     ): Boolean {
-        val rumMonitor = GlobalRum.get(sdkCore)
+        val rumMonitor = GlobalRumMonitor.get(sdkCore)
         val decorView = windowReference.get()?.decorView ?: return false
 
         // we only start the user action once
@@ -124,7 +124,7 @@ internal class GesturesListener(
     private fun closeScrollOrSwipeEventIfAny(decorView: View?, onUpEvent: MotionEvent) {
         val type = scrollEventType ?: return
 
-        val registeredRumMonitor = GlobalRum.get(sdkCore)
+        val registeredRumMonitor = GlobalRumMonitor.get(sdkCore)
         val scrollTarget = scrollTargetReference.get()
         if (decorView == null ||
             scrollTarget == null
@@ -180,7 +180,7 @@ internal class GesturesListener(
                 attributesProviders.forEach {
                     it.extractAttributes(target, attributes)
                 }
-                GlobalRum.get(sdkCore).addAction(
+                GlobalRumMonitor.get(sdkCore).addAction(
                     RumActionType.TAP,
                     resolveTargetName(interactionPredicate, target),
                     attributes

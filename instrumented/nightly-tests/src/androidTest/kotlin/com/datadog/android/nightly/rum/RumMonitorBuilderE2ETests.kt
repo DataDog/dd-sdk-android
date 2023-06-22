@@ -12,7 +12,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.invokeMethod
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.Rule
@@ -33,7 +33,7 @@ class RumMonitorBuilderE2ETests {
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun setSessionSampleRate(Float): Builder
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), RumMonitor): Boolean
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), RumMonitor): Boolean
      */
     @Test
     fun rum_rummonitor_builder_sample_all_in() {
@@ -95,7 +95,7 @@ class RumMonitorBuilderE2ETests {
             // this will add extra events to the monitor query value
             sendRandomRumEvent(forge, sdkCore, testMethodName, parentViewEventName = "")
             // expire the session here
-            GlobalRum.get(sdkCore).invokeMethod("resetSession")
+            GlobalRumMonitor.get(sdkCore).invokeMethod("resetSession")
             InstrumentationRegistry.getInstrumentation().waitForIdleSync()
         }
     }

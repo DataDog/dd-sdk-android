@@ -16,7 +16,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -85,7 +85,7 @@ class NavigationViewTrackingStrategy(
     @MainThread
     override fun onActivityPaused(activity: Activity) {
         super.onActivityPaused(activity)
-        val rumMonitor = withSdkCore { GlobalRum.get(it) }
+        val rumMonitor = withSdkCore { GlobalRumMonitor.get(it) }
         activity.findNavControllerOrNull(navigationViewId)?.currentDestination?.let {
             rumMonitor?.stopView(it)
         }
@@ -100,7 +100,7 @@ class NavigationViewTrackingStrategy(
         destination: NavDestination,
         arguments: Bundle?
     ) {
-        val rumMonitor = withSdkCore { GlobalRum.get(it) }
+        val rumMonitor = withSdkCore { GlobalRumMonitor.get(it) }
         componentPredicate.runIfValid(destination, internalLogger) {
             val attributes = if (trackArguments) convertToRumAttributes(arguments) else emptyMap()
             val viewName = componentPredicate.resolveViewName(destination)
@@ -130,7 +130,7 @@ class NavigationViewTrackingStrategy(
             val rumFeature = sdkCore
                 .getFeature(Feature.RUM_FEATURE_NAME)
                 ?.unwrap<RumFeature>()
-            val rumMonitor = GlobalRum.get(sdkCore) as? AdvancedRumMonitor
+            val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor
             val fragmentActivity = activity as? FragmentActivity
             val navController = activity.findNavControllerOrNull(navigationViewId)
             if (fragmentActivity != null && navController != null && rumFeature != null) {

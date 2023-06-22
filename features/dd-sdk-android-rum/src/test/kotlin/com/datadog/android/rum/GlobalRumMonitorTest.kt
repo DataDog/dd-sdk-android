@@ -30,8 +30,8 @@ import java.util.concurrent.Callable
     ExtendWith(ProhibitLeavingStaticMocksExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ProhibitLeavingStaticMocksIn(GlobalRum::class)
-internal class GlobalRumTest {
+@ProhibitLeavingStaticMocksIn(GlobalRumMonitor::class)
+internal class GlobalRumMonitorTest {
 
     @Mock
     lateinit var mockRumMonitor: RumMonitor
@@ -49,13 +49,13 @@ internal class GlobalRumTest {
 
     @AfterEach
     fun `tear down`() {
-        GlobalRum.clear()
+        GlobalRumMonitor.clear()
     }
 
     @Test
     fun `M return true W registerIfAbsent(monitor)`() {
         // When
-        val result = GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        val result = GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockRumMonitor)
 
         // Then
         assertThat(result).isTrue()
@@ -64,8 +64,8 @@ internal class GlobalRumTest {
     @Test
     fun `M return false W registerIfAbsent(monitor) twice {same sdkCore}`() {
         // When
-        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
-        val result = GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        val result = GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockRumMonitor)
 
         // Then
         assertThat(result).isFalse()
@@ -78,8 +78,8 @@ internal class GlobalRumTest {
         val mockMonitor2 = mock<RumMonitor>()
 
         // When
-        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
-        val result = GlobalRum.registerIfAbsent(mockSdkCore2, mockMonitor2)
+        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        val result = GlobalRumMonitor.registerIfAbsent(mockSdkCore2, mockMonitor2)
 
         // Then
         assertThat(result).isTrue()
@@ -88,7 +88,7 @@ internal class GlobalRumTest {
     @Test
     fun `M return true W registerIfAbsent(provider)`() {
         // When
-        val result = GlobalRum.registerIfAbsent(mockSdkCore, fakeRumMonitorProvider)
+        val result = GlobalRumMonitor.registerIfAbsent(mockSdkCore, fakeRumMonitorProvider)
 
         // Then
         assertThat(result).isTrue()
@@ -97,8 +97,8 @@ internal class GlobalRumTest {
     @Test
     fun `M return false W registerIfAbsent(provider) twice {same sdkCore}`() {
         // When
-        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
-        val result = GlobalRum.registerIfAbsent(mockSdkCore, fakeRumMonitorProvider)
+        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        val result = GlobalRumMonitor.registerIfAbsent(mockSdkCore, fakeRumMonitorProvider)
 
         // Then
         assertThat(result).isFalse()
@@ -112,8 +112,8 @@ internal class GlobalRumTest {
         val fakeRumMonitorProvider2 = Callable<RumMonitor> { mockMonitor2 }
 
         // When
-        GlobalRum.registerIfAbsent(mockSdkCore, fakeRumMonitorProvider)
-        val result = GlobalRum.registerIfAbsent(mockSdkCore2, fakeRumMonitorProvider2)
+        GlobalRumMonitor.registerIfAbsent(mockSdkCore, fakeRumMonitorProvider)
+        val result = GlobalRumMonitor.registerIfAbsent(mockSdkCore2, fakeRumMonitorProvider2)
 
         // Then
         assertThat(result).isTrue()
@@ -122,8 +122,8 @@ internal class GlobalRumTest {
     @Test
     fun `M return true W registerIfAbsent(monitor) + isRegistered() {same sdkCore}`() {
         // When
-        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
-        val result = GlobalRum.isRegistered(mockSdkCore)
+        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        val result = GlobalRumMonitor.isRegistered(mockSdkCore)
 
         // Then
         assertThat(result).isTrue()
@@ -135,8 +135,8 @@ internal class GlobalRumTest {
         val mockSdkCore2 = mock<SdkCore>()
 
         // When
-        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
-        val result = GlobalRum.isRegistered(mockSdkCore2)
+        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        val result = GlobalRumMonitor.isRegistered(mockSdkCore2)
 
         // Then
         assertThat(result).isFalse()
@@ -145,8 +145,8 @@ internal class GlobalRumTest {
     @Test
     fun `M return true W registerIfAbsent(provider) + isRegistered() {same sdkCore}`() {
         // When
-        GlobalRum.registerIfAbsent(mockSdkCore, fakeRumMonitorProvider)
-        val result = GlobalRum.isRegistered(mockSdkCore)
+        GlobalRumMonitor.registerIfAbsent(mockSdkCore, fakeRumMonitorProvider)
+        val result = GlobalRumMonitor.isRegistered(mockSdkCore)
 
         // Then
         assertThat(result).isTrue()
@@ -158,8 +158,8 @@ internal class GlobalRumTest {
         val mockSdkCore2 = mock<SdkCore>()
 
         // When
-        GlobalRum.registerIfAbsent(mockSdkCore, fakeRumMonitorProvider)
-        val result = GlobalRum.isRegistered(mockSdkCore2)
+        GlobalRumMonitor.registerIfAbsent(mockSdkCore, fakeRumMonitorProvider)
+        val result = GlobalRumMonitor.isRegistered(mockSdkCore2)
 
         // Then
         assertThat(result).isFalse()
@@ -168,8 +168,8 @@ internal class GlobalRumTest {
     @Test
     fun `M return monitor W registerIfAbsent(monitor) + get() {same sdkCore}`() {
         // When
-        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
-        val result = GlobalRum.get(mockSdkCore)
+        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        val result = GlobalRumMonitor.get(mockSdkCore)
 
         // Then
         assertThat(result).isSameAs(mockRumMonitor)
@@ -181,8 +181,8 @@ internal class GlobalRumTest {
         val mockSdkCore2 = mock<SdkCore>()
 
         // When
-        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
-        val result = GlobalRum.get(mockSdkCore2)
+        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        val result = GlobalRumMonitor.get(mockSdkCore2)
 
         // Then
         assertThat(result).isInstanceOf(NoOpRumMonitor::class.java)
@@ -191,8 +191,8 @@ internal class GlobalRumTest {
     @Test
     fun `M return monitor W registerIfAbsent(provider) + get() {same sdkCore}`() {
         // When
-        GlobalRum.registerIfAbsent(mockSdkCore, fakeRumMonitorProvider)
-        val result = GlobalRum.get(mockSdkCore)
+        GlobalRumMonitor.registerIfAbsent(mockSdkCore, fakeRumMonitorProvider)
+        val result = GlobalRumMonitor.get(mockSdkCore)
 
         // Then
         assertThat(result).isSameAs(mockRumMonitor)
@@ -204,8 +204,8 @@ internal class GlobalRumTest {
         val mockSdkCore2 = mock<SdkCore>()
 
         // When
-        GlobalRum.registerIfAbsent(mockSdkCore, fakeRumMonitorProvider)
-        val result = GlobalRum.get(mockSdkCore2)
+        GlobalRumMonitor.registerIfAbsent(mockSdkCore, fakeRumMonitorProvider)
+        val result = GlobalRumMonitor.get(mockSdkCore2)
 
         // Then
         assertThat(result).isInstanceOf(NoOpRumMonitor::class.java)

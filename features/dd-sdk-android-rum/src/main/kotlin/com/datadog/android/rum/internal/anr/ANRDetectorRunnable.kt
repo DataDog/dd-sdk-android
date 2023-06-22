@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.anr
 
 import android.os.Handler
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.v2.api.SdkCore
 
@@ -43,7 +43,7 @@ internal class ANRDetectorRunnable(
                     callback.wait(anrThresholdMs)
 
                     if (!callback.wasCalled()) {
-                        GlobalRum.get(sdkCore).addError(
+                        GlobalRumMonitor.get(sdkCore).addError(
                             ANR_MESSAGE,
                             RumErrorSource.SOURCE,
                             ANRException(handler.looper.thread),

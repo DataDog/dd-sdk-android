@@ -7,7 +7,7 @@
 package com.datadog.android.fresco
 
 import com.datadog.android.Datadog
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.v2.api.SdkCore
 import com.facebook.cache.common.CacheEvent
@@ -37,7 +37,7 @@ class DatadogFrescoCacheListener @JvmOverloads constructor(
     /** @inheritdoc */
     override fun onReadException(cacheEvent: CacheEvent) {
         val tags = tags(cacheEvent.cacheKey)
-        GlobalRum.get(sdkCore).addError(
+        GlobalRumMonitor.get(sdkCore).addError(
             CACHE_ERROR_READ_MESSAGE,
             RumErrorSource.SOURCE,
             cacheEvent.exception,
@@ -72,7 +72,7 @@ class DatadogFrescoCacheListener @JvmOverloads constructor(
 
     /** @inheritDoc */
     override fun onWriteException(cacheEvent: CacheEvent) {
-        GlobalRum.get(sdkCore).addError(
+        GlobalRumMonitor.get(sdkCore).addError(
             CACHE_ERROR_WRITE_MESSAGE,
             RumErrorSource.SOURCE,
             cacheEvent.exception,

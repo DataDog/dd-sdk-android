@@ -14,7 +14,7 @@ import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.utils.identifyRequest
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -214,7 +214,7 @@ internal constructor(
             val method = request.method()
             val requestId = identifyRequest(request)
 
-            GlobalRum.get(sdkCore).startResource(requestId, method, url)
+            GlobalRumMonitor.get(sdkCore).startResource(requestId, method, url)
         } else {
             val prefix = if (sdkInstanceName == null) {
                 "Default SDK instance"
@@ -266,7 +266,7 @@ internal constructor(
 
     override fun onSdkInstanceReady(sdkCore: SdkCore) {
         super.onSdkInstanceReady(sdkCore)
-        (GlobalRum.get(sdkCore) as? AdvancedNetworkRumMonitor)?.notifyInterceptorInstantiated()
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.notifyInterceptorInstantiated()
     }
 
     // endregion
@@ -295,7 +295,7 @@ internal constructor(
                 RumAttributes.RULE_PSR to traceSampler.getSampleRate()
             )
         }
-        GlobalRum.get(sdkCore).stopResource(
+        GlobalRumMonitor.get(sdkCore).stopResource(
             requestId,
             statusCode,
             getBodyLength(response, sdkCore.internalLogger),
@@ -312,7 +312,7 @@ internal constructor(
         val requestId = identifyRequest(request)
         val method = request.method()
         val url = request.url().toString()
-        GlobalRum.get(sdkCore).stopResourceWithError(
+        GlobalRumMonitor.get(sdkCore).stopResourceWithError(
             requestId,
             null,
             ERROR_MSG_FORMAT.format(Locale.US, method, url),

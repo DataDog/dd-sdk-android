@@ -9,7 +9,7 @@ package com.datadog.android.rum.tracking
 import android.app.Activity
 import android.os.Bundle
 import androidx.annotation.MainThread
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
@@ -126,7 +126,7 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
     // region Internal
 
     private fun getRumMonitor(): RumMonitor? {
-        return withSdkCore { GlobalRum.get(it) }
+        return withSdkCore { GlobalRumMonitor.get(it) }
     }
 
     private fun getAdvancedRumMonitor(): AdvancedRumMonitor? {

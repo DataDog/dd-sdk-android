@@ -23,7 +23,7 @@ import com.datadog.android.ndk.NdkCrashReports
 import com.datadog.android.okhttp.DatadogEventListener
 import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptor
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumMonitor
@@ -160,8 +160,8 @@ class SampleApplication : Application() {
                 .setService(BuildConfig.APPLICATION_ID)
                 .build()
         )
-        GlobalRum.registerIfAbsent(monitor = RumMonitor.Builder().build())
-        GlobalRum.get().debug = true
+        GlobalRumMonitor.registerIfAbsent(monitor = RumMonitor.Builder().build())
+        GlobalRumMonitor.get().debug = true
         TracingRxJava3Utils.enableTracing(GlobalTracer.get())
     }
 

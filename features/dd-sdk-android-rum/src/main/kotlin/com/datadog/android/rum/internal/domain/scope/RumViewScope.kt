@@ -11,7 +11,7 @@ import androidx.annotation.WorkerThread
 import androidx.navigation.NavController
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumPerformanceMetric
@@ -141,7 +141,7 @@ internal open class RumViewScope(
             it.putAll(getRumContext().toMap())
             it[RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY] = serverTimeOffsetInMs
         }
-        attributes.putAll(GlobalRum.get(sdkCore).getAttributes())
+        attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
         frameRateVitalMonitor.register(frameRateVitalListener)
@@ -657,7 +657,7 @@ internal open class RumViewScope(
         if (!viewUpdatePredicate.canUpdateView(viewComplete, event)) {
             return
         }
-        attributes.putAll(GlobalRum.get(sdkCore).getAttributes())
+        attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
         version++
 
         // make a local copy, so that closure captures the state as of now
@@ -812,7 +812,7 @@ internal open class RumViewScope(
         attributes: Map<String, Any?>
     ): MutableMap<String, Any?> {
         return attributes.toMutableMap()
-            .apply { putAll(GlobalRum.get(sdkCore).getAttributes()) }
+            .apply { putAll(GlobalRumMonitor.get(sdkCore).getAttributes()) }
     }
 
     @WorkerThread
@@ -838,7 +838,7 @@ internal open class RumViewScope(
         pendingActionCount++
         val rumContext = getRumContext()
 
-        val globalAttributes = GlobalRum.get(sdkCore).getAttributes().toMutableMap()
+        val globalAttributes = GlobalRumMonitor.get(sdkCore).getAttributes().toMutableMap()
 
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->

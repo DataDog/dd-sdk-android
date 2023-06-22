@@ -8,8 +8,8 @@ public final class com/datadog/android/rum/DdRumContentProvider : android/conten
 	public fun update (Landroid/net/Uri;Landroid/content/ContentValues;Ljava/lang/String;[Ljava/lang/String;)I
 }
 
-public final class com/datadog/android/rum/GlobalRum {
-	public static final field INSTANCE Lcom/datadog/android/rum/GlobalRum;
+public final class com/datadog/android/rum/GlobalRumMonitor {
+	public static final field INSTANCE Lcom/datadog/android/rum/GlobalRumMonitor;
 	public static final fun get ()Lcom/datadog/android/rum/RumMonitor;
 	public static final fun get (Lcom/datadog/android/v2/api/SdkCore;)Lcom/datadog/android/rum/RumMonitor;
 	public static synthetic fun get$default (Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Lcom/datadog/android/rum/RumMonitor;

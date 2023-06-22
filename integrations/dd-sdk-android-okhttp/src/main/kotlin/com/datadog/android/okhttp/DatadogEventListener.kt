@@ -9,7 +9,7 @@ package com.datadog.android.okhttp
 import com.datadog.android.SdkReference
 import com.datadog.android.okhttp.DatadogEventListener.Factory
 import com.datadog.android.okhttp.utils.identifyRequest
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.v2.api.InternalLogger
@@ -166,12 +166,12 @@ internal constructor(
     // region Internal
 
     private fun sendWaitForResourceTimingEvent() {
-        (GlobalRum.get(sdkCore) as? AdvancedNetworkRumMonitor)?.waitForResourceTiming(key)
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.waitForResourceTiming(key)
     }
 
     private fun sendTiming() {
         val timing = buildTiming()
-        (GlobalRum.get(sdkCore) as? AdvancedNetworkRumMonitor)?.addResourceTiming(key, timing)
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.addResourceTiming(key, timing)
     }
 
     private fun buildTiming(): ResourceTiming {

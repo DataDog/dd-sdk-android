@@ -20,7 +20,7 @@ import com.datadog.android.nightly.utils.defaultTestAttributes
 import com.datadog.android.nightly.utils.executeInsideView
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measure
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -34,7 +34,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class GlobalRumE2ETests {
+class GlobalRumMonitorE2ETests {
     @get:Rule
     val forge = ForgeRule()
 
@@ -50,9 +50,9 @@ class GlobalRumE2ETests {
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
      * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#constructor(String)
      * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun build(): RumConfiguration
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun get(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): RumMonitor
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun isRegistered(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): Boolean
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), RumMonitor): Boolean
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun get(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): RumMonitor
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun isRegistered(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): Boolean
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), RumMonitor): Boolean
      */
     @Before
     fun setUp() {
@@ -65,7 +65,7 @@ class GlobalRumE2ETests {
     // region View
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun addAttribute(String, Any?)
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun addAttribute(String, Any?)
      */
     @Test
     fun rum_globalrum_add_attribute_for_view() {
@@ -75,18 +75,18 @@ class GlobalRumE2ETests {
         val strAttrValue = forge.anAlphabeticalString()
         val intAttrValue = forge.anInt()
         addAttributesMeasured(strAttrValue, intAttrValue)
-        GlobalRum.get(sdkCore).startView(
+        GlobalRumMonitor.get(sdkCore).startView(
             viewKey,
             viewName,
             defaultTestAttributes(testMethodName)
         )
-        GlobalRum.get(sdkCore).stopView(viewKey)
+        GlobalRumMonitor.get(sdkCore).stopView(viewKey)
         Thread.sleep(WRITE_DELAY_MS)
         removeAttributes()
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun removeAttribute(String)
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun removeAttribute(String)
      */
     @Test
     fun rum_globalrum_remove_attribute_for_view() {
@@ -97,12 +97,12 @@ class GlobalRumE2ETests {
         val intAttrValue = forge.anInt()
         addAttributes(strAttrValue, intAttrValue)
         removeAttributesMeasured()
-        GlobalRum.get(sdkCore).startView(
+        GlobalRumMonitor.get(sdkCore).startView(
             viewKey,
             viewName,
             defaultTestAttributes(testMethodName)
         )
-        GlobalRum.get(sdkCore).stopView(viewKey)
+        GlobalRumMonitor.get(sdkCore).stopView(viewKey)
     }
 
     // endregion
@@ -110,7 +110,7 @@ class GlobalRumE2ETests {
     // region Action
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun addAttribute(String, Any?)
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun addAttribute(String, Any?)
      */
     @Test
     fun rum_globalrum_add_attribute_for_action() {
@@ -123,7 +123,7 @@ class GlobalRumE2ETests {
 
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             addAttributesMeasured(strAttrValue, intAttrValue)
-            GlobalRum.get(sdkCore).addAction(
+            GlobalRumMonitor.get(sdkCore).addAction(
                 RumActionType.CUSTOM,
                 actionName,
                 attributes = defaultTestAttributes(testMethodName)
@@ -135,7 +135,7 @@ class GlobalRumE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun removeAttribute(String)
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun removeAttribute(String)
      */
     @Test
     fun rum_globalrum_remove_attribute_for_action() {
@@ -149,7 +149,7 @@ class GlobalRumE2ETests {
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             addAttributes(strAttrValue, intAttrValue)
             removeAttributesMeasured()
-            GlobalRum.get(sdkCore).addAction(
+            GlobalRumMonitor.get(sdkCore).addAction(
                 RumActionType.CUSTOM,
                 actionName,
                 attributes = defaultTestAttributes(testMethodName)
@@ -164,7 +164,7 @@ class GlobalRumE2ETests {
     // region Resource
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun addAttribute(String, Any?)
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun addAttribute(String, Any?)
      */
     @Test
     fun rum_globalrum_add_attribute_for_resource() {
@@ -177,14 +177,14 @@ class GlobalRumE2ETests {
 
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             addAttributesMeasured(strAttrValue, intAttrValue)
-            GlobalRum.get(sdkCore).startResource(
+            GlobalRumMonitor.get(sdkCore).startResource(
                 resourceKey,
                 forge.aResourceMethod(),
                 resourceKey,
                 attributes = defaultTestAttributes(testMethodName)
             )
             Thread.sleep(100)
-            GlobalRum.get(sdkCore).stopResource(
+            GlobalRumMonitor.get(sdkCore).stopResource(
                 resourceKey,
                 200,
                 forge.aLong(min = 1),
@@ -197,7 +197,7 @@ class GlobalRumE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun removeAttribute(String)
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun removeAttribute(String)
      */
     @Test
     fun rum_globalrum_remove_attribute_for_resource() {
@@ -211,14 +211,14 @@ class GlobalRumE2ETests {
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             addAttributes(strAttrValue, intAttrValue)
             removeAttributesMeasured()
-            GlobalRum.get(sdkCore).startResource(
+            GlobalRumMonitor.get(sdkCore).startResource(
                 resourceKey,
                 forge.aResourceMethod(),
                 resourceKey,
                 attributes = defaultTestAttributes(testMethodName)
             )
             Thread.sleep(100)
-            GlobalRum.get(sdkCore).stopResource(
+            GlobalRumMonitor.get(sdkCore).stopResource(
                 resourceKey,
                 200,
                 forge.aLong(min = 1),
@@ -233,7 +233,7 @@ class GlobalRumE2ETests {
     // region Error
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun addAttribute(String, Any?)
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun addAttribute(String, Any?)
      */
     @Test
     fun rum_globalrum_add_attribute_for_error() {
@@ -246,7 +246,7 @@ class GlobalRumE2ETests {
 
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             addAttributesMeasured(strAttrValue, intAttrValue)
-            GlobalRum.get(sdkCore).addError(
+            GlobalRumMonitor.get(sdkCore).addError(
                 errorMessage,
                 forge.aValueFrom(RumErrorSource::class.java),
                 forge.aNullable { forge.aThrowable() },
@@ -258,7 +258,7 @@ class GlobalRumE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun removeAttribute(String)
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun removeAttribute(String)
      */
     @Test
     fun rum_globalrum_remove_attribute_for_error() {
@@ -272,7 +272,7 @@ class GlobalRumE2ETests {
         executeInsideView(viewKey, viewName, testMethodName, sdkCore) {
             addAttributes(strAttrValue, intAttrValue)
             removeAttributesMeasured()
-            GlobalRum.get(sdkCore).addError(
+            GlobalRumMonitor.get(sdkCore).addError(
                 errorMessage,
                 forge.aValueFrom(RumErrorSource::class.java),
                 forge.aNullable { forge.aThrowable() },
@@ -287,30 +287,30 @@ class GlobalRumE2ETests {
 
     private fun addAttributesMeasured(strAttrValue: String, intAttrValue: Int) {
         measure(MEASURE_TEST_METHOD_ADD) {
-            GlobalRum.get(sdkCore).addAttribute(RUM_CUSTOM_STR_ATTRIBUTE, strAttrValue)
+            GlobalRumMonitor.get(sdkCore).addAttribute(RUM_CUSTOM_STR_ATTRIBUTE, strAttrValue)
         }
         measure(MEASURE_TEST_METHOD_ADD) {
-            GlobalRum.get(sdkCore).addAttribute(RUM_CUSTOM_INT_ATTRIBUTE, intAttrValue)
+            GlobalRumMonitor.get(sdkCore).addAttribute(RUM_CUSTOM_INT_ATTRIBUTE, intAttrValue)
         }
     }
 
     private fun addAttributes(strAttrValue: String, intAttrValue: Int) {
-        GlobalRum.get(sdkCore).addAttribute(RUM_CUSTOM_STR_ATTRIBUTE, strAttrValue)
-        GlobalRum.get(sdkCore).addAttribute(RUM_CUSTOM_INT_ATTRIBUTE, intAttrValue)
+        GlobalRumMonitor.get(sdkCore).addAttribute(RUM_CUSTOM_STR_ATTRIBUTE, strAttrValue)
+        GlobalRumMonitor.get(sdkCore).addAttribute(RUM_CUSTOM_INT_ATTRIBUTE, intAttrValue)
     }
 
     private fun removeAttributesMeasured() {
         measure(MEASURE_TEST_METHOD_REMOVE) {
-            GlobalRum.get(sdkCore).removeAttribute(RUM_CUSTOM_STR_ATTRIBUTE)
+            GlobalRumMonitor.get(sdkCore).removeAttribute(RUM_CUSTOM_STR_ATTRIBUTE)
         }
         measure(MEASURE_TEST_METHOD_REMOVE) {
-            GlobalRum.get(sdkCore).removeAttribute(RUM_CUSTOM_INT_ATTRIBUTE)
+            GlobalRumMonitor.get(sdkCore).removeAttribute(RUM_CUSTOM_INT_ATTRIBUTE)
         }
     }
 
     private fun removeAttributes() {
-        GlobalRum.get(sdkCore).removeAttribute(RUM_CUSTOM_STR_ATTRIBUTE)
-        GlobalRum.get(sdkCore).removeAttribute(RUM_CUSTOM_INT_ATTRIBUTE)
+        GlobalRumMonitor.get(sdkCore).removeAttribute(RUM_CUSTOM_STR_ATTRIBUTE)
+        GlobalRumMonitor.get(sdkCore).removeAttribute(RUM_CUSTOM_INT_ATTRIBUTE)
     }
 
     // endregion

@@ -20,7 +20,7 @@ import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measure
 import com.datadog.android.nightly.utils.measureSdkInitialize
 import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracesConfiguration
@@ -153,7 +153,7 @@ class SpanConfigE2ETests {
         val viewKey = "some-view-key"
         val viewName = "some-view-name"
         val actionName = "some-action-name"
-        val rumMonitor = GlobalRum.get(sdkCore)
+        val rumMonitor = GlobalRumMonitor.get(sdkCore)
         rumMonitor.startView(viewKey, viewName)
         rumMonitor.startAction(RumActionType.TAP, actionName, emptyMap())
         sendRandomActionOutcomeEvent(forge, sdkCore)
@@ -186,7 +186,7 @@ class SpanConfigE2ETests {
 
         val viewKey = "some-view-key"
         val viewName = "some-view-name"
-        val rumMonitor = GlobalRum.get(sdkCore)
+        val rumMonitor = GlobalRumMonitor.get(sdkCore)
         rumMonitor.startView(viewKey, viewName)
 
         // we need to wait a bit until RUM Context is updated

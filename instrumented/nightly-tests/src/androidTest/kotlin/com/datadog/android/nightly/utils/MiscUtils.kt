@@ -18,7 +18,7 @@ import com.datadog.android.nightly.BuildConfig
 import com.datadog.android.nightly.ENV_NAME
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
@@ -48,21 +48,21 @@ inline fun executeInsideView(
     sdkCore: SdkCore,
     codeBlock: () -> Unit
 ) {
-    GlobalRum.get(sdkCore).startView(viewKey, viewName, attributes = defaultTestAttributes(testMethodName))
+    GlobalRumMonitor.get(sdkCore).startView(viewKey, viewName, attributes = defaultTestAttributes(testMethodName))
     codeBlock()
-    GlobalRum.get(sdkCore).stopView(viewKey)
+    GlobalRumMonitor.get(sdkCore).stopView(viewKey)
 }
 
 fun sendRandomActionOutcomeEvent(forge: Forge, sdkCore: SdkCore) {
     if (forge.aBool()) {
         val key = forge.anAlphabeticalString()
-        GlobalRum.get(sdkCore).startResource(
+        GlobalRumMonitor.get(sdkCore).startResource(
             key,
             forge.aResourceMethod(),
             key,
             forge.exhaustiveAttributes()
         )
-        GlobalRum.get(sdkCore).stopResource(
+        GlobalRumMonitor.get(sdkCore).stopResource(
             key,
             forge.anInt(min = 200, max = 500),
             forge.aLong(min = 1),
@@ -70,7 +70,7 @@ fun sendRandomActionOutcomeEvent(forge: Forge, sdkCore: SdkCore) {
             forge.exhaustiveAttributes()
         )
     } else {
-        GlobalRum.get(sdkCore).addError(
+        GlobalRumMonitor.get(sdkCore).addError(
             forge.anAlphabeticalString(),
             forge.aValueFrom(RumErrorSource::class.java),
             forge.aNullable { forge.aThrowable() },
@@ -84,7 +84,7 @@ fun stopSdk() {
 
     // Reset Global states
     GlobalTracer::class.java.setStaticValue("isRegistered", false)
-    val isRumRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
+    val isRumRegistered: AtomicBoolean = GlobalRumMonitor::class.java.getStaticValue("isRegistered")
     isRumRegistered.set(false)
 }
 
@@ -134,7 +134,7 @@ fun initializeSdk(
             }
         }
     GlobalTracer.registerIfAbsent(tracerProvider.invoke(sdkCore))
-    GlobalRum.registerIfAbsent(sdkCore, rumMonitorProvider.invoke(sdkCore))
+    GlobalRumMonitor.registerIfAbsent(sdkCore, rumMonitorProvider.invoke(sdkCore))
     return sdkCore
 }
 

@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.domain
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.serializeToByteArray
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
@@ -78,7 +78,7 @@ internal class RumDataWriter(
     }
 
     private fun notifyEventSent(viewId: String, storageEvent: StorageEvent) {
-        val rumMonitor = GlobalRum.get(sdkCore)
+        val rumMonitor = GlobalRumMonitor.get(sdkCore)
         if (rumMonitor is AdvancedRumMonitor) {
             rumMonitor.eventSent(viewId, storageEvent)
         }

@@ -6,7 +6,7 @@
 
 package com.datadog.android.ktx.coroutine
 
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.v2.api.SdkCore
@@ -46,12 +46,12 @@ class FlowExtTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockRumMonitor)
     }
 
     @AfterEach
     fun `tear down`() {
-        GlobalRum::class.java.getDeclaredMethod("reset").apply {
+        GlobalRumMonitor::class.java.getDeclaredMethod("reset").apply {
             isAccessible = true
             invoke(null)
         }

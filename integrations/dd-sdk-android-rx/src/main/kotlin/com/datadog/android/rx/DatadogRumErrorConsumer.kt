@@ -7,7 +7,7 @@
 package com.datadog.android.rx
 
 import com.datadog.android.Datadog
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.v2.api.SdkCore
 import io.reactivex.rxjava3.functions.Consumer
@@ -27,7 +27,7 @@ class DatadogRumErrorConsumer @JvmOverloads constructor(
 
     /** @inheritDoc */
     override fun accept(error: Throwable) {
-        GlobalRum.get(sdkCore).addError(REQUEST_ERROR_MESSAGE, RumErrorSource.SOURCE, error, emptyMap())
+        GlobalRumMonitor.get(sdkCore).addError(REQUEST_ERROR_MESSAGE, RumErrorSource.SOURCE, error, emptyMap())
     }
 
     internal companion object {

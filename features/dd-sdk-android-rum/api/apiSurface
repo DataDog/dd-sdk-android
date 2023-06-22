@@ -5,7 +5,8 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
   override fun insert(android.net.Uri, android.content.ContentValues?): android.net.Uri?
   override fun delete(android.net.Uri, String?, Array<String>?): Int
   override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
-object com.datadog.android.rum.GlobalRum
+typealias GlobalRum = GlobalRumMonitor
+object com.datadog.android.rum.GlobalRumMonitor
   fun isRegistered(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): Boolean
   fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), RumMonitor): Boolean
   fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), java.util.concurrent.Callable<RumMonitor>): Boolean

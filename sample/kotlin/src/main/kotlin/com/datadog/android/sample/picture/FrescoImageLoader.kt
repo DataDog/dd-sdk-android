@@ -11,7 +11,7 @@ import android.net.Uri
 import android.widget.ImageView
 import com.datadog.android.Datadog
 import com.datadog.android.fresco.DatadogFrescoCacheListener
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.facebook.cache.disk.DiskCacheConfig
 import com.facebook.common.util.ByteConstants
@@ -29,7 +29,7 @@ internal class FrescoImageLoader : ImageLoader {
         if (imageView is SimpleDraweeView) {
             imageView.setImageURI(Uri.parse(url))
         } else {
-            GlobalRum.get(Datadog.getInstance()).addError(
+            GlobalRumMonitor.get(Datadog.getInstance()).addError(
                 "Unable to load Fresco image in non Drawee View",
                 RumErrorSource.SOURCE,
                 null,

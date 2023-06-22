@@ -7,7 +7,7 @@
 package com.datadog.android.ktx.coroutine
 
 import com.datadog.android.Datadog
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.v2.api.SdkCore
 import kotlinx.coroutines.flow.Flow
@@ -32,7 +32,7 @@ fun <T> Flow<T>.sendErrorToDatadog(sdkCore: SdkCore = Datadog.getInstance()): Fl
         try {
             collect { value -> emit(value) }
         } catch (e: Throwable) {
-            GlobalRum.get(sdkCore)
+            GlobalRumMonitor.get(sdkCore)
                 .addError(
                     ERROR_FLOW,
                     RumErrorSource.SOURCE,

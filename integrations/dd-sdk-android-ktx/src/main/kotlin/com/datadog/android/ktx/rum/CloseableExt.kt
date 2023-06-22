@@ -7,7 +7,7 @@
 package com.datadog.android.ktx.rum
 
 import com.datadog.android.Datadog
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.v2.api.SdkCore
 import java.io.Closeable
@@ -43,5 +43,5 @@ fun <T : Closeable, R> T.useMonitored(sdkCore: SdkCore = Datadog.getInstance(), 
 }
 
 private fun handleError(throwable: Throwable, sdkCore: SdkCore) {
-    GlobalRum.get(sdkCore).addError(CLOSABLE_ERROR_MESSAGE, RumErrorSource.SOURCE, throwable, emptyMap())
+    GlobalRumMonitor.get(sdkCore).addError(CLOSABLE_ERROR_MESSAGE, RumErrorSource.SOURCE, throwable, emptyMap())
 }

@@ -10,7 +10,7 @@ import android.app.Application
 import android.os.Build
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
@@ -117,12 +117,12 @@ internal class RumFeatureTest {
             fakeConfiguration,
             ndkCrashEventHandlerFactory = { mockNdkCrashEventHandler }
         )
-        GlobalRum.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockRumMonitor)
     }
 
     @AfterEach
     fun `tear down`() {
-        GlobalRum.clear()
+        GlobalRumMonitor.clear()
     }
 
     @Test

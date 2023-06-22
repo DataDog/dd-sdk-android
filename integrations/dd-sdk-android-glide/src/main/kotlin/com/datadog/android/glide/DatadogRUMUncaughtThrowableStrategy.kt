@@ -8,7 +8,7 @@ package com.datadog.android.glide
 
 import com.bumptech.glide.load.engine.executor.GlideExecutor
 import com.datadog.android.SdkReference
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.v2.api.InternalLogger
@@ -36,7 +36,7 @@ class DatadogRUMUncaughtThrowableStrategy(
         if (t != null) {
             val sdkCore = sdkReference.get()
             if (sdkCore != null) {
-                GlobalRum.get(sdkCore)
+                GlobalRumMonitor.get(sdkCore)
                     .addError("Glide $name error", RumErrorSource.SOURCE, t, emptyMap())
             } else {
                 val prefix = if (sdkInstanceName == null) {

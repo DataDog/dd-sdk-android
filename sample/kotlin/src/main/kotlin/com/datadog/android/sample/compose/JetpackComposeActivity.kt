@@ -23,7 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.google.accompanist.appcompattheme.AppCompatTheme
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
@@ -53,7 +53,7 @@ class JetpackComposeActivity : AppCompatActivity() {
                     val lifecycleOwner = LocalLifecycleOwner.current
                     DisposableEffect(lifecycleOwner) {
                         val observer = LifecycleEventObserver { _, event ->
-                            val rumMonitor = GlobalRum.get()
+                            val rumMonitor = GlobalRumMonitor.get()
                             val screen = pages[pagerState.currentPage].trackingName
                             if (event == Lifecycle.Event.ON_RESUME) {
                                 rumMonitor.startView(screen, screen)
@@ -75,7 +75,7 @@ class JetpackComposeActivity : AppCompatActivity() {
                             .drop(1)
                             .collect { page ->
                                 val screen = pages[page].trackingName
-                                GlobalRum.get().startView(screen, screen)
+                                GlobalRumMonitor.get().startView(screen, screen)
                             }
                     }
 

@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.instrumentation
 import android.content.Context
 import android.os.Looper
 import android.util.Printer
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.v2.api.SdkCore
@@ -81,7 +81,7 @@ internal class MainLooperLongTaskStrategy(
         } else if (message.startsWith(PREFIX_END)) {
             val durationNs = now - startUptimeNs
             if (durationNs > thresholdNS && this::sdkCore.isInitialized) {
-                (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)?.addLongTask(durationNs, target)
+                (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addLongTask(durationNs, target)
             }
         }
     }

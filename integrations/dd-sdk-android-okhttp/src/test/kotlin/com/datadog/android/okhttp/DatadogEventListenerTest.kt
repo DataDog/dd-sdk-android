@@ -8,7 +8,7 @@ package com.datadog.android.okhttp
 
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.reset
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -309,7 +309,7 @@ internal class DatadogEventListenerTest {
     @Test
     fun `𝕄 doNothing 𝕎 call without RumMonitor`() {
         // Given
-        GlobalRum.reset()
+        GlobalRumMonitor.reset()
 
         // When
         testedListener.callStart(mockCall)

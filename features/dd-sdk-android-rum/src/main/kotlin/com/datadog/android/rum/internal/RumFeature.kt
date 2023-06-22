@@ -19,7 +19,7 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
@@ -248,14 +248,14 @@ internal class RumFeature constructor(
             "logger_error" -> addLoggerError(event)
             "logger_error_with_stacktrace" -> addLoggerErrorWithStacktrace(event)
             "web_view_ingested_notification" -> {
-                (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)?.sendWebViewEvent()
+                (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.sendWebViewEvent()
             }
 
             "telemetry_error" -> logTelemetryError(event)
             "telemetry_debug" -> logTelemetryDebug(event)
             "telemetry_configuration" -> logTelemetryConfiguration(event)
             "flush_and_stop_monitor" -> {
-                (GlobalRum.get(sdkCore) as? DatadogRumMonitor)?.let {
+                (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.let {
                     it.stopKeepAliveCallback()
                     it.drainExecutorService()
                 }
@@ -399,7 +399,7 @@ internal class RumFeature constructor(
             return
         }
 
-        (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)?.addCrash(
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addCrash(
             message,
             RumErrorSource.SOURCE,
             throwable
@@ -422,7 +422,7 @@ internal class RumFeature constructor(
             return
         }
 
-        (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)?.addError(
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addError(
             message,
             RumErrorSource.LOGGER,
             throwable,
@@ -446,7 +446,7 @@ internal class RumFeature constructor(
             return
         }
 
-        (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)?.addErrorWithStacktrace(
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addErrorWithStacktrace(
             message,
             RumErrorSource.LOGGER,
             stacktrace,
@@ -490,7 +490,7 @@ internal class RumFeature constructor(
 
     private fun logTelemetryConfiguration(event: Map<*, *>) {
         TelemetryCoreConfiguration.fromEvent(event, sdkCore.internalLogger)?.let {
-            (GlobalRum.get(sdkCore) as? AdvancedRumMonitor)
+            (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)
                 ?.sendConfigurationTelemetryEvent(it)
         }
     }

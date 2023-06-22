@@ -10,7 +10,7 @@ import android.database.DatabaseErrorHandler
 import android.database.DefaultDatabaseErrorHandler
 import android.database.sqlite.SQLiteDatabase
 import com.datadog.android.SdkReference
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.v2.api.InternalLogger
@@ -39,7 +39,7 @@ class DatadogDatabaseErrorHandler(
         defaultErrorHandler.onCorruption(dbObj)
         val sdkCore = sdkReference.get()
         if (sdkCore != null) {
-            GlobalRum.get(sdkCore)
+            GlobalRumMonitor.get(sdkCore)
                 .addError(
                     String.format(Locale.US, DATABASE_CORRUPTION_ERROR_MESSAGE, dbObj.path),
                     RumErrorSource.SOURCE,
