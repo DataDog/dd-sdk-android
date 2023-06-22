@@ -42,9 +42,9 @@ internal class SdkInternalLogger(
      */
     internal val maintainerLogger = maintainerLogHandlerFactory.invoke()
 
-    private val onlyOnceUserMessages = mutableListOf<String>()
-    private val onlyOnceMaintainerMessages = mutableListOf<String>()
-    private val onlyOnceTelemetryMessages = mutableListOf<String>()
+    private val onlyOnceUserMessages = mutableSetOf<String>()
+    private val onlyOnceMaintainerMessages = mutableSetOf<String>()
+    private val onlyOnceTelemetryMessages = mutableSetOf<String>()
 
     // region InternalLogger
 
@@ -118,7 +118,7 @@ internal class SdkInternalLogger(
         message: String,
         error: Throwable?,
         onlyOnce: Boolean,
-        knownSingleMessages: MutableList<String>
+        knownSingleMessages: MutableSet<String>
     ) {
         if (onlyOnce) {
             if (knownSingleMessages.contains(message)) {

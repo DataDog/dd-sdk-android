@@ -631,7 +631,8 @@ internal class WebViewRumEventConsumerTest {
             eq(InternalLogger.Level.ERROR),
             targets = eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
             eq(WebViewRumEventConsumer.JSON_PARSING_ERROR_MESSAGE),
-            any()
+            any(),
+            eq(false)
         )
     }
 

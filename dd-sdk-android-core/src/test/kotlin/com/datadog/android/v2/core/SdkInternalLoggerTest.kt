@@ -78,13 +78,6 @@ internal class SdkInternalLoggerTest {
         }
     }
 
-//    Simple string
-//       withLambda:     3517458
-//    withoutLambda:     1570417
-//    String template
-//       withLambda:     4300250
-//    withoutLambda:    11746375
-
     // region Target.USER
 
     @Test

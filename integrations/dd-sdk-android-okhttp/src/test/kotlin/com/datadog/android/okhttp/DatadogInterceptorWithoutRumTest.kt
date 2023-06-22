@@ -77,7 +77,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
 
         // Then
         verify(mockInternalLogger).log(
-            InternalLogger.Level.WARN,
+            InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             DatadogInterceptor.WARN_RUM_DISABLED.format(Locale.US, "Default SDK instance")
         )

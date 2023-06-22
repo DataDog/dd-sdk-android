@@ -24,7 +24,7 @@ internal class InternalLoggerReleaseTest {
         )
 
         // Then
-        assertThat(logger.sdkLogger).isNull()
+        assertThat(logger.maintainerLogger).isNull()
     }
 
     // endregion

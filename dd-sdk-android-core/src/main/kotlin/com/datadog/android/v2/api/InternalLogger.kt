@@ -82,7 +82,7 @@ interface InternalLogger {
      * @param message the log message
      * @param throwable an optional throwable error
      * @param onlyOnce whether only one instance of the message should be sent per lifetime of the
-     * logger (default is `false`)
+     * logger (default is `false`, onlyOnce applies to each target independently)
      */
     fun log(
         level: Level,
@@ -96,7 +96,7 @@ interface InternalLogger {
 
         /**
          * Logger for the cases when SDK instance is not yet available. Try to use the logger
-         * provided by [SdkCore._internalLogger] instead if possible.
+         * provided by [FeatureSdkCore.internalLogger] instead if possible.
          */
         val UNBOUND: InternalLogger = SdkInternalLogger(null)
     }
