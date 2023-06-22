@@ -170,7 +170,10 @@ class SessionReplayFeature internal constructor(
         }
     }
 
-    internal fun startRecording() {
+    /**
+     * Resumes the replay recorder.
+     */
+    fun startRecording() {
         if (!initialized.get()) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -188,7 +191,10 @@ class SessionReplayFeature internal constructor(
         return SessionReplayRecordWriter(sdkCore)
     }
 
-    internal fun stopRecording() {
+    /**
+     * Stops the replay recorder.
+     */
+    fun stopRecording() {
         if (isRecording.getAndSet(false)) {
             sessionReplayRecorder.stopRecorders()
         }

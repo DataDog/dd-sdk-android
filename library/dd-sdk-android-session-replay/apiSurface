@@ -17,6 +17,8 @@ class com.datadog.android.sessionreplay.SessionReplayFeature : com.datadog.andro
   override val storageConfiguration: com.datadog.android.v2.api.FeatureStorageConfiguration
   override fun onStop()
   override fun onReceive(Any)
+  fun startRecording()
+  fun stopRecording()
 enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - ALLOW_ALL
   - MASK_ALL
