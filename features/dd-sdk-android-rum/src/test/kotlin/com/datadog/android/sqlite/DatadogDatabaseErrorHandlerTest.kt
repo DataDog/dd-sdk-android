@@ -9,7 +9,7 @@ package com.datadog.android.sqlite
 import android.database.DatabaseErrorHandler
 import android.database.DefaultDatabaseErrorHandler
 import android.database.sqlite.SQLiteDatabase
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
@@ -70,12 +70,12 @@ internal class DatadogDatabaseErrorHandlerTest {
         testedHandler = DatadogDatabaseErrorHandler(defaultErrorHandler = mockDefaultHandler)
         whenever(mockSqliteDatabase.path).thenReturn(fakeDbPath)
         whenever(mockSqliteDatabase.version).thenReturn(fakeDbVersion)
-        GlobalRum.registerIfAbsent(datadog.mockInstance, mockRumMonitor)
+        GlobalRumMonitor.registerIfAbsent(datadog.mockInstance, mockRumMonitor)
     }
 
     @AfterEach
     fun `tear down`() {
-        GlobalRum.clear()
+        GlobalRumMonitor.clear()
     }
 
     @Test

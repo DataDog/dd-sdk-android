@@ -11,7 +11,7 @@ import android.os.Build
 import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
@@ -50,7 +50,7 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
             val rumFeature = withSdkCore {
                 it.getFeature(Feature.RUM_FEATURE_NAME)?.unwrap<RumFeature>()
             }
-            val rumMonitor = withSdkCore { GlobalRum.get(it) }
+            val rumMonitor = withSdkCore { GlobalRumMonitor.get(it) }
             if (rumFeature != null && rumMonitor != null) {
                 AndroidXFragmentLifecycleCallbacks(
                     argumentsProvider = {
@@ -71,7 +71,7 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
             val rumFeature = withSdkCore {
                 it.getFeature(Feature.RUM_FEATURE_NAME)?.unwrap<RumFeature>()
             }
-            val rumMonitor = withSdkCore { GlobalRum.get(it) }
+            val rumMonitor = withSdkCore { GlobalRumMonitor.get(it) }
             if (
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
                 rumFeature != null && rumMonitor != null

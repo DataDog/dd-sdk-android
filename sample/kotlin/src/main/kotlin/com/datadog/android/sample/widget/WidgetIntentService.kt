@@ -13,7 +13,7 @@ import android.content.Context
 import android.content.Intent
 import android.view.View
 import android.widget.RemoteViews
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.sample.R
 import com.datadog.android.sample.SampleApplication
@@ -35,11 +35,11 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
                 val hasRumContext = widgetId != 0 && widgetName != null
 
                 if (hasRumContext) {
-                    GlobalRum.get()
+                    GlobalRumMonitor.get()
                         .startView(widgetId, widgetName ?: "DatadogWidget", emptyMap())
                     val clickedTargetName = intent.getStringExtra(WIDGET_CLICKED_TARGET_NAME)
                     if (clickedTargetName != null) {
-                        GlobalRum.get()
+                        GlobalRumMonitor.get()
                             .addAction(RumActionType.CLICK, clickedTargetName, emptyMap())
                     }
                 }
@@ -47,7 +47,7 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
                 performRequest()
 
                 if (hasRumContext) {
-                    GlobalRum.get().stopView(widgetId)
+                    GlobalRumMonitor.get().stopView(widgetId)
                 }
             }
             else -> {

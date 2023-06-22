@@ -10,7 +10,7 @@ import android.app.Service
 import android.os.Bundle
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.nightly.BuildConfig
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.v2.api.SdkCore
 
@@ -18,7 +18,7 @@ internal abstract class CrashService : Service() {
 
     protected fun initRum(sdkCore: SdkCore, extras: Bundle?) {
         val rumMonitor = RumMonitor.Builder(sdkCore).build()
-        GlobalRum.registerIfAbsent(sdkCore, rumMonitor)
+        GlobalRumMonitor.registerIfAbsent(sdkCore, rumMonitor)
         extras?.let { bundle ->
             bundle.keySet().forEach {
                 // TODO RUMM-2717 Bundle#get is deprecated, but there is no replacement for it.

@@ -16,7 +16,7 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumConfiguration
@@ -76,7 +76,7 @@ internal class EncryptionTest {
         )
         featureActivations.shuffled(Random(forge.seed)).forEach { it() }
         val rumMonitor = RumMonitor.Builder(sdkCore).build()
-        GlobalRum.registerIfAbsent(sdkCore, rumMonitor)
+        GlobalRumMonitor.registerIfAbsent(sdkCore, rumMonitor)
 
         val tracer = AndroidTracer.Builder(sdkCore).setBundleWithRumEnabled(true).build()
         GlobalTracer.registerIfAbsent(tracer)
@@ -210,7 +210,7 @@ internal class EncryptionTest {
     private fun stopSdk() {
         Datadog.stopInstance()
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        GlobalRum::class.java.getDeclaredMethod("reset").apply {
+        GlobalRumMonitor::class.java.getDeclaredMethod("reset").apply {
             isAccessible = true
             invoke(null)
         }

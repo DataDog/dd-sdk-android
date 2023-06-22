@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -45,7 +45,7 @@ internal class RumResourceScope(
 
     internal val resourceId: String = UUID.randomUUID().toString()
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap().apply {
-        putAll(GlobalRum.get(sdkCore).getAttributes())
+        putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
     }
     private var timing: ResourceTiming? = null
     private val initialContext = parentScope.getRumContext()
@@ -168,7 +168,7 @@ internal class RumResourceScope(
         eventTime: Time,
         writer: DataWriter<Any>
     ) {
-        attributes.putAll(GlobalRum.get(sdkCore).getAttributes())
+        attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
         val traceId = attributes.remove(RumAttributes.TRACE_ID)?.toString()
         val spanId = attributes.remove(RumAttributes.SPAN_ID)?.toString()
         val rulePsr = attributes.remove(RumAttributes.RULE_PSR) as? Number
@@ -296,7 +296,7 @@ internal class RumResourceScope(
         errorType: String?,
         writer: DataWriter<Any>
     ) {
-        attributes.putAll(GlobalRum.get(sdkCore).getAttributes())
+        attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
 
         val rumContext = getRumContext()
 

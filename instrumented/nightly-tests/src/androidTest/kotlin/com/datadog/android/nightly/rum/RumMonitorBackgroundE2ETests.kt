@@ -21,7 +21,7 @@ import com.datadog.android.nightly.utils.exhaustiveAttributes
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measure
 import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -53,9 +53,9 @@ class RumMonitorBackgroundE2ETests {
      * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun build(): RumConfiguration
      * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun trackBackgroundEvents(Boolean): Builder
      * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun trackFrustrations(Boolean): Builder
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun get(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): RumMonitor
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun isRegistered(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): Boolean
-     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), RumMonitor): Boolean
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun get(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): RumMonitor
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun isRegistered(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): Boolean
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), RumMonitor): Boolean
      */
     @Before
     fun setUp() {
@@ -86,7 +86,7 @@ class RumMonitorBackgroundE2ETests {
             RumActionType::class.java,
             exclude = listOf(RumActionType.BACK)
         )
-        GlobalRum.get(sdkCore).startAction(
+        GlobalRumMonitor.get(sdkCore).startAction(
             type,
             actionName,
             attributes = defaultTestAttributes(testMethodName)
@@ -101,7 +101,7 @@ class RumMonitorBackgroundE2ETests {
         Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
         val attributes = forge.exhaustiveAttributes()
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).stopAction(type, actionName, attributes)
+            GlobalRumMonitor.get(sdkCore).stopAction(type, actionName, attributes)
         }
 
         Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
@@ -121,7 +121,7 @@ class RumMonitorBackgroundE2ETests {
         )
         val attributes = defaultTestAttributes(testMethodName)
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).addAction(
+            GlobalRumMonitor.get(sdkCore).addAction(
                 actionType,
                 actionName,
                 attributes = attributes
@@ -138,7 +138,7 @@ class RumMonitorBackgroundE2ETests {
         val actionName = forge.anActionName()
         val attributes = defaultTestAttributes(testMethodName)
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).addAction(
+            GlobalRumMonitor.get(sdkCore).addAction(
                 RumActionType.CUSTOM,
                 actionName,
                 attributes = attributes
@@ -161,7 +161,7 @@ class RumMonitorBackgroundE2ETests {
         val actionName = forge.anActionName()
         val attributes = defaultTestAttributes(testMethodName)
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).addAction(
+            GlobalRumMonitor.get(sdkCore).addAction(
                 RumActionType.CUSTOM,
                 actionName,
                 attributes = attributes
@@ -186,7 +186,7 @@ class RumMonitorBackgroundE2ETests {
             exclude = listOf(RumActionType.CUSTOM, RumActionType.BACK)
         )
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).addAction(
+            GlobalRumMonitor.get(sdkCore).addAction(
                 actionType,
                 actionName,
                 attributes = attributes
@@ -215,7 +215,7 @@ class RumMonitorBackgroundE2ETests {
         val testMethodName = "rum_rummonitor_stop_background_resource"
         val resourceKey = forge.aResourceKey()
         val attributes = defaultTestAttributes(testMethodName)
-        GlobalRum.get(sdkCore).startResource(
+        GlobalRumMonitor.get(sdkCore).startResource(
             resourceKey,
             forge.aResourceMethod(),
             resourceKey,
@@ -224,7 +224,7 @@ class RumMonitorBackgroundE2ETests {
         val size = forge.aLong(min = 1)
         val kind = forge.aValueFrom(RumResourceKind::class.java)
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).stopResource(
+            GlobalRumMonitor.get(sdkCore).stopResource(
                 resourceKey,
                 200,
                 size,
@@ -243,7 +243,7 @@ class RumMonitorBackgroundE2ETests {
         val resourceKey = forge.aResourceKey()
         val method = forge.aResourceMethod()
         val attributes = defaultTestAttributes(testMethodName)
-        GlobalRum.get(sdkCore).startResource(
+        GlobalRumMonitor.get(sdkCore).startResource(
             resourceKey,
             method,
             resourceKey,
@@ -254,7 +254,7 @@ class RumMonitorBackgroundE2ETests {
         val source = forge.aValueFrom(RumErrorSource::class.java)
         val throwable = forge.aThrowable()
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).stopResourceWithError(
+            GlobalRumMonitor.get(sdkCore).stopResourceWithError(
                 resourceKey,
                 statusCode,
                 message,
@@ -273,7 +273,7 @@ class RumMonitorBackgroundE2ETests {
         val testMethodName = "rum_rummonitor_stop_background_resource_with_error_stacktrace"
         val resourceKey = forge.aResourceKey()
         val attributes = defaultTestAttributes(testMethodName)
-        GlobalRum.get(sdkCore).startResource(
+        GlobalRumMonitor.get(sdkCore).startResource(
             resourceKey,
             forge.aResourceMethod(),
             resourceKey,
@@ -285,7 +285,7 @@ class RumMonitorBackgroundE2ETests {
         val errorType = forge.aNullable { forge.anAlphabeticalString() }
         val source = forge.aValueFrom(RumErrorSource::class.java)
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).stopResourceWithError(
+            GlobalRumMonitor.get(sdkCore).stopResourceWithError(
                 resourceKey,
                 anInt,
                 aResourceErrorMessage,
@@ -312,7 +312,7 @@ class RumMonitorBackgroundE2ETests {
         val throwable = forge.aNullable { forge.aThrowable() }
         val attributes = defaultTestAttributes(testMethodName)
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).addError(
+            GlobalRumMonitor.get(sdkCore).addError(
                 errorMessage,
                 source,
                 throwable,
@@ -332,7 +332,7 @@ class RumMonitorBackgroundE2ETests {
         val stacktrace = forge.aNullable { forge.aThrowable().stackTraceToString() }
         val attributes = defaultTestAttributes(testMethodName)
         measure(testMethodName) {
-            GlobalRum.get(sdkCore).addErrorWithStacktrace(
+            GlobalRumMonitor.get(sdkCore).addErrorWithStacktrace(
                 errorMessage,
                 source,
                 stacktrace,

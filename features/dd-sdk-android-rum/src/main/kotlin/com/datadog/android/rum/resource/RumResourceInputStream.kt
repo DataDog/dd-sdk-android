@@ -7,7 +7,7 @@
 package com.datadog.android.rum.resource
 
 import com.datadog.android.Datadog
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -41,7 +41,7 @@ class RumResourceInputStream @JvmOverloads constructor(
     private var lastByte: Long = 0L
 
     init {
-        val rumMonitor = GlobalRum.get(sdkCore)
+        val rumMonitor = GlobalRumMonitor.get(sdkCore)
         rumMonitor.startResource(key, METHOD, url, emptyMap())
         callStart = System.nanoTime()
         if (rumMonitor is AdvancedRumMonitor) {
@@ -130,7 +130,7 @@ class RumResourceInputStream @JvmOverloads constructor(
         return callWithErrorTracking(ERROR_CLOSE) {
             @Suppress("UnsafeThirdPartyFunctionCall") // caller should handle the exception
             close()
-            val monitor = GlobalRum.get(sdkCore)
+            val monitor = GlobalRumMonitor.get(sdkCore)
             (monitor as? AdvancedRumMonitor)?.addResourceTiming(
                 key,
                 ResourceTiming(
@@ -161,7 +161,7 @@ class RumResourceInputStream @JvmOverloads constructor(
         } catch (e: Throwable) {
             if (!failed) {
                 failed = true
-                GlobalRum.get(sdkCore).stopResourceWithError(
+                GlobalRumMonitor.get(sdkCore).stopResourceWithError(
                     key,
                     null,
                     errorMessage,

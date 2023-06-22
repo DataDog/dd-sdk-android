@@ -6,7 +6,7 @@
 
 package com.datadog.android.okhttp.utils.config
 
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.v2.core.InternalSdkCore
@@ -24,11 +24,11 @@ internal class GlobalRumMonitorTestConfiguration(
     override fun setUp(forge: Forge) {
         super.setUp(forge)
         mockSdkCore = datadogSingletonTestConfiguration?.mockInstance ?: mock()
-        GlobalRum.registerIfAbsent(mockSdkCore, mockInstance)
+        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockInstance)
     }
 
     override fun tearDown(forge: Forge) {
-        GlobalRum::class.java.getDeclaredMethod("reset").apply {
+        GlobalRumMonitor::class.java.getDeclaredMethod("reset").apply {
             isAccessible = true
             invoke(null)
         }

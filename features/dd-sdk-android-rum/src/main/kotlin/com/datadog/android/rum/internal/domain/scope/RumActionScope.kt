@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
@@ -49,7 +49,7 @@ internal class RumActionScope(
     private val networkInfo = sdkCore.networkInfo
 
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap().apply {
-        putAll(GlobalRum.get(sdkCore).getAttributes())
+        putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
     }
 
     private val ongoingResourceKeys = mutableListOf<WeakReference<Any>>()
@@ -191,7 +191,7 @@ internal class RumActionScope(
         if (sent) return
 
         val actualType = type
-        attributes.putAll(GlobalRum.get(sdkCore).getAttributes())
+        attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
         val rumContext = getRumContext()
 
         // make a copy so that closure captures at the state as of now

@@ -7,7 +7,7 @@
 package com.datadog.android.glide
 
 import com.datadog.android.glide.utils.config.DatadogSingletonTestConfiguration
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -48,14 +48,14 @@ internal class DatadogRUMUncaughtThrowableStrategyTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRum.registerIfAbsent(datadog.mockInstance, mockRumMonitor)
+        GlobalRumMonitor.registerIfAbsent(datadog.mockInstance, mockRumMonitor)
 
         testedStrategy = DatadogRUMUncaughtThrowableStrategy(fakeName)
     }
 
     @AfterEach
     fun `tear down`() {
-        GlobalRum::class.java.getDeclaredMethod("reset").apply {
+        GlobalRumMonitor::class.java.getDeclaredMethod("reset").apply {
             isAccessible = true
             invoke(null)
         }

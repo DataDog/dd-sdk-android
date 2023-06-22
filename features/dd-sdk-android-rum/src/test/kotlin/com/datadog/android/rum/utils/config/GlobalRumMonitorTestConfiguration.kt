@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.utils.config
 
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.v2.core.InternalSdkCore
@@ -22,11 +22,11 @@ internal class GlobalRumMonitorTestConfiguration :
     override fun setUp(forge: Forge) {
         super.setUp(forge)
         mockSdkCore = mock()
-        GlobalRum.registerIfAbsent(mockSdkCore, mockInstance)
+        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockInstance)
     }
 
     override fun tearDown(forge: Forge) {
-        GlobalRum.clear()
+        GlobalRumMonitor.clear()
         super.tearDown(forge)
     }
 }

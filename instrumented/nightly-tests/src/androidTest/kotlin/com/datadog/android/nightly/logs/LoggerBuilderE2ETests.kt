@@ -15,7 +15,7 @@ import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measureLoggerInitialize
 import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.v2.api.SdkCore
 import fr.xgouchet.elmyr.junit4.ForgeRule
@@ -230,15 +230,15 @@ class LoggerBuilderE2ETests {
         }
         val viewKey = forge.anAlphabeticalString()
         val actionName = forge.anAlphabeticalString()
-        GlobalRum.get(sdkCore).startView(viewKey, forge.anAlphabeticalString())
-        GlobalRum.get(sdkCore).startAction(RumActionType.TAP, actionName, emptyMap())
+        GlobalRumMonitor.get(sdkCore).startView(viewKey, forge.anAlphabeticalString())
+        GlobalRumMonitor.get(sdkCore).startAction(RumActionType.TAP, actionName, emptyMap())
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
         sendRandomActionOutcomeEvent(forge, sdkCore)
         // Give time to the View event to be propagated
         Thread.sleep(200)
         logger.sendRandomLog(testMethodName, forge)
-        GlobalRum.get(sdkCore).stopAction(RumActionType.TAP, actionName)
-        GlobalRum.get(sdkCore).stopView(viewKey)
+        GlobalRumMonitor.get(sdkCore).stopAction(RumActionType.TAP, actionName)
+        GlobalRumMonitor.get(sdkCore).stopView(viewKey)
     }
 
     /**
@@ -274,9 +274,9 @@ class LoggerBuilderE2ETests {
             logger = Logger.Builder(sdkCore).setBundleWithRumEnabled(false).build()
         }
         val viewKey = forge.anAlphabeticalString()
-        GlobalRum.get(sdkCore).startView(viewKey, forge.anAlphabeticalString())
+        GlobalRumMonitor.get(sdkCore).startView(viewKey, forge.anAlphabeticalString())
         logger.sendRandomLog(testMethodName, forge)
-        GlobalRum.get(sdkCore).stopView(viewKey)
+        GlobalRumMonitor.get(sdkCore).stopView(viewKey)
     }
 
     /**

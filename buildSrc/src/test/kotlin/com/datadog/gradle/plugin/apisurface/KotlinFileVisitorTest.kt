@@ -780,7 +780,7 @@ internal class KotlinFileVisitorTest {
     }
 
     @Test
-    fun `describes type alias`() {
+    fun `describes function type alias`() {
         tempFile.writeText(
             """
             typealias StringTransform = (String) -> String?
@@ -793,6 +793,22 @@ internal class KotlinFileVisitorTest {
         assertEquals(
             "typealias StringTransform = (String) -> String?\n" +
                 "typealias StringRepeat = (String, Int) -> String\n",
+            testedVisitor.description.toString()
+        )
+    }
+
+    @Test
+    fun `describes class type alias`() {
+        tempFile.writeText(
+            """
+            typealias PowerfulString = String
+            """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertEquals(
+            "typealias PowerfulString = String\n",
             testedVisitor.description.toString()
         )
     }

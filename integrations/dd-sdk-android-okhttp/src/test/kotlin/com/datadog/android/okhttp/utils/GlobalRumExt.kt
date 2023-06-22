@@ -6,11 +6,11 @@
 
 package com.datadog.android.okhttp.utils
 
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import kotlin.reflect.full.memberFunctions
 import kotlin.reflect.jvm.isAccessible
 
-internal fun GlobalRum.reset() {
+internal fun GlobalRumMonitor.reset() {
     this::class.memberFunctions
         .first { it.name == "reset" }
         .apply { this.isAccessible = true }

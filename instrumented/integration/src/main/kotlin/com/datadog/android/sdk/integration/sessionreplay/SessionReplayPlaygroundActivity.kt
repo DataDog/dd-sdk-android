@@ -17,7 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.ActionBarContainer
 import androidx.appcompat.widget.Toolbar
 import com.datadog.android.Datadog
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -62,7 +62,7 @@ internal open class SessionReplayPlaygroundActivity : AppCompatActivity() {
         )
         featureActivations.shuffled(Random(intent.getForgeSeed()))
             .forEach { it() }
-        GlobalRum.registerIfAbsent(sdkCore, RumMonitor.Builder(sdkCore).build())
+        GlobalRumMonitor.registerIfAbsent(sdkCore, RumMonitor.Builder(sdkCore).build())
         setContentView(R.layout.session_replay_layout)
         titleTextView = findViewById(R.id.title)
         clickMeButton = findViewById(R.id.button)

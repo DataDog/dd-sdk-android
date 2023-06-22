@@ -15,7 +15,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
 import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.addForgeSeed
 import com.datadog.android.sdk.utils.addTrackingConsent
@@ -110,7 +110,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
             }
 
         Datadog.stopInstance()
-        GlobalRum::class.java.getDeclaredMethod("reset").apply {
+        GlobalRumMonitor::class.java.getDeclaredMethod("reset").apply {
             isAccessible = true
             invoke(null)
         }

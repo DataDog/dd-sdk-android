@@ -25,7 +25,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.datadog.android.Datadog
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
@@ -53,7 +53,7 @@ fun trackClick(
 ): () -> Unit {
     val onTapState = rememberUpdatedState(newValue = onClick)
     return remember(targetName, attributes) {
-        TapActionTracker(targetName, attributes, onTapState, GlobalRum.get(sdkCore))
+        TapActionTracker(targetName, attributes, onTapState, GlobalRumMonitor.get(sdkCore))
     }
 }
 
@@ -84,7 +84,7 @@ fun TrackInteractionEffect(
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
     LaunchedEffect(interactionSource, interactionType, isRtl) {
-        val rumMonitor = GlobalRum.get(sdkCore)
+        val rumMonitor = GlobalRumMonitor.get(sdkCore)
         when (interactionType) {
             is InteractionType.Swipe<*> -> trackSwipe(
                 rumMonitor,

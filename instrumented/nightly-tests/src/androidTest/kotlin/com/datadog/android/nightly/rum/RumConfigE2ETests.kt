@@ -34,7 +34,7 @@ import com.datadog.android.nightly.utils.invokeMethod
 import com.datadog.android.nightly.utils.measureSdkInitialize
 import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -158,12 +158,12 @@ class RumConfigE2ETests {
 
         val key = forge.aViewKey()
         val name = forge.aViewName()
-        GlobalRum.get(sdkCore).startView(
+        GlobalRumMonitor.get(sdkCore).startView(
             key,
             name,
             defaultTestAttributes(testMethodName)
         )
-        GlobalRum.get(sdkCore).stopView(key, defaultTestAttributes(testMethodName))
+        GlobalRumMonitor.get(sdkCore).stopView(key, defaultTestAttributes(testMethodName))
     }
 
     /**
@@ -194,12 +194,12 @@ class RumConfigE2ETests {
 
         val key = forge.aViewKey()
         val name = forge.aViewName()
-        GlobalRum.get(sdkCore).startView(
+        GlobalRumMonitor.get(sdkCore).startView(
             key,
             name,
             defaultTestAttributes(testMethodName)
         )
-        GlobalRum.get(sdkCore).stopView(key, defaultTestAttributes(testMethodName))
+        GlobalRumMonitor.get(sdkCore).stopView(key, defaultTestAttributes(testMethodName))
     }
 
     // endregion
@@ -649,7 +649,7 @@ class RumConfigE2ETests {
             // this will add extra events to the monitor query value
             sendRandomRumEvent(forge, sdkCore, testMethodName, parentViewEventName = "")
             // expire the session here
-            GlobalRum.get(sdkCore).invokeMethod("resetSession")
+            GlobalRumMonitor.get(sdkCore).invokeMethod("resetSession")
             InstrumentationRegistry.getInstrumentation().waitForIdleSync()
         }
     }
@@ -781,13 +781,13 @@ class RumConfigE2ETests {
     private fun sendRandomResource(sdkCore: SdkCore, testMethodName: String) {
         executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName, sdkCore) {
             val resourceKey = forge.aResourceKey()
-            GlobalRum.get(sdkCore).startResource(
+            GlobalRumMonitor.get(sdkCore).startResource(
                 resourceKey,
                 forge.aResourceMethod(),
                 resourceKey,
                 defaultTestAttributes(testMethodName)
             )
-            GlobalRum.get(sdkCore).stopResource(
+            GlobalRumMonitor.get(sdkCore).stopResource(
                 resourceKey,
                 forge.anInt(min = 200, max = 500),
                 forge.aLong(min = 1),
@@ -799,7 +799,7 @@ class RumConfigE2ETests {
 
     private fun sendRandomActionEvent(sdkCore: SdkCore, testMethodName: String) {
         executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName, sdkCore) {
-            GlobalRum.get(sdkCore).addAction(
+            GlobalRumMonitor.get(sdkCore).addAction(
                 forge.aValueFrom(RumActionType::class.java),
                 forge.anActionName(),
                 defaultTestAttributes(testMethodName)
@@ -811,7 +811,7 @@ class RumConfigE2ETests {
 
     private fun sendRandomErrorEvent(sdkCore: SdkCore, testMethodName: String) {
         executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName, sdkCore) {
-            GlobalRum.get(sdkCore).addError(
+            GlobalRumMonitor.get(sdkCore).addError(
                 forge.anErrorMessage(),
                 forge.aValueFrom(RumErrorSource::class.java),
                 forge.aNullable { forge.aThrowable() },
@@ -822,7 +822,7 @@ class RumConfigE2ETests {
 
     private fun sendRandomLongTaskEvent(sdkCore: SdkCore, testMethodName: String) {
         executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName, sdkCore) {
-            GlobalRum.get(sdkCore).addAttribute(TEST_METHOD_NAME_KEY, testMethodName)
+            GlobalRumMonitor.get(sdkCore).addAttribute(TEST_METHOD_NAME_KEY, testMethodName)
             Handler(Looper.getMainLooper()).post {
                 Thread.sleep(100)
             }

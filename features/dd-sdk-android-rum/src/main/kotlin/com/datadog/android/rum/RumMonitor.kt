@@ -28,7 +28,7 @@ import com.datadog.tools.annotation.NoOpImplementation
  *
  *  It allows you to record User events that can be explored and analyzed in Datadog Dashboards.
  *
- *  You can only have one active RumMonitor, and should register/retrieve it from the [GlobalRum] object.
+ *  You can only have one active RumMonitor, and should register/retrieve it from the [GlobalRumMonitor] object.
  */
 @Suppress("ComplexInterface", "TooManyFunctions")
 @NoOpImplementation
