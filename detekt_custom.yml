@@ -302,6 +302,7 @@ datadog:
       - "android.util.Log.i(kotlin.String?, kotlin.String)"
       - "android.util.Log.e(kotlin.String?, kotlin.String)"
       - "android.util.Log.e(kotlin.String?, kotlin.String?, kotlin.Throwable?)"
+      - "android.util.Log.w(kotlin.String?, kotlin.String)"
       - "android.util.Log.getStackTraceString(kotlin.Throwable?)"
       - "android.util.TypedValue.constructor()"
       - "android.view.Choreographer.postFrameCallback(android.view.Choreographer.FrameCallback)"
@@ -386,6 +387,7 @@ datadog:
       - "androidx.work.OneTimeWorkRequest.Builder.setInitialDelay(kotlin.Long, java.util.concurrent.TimeUnit)"
       - "androidx.work.WorkManager.cancelAllWorkByTag(kotlin.String)"
       - "androidx.work.WorkManager.getInstance(android.content.Context)"
+      - "androidx.work.WorkManager.isInitialized()"
       # endregion
       # region Glide
       - "com.bumptech.glide.GlideBuilder.setDiskCacheExecutor(com.bumptech.glide.load.engine.executor.GlideExecutor?)"
@@ -722,6 +724,7 @@ datadog:
       - "kotlin.collections.MutableSet.addAll(kotlin.collections.Collection)"
       - "kotlin.collections.MutableSet.clear()"
       - "kotlin.collections.MutableSet.contains(com.datadog.android.telemetry.internal.TelemetryEventId)"
+      - "kotlin.collections.MutableSet.contains(kotlin.String)"
       - "kotlin.collections.MutableSet.filter(kotlin.Function1)"
       - "kotlin.collections.MutableSet.firstOrNull(kotlin.Function1)"
       - "kotlin.collections.MutableSet.forEach(kotlin.Function1)"

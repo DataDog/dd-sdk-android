@@ -1074,7 +1074,9 @@ internal open class TracingInterceptorNonDdTracerTest {
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                TracingInterceptor.WARNING_TRACING_DISABLED
+                TracingInterceptor.WARNING_TRACING_DISABLED,
+                null,
+                true
             )
     }
 
@@ -1299,7 +1301,9 @@ internal open class TracingInterceptorNonDdTracerTest {
             .log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                TracingInterceptor.WARNING_TRACING_NO_HOSTS
+                TracingInterceptor.WARNING_TRACING_NO_HOSTS,
+                null,
+                true
             )
     }
 

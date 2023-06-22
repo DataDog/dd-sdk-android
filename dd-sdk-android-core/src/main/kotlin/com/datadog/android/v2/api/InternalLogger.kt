@@ -64,12 +64,15 @@ interface InternalLogger {
      * @param target the target handler for the log
      * @param message the log message
      * @param throwable an optional throwable error
+     * @param onlyOnce whether only one instance of the message should be sent per lifetime of the
+     * logger (default is `false`)
      */
     fun log(
         level: Level,
         target: Target,
         message: String,
-        throwable: Throwable? = null
+        throwable: Throwable? = null,
+        onlyOnce: Boolean = false
     )
 
     /**
@@ -78,19 +81,22 @@ interface InternalLogger {
      * @param targets list of the target handlers for the log
      * @param message the log message
      * @param throwable an optional throwable error
+     * @param onlyOnce whether only one instance of the message should be sent per lifetime of the
+     * logger (default is `false`, onlyOnce applies to each target independently)
      */
     fun log(
         level: Level,
         targets: List<Target>,
         message: String,
-        throwable: Throwable? = null
+        throwable: Throwable? = null,
+        onlyOnce: Boolean = false
     )
 
     companion object {
 
         /**
          * Logger for the cases when SDK instance is not yet available. Try to use the logger
-         * provided by [SdkCore._internalLogger] instead if possible.
+         * provided by [FeatureSdkCore.internalLogger] instead if possible.
          */
         val UNBOUND: InternalLogger = SdkInternalLogger(null)
     }

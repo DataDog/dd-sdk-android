@@ -144,7 +144,8 @@ internal class LogsDataWriterTest {
                     )
                 ),
                 any(),
-                eq(fakeThrowable)
+                eq(fakeThrowable),
+                eq(false)
             )
 
         verifyNoInteractions(mockEventBatchWriter)

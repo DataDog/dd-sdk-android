@@ -263,7 +263,8 @@ internal class HostsSanitizerTest {
                         fakeFeature
                     )
                 ),
-                any<MalformedURLException>()
+                any<MalformedURLException>(),
+                eq(false)
             )
         }
     }

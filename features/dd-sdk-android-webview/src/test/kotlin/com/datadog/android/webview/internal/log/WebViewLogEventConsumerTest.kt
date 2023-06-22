@@ -246,7 +246,8 @@ internal class WebViewLogEventConsumerTest {
             eq(WebViewLogEventConsumer.JSON_PARSING_ERROR_MESSAGE),
             argThat {
                 expectedThrowable.isAssignableFrom(this::class.java)
-            }
+            },
+            eq(false)
         )
     }
 

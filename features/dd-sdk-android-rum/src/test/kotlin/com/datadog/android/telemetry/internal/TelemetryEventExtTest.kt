@@ -79,7 +79,8 @@ internal class TelemetryEventExtTest {
                 UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
                     .format(Locale.US, fakeInvalidSource)
             ),
-            argThat { this is NoSuchElementException }
+            argThat { this is NoSuchElementException },
+            eq(false)
         )
     }
 
@@ -115,7 +116,8 @@ internal class TelemetryEventExtTest {
                 UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
                     .format(Locale.US, fakeInvalidSource)
             ),
-            argThat { this is NoSuchElementException }
+            argThat { this is NoSuchElementException },
+            eq(false)
         )
     }
 
@@ -153,7 +155,8 @@ internal class TelemetryEventExtTest {
                 UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
                     .format(Locale.US, fakeInvalidSource)
             ),
-            argThat { this is NoSuchElementException }
+            argThat { this is NoSuchElementException },
+            eq(false)
         )
     }
 

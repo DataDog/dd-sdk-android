@@ -222,7 +222,7 @@ internal constructor(
                 "SDK instance with name=$sdkInstanceName"
             }
             (sdkCore?.internalLogger ?: InternalLogger.UNBOUND).log(
-                InternalLogger.Level.WARN,
+                InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 WARN_RUM_DISABLED.format(Locale.US, prefix)
             )

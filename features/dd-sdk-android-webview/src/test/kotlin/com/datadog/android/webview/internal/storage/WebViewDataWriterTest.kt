@@ -144,7 +144,8 @@ internal class WebViewDataWriterTest {
                     )
                 ),
                 any(),
-                eq(fakeThrowable)
+                eq(fakeThrowable),
+                eq(false)
             )
 
         verifyNoInteractions(mockEventBatchWriter)

@@ -367,7 +367,8 @@ internal class DatadogDataConstraintsTest {
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.USER),
             logArgumentCaptor.capture(),
-            isNull()
+            isNull(),
+            eq(false)
         )
 
         assertThat(logArgumentCaptor.allValues).containsExactlyInAnyOrderElementsOf(
