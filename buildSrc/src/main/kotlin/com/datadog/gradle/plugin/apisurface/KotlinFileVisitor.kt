@@ -320,7 +320,12 @@ class KotlinFileVisitor {
         val type = node.firstChildNode("type")
 
         description.append(INDENT.repeat(level))
-        description.append("typealias $name = ${type.lambdaName()}\n")
+        val rootTypeName = if (type.hasChildNode("functionType")) {
+            type.lambdaName()
+        } else {
+            type.typeName()
+        }
+        description.append("typealias $name = $rootTypeName\n")
     }
 
     private fun ignoreNode() {
