@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -154,7 +155,7 @@ internal class SingleItemDataWriterTest {
 
         // Then
         verifyNoInteractions(mockFileWriter)
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             Serializer.ERROR_SERIALIZING.format(Locale.US, data.javaClass.simpleName),
@@ -186,7 +187,7 @@ internal class SingleItemDataWriterTest {
 
         // Then
         verifyNoInteractions(mockFileWriter)
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             SingleItemDataWriter.ERROR_LARGE_DATA.format(Locale.US, dataSize, maxLimit)

@@ -8,6 +8,7 @@ package com.datadog.android.telemetry.internal
 
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.forge.aStringNotMatchingSet
+import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
@@ -20,10 +21,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.kotlin.argThat
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import java.util.Locale
 
 @Extensions(
@@ -72,15 +70,11 @@ internal class TelemetryEventExtTest {
         TelemetryDebugEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            eq(
-                UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
-                    .format(Locale.US, fakeInvalidSource)
-            ),
-            argThat { this is NoSuchElementException },
-            eq(false)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, fakeInvalidSource),
+            NoSuchElementException::class.java
         )
     }
 
@@ -109,15 +103,11 @@ internal class TelemetryEventExtTest {
         TelemetryErrorEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            eq(
-                UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
-                    .format(Locale.US, fakeInvalidSource)
-            ),
-            argThat { this is NoSuchElementException },
-            eq(false)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, fakeInvalidSource),
+            NoSuchElementException::class.java
         )
     }
 
@@ -148,15 +138,11 @@ internal class TelemetryEventExtTest {
         TelemetryConfigurationEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            eq(
-                UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
-                    .format(Locale.US, fakeInvalidSource)
-            ),
-            argThat { this is NoSuchElementException },
-            eq(false)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, fakeInvalidSource),
+            NoSuchElementException::class.java
         )
     }
 

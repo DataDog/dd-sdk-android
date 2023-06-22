@@ -16,6 +16,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpFeatureSdkCore
@@ -46,7 +47,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -163,7 +163,7 @@ internal class DatadogTest {
         )
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        logger.mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             Datadog.MESSAGE_ALREADY_INITIALIZED
@@ -186,7 +186,7 @@ internal class DatadogTest {
         Datadog.initialize(name, appContext.mockInstance, credentials, configuration, fakeConsent)
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        logger.mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             Datadog.MESSAGE_ALREADY_INITIALIZED
@@ -328,7 +328,7 @@ internal class DatadogTest {
         )
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        logger.mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             Datadog.CANNOT_CREATE_SDK_INSTANCE_ID_ERROR
@@ -358,7 +358,7 @@ internal class DatadogTest {
         )
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        logger.mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             Datadog.CANNOT_CREATE_SDK_INSTANCE_ID_ERROR
@@ -450,15 +450,14 @@ internal class DatadogTest {
         Datadog.getInstance(fakeInstanceName)
 
         // Then
-        verify(logger.mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                Datadog.MESSAGE_SDK_NOT_INITIALIZED.format(
-                    Locale.US,
-                    fakeInstanceName ?: SdkCoreRegistry.DEFAULT_INSTANCE_NAME
-                )
+        logger.mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            Datadog.MESSAGE_SDK_NOT_INITIALIZED.format(
+                Locale.US,
+                fakeInstanceName ?: SdkCoreRegistry.DEFAULT_INSTANCE_NAME
             )
+        )
     }
 
     @Test

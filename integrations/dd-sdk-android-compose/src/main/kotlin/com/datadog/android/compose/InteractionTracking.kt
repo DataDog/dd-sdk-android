@@ -30,6 +30,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.v2.api.SdkCore
+import kotlinx.coroutines.flow.FlowCollector
 import java.lang.Exception
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.roundToInt
@@ -94,6 +95,7 @@ fun TrackInteractionEffect(
                 isRtl,
                 attributes
             )
+
             is InteractionType.Scroll -> trackScroll(
                 rumMonitor,
                 targetName,
@@ -244,35 +246,38 @@ internal suspend fun <T> trackDragInteraction(
 ) {
     val ongoingInteractions = mutableMapOf<DragInteraction.Start, T>()
     try {
-        interactionSource.interactions.collect { interaction ->
-            when (interaction) {
-                is DragInteraction.Start -> {
-                    @Suppress("UnsafeThirdPartyFunctionCall")
-                    onStart(ongoingInteractions, interaction)
-                }
-                is DragInteraction.Stop, is DragInteraction.Cancel -> {
-                    val start = when (interaction) {
-                        is DragInteraction.Stop -> interaction.start
-                        is DragInteraction.Cancel -> interaction.start
-                        else -> {
-                            // this will never happen, let's just make compiler happy and
-                            // give a fake start
-                            Log.e(
-                                LOG_TAG,
-                                "Unexpected branch reached" +
-                                    " for the drag interaction start"
-                            )
-                            DragInteraction.Start()
-                        }
+        interactionSource.interactions.collect(
+            FlowCollector { interaction ->
+                when (interaction) {
+                    is DragInteraction.Start -> {
+                        @Suppress("UnsafeThirdPartyFunctionCall")
+                        onStart(ongoingInteractions, interaction)
                     }
 
-                    ongoingInteractions.remove(start)?.let {
-                        @Suppress("UnsafeThirdPartyFunctionCall")
-                        onStopOrCancel(it)
+                    is DragInteraction.Stop, is DragInteraction.Cancel -> {
+                        val start = when (interaction) {
+                            is DragInteraction.Stop -> interaction.start
+                            is DragInteraction.Cancel -> interaction.start
+                            else -> {
+                                // this will never happen, let's just make compiler happy and
+                                // give a fake start
+                                Log.e(
+                                    LOG_TAG,
+                                    "Unexpected branch reached" +
+                                        " for the drag interaction start"
+                                )
+                                DragInteraction.Start()
+                            }
+                        }
+
+                        ongoingInteractions.remove(start)?.let {
+                            @Suppress("UnsafeThirdPartyFunctionCall")
+                            onStopOrCancel(it)
+                        }
                     }
                 }
             }
-        }
+        )
     } catch (ce: CancellationException) {
         @Suppress("ThrowingInternalException")
         throw ce
@@ -300,9 +305,11 @@ private val ScrollableState.currentPosition: Int?
                 (this.firstVisibleItemIndex shl SHIFT_SIZE) or
                     (this.firstVisibleItemScrollOffset and SHIFT_MASK)
             }
+
             is ScrollState -> {
                 this.value
             }
+
             else -> {
                 null
             }
@@ -376,6 +383,7 @@ private fun resolveDragDirection(
         } else {
             "up"
         }
+
         Orientation.Horizontal -> if (isDirectionPositive) {
             if (!isRtl) "right" else "left"
         } else {

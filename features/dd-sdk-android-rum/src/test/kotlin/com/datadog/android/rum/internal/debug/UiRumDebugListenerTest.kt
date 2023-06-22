@@ -19,6 +19,7 @@ import android.widget.TextView
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -96,7 +97,7 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityResumed(mockActivity)
 
         // THEN
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
@@ -114,7 +115,7 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityResumed(mockActivity)
 
         // THEN
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
@@ -132,7 +133,7 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityResumed(mockActivity)
 
         // THEN
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE

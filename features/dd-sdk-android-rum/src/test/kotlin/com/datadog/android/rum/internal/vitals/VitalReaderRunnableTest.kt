@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.vitals
 
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
@@ -162,7 +163,7 @@ internal class VitalReaderRunnableTest {
         testedRunnable.run()
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             "Unable to schedule Vitals monitoring task on the executor",

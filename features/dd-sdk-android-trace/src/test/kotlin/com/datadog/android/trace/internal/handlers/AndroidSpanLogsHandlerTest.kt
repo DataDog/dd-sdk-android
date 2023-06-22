@@ -8,6 +8,7 @@ package com.datadog.android.trace.internal.handlers
 
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
+import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
@@ -444,11 +445,10 @@ internal class AndroidSpanLogsHandlerTest {
         testedLogHandler.log(event, mockSpan)
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                AndroidSpanLogsHandler.MISSING_LOG_FEATURE_INFO
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            AndroidSpanLogsHandler.MISSING_LOG_FEATURE_INFO
+        )
     }
 }

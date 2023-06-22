@@ -42,7 +42,7 @@ internal class BroadcastReceiverSystemInfoProvider(
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),
-                    "Received unknown broadcast intent: [$action]"
+                    { "Received unknown broadcast intent: [$action]" }
                 )
             }
         }

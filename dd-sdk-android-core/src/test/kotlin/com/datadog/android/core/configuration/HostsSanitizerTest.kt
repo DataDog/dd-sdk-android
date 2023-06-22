@@ -22,7 +22,10 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.net.MalformedURLException
 import java.net.URL
@@ -120,16 +123,23 @@ internal class HostsSanitizerTest {
         )
 
         // Then
-        hosts.forEach {
-            verify(logger.mockInternalLogger).log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                HostsSanitizer.ERROR_MALFORMED_HOST_IP_ADDRESS.format(
-                    Locale.US,
-                    it,
-                    fakeFeature
-                )
+        val expectedMessages = hosts.map {
+            HostsSanitizer.ERROR_MALFORMED_HOST_IP_ADDRESS.format(
+                Locale.US,
+                it,
+                fakeFeature
             )
+        }
+        argumentCaptor<() -> String> {
+            verify(logger.mockInternalLogger, times(hosts.size)).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                isNull(),
+                eq(false)
+            )
+            assertThat(allValues.map { it() })
+                .containsExactlyInAnyOrderElementsOf(expectedMessages)
         }
     }
 
@@ -148,16 +158,23 @@ internal class HostsSanitizerTest {
         )
 
         // THEN
-        hosts.forEach {
-            verify(logger.mockInternalLogger).log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                HostsSanitizer.ERROR_MALFORMED_HOST_IP_ADDRESS.format(
-                    Locale.US,
-                    it,
-                    fakeFeature
-                )
+        val expectedMessages = hosts.map {
+            HostsSanitizer.ERROR_MALFORMED_HOST_IP_ADDRESS.format(
+                Locale.US,
+                it,
+                fakeFeature
             )
+        }
+        argumentCaptor<() -> String> {
+            verify(logger.mockInternalLogger, times(hosts.size)).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                isNull(),
+                eq(false)
+            )
+            assertThat(allValues.map { it() })
+                .containsExactlyInAnyOrderElementsOf(expectedMessages)
         }
     }
 
@@ -215,27 +232,34 @@ internal class HostsSanitizerTest {
     @Test
     fun `M warn W sanitizeHosts { url }`(
         @StringForgery(
-            regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
+            regex = "([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
         ) hosts: List<String>
     ) {
+        // Given
+        val urls = hosts.map { "https://$it/" }
+
         // When
-        testedSanitizer.sanitizeHosts(
-            hosts,
-            fakeFeature
-        )
+        testedSanitizer.sanitizeHosts(urls, fakeFeature)
 
         // THEN
-        hosts.forEach {
-            verify(logger.mockInternalLogger).log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                HostsSanitizer.WARNING_USING_URL.format(
-                    Locale.US,
-                    it,
-                    fakeFeature,
-                    URL(it).host
-                )
+        val expectedMessages = hosts.map {
+            HostsSanitizer.WARNING_USING_URL.format(
+                Locale.US,
+                "https://$it/",
+                fakeFeature,
+                it
             )
+        }
+        argumentCaptor<() -> String> {
+            verify(logger.mockInternalLogger, times(hosts.size)).log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                isNull(),
+                eq(false)
+            )
+            assertThat(allValues.map { it() })
+                .containsExactlyInAnyOrderElementsOf(expectedMessages)
         }
     }
 
@@ -252,20 +276,23 @@ internal class HostsSanitizerTest {
         )
 
         // Then
-        hosts.forEach {
-            verify(logger.mockInternalLogger).log(
+        val expectedMessages = hosts.map {
+            HostsSanitizer.ERROR_MALFORMED_URL.format(
+                Locale.US,
+                it,
+                fakeFeature
+            )
+        }
+        argumentCaptor<() -> String> {
+            verify(logger.mockInternalLogger, times(hosts.size)).log(
                 eq(InternalLogger.Level.ERROR),
                 eq(InternalLogger.Target.USER),
-                eq(
-                    HostsSanitizer.ERROR_MALFORMED_URL.format(
-                        Locale.US,
-                        it,
-                        fakeFeature
-                    )
-                ),
+                capture(),
                 any<MalformedURLException>(),
                 eq(false)
             )
+            assertThat(allValues.map { it() })
+                .containsExactlyInAnyOrderElementsOf(expectedMessages)
         }
     }
 

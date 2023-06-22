@@ -31,6 +31,7 @@ import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.telemetry.internal.TelemetryType
@@ -1756,7 +1757,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor.debug = true
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             DatadogRumMonitor.RUM_DEBUG_RUM_NOT_ENABLED_WARNING

@@ -31,6 +31,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.resolveViewUrl
+import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
@@ -520,7 +521,7 @@ internal class RumViewScopeTest {
             assertThat(rumContext["action_id"])
                 .isEqualTo(anotherScope.getRumContext().actionId)
         }
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.MAINTAINER,
             RumViewScope.RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE
@@ -614,7 +615,7 @@ internal class RumViewScopeTest {
                 .isNull()
         }
 
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.MAINTAINER,
             RumViewScope.RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE
@@ -3443,7 +3444,7 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
 
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumViewScope.ACTION_DROPPED_WARNING.format(
@@ -3475,7 +3476,7 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
 
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumViewScope.ACTION_DROPPED_WARNING.format(
@@ -7143,7 +7144,7 @@ internal class RumViewScopeTest {
                     hasDuration(1)
                 }
         }
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             RumViewScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, testedScope.name)

@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.file
 
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -117,7 +118,7 @@ internal class EncryptedFileReaderWriterTest {
         // Then
         assertThat(result).isFalse()
 
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             EncryptedFileReaderWriter.BAD_ENCRYPTION_RESULT_MESSAGE
@@ -140,7 +141,7 @@ internal class EncryptedFileReaderWriterTest {
         // Then
         assertThat(result).isFalse()
 
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
             EncryptedFileReaderWriter.APPEND_MODE_NOT_SUPPORTED_MESSAGE

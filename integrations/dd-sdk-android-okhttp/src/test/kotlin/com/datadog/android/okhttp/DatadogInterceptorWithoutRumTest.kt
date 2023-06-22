@@ -8,6 +8,7 @@ package com.datadog.android.okhttp
 
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorTest
+import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.InternalLogger
@@ -76,7 +77,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         testedInterceptor.intercept(mockChain)
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             DatadogInterceptor.WARN_RUM_DISABLED.format(Locale.US, "Default SDK instance")

@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -133,20 +133,16 @@ internal class LogsDataWriterTest {
 
         // Then
         assertThat(result).isFalse
-
-        verify(mockInternalLogger)
-            .log(
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
                 eq(InternalLogger.Level.ERROR),
-                targets = eq(
-                    listOf(
-                        InternalLogger.Target.USER,
-                        InternalLogger.Target.TELEMETRY
-                    )
-                ),
-                any(),
+                eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
+                capture(),
                 eq(fakeThrowable),
                 eq(false)
             )
+            assertThat(firstValue()).isEqualTo("Error serializing LogEvent model")
+        }
 
         verifyNoInteractions(mockEventBatchWriter)
     }

@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.thread
 
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
@@ -21,9 +22,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isA
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
 import java.util.concurrent.CancellationException
@@ -94,13 +92,12 @@ internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> 
         Thread.sleep(DEFAULT_SLEEP_DURATION_MS)
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
-                throwable
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
+            throwable
+        )
     }
 
     // endregion
@@ -151,13 +148,12 @@ internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> 
         // Then
         assertThat(futureTask.isDone).isTrue
 
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
-                throwable
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
+            throwable
+        )
     }
 
     @Test
@@ -172,14 +168,12 @@ internal abstract class AbstractLoggingExecutorServiceTest<T : ExecutorService> 
         // Then
         assertThat(futureTask.isCancelled).isTrue
 
-        verify(mockInternalLogger)
-            .log(
-                eq(InternalLogger.Level.ERROR),
-                eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
-                eq(ERROR_UNCAUGHT_EXECUTION_EXCEPTION),
-                isA<CancellationException>(),
-                eq(false)
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
+            CancellationException::class.java
+        )
     }
 
     // endregion

@@ -32,7 +32,7 @@ internal class MixedWebViewEventConsumer(
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),
-                    WEB_EVENT_MISSING_TYPE_ERROR_MESSAGE.format(US, event)
+                    { WEB_EVENT_MISSING_TYPE_ERROR_MESSAGE.format(US, event) }
                 )
                 return
             }
@@ -43,7 +43,7 @@ internal class MixedWebViewEventConsumer(
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),
-                    WEB_EVENT_MISSING_WRAPPED_EVENT.format(US, event)
+                    { WEB_EVENT_MISSING_WRAPPED_EVENT.format(US, event) }
                 )
                 return
             }
@@ -60,7 +60,7 @@ internal class MixedWebViewEventConsumer(
                     internalLogger.log(
                         InternalLogger.Level.ERROR,
                         InternalLogger.Target.MAINTAINER,
-                        WRONG_EVENT_TYPE_ERROR_MESSAGE.format(US, eventType)
+                        { WRONG_EVENT_TYPE_ERROR_MESSAGE.format(US, eventType) }
                     )
                 }
             }
@@ -68,7 +68,7 @@ internal class MixedWebViewEventConsumer(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                WEB_EVENT_PARSING_ERROR_MESSAGE.format(US, event),
+                { WEB_EVENT_PARSING_ERROR_MESSAGE.format(US, event) },
                 e
             )
         }

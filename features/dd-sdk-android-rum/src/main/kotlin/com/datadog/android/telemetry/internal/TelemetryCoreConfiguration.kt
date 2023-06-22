@@ -35,8 +35,10 @@ internal data class TelemetryCoreConfiguration(
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    "One of the mandatory parameters for core configuration telemetry" +
-                        " reporting is either missing or have a wrong type."
+                    {
+                        "One of the mandatory parameters for core configuration telemetry" +
+                            " reporting is either missing or have a wrong type."
+                    }
                 )
                 return null
             }

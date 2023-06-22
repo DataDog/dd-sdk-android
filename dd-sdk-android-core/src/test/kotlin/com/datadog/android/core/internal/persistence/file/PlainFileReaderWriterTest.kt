@@ -6,7 +6,9 @@
 
 package com.datadog.android.core.internal.persistence.file
 
+import com.datadog.android.core.internal.persistence.file.batch.PlainBatchFileReaderWriter
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -23,11 +25,9 @@ import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.io.File
+import java.io.IOException
 import java.util.Locale
 
 @Extensions(
@@ -178,12 +178,11 @@ internal class PlainFileReaderWriterTest {
         // Then
         assertThat(result).isFalse()
         assertThat(file).doesNotExist()
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-            eq(PlainFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path)),
-            any(),
-            eq(false)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
+            IOException::class.java
         )
     }
 
@@ -206,12 +205,11 @@ internal class PlainFileReaderWriterTest {
 
         // Then
         assertThat(result).isFalse()
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-            eq(PlainFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path)),
-            any(),
-            eq(false)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
+            IOException::class.java
         )
     }
 
@@ -233,7 +231,7 @@ internal class PlainFileReaderWriterTest {
         // Then
         assertThat(result).isEmpty()
         assertThat(file).doesNotExist()
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             PlainFileReaderWriter.ERROR_READ.format(Locale.US, file.path),
@@ -254,7 +252,7 @@ internal class PlainFileReaderWriterTest {
 
         // Then
         assertThat(result).isEmpty()
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             PlainFileReaderWriter.ERROR_READ.format(Locale.US, file.path),

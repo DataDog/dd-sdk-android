@@ -144,7 +144,7 @@ internal class RumFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE
+                { DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE }
             )
             ALL_IN_SAMPLE_RATE
         } else {
@@ -237,7 +237,7 @@ internal class RumFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName)
+                { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
             )
             return
         }
@@ -265,7 +265,7 @@ internal class RumFeature constructor(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"])
+                    { UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"]) }
                 )
             }
         }
@@ -281,7 +281,7 @@ internal class RumFeature constructor(
             InternalLogger.UNBOUND.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                "$RUM_FEATURE_NOT_YET_INITIALIZED Cannot enable RUM debugging."
+                { "$RUM_FEATURE_NOT_YET_INITIALIZED Cannot enable RUM debugging." }
             )
             return
         }
@@ -394,7 +394,7 @@ internal class RumFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS
+                { JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS }
             )
             return
         }
@@ -417,7 +417,7 @@ internal class RumFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS
+                { LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS }
             )
             return
         }
@@ -441,7 +441,7 @@ internal class RumFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS
+                { LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS }
             )
             return
         }
@@ -460,7 +460,7 @@ internal class RumFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                TELEMETRY_MISSING_MESSAGE_FIELD
+                { TELEMETRY_MISSING_MESSAGE_FIELD }
             )
             return
         }
@@ -481,7 +481,7 @@ internal class RumFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                TELEMETRY_MISSING_MESSAGE_FIELD
+                { TELEMETRY_MISSING_MESSAGE_FIELD }
             )
             return
         }

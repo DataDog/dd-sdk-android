@@ -14,6 +14,10 @@ internal class LogcatLogHandler(
     internal val predicate: (level: Int) -> Boolean = { true }
 ) {
 
+    fun canLog(level: Int): Boolean {
+        return predicate(level)
+    }
+
     fun log(level: Int, message: String, throwable: Throwable?) {
         if (!predicate.invoke(level)) return
 

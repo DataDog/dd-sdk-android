@@ -33,7 +33,7 @@ internal fun cancelUploadWorker(context: Context, internalLogger: InternalLogger
         internalLogger.log(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            CANCEL_ERROR_MESSAGE,
+            { CANCEL_ERROR_MESSAGE },
             e
         )
     }
@@ -59,13 +59,13 @@ internal fun triggerUploadWorker(context: Context, internalLogger: InternalLogge
         internalLogger.log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.MAINTAINER,
-            UPLOAD_WORKER_WAS_SCHEDULED
+            { UPLOAD_WORKER_WAS_SCHEDULED }
         )
     } catch (e: Exception) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            SETUP_ERROR_MESSAGE,
+            { SETUP_ERROR_MESSAGE },
             e
         )
     }

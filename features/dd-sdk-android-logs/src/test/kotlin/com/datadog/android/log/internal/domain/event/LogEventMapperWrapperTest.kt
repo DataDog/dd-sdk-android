@@ -14,6 +14,7 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -21,6 +22,9 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -87,14 +91,21 @@ internal class LogEventMapperWrapperTest {
         testedEventMapper.map(mockLogEvent)
 
         // THEN
-        verify(mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            LogEventMapperWrapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(
-                Locale.US,
-                mockLogEvent.toString()
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                isNull(),
+                eq(false)
             )
-        )
+            assertThat(firstValue()).isEqualTo(
+                LogEventMapperWrapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(
+                    Locale.US,
+                    mockLogEvent.toString()
+                )
+            )
+        }
     }
 
     @Test
@@ -119,13 +130,20 @@ internal class LogEventMapperWrapperTest {
         testedEventMapper.map(mockLogEvent)
 
         // THEN
-        verify(mockInternalLogger).log(
-            InternalLogger.Level.INFO,
-            InternalLogger.Target.USER,
-            LogEventMapperWrapper.EVENT_NULL_WARNING_MESSAGE.format(
-                Locale.US,
-                mockLogEvent.toString()
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.INFO),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                isNull(),
+                eq(false)
             )
-        )
+            assertThat(firstValue()).isEqualTo(
+                LogEventMapperWrapper.EVENT_NULL_WARNING_MESSAGE.format(
+                    Locale.US,
+                    mockLogEvent.toString()
+                )
+            )
+        }
     }
 }

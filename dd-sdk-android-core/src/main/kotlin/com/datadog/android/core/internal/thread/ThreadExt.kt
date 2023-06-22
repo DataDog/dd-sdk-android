@@ -28,7 +28,7 @@ internal fun sleepSafe(durationMs: Long, internalLogger: InternalLogger): Boolea
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                "Thread was unable to set its own interrupted state",
+                { "Thread was unable to set its own interrupted state" },
                 se
             )
         }
@@ -38,7 +38,7 @@ internal fun sleepSafe(durationMs: Long, internalLogger: InternalLogger): Boolea
         internalLogger.log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            "Thread tried to sleep for a negative amount of time",
+            { "Thread tried to sleep for a negative amount of time" },
             e
         )
         return false
@@ -67,7 +67,7 @@ internal fun loggingAfterExecute(task: Runnable?, t: Throwable?, logger: Interna
                 logger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.MAINTAINER,
-                    "Thread was unable to set its own interrupted state",
+                    { "Thread was unable to set its own interrupted state" },
                     se
                 )
             }
@@ -77,7 +77,7 @@ internal fun loggingAfterExecute(task: Runnable?, t: Throwable?, logger: Interna
         logger.log(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
+            { ERROR_UNCAUGHT_EXECUTION_EXCEPTION },
             throwable
         )
     }

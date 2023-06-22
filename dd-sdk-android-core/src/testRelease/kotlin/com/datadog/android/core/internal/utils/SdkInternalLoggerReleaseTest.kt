@@ -11,7 +11,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 
-internal class InternalLoggerReleaseTest {
+internal class SdkInternalLoggerReleaseTest {
 
     // region sdkLogger
 

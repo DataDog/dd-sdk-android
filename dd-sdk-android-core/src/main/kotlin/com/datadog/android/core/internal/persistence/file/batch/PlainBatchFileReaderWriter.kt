@@ -48,7 +48,7 @@ internal class PlainBatchFileReaderWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_WRITE.format(Locale.US, file.path),
+                { ERROR_WRITE.format(Locale.US, file.path) },
                 e
             )
             false
@@ -56,7 +56,7 @@ internal class PlainBatchFileReaderWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_WRITE.format(Locale.US, file.path),
+                { ERROR_WRITE.format(Locale.US, file.path) },
                 e
             )
             false
@@ -73,7 +73,7 @@ internal class PlainBatchFileReaderWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_READ.format(Locale.US, file.path),
+                { ERROR_READ.format(Locale.US, file.path) },
                 e
             )
             emptyList()
@@ -81,7 +81,7 @@ internal class PlainBatchFileReaderWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_READ.format(Locale.US, file.path),
+                { "ERROR_READ.format(Locale.US, file.path)" },
                 e
             )
             emptyList()
@@ -151,7 +151,7 @@ internal class PlainBatchFileReaderWriter(
                     internalLogger.log(
                         InternalLogger.Level.ERROR,
                         InternalLogger.Target.MAINTAINER,
-                        ERROR_FAILED_META_PARSE,
+                        { ERROR_FAILED_META_PARSE },
                         e
                     )
                     continue
@@ -162,11 +162,10 @@ internal class PlainBatchFileReaderWriter(
         }
 
         if (remaining != 0 || (inputLength > 0 && result.isEmpty())) {
-            val message = WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                message
+                { WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path) }
             )
         }
 
@@ -196,8 +195,10 @@ internal class PlainBatchFileReaderWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                "Unexpected block type identifier=$blockType met," +
-                    " was expecting $expectedBlockType(${expectedBlockType.identifier})"
+                {
+                    "Unexpected block type identifier=$blockType met," +
+                        " was expecting $expectedBlockType(${expectedBlockType.identifier})"
+                }
             )
             // in theory we could continue reading, because we still know data size,
             // but unexpected type says that at least relationship between blocks is broken,
@@ -229,14 +230,16 @@ internal class PlainBatchFileReaderWriter(
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.MAINTAINER,
-                    "Number of bytes read for operation='$operation' doesn't" +
-                        " match with expected: expected=$expected, actual=$actual"
+                    {
+                        "Number of bytes read for operation='$operation' doesn't" +
+                            " match with expected: expected=$expected, actual=$actual"
+                    }
                 )
             } else {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.MAINTAINER,
-                    "Unexpected EOF at the operation=$operation"
+                    { "Unexpected EOF at the operation=$operation" }
                 )
             }
             false

@@ -441,8 +441,8 @@ public final class com/datadog/android/v2/api/FeatureUploadConfiguration {
 
 public abstract interface class com/datadog/android/v2/api/InternalLogger {
 	public static final field Companion Lcom/datadog/android/v2/api/InternalLogger$Companion;
-	public abstract fun log (Lcom/datadog/android/v2/api/InternalLogger$Level;Lcom/datadog/android/v2/api/InternalLogger$Target;Ljava/lang/String;Ljava/lang/Throwable;Z)V
-	public abstract fun log (Lcom/datadog/android/v2/api/InternalLogger$Level;Ljava/util/List;Ljava/lang/String;Ljava/lang/Throwable;Z)V
+	public abstract fun log (Lcom/datadog/android/v2/api/InternalLogger$Level;Lcom/datadog/android/v2/api/InternalLogger$Target;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;Z)V
+	public abstract fun log (Lcom/datadog/android/v2/api/InternalLogger$Level;Ljava/util/List;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;Z)V
 }
 
 public final class com/datadog/android/v2/api/InternalLogger$Companion {
@@ -450,8 +450,8 @@ public final class com/datadog/android/v2/api/InternalLogger$Companion {
 }
 
 public final class com/datadog/android/v2/api/InternalLogger$DefaultImpls {
-	public static synthetic fun log$default (Lcom/datadog/android/v2/api/InternalLogger;Lcom/datadog/android/v2/api/InternalLogger$Level;Lcom/datadog/android/v2/api/InternalLogger$Target;Ljava/lang/String;Ljava/lang/Throwable;ZILjava/lang/Object;)V
-	public static synthetic fun log$default (Lcom/datadog/android/v2/api/InternalLogger;Lcom/datadog/android/v2/api/InternalLogger$Level;Ljava/util/List;Ljava/lang/String;Ljava/lang/Throwable;ZILjava/lang/Object;)V
+	public static synthetic fun log$default (Lcom/datadog/android/v2/api/InternalLogger;Lcom/datadog/android/v2/api/InternalLogger$Level;Lcom/datadog/android/v2/api/InternalLogger$Target;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZILjava/lang/Object;)V
+	public static synthetic fun log$default (Lcom/datadog/android/v2/api/InternalLogger;Lcom/datadog/android/v2/api/InternalLogger$Level;Ljava/util/List;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/v2/api/InternalLogger$Level : java/lang/Enum {

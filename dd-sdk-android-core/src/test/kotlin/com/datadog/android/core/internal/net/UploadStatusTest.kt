@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.net
 
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -19,7 +20,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.quality.Strictness
 
@@ -54,12 +54,11 @@ internal class UploadStatusTest {
         )
 
         // Then
-        verify(mockLogger)
-            .log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                "Batch [$fakeByteSize bytes] ($fakeContext) sent successfully."
-            )
+        mockLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            "Batch [$fakeByteSize bytes] ($fakeContext) sent successfully."
+        )
         verifyNoMoreInteractions(mockLogger)
     }
 
@@ -73,13 +72,12 @@ internal class UploadStatusTest {
         )
 
         // Then
-        verify(mockLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                    "because of a network error; we will retry later."
-            )
+        mockLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                "because of a network error; we will retry later."
+        )
         verifyNoMoreInteractions(mockLogger)
     }
 
@@ -93,15 +91,14 @@ internal class UploadStatusTest {
         )
 
         // Then
-        verify(mockLogger)
-            .log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                    "because your token is invalid; the batch was dropped. " +
-                    "Make sure that the provided token still " +
-                    "exists and you're targeting the relevant Datadog site."
-            )
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                "because your token is invalid; the batch was dropped. " +
+                "Make sure that the provided token still " +
+                "exists and you're targeting the relevant Datadog site."
+        )
         verifyNoMoreInteractions(mockLogger)
     }
 
@@ -115,13 +112,12 @@ internal class UploadStatusTest {
         )
 
         // Then
-        verify(mockLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                    "because of a network redirection; the batch was dropped."
-            )
+        mockLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                "because of a network redirection; the batch was dropped."
+        )
         verifyNoMoreInteractions(mockLogger)
     }
 
@@ -135,14 +131,13 @@ internal class UploadStatusTest {
         )
 
         // Then
-        verify(mockLogger)
-            .log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                    "because of a processing error or invalid data; " +
-                    "the batch was dropped."
-            )
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                "because of a processing error or invalid data; " +
+                "the batch was dropped."
+        )
         verifyNoMoreInteractions(mockLogger)
     }
 
@@ -156,13 +151,12 @@ internal class UploadStatusTest {
         )
 
         // Then
-        verify(mockLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                "Batch [$fakeByteSize bytes] ($fakeContext) not uploaded due to rate limitation; " +
-                    "we will retry later."
-            )
+        mockLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            "Batch [$fakeByteSize bytes] ($fakeContext) not uploaded due to rate limitation; " +
+                "we will retry later."
+        )
     }
 
     @Test
@@ -175,13 +169,12 @@ internal class UploadStatusTest {
         )
 
         // Then
-        verify(mockLogger)
-            .log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                    "because of a server processing error; we will retry later."
-            )
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                "because of a server processing error; we will retry later."
+        )
         verifyNoMoreInteractions(mockLogger)
     }
 
@@ -195,13 +188,12 @@ internal class UploadStatusTest {
         )
 
         // Then
-        verify(mockLogger)
-            .log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                    "because of an unknown error; the batch was dropped."
-            )
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                "because of an unknown error; the batch was dropped."
+        )
     }
 
     @Test
@@ -214,13 +206,12 @@ internal class UploadStatusTest {
         )
 
         // Then
-        verify(mockLogger)
-            .log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                    "because of an error when creating the request;" +
-                    " the batch was dropped."
-            )
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                "because of an error when creating the request;" +
+                " the batch was dropped."
+        )
     }
 }

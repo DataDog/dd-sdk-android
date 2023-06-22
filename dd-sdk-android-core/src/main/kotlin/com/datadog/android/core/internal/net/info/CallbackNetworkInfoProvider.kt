@@ -65,7 +65,7 @@ internal class CallbackNetworkInfoProvider(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                ERROR_REGISTER
+                { ERROR_REGISTER }
             )
             return
         }
@@ -83,7 +83,7 @@ internal class CallbackNetworkInfoProvider(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                ERROR_REGISTER,
+                { ERROR_REGISTER },
                 e
             )
             lastNetworkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)
@@ -94,7 +94,7 @@ internal class CallbackNetworkInfoProvider(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                ERROR_REGISTER,
+                { ERROR_REGISTER },
                 e
             )
             lastNetworkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)
@@ -110,7 +110,7 @@ internal class CallbackNetworkInfoProvider(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                ERROR_UNREGISTER
+                { ERROR_UNREGISTER }
             )
             return
         }
@@ -123,7 +123,7 @@ internal class CallbackNetworkInfoProvider(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                ERROR_UNREGISTER,
+                { ERROR_UNREGISTER },
                 e
             )
         } catch (e: RuntimeException) {
@@ -132,7 +132,7 @@ internal class CallbackNetworkInfoProvider(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                ERROR_UNREGISTER,
+                { ERROR_UNREGISTER },
                 e
             )
         }

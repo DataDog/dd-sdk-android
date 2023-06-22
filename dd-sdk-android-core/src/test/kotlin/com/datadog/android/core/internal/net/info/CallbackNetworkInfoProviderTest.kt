@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.utils.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.NetworkInfo
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -423,7 +424,7 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.register(context)
 
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             CallbackNetworkInfoProvider.ERROR_REGISTER
@@ -443,7 +444,7 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.register(context)
 
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             CallbackNetworkInfoProvider.ERROR_REGISTER,
@@ -466,7 +467,7 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.register(context)
 
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             CallbackNetworkInfoProvider.ERROR_REGISTER,
@@ -593,7 +594,7 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.unregister(context)
 
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             CallbackNetworkInfoProvider.ERROR_UNREGISTER,
@@ -608,7 +609,7 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.unregister(context)
 
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             CallbackNetworkInfoProvider.ERROR_UNREGISTER
@@ -629,7 +630,7 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.unregister(context)
 
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             CallbackNetworkInfoProvider.ERROR_UNREGISTER,

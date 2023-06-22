@@ -62,7 +62,7 @@ interface InternalLogger {
      * Logs a message from the internal implementation.
      * @param level the severity level of the log
      * @param target the target handler for the log
-     * @param message the log message
+     * @param messageBuilder the lambda building the log message
      * @param throwable an optional throwable error
      * @param onlyOnce whether only one instance of the message should be sent per lifetime of the
      * logger (default is `false`)
@@ -70,7 +70,7 @@ interface InternalLogger {
     fun log(
         level: Level,
         target: Target,
-        message: String,
+        messageBuilder: () -> String,
         throwable: Throwable? = null,
         onlyOnce: Boolean = false
     )
@@ -79,7 +79,7 @@ interface InternalLogger {
      * Logs a message from the internal implementation.
      * @param level the severity level of the log
      * @param targets list of the target handlers for the log
-     * @param message the log message
+     * @param messageBuilder the lambda building the log message
      * @param throwable an optional throwable error
      * @param onlyOnce whether only one instance of the message should be sent per lifetime of the
      * logger (default is `false`, onlyOnce applies to each target independently)
@@ -87,7 +87,7 @@ interface InternalLogger {
     fun log(
         level: Level,
         targets: List<Target>,
-        message: String,
+        messageBuilder: () -> String,
         throwable: Throwable? = null,
         onlyOnce: Boolean = false
     )

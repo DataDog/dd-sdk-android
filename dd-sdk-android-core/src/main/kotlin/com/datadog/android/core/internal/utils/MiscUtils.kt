@@ -46,7 +46,7 @@ internal inline fun retryWithDelay(
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),
-                    "Internal I/O operation failed",
+                    { "Internal I/O operation failed" },
                     e
                 )
                 return false

@@ -30,13 +30,13 @@ internal class MoveDataMigrationOperation(
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                WARN_NULL_SOURCE_DIR
+                { WARN_NULL_SOURCE_DIR }
             )
         } else if (toDir == null) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                WARN_NULL_DEST_DIR
+                { WARN_NULL_DEST_DIR }
             )
         } else {
             retryWithDelay(MAX_RETRY, RETRY_DELAY_NS, internalLogger) {

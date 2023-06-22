@@ -50,6 +50,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -236,16 +237,21 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(Any())
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                isNull(),
+                eq(false)
+            )
+            assertThat(firstValue()).isEqualTo(
                 LogsFeature.UNSUPPORTED_EVENT_TYPE.format(
                     Locale.US,
                     Any()::class.java.canonicalName
                 )
             )
-
+        }
         verifyNoMoreInteractions(mockInternalLogger)
         verifyNoInteractions(mockDataWriter)
     }
@@ -264,12 +270,18 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                isNull(),
+                eq(false)
+            )
+            assertThat(firstValue()).isEqualTo(
                 LogsFeature.UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"])
             )
+        }
 
         verifyNoMoreInteractions(mockInternalLogger)
         verifyNoInteractions(mockDataWriter)
@@ -304,9 +316,11 @@ internal class LogsFeatureTest {
             ValueMissingType.MISSING -> event.remove(
                 forge.anElementFrom(event.keys.filterNot { it == "type" })
             )
+
             ValueMissingType.NULL -> event[
                 forge.anElementFrom(event.keys.filterNot { it == "type" })
             ] = null
+
             ValueMissingType.WRONG_TYPE -> event[
                 forge.anElementFrom(event.keys.filterNot { it == "type" })
             ] = Any()
@@ -316,12 +330,18 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                isNull(),
+                eq(false)
+            )
+            assertThat(firstValue()).isEqualTo(
                 LogsFeature.JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING
             )
+        }
 
         verifyNoMoreInteractions(mockInternalLogger)
         verifyNoInteractions(mockDataWriter)
@@ -519,9 +539,11 @@ internal class LogsFeatureTest {
             ValueMissingType.MISSING -> event.remove(
                 forge.anElementFrom(event.keys.filterNot { it == "type" })
             )
+
             ValueMissingType.NULL -> event[
                 forge.anElementFrom(event.keys.filterNot { it == "type" })
             ] = null
+
             ValueMissingType.WRONG_TYPE -> event[
                 forge.anElementFrom(event.keys.filterNot { it == "type" })
             ] = Any()
@@ -531,12 +553,18 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                isNull(),
+                eq(false)
+            )
+            assertThat(firstValue()).isEqualTo(
                 LogsFeature.NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING
             )
+        }
 
         verifyNoMoreInteractions(mockInternalLogger)
         verifyNoInteractions(mockDataWriter)
@@ -715,9 +743,11 @@ internal class LogsFeatureTest {
             ValueMissingType.MISSING -> event.remove(
                 forge.anElementFrom(event.keys.filterNot { it == "type" })
             )
+
             ValueMissingType.NULL -> event[
                 forge.anElementFrom(event.keys.filterNot { it == "type" })
             ] = null
+
             ValueMissingType.WRONG_TYPE -> event[
                 forge.anElementFrom(event.keys.filterNot { it == "type" })
             ] = Any()
@@ -727,13 +757,18 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                isNull(),
+                eq(false)
+            )
+            assertThat(firstValue()).isEqualTo(
                 LogsFeature.SPAN_LOG_EVENT_MISSING_MANDATORY_FIELDS_WARNING
             )
-
+        }
         verifyNoMoreInteractions(mockInternalLogger)
         verifyNoInteractions(mockDataWriter)
     }

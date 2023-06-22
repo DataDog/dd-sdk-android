@@ -139,7 +139,7 @@ internal class RumApplicationScope(
                     sdkCore.internalLogger.log(
                         InternalLogger.Level.WARN,
                         InternalLogger.Target.USER,
-                        LAST_ACTIVE_VIEW_GONE_WARNING_MESSAGE.format(Locale.US, it.name)
+                        { LAST_ACTIVE_VIEW_GONE_WARNING_MESSAGE.format(Locale.US, it.name) }
                     )
                 }
             }
@@ -150,7 +150,7 @@ internal class RumApplicationScope(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.TELEMETRY,
-                MULTIPLE_ACTIVE_SESSIONS_ERROR
+                { MULTIPLE_ACTIVE_SESSIONS_ERROR }
             )
         }
     }

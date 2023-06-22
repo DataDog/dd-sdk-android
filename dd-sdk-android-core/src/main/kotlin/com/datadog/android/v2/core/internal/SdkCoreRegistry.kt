@@ -32,7 +32,7 @@ internal class SdkCoreRegistry(
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                "An SdkCode with name $key has already been registered."
+                { "An SdkCode with name $key has already been registered." }
             )
         } else {
             instances[key] = sdkCore

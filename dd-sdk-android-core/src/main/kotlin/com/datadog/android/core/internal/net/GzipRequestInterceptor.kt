@@ -56,7 +56,7 @@ internal class GzipRequestInterceptor(private val internalLogger: InternalLogger
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),
-                    "Unable to gzip request body",
+                    { "Unable to gzip request body" },
                     e
                 )
                 originalRequest

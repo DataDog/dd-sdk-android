@@ -84,7 +84,7 @@ internal class ConsentAwareFileMigrator(
                     InternalLogger.Target.MAINTAINER,
                     InternalLogger.Target.TELEMETRY
                 ),
-                "Unexpected consent migration from $previousState to $newState"
+                { "Unexpected consent migration from $previousState to $newState" }
             )
             NoOpDataMigrationOperation()
         }

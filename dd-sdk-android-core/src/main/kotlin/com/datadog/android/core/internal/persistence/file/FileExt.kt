@@ -38,7 +38,7 @@ private fun <T> File.safeCall(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            "Security exception was thrown for file ${this.path}",
+            { "Security exception was thrown for file ${this.path}" },
             e
         )
         default
@@ -46,7 +46,7 @@ private fun <T> File.safeCall(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            "Unexpected exception was thrown for file ${this.path}",
+            { "Unexpected exception was thrown for file ${this.path}" },
             e
         )
         default

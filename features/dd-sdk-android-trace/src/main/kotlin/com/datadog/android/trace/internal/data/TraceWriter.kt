@@ -73,7 +73,7 @@ internal class TraceWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                ERROR_SERIALIZING.format(Locale.US, mapped.javaClass.simpleName),
+                { ERROR_SERIALIZING.format(Locale.US, mapped.javaClass.simpleName) },
                 e
             )
         }

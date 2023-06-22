@@ -32,7 +32,7 @@ internal class WebViewRumEventContextProvider(private val internalLogger: Intern
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                RUM_NOT_INITIALIZED_WARNING_MESSAGE
+                { RUM_NOT_INITIALIZED_WARNING_MESSAGE }
             )
             null
         } else {

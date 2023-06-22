@@ -197,8 +197,10 @@ internal constructor(
             InternalLogger.UNBOUND.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                "$prefix for OkHttp instrumentation is not found, skipping" +
-                    " tracking of request with url=${chain.request().url()}"
+                {
+                    "$prefix for OkHttp instrumentation is not found, skipping" +
+                        " tracking of request with url=${chain.request().url()}"
+                }
             )
             @Suppress("UnsafeThirdPartyFunctionCall") // we are in method which allows throwing IOException
             return chain.proceed(chain.request())
@@ -258,7 +260,7 @@ internal constructor(
             (sdkCore as FeatureSdkCore).internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                WARNING_TRACING_NO_HOSTS,
+                { WARNING_TRACING_NO_HOSTS },
                 onlyOnce = true
             )
         }
@@ -286,7 +288,7 @@ internal constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                "Failed to update intercepted OkHttp request",
+                { "Failed to update intercepted OkHttp request" },
                 e
             )
             request
@@ -325,7 +327,7 @@ internal constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                WARNING_TRACING_DISABLED,
+                { WARNING_TRACING_DISABLED },
                 onlyOnce = true
             )
             null
@@ -350,7 +352,7 @@ internal constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                WARNING_DEFAULT_TRACER
+                { WARNING_DEFAULT_TRACER }
             )
         }
         return localTracerReference.get()
@@ -520,9 +522,11 @@ internal constructor(
                         DATADOG_ORIGIN_HEADER -> if (tracingHeaderTypes.contains(TracingHeaderType.DATADOG)) {
                             tracedRequestBuilder.addHeader(key, value)
                         }
+
                         B3_HEADER_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.B3)) {
                             tracedRequestBuilder.addHeader(key, value)
                         }
+
                         B3M_SPAN_ID_KEY,
                         B3M_TRACE_ID_KEY,
                         B3M_SAMPLING_PRIORITY_KEY -> if (tracingHeaderTypes.contains(
@@ -531,9 +535,11 @@ internal constructor(
                         ) {
                             tracedRequestBuilder.addHeader(key, value)
                         }
+
                         W3C_TRACEPARENT_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.TRACECONTEXT)) {
                             tracedRequestBuilder.addHeader(key, value)
                         }
+
                         else -> tracedRequestBuilder.addHeader(key, value)
                     }
                 }

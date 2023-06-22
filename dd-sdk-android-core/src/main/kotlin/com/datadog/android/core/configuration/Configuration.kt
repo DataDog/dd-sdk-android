@@ -236,7 +236,7 @@ internal constructor(
                 unboundInternalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    ERROR_FEATURE_DISABLED.format(Locale.US, feature.featureName, method)
+                    { ERROR_FEATURE_DISABLED.format(Locale.US, feature.featureName, method) }
                 )
             }
         }

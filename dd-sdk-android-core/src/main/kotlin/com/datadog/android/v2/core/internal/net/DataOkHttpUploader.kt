@@ -41,8 +41,10 @@ internal class DataOkHttpUploader(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                "Unable to create the request, probably due to bad data format." +
-                    " The batch will be dropped.",
+                {
+                    "Unable to create the request, probably due to bad data format." +
+                        " The batch will be dropped."
+                },
                 e
             )
             return UploadStatus.REQUEST_CREATION_ERROR
@@ -54,7 +56,7 @@ internal class DataOkHttpUploader(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                "Unable to execute the request; we will retry later.",
+                { "Unable to execute the request; we will retry later." },
                 e
             )
             UploadStatus.NETWORK_ERROR
@@ -121,7 +123,7 @@ internal class DataOkHttpUploader(
                 internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.MAINTAINER,
-                    WARNING_USER_AGENT_HEADER_RESERVED
+                    { WARNING_USER_AGENT_HEADER_RESERVED }
                 )
                 continue
             }
@@ -163,7 +165,7 @@ internal class DataOkHttpUploader(
                 internalLogger.log(
                     InternalLogger.Level.WARN,
                     listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                    "Unexpected status code $code on upload request: ${request.description}"
+                    { "Unexpected status code $code on upload request: ${request.description}" }
                 )
                 UploadStatus.UNKNOWN_ERROR
             }

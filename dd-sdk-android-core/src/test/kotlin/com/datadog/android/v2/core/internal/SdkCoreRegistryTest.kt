@@ -7,6 +7,7 @@
 package com.datadog.android.v2.core.internal
 
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -21,7 +22,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -113,7 +113,7 @@ internal class SdkCoreRegistryTest {
         val instance = testedRegistry.getInstance(name)
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             "An SdkCode with name $name has already been registered."

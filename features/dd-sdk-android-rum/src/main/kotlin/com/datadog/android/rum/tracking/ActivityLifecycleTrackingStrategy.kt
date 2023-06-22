@@ -44,8 +44,10 @@ abstract class ActivityLifecycleTrackingStrategy :
             (sdkCore as FeatureSdkCore).internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                "In order to use the RUM automatic tracking feature you will have" +
-                    " to use the Application context when initializing the SDK"
+                {
+                    "In order to use the RUM automatic tracking feature you will have" +
+                        " to use the Application context when initializing the SDK"
+                }
             )
         }
     }
@@ -163,8 +165,10 @@ abstract class ActivityLifecycleTrackingStrategy :
             InternalLogger.UNBOUND.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                RumFeature.RUM_FEATURE_NOT_YET_INITIALIZED +
-                    " Cannot provide SDK instance for view tracking."
+                {
+                    RumFeature.RUM_FEATURE_NOT_YET_INITIALIZED +
+                        " Cannot provide SDK instance for view tracking."
+                }
             )
             null
         }

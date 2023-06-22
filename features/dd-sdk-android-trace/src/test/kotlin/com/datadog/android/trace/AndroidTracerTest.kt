@@ -8,6 +8,7 @@ package com.datadog.android.trace
 
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.TracingFeature
+import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
@@ -147,7 +148,7 @@ internal class AndroidTracerTest {
         testedTracerBuilder.build()
 
         // THEN
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             AndroidTracer.TRACING_NOT_ENABLED_ERROR_MESSAGE
@@ -163,7 +164,7 @@ internal class AndroidTracerTest {
         testedTracerBuilder.build()
 
         // THEN
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             AndroidTracer.RUM_NOT_ENABLED_ERROR_MESSAGE
@@ -179,7 +180,7 @@ internal class AndroidTracerTest {
         testedTracerBuilder.build()
 
         // THEN
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             AndroidTracer.DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE

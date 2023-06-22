@@ -16,6 +16,7 @@ import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
@@ -371,7 +372,7 @@ internal class SdkFeatureTest {
         testedFeature.sendEvent(fakeEvent)
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             SdkFeature.NO_EVENT_RECEIVER.format(Locale.US, fakeFeatureName)

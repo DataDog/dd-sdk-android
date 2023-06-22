@@ -343,7 +343,7 @@ internal constructor(internal var handler: LogHandler) {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    SDK_NOT_INITIALIZED_WARNING_MESSAGE
+                    { SDK_NOT_INITIALIZED_WARNING_MESSAGE }
                 )
                 return NoOpLogHandler()
             }

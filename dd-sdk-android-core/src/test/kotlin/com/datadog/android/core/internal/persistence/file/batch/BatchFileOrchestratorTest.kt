@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.persistence.file.batch
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -30,7 +31,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -93,9 +93,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogger).log(
+        mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
         )
     }
@@ -119,9 +119,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogger).log(
+        mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -146,9 +146,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogger).log(
+        mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -425,9 +425,9 @@ internal class BatchFileOrchestratorTest {
         assertThat(result.name.toLong())
             .isBetween(start, end)
         assertThat(files.first()).doesNotExist()
-        verify(mockLogger).log(
+        mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_DISK_FULL.format(
                 Locale.US,
                 files.size * previousData.length,
@@ -487,9 +487,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogger).log(
+        mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
         )
     }
@@ -512,9 +512,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogger).log(
+        mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -538,9 +538,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogger).log(
+        mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -664,9 +664,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isEmpty()
-        verify(mockLogger).log(
+        mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
         )
     }
@@ -689,9 +689,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isEmpty()
-        verify(mockLogger).log(
+        mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -715,9 +715,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isEmpty()
-        verify(mockLogger).log(
+        mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -853,9 +853,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogger).log(
+        mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
         )
     }
@@ -878,9 +878,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogger).log(
+        mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -904,9 +904,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogger).log(
+        mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -978,13 +978,12 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNotNull()
-        verify(mockLogger)
-            .log(
-                InternalLogger.Level.DEBUG,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                BatchFileOrchestrator.DEBUG_DIFFERENT_ROOT
-                    .format(Locale.US, fakeFile.path, fakeRootDir.path)
-            )
+        mockLogger.verifyLog(
+            InternalLogger.Level.DEBUG,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.DEBUG_DIFFERENT_ROOT
+                .format(Locale.US, fakeFile.path, fakeRootDir.path)
+        )
     }
 
     @Test
@@ -999,12 +998,11 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockLogger)
-            .log(
-                InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                BatchFileOrchestrator.ERROR_NOT_BATCH_FILE.format(Locale.US, fakeFile.path)
-            )
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            BatchFileOrchestrator.ERROR_NOT_BATCH_FILE.format(Locale.US, fakeFile.path)
+        )
     }
 
     // endregion

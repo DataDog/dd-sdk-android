@@ -83,7 +83,7 @@ internal class AndroidSpanLogsHandler(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                MISSING_LOG_FEATURE_INFO
+                { MISSING_LOG_FEATURE_INFO }
             )
         }
     }

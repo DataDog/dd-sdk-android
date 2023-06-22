@@ -9,6 +9,7 @@ package com.datadog.android.v2.core.internal.net
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
@@ -531,7 +532,7 @@ internal class DataOkHttpUploaderTest {
         testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        verify(mockLogger).log(
+        mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             "Unable to create the request, probably due to bad data format. " +
@@ -568,7 +569,7 @@ internal class DataOkHttpUploaderTest {
         testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        verify(mockLogger).log(
+        mockLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
             DataOkHttpUploader.WARNING_USER_AGENT_HEADER_RESERVED

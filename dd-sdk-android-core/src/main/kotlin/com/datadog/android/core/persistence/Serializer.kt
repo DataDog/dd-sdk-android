@@ -45,7 +45,7 @@ fun <T : Any> Serializer<T>.serializeToByteArray(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            Serializer.ERROR_SERIALIZING.format(Locale.US, model.javaClass.simpleName),
+            { Serializer.ERROR_SERIALIZING.format(Locale.US, model.javaClass.simpleName) },
             e
         )
         null

@@ -17,6 +17,7 @@ import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFac
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.sessionreplay.utils.verifyLog
 import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.InternalLogger
@@ -273,12 +274,11 @@ internal class SessionReplayFeatureTest {
         testedFeature.startRecording()
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                SessionReplayFeature.CANNOT_START_RECORDING_NOT_INITIALIZED
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            SessionReplayFeature.CANNOT_START_RECORDING_NOT_INITIALIZED
+        )
         verifyNoInteractions(mockRecorder)
     }
 
@@ -288,12 +288,11 @@ internal class SessionReplayFeatureTest {
         testedFeature.onInitialize(mock())
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                SessionReplayFeature.REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            SessionReplayFeature.REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE
+        )
         verifyNoInteractions(mockRecorder)
     }
 
@@ -340,12 +339,11 @@ internal class SessionReplayFeatureTest {
         // Then
         verify(mockRecorder).registerCallbacks()
         verifyNoMoreInteractions(mockRecorder)
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                SessionReplayFeature.SESSION_SAMPLED_OUT_MESSAGE
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            SessionReplayFeature.SESSION_SAMPLED_OUT_MESSAGE
+        )
     }
 
     @Test
@@ -367,12 +365,11 @@ internal class SessionReplayFeatureTest {
         // Then
         verify(mockRecorder).registerCallbacks()
         verifyNoMoreInteractions(mockRecorder)
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                SessionReplayFeature.SESSION_SAMPLED_OUT_MESSAGE
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            SessionReplayFeature.SESSION_SAMPLED_OUT_MESSAGE
+        )
     }
 
     @Test
@@ -404,12 +401,11 @@ internal class SessionReplayFeatureTest {
             verify(mockRecorder).stopRecorders()
         }
         verifyNoMoreInteractions(mockRecorder)
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                SessionReplayFeature.SESSION_SAMPLED_OUT_MESSAGE
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            SessionReplayFeature.SESSION_SAMPLED_OUT_MESSAGE
+        )
     }
 
     @Test
@@ -441,12 +437,11 @@ internal class SessionReplayFeatureTest {
             verify(mockRecorder).stopRecorders()
         }
         verifyNoMoreInteractions(mockRecorder)
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                SessionReplayFeature.SESSION_SAMPLED_OUT_MESSAGE
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            SessionReplayFeature.SESSION_SAMPLED_OUT_MESSAGE
+        )
     }
 
     @Test
@@ -478,12 +473,11 @@ internal class SessionReplayFeatureTest {
             verify(mockRecorder).stopRecorders()
         }
         verifyNoMoreInteractions(mockRecorder)
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                SessionReplayFeature.SESSION_SAMPLED_OUT_MESSAGE
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            SessionReplayFeature.SESSION_SAMPLED_OUT_MESSAGE
+        )
     }
 
     @Test
@@ -492,15 +486,14 @@ internal class SessionReplayFeatureTest {
         testedFeature.onReceive(Any())
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                SessionReplayFeature.UNSUPPORTED_EVENT_TYPE.format(
-                    Locale.US,
-                    Any()::class.java.canonicalName
-                )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            SessionReplayFeature.UNSUPPORTED_EVENT_TYPE.format(
+                Locale.US,
+                Any()::class.java.canonicalName
             )
+        )
 
         verifyNoInteractions(mockRecorder)
     }
@@ -521,12 +514,11 @@ internal class SessionReplayFeatureTest {
         // Then
         val expectedMessage = SessionReplayFeature.UNKNOWN_EVENT_TYPE_PROPERTY_VALUE
             .format(Locale.US, event[SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY])
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                expectedMessage
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            expectedMessage
+        )
 
         verifyNoInteractions(mockRecorder)
     }
@@ -543,12 +535,11 @@ internal class SessionReplayFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
+        )
 
         verifyNoInteractions(mockRecorder)
     }
@@ -569,12 +560,11 @@ internal class SessionReplayFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
+        )
 
         verifyNoInteractions(mockRecorder)
     }

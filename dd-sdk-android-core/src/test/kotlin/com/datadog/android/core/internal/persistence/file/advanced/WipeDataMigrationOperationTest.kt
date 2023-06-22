@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.file.advanced
 
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -71,7 +72,7 @@ internal class WipeDataMigrationOperationTest {
 
         // Then
         verifyNoInteractions(mockFileMover)
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
             WipeDataMigrationOperation.WARN_NULL_DIR

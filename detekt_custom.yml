@@ -492,12 +492,14 @@ datadog:
       - "java.util.concurrent.atomic.AtomicReference.compareAndSet(io.opentracing.Tracer, io.opentracing.Tracer)"
       - "java.util.concurrent.atomic.AtomicReference.compareAndSet(null, null)"
       - "java.util.concurrent.atomic.AtomicReference.constructor()"
+      - "java.util.concurrent.atomic.AtomicReference.constructor(android.app.Application.ActivityLifecycleCallbacks)"
       - "java.util.concurrent.atomic.AtomicReference.constructor(com.datadog.android.rum.internal.domain.RumContext)"
       - "java.util.concurrent.atomic.AtomicReference.constructor(com.datadog.android.v2.api.FeatureEventReceiver)"
       - "java.util.concurrent.atomic.AtomicReference.constructor(com.datadog.android.v2.api.SdkCore)"
       - "java.util.concurrent.atomic.AtomicReference.constructor(kotlin.String)"
       - "java.util.concurrent.atomic.AtomicReference.get()"
       - "java.util.concurrent.atomic.AtomicReference.set(null)"
+      - "java.util.concurrent.atomic.AtomicReference.set(android.app.Application.ActivityLifecycleCallbacks)"
       - "java.util.concurrent.atomic.AtomicReference.set(com.datadog.android.rum.internal.domain.RumContext)"
       - "java.util.concurrent.atomic.AtomicReference.set(com.datadog.android.v2.api.FeatureEventReceiver)"
       - "java.util.concurrent.atomic.AtomicReference.set(com.datadog.android.v2.api.SdkCore)"
@@ -850,6 +852,7 @@ datadog:
       - "kotlinx.coroutines.CoroutineScope.async(kotlin.coroutines.CoroutineContext, kotlinx.coroutines.CoroutineStart, kotlin.coroutines.SuspendFunction1)"
       - "kotlinx.coroutines.CoroutineScope.launch(kotlin.coroutines.CoroutineContext, kotlinx.coroutines.CoroutineStart, kotlin.coroutines.SuspendFunction1)"
       - "kotlinx.coroutines.flow.FlowCollector.emit(kotlin.Any?)"
+      - "kotlinx.coroutines.flow.Flow.collect(kotlinx.coroutines.flow.FlowCollector)"
       # endregion
       # region Gson
       - "com.google.gson.JsonArray.addAll(com.google.gson.JsonArray)"

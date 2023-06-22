@@ -104,7 +104,7 @@ class AndroidTracer internal constructor(
                         sdkCore.internalLogger.log(
                             InternalLogger.Level.ERROR,
                             InternalLogger.Target.USER,
-                            DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
+                            { DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE }
                         )
                     }
                     service
@@ -138,7 +138,7 @@ class AndroidTracer internal constructor(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    TRACING_NOT_ENABLED_ERROR_MESSAGE
+                    { TRACING_NOT_ENABLED_ERROR_MESSAGE }
                 )
             }
 
@@ -146,7 +146,7 @@ class AndroidTracer internal constructor(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    RUM_NOT_ENABLED_ERROR_MESSAGE
+                    { RUM_NOT_ENABLED_ERROR_MESSAGE }
                 )
                 bundleWithRumEnabled = false
             }

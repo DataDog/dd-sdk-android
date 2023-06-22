@@ -50,7 +50,7 @@ internal class JankStatsActivityLifecycleListener(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                "Unable to attach JankStats to the current window.",
+                { "Unable to attach JankStats to the current window." },
                 e
             )
         }

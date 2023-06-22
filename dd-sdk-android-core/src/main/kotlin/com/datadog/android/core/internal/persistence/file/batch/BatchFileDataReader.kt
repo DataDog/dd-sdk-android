@@ -103,7 +103,7 @@ internal class BatchFileDataReader(
             internalLogger.log(
                 level = InternalLogger.Level.WARN,
                 target = InternalLogger.Target.MAINTAINER,
-                WARNING_UNKNOWN_BATCH_ID.format(Locale.US, fileName)
+                { WARNING_UNKNOWN_BATCH_ID.format(Locale.US, fileName) }
             )
         }
     }
@@ -131,7 +131,7 @@ internal class BatchFileDataReader(
             internalLogger.log(
                 level = InternalLogger.Level.WARN,
                 target = InternalLogger.Target.MAINTAINER,
-                WARNING_DELETE_FAILED.format(Locale.US, file.path)
+                { WARNING_DELETE_FAILED.format(Locale.US, file.path) }
             )
         }
     }

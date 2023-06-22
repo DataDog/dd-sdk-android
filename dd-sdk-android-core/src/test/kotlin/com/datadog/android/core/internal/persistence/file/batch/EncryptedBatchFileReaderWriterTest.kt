@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.file.batch
 
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -121,8 +122,7 @@ internal class EncryptedBatchFileReaderWriterTest {
 
         // Then
         assertThat(result).isFalse()
-
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             EncryptedBatchReaderWriter.BAD_ENCRYPTION_RESULT_MESSAGE

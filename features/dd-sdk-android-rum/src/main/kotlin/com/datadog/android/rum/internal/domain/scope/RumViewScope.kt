@@ -270,7 +270,7 @@ internal open class RumViewScope(
                     sdkCore.internalLogger.log(
                         InternalLogger.Level.DEBUG,
                         InternalLogger.Target.MAINTAINER,
-                        RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE
+                        { RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE }
                     )
                 }
             }
@@ -309,7 +309,7 @@ internal open class RumViewScope(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    ACTION_DROPPED_WARNING.format(Locale.US, event.type, event.name)
+                    { ACTION_DROPPED_WARNING.format(Locale.US, event.type, event.name) }
                 )
                 return
             }
@@ -549,7 +549,7 @@ internal open class RumViewScope(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.DEBUG,
                     InternalLogger.Target.MAINTAINER,
-                    RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE
+                    { RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE }
                 )
             }
         }
@@ -787,7 +787,7 @@ internal open class RumViewScope(
                     InternalLogger.Target.USER,
                     InternalLogger.Target.TELEMETRY
                 ),
-                NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, name)
+                { NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, name) }
             )
             1
         } else {

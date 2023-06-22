@@ -36,19 +36,21 @@ class HostsSanitizer {
                     unboundInternalLogger.log(
                         InternalLogger.Level.WARN,
                         InternalLogger.Target.USER,
-                        WARNING_USING_URL.format(
-                            Locale.US,
-                            it,
-                            feature,
-                            parsedUrl.host
-                        )
+                        {
+                            WARNING_USING_URL.format(
+                                Locale.US,
+                                it,
+                                feature,
+                                parsedUrl.host
+                            )
+                        }
                     )
                     parsedUrl.host
                 } catch (e: MalformedURLException) {
                     unboundInternalLogger.log(
                         InternalLogger.Level.ERROR,
                         InternalLogger.Target.USER,
-                        ERROR_MALFORMED_URL.format(Locale.US, it, feature),
+                        { ERROR_MALFORMED_URL.format(Locale.US, it, feature) },
                         e
                     )
                     null
@@ -62,7 +64,7 @@ class HostsSanitizer {
                 unboundInternalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    ERROR_MALFORMED_HOST_IP_ADDRESS.format(Locale.US, it, feature)
+                    { ERROR_MALFORMED_HOST_IP_ADDRESS.format(Locale.US, it, feature) }
                 )
                 null
             }

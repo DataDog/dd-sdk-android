@@ -192,7 +192,7 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.MAINTAINER,
-                    "Trying to shut down Kronos when it is already not running",
+                    { "Trying to shut down Kronos when it is already not running" },
                     ise
                 )
             }
@@ -281,7 +281,7 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
                     internalLogger.log(
                         InternalLogger.Level.ERROR,
                         InternalLogger.Target.MAINTAINER,
-                        "Unable to launch a synchronize local time with an NTP server.",
+                        { "Unable to launch a synchronize local time with an NTP server." },
                         ise
                     )
                 }
@@ -332,7 +332,7 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                "Unable to read your application's version name",
+                { "Unable to read your application's version name" },
                 e
             )
             null
@@ -483,7 +483,7 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.MAINTAINER,
-                    "Thread was unable to set its own interrupted state",
+                    { "Thread was unable to set its own interrupted state" },
                     se
                 )
             }

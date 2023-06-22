@@ -44,7 +44,7 @@ internal class NdkCrashReportsFeature(private val sdkCore: FeatureSdkCore) :
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                "Unable to create NDK Crash Report folder $ndkCrashesDirs",
+                { "Unable to create NDK Crash Report folder $ndkCrashesDirs" },
                 e
             )
             return
@@ -101,7 +101,7 @@ internal class NdkCrashReportsFeature(private val sdkCore: FeatureSdkCore) :
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                ERROR_LOADING_NATIVE_MESSAGE,
+                { ERROR_LOADING_NATIVE_MESSAGE },
                 exception
             )
         }

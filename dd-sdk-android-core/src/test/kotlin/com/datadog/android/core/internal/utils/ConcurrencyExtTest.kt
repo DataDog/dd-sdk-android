@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.utils
 
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -76,7 +77,7 @@ internal class ConcurrencyExtTest {
 
         // Then
         verify(service).execute(runnable)
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             "Unable to schedule $name task on the executor",
@@ -123,7 +124,7 @@ internal class ConcurrencyExtTest {
         // Then
         assertThat(result).isNull()
         verify(service).schedule(runnable, delay, unit)
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             "Unable to schedule $name task on the executor",
@@ -166,7 +167,7 @@ internal class ConcurrencyExtTest {
         // Then
         assertThat(result).isNull()
         verify(service).submit(runnable)
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             "Unable to schedule $name task on the executor",

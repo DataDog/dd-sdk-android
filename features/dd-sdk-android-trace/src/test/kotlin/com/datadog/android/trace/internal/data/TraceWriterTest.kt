@@ -10,6 +10,7 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
+import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
@@ -255,13 +256,12 @@ internal class TraceWriterTest {
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
 
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                TraceWriter.ERROR_SERIALIZING.format(Locale.US, SpanEvent::class.java.simpleName),
-                fakeThrowable
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            TraceWriter.ERROR_SERIALIZING.format(Locale.US, SpanEvent::class.java.simpleName),
+            fakeThrowable
+        )
 
         ddSpans.forEach {
             it.finish()

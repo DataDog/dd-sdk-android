@@ -60,28 +60,28 @@ internal class WebViewLogEventConsumer(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                JSON_PARSING_ERROR_MESSAGE,
+                { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
         } catch (e: IllegalStateException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                JSON_PARSING_ERROR_MESSAGE,
+                { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
         } catch (e: NumberFormatException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                JSON_PARSING_ERROR_MESSAGE,
+                { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
         } catch (e: UnsupportedOperationException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                JSON_PARSING_ERROR_MESSAGE,
+                { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
         }
@@ -97,21 +97,21 @@ internal class WebViewLogEventConsumer(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                JSON_PARSING_ERROR_MESSAGE,
+                { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
         } catch (e: IllegalStateException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                JSON_PARSING_ERROR_MESSAGE,
+                { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
         } catch (e: UnsupportedOperationException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                JSON_PARSING_ERROR_MESSAGE,
+                { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
         }

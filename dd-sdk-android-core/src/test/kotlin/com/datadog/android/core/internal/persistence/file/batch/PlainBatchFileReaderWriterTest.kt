@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.file.batch
 
 import com.datadog.android.core.internal.persistence.file.EventMeta
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import com.google.gson.JsonParseException
 import fr.xgouchet.elmyr.Forge
@@ -26,8 +27,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.isA
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.io.File
@@ -182,13 +183,17 @@ internal class PlainBatchFileReaderWriterTest {
         // Then
         assertThat(result).isFalse()
         assertThat(file).doesNotExist()
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-            eq(PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path)),
-            any(),
-            eq(false)
-        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
+                capture(),
+                any(),
+                eq(false)
+            )
+            assertThat(firstValue())
+                .isEqualTo(PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path))
+        }
     }
 
     @Test
@@ -210,13 +215,17 @@ internal class PlainBatchFileReaderWriterTest {
 
         // Then
         assertThat(result).isFalse()
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-            eq(PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path)),
-            any(),
-            eq(false)
-        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
+                capture(),
+                any(),
+                eq(false)
+            )
+            assertThat(firstValue())
+                .isEqualTo(PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path))
+        }
     }
 
     // endregion
@@ -237,13 +246,18 @@ internal class PlainBatchFileReaderWriterTest {
         // Then
         assertThat(result).isEmpty()
         assertThat(file).doesNotExist()
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-            eq(PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path)),
-            any(),
-            eq(false)
-        )
+
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
+                capture(),
+                any(),
+                eq(false)
+            )
+            assertThat(firstValue())
+                .isEqualTo(PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path))
+        }
     }
 
     @Test
@@ -259,13 +273,17 @@ internal class PlainBatchFileReaderWriterTest {
 
         // Then
         assertThat(result).isEmpty()
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-            eq(PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path)),
-            any(),
-            eq(false)
-        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
+                capture(),
+                any(),
+                eq(false)
+            )
+            assertThat(firstValue())
+                .isEqualTo(PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path))
+        }
     }
 
     @Test
@@ -282,7 +300,7 @@ internal class PlainBatchFileReaderWriterTest {
 
         // Then
         assertThat(result).isEmpty()
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             PlainBatchFileReaderWriter.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
@@ -360,14 +378,17 @@ internal class PlainBatchFileReaderWriterTest {
 
         // Then
         assertThat(result).containsExactlyElementsOf(events.minus(events[malformedMetaIndex]))
-
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.MAINTAINER),
-            eq(PlainBatchFileReaderWriter.ERROR_FAILED_META_PARSE),
-            isA<JsonParseException>(),
-            eq(false)
-        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.MAINTAINER),
+                capture(),
+                any(),
+                eq(false)
+            )
+            assertThat(firstValue())
+                .isEqualTo(PlainBatchFileReaderWriter.ERROR_FAILED_META_PARSE)
+        }
     }
 
     @Test
@@ -419,7 +440,7 @@ internal class PlainBatchFileReaderWriterTest {
         // Then
         assertThat(result).containsExactlyElementsOf(events.take(badEventIndex))
 
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             PlainBatchFileReaderWriter.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)

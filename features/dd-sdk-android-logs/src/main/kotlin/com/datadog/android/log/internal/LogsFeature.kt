@@ -87,7 +87,7 @@ internal class LogsFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName)
+                { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
             )
             return
         }
@@ -102,7 +102,7 @@ internal class LogsFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event[TYPE_EVENT_KEY])
+                { UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event[TYPE_EVENT_KEY]) }
             )
         }
     }
@@ -138,7 +138,7 @@ internal class LogsFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING
+                { JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING }
             )
             return
         }
@@ -176,7 +176,7 @@ internal class LogsFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                "Log event write operation wait was interrupted.",
+                { "Log event write operation wait was interrupted." },
                 e
             )
         }
@@ -198,7 +198,7 @@ internal class LogsFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING
+                { NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING }
             )
             return
         }
@@ -240,7 +240,7 @@ internal class LogsFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                SPAN_LOG_EVENT_MISSING_MANDATORY_FIELDS_WARNING
+                { SPAN_LOG_EVENT_MISSING_MANDATORY_FIELDS_WARNING }
             )
             return
         }

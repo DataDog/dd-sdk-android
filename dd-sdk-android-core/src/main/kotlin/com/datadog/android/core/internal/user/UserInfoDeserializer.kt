@@ -23,7 +23,7 @@ internal class UserInfoDeserializer(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
+                { DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model) },
                 e
             )
             null

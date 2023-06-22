@@ -51,26 +51,37 @@ internal class SdkInternalLogger(
     override fun log(
         level: InternalLogger.Level,
         target: InternalLogger.Target,
-        message: String,
+        messageBuilder: () -> String,
         throwable: Throwable?,
         onlyOnce: Boolean
     ) {
         when (target) {
-            InternalLogger.Target.USER -> logToUser(level, message, throwable, onlyOnce)
-            InternalLogger.Target.MAINTAINER -> logToMaintainer(level, message, throwable, onlyOnce)
-            InternalLogger.Target.TELEMETRY -> logToTelemetry(level, message, throwable, onlyOnce)
+            InternalLogger.Target.USER -> logToUser(level, messageBuilder, throwable, onlyOnce)
+            InternalLogger.Target.MAINTAINER -> logToMaintainer(
+                level,
+                messageBuilder,
+                throwable,
+                onlyOnce
+            )
+
+            InternalLogger.Target.TELEMETRY -> logToTelemetry(
+                level,
+                messageBuilder,
+                throwable,
+                onlyOnce
+            )
         }
     }
 
     override fun log(
         level: InternalLogger.Level,
         targets: List<InternalLogger.Target>,
-        message: String,
+        messageBuilder: () -> String,
         throwable: Throwable?,
         onlyOnce: Boolean
     ) {
         targets.forEach {
-            log(level, it, message, throwable)
+            log(level, it, messageBuilder, throwable)
         }
     }
 
@@ -80,14 +91,14 @@ internal class SdkInternalLogger(
 
     private fun logToUser(
         level: InternalLogger.Level,
-        message: String,
+        messageBuilder: () -> String,
         error: Throwable?,
         onlyOnce: Boolean
     ) {
         sendToLogHandler(
             userLogger,
             level,
-            message,
+            messageBuilder,
             error,
             onlyOnce,
             onlyOnceUserMessages
@@ -96,7 +107,7 @@ internal class SdkInternalLogger(
 
     private fun logToMaintainer(
         level: InternalLogger.Level,
-        message: String,
+        messageBuilder: () -> String,
         error: Throwable?,
         onlyOnce: Boolean
     ) {
@@ -104,7 +115,7 @@ internal class SdkInternalLogger(
             sendToLogHandler(
                 it,
                 level,
-                message,
+                messageBuilder,
                 error,
                 onlyOnce,
                 onlyOnceMaintainerMessages
@@ -115,11 +126,13 @@ internal class SdkInternalLogger(
     private fun sendToLogHandler(
         handler: LogcatLogHandler,
         level: InternalLogger.Level,
-        message: String,
+        messageBuilder: () -> String,
         error: Throwable?,
         onlyOnce: Boolean,
         knownSingleMessages: MutableSet<String>
     ) {
+        if (!handler.canLog(level.toLogLevel())) return
+        val message = messageBuilder().withSdkName()
         if (onlyOnce) {
             if (knownSingleMessages.contains(message)) {
                 // drop the message… wait should we log that we dropped it?
@@ -128,16 +141,17 @@ internal class SdkInternalLogger(
                 knownSingleMessages.add(message)
             }
         }
-        handler.log(level.toLogLevel(), message.withSdkName(), error)
+        handler.log(level.toLogLevel(), message, error)
     }
 
     private fun logToTelemetry(
         level: InternalLogger.Level,
-        message: String,
+        messageBuilder: () -> String,
         error: Throwable?,
         onlyOnce: Boolean
     ) {
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
+        val message = messageBuilder()
         if (onlyOnce) {
             if (onlyOnceTelemetryMessages.contains(message)) {
                 // drop the message… wait should we log that we dropped it?

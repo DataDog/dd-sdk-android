@@ -113,8 +113,8 @@ internal class DatadogNdkCrashHandler(
         } catch (e: SecurityException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_READ_NDK_DIR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { ERROR_READ_NDK_DIR },
                 e
             )
         } finally {
@@ -233,7 +233,7 @@ internal class DatadogNdkCrashHandler(
                 internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.MAINTAINER,
-                    WARN_CANNOT_READ_VIEW_INFO_DATA,
+                    { WARN_CANNOT_READ_VIEW_INFO_DATA },
                     e
                 )
                 Triple(null, null, null)
@@ -282,7 +282,7 @@ internal class DatadogNdkCrashHandler(
             internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                INFO_RUM_FEATURE_NOT_REGISTERED
+                { INFO_RUM_FEATURE_NOT_REGISTERED }
             )
         }
     }
@@ -314,7 +314,7 @@ internal class DatadogNdkCrashHandler(
             internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                INFO_LOGS_FEATURE_NOT_REGISTERED
+                { INFO_LOGS_FEATURE_NOT_REGISTERED }
             )
         }
     }
@@ -328,12 +328,14 @@ internal class DatadogNdkCrashHandler(
             } catch (e: Throwable) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
-                    targets = listOf(
+                    listOf(
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),
-                    "Unable to clear the NDK crash report file:" +
-                        " ${ndkCrashDataDirectory.absolutePath}",
+                    {
+                        "Unable to clear the NDK crash report file:" +
+                            " ${ndkCrashDataDirectory.absolutePath}"
+                    },
                     e
                 )
             }

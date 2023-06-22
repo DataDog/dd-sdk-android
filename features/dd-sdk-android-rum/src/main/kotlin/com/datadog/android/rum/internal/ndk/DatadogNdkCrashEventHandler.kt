@@ -33,7 +33,7 @@ internal class DatadogNdkCrashEventHandler(
             internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                INFO_RUM_FEATURE_NOT_REGISTERED
+                { INFO_RUM_FEATURE_NOT_REGISTERED }
             )
             return
         }
@@ -52,7 +52,7 @@ internal class DatadogNdkCrashEventHandler(
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS
+                { NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS }
             )
             return
         }

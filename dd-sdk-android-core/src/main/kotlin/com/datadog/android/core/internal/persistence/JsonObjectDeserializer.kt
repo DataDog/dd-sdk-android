@@ -21,7 +21,7 @@ internal class JsonObjectDeserializer(private val internalLogger: InternalLogger
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
+                { DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model) },
                 jpe
             )
             null
@@ -29,7 +29,7 @@ internal class JsonObjectDeserializer(private val internalLogger: InternalLogger
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
+                { DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model) },
                 ise
             )
             null

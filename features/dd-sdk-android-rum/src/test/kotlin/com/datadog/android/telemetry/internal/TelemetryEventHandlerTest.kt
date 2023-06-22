@@ -16,6 +16,7 @@ import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.telemetry.assertj.TelemetryConfigurationEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.assertj.TelemetryDebugEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.assertj.TelemetryErrorEventAssert.Companion.assertThat
@@ -474,7 +475,7 @@ internal class TelemetryEventHandlerTest {
         testedTelemetryHandler.handleEvent(anotherEvent, mockWriter)
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.MAINTAINER,
             TelemetryEventHandler.ALREADY_SEEN_EVENT_MESSAGE.format(
@@ -493,12 +494,15 @@ internal class TelemetryEventHandlerTest {
                 is TelemetryDebugEvent -> {
                     assertDebugEventMatchesRawEvent(capturedValue, rawEvent, fakeRumContext)
                 }
+
                 is TelemetryErrorEvent -> {
                     assertErrorEventMatchesRawEvent(capturedValue, rawEvent, fakeRumContext)
                 }
+
                 is TelemetryConfigurationEvent -> {
                     assertConfigEventMatchesRawEvent(capturedValue, rawEvent, fakeRumContext)
                 }
+
                 else -> throw IllegalArgumentException(
                     "Unexpected type=${lastValue::class.jvmName} of the captured value."
                 )
@@ -525,10 +529,11 @@ internal class TelemetryEventHandlerTest {
         }
 
         // Then
-        verify(mockInternalLogger, times(extraNumber)).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.MAINTAINER,
-            TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE
+            TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE,
+            mode = times(extraNumber)
         )
 
         argumentCaptor<Any> {
@@ -543,6 +548,7 @@ internal class TelemetryEventHandlerTest {
                             fakeRumContext
                         )
                     }
+
                     is TelemetryErrorEvent -> {
                         assertErrorEventMatchesRawEvent(
                             capturedValue,
@@ -550,6 +556,7 @@ internal class TelemetryEventHandlerTest {
                             fakeRumContext
                         )
                     }
+
                     is TelemetryConfigurationEvent -> {
                         assertConfigEventMatchesRawEvent(
                             capturedValue,
@@ -557,6 +564,7 @@ internal class TelemetryEventHandlerTest {
                             fakeRumContext
                         )
                     }
+
                     else -> throw IllegalArgumentException(
                         "Unexpected type=${lastValue::class.jvmName} of the captured value."
                     )
@@ -595,10 +603,11 @@ internal class TelemetryEventHandlerTest {
         }
 
         // Then
-        verify(mockInternalLogger, times(extraNumber)).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.MAINTAINER,
-            TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE
+            TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE,
+            mode = times(extraNumber)
         )
 
         argumentCaptor<Any> {
@@ -613,6 +622,7 @@ internal class TelemetryEventHandlerTest {
                             fakeRumContext
                         )
                     }
+
                     is TelemetryErrorEvent -> {
                         assertErrorEventMatchesRawEvent(
                             capturedValue,
@@ -620,6 +630,7 @@ internal class TelemetryEventHandlerTest {
                             fakeRumContext
                         )
                     }
+
                     is TelemetryConfigurationEvent -> {
                         assertConfigEventMatchesRawEvent(
                             capturedValue,
@@ -627,6 +638,7 @@ internal class TelemetryEventHandlerTest {
                             fakeRumContext
                         )
                     }
+
                     else -> throw IllegalArgumentException(
                         "Unexpected type=${lastValue::class.jvmName} of the captured value."
                     )

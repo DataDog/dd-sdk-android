@@ -17,6 +17,7 @@ import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
@@ -538,7 +539,7 @@ internal class UploadWorkerTest {
         val result = testedWorker.doWork()
 
         // Then
-        verify(logger.mockInternalLogger).log(
+        logger.mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             UploadWorker.MESSAGE_NOT_INITIALIZED

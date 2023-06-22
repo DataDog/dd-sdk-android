@@ -35,6 +35,7 @@ import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.rum.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.rum.utils.config.MainLooperTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.InternalSdkCore
@@ -154,12 +155,11 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.sampleRate).isEqualTo(RumFeature.ALL_IN_SAMPLE_RATE)
-        verify(mockSdkCore.internalLogger)
-            .log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                RumFeature.DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE
-            )
+        mockSdkCore.internalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            RumFeature.DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE
+        )
     }
 
     @Test
@@ -720,15 +720,14 @@ internal class RumFeatureTest {
         testedFeature.onReceive(Any())
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                RumFeature.UNSUPPORTED_EVENT_TYPE.format(
-                    Locale.US,
-                    Any()::class.java.canonicalName
-                )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            RumFeature.UNSUPPORTED_EVENT_TYPE.format(
+                Locale.US,
+                Any()::class.java.canonicalName
             )
+        )
 
         verifyNoInteractions(mockRumMonitor)
     }
@@ -746,15 +745,14 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                RumFeature.UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(
-                    Locale.US,
-                    event["type"]
-                )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            RumFeature.UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(
+                Locale.US,
+                event["type"]
             )
+        )
 
         verifyNoInteractions(mockRumMonitor)
     }
@@ -781,12 +779,11 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                RumFeature.JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            RumFeature.JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS
+        )
 
         verifyNoInteractions(mockRumMonitor)
     }
@@ -904,12 +901,11 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                RumFeature.LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            RumFeature.LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS
+        )
 
         verifyNoInteractions(mockRumMonitor)
     }
@@ -962,12 +958,11 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                RumFeature.LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            RumFeature.LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS
+        )
 
         verifyNoInteractions(mockRumMonitor)
     }
@@ -1023,12 +1018,11 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
+        )
 
         verifyNoInteractions(mockRumMonitor)
     }
@@ -1096,12 +1090,11 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
+        )
 
         verifyNoInteractions(mockRumMonitor)
     }

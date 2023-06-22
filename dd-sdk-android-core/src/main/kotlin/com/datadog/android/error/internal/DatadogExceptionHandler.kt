@@ -45,7 +45,7 @@ internal class DatadogExceptionHandler(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                MISSING_LOGS_FEATURE_INFO
+                { MISSING_LOGS_FEATURE_INFO }
             )
         }
 
@@ -63,7 +63,7 @@ internal class DatadogExceptionHandler(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                MISSING_RUM_FEATURE_INFO
+                { MISSING_RUM_FEATURE_INFO }
             )
         }
 
@@ -77,7 +77,7 @@ internal class DatadogExceptionHandler(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    EXECUTOR_NOT_IDLED_WARNING_MESSAGE
+                    { EXECUTOR_NOT_IDLED_WARNING_MESSAGE }
                 )
             }
         }

@@ -216,7 +216,7 @@ internal class GesturesListener(
             internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                MSG_NO_TARGET_TAP
+                { MSG_NO_TARGET_TAP }
             )
         }
         return target
@@ -248,7 +248,7 @@ internal class GesturesListener(
             internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                MSG_NO_TARGET_SCROLL_SWIPE
+                { MSG_NO_TARGET_SCROLL_SWIPE }
             )
         }
 

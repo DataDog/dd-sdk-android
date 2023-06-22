@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.time
 
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
@@ -15,7 +16,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 
 @Extensions(
     ExtendWith(ForgeExtension::class)
@@ -36,7 +36,7 @@ internal class LoggingSyncListenerTest {
         testableListener.onError(fakeHost, throwable)
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
             "Kronos onError @host:$fakeHost",

@@ -7,6 +7,7 @@
 package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
@@ -25,7 +26,6 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.util.UUID
 
@@ -160,7 +160,7 @@ internal class WebViewRumEventContextProviderTest {
         testedContextProvider.getRumContext(fakeDatadogContext)
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
@@ -194,7 +194,7 @@ internal class WebViewRumEventContextProviderTest {
         testedContextProvider.getRumContext(fakeDatadogContext)
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
@@ -228,7 +228,7 @@ internal class WebViewRumEventContextProviderTest {
         testedContextProvider.getRumContext(fakeDatadogContext)
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
@@ -262,7 +262,7 @@ internal class WebViewRumEventContextProviderTest {
         testedContextProvider.getRumContext(fakeDatadogContext)
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
@@ -299,7 +299,7 @@ internal class WebViewRumEventContextProviderTest {
         }
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
@@ -336,7 +336,7 @@ internal class WebViewRumEventContextProviderTest {
         }
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
@@ -373,7 +373,7 @@ internal class WebViewRumEventContextProviderTest {
         }
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
@@ -410,7 +410,7 @@ internal class WebViewRumEventContextProviderTest {
         }
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE

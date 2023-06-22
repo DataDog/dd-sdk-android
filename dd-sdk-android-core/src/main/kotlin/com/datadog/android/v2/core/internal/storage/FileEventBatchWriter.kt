@@ -57,11 +57,13 @@ internal class FileEventBatchWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                ERROR_LARGE_DATA.format(
-                    Locale.US,
-                    eventSize,
-                    filePersistenceConfig.maxItemSize
-                )
+                {
+                    ERROR_LARGE_DATA.format(
+                        Locale.US,
+                        eventSize,
+                        filePersistenceConfig.maxItemSize
+                    )
+                }
             )
             return false
         }
@@ -79,10 +81,12 @@ internal class FileEventBatchWriter(
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                WARNING_METADATA_WRITE_FAILED.format(
-                    Locale.US,
-                    metadataFile.path
-                )
+                {
+                    WARNING_METADATA_WRITE_FAILED.format(
+                        Locale.US,
+                        metadataFile.path
+                    )
+                }
             )
         }
     }

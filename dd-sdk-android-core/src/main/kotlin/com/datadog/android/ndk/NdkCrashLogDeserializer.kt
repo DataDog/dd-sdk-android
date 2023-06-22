@@ -22,7 +22,7 @@ internal class NdkCrashLogDeserializer(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
+                { DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model) },
                 e
             )
             null
@@ -30,7 +30,7 @@ internal class NdkCrashLogDeserializer(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
+                { DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model) },
                 e
             )
             null
