@@ -28,14 +28,24 @@ internal class NdkCrashReportsFeature(private val sdkCore: FeatureSdkCore) :
     override val name: String = "ndk-crash-reporting"
 
     // region Feature
+    @Suppress("ReturnCount")
     override fun onInitialize(appContext: Context) {
         loadNativeLibrary(sdkCore.internalLogger)
         if (!nativeLibraryLoaded) {
             return
         }
         val internalSdkCore = sdkCore as InternalSdkCore
+        val rootStorageDir = internalSdkCore.rootStorageDir
+        if (rootStorageDir == null) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { NO_SDK_ROOT_DIR_MESSAGE }
+            )
+            return
+        }
         val ndkCrashesDirs = File(
-            internalSdkCore.rootStorageDir,
+            rootStorageDir,
             NDK_CRASH_REPORTS_FOLDER
         )
         try {
@@ -122,6 +132,8 @@ internal class NdkCrashReportsFeature(private val sdkCore: FeatureSdkCore) :
         internal const val NDK_CRASH_REPORTS_FOLDER = "ndk_crash_reports_v2"
         private const val ERROR_LOADING_NATIVE_MESSAGE =
             "We could not load the native library for NDK crash reporting."
+        internal const val NO_SDK_ROOT_DIR_MESSAGE =
+            "Cannot get a directory for SDK data storage. Please make sure that SDK is initialized."
         internal const val TRACKING_CONSENT_PENDING = 0
         internal const val TRACKING_CONSENT_GRANTED = 1
         internal const val TRACKING_CONSENT_NOT_GRANTED = 2

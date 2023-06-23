@@ -521,7 +521,6 @@ public final class com/datadog/android/v2/api/RequestFactory$Companion {
 public abstract interface class com/datadog/android/v2/api/SdkCore {
 	public abstract fun addUserProperties (Ljava/util/Map;)V
 	public abstract fun clearAllData ()V
-	public abstract fun getFirstPartyHostResolver ()Lcom/datadog/android/core/internal/net/FirstPartyHostHeaderTypeResolver;
 	public abstract fun getName ()Ljava/lang/String;
 	public abstract fun getService ()Ljava/lang/String;
 	public abstract fun getTime ()Lcom/datadog/android/v2/api/context/TimeInfo;
@@ -720,6 +719,7 @@ public final class com/datadog/android/v2/api/context/UserInfo {
 public abstract interface class com/datadog/android/v2/core/InternalSdkCore : com/datadog/android/v2/api/FeatureSdkCore {
 	public abstract fun getAllFeatures ()Ljava/util/List;
 	public abstract fun getDatadogContext ()Lcom/datadog/android/v2/api/context/DatadogContext;
+	public abstract fun getFirstPartyHostResolver ()Lcom/datadog/android/core/internal/net/FirstPartyHostHeaderTypeResolver;
 	public abstract fun getNetworkInfo ()Lcom/datadog/android/v2/api/context/NetworkInfo;
 	public abstract fun getPersistenceExecutorService ()Ljava/util/concurrent/ExecutorService;
 	public abstract fun getRootStorageDir ()Ljava/io/File;

@@ -10,6 +10,8 @@ import android.os.Build
 
 /**
  * Check [BuildSdkVersionProvider] docs.
+ *
+ * FOR INTERNAL USAGE ONLY.
  */
 class DefaultBuildSdkVersionProvider : BuildSdkVersionProvider {
 

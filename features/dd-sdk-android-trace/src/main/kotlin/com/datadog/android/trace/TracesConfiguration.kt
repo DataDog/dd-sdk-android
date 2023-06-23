@@ -6,8 +6,8 @@
 
 package com.datadog.android.trace
 
-import com.datadog.android.trace.internal.domain.event.NoOpSpanEventMapper
-import com.datadog.android.trace.internal.domain.event.SpanEventMapper
+import com.datadog.android.trace.event.NoOpSpanEventMapper
+import com.datadog.android.trace.event.SpanEventMapper
 
 /**
  * Describes configuration to be used for the Traces feature.

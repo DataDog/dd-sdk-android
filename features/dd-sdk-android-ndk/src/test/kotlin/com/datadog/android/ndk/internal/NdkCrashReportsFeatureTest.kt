@@ -8,6 +8,7 @@ package com.datadog.android.ndk.internal
 
 import android.content.Context
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.setFieldValue
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -22,8 +23,12 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
@@ -114,5 +119,41 @@ class NdkCrashReportsFeatureTest {
         // THEN
         val ndkCrashDirectory = File(tempDir, NdkCrashReportsFeature.NDK_CRASH_REPORTS_FOLDER)
         assertThat(ndkCrashDirectory.exists()).isFalse()
+    }
+
+    @ParameterizedTest
+    @EnumSource(TrackingConsent::class)
+    fun `M do nothing  W register { no root storage dir }`(
+        trackingConsent: TrackingConsent
+    ) {
+        // GIVEN
+        val mockContext: Context = mock()
+        whenever(mockSdkCore.rootStorageDir) doReturn null
+        whenever(mockSdkCore.trackingConsent) doReturn trackingConsent
+        val mockInternalLogger = mock<InternalLogger>()
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        testedFeature.setFieldValue("nativeLibraryLoaded", true)
+
+        // WHEN
+        try {
+            testedFeature.onInitialize(mockContext)
+        } catch (e: UnsatisfiedLinkError) {
+            // Do nothing. Just to avoid the NDK linkage error.
+        }
+
+        // THEN
+        val ndkCrashDirectory = File(tempDir, NdkCrashReportsFeature.NDK_CRASH_REPORTS_FOLDER)
+        assertThat(ndkCrashDirectory.exists()).isFalse()
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger)
+                .log(
+                    eq(InternalLogger.Level.WARN),
+                    eq(InternalLogger.Target.USER),
+                    capture(),
+                    isNull(),
+                    eq(false)
+                )
+            assertThat(lastValue()).isEqualTo(NdkCrashReportsFeature.NO_SDK_ROOT_DIR_MESSAGE)
+        }
     }
 }

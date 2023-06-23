@@ -19,6 +19,7 @@ import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.opentracing.DDTracer
 import com.datadog.trace.api.DDTags
 import com.datadog.trace.api.interceptor.MutableSpan
@@ -84,7 +85,7 @@ internal constructor(
     )
 
     internal val sdkCoreReference = SdkReference(sdkInstanceName) {
-        onSdkInstanceReady(it)
+        onSdkInstanceReady(it as InternalSdkCore)
     }
 
     /**
@@ -187,7 +188,7 @@ internal constructor(
 
     /** @inheritdoc */
     override fun intercept(chain: Interceptor.Chain): Response {
-        val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
+        val sdkCore = sdkCoreReference.get()
         if (sdkCore == null) {
             val prefix = if (sdkInstanceName == null) {
                 "Default SDK instance"
@@ -205,13 +206,14 @@ internal constructor(
             @Suppress("UnsafeThirdPartyFunctionCall") // we are in method which allows throwing IOException
             return chain.proceed(chain.request())
         } else {
-            val tracer = resolveTracer(sdkCore)
+            val internalSdkCore = sdkCore as InternalSdkCore
+            val tracer = resolveTracer(internalSdkCore)
             val request = chain.request()
 
-            return if (tracer == null || !isRequestTraceable(sdkCore, request)) {
-                intercept(sdkCore, chain, request)
+            return if (tracer == null || !isRequestTraceable(internalSdkCore, request)) {
+                intercept(internalSdkCore, chain, request)
             } else {
-                interceptAndTrace(sdkCore, chain, request, tracer)
+                interceptAndTrace(internalSdkCore, chain, request, tracer)
             }
         }
     }
@@ -253,11 +255,11 @@ internal constructor(
 
     // region Internal
 
-    internal open fun onSdkInstanceReady(sdkCore: SdkCore) {
+    internal open fun onSdkInstanceReady(sdkCore: InternalSdkCore) {
         if (localFirstPartyHostHeaderTypeResolver.isEmpty() &&
             sdkCore.firstPartyHostResolver.isEmpty()
         ) {
-            (sdkCore as FeatureSdkCore).internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { WARNING_TRACING_NO_HOSTS },
@@ -266,7 +268,7 @@ internal constructor(
         }
     }
 
-    private fun isRequestTraceable(sdkCore: SdkCore, request: Request): Boolean {
+    private fun isRequestTraceable(sdkCore: InternalSdkCore, request: Request): Boolean {
         val url = request.url()
         return sdkCore.firstPartyHostResolver.isFirstPartyUrl(url) ||
             localFirstPartyHostHeaderTypeResolver.isFirstPartyUrl(url)
@@ -274,7 +276,7 @@ internal constructor(
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
     private fun interceptAndTrace(
-        sdkCore: FeatureSdkCore,
+        sdkCore: InternalSdkCore,
         chain: Interceptor.Chain,
         request: Request,
         tracer: Tracer
@@ -321,7 +323,7 @@ internal constructor(
     }
 
     @Synchronized
-    private fun resolveTracer(sdkCore: FeatureSdkCore): Tracer? {
+    private fun resolveTracer(sdkCore: InternalSdkCore): Tracer? {
         val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         return if (tracingFeature == null) {
             sdkCore.internalLogger.log(
@@ -341,7 +343,7 @@ internal constructor(
         }
     }
 
-    private fun resolveLocalTracer(sdkCore: FeatureSdkCore): Tracer {
+    private fun resolveLocalTracer(sdkCore: InternalSdkCore): Tracer {
         // only register once
         if (localTracerReference.get() == null) {
             @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
@@ -492,7 +494,7 @@ internal constructor(
     }
 
     private fun updateRequest(
-        sdkCore: SdkCore,
+        sdkCore: InternalSdkCore,
         request: Request,
         tracer: Tracer,
         span: Span,

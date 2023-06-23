@@ -10,6 +10,8 @@ import android.os.Build
 
 /**
  * Wrapper around [Build.VERSION.SDK_INT] in order to simplify mocking in tests.
+ *
+ * FOR INTERNAL USAGE ONLY. THIS INTERFACE CONTENT MAY CHANGE WITHOUT NOTICE.
  */
 interface BuildSdkVersionProvider {
 

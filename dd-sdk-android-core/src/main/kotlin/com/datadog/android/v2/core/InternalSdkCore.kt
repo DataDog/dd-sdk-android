@@ -8,6 +8,7 @@ package com.datadog.android.v2.core
 
 import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.FeatureScope
@@ -38,7 +39,7 @@ interface InternalSdkCore : FeatureSdkCore {
      * Root folder for the hosting SDK instance.
      */
     @InternalApi
-    val rootStorageDir: File
+    val rootStorageDir: File?
 
     /**
      * Shows if core is running in developer mode (some settings are overwritten to simplify
@@ -46,6 +47,12 @@ interface InternalSdkCore : FeatureSdkCore {
      */
     @InternalApi
     val isDeveloperModeEnabled: Boolean
+
+    /**
+     * Returns an instance of [FirstPartyHostHeaderTypeResolver] associated with the current
+     * SDK instance.
+     */
+    val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver
 
     /**
      * Writes current RUM view event to the dedicated file for the needs of NDK crash reporting.

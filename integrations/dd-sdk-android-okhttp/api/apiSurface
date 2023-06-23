@@ -22,7 +22,7 @@ open class com.datadog.android.okhttp.DatadogInterceptor : com.datadog.android.o
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   override fun onRequestIntercepted(com.datadog.android.v2.api.FeatureSdkCore, okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   override fun canSendSpan(): Boolean
-  override fun onSdkInstanceReady(com.datadog.android.v2.api.SdkCore)
+  override fun onSdkInstanceReady(com.datadog.android.v2.core.InternalSdkCore)
 interface com.datadog.android.okhttp.trace.TracedRequestListener
   fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
 open class com.datadog.android.okhttp.trace.TracingInterceptor : okhttp3.Interceptor

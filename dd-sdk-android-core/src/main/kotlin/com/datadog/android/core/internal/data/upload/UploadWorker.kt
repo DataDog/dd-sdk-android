@@ -17,6 +17,7 @@ import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.InternalSdkCore
+import com.datadog.android.v2.core.NoOpInternalSdkCore
 import com.datadog.android.v2.core.internal.net.DataUploader
 import java.util.LinkedList
 import java.util.Queue
@@ -41,7 +42,7 @@ internal class UploadWorker(
         // have a chance to go.
         val instanceName = inputData.getString(DATADOG_INSTANCE_NAME)
         val sdkCore = Datadog.getInstance(instanceName) as? InternalSdkCore
-        if (sdkCore == null) {
+        if (sdkCore == null || sdkCore is NoOpInternalSdkCore) {
             unboundInternalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
