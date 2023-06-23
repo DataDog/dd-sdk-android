@@ -62,8 +62,8 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         /**
-         * Sets the sampling rate for Session Replay recorded Sessions. Please note that this
-         * sampling rate will be applied on top of the already sampled in RUM session.
+         * Sets the sample rate for Session Replay recorded Sessions. Please note that this
+         * sample rate will be applied on top of the already sampled in RUM session.
          *
          * @param sampleRate must be a value between 0 and 100. A value of 0
          * means no session will be recorded, 100 means all sessions will be recorded.
