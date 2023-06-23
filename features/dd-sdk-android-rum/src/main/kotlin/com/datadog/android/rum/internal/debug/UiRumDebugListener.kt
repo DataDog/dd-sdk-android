@@ -62,7 +62,7 @@ internal class UiRumDebugListener(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                CANNOT_FIND_CONTENT_VIEW_MESSAGE
+                { CANNOT_FIND_CONTENT_VIEW_MESSAGE }
             )
             return
         }

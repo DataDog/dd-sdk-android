@@ -28,7 +28,7 @@ internal class WipeDataMigrationOperation(
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                WARN_NULL_DIR
+                { WARN_NULL_DIR }
             )
         } else {
             retryWithDelay(MAX_RETRY, RETRY_DELAY_NS, internalLogger) {

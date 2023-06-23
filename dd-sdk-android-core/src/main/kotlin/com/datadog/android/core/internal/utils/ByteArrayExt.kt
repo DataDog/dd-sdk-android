@@ -109,14 +109,14 @@ internal fun ByteArray.copyTo(
         internalLogger.log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            "Cannot copy ByteArray, dest doesn't have enough space"
+            { "Cannot copy ByteArray, dest doesn't have enough space" }
         )
         false
     } else if (srcPos + length > size) {
         internalLogger.log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            "Cannot copy ByteArray, src doesn't have enough data"
+            { "Cannot copy ByteArray, src doesn't have enough data" }
         )
         false
     } else {

@@ -71,6 +71,12 @@ android {
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
     }
+    sourceSets.named("testDebug") {
+        java.srcDir("src/testDebug/kotlin")
+    }
+    sourceSets.named("testRelease") {
+        java.srcDir("src/testRelease/kotlin")
+    }
     sourceSets.named("androidTest") {
         java.srcDir("src/androidTest/kotlin")
     }
@@ -83,6 +89,9 @@ android {
         unitTests.apply {
             isReturnDefaultValues = true
         }
+    }
+    testFixtures {
+        enable = true
     }
 
     buildTypes {

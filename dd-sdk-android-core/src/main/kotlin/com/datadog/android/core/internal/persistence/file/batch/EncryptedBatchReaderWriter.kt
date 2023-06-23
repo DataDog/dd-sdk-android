@@ -29,7 +29,7 @@ internal class EncryptedBatchReaderWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                BAD_ENCRYPTION_RESULT_MESSAGE
+                { BAD_ENCRYPTION_RESULT_MESSAGE }
             )
             return false
         }

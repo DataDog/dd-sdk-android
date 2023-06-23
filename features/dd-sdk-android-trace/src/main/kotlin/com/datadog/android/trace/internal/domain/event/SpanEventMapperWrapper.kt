@@ -21,7 +21,7 @@ internal class SpanEventMapperWrapper(
             internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, event)
+                { NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, event) }
             )
             return null
         }

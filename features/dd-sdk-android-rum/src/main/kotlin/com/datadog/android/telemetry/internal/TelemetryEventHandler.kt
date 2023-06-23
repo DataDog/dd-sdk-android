@@ -112,7 +112,7 @@ internal class TelemetryEventHandler(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.MAINTAINER,
-                ALREADY_SEEN_EVENT_MESSAGE.format(Locale.US, eventIdentity)
+                { ALREADY_SEEN_EVENT_MESSAGE.format(Locale.US, eventIdentity) }
             )
             return false
         }
@@ -121,7 +121,7 @@ internal class TelemetryEventHandler(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.MAINTAINER,
-                MAX_EVENT_NUMBER_REACHED_MESSAGE
+                { MAX_EVENT_NUMBER_REACHED_MESSAGE }
             )
             return false
         }
@@ -262,8 +262,10 @@ internal class TelemetryEventHandler(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.TELEMETRY,
-                    "GlobalTracer class exists in the runtime classpath, " +
-                        "but there is an error invoking isRegistered method",
+                    {
+                        "GlobalTracer class exists in the runtime classpath, " +
+                            "but there is an error invoking isRegistered method"
+                    },
                     t
                 )
                 false

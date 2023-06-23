@@ -14,6 +14,7 @@ import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
@@ -388,7 +389,7 @@ internal class DatadogNdkCrashEventHandlerTest {
 
         // Then
         verifyNoInteractions(mockRumWriter, mockEventBatchWriter)
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             DatadogNdkCrashEventHandler.INFO_RUM_FEATURE_NOT_REGISTERED
@@ -418,12 +419,11 @@ internal class DatadogNdkCrashEventHandlerTest {
 
         // Then
         verifyNoInteractions(mockRumWriter, mockEventBatchWriter)
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                DatadogNdkCrashEventHandler.NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            DatadogNdkCrashEventHandler.NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS
+        )
     }
 
     @ParameterizedTest
@@ -458,12 +458,11 @@ internal class DatadogNdkCrashEventHandlerTest {
 
         // Then
         verifyNoInteractions(mockRumWriter, mockEventBatchWriter)
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                DatadogNdkCrashEventHandler.NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            DatadogNdkCrashEventHandler.NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS
+        )
     }
 
     enum class ValueMissingType {

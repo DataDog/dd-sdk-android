@@ -142,6 +142,7 @@ internal class DatadogCore(
                 coreFeature.ndkCrashHandler
                     .handleNdkCrash(this, NdkCrashHandler.ReportTarget.LOGS)
             }
+
             Feature.RUM_FEATURE_NAME -> {
                 coreFeature.ndkCrashHandler
                     .handleNdkCrash(this, NdkCrashHandler.ReportTarget.RUM)
@@ -204,14 +205,14 @@ internal class DatadogCore(
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, featureName)
+                { MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, featureName) }
             )
         } else {
             if (feature.eventReceiver.get() != null) {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, featureName)
+                    { EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, featureName) }
                 )
             }
             feature.eventReceiver.set(receiver)
@@ -248,7 +249,7 @@ internal class DatadogCore(
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(Locale.US, lastViewEventFile.parent)
+                { LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(Locale.US, lastViewEventFile.parent) }
             )
         }
     }
@@ -376,7 +377,7 @@ internal class DatadogCore(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                "Unable to add shutdown hook, Runtime is already shutting down",
+                { "Unable to add shutdown hook, Runtime is already shutting down" },
                 e
             )
             stop()
@@ -385,14 +386,14 @@ internal class DatadogCore(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                "Shutdown hook was rejected",
+                { "Shutdown hook was rejected" },
                 e
             )
         } catch (e: SecurityException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                "Security Manager denied adding shutdown hook ",
+                { "Security Manager denied adding shutdown hook " },
                 e
             )
         }

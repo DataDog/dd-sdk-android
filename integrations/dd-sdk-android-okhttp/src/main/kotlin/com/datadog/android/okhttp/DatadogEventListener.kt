@@ -251,8 +251,10 @@ internal constructor(
                 InternalLogger.UNBOUND.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
-                    "No SDK instance is available, skipping tracking" +
-                        " timing information of request with url ${call.request().url()}."
+                    {
+                        "No SDK instance is available, skipping tracking" +
+                            " timing information of request with url ${call.request().url()}."
+                    }
                 )
                 NO_OP_EVENT_LISTENER
             }

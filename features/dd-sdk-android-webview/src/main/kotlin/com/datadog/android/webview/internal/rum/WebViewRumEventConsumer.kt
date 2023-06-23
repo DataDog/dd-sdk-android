@@ -59,28 +59,28 @@ internal class WebViewRumEventConsumer(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                JSON_PARSING_ERROR_MESSAGE,
+                { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
         } catch (e: NumberFormatException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                JSON_PARSING_ERROR_MESSAGE,
+                { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
         } catch (e: IllegalStateException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                JSON_PARSING_ERROR_MESSAGE,
+                { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
         } catch (e: UnsupportedOperationException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                JSON_PARSING_ERROR_MESSAGE,
+                { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
         }
@@ -112,7 +112,7 @@ internal class WebViewRumEventConsumer(
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),
-                    "Trying to remove from an empty map.",
+                    { "Trying to remove offset from an empty map." },
                     e
                 )
                 break

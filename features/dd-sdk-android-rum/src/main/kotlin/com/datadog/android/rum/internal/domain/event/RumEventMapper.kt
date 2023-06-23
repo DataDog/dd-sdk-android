@@ -63,12 +63,14 @@ internal data class RumEventMapper(
             else -> {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
-                    targets = listOf(
+                    listOf(
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),
-                    NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
-                        .format(Locale.US, event.javaClass.simpleName)
+                    {
+                        NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
+                            .format(Locale.US, event.javaClass.simpleName)
+                    }
                 )
                 event
             }
@@ -89,21 +91,21 @@ internal data class RumEventMapper(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event)
+                { VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event) }
             )
             event
         } else if (mappedEvent == null) {
             internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event)
+                { EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event) }
             )
             null
         } else if (mappedEvent !== event) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, event)
+                { NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, event) }
             )
             null
         } else {

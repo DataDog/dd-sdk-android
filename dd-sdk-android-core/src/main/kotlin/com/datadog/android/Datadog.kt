@@ -67,7 +67,7 @@ object Datadog {
                 unboundInternalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    MESSAGE_ALREADY_INITIALIZED
+                    { MESSAGE_ALREADY_INITIALIZED }
                 )
                 return existing
             }
@@ -80,7 +80,7 @@ object Datadog {
                 unboundInternalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    CANNOT_CREATE_SDK_INSTANCE_ID_ERROR
+                    { CANNOT_CREATE_SDK_INSTANCE_ID_ERROR }
                 )
                 return null
             }
@@ -143,7 +143,7 @@ object Datadog {
                 unboundInternalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    MESSAGE_SDK_NOT_INITIALIZED.format(Locale.US, sdkInstanceName)
+                    { MESSAGE_SDK_NOT_INITIALIZED.format(Locale.US, sdkInstanceName) }
                 )
                 NoOpFeatureSdkCore()
             } else {

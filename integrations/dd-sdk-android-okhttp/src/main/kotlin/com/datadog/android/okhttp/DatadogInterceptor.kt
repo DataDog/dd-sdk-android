@@ -224,7 +224,7 @@ internal constructor(
             (sdkCore?.internalLogger ?: InternalLogger.UNBOUND).log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                WARN_RUM_DISABLED.format(Locale.US, prefix)
+                { WARN_RUM_DISABLED.format(Locale.US, prefix) }
             )
         }
         return super.intercept(chain)
@@ -331,7 +331,7 @@ internal constructor(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                ERROR_PEEK_BODY,
+                { ERROR_PEEK_BODY },
                 e
             )
             null
@@ -339,7 +339,7 @@ internal constructor(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_PEEK_BODY,
+                { ERROR_PEEK_BODY },
                 e
             )
             null
@@ -347,7 +347,7 @@ internal constructor(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_PEEK_BODY,
+                { ERROR_PEEK_BODY },
                 e
             )
             null

@@ -141,7 +141,7 @@ internal class RumViewManagerScope(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    MESSAGE_MISSING_VIEW
+                    { MESSAGE_MISSING_VIEW }
                 )
             }
         }
@@ -195,7 +195,7 @@ internal class RumViewManagerScope(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                MESSAGE_MISSING_VIEW
+                { MESSAGE_MISSING_VIEW }
             )
         }
     }

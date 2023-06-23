@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.persistence.file
 
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -22,7 +23,6 @@ import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.io.File
 import java.util.Locale
@@ -139,7 +139,7 @@ internal class FileMoverTest {
 
         // Then
         assertThat(result).isTrue()
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.MAINTAINER,
             FileMover.INFO_MOVE_NO_SRC.format(Locale.US, fakeSrcDir.path)
@@ -157,7 +157,7 @@ internal class FileMoverTest {
 
         // Then
         assertThat(result).isFalse()
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             FileMover.ERROR_MOVE_NOT_DIR.format(Locale.US, fakeSrcDir.path)
@@ -175,7 +175,7 @@ internal class FileMoverTest {
 
         // Then
         assertThat(result).isFalse()
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             FileMover.ERROR_MOVE_NOT_DIR.format(Locale.US, fakeDstDir.path)

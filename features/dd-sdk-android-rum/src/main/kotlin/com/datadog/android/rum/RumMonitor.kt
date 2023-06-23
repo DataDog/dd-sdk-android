@@ -347,7 +347,7 @@ interface RumMonitor {
                 logger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    UNEXPECTED_SDK_CORE_TYPE
+                    { UNEXPECTED_SDK_CORE_TYPE }
                 )
                 return NoOpRumMonitor()
             }
@@ -358,14 +358,14 @@ interface RumMonitor {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    RUM_NOT_ENABLED_ERROR_MESSAGE
+                    { RUM_NOT_ENABLED_ERROR_MESSAGE }
                 )
                 NoOpRumMonitor()
             } else if (rumFeature.applicationId.isBlank()) {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    INVALID_APPLICATION_ID_ERROR_MESSAGE
+                    { INVALID_APPLICATION_ID_ERROR_MESSAGE }
                 )
                 NoOpRumMonitor()
             } else {

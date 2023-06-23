@@ -22,7 +22,7 @@ internal fun TelemetryDebugEvent.Source.Companion.tryFromSource(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source),
+            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
             e
         )
         null
@@ -39,7 +39,7 @@ internal fun TelemetryErrorEvent.Source.Companion.tryFromSource(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source),
+            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
             e
         )
         null
@@ -56,7 +56,7 @@ internal fun TelemetryConfigurationEvent.Source.Companion.tryFromSource(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source),
+            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
             e
         )
         null

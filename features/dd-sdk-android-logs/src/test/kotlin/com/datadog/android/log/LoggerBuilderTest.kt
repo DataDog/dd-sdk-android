@@ -35,7 +35,10 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -90,13 +93,17 @@ internal class LoggerBuilderTest {
 
         // Then
         val handler = testedLogger.handler
-
         assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
-        verify(mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Logger.SDK_NOT_INITIALIZED_WARNING_MESSAGE
-        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                isNull(),
+                eq(false)
+            )
+            assertThat(firstValue()).isEqualTo(Logger.SDK_NOT_INITIALIZED_WARNING_MESSAGE)
+        }
     }
 
     @Test

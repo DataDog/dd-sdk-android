@@ -65,11 +65,13 @@ internal open class SingleItemDataWriter<T : Any>(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                ERROR_LARGE_DATA.format(
-                    Locale.US,
-                    eventSize,
-                    filePersistenceConfig.maxItemSize
-                )
+                {
+                    ERROR_LARGE_DATA.format(
+                        Locale.US,
+                        eventSize,
+                        filePersistenceConfig.maxItemSize
+                    )
+                }
             )
             return false
         }

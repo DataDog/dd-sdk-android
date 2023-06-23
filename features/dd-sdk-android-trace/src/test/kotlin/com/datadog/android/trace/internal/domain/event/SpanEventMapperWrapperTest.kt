@@ -7,6 +7,7 @@
 package com.datadog.android.trace.internal.domain.event
 
 import com.datadog.android.trace.model.SpanEvent
+import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -84,7 +85,7 @@ internal class SpanEventMapperWrapperTest {
         testedEventMapper.map(mockSpanEvent)
 
         // THEN
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             SpanEventMapperWrapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(

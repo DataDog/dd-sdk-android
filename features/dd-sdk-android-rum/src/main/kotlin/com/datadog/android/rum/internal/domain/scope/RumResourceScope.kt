@@ -268,7 +268,7 @@ internal class RumResourceScope(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, url)
+                { NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, url) }
             )
             1
         } else {

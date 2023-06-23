@@ -108,7 +108,7 @@ internal class BatchFileOrchestrator(
             internalLogger.log(
                 InternalLogger.Level.DEBUG,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                DEBUG_DIFFERENT_ROOT.format(Locale.US, file.path, rootDir.path)
+                { DEBUG_DIFFERENT_ROOT.format(Locale.US, file.path, rootDir.path) }
             )
         }
 
@@ -118,7 +118,7 @@ internal class BatchFileOrchestrator(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_NOT_BATCH_FILE.format(Locale.US, file.path)
+                { ERROR_NOT_BATCH_FILE.format(Locale.US, file.path) }
             )
             null
         }
@@ -141,7 +141,7 @@ internal class BatchFileOrchestrator(
                             InternalLogger.Target.MAINTAINER,
                             InternalLogger.Target.TELEMETRY
                         ),
-                        ERROR_ROOT_NOT_WRITABLE.format(Locale.US, rootDir.path)
+                        { ERROR_ROOT_NOT_WRITABLE.format(Locale.US, rootDir.path) }
                     )
                     return false
                 }
@@ -152,7 +152,7 @@ internal class BatchFileOrchestrator(
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),
-                    ERROR_ROOT_NOT_DIR.format(Locale.US, rootDir.path)
+                    { ERROR_ROOT_NOT_DIR.format(Locale.US, rootDir.path) }
                 )
                 return false
             }
@@ -173,7 +173,7 @@ internal class BatchFileOrchestrator(
                             InternalLogger.Target.MAINTAINER,
                             InternalLogger.Target.TELEMETRY
                         ),
-                        ERROR_CANT_CREATE_ROOT.format(Locale.US, rootDir.path)
+                        { ERROR_CANT_CREATE_ROOT.format(Locale.US, rootDir.path) }
                     )
                     return false
                 }
@@ -246,7 +246,7 @@ internal class BatchFileOrchestrator(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_DISK_FULL.format(Locale.US, sizeOnDisk, maxDiskSpace, sizeToFree)
+                { ERROR_DISK_FULL.format(Locale.US, sizeOnDisk, maxDiskSpace, sizeToFree) }
             )
             files.fold(sizeToFree) { remainingSizeToFree, file ->
                 if (remainingSizeToFree > 0) {

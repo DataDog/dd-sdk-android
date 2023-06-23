@@ -149,7 +149,7 @@ internal constructor(
                 (sdkCore as FeatureSdkCore).internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE
+                    { JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE }
                 )
             }
             webView.addJavascriptInterface(
@@ -173,7 +173,7 @@ internal constructor(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
-                    RUM_FEATURE_MISSING_INFO
+                    { RUM_FEATURE_MISSING_INFO }
                 )
                 null
             }
@@ -185,7 +185,7 @@ internal constructor(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
-                    LOGS_FEATURE_MISSING_INFO
+                    { LOGS_FEATURE_MISSING_INFO }
                 )
                 null
             }

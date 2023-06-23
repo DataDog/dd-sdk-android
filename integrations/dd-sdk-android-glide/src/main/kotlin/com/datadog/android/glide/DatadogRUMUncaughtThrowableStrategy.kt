@@ -47,8 +47,9 @@ class DatadogRUMUncaughtThrowableStrategy(
                 InternalLogger.UNBOUND.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
-                    "$prefix is not provided, skipping" +
-                        " reporting the Glide $name error"
+                    {
+                        "$prefix is not provided, skipping reporting the Glide $name error"
+                    }
                 )
             }
         }

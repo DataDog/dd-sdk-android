@@ -13,6 +13,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.forge.aStringNotMatchingSet
+import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -23,10 +24,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
-import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.argThat
-import org.mockito.kotlin.eq
 import java.util.Locale
 
 @Extensions(
@@ -79,15 +77,11 @@ internal class RumEventSourceExtTest {
         ViewEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            eq(
-                UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
-                    .format(Locale.US, fakeInvalidSource)
-            ),
-            argThat { this is NoSuchElementException },
-            eq(false)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, fakeInvalidSource),
+            NoSuchElementException::class.java
         )
     }
 
@@ -116,15 +110,11 @@ internal class RumEventSourceExtTest {
         ActionEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            eq(
-                UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
-                    .format(Locale.US, fakeInvalidSource)
-            ),
-            argThat { this is NoSuchElementException },
-            eq(false)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, fakeInvalidSource),
+            NoSuchElementException::class.java
         )
     }
 
@@ -155,15 +145,11 @@ internal class RumEventSourceExtTest {
         ErrorEvent.ErrorEventSource.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            eq(
-                UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
-                    .format(Locale.US, fakeInvalidSource)
-            ),
-            argThat { this is NoSuchElementException },
-            eq(false)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, fakeInvalidSource),
+            NoSuchElementException::class.java
         )
     }
 
@@ -194,15 +180,11 @@ internal class RumEventSourceExtTest {
         ResourceEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            eq(
-                UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
-                    .format(Locale.US, fakeInvalidSource)
-            ),
-            argThat { this is NoSuchElementException },
-            eq(false)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, fakeInvalidSource),
+            NoSuchElementException::class.java
         )
     }
 
@@ -232,15 +214,11 @@ internal class RumEventSourceExtTest {
         LongTaskEvent.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            eq(
-                UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
-                    .format(Locale.US, fakeInvalidSource)
-            ),
-            argThat { this is NoSuchElementException },
-            eq(false)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, fakeInvalidSource),
+            NoSuchElementException::class.java
         )
     }
 

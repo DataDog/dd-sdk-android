@@ -45,7 +45,7 @@ internal class UploadWorker(
             unboundInternalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                MESSAGE_NOT_INITIALIZED
+                { MESSAGE_NOT_INITIALIZED }
             )
             return Result.success()
         }

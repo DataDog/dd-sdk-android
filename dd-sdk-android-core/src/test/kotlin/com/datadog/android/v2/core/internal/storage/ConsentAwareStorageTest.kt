@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
@@ -274,7 +275,7 @@ internal class ConsentAwareStorageTest {
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
             eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-            any<String>(),
+            any(),
             isA<RejectedExecutionException>(),
             eq(false)
         )
@@ -529,7 +530,7 @@ internal class ConsentAwareStorageTest {
 
         // Then
         verify(mockFileMover).delete(file)
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
             ConsentAwareStorage.WARNING_DELETE_FAILED.format(Locale.US, file.path)
@@ -562,7 +563,7 @@ internal class ConsentAwareStorageTest {
 
         // Then
         verify(mockFileMover).delete(file)
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
             ConsentAwareStorage.WARNING_DELETE_FAILED.format(Locale.US, mockMetaFile.path)

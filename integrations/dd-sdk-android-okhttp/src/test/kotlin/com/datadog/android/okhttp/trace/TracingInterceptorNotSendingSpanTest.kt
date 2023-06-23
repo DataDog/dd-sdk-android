@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.InternalLogger
@@ -1005,14 +1006,13 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
         verifyNoInteractions(mockLocalTracer)
         verifyNoInteractions(mockTracer)
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                TracingInterceptor.WARNING_TRACING_DISABLED,
-                null,
-                true
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            TracingInterceptor.WARNING_TRACING_DISABLED,
+            null,
+            true
+        )
     }
 
     @Test
@@ -1040,12 +1040,11 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(localSpan, never()).finish()
         verify(localSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                TracingInterceptor.WARNING_DEFAULT_TRACER
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            TracingInterceptor.WARNING_DEFAULT_TRACER
+        )
     }
 
     @Test
@@ -1085,12 +1084,11 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan as MutableSpan).drop()
         assertThat(response1).isSameAs(expectedResponse1)
         assertThat(response2).isSameAs(expectedResponse2)
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                TracingInterceptor.WARNING_DEFAULT_TRACER
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            TracingInterceptor.WARNING_DEFAULT_TRACER
+        )
     }
 
     @Test
@@ -1247,14 +1245,13 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
         // Then
         verifyNoInteractions(mockTracer, mockLocalTracer)
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                TracingInterceptor.WARNING_TRACING_NO_HOSTS,
-                null,
-                true
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            TracingInterceptor.WARNING_TRACING_NO_HOSTS,
+            null,
+            true
+        )
     }
 
     @Test

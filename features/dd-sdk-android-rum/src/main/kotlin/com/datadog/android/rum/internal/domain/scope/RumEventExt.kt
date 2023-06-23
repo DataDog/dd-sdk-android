@@ -29,7 +29,7 @@ internal fun String.toMethod(internalLogger: InternalLogger): ResourceEvent.Meth
         internalLogger.log(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            "Unable to convert [$this] to a valid http method",
+            { "Unable to convert [$this] to a valid http method" },
             e
         )
         ResourceEvent.Method.GET
@@ -43,7 +43,7 @@ internal fun String.toErrorMethod(internalLogger: InternalLogger): ErrorEvent.Me
         internalLogger.log(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            "Unable to convert [$this] to a valid http method",
+            { "Unable to convert [$this] to a valid http method" },
             e
         )
         ErrorEvent.Method.GET
@@ -392,7 +392,7 @@ internal fun ViewEvent.Source.Companion.tryFromSource(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source),
+            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
             e
         )
         null
@@ -409,7 +409,7 @@ internal fun LongTaskEvent.Source.Companion.tryFromSource(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source),
+            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
             e
         )
         null
@@ -426,7 +426,7 @@ internal fun ErrorEvent.ErrorEventSource.Companion.tryFromSource(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source),
+            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
             e
         )
         null
@@ -443,7 +443,7 @@ internal fun ActionEvent.Source.Companion.tryFromSource(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source),
+            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
             e
         )
         null
@@ -460,7 +460,7 @@ internal fun ResourceEvent.Source.Companion.tryFromSource(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source),
+            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
             e
         )
         null

@@ -33,16 +33,16 @@ internal class RumEventDeserializer(private val internalLogger: InternalLogger) 
         } catch (e: JsonParseException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model) },
                 e
             )
             null
         } catch (e: IllegalStateException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model) },
                 e
             )
             null
@@ -75,6 +75,7 @@ internal class RumEventDeserializer(private val internalLogger: InternalLogger) 
                     )
                 }
             }
+
             else -> throw JsonParseException(
                 "We could not deserialize the event with type: $eventType"
             )

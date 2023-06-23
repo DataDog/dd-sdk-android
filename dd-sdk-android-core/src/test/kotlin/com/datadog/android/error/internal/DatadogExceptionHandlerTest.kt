@@ -18,6 +18,7 @@ import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.InternalLogger
@@ -132,7 +133,7 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             DatadogExceptionHandler.MISSING_LOGS_FEATURE_INFO
@@ -340,10 +341,11 @@ internal class DatadogExceptionHandlerTest {
         // Then
         verify(mockScheduledThreadExecutor)
             .waitToIdle(DatadogExceptionHandler.MAX_WAIT_FOR_IDLE_TIME_IN_MS, mockInternalLogger)
-        verify(mockInternalLogger, never()).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE
+            DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE,
+            mode = never()
         )
     }
 
@@ -363,7 +365,7 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE
@@ -416,7 +418,7 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             DatadogExceptionHandler.MISSING_RUM_FEATURE_INFO

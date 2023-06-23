@@ -25,7 +25,7 @@ internal class Sha256HashGenerator : HashGenerator {
             unboundInternalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                SHA_256_HASH_GENERATION_ERROR,
+                { SHA_256_HASH_GENERATION_ERROR },
                 e
             )
             null

@@ -82,7 +82,7 @@ internal class SessionReplayFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE
+                { REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE }
             )
             return
         }
@@ -119,7 +119,7 @@ internal class SessionReplayFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName)
+                { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
             )
             return
         }
@@ -140,10 +140,12 @@ internal class SessionReplayFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(
-                    Locale.US,
-                    sessionMetadata[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY]
-                )
+                {
+                    UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(
+                        Locale.US,
+                        sessionMetadata[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY]
+                    )
+                }
             )
         }
     }
@@ -155,7 +157,7 @@ internal class SessionReplayFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                EVENT_MISSING_MANDATORY_FIELDS
+                { EVENT_MISSING_MANDATORY_FIELDS }
             )
             return
         }
@@ -166,7 +168,7 @@ internal class SessionReplayFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                SESSION_SAMPLED_OUT_MESSAGE
+                { SESSION_SAMPLED_OUT_MESSAGE }
             )
             stopRecording()
         }
@@ -177,7 +179,7 @@ internal class SessionReplayFeature constructor(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                CANNOT_START_RECORDING_NOT_INITIALIZED
+                { CANNOT_START_RECORDING_NOT_INITIALIZED }
             )
             return
         }

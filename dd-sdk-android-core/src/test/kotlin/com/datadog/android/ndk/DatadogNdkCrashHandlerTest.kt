@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.persistence.file.FileReader
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.FeatureSdkCore
@@ -42,7 +43,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.firstValue
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -52,6 +52,7 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
+import java.lang.NullPointerException
 import java.util.Locale
 import java.util.Random
 import java.util.UUID
@@ -308,7 +309,7 @@ internal class DatadogNdkCrashHandlerTest {
         verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
 
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             DatadogNdkCrashHandler.INFO_LOGS_FEATURE_NOT_REGISTERED
@@ -418,6 +419,15 @@ internal class DatadogNdkCrashHandlerTest {
                     forge.anElementFrom(JsonArray(), JsonObject())
                 )
         }
+        val expectedExceptionClass = when (corruptionType) {
+            "missing_id_property",
+            "missing_property" -> NullPointerException::class.java
+
+            "wrong_id_type",
+            "wrong_type" -> ClassCastException::class.java
+
+            else -> Exception::class.java
+        }
 
         val expectedLogEvent = createLogEvent(ndkCrashLog, null, null, null)
 
@@ -429,14 +439,12 @@ internal class DatadogNdkCrashHandlerTest {
         verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
-        verify(mockInternalLogger)
-            .log(
-                eq(InternalLogger.Level.WARN),
-                eq(InternalLogger.Target.MAINTAINER),
-                eq(DatadogNdkCrashHandler.WARN_CANNOT_READ_VIEW_INFO_DATA),
-                any(),
-                eq(false)
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            DatadogNdkCrashHandler.WARN_CANNOT_READ_VIEW_INFO_DATA,
+            expectedExceptionClass
+        )
     }
 
     @Test
@@ -457,7 +465,7 @@ internal class DatadogNdkCrashHandlerTest {
         verify(mockExecutorService).submit(captureRunnable.capture())
         verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             DatadogNdkCrashHandler.INFO_RUM_FEATURE_NOT_REGISTERED

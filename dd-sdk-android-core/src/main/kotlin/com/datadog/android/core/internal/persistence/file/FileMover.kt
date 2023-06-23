@@ -27,7 +27,7 @@ internal class FileMover(val internalLogger: InternalLogger) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_DELETE.format(Locale.US, target.path),
+                { ERROR_DELETE.format(Locale.US, target.path) },
                 e
             )
             false
@@ -35,7 +35,7 @@ internal class FileMover(val internalLogger: InternalLogger) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_DELETE.format(Locale.US, target.path),
+                { ERROR_DELETE.format(Locale.US, target.path) },
                 e
             )
             false
@@ -52,7 +52,7 @@ internal class FileMover(val internalLogger: InternalLogger) {
             internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.MAINTAINER,
-                INFO_MOVE_NO_SRC.format(Locale.US, srcDir.path)
+                { INFO_MOVE_NO_SRC.format(Locale.US, srcDir.path) }
             )
             return true
         }
@@ -60,7 +60,7 @@ internal class FileMover(val internalLogger: InternalLogger) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_MOVE_NOT_DIR.format(Locale.US, srcDir.path)
+                { ERROR_MOVE_NOT_DIR.format(Locale.US, srcDir.path) }
             )
             return false
         }
@@ -72,7 +72,7 @@ internal class FileMover(val internalLogger: InternalLogger) {
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),
-                    ERROR_MOVE_NO_DST.format(Locale.US, srcDir.path)
+                    { ERROR_MOVE_NO_DST.format(Locale.US, srcDir.path) }
                 )
                 return false
             }
@@ -80,7 +80,7 @@ internal class FileMover(val internalLogger: InternalLogger) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_MOVE_NOT_DIR.format(Locale.US, destDir.path)
+                { ERROR_MOVE_NOT_DIR.format(Locale.US, destDir.path) }
             )
             return false
         }

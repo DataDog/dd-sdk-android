@@ -6,14 +6,12 @@
 
 package com.datadog.android.core.internal.thread
 
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isA
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -70,13 +68,12 @@ internal class LoggingScheduledThreadPoolExecutorTest :
         // Then
         assertThat(futureTask.isDone).isTrue
 
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
-                throwable
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
+            throwable
+        )
     }
 
     @Test
@@ -91,13 +88,11 @@ internal class LoggingScheduledThreadPoolExecutorTest :
         // Then
         assertThat(futureTask.isCancelled).isTrue
 
-        verify(mockInternalLogger)
-            .log(
-                eq(InternalLogger.Level.ERROR),
-                eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
-                eq(ERROR_UNCAUGHT_EXECUTION_EXCEPTION),
-                isA<CancellationException>(),
-                eq(false)
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
+            CancellationException::class.java
+        )
     }
 }

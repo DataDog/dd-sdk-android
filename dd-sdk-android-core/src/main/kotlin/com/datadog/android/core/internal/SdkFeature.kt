@@ -127,7 +127,7 @@ internal class SdkFeature(
             internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                NO_EVENT_RECEIVER.format(Locale.US, wrappedFeature.name)
+                { NO_EVENT_RECEIVER.format(Locale.US, wrappedFeature.name) }
             )
         } else {
             receiver.onReceive(event)

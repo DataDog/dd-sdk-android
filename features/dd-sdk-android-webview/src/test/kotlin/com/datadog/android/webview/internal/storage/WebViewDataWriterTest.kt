@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.storage
 
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.forge.aThrowable
@@ -24,10 +25,8 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -134,19 +133,12 @@ internal class WebViewDataWriterTest {
         // Then
         assertThat(result).isFalse
 
-        verify(mockLogger)
-            .log(
-                eq(InternalLogger.Level.ERROR),
-                targets = eq(
-                    listOf(
-                        InternalLogger.Target.USER,
-                        InternalLogger.Target.TELEMETRY
-                    )
-                ),
-                any(),
-                eq(fakeThrowable),
-                eq(false)
-            )
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            "Error serializing JsonObject model",
+            fakeThrowable
+        )
 
         verifyNoInteractions(mockEventBatchWriter)
     }

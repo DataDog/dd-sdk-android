@@ -29,13 +29,13 @@ class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataC
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    "\"$it\" is an invalid tag, and was ignored."
+                    { "\"$it\" is an invalid tag, and was ignored." }
                 )
             } else if (tag != it) {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    "tag \"$it\" was modified to \"$tag\" to match our constraints."
+                    { "tag \"$it\" was modified to \"$tag\" to match our constraints." }
                 )
             }
             tag
@@ -45,7 +45,7 @@ class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataC
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                "too many tags were added, $discardedCount had to be discarded."
+                { "too many tags were added, $discardedCount had to be discarded." }
             )
         }
         return convertedTags.take(MAX_TAG_COUNT)
@@ -68,14 +68,14 @@ class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataC
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    "\"$it\" is an invalid attribute, and was ignored."
+                    { "\"$it\" is an invalid attribute, and was ignored." }
                 )
                 null
             } else if (it.key in reservedKeys) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    "\"$it\" key was in the reservedKeys set, and was dropped."
+                    { "\"$it\" key was in the reservedKeys set, and was dropped." }
                 )
                 null
             } else {
@@ -84,8 +84,10 @@ class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataC
                     internalLogger.log(
                         InternalLogger.Level.WARN,
                         InternalLogger.Target.USER,
-                        "Key \"${it.key}\" " +
-                            "was modified to \"$key\" to match our constraints."
+                        {
+                            "Key \"${it.key}\" " +
+                                "was modified to \"$key\" to match our constraints."
+                        }
                     )
                 }
                 key to it.value
@@ -100,7 +102,7 @@ class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataC
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                warningMessage
+                { warningMessage }
             )
         }
         return convertedAttributes.take(MAX_ATTR_COUNT).toMutableMap()
@@ -115,11 +117,13 @@ class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataC
                 internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    CUSTOM_TIMING_KEY_REPLACED_WARNING.format(
-                        Locale.US,
-                        entry.key,
-                        sanitizedKey
-                    )
+                    {
+                        CUSTOM_TIMING_KEY_REPLACED_WARNING.format(
+                            Locale.US,
+                            entry.key,
+                            sanitizedKey
+                        )
+                    }
                 )
             }
             sanitizedKey

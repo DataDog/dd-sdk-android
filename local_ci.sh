@@ -146,6 +146,9 @@ if [[ $TEST == 1 ]]; then
 
   echo "---- Unit tests (Debug)"
   ./gradlew uTD
+
+  echo "---- Unit tests (Release)"
+  ./gradlew uTR
 fi
 
 echo "-- Done ✔︎"

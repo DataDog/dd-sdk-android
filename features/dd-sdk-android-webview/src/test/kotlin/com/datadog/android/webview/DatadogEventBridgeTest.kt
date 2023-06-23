@@ -9,6 +9,7 @@ package com.datadog.android.webview
 import android.webkit.WebSettings
 import android.webkit.WebView
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureScope
@@ -187,12 +188,11 @@ internal class DatadogEventBridgeTest {
                 .isSameAs(mockLogsRequestFactory)
         }
 
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                DatadogEventBridge.RUM_FEATURE_MISSING_INFO
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            DatadogEventBridge.RUM_FEATURE_MISSING_INFO
+        )
     }
 
     @Test
@@ -232,12 +232,11 @@ internal class DatadogEventBridgeTest {
                 .isSameAs(mockRumRequestFactory)
         }
 
-        verify(mockInternalLogger)
-            .log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                DatadogEventBridge.LOGS_FEATURE_MISSING_INFO
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            DatadogEventBridge.LOGS_FEATURE_MISSING_INFO
+        )
     }
 
     @Test
@@ -345,7 +344,7 @@ internal class DatadogEventBridgeTest {
             argThat { this is DatadogEventBridge },
             eq(DatadogEventBridge.DATADOG_EVENT_BRIDGE_NAME)
         )
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             DatadogEventBridge.JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE

@@ -114,7 +114,7 @@ internal class DatadogRumMonitor(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    RUM_DEBUG_RUM_NOT_ENABLED_WARNING
+                    { RUM_DEBUG_RUM_NOT_ENABLED_WARNING }
                 )
                 return
             }
@@ -510,7 +510,7 @@ internal class DatadogRumMonitor(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.MAINTAINER,
-                    "Waiting for pending RUM events was interrupted"
+                    { "Waiting for pending RUM events was interrupted" }
                 )
             }
         }

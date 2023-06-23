@@ -28,7 +28,7 @@ internal class EncryptedFileReaderWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                APPEND_MODE_NOT_SUPPORTED_MESSAGE
+                { APPEND_MODE_NOT_SUPPORTED_MESSAGE }
             )
             return false
         }
@@ -39,7 +39,7 @@ internal class EncryptedFileReaderWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                BAD_ENCRYPTION_RESULT_MESSAGE
+                { BAD_ENCRYPTION_RESULT_MESSAGE }
             )
             return false
         }

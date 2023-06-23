@@ -27,8 +27,10 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -86,14 +88,17 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
+        val mockLambda: () -> String = mock()
+        whenever(mockLambda.invoke()) doReturn fakeMessage
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
         val fakeThrowable = forge.aNullable { forge.aThrowable() }
+        whenever(mockUserLogHandler.canLog(any())) doReturn true
 
         // When
         testedInternalLogger.log(
             fakeLevel,
             InternalLogger.Target.USER,
-            fakeMessage,
+            mockLambda,
             fakeThrowable
         )
 
@@ -112,15 +117,18 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
+        val mockLambda: () -> String = mock()
+        whenever(mockLambda.invoke()) doReturn fakeMessage
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
         val fakeThrowable = forge.aNullable { forge.aThrowable() }
+        whenever(mockUserLogHandler.canLog(any())) doReturn true
 
         // When
         repeat(10) {
             testedInternalLogger.log(
                 fakeLevel,
                 InternalLogger.Target.USER,
-                fakeMessage,
+                mockLambda,
                 fakeThrowable,
                 true
             )
@@ -159,6 +167,31 @@ internal class SdkInternalLoggerTest {
         }
     }
 
+    @Test
+    fun `𝕄 not evaluate lambda 𝕎 log { USER target }`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        val mockLambda: () -> String = mock()
+        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
+        val fakeThrowable = forge.aNullable { forge.aThrowable() }
+        whenever(mockUserLogHandler.canLog(any())) doReturn false
+
+        // When
+        testedInternalLogger.log(
+            fakeLevel,
+            InternalLogger.Target.USER,
+            mockLambda,
+            fakeThrowable,
+            true
+        )
+
+        // Then
+        verify(mockLambda, never()).invoke()
+    }
+
     // endregion
 
     @Test
@@ -167,24 +200,26 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
+        val mockLambda: () -> String = mock()
+        whenever(mockLambda.invoke()) doReturn fakeMessage
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
         val fakeThrowable = forge.aNullable { forge.aThrowable() }
+        whenever(mockMaintainerLogHandler.canLog(any())) doReturn true
 
         // When
         testedInternalLogger.log(
             fakeLevel,
             InternalLogger.Target.MAINTAINER,
-            fakeMessage,
+            mockLambda,
             fakeThrowable
         )
 
         // Then
-        verify(mockMaintainerLogHandler)
-            .log(
-                fakeLevel.toLogLevel(),
-                "[$fakeInstanceName]: $fakeMessage",
-                fakeThrowable
-            )
+        verify(mockMaintainerLogHandler).log(
+            fakeLevel.toLogLevel(),
+            "[$fakeInstanceName]: $fakeMessage",
+            fakeThrowable
+        )
     }
 
     @Test
@@ -193,27 +228,29 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
+        val mockLambda: () -> String = mock()
+        whenever(mockLambda.invoke()) doReturn fakeMessage
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
         val fakeThrowable = forge.aNullable { forge.aThrowable() }
+        whenever(mockMaintainerLogHandler.canLog(any())) doReturn true
 
         // When
         repeat(10) {
             testedInternalLogger.log(
                 fakeLevel,
                 InternalLogger.Target.MAINTAINER,
-                fakeMessage,
+                mockLambda,
                 fakeThrowable,
                 true
             )
         }
 
         // Then
-        verify(mockMaintainerLogHandler)
-            .log(
-                fakeLevel.toLogLevel(),
-                "[$fakeInstanceName]: $fakeMessage",
-                fakeThrowable
-            )
+        verify(mockMaintainerLogHandler).log(
+            fakeLevel.toLogLevel(),
+            "[$fakeInstanceName]: $fakeMessage",
+            fakeThrowable
+        )
     }
 
     @Test
@@ -222,6 +259,8 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
+        val mockLambda: () -> String = mock()
+        whenever(mockLambda.invoke()) doReturn fakeMessage
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.INFO, InternalLogger.Level.DEBUG)
         val mockRumFeatureScope = mock<FeatureScope>()
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
@@ -230,7 +269,7 @@ internal class SdkInternalLoggerTest {
         testedInternalLogger.log(
             fakeLevel,
             InternalLogger.Target.TELEMETRY,
-            fakeMessage,
+            mockLambda,
             null
         )
 
@@ -250,6 +289,8 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
+        val mockLambda: () -> String = mock()
+        whenever(mockLambda.invoke()) doReturn fakeMessage
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.WARN, InternalLogger.Level.ERROR)
         val mockRumFeatureScope = mock<FeatureScope>()
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
@@ -258,7 +299,7 @@ internal class SdkInternalLoggerTest {
         testedInternalLogger.log(
             fakeLevel,
             InternalLogger.Target.TELEMETRY,
-            fakeMessage,
+            mockLambda,
             null
         )
 
@@ -279,6 +320,8 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
+        val mockLambda: () -> String = mock()
+        whenever(mockLambda.invoke()) doReturn fakeMessage
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
         val fakeThrowable = forge.aThrowable()
         val mockRumFeatureScope = mock<FeatureScope>()
@@ -288,7 +331,7 @@ internal class SdkInternalLoggerTest {
         testedInternalLogger.log(
             fakeLevel,
             InternalLogger.Target.TELEMETRY,
-            fakeMessage,
+            mockLambda,
             fakeThrowable
         )
 
@@ -309,6 +352,8 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
+        val mockLambda: () -> String = mock()
+        whenever(mockLambda.invoke()) doReturn fakeMessage
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.INFO, InternalLogger.Level.DEBUG)
         val mockRumFeatureScope = mock<FeatureScope>()
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
@@ -318,7 +363,7 @@ internal class SdkInternalLoggerTest {
             testedInternalLogger.log(
                 fakeLevel,
                 InternalLogger.Target.TELEMETRY,
-                fakeMessage,
+                mockLambda,
                 null,
                 true
             )

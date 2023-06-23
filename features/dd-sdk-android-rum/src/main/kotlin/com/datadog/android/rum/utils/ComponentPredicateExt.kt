@@ -29,7 +29,7 @@ internal inline fun <reified T : Any> ComponentPredicate<T>.runIfValid(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                "Internal operation failed on ComponentPredicate",
+                { "Internal operation failed on ComponentPredicate" },
                 e
             )
         }

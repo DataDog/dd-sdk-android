@@ -23,6 +23,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.InternalLogger
@@ -306,7 +307,7 @@ internal class DatadogCoreTest {
         testedCore.setEventReceiver(feature, fakeReceiver)
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             DatadogCore.MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, feature)
@@ -330,7 +331,7 @@ internal class DatadogCoreTest {
         testedCore.setEventReceiver(feature, fakeReceiver)
 
         // Then
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             DatadogCore.EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, feature)
@@ -541,7 +542,7 @@ internal class DatadogCoreTest {
 
         // Then
         assertThat(ndkReportsFolder).doesNotExist()
-        verify(mockInternalLogger).log(
+        mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
             DatadogCore.LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(

@@ -19,11 +19,10 @@ internal class LoggingSyncListener(private val internalLogger: InternalLogger) :
     }
 
     override fun onError(host: String, throwable: Throwable) {
-        val message = "Kronos onError @host:$host"
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
-            message,
+            { "Kronos onError @host:$host" },
             throwable
         )
     }

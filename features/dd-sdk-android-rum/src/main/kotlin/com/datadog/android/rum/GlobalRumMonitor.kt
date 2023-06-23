@@ -93,7 +93,7 @@ object GlobalRumMonitor {
                 (sdkCore as FeatureSdkCore).internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    "A RumMonitor has already been registered for this SDK instance"
+                    { "A RumMonitor has already been registered for this SDK instance" }
                 )
                 false
             } else {

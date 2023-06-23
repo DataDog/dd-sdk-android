@@ -17,6 +17,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -320,12 +321,12 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
-        verify(mockInternalLogger, times(intermediaryEvents.size))
-            .log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                GesturesListener.MSG_NO_TARGET_SCROLL_SWIPE
-            )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            GesturesListener.MSG_NO_TARGET_SCROLL_SWIPE,
+            mode = times(intermediaryEvents.size)
+        )
         verifyNoInteractions(rumMonitor.mockInstance)
     }
 
@@ -881,14 +882,17 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
                 whenever(stopEvent.x).thenReturn(initialStartX)
                 whenever(stopEvent.y).thenReturn((initialStartY - 2))
             }
+
             GesturesListener.SCROLL_DIRECTION_DOWN -> {
                 whenever(stopEvent.x).thenReturn(initialStartX)
                 whenever(stopEvent.y).thenReturn((initialStartY + 2))
             }
+
             GesturesListener.SCROLL_DIRECTION_RIGHT -> {
                 whenever(stopEvent.x).thenReturn((initialStartX + 2))
                 whenever(stopEvent.y).thenReturn(initialStartY)
             }
+
             GesturesListener.SCROLL_DIRECTION_LEFT -> {
                 whenever(stopEvent.x).thenReturn((initialStartX - 2))
                 whenever(stopEvent.y).thenReturn(initialStartY)

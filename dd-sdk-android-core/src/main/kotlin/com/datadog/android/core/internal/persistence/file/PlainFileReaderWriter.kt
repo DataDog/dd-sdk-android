@@ -37,7 +37,7 @@ internal class PlainFileReaderWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_WRITE.format(Locale.US, file.path),
+                { ERROR_WRITE.format(Locale.US, file.path) },
                 e
             )
             false
@@ -45,7 +45,7 @@ internal class PlainFileReaderWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_WRITE.format(Locale.US, file.path),
+                { ERROR_WRITE.format(Locale.US, file.path) },
                 e
             )
             false
@@ -61,14 +61,14 @@ internal class PlainFileReaderWriter(
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                    ERROR_READ.format(Locale.US, file.path)
+                    { ERROR_READ.format(Locale.US, file.path) }
                 )
                 EMPTY_BYTE_ARRAY
             } else if (file.isDirectory) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                    ERROR_READ.format(Locale.US, file.path)
+                    { ERROR_READ.format(Locale.US, file.path) }
                 )
                 EMPTY_BYTE_ARRAY
             } else {
@@ -79,7 +79,7 @@ internal class PlainFileReaderWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_READ.format(Locale.US, file.path),
+                { ERROR_READ.format(Locale.US, file.path) },
                 e
             )
             EMPTY_BYTE_ARRAY
@@ -87,7 +87,7 @@ internal class PlainFileReaderWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                ERROR_READ.format(Locale.US, file.path),
+                { ERROR_READ.format(Locale.US, file.path) },
                 e
             )
             EMPTY_BYTE_ARRAY

@@ -38,7 +38,7 @@ fun Executor.executeSafe(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            ERROR_TASK_REJECTED.format(Locale.US, operationName),
+            { ERROR_TASK_REJECTED.format(Locale.US, operationName) },
             e
         )
     }
@@ -68,7 +68,7 @@ fun ScheduledExecutorService.scheduleSafe(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            ERROR_TASK_REJECTED.format(Locale.US, operationName),
+            { ERROR_TASK_REJECTED.format(Locale.US, operationName) },
             e
         )
         null
@@ -95,7 +95,7 @@ fun ExecutorService.submitSafe(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            ERROR_TASK_REJECTED.format(Locale.US, operationName),
+            { ERROR_TASK_REJECTED.format(Locale.US, operationName) },
             e
         )
         null

@@ -22,7 +22,7 @@ import org.mockito.kotlin.mock
     ExtendWith(ForgeExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
-internal class InternalLoggerDebugTest {
+internal class SdkInternalLoggerDebugTest {
 
     // region sdkLogger
 

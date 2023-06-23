@@ -68,7 +68,7 @@ internal class DatadogLogHandler(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    LOGS_FEATURE_NOT_REGISTERED
+                    { LOGS_FEATURE_NOT_REGISTERED }
                 )
             }
         }
@@ -88,7 +88,7 @@ internal class DatadogLogHandler(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
-                    RUM_FEATURE_NOT_REGISTERED
+                    { RUM_FEATURE_NOT_REGISTERED }
                 )
             }
         }
@@ -135,7 +135,7 @@ internal class DatadogLogHandler(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    LOGS_FEATURE_NOT_REGISTERED
+                    { LOGS_FEATURE_NOT_REGISTERED }
                 )
             }
         }
@@ -155,7 +155,7 @@ internal class DatadogLogHandler(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
-                    RUM_FEATURE_NOT_REGISTERED
+                    { RUM_FEATURE_NOT_REGISTERED }
                 )
             }
         }

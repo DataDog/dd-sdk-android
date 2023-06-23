@@ -58,8 +58,10 @@ class DatadogDatabaseErrorHandler(
             InternalLogger.UNBOUND.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                "$prefix is not found, " +
-                    "skipping reporting the corruption of sqlite database: %s"
+                {
+                    "$prefix is not found, " +
+                        "skipping reporting the corruption of sqlite database: %s"
+                }
             )
         }
     }

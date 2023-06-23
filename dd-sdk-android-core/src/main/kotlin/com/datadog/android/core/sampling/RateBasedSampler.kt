@@ -51,14 +51,14 @@ class RateBasedSampler(internal val sampleRateProvider: () -> Float) : Sampler {
             InternalLogger.UNBOUND.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                "Sample rate value provided $rawSampleRate is below 0, setting it to 0."
+                { "Sample rate value provided $rawSampleRate is below 0, setting it to 0." }
             )
             0f
         } else if (rawSampleRate > SAMPLE_ALL_RATE) {
             InternalLogger.UNBOUND.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                "Sample rate value provided $rawSampleRate is above 100, setting it to 100."
+                { "Sample rate value provided $rawSampleRate is above 100, setting it to 100." }
             )
             SAMPLE_ALL_RATE
         } else {

@@ -22,14 +22,14 @@ internal class LogEventMapperWrapper(
             internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event)
+                { EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event) }
             )
             null
         } else if (mappedEvent !== event) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, event)
+                { NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, event) }
             )
             null
         } else {
