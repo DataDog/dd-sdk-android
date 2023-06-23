@@ -37,18 +37,18 @@ import kotlin.math.roundToInt
 /**
  * Creates a proxy around click listener, which will report clicks to Datadog.
  *
- * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  * @param targetName Name of the click target.
  * @param attributes Additional custom attributes to attach to the action. Attributes can be
  * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
+ * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  * @param onClick Click listener.
  */
 @ExperimentalTrackingApi
 @Composable
 fun trackClick(
-    sdkCore: SdkCore = Datadog.getInstance(),
     targetName: String,
     attributes: Map<String, Any?> = remember { emptyMap() },
+    sdkCore: SdkCore = Datadog.getInstance(),
     onClick: () -> Unit
 ): () -> Unit {
     val onTapState = rememberUpdatedState(newValue = onClick)
@@ -64,22 +64,22 @@ fun trackClick(
  *
  * For tracking clicks check [trackClick].
  *
- * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  * @param targetName Name of the tracking target.
  * @param interactionSource [InteractionSource] which hosts the flow of interactions happening.
  * @param interactionType Type of the interaction, either [InteractionType.Scroll]
  * or [InteractionType.Swipe]
  * @param attributes Additional custom attributes to attach to the action. Attributes can be
  * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
+ * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  */
 @ExperimentalTrackingApi
 @Composable
 fun TrackInteractionEffect(
-    sdkCore: SdkCore = Datadog.getInstance(),
     targetName: String,
     interactionSource: InteractionSource,
     interactionType: InteractionType,
-    attributes: Map<String, Any?> = emptyMap()
+    attributes: Map<String, Any?> = emptyMap(),
+    sdkCore: SdkCore = Datadog.getInstance()
 ) {
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 

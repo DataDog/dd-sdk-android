@@ -18,7 +18,7 @@ internal abstract class CrashService : Service() {
 
     protected fun initRum(sdkCore: SdkCore, extras: Bundle?) {
         val rumMonitor = RumMonitor.Builder(sdkCore).build()
-        GlobalRumMonitor.registerIfAbsent(sdkCore, rumMonitor)
+        GlobalRumMonitor.registerIfAbsent(rumMonitor, sdkCore)
         extras?.let { bundle ->
             bundle.keySet().forEach {
                 // TODO RUMM-2717 Bundle#get is deprecated, but there is no replacement for it.

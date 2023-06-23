@@ -55,7 +55,7 @@ class RumMonitorBackgroundE2ETests {
      * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun trackFrustrations(Boolean): Builder
      * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun get(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): RumMonitor
      * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun isRegistered(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): Boolean
-     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), RumMonitor): Boolean
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun registerIfAbsent(RumMonitor, com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): Boolean
      */
     @Before
     fun setUp() {

@@ -2,8 +2,8 @@ public abstract interface annotation class com/datadog/android/compose/Experimen
 }
 
 public final class com/datadog/android/compose/InteractionTrackingKt {
-	public static final fun TrackInteractionEffect (Lcom/datadog/android/v2/api/SdkCore;Ljava/lang/String;Landroidx/compose/foundation/interaction/InteractionSource;Lcom/datadog/android/compose/InteractionType;Ljava/util/Map;Landroidx/compose/runtime/Composer;II)V
-	public static final fun trackClick (Lcom/datadog/android/v2/api/SdkCore;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function0;Landroidx/compose/runtime/Composer;II)Lkotlin/jvm/functions/Function0;
+	public static final fun TrackInteractionEffect (Ljava/lang/String;Landroidx/compose/foundation/interaction/InteractionSource;Lcom/datadog/android/compose/InteractionType;Ljava/util/Map;Lcom/datadog/android/v2/api/SdkCore;Landroidx/compose/runtime/Composer;II)V
+	public static final fun trackClick (Ljava/lang/String;Ljava/util/Map;Lcom/datadog/android/v2/api/SdkCore;Lkotlin/jvm/functions/Function0;Landroidx/compose/runtime/Composer;II)Lkotlin/jvm/functions/Function0;
 }
 
 public abstract class com/datadog/android/compose/InteractionType {
@@ -23,6 +23,6 @@ public final class com/datadog/android/compose/InteractionType$Swipe : com/datad
 }
 
 public final class com/datadog/android/compose/NavigationKt {
-	public static final fun NavigationViewTrackingEffect (Landroidx/navigation/NavController;Lcom/datadog/android/v2/api/SdkCore;ZLcom/datadog/android/rum/tracking/ComponentPredicate;Landroidx/compose/runtime/Composer;II)V
+	public static final fun NavigationViewTrackingEffect (Landroidx/navigation/NavController;ZLcom/datadog/android/rum/tracking/ComponentPredicate;Lcom/datadog/android/v2/api/SdkCore;Landroidx/compose/runtime/Composer;II)V
 }
 

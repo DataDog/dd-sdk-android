@@ -18,8 +18,7 @@ import timber.log.Timber
  */
 class DatadogTree(
     private val logger: Logger
-) :
-    Timber.Tree() {
+) : Timber.Tree() {
 
     /**
      * Creates a [Timber.Tree] with a default [Logger] having a minimum log priority
@@ -27,12 +26,12 @@ class DatadogTree(
      *
      * See [Logger.Builder.setDatadogLogsMinPriority] for details.
      *
-     * @param sdkCore SDK instance to bind to. If not provided, default instance will be used.
      * @param minLogPriority Minimum log priority to be sent to the Datadog servers.
+     * @param sdkCore SDK instance to bind to. If not provided, default instance will be used.
      */
     @Suppress("unused")
     @JvmOverloads
-    constructor(sdkCore: SdkCore = Datadog.getInstance(), minLogPriority: Int) :
+    constructor(minLogPriority: Int, sdkCore: SdkCore = Datadog.getInstance()) :
         this(
             Logger.Builder(sdkCore)
                 .setDatadogLogsMinPriority(minLogPriority)

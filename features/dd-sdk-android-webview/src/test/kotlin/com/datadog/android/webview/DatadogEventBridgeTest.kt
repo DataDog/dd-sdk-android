@@ -126,7 +126,7 @@ internal class DatadogEventBridgeTest {
         }
 
         // When
-        val bridge = DatadogEventBridge(mockCore, fakeHosts)
+        val bridge = DatadogEventBridge(fakeHosts, mockCore)
 
         // Then
         val consumer = bridge.webViewEventConsumer
@@ -163,7 +163,7 @@ internal class DatadogEventBridgeTest {
         }
 
         // When
-        val bridge = DatadogEventBridge(mockCore, fakeHosts)
+        val bridge = DatadogEventBridge(fakeHosts, mockCore)
 
         // Then
         val consumer = bridge.webViewEventConsumer
@@ -208,7 +208,7 @@ internal class DatadogEventBridgeTest {
         }
 
         // When
-        val bridge = DatadogEventBridge(mockCore, fakeHosts)
+        val bridge = DatadogEventBridge(fakeHosts, mockCore)
 
         // Then
         val consumer = bridge.webViewEventConsumer
@@ -258,7 +258,7 @@ internal class DatadogEventBridgeTest {
     ) {
         // Given
         val expectedHosts = hosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        testedDatadogEventBridge = DatadogEventBridge(mockCore, hosts)
+        testedDatadogEventBridge = DatadogEventBridge(hosts, mockCore)
 
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
@@ -276,7 +276,7 @@ internal class DatadogEventBridgeTest {
     ) {
         // Given
         val expectedHosts = hosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        testedDatadogEventBridge = DatadogEventBridge(mockCore, hosts)
+        testedDatadogEventBridge = DatadogEventBridge(hosts, mockCore)
 
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
@@ -294,7 +294,7 @@ internal class DatadogEventBridgeTest {
         // Given
         val expectedHosts = hosts.map { URL(it).host }
             .joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        testedDatadogEventBridge = DatadogEventBridge(mockCore, hosts)
+        testedDatadogEventBridge = DatadogEventBridge(hosts, mockCore)
 
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
@@ -315,7 +315,7 @@ internal class DatadogEventBridgeTest {
         }
 
         // When
-        DatadogEventBridge.setup(mockCore, mockWebView, fakeHosts)
+        DatadogEventBridge.setup(mockWebView, fakeHosts, mockCore)
 
         // Then
         verify(mockWebView).addJavascriptInterface(
@@ -338,7 +338,7 @@ internal class DatadogEventBridgeTest {
         }
 
         // When
-        DatadogEventBridge.setup(mockCore, mockWebView, fakeHosts)
+        DatadogEventBridge.setup(mockWebView, fakeHosts, mockCore)
 
         // Then
         verify(mockWebView).addJavascriptInterface(

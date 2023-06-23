@@ -107,19 +107,19 @@ internal class ComposeNavigationObserver(
  * for Compose setup.
  *
  * @param navController [NavController] to watch
- * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  * @param trackArguments whether to track navigation arguments
  * @param destinationPredicate to accept the [NavDestination] that will be taken into account as
  * valid RUM View events.
+ * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  */
 @ExperimentalTrackingApi
 @Composable
 @NonRestartableComposable
 fun NavigationViewTrackingEffect(
     navController: NavController,
-    sdkCore: SdkCore = Datadog.getInstance(),
     trackArguments: Boolean = true,
-    destinationPredicate: ComponentPredicate<NavDestination> = AcceptAllNavDestinations()
+    destinationPredicate: ComponentPredicate<NavDestination> = AcceptAllNavDestinations(),
+    sdkCore: SdkCore = Datadog.getInstance()
 ) {
     val currentTrackArguments by rememberUpdatedState(newValue = trackArguments)
     val currentDestinationPredicate by rememberUpdatedState(newValue = destinationPredicate)

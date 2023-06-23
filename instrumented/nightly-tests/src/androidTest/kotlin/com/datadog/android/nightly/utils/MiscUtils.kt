@@ -134,7 +134,7 @@ fun initializeSdk(
             }
         }
     GlobalTracer.registerIfAbsent(tracerProvider.invoke(sdkCore))
-    GlobalRumMonitor.registerIfAbsent(sdkCore, rumMonitorProvider.invoke(sdkCore))
+    GlobalRumMonitor.registerIfAbsent(rumMonitorProvider.invoke(sdkCore), sdkCore)
     return sdkCore
 }
 

@@ -61,7 +61,7 @@ class DatadogSqliteCallbackTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
         testedSqliteCallback = DatadogSqliteCallback(mock(), mockSdkCore)
         whenever(mockSqliteDatabase.path).thenReturn(fakeDbPath)
         whenever(mockSqliteDatabase.version).thenReturn(fakeDbVersion)

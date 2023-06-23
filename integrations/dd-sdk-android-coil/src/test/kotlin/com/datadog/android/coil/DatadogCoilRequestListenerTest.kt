@@ -62,7 +62,7 @@ internal class DatadogCoilRequestListenerTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockRumMonitor)
+        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
         underTest = DatadogCoilRequestListener(mockSdkCore)
     }
 

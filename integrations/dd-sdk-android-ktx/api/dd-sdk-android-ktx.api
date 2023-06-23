@@ -23,8 +23,8 @@ public final class com/datadog/android/ktx/rum/CloseableExtKt {
 }
 
 public final class com/datadog/android/ktx/rum/ContextExtKt {
-	public static final fun getAssetAsRumResource (Landroid/content/Context;Ljava/lang/String;Lcom/datadog/android/v2/api/SdkCore;I)Ljava/io/InputStream;
-	public static synthetic fun getAssetAsRumResource$default (Landroid/content/Context;Ljava/lang/String;Lcom/datadog/android/v2/api/SdkCore;IILjava/lang/Object;)Ljava/io/InputStream;
+	public static final fun getAssetAsRumResource (Landroid/content/Context;Ljava/lang/String;ILcom/datadog/android/v2/api/SdkCore;)Ljava/io/InputStream;
+	public static synthetic fun getAssetAsRumResource$default (Landroid/content/Context;Ljava/lang/String;ILcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Ljava/io/InputStream;
 	public static final fun getRawResAsRumResource (Landroid/content/Context;ILcom/datadog/android/v2/api/SdkCore;)Ljava/io/InputStream;
 	public static synthetic fun getRawResAsRumResource$default (Landroid/content/Context;ILcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Ljava/io/InputStream;
 }

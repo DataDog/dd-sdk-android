@@ -24,8 +24,8 @@ internal const val HEX_RADIX = 16
  * files placed into the "assets" directory.
  *
  * @param fileName The name of the asset to open.  This name can be hierarchical.
- * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  * @param accessMode Desired access mode for retrieving the data.
+ * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  *
  * @return [InputStream] access to the asset data
  *
@@ -36,8 +36,8 @@ internal const val HEX_RADIX = 16
  */
 fun Context.getAssetAsRumResource(
     fileName: String,
-    sdkCore: SdkCore = Datadog.getInstance(),
-    accessMode: Int = AssetManager.ACCESS_STREAMING
+    accessMode: Int = AssetManager.ACCESS_STREAMING,
+    sdkCore: SdkCore = Datadog.getInstance()
 ): InputStream {
     return RumResourceInputStream(
         assets.open(fileName, accessMode),

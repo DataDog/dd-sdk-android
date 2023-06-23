@@ -24,7 +24,7 @@ internal class GlobalRumMonitorTestConfiguration(
     override fun setUp(forge: Forge) {
         super.setUp(forge)
         mockSdkCore = datadogSingletonTestConfiguration?.mockInstance ?: mock()
-        GlobalRumMonitor.registerIfAbsent(mockSdkCore, mockInstance)
+        GlobalRumMonitor.registerIfAbsent(mockInstance, mockSdkCore)
     }
 
     override fun tearDown(forge: Forge) {
