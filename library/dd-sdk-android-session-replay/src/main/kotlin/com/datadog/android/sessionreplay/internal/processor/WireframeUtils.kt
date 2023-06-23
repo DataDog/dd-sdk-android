@@ -80,6 +80,7 @@ internal class WireframeUtils {
             is MobileSegment.Wireframe.ShapeWireframe -> this.bounds()
             is MobileSegment.Wireframe.TextWireframe -> this.bounds()
             is MobileSegment.Wireframe.ImageWireframe -> this.bounds()
+            is MobileSegment.Wireframe.PlaceholderWireframe -> this.bounds()
         }
     }
 
@@ -95,6 +96,27 @@ internal class WireframeUtils {
     }
 
     private fun MobileSegment.Wireframe.TextWireframe.bounds(): Bounds {
+        return Bounds(
+            left = x + (clip?.left ?: 0),
+            right = x + width - (clip?.right ?: 0),
+            top = y + (clip?.top ?: 0),
+            bottom = y + height - (clip?.bottom ?: 0),
+            width = width,
+            height = height
+        )
+    }
+    private fun MobileSegment.Wireframe.ImageWireframe.bounds(): Bounds {
+        return Bounds(
+            left = x + (clip?.left ?: 0),
+            right = x + width - (clip?.right ?: 0),
+            top = y + (clip?.top ?: 0),
+            bottom = y + height - (clip?.bottom ?: 0),
+            width = width,
+            height = height
+        )
+    }
+
+    private fun MobileSegment.Wireframe.PlaceholderWireframe.bounds(): Bounds {
         return Bounds(
             left = x + (clip?.left ?: 0),
             right = x + width - (clip?.right ?: 0),
