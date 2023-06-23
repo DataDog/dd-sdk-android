@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.persistence.file
 
-import com.datadog.android.core.internal.persistence.file.batch.PlainBatchFileReaderWriter
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
@@ -181,7 +180,7 @@ internal class PlainFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
+            PlainFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
             IOException::class.java
         )
     }
@@ -208,7 +207,7 @@ internal class PlainFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
+            PlainFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
             IOException::class.java
         )
     }
