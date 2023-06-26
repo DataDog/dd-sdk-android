@@ -69,6 +69,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.inOrder
@@ -104,6 +105,9 @@ internal class CoreFeatureTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockPersistenceExecutorService: ExecutorService
+
     @Forgery
     lateinit var fakeCredentials: Credentials
 
@@ -119,9 +123,19 @@ internal class CoreFeatureTest {
     @BeforeEach
     fun `set up`() {
         CoreFeature.disableKronosBackgroundSync = true
-        testedFeature = CoreFeature(mockInternalLogger)
+        testedFeature = CoreFeature(
+            mockInternalLogger,
+            persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
+        )
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
+        whenever(mockPersistenceExecutorService.execute(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+        }
+        whenever(mockPersistenceExecutorService.submit(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+            mock()
+        }
     }
 
     @AfterEach
@@ -158,7 +172,6 @@ internal class CoreFeatureTest {
         )
 
         // Then
-        Thread.sleep(50)
         assertThat(testedFeature.timeProvider)
             .isInstanceOf(KronosTimeProvider::class.java)
     }
@@ -883,7 +896,6 @@ internal class CoreFeatureTest {
             fakeConfig,
             fakeConsent
         )
-        Thread.sleep(50)
 
         // When
         testedFeature.stop()

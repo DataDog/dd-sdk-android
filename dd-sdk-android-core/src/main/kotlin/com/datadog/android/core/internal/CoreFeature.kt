@@ -91,7 +91,20 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("TooManyFunctions")
-internal class CoreFeature(private val internalLogger: InternalLogger) {
+internal class CoreFeature(
+    private val internalLogger: InternalLogger,
+    // factory is needed to avoid flakiness in unit tests, we will provide same thread executor instead
+    private val persistenceExecutorServiceFactory: (InternalLogger) -> ExecutorService = {
+        LoggingThreadPoolExecutor(
+            CORE_DEFAULT_POOL_SIZE,
+            Runtime.getRuntime().availableProcessors(),
+            THREAD_POOL_MAX_KEEP_ALIVE_MS,
+            TimeUnit.MILLISECONDS,
+            LinkedBlockingDeque(),
+            it
+        )
+    }
+) {
 
     internal val initialized = AtomicBoolean(false)
     internal var contextRef: WeakReference<Context?> = WeakReference(null)
@@ -444,14 +457,7 @@ internal class CoreFeature(private val internalLogger: InternalLogger) {
         uploadExecutorService =
             LoggingScheduledThreadPoolExecutor(CORE_DEFAULT_POOL_SIZE, internalLogger)
         @Suppress("UnsafeThirdPartyFunctionCall") // workQueue can't be null
-        persistenceExecutorService = LoggingThreadPoolExecutor(
-            CORE_DEFAULT_POOL_SIZE,
-            Runtime.getRuntime().availableProcessors(),
-            THREAD_POOL_MAX_KEEP_ALIVE_MS,
-            TimeUnit.MILLISECONDS,
-            LinkedBlockingDeque(),
-            internalLogger
-        )
+        persistenceExecutorService = persistenceExecutorServiceFactory(internalLogger)
     }
 
     private fun resolveProcessInfo(appContext: Context) {

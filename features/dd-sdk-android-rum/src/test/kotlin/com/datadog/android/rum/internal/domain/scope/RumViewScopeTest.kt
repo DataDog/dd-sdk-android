@@ -75,7 +75,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
-import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -487,7 +486,6 @@ internal class RumViewScopeTest {
             type = expectedViewType,
             trackFrustrations = fakeTrackFrustrations
         )
-        reset(mockInternalLogger)
 
         // When
         testedScope.handleEvent(
@@ -577,7 +575,6 @@ internal class RumViewScopeTest {
         testedScope.activeActionScope = mockChildScope
         val stopActionEvent = RumRawEvent.StopAction(rumActionType, actionName, emptyMap())
         whenever(mockChildScope.handleEvent(stopActionEvent, mockWriter)) doReturn null
-        reset(mockInternalLogger)
 
         // When
         testedScope.handleEvent(

@@ -52,6 +52,7 @@ import java.util.concurrent.TimeUnit
  * @param instanceId the unique identifier for this instance
  * @param name the name of this instance
  * @param internalLoggerProvider Provider for [InternalLogger] instance.
+ * @param persistenceExecutorServiceFactory Custom factory for persistence executor, used only in unit-tests
  */
 @Suppress("TooManyFunctions")
 internal class DatadogCore(
@@ -59,7 +60,9 @@ internal class DatadogCore(
     internal val credentials: Credentials,
     internal val instanceId: String,
     override val name: String,
-    internalLoggerProvider: (FeatureSdkCore) -> InternalLogger = { SdkInternalLogger(it) }
+    internalLoggerProvider: (FeatureSdkCore) -> InternalLogger = { SdkInternalLogger(it) },
+    // only for unit tests
+    private val persistenceExecutorServiceFactory: ((InternalLogger) -> ExecutorService)? = null
 ) : InternalSdkCore {
 
     internal lateinit var coreFeature: CoreFeature
@@ -281,7 +284,11 @@ internal class DatadogCore(
         }
 
         // always initialize Core Features first
-        coreFeature = CoreFeature(internalLogger)
+        coreFeature = if (persistenceExecutorServiceFactory != null) {
+            CoreFeature(internalLogger, persistenceExecutorServiceFactory)
+        } else {
+            CoreFeature(internalLogger)
+        }
         coreFeature.initialize(
             context,
             instanceId,
