@@ -6,7 +6,7 @@
 
 package com.datadog.android.v2.api.context
 
-import com.datadog.android.core.`internal`.utils.toJsonElement
+import com.datadog.android.core.internal.utils.JsonSerializer
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
@@ -48,7 +48,7 @@ data class UserInfo(
         }
         additionalProperties.forEach { (k, v) ->
             if (k !in RESERVED_PROPERTIES) {
-                json.add(k, v.toJsonElement())
+                json.add(k, JsonSerializer.toJsonElement(v))
             }
         }
         return json

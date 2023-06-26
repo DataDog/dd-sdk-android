@@ -102,11 +102,11 @@ fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.v2.api
 fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.v2.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
 fun java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.v2.api.InternalLogger, Runnable): java.util.concurrent.Future<*>?
 val NULL_MAP_VALUE: Object
-fun Any?.toJsonElement(): com.google.gson.JsonElement
+object com.datadog.android.core.internal.utils.JsonSerializer
+  fun toJsonElement(Any?): com.google.gson.JsonElement
 fun Int.toHexString(): String
 fun Long.toHexString(): String
 fun java.math.BigInteger.toHexString(): String
-fun Float.percent(): Double
 fun Throwable.loggableStackTrace(): String
 interface com.datadog.android.core.persistence.Serializer<T: Any>
   fun serialize(T): String?

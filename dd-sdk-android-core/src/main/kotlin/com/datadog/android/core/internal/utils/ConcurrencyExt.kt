@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 import java.util.concurrent.Executor
@@ -26,6 +27,7 @@ internal const val ERROR_TASK_REJECTED = "Unable to schedule %s task on the exec
  * @param internalLogger Internal logger.
  * @param runnable Task to run.
  */
+@InternalApi
 fun Executor.executeSafe(
     operationName: String,
     internalLogger: InternalLogger,
@@ -54,6 +56,7 @@ fun Executor.executeSafe(
  * @param internalLogger Internal logger.
  * @param runnable Task to run.
  */
+@InternalApi
 fun ScheduledExecutorService.scheduleSafe(
     operationName: String,
     delay: Long,
@@ -83,6 +86,7 @@ fun ScheduledExecutorService.scheduleSafe(
  * @param internalLogger Internal logger.
  * @param runnable Task to run.
  */
+@InternalApi
 fun ExecutorService.submitSafe(
     operationName: String,
     internalLogger: InternalLogger,

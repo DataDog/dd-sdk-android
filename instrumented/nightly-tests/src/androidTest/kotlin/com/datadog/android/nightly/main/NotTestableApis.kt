@@ -24,6 +24,7 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useCustomCrashReportsEndpoint(String): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun useSite(com.datadog.android.DatadogSite): Builder
  * apiMethodSignature: com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor#constructor(Int, com.datadog.android.v2.api.InternalLogger)
+ * apiMethodSignature: com.datadog.android.core.internal.utils.JsonSerializer#fun toJsonElement(Any?): com.google.gson.JsonElement
  * apiMethodSignature: com.datadog.android.core.sampling.RateBasedSampler#constructor(Double)
  * apiMethodSignature: com.datadog.android.core.sampling.RateBasedSampler#constructor(Float)
  * apiMethodSignature: com.datadog.android.event.MapperSerializer<T#constructor(EventMapper<T>, com.datadog.android.core.persistence.Serializer<T>)
@@ -52,11 +53,10 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun build(): SessionReplayConfiguration
  * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun setPrivacy(SessionReplayPrivacy): Builder
  * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplayConfiguration$Builder#fun useCustomEndpoint(String): Builder
- * apiMethodSignature: fun Any?.toJsonElement(): com.google.gson.JsonElement
  * apiMethodSignature: fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.v2.api.InternalLogger): ByteArray
- * apiMethodSignature: fun Float.percent(): Double
  * apiMethodSignature: fun java.math.BigInteger.toHexString(): String
  * apiMethodSignature: fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.v2.api.InternalLogger, Runnable)
+ * apiMethodSignature: fun java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.v2.api.InternalLogger, Runnable): java.util.concurrent.Future<*>?
  * apiMethodSignature: fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.v2.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
  * apiMethodSignature: fun Int.toHexString(): String
  * apiMethodSignature: fun Long.toHexString(): String
