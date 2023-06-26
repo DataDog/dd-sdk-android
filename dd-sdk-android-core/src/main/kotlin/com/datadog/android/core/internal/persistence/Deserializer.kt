@@ -8,6 +8,8 @@ package com.datadog.android.core.internal.persistence
 
 /**
  * The Deserializer<P, R> generic interface. Should be implemented by any custom deserializer.
+ *
+ * FOR INTERNAL USAGE ONLY. THIS INTERFACE CONTENT MAY CHANGE WITHOUT NOTICE.
  */
 interface Deserializer<P : Any, R : Any> {
 

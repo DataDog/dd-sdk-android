@@ -6,8 +6,8 @@
 
 package com.datadog.android.trace.internal
 
+import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.trace.internal.data.TraceWriter
-import com.datadog.android.trace.internal.domain.event.SpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.net.TracesRequestFactory
 import com.datadog.android.utils.forge.Configurator

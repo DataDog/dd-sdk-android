@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.trace.internal.domain.event
+package com.datadog.android.trace.event
 
 import com.datadog.android.event.EventMapper
 import com.datadog.android.trace.model.SpanEvent

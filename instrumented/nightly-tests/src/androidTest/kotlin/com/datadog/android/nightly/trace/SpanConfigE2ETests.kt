@@ -25,7 +25,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracesConfiguration
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.trace.internal.domain.event.SpanEventMapper
+import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.android.v2.api.context.UserInfo
 import fr.xgouchet.elmyr.junit4.ForgeRule
@@ -104,7 +104,7 @@ class SpanConfigE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.trace.TracesConfiguration$Builder#fun setSpanEventMapper(com.datadog.android.trace.internal.domain.event.SpanEventMapper): Builder
+     * apiMethodSignature: com.datadog.android.trace.TracesConfiguration$Builder#fun setSpanEventMapper(com.datadog.android.trace.event.SpanEventMapper): Builder
      */
     @Test
     fun trace_config_set_span_event_mapper() {

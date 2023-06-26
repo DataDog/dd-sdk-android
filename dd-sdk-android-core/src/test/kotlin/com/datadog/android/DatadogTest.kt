@@ -19,7 +19,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.NoOpFeatureSdkCore
+import com.datadog.android.v2.core.NoOpInternalSdkCore
 import com.datadog.android.v2.core.internal.HashGenerator
 import com.datadog.android.v2.core.internal.SdkCoreRegistry
 import com.datadog.android.v2.core.internal.Sha256HashGenerator
@@ -384,7 +384,7 @@ internal class DatadogTest {
         val getInstance = Datadog.getInstance()
 
         // Then
-        assertThat(getInstance).isInstanceOf(NoOpFeatureSdkCore::class.java)
+        assertThat(getInstance).isInstanceOf(NoOpInternalSdkCore::class.java)
         assertThat(sdk.coreFeature.initialized.get()).isFalse()
     }
 
@@ -409,7 +409,7 @@ internal class DatadogTest {
         val getInstance = Datadog.getInstance(name)
 
         // Then
-        assertThat(getInstance).isInstanceOf(NoOpFeatureSdkCore::class.java)
+        assertThat(getInstance).isInstanceOf(NoOpInternalSdkCore::class.java)
         assertThat(sdk.coreFeature.initialized.get()).isFalse()
     }
 

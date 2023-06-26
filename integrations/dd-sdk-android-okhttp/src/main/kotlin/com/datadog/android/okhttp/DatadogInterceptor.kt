@@ -29,6 +29,7 @@ import com.datadog.android.v2.api.Feature
 import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.InternalSdkCore
 import io.opentracing.Span
 import io.opentracing.Tracer
 import okhttp3.Interceptor
@@ -264,7 +265,7 @@ internal constructor(
         return rumFeature == null
     }
 
-    override fun onSdkInstanceReady(sdkCore: SdkCore) {
+    override fun onSdkInstanceReady(sdkCore: InternalSdkCore) {
         super.onSdkInstanceReady(sdkCore)
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.notifyInterceptorInstantiated()
     }

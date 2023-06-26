@@ -7,6 +7,7 @@
 package com.datadog.android.trace.internal.domain.event
 
 import com.datadog.android.event.EventMapper
+import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
