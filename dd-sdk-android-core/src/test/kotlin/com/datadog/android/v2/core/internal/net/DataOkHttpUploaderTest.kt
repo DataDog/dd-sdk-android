@@ -24,6 +24,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -596,27 +597,27 @@ internal class DataOkHttpUploaderTest {
         argumentCaptor<Request> {
             verify(mockCallFactory).newCall(capture())
 
-            verifyRequestUrl(firstValue.url(), HttpUrl.get(expectedRequest.url))
+            verifyRequestUrl(firstValue.url, expectedRequest.url.toHttpUrl())
             verifyRequestHeaders(
-                firstValue.headers(),
+                firstValue.headers,
                 expectedRequest.headers,
                 expectedUserAgentHeader
             )
-            verifyRequestBody(firstValue.body(), expectedRequest.body, expectedRequest.contentType)
+            verifyRequestBody(firstValue.body, expectedRequest.body, expectedRequest.contentType)
         }
     }
 
     private fun verifyRequestUrl(url: HttpUrl, expectedUrl: HttpUrl) {
-        assertThat(url.scheme()).isEqualTo(expectedUrl.scheme())
-        assertThat(url.host()).isEqualTo(expectedUrl.host())
-        assertThat(url.encodedPath()).isEqualTo(expectedUrl.encodedPath())
+        assertThat(url.scheme).isEqualTo(expectedUrl.scheme)
+        assertThat(url.host).isEqualTo(expectedUrl.host)
+        assertThat(url.encodedPath).isEqualTo(expectedUrl.encodedPath)
 
-        val expectedQueryParams = expectedUrl.queryParameterNames()
+        val expectedQueryParams = expectedUrl.queryParameterNames
 
-        assertThat(url.queryParameterNames().size).isEqualTo(expectedQueryParams.size)
+        assertThat(url.queryParameterNames.size).isEqualTo(expectedQueryParams.size)
 
         if (expectedQueryParams.isEmpty()) {
-            assertThat(url.query()).isNullOrEmpty()
+            assertThat(url.query).isNullOrEmpty()
         } else {
             expectedQueryParams.forEach {
                 val actualValue = url.queryParameter(it)
@@ -665,7 +666,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     private fun verifyResponseIsClosed() {
-        verify(fakeResponse.body())!!.close()
+        verify(fakeResponse.body)!!.close()
     }
 
     // endregion

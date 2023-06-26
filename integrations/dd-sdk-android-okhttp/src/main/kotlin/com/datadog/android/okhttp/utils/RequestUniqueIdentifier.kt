@@ -13,9 +13,9 @@ import java.io.IOException
  * Generates an identifier to uniquely track requests.
  */
 internal fun identifyRequest(request: Request): String {
-    val method = request.method()
-    val url = request.url()
-    val body = request.body()
+    val method = request.method
+    val url = request.url
+    val body = request.body
     return if (body == null) {
         "$method•$url"
     } else {

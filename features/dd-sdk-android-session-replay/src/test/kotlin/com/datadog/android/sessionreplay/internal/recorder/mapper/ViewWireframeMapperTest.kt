@@ -208,10 +208,8 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         assertThat(shapeWireframes).isEqualTo(expectedWireframes)
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Test
-    fun `M resolve a ShapeWireframe with shapeStyle W map {RippleDrawable, ColorDrawable, L}`(
+    fun `M resolve a ShapeWireframe with shapeStyle W map {RippleDrawable, ColorDrawable}`(
         forge: Forge
     ) {
         // Given
@@ -257,45 +255,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
     }
 
     @Test
-    fun `M resolve a ShapeWireframe no shapeStyle W map {RippleDrawable, ColorDrawable, lowL}`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{8}")
-        val fakeDrawableColor = fakeStyleColor
-            .substring(1)
-            .toLong(16)
-            .shr(8)
-            .toInt()
-        val fakeDrawableAlpha = fakeStyleColor
-            .substring(1)
-            .toLong(16)
-            .and(ALPHA_MASK)
-            .toInt()
-        val mockDrawable = mock<ColorDrawable> {
-            whenever(it.color).thenReturn(fakeDrawableColor)
-            whenever(it.alpha).thenReturn(fakeDrawableAlpha)
-        }
-        val mockRipple = mock<RippleDrawable> {
-            whenever(it.numberOfLayers).thenReturn(forge.anInt(min = 1))
-            whenever(it.getDrawable(0)).thenReturn(mockDrawable)
-        }
-        val mockView = forge.aMockView<View>().apply {
-            whenever(this.background).thenReturn(mockRipple)
-        }
-
-        // When
-        val shapeWireframes = testedWireframeMapper.map(mockView, fakeMappingContext)
-
-        // Then
-        val expectedWireframes = mockView.toShapeWireframes()
-        assertThat(shapeWireframes).isEqualTo(expectedWireframes)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    @Test
-    fun `M resolve a ShapeWireframe no shapeStyle W produce {RippleDrawable, NonColorDrawable, L}`(
+    fun `M resolve a ShapeWireframe no shapeStyle W produce {RippleDrawable, NonColorDrawable}`(
         forge: Forge
     ) {
         // Given

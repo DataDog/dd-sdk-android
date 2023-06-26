@@ -8,7 +8,6 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.content.res.ColorStateList
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.widget.CheckedTextView
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
@@ -17,7 +16,6 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
-import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -235,7 +233,6 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         assertThat(resolvedWireframes).isEqualTo(fakeTextWireframes + expectedCheckBoxWireframe)
     }
 
-    @TestTargetApi(value = Build.VERSION_CODES.LOLLIPOP)
     @Test
     fun `M resolve the checkbox as ShapeWireframe W map() { checkMarkTintList available }`() {
         // Given
@@ -268,7 +265,6 @@ internal abstract class BaseCheckedTextViewMapperTest : BaseWireframeMapperTest(
         assertThat(resolvedWireframes).isEqualTo(fakeTextWireframes + expectedCheckBoxWireframe)
     }
 
-    @TestTargetApi(value = Build.VERSION_CODES.LOLLIPOP)
     @Test
     fun `M resolve the checkbox as ShapeWireframe W map() { checkMarkTintList is null }`() {
         // Given

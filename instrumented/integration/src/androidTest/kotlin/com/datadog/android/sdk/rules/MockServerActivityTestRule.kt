@@ -67,7 +67,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
             }
         requests.clear()
         mockWebServer.start()
-        mockWebServer.setDispatcher(
+        mockWebServer.dispatcher =
             object : Dispatcher() {
                 override fun dispatch(request: RecordedRequest): MockResponse {
                     if (keepRequests) {
@@ -80,14 +80,13 @@ internal open class MockServerActivityTestRule<T : Activity>(
 
                     return if (request.path == CONNECTION_ISSUE_PATH) {
                         MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE)
-                    } else if (request.path.endsWith("nyan-cat.gif")) {
+                    } else if (request.path?.endsWith("nyan-cat.gif") == true) {
                         mockResponse(200)
                     } else {
                         mockResponse(HttpURLConnection.HTTP_ACCEPTED)
                     }
                 }
             }
-        )
 
         getConnectionUrl().let {
             RuntimeConfig.logsEndpointUrl = "$it/$LOGS_URL_SUFFIX"
@@ -192,7 +191,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
     }
 
     private fun RecordedRequest.unzip(): String {
-        if (body.size() <= 0) {
+        if (body.size <= 0) {
             return ""
         }
         val gzipInputStream =

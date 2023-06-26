@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.os.Build
 import android.widget.EditText
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
@@ -66,13 +65,11 @@ internal open class EditTextViewMapper(
     }
 
     private fun resolveUnderlineColor(view: EditText): String {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            view.backgroundTintList?.let {
-                return colorAndAlphaAsStringHexa(
-                    it.defaultColor,
-                    OPAQUE_ALPHA_VALUE
-                )
-            }
+        view.backgroundTintList?.let {
+            return colorAndAlphaAsStringHexa(
+                it.defaultColor,
+                OPAQUE_ALPHA_VALUE
+            )
         }
         return colorAndAlphaAsStringHexa(view.currentTextColor, OPAQUE_ALPHA_VALUE)
     }

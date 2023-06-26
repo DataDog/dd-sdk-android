@@ -19,7 +19,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -128,7 +128,7 @@ internal class DatadogCoilRequestListenerTest {
     @Test
     fun `M send RUM error event W HttpUrl Request fails`(forge: Forge) {
         // GIVEN
-        val fakeHttpUrl = HttpUrl.get(forgeImagePath(forge))
+        val fakeHttpUrl = forgeImagePath(forge).toHttpUrl()
         mockRequest = mockImageRequest(fakeHttpUrl)
 
         // WHEN
@@ -144,7 +144,7 @@ internal class DatadogCoilRequestListenerTest {
         )
         Assertions.assertThat(argumentCaptor.firstValue).containsEntry(
             DatadogCoilRequestListener.REQUEST_PATH_TAG,
-            fakeHttpUrl.url().toString()
+            fakeHttpUrl.toUrl().toString()
         )
     }
 

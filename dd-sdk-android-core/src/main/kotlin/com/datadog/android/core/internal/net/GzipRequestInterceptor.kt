@@ -15,7 +15,7 @@ import okhttp3.RequestBody
 import okhttp3.Response
 import okio.BufferedSink
 import okio.GzipSink
-import okio.Okio
+import okio.buffer
 import java.io.IOException
 import kotlin.jvm.Throws
 
@@ -36,7 +36,7 @@ internal class GzipRequestInterceptor(private val internalLogger: InternalLogger
     @Throws(IOException::class)
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest: Request = chain.request()
-        val body = originalRequest.body()
+        val body = originalRequest.body
 
         return if (body == null ||
             originalRequest.header(HEADER_ENCODING) != null ||
@@ -47,7 +47,7 @@ internal class GzipRequestInterceptor(private val internalLogger: InternalLogger
             val compressedRequest = try {
                 originalRequest.newBuilder()
                     .header(HEADER_ENCODING, ENCODING_GZIP)
-                    .method(originalRequest.method(), gzip(body))
+                    .method(originalRequest.method, gzip(body))
                     .build()
             } catch (e: Exception) {
                 internalLogger.log(
@@ -81,7 +81,7 @@ internal class GzipRequestInterceptor(private val internalLogger: InternalLogger
 
             @Suppress("UnsafeThirdPartyFunctionCall") // write to is expected to throw IOExceptions
             override fun writeTo(sink: BufferedSink) {
-                val gzipSink: BufferedSink = Okio.buffer(GzipSink(sink))
+                val gzipSink: BufferedSink = GzipSink(sink).buffer()
                 body.writeTo(gzipSink)
                 gzipSink.close()
             }

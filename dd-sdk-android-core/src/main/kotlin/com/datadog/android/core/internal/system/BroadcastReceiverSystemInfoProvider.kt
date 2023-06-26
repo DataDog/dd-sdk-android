@@ -11,14 +11,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
-import android.os.Build
 import android.os.PowerManager
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
 import com.datadog.android.v2.api.InternalLogger
 import kotlin.math.roundToInt
 
 internal class BroadcastReceiverSystemInfoProvider(
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val internalLogger: InternalLogger
 ) :
     ThreadSafeReceiver(), SystemInfoProvider {
@@ -55,9 +53,7 @@ internal class BroadcastReceiverSystemInfoProvider(
     @SuppressLint("InlinedApi")
     override fun register(context: Context) {
         registerIntentFilter(context, Intent.ACTION_BATTERY_CHANGED)
-        if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.LOLLIPOP) {
-            registerIntentFilter(context, PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
-        }
+        registerIntentFilter(context, PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
     }
 
     override fun unregister(context: Context) {
@@ -100,15 +96,12 @@ internal class BroadcastReceiverSystemInfoProvider(
         )
     }
 
-    @SuppressLint("NewApi")
     private fun handlePowerSaveIntent(context: Context) {
-        if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.LOLLIPOP) {
-            val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
-            val powerSaveMode = powerManager?.isPowerSaveMode ?: false
-            systemInfo = systemInfo.copy(
-                powerSaveMode = powerSaveMode
-            )
-        }
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+        val powerSaveMode = powerManager?.isPowerSaveMode ?: false
+        systemInfo = systemInfo.copy(
+            powerSaveMode = powerSaveMode
+        )
     }
 
     // endregion

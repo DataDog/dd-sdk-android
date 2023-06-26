@@ -9,9 +9,10 @@ package com.datadog.android.sessionreplay.internal.domain
 import com.datadog.android.sessionreplay.internal.net.BytesCompressor
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.google.gson.JsonObject
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 internal class RequestBodyFactory(
     private val compressor: BytesCompressor = BytesCompressor()
@@ -35,10 +36,8 @@ internal class RequestBodyFactory(
             .addFormDataPart(
                 SEGMENT_FORM_KEY,
                 segment.session.id,
-                RequestBody.create(
-                    MediaType.parse(CONTENT_TYPE_BINARY),
-                    compressedData
-                )
+                compressedData
+                    .toRequestBody(CONTENT_TYPE_BINARY.toMediaTypeOrNull())
             )
             .addFormDataPart(
                 APPLICATION_ID_FORM_KEY,

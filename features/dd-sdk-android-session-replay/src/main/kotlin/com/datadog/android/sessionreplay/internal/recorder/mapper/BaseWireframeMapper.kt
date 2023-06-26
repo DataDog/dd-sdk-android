@@ -62,10 +62,7 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
         return if (this is ColorDrawable) {
             val color = colorAndAlphaAsStringHexa(color, alpha)
             MobileSegment.ShapeStyle(color, viewAlpha) to null
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
-            this is RippleDrawable &&
-            numberOfLayers >= 1
-        ) {
+        } else if (this is RippleDrawable && numberOfLayers >= 1) {
             getDrawable(0).resolveShapeStyleAndBorder(viewAlpha)
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && this is InsetDrawable) {
             drawable?.resolveShapeStyleAndBorder(viewAlpha)

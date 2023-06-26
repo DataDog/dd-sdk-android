@@ -13,9 +13,9 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
 import okhttp3.Call
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Locale
 import com.datadog.android.v2.api.Request as DatadogRequest
 
@@ -104,7 +104,7 @@ internal class DataOkHttpUploader(
         val call = callFactory.newCall(okHttpRequest)
         val response = call.execute()
         response.close()
-        return responseCodeToUploadStatus(response.code(), request)
+        return responseCodeToUploadStatus(response.code, request)
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
@@ -112,11 +112,11 @@ internal class DataOkHttpUploader(
         val mediaType = if (request.contentType == null) {
             null
         } else {
-            MediaType.parse(request.contentType)
+            request.contentType.toMediaTypeOrNull()
         }
         val builder = Request.Builder()
             .url(request.url)
-            .post(RequestBody.create(mediaType, request.body))
+            .post(request.body.toRequestBody(mediaType))
 
         for ((header, value) in request.headers) {
             if (header.lowercase(Locale.US) == "user-agent") {

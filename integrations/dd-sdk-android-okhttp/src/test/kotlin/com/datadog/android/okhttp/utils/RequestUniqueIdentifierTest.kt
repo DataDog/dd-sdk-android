@@ -11,8 +11,10 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okio.BufferedSink
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -55,7 +57,7 @@ internal class RequestUniqueIdentifierTest {
 
     @Test
     fun `identify POST request`() {
-        val body = RequestBody.create(null, fakeBody)
+        val body = fakeBody.toRequestBody(null)
         val request = Request.Builder()
             .post(body).url(fakeUrl)
             .build()
@@ -69,7 +71,7 @@ internal class RequestUniqueIdentifierTest {
 
     @Test
     fun `identify POST request with content type`() {
-        val body = RequestBody.create(MediaType.parse(fakeContentType), fakeBody)
+        val body = fakeBody.toRequestBody(fakeContentType.toMediaTypeOrNull())
         val request = Request.Builder()
             .post(body).url(fakeUrl)
             .build()
@@ -83,7 +85,7 @@ internal class RequestUniqueIdentifierTest {
 
     @Test
     fun `identify PUT request`() {
-        val body = RequestBody.create(null, fakeBody)
+        val body = fakeBody.toRequestBody(null)
         val request = Request.Builder()
             .put(body).url(fakeUrl)
             .build()
@@ -97,7 +99,7 @@ internal class RequestUniqueIdentifierTest {
 
     @Test
     fun `identify PUT request with content type`() {
-        val body = RequestBody.create(MediaType.parse(fakeContentType), fakeBody)
+        val body = fakeBody.toRequestBody(fakeContentType.toMediaTypeOrNull())
         val request = Request.Builder()
             .put(body).url(fakeUrl)
             .build()
@@ -111,7 +113,7 @@ internal class RequestUniqueIdentifierTest {
 
     @Test
     fun `identify PATCH request`() {
-        val body = RequestBody.create(null, fakeBody)
+        val body = fakeBody.toRequestBody(null)
         val request = Request.Builder()
             .patch(body).url(fakeUrl)
             .build()
@@ -125,7 +127,7 @@ internal class RequestUniqueIdentifierTest {
 
     @Test
     fun `identify PATCH request with content type`() {
-        val body = RequestBody.create(MediaType.parse(fakeContentType), fakeBody)
+        val body = fakeBody.toRequestBody(fakeContentType.toMediaTypeOrNull())
         val request = Request.Builder()
             .patch(body).url(fakeUrl)
             .build()
@@ -151,7 +153,7 @@ internal class RequestUniqueIdentifierTest {
 
     @Test
     fun `identify DELETE request with body`() {
-        val body = RequestBody.create(null, fakeBody)
+        val body = fakeBody.toRequestBody(null)
         val request = Request.Builder()
             .delete(body).url(fakeUrl)
             .build()
@@ -165,7 +167,7 @@ internal class RequestUniqueIdentifierTest {
 
     @Test
     fun `identify DELETE request with content type`() {
-        val body = RequestBody.create(MediaType.parse(fakeContentType), fakeBody)
+        val body = fakeBody.toRequestBody(fakeContentType.toMediaTypeOrNull())
         val request = Request.Builder()
             .delete(body).url(fakeUrl)
             .build()
@@ -188,7 +190,7 @@ internal class RequestUniqueIdentifierTest {
             }
 
             override fun contentType(): MediaType? {
-                return MediaType.parse(fakeContentType)
+                return fakeContentType.toMediaTypeOrNull()
             }
 
             override fun writeTo(sink: BufferedSink) {

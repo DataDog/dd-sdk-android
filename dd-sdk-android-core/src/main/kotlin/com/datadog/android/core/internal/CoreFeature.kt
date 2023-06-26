@@ -422,7 +422,6 @@ internal class CoreFeature(
             configuration.needsClearTextHttp -> ConnectionSpec.CLEARTEXT
             else -> ConnectionSpec.Builder(ConnectionSpec.RESTRICTED_TLS)
                 .tlsVersions(TlsVersion.TLS_1_2, TlsVersion.TLS_1_3)
-                .supportsTlsExtensions(true)
                 .cipherSuites(*RESTRICTED_CIPHER_SUITES)
                 .build()
         }
@@ -554,15 +553,7 @@ internal class CoreFeature(
             CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 
             CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-
-            // these 4 are not listed in OpenSSL (because of CBC), but
-            // claimed to be FIPS 140-2 compliant in other sources. Keep them for now, can be safely
-            // dropped once min API is 21 (TODO RUMM-1594).
-            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
-            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
-            CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256,
-            CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA256
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
         )
 
         const val DRAIN_WAIT_SECONDS = 10L

@@ -16,18 +16,14 @@ import com.datadog.android.v2.api.context.DeviceType
 import java.util.Locale
 
 internal class DefaultAndroidInfoProvider(
-    appContext: Context,
-    sdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
+    appContext: Context
 ) : AndroidInfoProvider {
 
     // lazy is just to avoid breaking the tests (because without lazy type is resolved at the
     // construction time and Build.MODEL is null in unit-tests) and also to have value resolved
     // once to avoid different values for foldables during the application lifecycle
     override val deviceType: DeviceType by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        resolveDeviceType(
-            appContext,
-            sdkVersionProvider
-        )
+        resolveDeviceType(appContext)
     }
 
     override val deviceName: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -75,11 +71,8 @@ internal class DefaultAndroidInfoProvider(
         const val FEATURE_GOOGLE_ANDROID_TV = "com.google.android.tv"
         const val MIN_TABLET_WIDTH_DP = 800
 
-        private fun resolveDeviceType(
-            appContext: Context,
-            sdkVersionProvider: BuildSdkVersionProvider
-        ): DeviceType {
-            return if (isTv(appContext, sdkVersionProvider)) {
+        private fun resolveDeviceType(appContext: Context): DeviceType {
+            return if (isTv(appContext)) {
                 DeviceType.TV
             } else if (isTablet(appContext)) {
                 DeviceType.TABLET
@@ -90,30 +83,21 @@ internal class DefaultAndroidInfoProvider(
             }
         }
 
-        private fun isTv(
-            appContext: Context,
-            sdkVersionProvider: BuildSdkVersionProvider
-        ): Boolean {
+        private fun isTv(appContext: Context): Boolean {
             val uiModeManager =
                 appContext.getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager
             if (uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION) {
                 return true
             }
 
-            return hasTvFeature(appContext.packageManager, sdkVersionProvider)
+            return hasTvFeature(appContext.packageManager)
         }
 
         private fun hasTvFeature(
-            packageManager: PackageManager,
-            sdkVersionProvider: BuildSdkVersionProvider
+            packageManager: PackageManager
         ): Boolean {
-            val sdkVersion = sdkVersionProvider.version()
             return when {
-                sdkVersion >= Build.VERSION_CODES.LOLLIPOP &&
-                    packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK) -> true
-                sdkVersion < Build.VERSION_CODES.LOLLIPOP &&
-                    @Suppress("DEPRECATION")
-                    packageManager.hasSystemFeature(PackageManager.FEATURE_TELEVISION) -> true
+                packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK) -> true
                 packageManager.hasSystemFeature(FEATURE_GOOGLE_ANDROID_TV) -> true
                 else -> false
             }

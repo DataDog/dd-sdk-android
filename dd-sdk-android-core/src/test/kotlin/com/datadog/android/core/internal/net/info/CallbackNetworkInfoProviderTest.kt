@@ -125,7 +125,6 @@ internal class CallbackNetworkInfoProviderTest {
         whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) doReturn true
         whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn upSpeed
         whenever(mockCapabilities.linkDownstreamBandwidthKbps) doReturn downSpeed
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.LOLLIPOP
 
         // WHEN
         testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
@@ -145,7 +144,6 @@ internal class CallbackNetworkInfoProviderTest {
     fun `connected to wifi (no up or down bandwidth, no strength)`() {
         // GIVEN
         whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) doReturn true
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.LOLLIPOP
 
         // WHEN
         testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
@@ -199,7 +197,6 @@ internal class CallbackNetworkInfoProviderTest {
             .doReturn(true)
         whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn upSpeed
         whenever(mockCapabilities.linkDownstreamBandwidthKbps) doReturn downSpeed
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.LOLLIPOP
 
         // WHEN
         testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
@@ -220,7 +217,6 @@ internal class CallbackNetworkInfoProviderTest {
         // GIVEN
         whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI_AWARE))
             .doReturn(true)
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.LOLLIPOP
 
         // WHEN
         testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)

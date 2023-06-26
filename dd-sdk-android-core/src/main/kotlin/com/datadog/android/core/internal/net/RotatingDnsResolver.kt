@@ -39,12 +39,12 @@ internal class RotatingDnsResolver(
 
     // region Dns
 
-    override fun lookup(hostname: String): MutableList<InetAddress> {
+    override fun lookup(hostname: String): List<InetAddress> {
         val knownHost = knownHosts[hostname]
 
         return if (knownHost != null && isValid(knownHost)) {
             knownHost.rotate()
-            knownHost.addresses.toMutableList()
+            knownHost.addresses
         } else {
             @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
             val result = delegate.lookup(hostname)

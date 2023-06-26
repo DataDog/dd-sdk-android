@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.os.Build
 import android.widget.CheckedTextView
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
@@ -29,13 +28,11 @@ internal open class CheckedTextViewMapper(
     // region CheckableTextViewMapper
 
     override fun resolveCheckableColor(view: CheckedTextView): String {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            view.checkMarkTintList?.let {
-                return stringUtils.formatColorAndAlphaAsHexa(
-                    it.defaultColor,
-                    OPAQUE_ALPHA_VALUE
-                )
-            }
+        view.checkMarkTintList?.let {
+            return stringUtils.formatColorAndAlphaAsHexa(
+                it.defaultColor,
+                OPAQUE_ALPHA_VALUE
+            )
         }
         return stringUtils.formatColorAndAlphaAsHexa(view.currentTextColor, OPAQUE_ALPHA_VALUE)
     }

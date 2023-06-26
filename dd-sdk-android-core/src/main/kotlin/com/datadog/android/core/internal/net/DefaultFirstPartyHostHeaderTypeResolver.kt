@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.net
 
 import com.datadog.android.trace.TracingHeaderType
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.util.Locale
 
 /**
@@ -24,7 +25,7 @@ class DefaultFirstPartyHostHeaderTypeResolver(
 
     /** @inheritdoc */
     override fun isFirstPartyUrl(url: HttpUrl): Boolean {
-        val host = url.host()
+        val host = url.host
         return knownHosts.keys.any {
             it == "*" || host == it || host.endsWith(".$it")
         }
@@ -32,19 +33,19 @@ class DefaultFirstPartyHostHeaderTypeResolver(
 
     /** @inheritdoc */
     override fun isFirstPartyUrl(url: String): Boolean {
-        val httpUrl = HttpUrl.parse(url) ?: return false
+        val httpUrl = url.toHttpUrlOrNull() ?: return false
         return isFirstPartyUrl(httpUrl)
     }
 
     /** @inheritdoc */
     override fun headerTypesForUrl(url: String): Set<TracingHeaderType> {
-        val httpUrl = HttpUrl.parse(url) ?: return emptySet()
+        val httpUrl = url.toHttpUrlOrNull() ?: return emptySet()
         return headerTypesForUrl(httpUrl)
     }
 
     /** @inheritdoc */
     override fun headerTypesForUrl(url: HttpUrl): Set<TracingHeaderType> {
-        val host = url.host()
+        val host = url.host
         val filteredHosts = knownHosts.filter {
             it.key == "*" || it.key == host || host.endsWith(".${it.key}")
         }

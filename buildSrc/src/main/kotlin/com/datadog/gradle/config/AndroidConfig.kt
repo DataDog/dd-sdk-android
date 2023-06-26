@@ -14,11 +14,7 @@ import org.gradle.api.JavaVersion
 object AndroidConfig {
 
     const val TARGET_SDK = 33
-    const val MIN_SDK = 19
-
-    // this is temporary, until we bump min sdk. Compose requires min sdk 21.
-    const val MIN_SDK_FOR_COMPOSE = 21
-    const val MIN_SDK_FOR_WEAR = 23
+    const val MIN_SDK = 21
     const val BUILD_TOOLS_VERSION = "33.0.2"
 
     val VERSION = Version(2, 0, 0, Version.Type.Snapshot)
