@@ -55,6 +55,8 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.reset
@@ -64,6 +66,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 import java.util.Locale
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -85,6 +88,9 @@ internal class DatadogCoreTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockPersistenceExecutorService: ExecutorService
+
     @Forgery
     lateinit var fakeCredentials: Credentials
 
@@ -100,13 +106,21 @@ internal class DatadogCoreTest {
     @BeforeEach
     fun `set up`() {
         CoreFeature.disableKronosBackgroundSync = true
+        whenever(mockPersistenceExecutorService.execute(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+        }
+        whenever(mockPersistenceExecutorService.submit(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+            mock()
+        }
 
         testedCore = DatadogCore(
             appContext.mockInstance,
             fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
-            internalLoggerProvider = { mockInternalLogger }
+            internalLoggerProvider = { mockInternalLogger },
+            persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
             initialize(fakeConfiguration)
         }
