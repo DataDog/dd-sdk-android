@@ -12,7 +12,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -54,7 +54,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
         while (host in fakeHosts) {
             host = forge.aStringMatching(HOST_REGEX)
         }
-        val url = HttpUrl.get("$scheme://$host$path")
+        val url = "$scheme://$host$path".toHttpUrl()
 
         // When
         val result = testedDetector.isFirstPartyUrl(url)
@@ -71,7 +71,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     ) {
         // Given
         val host = forge.anElementFrom(fakeHosts.keys)
-        val url = HttpUrl.get("$scheme://$host$path")
+        val url = "$scheme://$host$path".toHttpUrl()
 
         // When
         val result = testedDetector.isFirstPartyUrl(url)
@@ -90,7 +90,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
         val fakeNewAllowedHosts = forge.aList { forge.aStringMatching(HOST_REGEX) }
         testedDetector.addKnownHosts(fakeNewAllowedHosts)
         val host = forge.anElementFrom(fakeNewAllowedHosts)
-        val url = HttpUrl.get("$scheme://$host$path")
+        val url = "$scheme://$host$path".toHttpUrl()
 
         // When
         val result = testedDetector.isFirstPartyUrl(url)
@@ -108,7 +108,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     ) {
         // Given
         val host = forge.anElementFrom(fakeHosts.keys)
-        val url = HttpUrl.get("$scheme://$subdomain.$host$path")
+        val url = "$scheme://$subdomain.$host$path".toHttpUrl()
 
         // When
         val result = testedDetector.isFirstPartyUrl(url)
@@ -126,7 +126,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     ) {
         // Given
         val host = forge.anElementFrom(fakeHosts.keys)
-        val url = HttpUrl.get("$scheme://$prefix$host$path")
+        val url = "$scheme://$prefix$host$path".toHttpUrl()
 
         // When
         val result = testedDetector.isFirstPartyUrl(url)
@@ -237,7 +237,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
         // GIVEN
         val fakeNewAllowedHosts = forge.aList { forge.aStringMatching(HOST_REGEX) }
         val host = forge.anElementFrom(fakeNewAllowedHosts)
-        val url = HttpUrl.get("$scheme://$host$path")
+        val url = "$scheme://$host$path".toHttpUrl()
         testedDetector = DefaultFirstPartyHostHeaderTypeResolver(mapOf("*" to emptySet()))
 
         // WHEN

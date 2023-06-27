@@ -1,7 +1,7 @@
 class com.datadog.android.okhttp.DatadogEventListener : okhttp3.EventListener
   override fun callStart(okhttp3.Call)
   override fun dnsStart(okhttp3.Call, String)
-  override fun dnsEnd(okhttp3.Call, String, MutableList<java.net.InetAddress>)
+  override fun dnsEnd(okhttp3.Call, String, List<java.net.InetAddress>)
   override fun connectStart(okhttp3.Call, java.net.InetSocketAddress, java.net.Proxy)
   override fun connectEnd(okhttp3.Call, java.net.InetSocketAddress, java.net.Proxy, okhttp3.Protocol?)
   override fun secureConnectStart(okhttp3.Call)

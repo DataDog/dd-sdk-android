@@ -16,11 +16,11 @@ import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Interceptor
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.Protocol
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -118,7 +118,7 @@ internal class CurlInterceptorTest {
         testedInterceptor = CurlInterceptor(false, mockOutput)
         fakeRequest = Request.Builder()
             .url(fakeUrl)
-            .post(RequestBody.create(null, fakeBody.toByteArray()))
+            .post(fakeBody.toByteArray().toRequestBody(null))
             .build()
         fakeResponse = forgeResponse(statusCode)
         stubChain()
@@ -140,7 +140,7 @@ internal class CurlInterceptorTest {
         testedInterceptor = CurlInterceptor(true, mockOutput)
         fakeRequest = Request.Builder()
             .url(fakeUrl)
-            .post(RequestBody.create(null, fakeBody.toByteArray()))
+            .post(fakeBody.toByteArray().toRequestBody(null))
             .build()
         fakeResponse = forgeResponse(statusCode)
         stubChain()
@@ -192,7 +192,7 @@ internal class CurlInterceptorTest {
         testedInterceptor = CurlInterceptor(true, mockOutput)
         fakeRequest = Request.Builder()
             .url(fakeUrl)
-            .post(RequestBody.create(MediaType.parse("$type/$subtype"), fakeBody.toByteArray()))
+            .post(fakeBody.toByteArray().toRequestBody("$type/$subtype".toMediaTypeOrNull()))
             .build()
         fakeResponse = forgeResponse(statusCode)
         stubChain()
@@ -224,10 +224,8 @@ internal class CurlInterceptorTest {
                     .setType(MultipartBody.FORM)
                     .addFormDataPart(fakeFormKey, fakeFormKeyValue)
                     .addPart(
-                        RequestBody.create(
-                            MediaType.parse("$type/$subtype"),
-                            fakeBody.toByteArray()
-                        )
+                        fakeBody.toByteArray()
+                            .toRequestBody("$type/$subtype".toMediaTypeOrNull())
                     )
                     .build()
             )

@@ -215,7 +215,7 @@ internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewMod
             val request = builder.build()
             return try {
                 val response = okHttpClient.newCall(request).execute()
-                val body = response.body()
+                val body = response.body
                 if (body != null) {
                     val content: String = body.string()
                     // Necessary to consume the response

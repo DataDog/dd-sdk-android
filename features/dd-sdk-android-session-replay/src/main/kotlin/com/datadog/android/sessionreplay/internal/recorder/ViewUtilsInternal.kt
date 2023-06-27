@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
-import android.os.Build
 import android.view.View
 import android.view.ViewStub
 import androidx.appcompat.widget.ActionBarContextView
@@ -15,11 +14,7 @@ import androidx.appcompat.widget.Toolbar
 internal class ViewUtilsInternal {
 
     private val systemViewIds by lazy {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            setOf(android.R.id.navigationBarBackground, android.R.id.statusBarBackground)
-        } else {
-            emptySet()
-        }
+        setOf(android.R.id.navigationBarBackground, android.R.id.statusBarBackground)
     }
 
     internal fun isNotVisible(view: View): Boolean {
@@ -33,13 +28,7 @@ internal class ViewUtilsInternal {
     }
 
     internal fun isToolbar(view: View): Boolean {
-        return (
-            Toolbar::class.java.isAssignableFrom(view::class.java)
-            ) ||
-            (
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
-                    android.widget.Toolbar::class.java
-                        .isAssignableFrom(view::class.java)
-                )
+        return Toolbar::class.java.isAssignableFrom(view::class.java) ||
+            android.widget.Toolbar::class.java.isAssignableFrom(view::class.java)
     }
 }

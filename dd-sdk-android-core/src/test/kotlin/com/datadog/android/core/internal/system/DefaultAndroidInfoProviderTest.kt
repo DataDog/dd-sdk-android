@@ -104,37 +104,10 @@ internal class DefaultAndroidInfoProviderTest {
     }
 
     @Test
-    fun `𝕄 return TV type 𝕎 deviceType { Lollipop & FEATURE_LEANBACK }`(
-        @IntForgery(
-            min = Build.VERSION_CODES.LOLLIPOP
-        ) fakeSdkVersion: Int
-    ) {
+    fun `𝕄 return TV type 𝕎 deviceType { FEATURE_LEANBACK }`() {
         // Given
-        whenever(mockSdkVersionProvider.version()) doReturn fakeSdkVersion
         whenever(
             mockPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
-        ) doReturn true
-        testedProvider = createProvider()
-
-        // When
-        val type = testedProvider.deviceType
-
-        // Then
-        assertThat(type).isEqualTo(DeviceType.TV)
-    }
-
-    @Test
-    fun `𝕄 return TV type 𝕎 deviceType { pre-Lollipop & FEATURE_TELEVISION }`(
-        @IntForgery(
-            min = Build.VERSION_CODES.BASE,
-            max = Build.VERSION_CODES.LOLLIPOP
-        ) fakeSdkVersion: Int
-    ) {
-        // Given
-        whenever(mockSdkVersionProvider.version()) doReturn fakeSdkVersion
-        @Suppress("DEPRECATION")
-        whenever(
-            mockPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEVISION)
         ) doReturn true
         testedProvider = createProvider()
 
@@ -407,8 +380,7 @@ internal class DefaultAndroidInfoProviderTest {
 
     // region private
 
-    private fun createProvider(): AndroidInfoProvider =
-        DefaultAndroidInfoProvider(mockContext, mockSdkVersionProvider)
+    private fun createProvider(): AndroidInfoProvider = DefaultAndroidInfoProvider(mockContext)
 
     private fun String.capitalize() =
         replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() }

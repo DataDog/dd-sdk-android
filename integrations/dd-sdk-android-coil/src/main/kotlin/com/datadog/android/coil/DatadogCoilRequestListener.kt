@@ -59,7 +59,7 @@ class DatadogCoilRequestListener @JvmOverloads constructor(
             }
             is HttpUrl -> {
                 mapOf(
-                    REQUEST_PATH_TAG to (request.data as HttpUrl).url().toString()
+                    REQUEST_PATH_TAG to (request.data as HttpUrl).toUrl().toString()
                 )
             }
             is File -> {

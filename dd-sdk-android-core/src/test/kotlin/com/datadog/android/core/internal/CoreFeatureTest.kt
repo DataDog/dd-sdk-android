@@ -193,8 +193,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `𝕄 initialize network info provider 𝕎 initialize {LOLLIPOP}`() {
+    fun `𝕄 initialize network info provider 𝕎 initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -308,8 +307,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `𝕄 initializes app info 𝕎 initialize() { LOLLIPOP }`() {
+    fun `𝕄 initializes app info 𝕎 initialize()`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -410,8 +408,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `𝕄 initializes app info 𝕎 initialize() {unknown package name, LOLLIPOP}`() {
+    fun `𝕄 initializes app info 𝕎 initialize() {unknown package name}`() {
         // Given
         @Suppress("DEPRECATION")
         whenever(appContext.mockPackageManager.getPackageInfo(appContext.fakePackageName, 0))
@@ -491,31 +488,26 @@ internal class CoreFeatureTest {
 
         // Then
         val okHttpClient = testedFeature.okHttpClient
-        assertThat(okHttpClient.protocols())
+        assertThat(okHttpClient.protocols)
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
-        assertThat(okHttpClient.callTimeoutMillis())
+        assertThat(okHttpClient.callTimeoutMillis)
             .isEqualTo(CoreFeature.NETWORK_TIMEOUT_MS.toInt())
-        assertThat(okHttpClient.connectionSpecs())
+        assertThat(okHttpClient.connectionSpecs)
             .hasSize(1)
 
-        val connectionSpec = okHttpClient.connectionSpecs().first()
+        val connectionSpec = okHttpClient.connectionSpecs.first()
 
         assertThat(connectionSpec.isTls).isTrue()
-        assertThat(connectionSpec.tlsVersions())
+        assertThat(connectionSpec.tlsVersions)
             .containsExactly(TlsVersion.TLS_1_2, TlsVersion.TLS_1_3)
-        assertThat(connectionSpec.supportsTlsExtensions()).isTrue()
-        assertThat(connectionSpec.cipherSuites()).containsExactly(
+        assertThat(connectionSpec.cipherSuites).containsExactly(
             CipherSuite.TLS_AES_128_GCM_SHA256,
             CipherSuite.TLS_AES_256_GCM_SHA384,
             CipherSuite.TLS_CHACHA20_POLY1305_SHA256,
             CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
             CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
             CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
-            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
-            CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256,
-            CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA256
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
         )
     }
 
@@ -532,11 +524,11 @@ internal class CoreFeatureTest {
 
         // Then
         val okHttpClient = testedFeature.okHttpClient
-        assertThat(okHttpClient.protocols())
+        assertThat(okHttpClient.protocols)
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
-        assertThat(okHttpClient.callTimeoutMillis())
+        assertThat(okHttpClient.callTimeoutMillis)
             .isEqualTo(CoreFeature.NETWORK_TIMEOUT_MS.toInt())
-        assertThat(okHttpClient.connectionSpecs())
+        assertThat(okHttpClient.connectionSpecs)
             .containsExactly(ConnectionSpec.CLEARTEXT)
     }
 
@@ -555,8 +547,8 @@ internal class CoreFeatureTest {
 
         // Then
         val okHttpClient = testedFeature.okHttpClient
-        assertThat(okHttpClient.proxy()).isSameAs(proxy)
-        assertThat(okHttpClient.proxyAuthenticator()).isSameAs(proxyAuth)
+        assertThat(okHttpClient.proxy).isSameAs(proxy)
+        assertThat(okHttpClient.proxyAuthenticator).isSameAs(proxyAuth)
     }
 
     @Test
@@ -572,8 +564,8 @@ internal class CoreFeatureTest {
 
         // Then
         val okHttpClient = testedFeature.okHttpClient
-        assertThat(okHttpClient.proxy()).isNull()
-        assertThat(okHttpClient.proxyAuthenticator()).isEqualTo(Authenticator.NONE)
+        assertThat(okHttpClient.proxy).isNull()
+        assertThat(okHttpClient.proxyAuthenticator).isEqualTo(Authenticator.NONE)
     }
 
     @Test

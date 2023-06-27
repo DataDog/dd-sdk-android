@@ -84,7 +84,7 @@ internal constructor(
     }
 
     /** @inheritdoc */
-    override fun dnsEnd(call: Call, domainName: String, inetAddressList: MutableList<InetAddress>) {
+    override fun dnsEnd(call: Call, domainName: String, inetAddressList: List<InetAddress>) {
         super.dnsEnd(call, domainName, inetAddressList)
         dnsEnd = System.nanoTime()
     }
@@ -131,7 +131,7 @@ internal constructor(
     override fun responseHeadersEnd(call: Call, response: Response) {
         super.responseHeadersEnd(call, response)
         headersEnd = System.nanoTime()
-        if (response.code() >= HttpURLConnection.HTTP_BAD_REQUEST) {
+        if (response.code >= HttpURLConnection.HTTP_BAD_REQUEST) {
             sendTiming()
         }
     }
@@ -253,7 +253,7 @@ internal constructor(
                     InternalLogger.Target.USER,
                     {
                         "No SDK instance is available, skipping tracking" +
-                            " timing information of request with url ${call.request().url()}."
+                            " timing information of request with url ${call.request().url}."
                     }
                 )
                 NO_OP_EVENT_LISTENER

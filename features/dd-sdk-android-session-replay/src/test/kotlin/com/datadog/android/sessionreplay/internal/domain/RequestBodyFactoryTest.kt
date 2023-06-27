@@ -14,10 +14,11 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.MultipartBody.Part
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -72,15 +73,13 @@ internal class RequestBodyFactoryTest {
         // Then
         assertThat(body).isInstanceOf(MultipartBody::class.java)
         val multipartBody = body as MultipartBody
-        assertThat(multipartBody.type()).isEqualTo(MultipartBody.FORM)
-        val parts = multipartBody.parts()
+        assertThat(multipartBody.type).isEqualTo(MultipartBody.FORM)
+        val parts = multipartBody.parts
         val compressedSegmentPart = Part.createFormData(
             RequestBodyFactory.SEGMENT_FORM_KEY,
             fakeSegment.session.id,
-            RequestBody.create(
-                MediaType.parse(RequestBodyFactory.CONTENT_TYPE_BINARY),
-                fakeCompressedData
-            )
+            fakeCompressedData
+                .toRequestBody(RequestBodyFactory.CONTENT_TYPE_BINARY.toMediaTypeOrNull())
         )
         val applicationIdPart = Part.createFormData(
             RequestBodyFactory.APPLICATION_ID_FORM_KEY,
@@ -121,8 +120,8 @@ internal class RequestBodyFactoryTest {
 
         assertThat(parts)
             .usingElementComparator { first, second ->
-                val headersEval = first.headers() == second.headers()
-                val bodyEval = first.body().toByteArray().contentEquals(second.body().toByteArray())
+                val headersEval = first.headers == second.headers
+                val bodyEval = first.body.toByteArray().contentEquals(second.body.toByteArray())
                 if (headersEval && bodyEval) {
                     0
                 } else {

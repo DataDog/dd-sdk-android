@@ -7,14 +7,12 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.content.res.ColorStateList
-import android.os.Build
 import android.widget.EditText
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
-import com.datadog.tools.unit.annotations.TestTargetApi
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -87,7 +85,6 @@ internal abstract class BaseEditTextViewMapperTest : BaseWireframeMapperTest() {
 
     abstract fun initTestInstance(): EditTextViewMapper
 
-    @TestTargetApi(value = Build.VERSION_CODES.LOLLIPOP)
     @Test
     fun `M resolve the underline as ShapeWireframe W map()`(forge: Forge) {
         // Given
@@ -118,43 +115,12 @@ internal abstract class BaseEditTextViewMapperTest : BaseWireframeMapperTest() {
             .isEqualTo(fakeTextWireframes + expectedUnderlineShapeWireframe)
     }
 
-    @TestTargetApi(value = Build.VERSION_CODES.LOLLIPOP)
     @Test
-    fun `M resolve the underline color from textColor W map{Lollipop, backgroundTint is null}`(
+    fun `M resolve the underline color from textColor W map{backgroundTint is null}`(
         forge: Forge
     ) {
         // Given
         whenever(mockEditText.backgroundTintList).thenReturn(null)
-        val fakeExpectedUnderlineColor = forge.aStringMatching("#[0-9A-Fa-f]{8}")
-        whenever(
-            mockStringUtils.formatColorAndAlphaAsHexa(
-                fakeTextColor,
-                OPAQUE_ALPHA_VALUE
-            )
-        )
-            .thenReturn(fakeExpectedUnderlineColor)
-        val expectedUnderlineShapeWireframe = MobileSegment.Wireframe.ShapeWireframe(
-            id = fakeGeneratedIdentifier,
-            x = fakeViewGlobalBounds.x,
-            y = fakeViewGlobalBounds.y +
-                fakeViewGlobalBounds.height -
-                EditTextViewMapper.UNDERLINE_HEIGHT_IN_PIXELS,
-            width = fakeViewGlobalBounds.width,
-            height = EditTextViewMapper.UNDERLINE_HEIGHT_IN_PIXELS,
-            shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = fakeExpectedUnderlineColor,
-                opacity = mockEditText.alpha
-            )
-        )
-
-        // When
-        assertThat(testedEditTextViewMapper.map(mockEditText, fakeMappingContext))
-            .isEqualTo(fakeTextWireframes + expectedUnderlineShapeWireframe)
-    }
-
-    @Test
-    fun `M resolve the underline color from textColor W map{ bellow Lollipop }`(forge: Forge) {
-        // Given
         val fakeExpectedUnderlineColor = forge.aStringMatching("#[0-9A-Fa-f]{8}")
         whenever(
             mockStringUtils.formatColorAndAlphaAsHexa(

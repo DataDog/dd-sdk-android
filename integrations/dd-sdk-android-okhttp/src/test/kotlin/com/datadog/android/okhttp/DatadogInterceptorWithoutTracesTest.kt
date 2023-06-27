@@ -37,14 +37,15 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.SpanContext
 import io.opentracing.Tracer
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Protocol
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
-import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -147,7 +148,7 @@ internal class DatadogInterceptorWithoutTracesTest {
 
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()
-        fakeMediaType = MediaType.parse(mediaType)
+        fakeMediaType = mediaType.toMediaTypeOrNull()
         fakeRequest = forgeRequest(forge)
         testedInterceptor = DatadogInterceptor(
             sdkInstanceName = null,
@@ -181,7 +182,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = fakeResourceAttributes
         val requestId = identifyRequest(fakeRequest)
-        val mimeType = fakeMediaType?.type()
+        val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
             else -> RumResourceKind.NATIVE
@@ -217,7 +218,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = fakeResourceAttributes
         val requestId = identifyRequest(fakeRequest)
-        val mimeType = fakeMediaType?.type()
+        val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
             else -> RumResourceKind.NATIVE
@@ -283,7 +284,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     fun `𝕄 create and drop a Span with info 𝕎 intercept() for successful request`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         val response = testedInterceptor.intercept(mockChain)
@@ -297,7 +298,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     fun `𝕄 create and drop a span with info 𝕎 intercept() for failing request {4xx}`(
         @IntForgery(min = 400, max = 500) statusCode: Int
     ) {
-        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         val response = testedInterceptor.intercept(mockChain)
@@ -330,7 +331,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         if (forge.aBool()) {
             fakeMethod = "POST"
             fakeBody = forge.anAlphabeticalString()
-            builder.post(RequestBody.create(null, fakeBody!!.toByteArray()))
+            builder.post(fakeBody!!.toByteArray().toRequestBody(null))
         } else {
             fakeMethod = forge.anElementFrom("GET", "HEAD", "DELETE")
             fakeBody = null
@@ -348,8 +349,8 @@ internal class DatadogInterceptorWithoutTracesTest {
             .protocol(Protocol.HTTP_2)
             .code(statusCode)
             .message("HTTP $statusCode")
-            .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type().orEmpty())
-            .body(ResponseBody.create(fakeMediaType, fakeResponseBody))
+            .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
+            .body(fakeResponseBody.toResponseBody(fakeMediaType))
         return builder.build()
     }
 

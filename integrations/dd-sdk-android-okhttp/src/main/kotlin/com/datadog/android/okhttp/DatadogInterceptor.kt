@@ -15,7 +15,6 @@ import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.GlobalRumMonitor
-import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
@@ -45,7 +44,7 @@ import java.util.Locale
  * For RUM integration: this interceptor will log the request as a RUM Resource, and fill the
  * request information (url, method, status code, optional error). Note that RUM Resources are only
  * tracked when a view is active. You can use one of the existing [ViewTrackingStrategy] when
- * configuring the SDK (see [Rum.Builder.useViewTrackingStrategy]) or start a view
+ * configuring the SDK (see [RumConfiguration.Builder.useViewTrackingStrategy]) or start a view
  * manually (see [RumMonitor.startView]).
  *
  * For APM integration: This interceptor will create a [Span] around the request and fill the
@@ -211,8 +210,8 @@ internal constructor(
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
         if (rumFeature != null) {
             val request = chain.request()
-            val url = request.url().toString()
-            val method = request.method()
+            val url = request.url.toString()
+            val method = request.method
             val requestId = identifyRequest(request)
 
             GlobalRumMonitor.get(sdkCore).startResource(requestId, method, url)
@@ -282,7 +281,7 @@ internal constructor(
         isSampled: Boolean
     ) {
         val requestId = identifyRequest(request)
-        val statusCode = response.code()
+        val statusCode = response.code
         val kind = when (val mimeType = response.header(HEADER_CT)) {
             null -> RumResourceKind.NATIVE
             else -> RumResourceKind.fromMimeType(mimeType)
@@ -311,8 +310,8 @@ internal constructor(
         throwable: Throwable
     ) {
         val requestId = identifyRequest(request)
-        val method = request.method()
-        val url = request.url().toString()
+        val method = request.method
+        val url = request.url.toString()
         GlobalRumMonitor.get(sdkCore).stopResourceWithError(
             requestId,
             null,

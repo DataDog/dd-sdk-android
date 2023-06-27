@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.os.Build
 import android.view.View
 import android.widget.Toolbar
 import androidx.appcompat.widget.ActionBarContainer
@@ -16,7 +15,6 @@ import com.datadog.android.sessionreplay.internal.recorder.optionselectormocks.A
 import com.datadog.android.sessionreplay.internal.recorder.optionselectormocks.ToolbarCustomSubclass
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.ViewUtils
-import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -99,7 +97,6 @@ internal class UnsupportedViewMapperTest : BaseTextViewWireframeMapperTest() {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `M resolve with the toolbar label as text W map { Subclass of Toolbar }`() {
         // Given
         actualWireframe = getWireframe(mockToolbarSubclass)
@@ -110,7 +107,6 @@ internal class UnsupportedViewMapperTest : BaseTextViewWireframeMapperTest() {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `M resolve with the toolbar label as text W map { Toolbar }`() {
         // Given
         actualWireframe = getWireframe(mockToolbar)

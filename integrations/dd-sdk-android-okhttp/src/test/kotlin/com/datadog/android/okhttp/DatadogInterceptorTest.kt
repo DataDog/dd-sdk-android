@@ -34,6 +34,8 @@ import okhttp3.MediaType
 import okhttp3.Protocol
 import okhttp3.Response
 import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
+import okio.Buffer
 import okio.BufferedSource
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -50,6 +52,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -174,7 +177,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes
         val requestId = identifyRequest(fakeRequest)
-        val mimeType = fakeMediaType?.type()
+        val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
             else -> RumResourceKind.NATIVE
@@ -212,7 +215,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         // no span -> shouldn't have trace/spans IDs
         val expectedStopAttrs = fakeAttributes
         val requestId = identifyRequest(fakeRequest)
-        val mimeType = fakeMediaType?.type()
+        val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
             else -> RumResourceKind.NATIVE
@@ -250,8 +253,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 .protocol(Protocol.HTTP_2)
                 .code(statusCode)
                 .message("HTTP $statusCode")
-                .body(ResponseBody.create(fakeMediaType, ""))
-                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type().orEmpty())
+                .body("".toResponseBody(fakeMediaType))
+                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
                 .build()
         }
         val expectedStopAttrs = mapOf(
@@ -260,7 +263,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes
         val requestId = identifyRequest(fakeRequest)
-        val mimeType = fakeMediaType?.type()
+        val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
             else -> RumResourceKind.NATIVE
@@ -299,14 +302,14 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 .protocol(Protocol.HTTP_2)
                 .code(statusCode)
                 .message("HTTP $statusCode")
-                .body(ResponseBody.create(fakeMediaType, ""))
-                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type().orEmpty())
+                .body("".toResponseBody(fakeMediaType))
+                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
                 .build()
         }
         // no span -> shouldn't have trace/spans IDs
         val expectedStopAttrs = fakeAttributes
         val requestId = identifyRequest(fakeRequest)
-        val mimeType = fakeMediaType?.type()
+        val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
             else -> RumResourceKind.NATIVE
@@ -344,15 +347,16 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 .protocol(Protocol.HTTP_2)
                 .code(statusCode)
                 .message("HTTP $statusCode")
-                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type().orEmpty())
+                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
                 .body(object : ResponseBody() {
                     override fun contentType(): MediaType? = fakeMediaType
 
                     override fun contentLength(): Long = fakeResponseBody.length.toLong()
 
                     override fun source(): BufferedSource {
-                        return mock<BufferedSource>().apply {
-                            whenever(this.request(any())) doThrow IOException()
+                        val buffer = Buffer()
+                        return spy(buffer).apply {
+                            whenever(request(any())) doThrow IOException()
                         }
                     }
                 })
@@ -365,7 +369,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes
         val requestId = identifyRequest(fakeRequest)
-        val mimeType = fakeMediaType?.type()
+        val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
             else -> RumResourceKind.NATIVE
@@ -404,15 +408,16 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 .protocol(Protocol.HTTP_2)
                 .code(statusCode)
                 .message("HTTP $statusCode")
-                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type().orEmpty())
+                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
                 .body(object : ResponseBody() {
                     override fun contentType(): MediaType? = fakeMediaType
 
                     override fun contentLength(): Long = fakeResponseBody.length.toLong()
 
                     override fun source(): BufferedSource {
-                        return mock<BufferedSource>().apply {
-                            whenever(this.request(any())) doThrow IOException()
+                        val buffer = Buffer()
+                        return spy(buffer).apply {
+                            whenever(request(any())) doThrow IOException()
                         }
                     }
                 })
@@ -422,7 +427,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         // no span -> shouldn't have trace/spans IDs
         val expectedStopAttrs = fakeAttributes
         val requestId = identifyRequest(fakeRequest)
-        val mimeType = fakeMediaType?.type()
+        val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
             else -> RumResourceKind.NATIVE
@@ -462,7 +467,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             RumAttributes.RULE_PSR to fakeTracingSampleRate
         ) + fakeAttributes
         val requestId = identifyRequest(fakeRequest)
-        val mimeType = fakeMediaType?.type()
+        val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
             else -> RumResourceKind.NATIVE
@@ -500,7 +505,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         // no span -> shouldn't have trace/spans IDs
         val expectedStopAttrs = fakeAttributes
         val requestId = identifyRequest(fakeRequest)
-        val mimeType = fakeMediaType?.type()
+        val mimeType = fakeMediaType?.type
         val kind = when {
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
             else -> RumResourceKind.NATIVE

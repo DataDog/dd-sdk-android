@@ -200,7 +200,7 @@ internal constructor(
                 InternalLogger.Target.USER,
                 {
                     "$prefix for OkHttp instrumentation is not found, skipping" +
-                        " tracking of request with url=${chain.request().url()}"
+                        " tracking of request with url=${chain.request().url}"
                 }
             )
             @Suppress("UnsafeThirdPartyFunctionCall") // we are in method which allows throwing IOException
@@ -269,7 +269,7 @@ internal constructor(
     }
 
     private fun isRequestTraceable(sdkCore: InternalSdkCore, request: Request): Boolean {
-        val url = request.url()
+        val url = request.url
         return sdkCore.firstPartyHostResolver.isFirstPartyUrl(url) ||
             localFirstPartyHostHeaderTypeResolver.isFirstPartyUrl(url)
     }
@@ -362,7 +362,7 @@ internal constructor(
 
     private fun buildSpan(tracer: Tracer, request: Request): Span {
         val parentContext = extractParentContext(tracer, request)
-        val url = request.url().toString()
+        val url = request.url.toString()
 
         val spanBuilder = tracer.buildSpan(SPAN_NAME)
         (spanBuilder as? DDTracer.DDSpanBuilder)?.withOrigin(traceOrigin)
@@ -372,7 +372,7 @@ internal constructor(
 
         (span as? MutableSpan)?.resourceName = url.substringBefore(URL_QUERY_PARAMS_BLOCK_SEPARATOR)
         span.setTag(Tags.HTTP_URL.key, url)
-        span.setTag(Tags.HTTP_METHOD.key, request.method())
+        span.setTag(Tags.HTTP_METHOD.key, request.method)
 
         return span
     }
@@ -431,7 +431,7 @@ internal constructor(
         val headerContext = tracer.extract(
             Format.Builtin.TEXT_MAP_EXTRACT,
             TextMapExtractAdapter(
-                request.headers().toMultimap()
+                request.headers.toMultimap()
                     .map { it.key to it.value.joinToString(";") }
                     .toMap()
             )
@@ -502,9 +502,9 @@ internal constructor(
     ): Request.Builder {
         val tracedRequestBuilder = request.newBuilder()
         val tracingHeaderTypes =
-            localFirstPartyHostHeaderTypeResolver.headerTypesForUrl(request.url())
+            localFirstPartyHostHeaderTypeResolver.headerTypesForUrl(request.url)
                 .ifEmpty {
-                    sdkCore.firstPartyHostResolver.headerTypesForUrl(request.url())
+                    sdkCore.firstPartyHostResolver.headerTypesForUrl(request.url)
                 }
 
         if (!isSampled) {
@@ -561,7 +561,7 @@ internal constructor(
         if (!isSampled || span == null) {
             onRequestIntercepted(sdkCore, request, null, response, null)
         } else {
-            val statusCode = response.code()
+            val statusCode = response.code
             span.setTag(Tags.HTTP_STATUS.key, statusCode)
             if (statusCode in HttpURLConnection.HTTP_BAD_REQUEST until HttpURLConnection.HTTP_INTERNAL_ERROR) {
                 (span as? MutableSpan)?.isError = true

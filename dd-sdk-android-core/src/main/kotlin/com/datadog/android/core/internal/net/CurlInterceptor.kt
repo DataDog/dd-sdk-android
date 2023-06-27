@@ -59,11 +59,11 @@ internal class CurlInterceptor(
 
         constructor(request: Request, printBody: Boolean) :
             this(
-                url = request.url().toString(),
-                method = request.method(),
-                contentType = request.body()?.contentType()?.toString(),
-                requestBody = request.body(),
-                headers = request.headers().toMultimap(),
+                url = request.url.toString(),
+                method = request.method,
+                contentType = request.body?.contentType()?.toString(),
+                requestBody = request.body,
+                headers = request.headers.toMultimap(),
                 printBody = printBody
             )
 
@@ -91,12 +91,12 @@ internal class CurlInterceptor(
         private fun RequestBody.toParts(): List<String> {
             return if (this is MultipartBody) {
                 val requestCurlPart = mutableListOf<String>()
-                this.parts().forEach {
-                    it.headers()?.toMultimap()?.forEach { (key, value) ->
+                this.parts.forEach {
+                    it.headers?.toMultimap()?.forEach { (key, value) ->
                         requestCurlPart.add(FORMAT_HEADER.format(Locale.US, key, value))
                     }
                     if (printBody) {
-                        requestCurlPart.add(FORMAT_BODY.format(Locale.US, peekBody(it.body())))
+                        requestCurlPart.add(FORMAT_BODY.format(Locale.US, peekBody(it.body)))
                     }
                 }
                 requestCurlPart

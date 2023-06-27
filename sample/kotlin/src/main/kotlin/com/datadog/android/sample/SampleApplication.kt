@@ -255,10 +255,8 @@ class SampleApplication : Application() {
             device.addProperty("brand", Build.BRAND)
             device.addProperty("manufacturer", Build.MANUFACTURER)
             device.addProperty("model", Build.MODEL)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                for (abi in Build.SUPPORTED_ABIS) {
-                    abis.add(abi)
-                }
+            for (abi in Build.SUPPORTED_ABIS) {
+                abis.add(abi)
             }
         } catch (t: Throwable) {
             Timber.e(t, "Error setting device and abi properties")

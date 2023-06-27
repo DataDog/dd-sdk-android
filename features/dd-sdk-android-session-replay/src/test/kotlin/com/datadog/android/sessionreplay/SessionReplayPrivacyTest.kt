@@ -209,15 +209,12 @@ internal class SessionReplayPrivacyTest {
             val maskUserInputLevel = SessionReplayPrivacy.MASK_USER_INPUT.toString()
 
             return Stream.of(
-                Arguments.of(Build.VERSION_CODES.KITKAT, allowAllLevel, allowAll),
                 Arguments.of(Build.VERSION_CODES.LOLLIPOP, allowAllLevel, allowAllFromApi21),
                 Arguments.of(Build.VERSION_CODES.O, allowAllLevel, allowAllFromApi26),
                 Arguments.of(Build.VERSION_CODES.Q, allowAllLevel, allowAllFromApi29),
-                Arguments.of(Build.VERSION_CODES.KITKAT, maskAllLevel, maskAll),
                 Arguments.of(Build.VERSION_CODES.LOLLIPOP, maskAllLevel, maskAllFromApi21),
                 Arguments.of(Build.VERSION_CODES.O, maskAllLevel, maskAllFromApi26),
                 Arguments.of(Build.VERSION_CODES.Q, maskAllLevel, maskAllFromApi29),
-                Arguments.of(Build.VERSION_CODES.KITKAT, maskUserInputLevel, maskUserInput),
                 Arguments.of(Build.VERSION_CODES.LOLLIPOP, maskUserInputLevel, maskUserInputFromApi21),
                 Arguments.of(Build.VERSION_CODES.O, maskUserInputLevel, maskUserInputFromApi26),
                 Arguments.of(Build.VERSION_CODES.Q, maskUserInputLevel, maskUserInputFromApi29)

@@ -6,14 +6,11 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
-import android.os.Build
 import android.view.View
 import android.view.ViewStub
-import androidx.annotation.RequiresApi
 import androidx.appcompat.widget.ActionBarContextView
 import androidx.appcompat.widget.Toolbar
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -96,9 +93,7 @@ internal class ViewUtilsInternalTest {
     // region System Noise
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `M return true W checkIfSystemNoise(){view the navigationBarBackground }`(forge: Forge) {
+    fun `M return true W checkIfSystemNoise(){ view the navigationBarBackground }`(forge: Forge) {
         // Given
         val mockView = forge
             .aMockView<View>()
@@ -111,9 +106,7 @@ internal class ViewUtilsInternalTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `M return true W checkIfSystemNoise(){view is statusBarBackground }`(forge: Forge) {
+    fun `M return true W checkIfSystemNoise(){ view is statusBarBackground }`(forge: Forge) {
         // Given
         val mockView = forge
             .aMockView<View>()
@@ -126,7 +119,7 @@ internal class ViewUtilsInternalTest {
     }
 
     @Test
-    fun `M return true W checkIfSystemNoise(){view is ViewStub }`() {
+    fun `M return true W checkIfSystemNoise(){ view is ViewStub }`() {
         // Given
         val mockView: ViewStub = mock()
 
@@ -135,7 +128,7 @@ internal class ViewUtilsInternalTest {
     }
 
     @Test
-    fun `M return true W checkIfSystemNoise(){view is ActionBarContextView }`() {
+    fun `M return true W checkIfSystemNoise(){ view is ActionBarContextView }`() {
         // Given
         val mockView: ActionBarContextView = mock()
 
@@ -144,7 +137,7 @@ internal class ViewUtilsInternalTest {
     }
 
     @Test
-    fun `M return false W checkIfSystemNoise(){view is not system noise }`(forge: Forge) {
+    fun `M return false W checkIfSystemNoise(){ view is not system noise }`(forge: Forge) {
         // Given
         val mockView = forge.aMockView<View>()
 
@@ -157,7 +150,7 @@ internal class ViewUtilsInternalTest {
     // region Toolbar
 
     @Test
-    fun `M return true W checkIsToolbar(){view androidx Toolbar }`(
+    fun `M return true W checkIsToolbar(){ view androidx Toolbar }`(
         forge: Forge
     ) {
         // Given
@@ -169,10 +162,8 @@ internal class ViewUtilsInternalTest {
         assertThat(testViewUtilsInternal.isToolbar(mockToolBar)).isTrue
     }
 
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     @Test
-    fun `M return true W checkIsToolbar(){view android Toolbar }`(
+    fun `M return true W checkIsToolbar(){ view android Toolbar }`(
         forge: Forge
     ) {
         // Given
@@ -183,7 +174,7 @@ internal class ViewUtilsInternalTest {
     }
 
     @Test
-    fun `M return false W checkIsToolbar(){view is not toolbar }`(forge: Forge) {
+    fun `M return false W checkIsToolbar(){ view is not toolbar }`(forge: Forge) {
         // Given
         val mockView = forge.aMockView<View>()
 

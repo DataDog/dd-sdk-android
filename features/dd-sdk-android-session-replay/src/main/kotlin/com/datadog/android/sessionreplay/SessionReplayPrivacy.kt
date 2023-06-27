@@ -137,9 +137,10 @@ enum class SessionReplayPrivacy {
             MapperTypeWrapper(AppCompatToolbar::class.java, unsupportedViewMapper.toGenericMapper())
         )
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            mappersList.add(0, MapperTypeWrapper(Toolbar::class.java, unsupportedViewMapper.toGenericMapper()))
-        }
+        mappersList.add(
+            0,
+            MapperTypeWrapper(Toolbar::class.java, unsupportedViewMapper.toGenericMapper())
+        )
 
         seekBarMapper?.let {
             mappersList.add(0, MapperTypeWrapper(SeekBar::class.java, it.toGenericMapper()))

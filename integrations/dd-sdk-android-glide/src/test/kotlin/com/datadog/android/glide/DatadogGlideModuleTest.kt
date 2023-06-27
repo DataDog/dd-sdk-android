@@ -88,7 +88,7 @@ internal class DatadogGlideModuleTest {
 
             assertThat(firstValue).isInstanceOf(OkHttpUrlLoader.Factory::class.java)
             val client: OkHttpClient = firstValue.getFieldValue("client")
-            assertThat(client.interceptors()).containsInstanceOf(DatadogInterceptor::class.java)
+            assertThat(client.interceptors).containsInstanceOf(DatadogInterceptor::class.java)
         }
     }
 

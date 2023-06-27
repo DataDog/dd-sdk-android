@@ -65,7 +65,7 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
         val request = builder.build()
         try {
             val response = okHttpClient.newCall(request).execute()
-            val body = response.body()
+            val body = response.body
             if (body != null) {
                 val content: String = body.string()
                 // Necessary to consume the response
