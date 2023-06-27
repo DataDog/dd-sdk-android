@@ -22,7 +22,6 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.Traces
@@ -102,8 +101,7 @@ fun initializeSdk(
     rumConfigProvider: (RumConfiguration.Builder) -> RumConfiguration? = {
         it.build()
     },
-    tracerProvider: (SdkCore) -> Tracer = { createDefaultAndroidTracer(it) },
-    rumMonitorProvider: (SdkCore) -> RumMonitor = { createDefaultRumMonitor(it) }
+    tracerProvider: (SdkCore) -> Tracer = { createDefaultAndroidTracer(it) }
 ): SdkCore {
     Datadog.setVerbosity(Log.VERBOSE)
     val sdkCore = Datadog.initialize(
@@ -134,7 +132,6 @@ fun initializeSdk(
             }
         }
     GlobalTracer.registerIfAbsent(tracerProvider.invoke(sdkCore))
-    GlobalRumMonitor.registerIfAbsent(rumMonitorProvider.invoke(sdkCore), sdkCore)
     return sdkCore
 }
 
@@ -170,5 +167,3 @@ private fun createDatadogDefaultConfiguration(): Configuration {
 
 private fun createDefaultAndroidTracer(sdkCore: SdkCore): Tracer =
     AndroidTracer.Builder(sdkCore).build()
-
-private fun createDefaultRumMonitor(sdkCore: SdkCore) = RumMonitor.Builder(sdkCore).build()

@@ -16,12 +16,6 @@ public final class com/datadog/android/rum/GlobalRumMonitor {
 	public static final fun isRegistered ()Z
 	public static final fun isRegistered (Lcom/datadog/android/v2/api/SdkCore;)Z
 	public static synthetic fun isRegistered$default (Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Z
-	public static final fun registerIfAbsent (Lcom/datadog/android/rum/RumMonitor;)Z
-	public static final fun registerIfAbsent (Lcom/datadog/android/rum/RumMonitor;Lcom/datadog/android/v2/api/SdkCore;)Z
-	public static final fun registerIfAbsent (Lcom/datadog/android/v2/api/SdkCore;Ljava/util/concurrent/Callable;)Z
-	public static final fun registerIfAbsent (Ljava/util/concurrent/Callable;)Z
-	public static synthetic fun registerIfAbsent$default (Lcom/datadog/android/rum/RumMonitor;Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Z
-	public static synthetic fun registerIfAbsent$default (Lcom/datadog/android/v2/api/SdkCore;Ljava/util/concurrent/Callable;ILjava/lang/Object;)Z
 }
 
 public final class com/datadog/android/rum/Rum {
@@ -99,6 +93,7 @@ public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public final fun setErrorEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setLongTaskEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setResourceEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun setSessionListener (Lcom/datadog/android/rum/RumSessionListener;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setSessionSampleRate (F)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setTelemetrySampleRate (F)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setViewEventMapper (Lcom/datadog/android/rum/event/ViewEventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
@@ -149,15 +144,6 @@ public abstract interface class com/datadog/android/rum/RumMonitor {
 	public abstract fun stopResourceWithError (Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/Throwable;Ljava/util/Map;)V
 	public abstract fun stopSession ()V
 	public abstract fun stopView (Ljava/lang/Object;Ljava/util/Map;)V
-}
-
-public final class com/datadog/android/rum/RumMonitor$Builder {
-	public fun <init> ()V
-	public fun <init> (Lcom/datadog/android/v2/api/SdkCore;)V
-	public synthetic fun <init> (Lcom/datadog/android/v2/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun build ()Lcom/datadog/android/rum/RumMonitor;
-	public final fun setSessionListener (Lcom/datadog/android/rum/RumSessionListener;)Lcom/datadog/android/rum/RumMonitor$Builder;
-	public final fun setSessionSampleRate (F)Lcom/datadog/android/rum/RumMonitor$Builder;
 }
 
 public final class com/datadog/android/rum/RumMonitor$DefaultImpls {

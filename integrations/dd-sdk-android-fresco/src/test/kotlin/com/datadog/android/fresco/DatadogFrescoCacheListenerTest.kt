@@ -35,6 +35,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.IOException
+import kotlin.reflect.full.declaredFunctions
+import kotlin.reflect.jvm.isAccessible
 
 @Extensions(
     ExtendWith(
@@ -66,7 +68,10 @@ internal class DatadogFrescoCacheListenerTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
+        GlobalRumMonitor::class.declaredFunctions.first { it.name == "registerIfAbsent" }.apply {
+            isAccessible = true
+            call(GlobalRumMonitor::class.objectInstance, mockRumMonitor, mockSdkCore)
+        }
         fakeEventKey =
             BitmapMemoryCacheKey(
                 fakeCacheEventUri,

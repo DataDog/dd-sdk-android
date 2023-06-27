@@ -12,9 +12,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
-import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
-import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
@@ -57,8 +55,6 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
             .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
             .build()
         Rum.enable(rumConfig, sdkCore)
-
-        GlobalRumMonitor.registerIfAbsent(RumMonitor.Builder(sdkCore).build(), sdkCore)
     }
 
     override fun onPostResume() {

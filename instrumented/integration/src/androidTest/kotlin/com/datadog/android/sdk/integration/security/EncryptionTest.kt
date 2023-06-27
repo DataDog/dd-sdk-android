@@ -75,8 +75,6 @@ internal class EncryptionTest {
             { SessionReplay.enable(SessionReplayConfiguration.Builder().build(), sdkCore) }
         )
         featureActivations.shuffled(Random(forge.seed)).forEach { it() }
-        val rumMonitor = RumMonitor.Builder(sdkCore).build()
-        GlobalRumMonitor.registerIfAbsent(rumMonitor, sdkCore)
 
         val tracer = AndroidTracer.Builder(sdkCore).setBundleWithRumEnabled(true).build()
         GlobalTracer.registerIfAbsent(tracer)
@@ -86,7 +84,7 @@ internal class EncryptionTest {
             .setBundleWithTraceEnabled(true)
             .build()
 
-        sendEventsForAllFeatures(rumMonitor, logger, tracer)
+        sendEventsForAllFeatures(GlobalRumMonitor.get(sdkCore), logger, tracer)
 
         flushAndShutdownExecutors()
         stopSdk()

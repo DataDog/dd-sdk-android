@@ -63,7 +63,7 @@ internal class DatadogRumMonitor(
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
-    sessionListener: RumSessionListener?,
+    sessionListener: RumSessionListener,
     private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 ) : RumMonitor, AdvancedRumMonitor {
 
@@ -77,11 +77,7 @@ internal class DatadogRumMonitor(
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
-        if (sessionListener != null) {
-            CombinedRumSessionListener(sessionListener, telemetryEventHandler)
-        } else {
-            telemetryEventHandler
-        }
+        CombinedRumSessionListener(sessionListener, telemetryEventHandler)
     )
 
     internal val keepAliveRunnable = Runnable {

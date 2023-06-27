@@ -30,6 +30,8 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
+import kotlin.reflect.full.declaredFunctions
+import kotlin.reflect.jvm.isAccessible
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -46,7 +48,10 @@ class FlowExtTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
+        GlobalRumMonitor::class.declaredFunctions.first { it.name == "registerIfAbsent" }.apply {
+            isAccessible = true
+            call(GlobalRumMonitor::class.objectInstance, mockRumMonitor, mockSdkCore)
+        }
     }
 
     @AfterEach

@@ -45,6 +45,7 @@ internal class ConfigurationRumForgeryFactory :
             backgroundEventTracking = forge.aBool(),
             trackFrustrations = forge.aBool(),
             vitalsMonitorUpdateFrequency = forge.aValueFrom(VitalsUpdateFrequency::class.java),
+            sessionListener = mock(),
             additionalConfig = forge.aMap { aString() to aString() }
         )
     }

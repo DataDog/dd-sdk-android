@@ -15,10 +15,8 @@ import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
-import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.Traces
@@ -91,7 +89,6 @@ class WearApplication : Application() {
                 .setService(BuildConfig.APPLICATION_ID)
                 .build()
         )
-        GlobalRumMonitor.registerIfAbsent(monitor = RumMonitor.Builder().build())
     }
 
     private fun createDatadogCredentials(): Credentials {

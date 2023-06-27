@@ -32,6 +32,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
+import kotlin.reflect.full.declaredFunctions
+import kotlin.reflect.jvm.isAccessible
 
 @Extensions(
     ExtendWith(
@@ -61,7 +63,10 @@ class DatadogSqliteCallbackTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
+        GlobalRumMonitor::class.declaredFunctions.first { it.name == "registerIfAbsent" }.apply {
+            isAccessible = true
+            call(GlobalRumMonitor::class.objectInstance, mockRumMonitor, mockSdkCore)
+        }
         testedSqliteCallback = DatadogSqliteCallback(mock(), mockSdkCore)
         whenever(mockSqliteDatabase.path).thenReturn(fakeDbPath)
         whenever(mockSqliteDatabase.version).thenReturn(fakeDbVersion)

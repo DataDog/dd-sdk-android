@@ -251,6 +251,15 @@ data class RumConfiguration internal constructor(
         }
 
         /**
+         * Sets the Session listener.
+         * @param sessionListener the listener to notify whenever a new Session starts.
+         */
+        fun setSessionListener(sessionListener: RumSessionListener): Builder {
+            rumConfig = rumConfig.copy(sessionListener = sessionListener)
+            return this
+        }
+
+        /**
          * Builds a [RumConfiguration] based on the current state of this Builder.
          */
         fun build(): RumConfiguration {
