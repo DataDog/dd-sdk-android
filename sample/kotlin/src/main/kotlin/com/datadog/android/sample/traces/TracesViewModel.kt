@@ -268,7 +268,7 @@ internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewMod
         @Suppress("CheckInternal")
         private val logger: Logger by lazy {
             Logger.Builder()
-                .setLoggerName("async_task")
+                .setName("async_task")
                 .setLogcatLogsEnabled(true)
                 .build()
                 .apply {

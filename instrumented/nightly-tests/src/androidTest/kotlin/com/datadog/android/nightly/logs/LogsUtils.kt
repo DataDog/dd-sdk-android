@@ -14,7 +14,7 @@ import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 
 fun initializeLogger(sdkCore: SdkCore) = Logger.Builder(sdkCore)
-    .setLoggerName(LOGGER_NAME)
+    .setName(LOGGER_NAME)
     .build()
 
 fun Logger.sendRandomLog(

@@ -108,7 +108,7 @@ class LogsConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.LogsConfiguration$Builder#fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
+     * apiMethodSignature: com.datadog.android.log.LogsConfiguration$Builder#fun setEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
      */
     @Test
     fun logs_config_set_event_mapper() {
@@ -123,7 +123,7 @@ class LogsConfigE2ETests {
                 ).build(),
                 logsConfigProvider = {
                     LogsConfiguration.Builder()
-                        .setLogEventMapper(
+                        .setEventMapper(
                             object : EventMapper<LogEvent> {
                                 override fun map(event: LogEvent): LogEvent {
                                     event.status = LogEvent.Status.ERROR
@@ -144,7 +144,7 @@ class LogsConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.LogsConfiguration$Builder#fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
+     * apiMethodSignature: com.datadog.android.log.LogsConfiguration$Builder#fun setEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
      */
     @Test
     fun logs_config_set_event_mapper_with_drop_event() {
@@ -159,7 +159,7 @@ class LogsConfigE2ETests {
                 ).build(),
                 logsConfigProvider = {
                     LogsConfiguration.Builder()
-                        .setLogEventMapper(
+                        .setEventMapper(
                             object : EventMapper<LogEvent> {
                                 override fun map(event: LogEvent): LogEvent? {
                                     return null

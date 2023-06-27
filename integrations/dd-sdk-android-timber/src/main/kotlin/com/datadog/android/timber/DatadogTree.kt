@@ -24,9 +24,9 @@ class DatadogTree(
      * Creates a [Timber.Tree] with a default [Logger] having a minimum log priority
      * for Datadog logs set to specified value.
      *
-     * See [Logger.Builder.setDatadogLogsMinPriority] for details.
+     * See [Logger.Builder.setRemoteLogThreshold] for details.
      *
-     * @param minLogPriority Minimum log priority to be sent to the Datadog servers.
+     * @param minLogPriority Minimum log threshold (priority) to be sent to the Datadog servers.
      * @param sdkCore SDK instance to bind to. If not provided, default instance will be used.
      */
     @Suppress("unused")
@@ -34,7 +34,7 @@ class DatadogTree(
     constructor(minLogPriority: Int, sdkCore: SdkCore = Datadog.getInstance()) :
         this(
             Logger.Builder(sdkCore)
-                .setDatadogLogsMinPriority(minLogPriority)
+                .setRemoteLogThreshold(minLogPriority)
                 .build()
         )
 

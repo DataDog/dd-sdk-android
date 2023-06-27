@@ -55,13 +55,13 @@ internal class LogsConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build configuration with Log eventMapper 𝕎 setLogEventMapper() and build()`() {
+    fun `𝕄 build configuration with Log eventMapper 𝕎 setEventMapper() and build()`() {
         // Given
         val mockEventMapper: EventMapper<LogEvent> = mock()
 
         // When
         val logsConfiguration = testedBuilder
-            .setLogEventMapper(mockEventMapper)
+            .setEventMapper(mockEventMapper)
             .build()
 
         // Then

@@ -11,14 +11,13 @@ class com.datadog.android.log.Logger
     constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
     fun build(): Logger
     fun setService(String): Builder
-    fun setDatadogLogsEnabled(Boolean): Builder
-    fun setDatadogLogsMinPriority(Int): Builder
+    fun setRemoteLogThreshold(Int): Builder
     fun setLogcatLogsEnabled(Boolean): Builder
     fun setNetworkInfoEnabled(Boolean): Builder
-    fun setLoggerName(String): Builder
+    fun setName(String): Builder
     fun setBundleWithTraceEnabled(Boolean): Builder
     fun setBundleWithRumEnabled(Boolean): Builder
-    fun setSampleRate(Float): Builder
+    fun setRemoteSampleRate(Float): Builder
   fun addAttribute(String, Any?)
   fun removeAttribute(String)
   fun addTag(String, String)
@@ -30,7 +29,7 @@ object com.datadog.android.log.Logs
 data class com.datadog.android.log.LogsConfiguration
   class Builder
     fun useCustomEndpoint(String): Builder
-    fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
+    fun setEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
     fun build(): LogsConfiguration
 data class com.datadog.android.log.model.LogEvent
   constructor(Status, kotlin.String, kotlin.String, kotlin.String, Logger, Dd, Usr? = null, Network? = null, Error? = null, kotlin.String, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
