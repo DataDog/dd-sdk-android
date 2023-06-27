@@ -36,6 +36,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
+import kotlin.reflect.full.declaredFunctions
+import kotlin.reflect.jvm.isAccessible
 
 @Extensions(
     ExtendWith(
@@ -62,7 +64,10 @@ internal class DatadogCoilRequestListenerTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
+        GlobalRumMonitor::class.declaredFunctions.first { it.name == "registerIfAbsent" }.apply {
+            isAccessible = true
+            call(GlobalRumMonitor::class.objectInstance, mockRumMonitor, mockSdkCore)
+        }
         underTest = DatadogCoilRequestListener(mockSdkCore)
     }
 

@@ -13,6 +13,8 @@ import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import fr.xgouchet.elmyr.Forge
 import org.mockito.kotlin.mock
+import kotlin.reflect.full.declaredFunctions
+import kotlin.reflect.jvm.isAccessible
 
 // TODO RUMM-2949 Share forgeries/test configurations between modules
 internal class GlobalRumMonitorTestConfiguration(
@@ -24,7 +26,10 @@ internal class GlobalRumMonitorTestConfiguration(
     override fun setUp(forge: Forge) {
         super.setUp(forge)
         mockSdkCore = datadogSingletonTestConfiguration?.mockInstance ?: mock()
-        GlobalRumMonitor.registerIfAbsent(mockInstance, mockSdkCore)
+        GlobalRumMonitor::class.declaredFunctions.first { it.name == "registerIfAbsent" }.apply {
+            isAccessible = true
+            call(GlobalRumMonitor::class.objectInstance, mockInstance, mockSdkCore)
+        }
     }
 
     override fun tearDown(forge: Forge) {

@@ -7,20 +7,7 @@
 package com.datadog.android.rum
 
 import android.app.Activity
-import android.os.Handler
-import android.os.Looper
-import androidx.annotation.FloatRange
 import androidx.fragment.app.Fragment
-import com.datadog.android.Datadog
-import com.datadog.android.core.sampling.RateBasedSampler
-import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
-import com.datadog.android.telemetry.internal.TelemetryEventHandler
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -28,7 +15,7 @@ import com.datadog.tools.annotation.NoOpImplementation
  *
  *  It allows you to record User events that can be explored and analyzed in Datadog Dashboards.
  *
- *  You can only have one active RumMonitor, and should register/retrieve it from the [GlobalRumMonitor] object.
+ *  You can only have one active RumMonitor, and should retrieve it from the [GlobalRumMonitor] object.
  */
 @Suppress("ComplexInterface", "TooManyFunctions")
 @NoOpImplementation
@@ -305,104 +292,4 @@ interface RumMonitor {
     @Suppress("FunctionName")
     @JvmSynthetic
     fun _getInternal(): _RumInternalProxy?
-
-    // region Builder
-
-    /**
-     * A Builder class for a [RumMonitor].
-     *
-     * @param sdkCore SDK instance to bind to. If not provided, default instance will be used.
-     */
-    class Builder @JvmOverloads constructor(private val sdkCore: SdkCore = Datadog.getInstance()) {
-
-        private var sampleRate: Float? = null
-        private var sessionListener: RumSessionListener? = null
-
-        /**
-         * Sets the sample rate for RUM Sessions.
-         *
-         * @param sampleRate the sample rate must be a value between 0 and 100. A value of 0
-         * means no RUM event will be sent, 100 means all sessions will be kept.
-         */
-        fun setSessionSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): Builder {
-            this.sampleRate = sampleRate
-            return this
-        }
-
-        /**
-         * Sets the Session listener.
-         * @param sessionListener the listener to notify whenever a new Session starts.
-         */
-        fun setSessionListener(sessionListener: RumSessionListener): Builder {
-            this.sessionListener = sessionListener
-            return this
-        }
-
-        /**
-         * Builds a [RumMonitor] based on the current state of this Builder.
-         */
-        fun build(): RumMonitor {
-            if (sdkCore !is InternalSdkCore) {
-                val logger = (sdkCore as? FeatureSdkCore)?.internalLogger ?: InternalLogger.UNBOUND
-                logger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.USER,
-                    { UNEXPECTED_SDK_CORE_TYPE }
-                )
-                return NoOpRumMonitor()
-            }
-
-            val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-                ?.unwrap<RumFeature>()
-            return if (rumFeature == null) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.USER,
-                    { RUM_NOT_ENABLED_ERROR_MESSAGE }
-                )
-                NoOpRumMonitor()
-            } else if (rumFeature.applicationId.isBlank()) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.USER,
-                    { INVALID_APPLICATION_ID_ERROR_MESSAGE }
-                )
-                NoOpRumMonitor()
-            } else {
-                DatadogRumMonitor(
-                    applicationId = rumFeature.applicationId,
-                    sdkCore = sdkCore,
-                    sampleRate = sampleRate ?: rumFeature.sampleRate,
-                    writer = rumFeature.dataWriter,
-                    handler = Handler(Looper.getMainLooper()),
-                    telemetryEventHandler = TelemetryEventHandler(
-                        sdkCore = sdkCore,
-                        eventSampler = RateBasedSampler(rumFeature.telemetrySampleRate),
-                        configurationExtraSampler = RateBasedSampler(
-                            rumFeature.telemetryConfigurationSampleRate
-                        )
-                    ),
-                    firstPartyHostHeaderTypeResolver = sdkCore.firstPartyHostResolver,
-                    cpuVitalMonitor = rumFeature.cpuVitalMonitor,
-                    memoryVitalMonitor = rumFeature.memoryVitalMonitor,
-                    frameRateVitalMonitor = rumFeature.frameRateVitalMonitor,
-                    backgroundTrackingEnabled = rumFeature.backgroundEventTracking,
-                    trackFrustrations = rumFeature.trackFrustrations,
-                    sessionListener = sessionListener
-                )
-            }
-        }
-
-        internal companion object {
-            internal const val UNEXPECTED_SDK_CORE_TYPE =
-                "SDK instance provided doesn't implement InternalSdkCore."
-            internal const val RUM_NOT_ENABLED_ERROR_MESSAGE =
-                "You're trying to create a RumMonitor instance, " +
-                    "but the SDK was not initialized or RUM feature was disabled " +
-                    "in your Configuration. No RUM data will be sent."
-            internal const val INVALID_APPLICATION_ID_ERROR_MESSAGE =
-                "You're trying to create a RumMonitor instance, " +
-                    "but the RUM application id was empty. No RUM data will be sent."
-        }
-    }
 }

@@ -21,6 +21,7 @@ import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
@@ -117,6 +118,7 @@ internal class RumFeature constructor(
     internal var debugActivityLifecycleListener =
         AtomicReference<Application.ActivityLifecycleCallbacks>(null)
     internal var jankStatsActivityLifecycleListener: Application.ActivityLifecycleCallbacks? = null
+    internal var sessionListener: RumSessionListener = NoOpRumSessionListener()
 
     internal var vitalExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
     internal lateinit var anrDetectorExecutorService: ExecutorService
@@ -173,6 +175,8 @@ internal class RumFeature constructor(
 
         registerTrackingStrategies(appContext)
 
+        sessionListener = configuration.sessionListener
+
         sdkCore.setEventReceiver(name, this)
 
         initialized.set(true)
@@ -204,6 +208,7 @@ internal class RumFeature constructor(
         anrDetectorExecutorService.shutdownNow()
         anrDetectorRunnable.stop()
         vitalExecutorService = NoOpScheduledExecutorService()
+        sessionListener = NoOpRumSessionListener()
     }
 
     // endregion
@@ -516,6 +521,7 @@ internal class RumFeature constructor(
         val backgroundEventTracking: Boolean,
         val trackFrustrations: Boolean,
         val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency,
+        val sessionListener: RumSessionListener,
         val additionalConfig: Map<String, Any>
     )
 
@@ -550,6 +556,7 @@ internal class RumFeature constructor(
             backgroundEventTracking = false,
             trackFrustrations = true,
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
+            sessionListener = NoOpRumSessionListener(),
             additionalConfig = emptyMap()
         )
 

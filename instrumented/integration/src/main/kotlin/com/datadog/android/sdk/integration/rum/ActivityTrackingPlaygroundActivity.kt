@@ -12,9 +12,7 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
 import com.datadog.android.rum.DdRumContentProvider
-import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
-import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
@@ -49,7 +47,6 @@ internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
             isAccessible = true
             invoke(null, ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
         }
-        GlobalRumMonitor.registerIfAbsent(RumMonitor.Builder(sdkCore).build(), sdkCore)
         setContentView(R.layout.fragment_tracking_layout)
     }
 }

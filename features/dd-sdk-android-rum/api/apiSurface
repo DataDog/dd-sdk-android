@@ -8,8 +8,6 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
 typealias GlobalRum = GlobalRumMonitor
 object com.datadog.android.rum.GlobalRumMonitor
   fun isRegistered(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): Boolean
-  fun registerIfAbsent(RumMonitor, com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): Boolean
-  fun registerIfAbsent(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), java.util.concurrent.Callable<RumMonitor>): Boolean
   fun get(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): RumMonitor
 object com.datadog.android.rum.Rum
   fun enable(RumConfiguration, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
@@ -76,6 +74,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
     fun useCustomEndpoint(String): Builder
     fun setAdditionalConfiguration(Map<String, Any>): Builder
+    fun setSessionListener(RumSessionListener): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
   - NETWORK
@@ -105,11 +104,6 @@ interface com.datadog.android.rum.RumMonitor
   fun stopSession()
   var debug: Boolean
   fun _getInternal(): _RumInternalProxy?
-  class Builder
-    constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
-    fun setSessionSampleRate(Float): Builder
-    fun setSessionListener(RumSessionListener): Builder
-    fun build(): RumMonitor
 enum com.datadog.android.rum.RumPerformanceMetric
   - FLUTTER_BUILD_TIME
   - FLUTTER_RASTER_TIME

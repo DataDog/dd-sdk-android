@@ -11,6 +11,7 @@ import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.assertj.ConfigurationRumAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
+import com.datadog.android.rum.internal.NoOpRumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
 import com.datadog.android.rum.model.ActionEvent
@@ -92,6 +93,7 @@ internal class RumConfigurationBuilderTest {
                 backgroundEventTracking = false,
                 trackFrustrations = true,
                 vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
+                sessionListener = NoOpRumSessionListener(),
                 additionalConfig = emptyMap()
             )
         )
@@ -484,5 +486,20 @@ internal class RumConfigurationBuilderTest {
         // Then
         assertThat(rumConfiguration.featureConfiguration.telemetryConfigurationSampleRate)
             .isEqualTo(sampleRate)
+    }
+
+    @Test
+    fun `𝕄 set a session listener W setSessionListener()`() {
+        // Given
+        val mockSessionListener = mock<RumSessionListener>()
+
+        // When
+        val rumConfiguration = testedBuilder
+            .setSessionListener(mockSessionListener)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.sessionListener)
+            .isSameAs(mockSessionListener)
     }
 }

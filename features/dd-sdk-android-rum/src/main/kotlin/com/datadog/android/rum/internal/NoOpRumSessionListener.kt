@@ -8,11 +8,16 @@ package com.datadog.android.rum.internal
 
 import com.datadog.android.rum.RumSessionListener
 
-internal class CombinedRumSessionListener(private vararg val listeners: RumSessionListener) :
-    RumSessionListener {
+internal class NoOpRumSessionListener : RumSessionListener {
     override fun onSessionStarted(sessionId: String, isDiscarded: Boolean) {
-        listeners.forEach {
-            it.onSessionStarted(sessionId, isDiscarded)
-        }
+        // no-op
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return other != null && other is NoOpRumSessionListener
+    }
+
+    override fun hashCode(): Int {
+        return 0
     }
 }
