@@ -9,8 +9,27 @@ package com.datadog.android.sessionreplay.internal.utils
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal fun MobileSegment.Wireframe.hasOpaqueBackground(): Boolean {
-    val shapeStyle = this.shapeStyle()
-    return shapeStyle != null && shapeStyle.isFullyOpaque() && shapeStyle.hasNonTranslucentColor()
+    return when (this) {
+        is MobileSegment.Wireframe.ImageWireframe -> this.hasOpaqueBackground()
+        is MobileSegment.Wireframe.ShapeWireframe -> this.hasOpaqueBackground()
+        is MobileSegment.Wireframe.TextWireframe -> this.hasOpaqueBackground()
+        is MobileSegment.Wireframe.PlaceholderWireframe -> true
+    }
+}
+
+private fun MobileSegment.Wireframe.ShapeWireframe.hasOpaqueBackground(): Boolean {
+    return shapeStyle.isOpaque()
+}
+
+private fun MobileSegment.Wireframe.TextWireframe.hasOpaqueBackground(): Boolean {
+    return shapeStyle.isOpaque()
+}
+private fun MobileSegment.Wireframe.ImageWireframe.hasOpaqueBackground(): Boolean {
+    return !(base64.isNullOrEmpty()) || shapeStyle.isOpaque()
+}
+
+private fun MobileSegment.ShapeStyle?.isOpaque(): Boolean {
+    return this != null && this.isFullyOpaque() && this.hasNonTranslucentColor()
 }
 
 internal fun MobileSegment.Wireframe.shapeStyle(): MobileSegment.ShapeStyle? {
@@ -18,6 +37,7 @@ internal fun MobileSegment.Wireframe.shapeStyle(): MobileSegment.ShapeStyle? {
         is MobileSegment.Wireframe.TextWireframe -> this.shapeStyle
         is MobileSegment.Wireframe.ShapeWireframe -> this.shapeStyle
         is MobileSegment.Wireframe.ImageWireframe -> this.shapeStyle
+        is MobileSegment.Wireframe.PlaceholderWireframe -> null
     }
 }
 
@@ -27,5 +47,6 @@ internal fun MobileSegment.Wireframe.copy(shapeStyle: MobileSegment.ShapeStyle?)
         is MobileSegment.Wireframe.TextWireframe -> this.copy(shapeStyle = shapeStyle)
         is MobileSegment.Wireframe.ShapeWireframe -> this.copy(shapeStyle = shapeStyle)
         is MobileSegment.Wireframe.ImageWireframe -> this.copy(shapeStyle = shapeStyle)
+        is MobileSegment.Wireframe.PlaceholderWireframe -> this
     }
 }

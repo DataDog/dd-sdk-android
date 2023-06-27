@@ -177,33 +177,13 @@ internal open class SessionReplayPlaygroundActivity : AppCompatActivity() {
             (it.getChildAt(0) as? Toolbar)?.let { toolbar ->
                 val toolbarScreenCoordinates = toolbar.getViewAbsoluteCoordinates()
 
-                val toolbarWireframe = MobileSegment.Wireframe.TextWireframe(
+                val toolbarWireframe = MobileSegment.Wireframe.PlaceholderWireframe(
                     id = toolbar.resolveId(),
                     x = toolbarScreenCoordinates[0].toLong().densityNormalized(density),
                     y = toolbarScreenCoordinates[1].toLong().densityNormalized(density),
                     width = toolbar.width.toLong().densityNormalized(density),
                     height = toolbar.height.toLong().densityNormalized(density),
-                    shapeStyle = MobileSegment.ShapeStyle(
-                        backgroundColor = "#F1F1F3FF",
-                        opacity = toolbar.alpha,
-                        cornerRadius = 4
-                    ),
-                    border = MobileSegment.ShapeBorder(
-                        color = "#D3D3D3FF",
-                        width = 1L
-                    ),
-                    text = UNSUPPORTED_VIEW_TITLE,
-                    textStyle = MobileSegment.TextStyle(
-                        family = SANS_SERIF_FAMILY_NAME,
-                        size = 10,
-                        color = "#FF0000FF"
-                    ),
-                    textPosition = MobileSegment.TextPosition(
-                        alignment = MobileSegment.Alignment(
-                            horizontal = MobileSegment.Horizontal.CENTER,
-                            vertical = MobileSegment.Vertical.CENTER
-                        )
-                    )
+                    label = UNSUPPORTED_VIEW_TITLE
                 )
 
                 fullSnapshotRecordWireframes.add(toolbarWireframe)

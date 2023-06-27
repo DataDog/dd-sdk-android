@@ -15,6 +15,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
@@ -30,7 +31,7 @@ internal class WireframeExtTest {
 
     @ParameterizedTest
     @MethodSource("testWireframes")
-    fun `M return true W hashOpaqueBackground { shapeStyle fully opaque with color }`(
+    fun `M return true W hasOpaqueBackground { shapeStyle fully opaque with color }`(
         fakeWireframe: MobileSegment.Wireframe,
         @StringForgery(regex = "#[0-9A-Fa-f]{6}[fF]{2}") fakeOpaqueColor: String,
         forge: Forge
@@ -49,7 +50,7 @@ internal class WireframeExtTest {
 
     @ParameterizedTest
     @MethodSource("testWireframes")
-    fun `M return false W hashOpaqueBackground { shapeStyle is null }`(
+    fun `M return false W hasOpaqueBackground { shapeStyle is null }`(
         fakeWireframe: MobileSegment.Wireframe
     ) {
         // Given
@@ -59,9 +60,15 @@ internal class WireframeExtTest {
         assertThat(fakeTestWireframe.hasOpaqueBackground()).isFalse
     }
 
+    fun `M return true W hasOpaqueBackground { PlaceholderWireframe }`(
+        fakeWireframe: MobileSegment.Wireframe.PlaceholderWireframe
+    ) {
+        assertThat(fakeWireframe.hasOpaqueBackground()).isTrue
+    }
+
     @ParameterizedTest
     @MethodSource("testWireframes")
-    fun `M return false W hashOpaqueBackground { shapeStyle not fully opaque }`(
+    fun `M return false W hasOpaqueBackground { shapeStyle not fully opaque }`(
         fakeWireframe: MobileSegment.Wireframe,
         @FloatForgery(0f, 1f) fakeOpacity: Float,
         @StringForgery(regex = "#[0-9A-Fa-f]{6}[fF]{2}") fakeOpaqueColor: String
@@ -77,7 +84,7 @@ internal class WireframeExtTest {
 
     @ParameterizedTest
     @MethodSource("testWireframes")
-    fun `M return false W hashOpaqueBackground { shapeStyle color not opaque }`(
+    fun `M return false W hasOpaqueBackground { shapeStyle color not opaque }`(
         fakeWireframe: MobileSegment.Wireframe,
         @StringForgery(regex = "#[0-9A-Fa-f]{6}[0-9A-Ea-e]{2}") fakeTranslucentColor: String,
         forge: Forge
@@ -92,6 +99,47 @@ internal class WireframeExtTest {
 
         // Then
         assertThat(fakeTestWireframe.hasOpaqueBackground()).isFalse
+    }
+
+    @Test
+    fun `M return true W hasOpaqueBackground { ImageWireframe, base64, noShapeStyle }`(
+        @Forgery fakeWireframe: MobileSegment.Wireframe.ImageWireframe,
+        @StringForgery fakeBase64: String
+    ) {
+        // Given
+        val fakeTestWireframe = fakeWireframe.copy(shapeStyle = null, base64 = fakeBase64)
+
+        // Then
+        assertThat(fakeTestWireframe.hasOpaqueBackground()).isTrue
+    }
+
+    @Test
+    fun `M return false W hasOpaqueBackground { ImageWireframe, no base64, noShapeStyle }`(
+        @Forgery fakeWireframe: MobileSegment.Wireframe.ImageWireframe
+    ) {
+        // Given
+        val fakeTestWireframe = fakeWireframe.copy(shapeStyle = null, base64 = null)
+
+        // Then
+        assertThat(fakeTestWireframe.hasOpaqueBackground()).isFalse
+    }
+
+    @Test
+    fun `M return false W hasOpaqueBackground { ImageWireframe, empty base64, noShapeStyle }`(
+        @Forgery fakeWireframe: MobileSegment.Wireframe.ImageWireframe
+    ) {
+        // Given
+        val fakeTestWireframe = fakeWireframe.copy(shapeStyle = null, base64 = "")
+
+        // Then
+        assertThat(fakeTestWireframe.hasOpaqueBackground()).isFalse
+    }
+
+    @Test
+    fun `M return true W hasOpaqueBackground { PlaceholderWireframe}`(
+        @Forgery fakeWireframe: MobileSegment.Wireframe.PlaceholderWireframe
+    ) {
+        assertThat(fakeWireframe.hasOpaqueBackground()).isTrue
     }
 
     // endregion
@@ -136,6 +184,7 @@ internal class WireframeExtTest {
             is MobileSegment.Wireframe.TextWireframe -> this.copy(shapeStyle = shapeStyle)
             is MobileSegment.Wireframe.ShapeWireframe -> this.copy(shapeStyle = shapeStyle)
             is MobileSegment.Wireframe.ImageWireframe -> this.copy(shapeStyle = shapeStyle)
+            is MobileSegment.Wireframe.PlaceholderWireframe -> this
         }
     }
 
@@ -149,7 +198,9 @@ internal class WireframeExtTest {
             ForgeConfigurator().configure(forge)
             return listOf(
                 forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>(),
-                forge.getForgery<MobileSegment.Wireframe.TextWireframe>()
+                forge.getForgery<MobileSegment.Wireframe.TextWireframe>(),
+                // we will make sure the base64 value is null to not influence the tests
+                forge.getForgery<MobileSegment.Wireframe.ImageWireframe>().copy(base64 = null)
             )
         }
 
@@ -158,10 +209,19 @@ internal class WireframeExtTest {
             ForgeConfigurator().configure(forge)
             val fakeTextWireframe: MobileSegment.Wireframe.TextWireframe = forge.getForgery()
             val fakeShapeWireframe: MobileSegment.Wireframe.ShapeWireframe = forge.getForgery()
+            val fakeImageWireframe: MobileSegment.Wireframe.ImageWireframe = forge.getForgery()
+            val fakePlaceholderWireframe: MobileSegment.Wireframe.PlaceholderWireframe = forge.getForgery()
             val expectedTextShapeStyle: MobileSegment.ShapeStyle? = forge.aNullable { getForgery() }
-            val expectedShapeShapeStyle: MobileSegment.ShapeStyle? = forge.aNullable { getForgery() }
+            val expectedShapeShapeStyle: MobileSegment.ShapeStyle? =
+                forge.aNullable { getForgery() }
+            val expectedImageShapeStyle: MobileSegment.ShapeStyle? =
+                forge.aNullable { getForgery() }
+            val expectedPlaceHolderShapeStyle: MobileSegment.ShapeStyle? =
+                forge.aNullable { getForgery() }
             val expectedTextWireframe = fakeTextWireframe.copy(shapeStyle = expectedTextShapeStyle)
             val expectedShapeWireframe = fakeShapeWireframe.copy(shapeStyle = expectedShapeShapeStyle)
+            val expectedImageWireframe = fakeImageWireframe.copy(shapeStyle = expectedImageShapeStyle)
+            val expectedPlaceholderWireframe = fakePlaceholderWireframe
             return listOf(
                 Arguments.of(
                     fakeShapeWireframe,
@@ -172,6 +232,16 @@ internal class WireframeExtTest {
                     fakeTextWireframe,
                     expectedTextShapeStyle,
                     expectedTextWireframe
+                ),
+                Arguments.of(
+                    fakeImageWireframe,
+                    expectedImageShapeStyle,
+                    expectedImageWireframe
+                ),
+                Arguments.of(
+                    fakePlaceholderWireframe,
+                    expectedPlaceHolderShapeStyle,
+                    expectedPlaceholderWireframe
                 )
             ).stream()
         }

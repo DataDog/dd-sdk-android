@@ -935,6 +935,8 @@ internal class RecordedDataProcessorTest {
                 this.copy(id = id)
             is MobileSegment.Wireframe.ImageWireframe ->
                 this.copy(id = id)
+            is MobileSegment.Wireframe.PlaceholderWireframe ->
+                this.copy(id = id)
         }
     }
 
