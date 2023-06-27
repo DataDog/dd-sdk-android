@@ -26,8 +26,8 @@ import com.datadog.android.security.Encryption
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.trace.AndroidTracer
-import com.datadog.android.trace.Traces
-import com.datadog.android.trace.TracesConfiguration
+import com.datadog.android.trace.Trace
+import com.datadog.android.trace.TraceConfiguration
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import io.opentracing.Tracer
@@ -71,7 +71,7 @@ internal class EncryptionTest {
                 Rum.enable(rumConfig, sdkCore)
             },
             { Logs.enable(LogsConfiguration.Builder().build(), sdkCore) },
-            { Traces.enable(TracesConfiguration.Builder().build(), sdkCore) },
+            { Trace.enable(TraceConfiguration.Builder().build(), sdkCore) },
             { SessionReplay.enable(SessionReplayConfiguration.Builder().build(), sdkCore) }
         )
         featureActivations.shuffled(Random(forge.seed)).forEach { it() }

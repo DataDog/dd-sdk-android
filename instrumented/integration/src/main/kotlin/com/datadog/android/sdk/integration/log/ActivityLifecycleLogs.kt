@@ -16,7 +16,7 @@ import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
-import com.datadog.android.trace.Traces
+import com.datadog.android.trace.Trace
 import fr.xgouchet.elmyr.Forge
 import java.util.Random
 
@@ -44,7 +44,7 @@ internal class ActivityLifecycleLogs : AppCompatActivity() {
         checkNotNull(sdkCore)
         val featureActivations = mutableListOf(
             { Logs.enable(RuntimeConfig.logsConfigBuilder().build(), sdkCore) },
-            { Traces.enable(RuntimeConfig.tracesConfigBuilder().build(), sdkCore) }
+            { Trace.enable(RuntimeConfig.tracesConfigBuilder().build(), sdkCore) }
         )
         featureActivations.shuffled(Random(intent.getForgeSeed())).forEach { it() }
 

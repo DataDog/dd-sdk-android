@@ -6,14 +6,14 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.trace.TracesConfiguration
+import com.datadog.android.trace.TraceConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import org.mockito.kotlin.mock
 
-class TracesConfigurationForgeryFactory : ForgeryFactory<TracesConfiguration> {
-    override fun getForgery(forge: Forge): TracesConfiguration {
-        return TracesConfiguration(
+class TraceConfigurationForgeryFactory : ForgeryFactory<TraceConfiguration> {
+    override fun getForgery(forge: Forge): TraceConfiguration {
+        return TraceConfiguration(
             customEndpointUrl = forge.aNullable { aStringMatching("https://[a-z]+\\.com") },
             eventMapper = mock()
         )

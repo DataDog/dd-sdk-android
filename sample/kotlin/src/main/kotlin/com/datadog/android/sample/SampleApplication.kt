@@ -45,8 +45,8 @@ import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.AndroidTracer
-import com.datadog.android.trace.Traces
-import com.datadog.android.trace.TracesConfiguration
+import com.datadog.android.trace.Trace
+import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.v2.api.context.UserInfo
 import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
@@ -134,12 +134,12 @@ class SampleApplication : Application() {
         }.build()
         Logs.enable(logsConfig)
 
-        val tracesConfig = TracesConfiguration.Builder().apply {
+        val tracesConfig = TraceConfiguration.Builder().apply {
             if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
                 useCustomEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
             }
         }.build()
-        Traces.enable(tracesConfig)
+        Trace.enable(tracesConfig)
 
         NdkCrashReports.enable()
 

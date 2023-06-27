@@ -16,7 +16,7 @@ import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
 import com.datadog.android.trace.AndroidTracer
-import com.datadog.android.trace.Traces
+import com.datadog.android.trace.Trace
 import com.datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
 import io.opentracing.Scope
@@ -48,7 +48,7 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
         checkNotNull(sdkCore)
         mutableListOf(
             { Logs.enable(RuntimeConfig.logsConfigBuilder().build(), sdkCore) },
-            { Traces.enable(RuntimeConfig.tracesConfigBuilder().build(), sdkCore) }
+            { Trace.enable(RuntimeConfig.tracesConfigBuilder().build(), sdkCore) }
         )
             .shuffled(Random(intent.getForgeSeed()))
             .forEach { it() }

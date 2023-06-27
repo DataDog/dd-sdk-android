@@ -30,7 +30,7 @@ import java.util.Random
 /**
  *  A class enabling Datadog tracing features.
  *
- * It allows you to create [ DDSpan ] and send them to Datadog servers.
+ * It allows you to create [DDSpan] and send them to Datadog servers.
  *
  * You can have multiple tracers configured in your application, each with their own settings.
  *

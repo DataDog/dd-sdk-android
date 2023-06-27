@@ -23,7 +23,7 @@ import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.trace.AndroidTracer
-import com.datadog.android.trace.TracesConfiguration
+import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.trace.model.SpanEvent
@@ -104,7 +104,7 @@ class SpanConfigE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.trace.TracesConfiguration$Builder#fun setSpanEventMapper(com.datadog.android.trace.event.SpanEventMapper): Builder
+     * apiMethodSignature: com.datadog.android.trace.TraceConfiguration$Builder#fun setEventMapper(com.datadog.android.trace.event.SpanEventMapper): Builder
      */
     @Test
     fun trace_config_set_span_event_mapper() {
@@ -118,7 +118,7 @@ class SpanConfigE2ETests {
                     crashReportsEnabled = true
                 ).build(),
                 tracesConfigProvider = {
-                    TracesConfiguration.Builder().setSpanEventMapper(object : SpanEventMapper {
+                    TraceConfiguration.Builder().setEventMapper(object : SpanEventMapper {
                         override fun map(event: SpanEvent): SpanEvent {
                             if (event.resource == fakeResourceName) {
                                 event.name = testMethodName

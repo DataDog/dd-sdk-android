@@ -22,8 +22,8 @@ import com.datadog.android.nightly.utils.NeverUseThatEncryption
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
-import com.datadog.android.trace.Traces
-import com.datadog.android.trace.TracesConfiguration
+import com.datadog.android.trace.Trace
+import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.v2.api.SdkCore
 
 internal open class NdkCrashService : CrashService() {
@@ -96,7 +96,7 @@ internal open class NdkCrashService : CrashService() {
             Rum.enable(rumConfig, sdkCore)
         }
         Logs.enable(LogsConfiguration.Builder().build(), sdkCore)
-        Traces.enable(TracesConfiguration.Builder().build(), sdkCore)
+        Trace.enable(TraceConfiguration.Builder().build(), sdkCore)
         if (ndkCrashReportsEnabled) {
             NdkCrashReports.enable(sdkCore)
         }

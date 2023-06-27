@@ -21,8 +21,8 @@ import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.trace.AndroidTracer
-import com.datadog.android.trace.Traces
-import com.datadog.android.trace.TracesConfiguration
+import com.datadog.android.trace.Trace
+import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.v2.api.context.UserInfo
 import io.opentracing.util.GlobalTracer
 import timber.log.Timber
@@ -69,14 +69,14 @@ class WearApplication : Application() {
             .build()
         Logs.enable(logsConfig)
 
-        val tracesConfig = TracesConfiguration.Builder()
+        val tracesConfig = TraceConfiguration.Builder()
             .apply {
                 if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
                 }
             }
             .build()
-        Traces.enable(tracesConfig)
+        Trace.enable(tracesConfig)
 
         Datadog.getInstance().setUserInfo(
             UserInfo(
