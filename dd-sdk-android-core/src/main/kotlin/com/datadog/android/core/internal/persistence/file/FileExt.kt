@@ -7,6 +7,7 @@
 
 package com.datadog.android.core.internal.persistence.file
 
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.v2.api.InternalLogger
 import java.io.File
 import java.io.FileFilter
@@ -63,6 +64,7 @@ internal fun File.canWriteSafe(internalLogger: InternalLogger): Boolean {
 /**
  * Non-throwing version of [File.canRead]. If exception happens, false is returned.
  */
+@InternalApi
 fun File.canReadSafe(internalLogger: InternalLogger): Boolean {
     return safeCall(default = false, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
@@ -80,6 +82,7 @@ internal fun File.deleteSafe(internalLogger: InternalLogger): Boolean {
 /**
  * Non-throwing version of [File.exists]. If exception happens, false is returned.
  */
+@InternalApi
 fun File.existsSafe(internalLogger: InternalLogger): Boolean {
     return safeCall(default = false, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
@@ -139,6 +142,7 @@ internal fun File.renameToSafe(dest: File, internalLogger: InternalLogger): Bool
 /**
  * Non-throwing version of [File.readText]. If exception happens, null is returned.
  */
+@InternalApi
 fun File.readTextSafe(charset: Charset = Charsets.UTF_8, internalLogger: InternalLogger): String? {
     return if (existsSafe(internalLogger) && canReadSafe(internalLogger)) {
         safeCall(default = null, internalLogger) {
@@ -164,6 +168,7 @@ internal fun File.readBytesSafe(internalLogger: InternalLogger): ByteArray? {
 /**
  * Non-throwing version of [File.readLines]. If exception happens, null is returned.
  */
+@InternalApi
 fun File.readLinesSafe(
     charset: Charset = Charsets.UTF_8,
     internalLogger: InternalLogger

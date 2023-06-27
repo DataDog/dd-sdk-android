@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.v2.api.InternalLogger
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -58,34 +59,39 @@ internal inline fun retryWithDelay(
     return wasSuccessful
 }
 
-// TODO RUMM-3003 Better to avoid having this as extension function to prevent polluting
-//  auto-complete dropdown on the user side. Converting it to explicit call with argument
-//  should help.
-/**
- * Converts arbitrary object to the [JsonElement] with the best effort. [Any.toString] is
- * used as a fallback.
- */
-fun Any?.toJsonElement(): JsonElement {
-    return when (this) {
-        NULL_MAP_VALUE -> JsonNull.INSTANCE
-        null -> JsonNull.INSTANCE
-        JsonNull.INSTANCE -> JsonNull.INSTANCE
-        is Boolean -> JsonPrimitive(this)
-        is Int -> JsonPrimitive(this)
-        is Long -> JsonPrimitive(this)
-        is Float -> JsonPrimitive(this)
-        is Double -> JsonPrimitive(this)
-        is String -> JsonPrimitive(this)
-        is Date -> JsonPrimitive(this.time)
-        // this line should come before Iterable, otherwise this branch is never executed
-        is JsonArray -> this
-        is Iterable<*> -> this.toJsonArray()
-        is Map<*, *> -> this.toJsonObject()
-        is JsonObject -> this
-        is JsonPrimitive -> this
-        is JSONObject -> this.toJsonObject()
-        is JSONArray -> this.toJsonArray()
-        else -> JsonPrimitive(toString())
+@Suppress("UndocumentedPublicClass")
+object JsonSerializer {
+    // it could be an extension function, but since the scope is very wide (Any?) in order to avoid
+    // polluting user-space, we are going to encapsulate it. Maybe later if we have an internal
+    // package it can be converted back to the extension function.
+
+    /**
+     * Converts arbitrary object to the [JsonElement] with the best effort. [Any.toString] is
+     * used as a fallback.
+     */
+    @InternalApi
+    fun toJsonElement(item: Any?): JsonElement {
+        return when (item) {
+            NULL_MAP_VALUE -> JsonNull.INSTANCE
+            null -> JsonNull.INSTANCE
+            JsonNull.INSTANCE -> JsonNull.INSTANCE
+            is Boolean -> JsonPrimitive(item)
+            is Int -> JsonPrimitive(item)
+            is Long -> JsonPrimitive(item)
+            is Float -> JsonPrimitive(item)
+            is Double -> JsonPrimitive(item)
+            is String -> JsonPrimitive(item)
+            is Date -> JsonPrimitive(item.time)
+            // this line should come before Iterable, otherwise this branch is never executed
+            is JsonArray -> item
+            is Iterable<*> -> item.toJsonArray()
+            is Map<*, *> -> item.toJsonObject()
+            is JsonObject -> item
+            is JsonPrimitive -> item
+            is JSONObject -> item.toJsonObject()
+            is JSONArray -> item.toJsonArray()
+            else -> JsonPrimitive(item.toString())
+        }
     }
 }
 
@@ -111,7 +117,7 @@ internal fun Any?.fromJsonElement(): Any? {
 internal fun Iterable<*>.toJsonArray(): JsonElement {
     val array = JsonArray()
     forEach {
-        array.add(it.toJsonElement())
+        array.add(JsonSerializer.toJsonElement(it))
     }
     return array
 }
@@ -119,7 +125,7 @@ internal fun Iterable<*>.toJsonArray(): JsonElement {
 internal fun Map<*, *>.toJsonObject(): JsonElement {
     val obj = JsonObject()
     forEach {
-        obj.add(it.key.toString(), it.value.toJsonElement())
+        obj.add(it.key.toString(), JsonSerializer.toJsonElement(it.value))
     }
     return obj
 }
@@ -128,7 +134,7 @@ internal fun JSONObject.toJsonObject(): JsonElement {
     val obj = JsonObject()
     for (key in keys()) {
         @Suppress("UnsafeThirdPartyFunctionCall") // iteration over keys which exist
-        obj.add(key, get(key).toJsonElement())
+        obj.add(key, JsonSerializer.toJsonElement(get(key)))
     }
     return obj
 }
@@ -137,7 +143,7 @@ internal fun JSONArray.toJsonArray(): JsonElement {
     val obj = JsonArray()
     for (index in 0 until length()) {
         @Suppress("UnsafeThirdPartyFunctionCall") // iteration over indexes which exist
-        obj.add(get(index).toJsonElement())
+        obj.add(JsonSerializer.toJsonElement(get(index)))
     }
     return obj
 }

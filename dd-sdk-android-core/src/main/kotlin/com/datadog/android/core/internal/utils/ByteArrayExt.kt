@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.v2.api.InternalLogger
 
 /**
@@ -43,6 +44,7 @@ internal fun ByteArray.split(delimiter: Byte, internalLogger: InternalLogger): L
  * @param suffix Optional suffix to add to the result.
  * @param internalLogger logger to use.
  */
+@InternalApi
 fun Collection<ByteArray>.join(
     separator: ByteArray,
     prefix: ByteArray = ByteArray(0),

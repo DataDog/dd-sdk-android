@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.utils.assertj
 
-import com.datadog.android.core.internal.utils.toJsonElement
+import com.datadog.android.core.internal.utils.JsonSerializer
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
@@ -103,7 +103,7 @@ internal class JsonElementAssert(actual: JsonElement) :
     private fun Iterable<*>.toJsonArray(): JsonElement {
         val array = JsonArray()
         forEach {
-            array.add(it.toJsonElement())
+            array.add(JsonSerializer.toJsonElement(it))
         }
         return array
     }
@@ -111,7 +111,7 @@ internal class JsonElementAssert(actual: JsonElement) :
     private fun Map<*, *>.toJsonObject(): JsonElement {
         val obj = JsonObject()
         forEach {
-            obj.add(it.key.toString(), it.value.toJsonElement())
+            obj.add(it.key.toString(), JsonSerializer.toJsonElement(it.value))
         }
         return obj
     }
@@ -120,7 +120,7 @@ internal class JsonElementAssert(actual: JsonElement) :
         val obj = JsonObject()
         for (key in keys()) {
             @Suppress("UnsafeThirdPartyFunctionCall") // iteration over keys which exist
-            obj.add(key, get(key).toJsonElement())
+            obj.add(key, JsonSerializer.toJsonElement(get(key)))
         }
         return obj
     }
@@ -129,7 +129,7 @@ internal class JsonElementAssert(actual: JsonElement) :
         val obj = JsonArray()
         for (index in 0 until length()) {
             @Suppress("UnsafeThirdPartyFunctionCall") // iteration over indexes which exist
-            obj.add(get(index).toJsonElement())
+            obj.add(JsonSerializer.toJsonElement(get(index)))
         }
         return obj
     }

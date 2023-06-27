@@ -206,16 +206,16 @@ public final class com/datadog/android/core/internal/utils/ConcurrencyExtKt {
 	public static final fun submitSafe (Ljava/util/concurrent/ExecutorService;Ljava/lang/String;Lcom/datadog/android/v2/api/InternalLogger;Ljava/lang/Runnable;)Ljava/util/concurrent/Future;
 }
 
+public final class com/datadog/android/core/internal/utils/JsonSerializer {
+	public static final field INSTANCE Lcom/datadog/android/core/internal/utils/JsonSerializer;
+	public final fun toJsonElement (Ljava/lang/Object;)Lcom/google/gson/JsonElement;
+}
+
 public final class com/datadog/android/core/internal/utils/MapUtilsKt {
 	public static final fun getNULL_MAP_VALUE ()Ljava/lang/Object;
 }
 
-public final class com/datadog/android/core/internal/utils/MiscUtilsKt {
-	public static final fun toJsonElement (Ljava/lang/Object;)Lcom/google/gson/JsonElement;
-}
-
 public final class com/datadog/android/core/internal/utils/NumberExtKt {
-	public static final fun percent (F)D
 	public static final fun toHexString (I)Ljava/lang/String;
 	public static final fun toHexString (J)Ljava/lang/String;
 	public static final fun toHexString (Ljava/math/BigInteger;)Ljava/lang/String;
