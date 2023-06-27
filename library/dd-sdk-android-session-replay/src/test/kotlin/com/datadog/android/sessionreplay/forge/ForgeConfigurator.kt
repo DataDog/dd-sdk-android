@@ -51,6 +51,8 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(RumContextDataForgeryFactory())
         forge.addFactory(ImageWireframeForgeryFactory())
         forge.addFactory(PlaceholderWireframeForgeryFactory())
+        forge.addFactory(SnapshotRecordedDataQueueItemForgeryFactory())
+        forge.addFactory(TouchEventRecordedDataQueueItemForgeryFactory())
 
         forge.useJvmFactories()
     }

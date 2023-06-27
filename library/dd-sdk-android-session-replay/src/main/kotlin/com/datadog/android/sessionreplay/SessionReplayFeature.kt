@@ -52,7 +52,6 @@ class SessionReplayFeature internal constructor(
                 privacy = configuration.privacy,
                 recordWriter = recordWriter,
                 timeProvider = SessionReplayTimeProvider(sdkCore),
-                recordCallback = SessionReplayRecordCallback(sdkCore),
                 customMappers = configuration.customMappers(),
                 customOptionSelectorDetectors =
                 configuration.extensionSupport.getOptionSelectorDetectors()
@@ -188,7 +187,8 @@ class SessionReplayFeature internal constructor(
     }
 
     private fun createDataWriter(): RecordWriter {
-        return SessionReplayRecordWriter(sdkCore)
+        val recordCallback = SessionReplayRecordCallback(sdkCore)
+        return SessionReplayRecordWriter(sdkCore, recordCallback)
     }
 
     /**

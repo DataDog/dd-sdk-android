@@ -8,14 +8,14 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.content.Context
 import android.view.Window
-import com.datadog.android.sessionreplay.internal.processor.Processor
+import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.callback.NoOpWindowCallback
 import com.datadog.android.sessionreplay.internal.recorder.callback.RecorderWindowCallback
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import java.util.WeakHashMap
 
 internal class WindowCallbackInterceptor(
-    private val processor: Processor,
+    private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor,
     private val timeProvider: TimeProvider
 ) {
@@ -46,7 +46,7 @@ internal class WindowCallbackInterceptor(
         val toWrap = window.callback ?: NoOpWindowCallback()
         window.callback = RecorderWindowCallback(
             appContext,
-            processor,
+            recordedDataQueueHandler,
             toWrap,
             timeProvider,
             viewOnDrawInterceptor
