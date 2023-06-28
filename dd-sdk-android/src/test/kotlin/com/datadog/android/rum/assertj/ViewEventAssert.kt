@@ -553,6 +553,14 @@ internal class ViewEventAssert(actual: ViewEvent) :
             )
             .isEqualTo(hasReplay)
     }
+    fun hasReplayStats(replayStats: ViewEvent.ReplayStats) {
+        assertThat(actual.dd.replayStats)
+            .overridingErrorMessage(
+                "Expected event data to have replay stats $replayStats " +
+                    "but was ${actual.dd.replayStats}"
+            )
+            .isEqualTo(replayStats)
+    }
 
     fun hasFlutterBuildTime(value: ViewEvent.FlutterBuildTime?): ViewEventAssert {
         performanceMetricsAreClose("flutterBuildTime", actual.view.flutterBuildTime, value)

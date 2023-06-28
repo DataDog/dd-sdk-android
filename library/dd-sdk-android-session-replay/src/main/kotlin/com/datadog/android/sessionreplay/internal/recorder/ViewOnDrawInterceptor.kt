@@ -9,19 +9,19 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.content.Context
 import android.view.View
 import android.view.ViewTreeObserver.OnDrawListener
-import com.datadog.android.sessionreplay.internal.processor.Processor
+import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener
 import java.util.WeakHashMap
 
 internal class ViewOnDrawInterceptor(
-    private val processor: Processor,
+    private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val snapshotProducer: SnapshotProducer,
     private val onDrawListenerProducer: (Context, List<View>) -> OnDrawListener =
         { activity, decorViews ->
             WindowsOnDrawListener(
                 activity,
                 decorViews,
-                processor,
+                recordedDataQueueHandler,
                 snapshotProducer
             )
         }

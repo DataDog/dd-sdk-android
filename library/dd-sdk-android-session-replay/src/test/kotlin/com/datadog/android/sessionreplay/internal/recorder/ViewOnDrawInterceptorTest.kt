@@ -12,7 +12,7 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewTreeObserver
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.processor.Processor
+import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -44,7 +44,7 @@ internal class ViewOnDrawInterceptorTest {
     lateinit var testedInterceptor: ViewOnDrawInterceptor
 
     @Mock
-    lateinit var mockProcessor: Processor
+    lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
 
     @Mock
     lateinit var mockSnapshotProducer: SnapshotProducer
@@ -58,7 +58,7 @@ internal class ViewOnDrawInterceptorTest {
         mockActivity = forge.aMockedActivity()
         fakeDecorViews = forge.aMockedDecorViewsList()
         testedInterceptor = ViewOnDrawInterceptor(
-            mockProcessor,
+            mockRecordedDataQueueHandler,
             mockSnapshotProducer
         )
     }
@@ -81,7 +81,7 @@ internal class ViewOnDrawInterceptorTest {
         // Given
         val mockOnDrawListener = mock<ViewTreeObserver.OnDrawListener>()
         testedInterceptor = ViewOnDrawInterceptor(
-            mockProcessor,
+            mockRecordedDataQueueHandler,
             mockSnapshotProducer
         ) { _, _ -> mockOnDrawListener }
 

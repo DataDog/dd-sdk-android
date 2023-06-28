@@ -16,6 +16,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -180,6 +182,129 @@ internal class MutationResolverTest {
 
     // endregion
 
+    // region property update mutations
+
+    @ParameterizedTest
+    @MethodSource("positionMutationData")
+    fun `M identify the updated wireframes W resolveMutations {position}`(
+        mutationTestData: MutationTestData
+    ) {
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            mutationTestData.prevSnapshot,
+            mutationTestData.newSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(mutationTestData.expectedMutation)
+    }
+
+    @ParameterizedTest
+    @MethodSource("dimensionMutationData")
+    fun `M identify the updated wireframes W resolveMutations {dimension}`(
+        mutationTestData: MutationTestData
+    ) {
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            mutationTestData.prevSnapshot,
+            mutationTestData.newSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(mutationTestData.expectedMutation)
+    }
+
+    @ParameterizedTest
+    @MethodSource("clipMutationData")
+    fun `M identify the updated wireframes W resolveMutations {clip}`(
+        mutationTestData: MutationTestData
+    ) {
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            mutationTestData.prevSnapshot,
+            mutationTestData.newSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(mutationTestData.expectedMutation)
+    }
+
+    @ParameterizedTest
+    @MethodSource("clipNullMutationData")
+    fun `M identify the updated wireframes W resolveMutations {clip null}`(
+        mutationTestData: MutationTestData
+    ) {
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            mutationTestData.prevSnapshot,
+            mutationTestData.newSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(mutationTestData.expectedMutation)
+    }
+
+    @ParameterizedTest
+    @MethodSource("borderMutationData")
+    fun `M identify the updated wireframes W resolveMutations {border}`(
+        mutationTestData: MutationTestData
+    ) {
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            mutationTestData.prevSnapshot,
+            mutationTestData.newSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(mutationTestData.expectedMutation)
+    }
+
+    @ParameterizedTest
+    @MethodSource("shapeStyleMutationData")
+    fun `M identify the updated wireframes W resolveMutations {shapeStyle}`(
+        mutationTestData: MutationTestData
+    ) {
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            mutationTestData.prevSnapshot,
+            mutationTestData.newSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(mutationTestData.expectedMutation)
+    }
+
+    @ParameterizedTest
+    @MethodSource("typeMutationData")
+    fun `M identify the updated wireframes W resolveMutations {type}`(
+        mutationTestData: MutationTestData
+    ) {
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            mutationTestData.prevSnapshot,
+            mutationTestData.newSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isNullOrEmpty()
+    }
+
+    // endregion
+
     // region order changed mutations
 
     @Test
@@ -213,384 +338,10 @@ internal class MutationResolverTest {
         assertThat(mutations?.removes).containsExactlyInAnyOrder(*expectedRemovals.toTypedArray())
         assertThat(mutations?.updates).isNullOrEmpty()
     }
-    // endregion
-
-    // region ShapeWireframe update mutations
-
-    @Test
-    fun `M identify the updated wireframes W resolveMutations {Shape, position}`(forge: Forge) {
-        // Given
-        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
-            forge.getForgery(MobileSegment.Wireframe.ShapeWireframe::class.java)
-        }
-        val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
-        val fakeUpdatedWireframes = fakePrevSnapshot
-            .take(fakeUpdateSize)
-            .map { it.copy(x = forge.aLong(), y = forge.aLong()) }
-        val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
-        val expectedUpdates = fakeUpdatedWireframes.map {
-            MobileSegment.WireframeUpdateMutation.ShapeWireframeUpdate(
-                id = it.id(),
-                x = it.x,
-                y = it.y
-            )
-        }
-
-        // When
-        val mutations = testedMutationResolver.resolveMutations(
-            fakePrevSnapshot,
-            fakeCurrentSnapshot
-        )
-
-        // Then
-        assertThat(mutations?.adds).isNullOrEmpty()
-        assertThat(mutations?.removes).isNullOrEmpty()
-        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
-    }
-
-    @Test
-    fun `M identify the updated wireframes W resolveMutations {Shape, dimensions}`(forge: Forge) {
-        // Given
-        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
-            forge.getForgery(MobileSegment.Wireframe.ShapeWireframe::class.java)
-        }
-        val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
-        val fakeUpdatedWireframes = fakePrevSnapshot
-            .take(fakeUpdateSize)
-            .map { it.copy(width = forge.aLong(), height = forge.aLong()) }
-        val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
-        val expectedUpdates = fakeUpdatedWireframes.map {
-            MobileSegment.WireframeUpdateMutation.ShapeWireframeUpdate(
-                id = it.id(),
-                width = it.width,
-                height = it.height
-            )
-        }
-
-        // When
-        val mutations = testedMutationResolver.resolveMutations(
-            fakePrevSnapshot,
-            fakeCurrentSnapshot
-        )
-
-        // Then
-        assertThat(mutations?.adds).isNullOrEmpty()
-        assertThat(mutations?.removes).isNullOrEmpty()
-        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
-    }
-
-    @Test
-    fun `M identify the updated wireframes W resolveMutations {Shape, border}`(forge: Forge) {
-        // Given
-        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
-            forge.getForgery(MobileSegment.Wireframe.ShapeWireframe::class.java)
-        }
-        val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
-        val fakeUpdatedWireframes = fakePrevSnapshot
-            .take(fakeUpdateSize)
-            .map {
-                it.copy(
-                    border = MobileSegment.ShapeBorder(
-                        forge.aStringMatching("#[0-9A-F]{6}FF"),
-                        forge.aPositiveLong(strict = true)
-                    )
-                )
-            }
-        val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
-        val expectedUpdates = fakeUpdatedWireframes.map {
-            MobileSegment.WireframeUpdateMutation.ShapeWireframeUpdate(
-                id = it.id(),
-                border = it.border
-            )
-        }
-
-        // When
-        val mutations = testedMutationResolver.resolveMutations(
-            fakePrevSnapshot,
-            fakeCurrentSnapshot
-        )
-
-        // Then
-        assertThat(mutations?.adds).isNullOrEmpty()
-        assertThat(mutations?.removes).isNullOrEmpty()
-        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
-    }
-
-    @Test
-    fun `M identify the updated wireframes W resolveMutations {Shape, shapeStyle}`(forge: Forge) {
-        // Given
-        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
-            forge.getForgery(MobileSegment.Wireframe.ShapeWireframe::class.java)
-        }
-        val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
-        val fakeUpdatedWireframes = fakePrevSnapshot
-            .take(fakeUpdateSize)
-            .map {
-                it.copy(
-                    shapeStyle = MobileSegment.ShapeStyle(
-                        backgroundColor = forge.aStringMatching("#[0-9A-F]{6}FF"),
-                        opacity = forge.aFloat(min = 0f, max = 1f),
-                        cornerRadius = forge.aPositiveLong()
-                    )
-                )
-            }
-        val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
-        val expectedUpdates = fakeUpdatedWireframes.map {
-            MobileSegment.WireframeUpdateMutation.ShapeWireframeUpdate(
-                id = it.id(),
-                shapeStyle = it.shapeStyle
-            )
-        }
-
-        // When
-        val mutations = testedMutationResolver.resolveMutations(
-            fakePrevSnapshot,
-            fakeCurrentSnapshot
-        )
-
-        // Then
-        assertThat(mutations?.adds).isNullOrEmpty()
-        assertThat(mutations?.removes).isNullOrEmpty()
-        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
-    }
-
-    @Test
-    fun `M identify the updated wireframes W resolveMutations {Shape, clip}`(forge: Forge) {
-        // Given
-        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
-            forge.getForgery(MobileSegment.Wireframe.ShapeWireframe::class.java)
-        }
-        val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
-        val fakeUpdatedWireframes = fakePrevSnapshot
-            .take(fakeUpdateSize)
-            .map {
-                it.copy(
-                    clip = forge.forgeDifferent(it.clip)
-                )
-            }
-        val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
-        val expectedUpdates = fakeUpdatedWireframes.map {
-            MobileSegment.WireframeUpdateMutation.ShapeWireframeUpdate(
-                id = it.id(),
-                clip = it.clip
-            )
-        }
-
-        // When
-        val mutations = testedMutationResolver.resolveMutations(
-            fakePrevSnapshot,
-            fakeCurrentSnapshot
-        )
-
-        // Then
-        assertThat(mutations?.adds).isNullOrEmpty()
-        assertThat(mutations?.removes).isNullOrEmpty()
-        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
-    }
-
-    @Test
-    fun `M provide an empty clip W resolveMutations {Shape, new clip is null}`(forge: Forge) {
-        // Given
-        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
-            forge.getForgery(MobileSegment.Wireframe.ShapeWireframe::class.java)
-                .copy(clip = forge.getForgery())
-        }
-        val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
-        val fakeUpdatedWireframes = fakePrevSnapshot
-            .take(fakeUpdateSize)
-            .map {
-                it.copy(
-                    clip = null
-                )
-            }
-        val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
-        val expectedUpdates = fakeUpdatedWireframes.map {
-            MobileSegment.WireframeUpdateMutation.ShapeWireframeUpdate(
-                id = it.id(),
-                clip = MobileSegment.WireframeClip(0, 0, 0, 0)
-            )
-        }
-
-        // When
-        val mutations = testedMutationResolver.resolveMutations(
-            fakePrevSnapshot,
-            fakeCurrentSnapshot
-        )
-
-        // Then
-        assertThat(mutations?.adds).isNullOrEmpty()
-        assertThat(mutations?.removes).isNullOrEmpty()
-        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
-    }
-
-    @Test
-    fun `M return empty mutations W resolveMutation {Shape wireframes types are not matching}`(
-        forge: Forge
-    ) {
-        // Given
-        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
-            forge.getForgery(MobileSegment.Wireframe.ShapeWireframe::class.java)
-        }
-
-        val fakeCurrentSnapshot = fakePrevSnapshot.map {
-            forge.getForgery(
-                MobileSegment.Wireframe
-                    .TextWireframe::class.java
-            ).copy(id = it.id)
-        }
-
-        // When
-        val mutations = testedMutationResolver.resolveMutations(
-            fakePrevSnapshot,
-            fakeCurrentSnapshot
-        )
-
-        // Then
-        assertThat(mutations?.adds).isNullOrEmpty()
-        assertThat(mutations?.removes).isNullOrEmpty()
-        assertThat(mutations?.updates).isNullOrEmpty()
-    }
 
     // endregion
 
     // region TextWireframe update mutations
-
-    @Test
-    fun `M identify the updated wireframes W resolveMutations {Text, position}`(forge: Forge) {
-        // Given
-        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
-            forge.getForgery(MobileSegment.Wireframe.TextWireframe::class.java)
-        }
-        val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
-        val fakeUpdatedWireframes = fakePrevSnapshot
-            .take(fakeUpdateSize)
-            .map { it.copy(x = forge.aLong(), y = forge.aLong()) }
-        val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
-        val expectedUpdates = fakeUpdatedWireframes.map {
-            MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
-                id = it.id(),
-                x = it.x,
-                y = it.y
-            )
-        }
-
-        // When
-        val mutations = testedMutationResolver.resolveMutations(
-            fakePrevSnapshot,
-            fakeCurrentSnapshot
-        )
-
-        // Then
-        assertThat(mutations?.adds).isNullOrEmpty()
-        assertThat(mutations?.removes).isNullOrEmpty()
-        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
-    }
-
-    @Test
-    fun `M identify the updated wireframes W resolveMutations {Text, dimensions}`(forge: Forge) {
-        // Given
-        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
-            forge.getForgery(MobileSegment.Wireframe.TextWireframe::class.java)
-        }
-        val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
-        val fakeUpdatedWireframes = fakePrevSnapshot
-            .take(fakeUpdateSize)
-            .map { it.copy(width = forge.aLong(), height = forge.aLong()) }
-        val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
-        val expectedUpdates = fakeUpdatedWireframes.map {
-            MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
-                id = it.id(),
-                width = it.width,
-                height = it.height
-            )
-        }
-
-        // When
-        val mutations = testedMutationResolver.resolveMutations(
-            fakePrevSnapshot,
-            fakeCurrentSnapshot
-        )
-
-        // Then
-        assertThat(mutations?.adds).isNullOrEmpty()
-        assertThat(mutations?.removes).isNullOrEmpty()
-        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
-    }
-
-    @Test
-    fun `M identify the updated wireframes W resolveMutations {Text, border}`(forge: Forge) {
-        // Given
-        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
-            forge.getForgery(MobileSegment.Wireframe.TextWireframe::class.java)
-        }
-        val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
-        val fakeUpdatedWireframes = fakePrevSnapshot
-            .take(fakeUpdateSize)
-            .map {
-                it.copy(
-                    border = MobileSegment.ShapeBorder(
-                        forge.aStringMatching("#[0-9A-F]{6}FF"),
-                        forge.aPositiveLong(strict = true)
-                    )
-                )
-            }
-        val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
-        val expectedUpdates = fakeUpdatedWireframes.map {
-            MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
-                id = it.id(),
-                border = it.border
-            )
-        }
-
-        // When
-        val mutations = testedMutationResolver.resolveMutations(
-            fakePrevSnapshot,
-            fakeCurrentSnapshot
-        )
-
-        // Then
-        assertThat(mutations?.adds).isNullOrEmpty()
-        assertThat(mutations?.removes).isNullOrEmpty()
-        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
-    }
-
-    @Test
-    fun `M identify the updated wireframes W resolveMutations {Text, shapeStyle}`(forge: Forge) {
-        // Given
-        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
-            forge.getForgery(MobileSegment.Wireframe.TextWireframe::class.java)
-        }
-        val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
-        val fakeUpdatedWireframes = fakePrevSnapshot
-            .take(fakeUpdateSize)
-            .map {
-                it.copy(
-                    shapeStyle = MobileSegment.ShapeStyle(
-                        backgroundColor = forge.aStringMatching("#[0-9A-F]{6}FF"),
-                        opacity = forge.aFloat(min = 0f, max = 1f),
-                        cornerRadius = forge.aPositiveLong()
-                    )
-                )
-            }
-        val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
-        val expectedUpdates = fakeUpdatedWireframes.map {
-            MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
-                id = it.id(),
-                shapeStyle = it.shapeStyle
-            )
-        }
-
-        // When
-        val mutations = testedMutationResolver.resolveMutations(
-            fakePrevSnapshot,
-            fakeCurrentSnapshot
-        )
-
-        // Then
-        assertThat(mutations?.adds).isNullOrEmpty()
-        assertThat(mutations?.removes).isNullOrEmpty()
-        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
-    }
 
     @Test
     fun `M identify the updated wireframes W resolveMutations {Text, text}`(forge: Forge) {
@@ -709,25 +460,25 @@ internal class MutationResolverTest {
         assertThat(mutations?.updates).isEqualTo(expectedUpdates)
     }
 
+    // endregion
+
+    // region ImageWireframe update mutations
+
     @Test
-    fun `M identify the updated wireframes W resolveMutations {Text, clip}`(forge: Forge) {
+    fun `M identify the updated wireframes W resolveMutations {Image, valid base64}`(forge: Forge) {
         // Given
         val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
-            forge.getForgery(MobileSegment.Wireframe.TextWireframe::class.java)
+            forge.getForgery(MobileSegment.Wireframe.ImageWireframe::class.java)
         }
         val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
         val fakeUpdatedWireframes = fakePrevSnapshot
             .take(fakeUpdateSize)
-            .map {
-                it.copy(
-                    clip = forge.forgeDifferent(it.clip)
-                )
-            }
+            .map { it.copy(base64 = forge.aString()) }
         val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
         val expectedUpdates = fakeUpdatedWireframes.map {
-            MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
+            MobileSegment.WireframeUpdateMutation.ImageWireframeUpdate(
                 id = it.id(),
-                clip = it.clip
+                base64 = it.base64
             )
         }
 
@@ -743,26 +494,25 @@ internal class MutationResolverTest {
         assertThat(mutations?.updates).isEqualTo(expectedUpdates)
     }
 
+    // endregion
+
+    // region PlaceholderWireframe update mutations
+
     @Test
-    fun `M provide an empty clip W resolveMutations {Text, new clip is null}`(forge: Forge) {
+    fun `M identify the updated wireframes W resolveMutations {Placeholder, label}`(forge: Forge) {
         // Given
         val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
-            forge.getForgery(MobileSegment.Wireframe.TextWireframe::class.java)
-                .copy(clip = forge.getForgery())
+            forge.getForgery(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
         }
         val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
         val fakeUpdatedWireframes = fakePrevSnapshot
             .take(fakeUpdateSize)
-            .map {
-                it.copy(
-                    clip = null
-                )
-            }
+            .map { it.copy(label = forge.aString()) }
         val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
         val expectedUpdates = fakeUpdatedWireframes.map {
-            MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
+            MobileSegment.WireframeUpdateMutation.PlaceholderWireframeUpdate(
                 id = it.id(),
-                clip = MobileSegment.WireframeClip(0, 0, 0, 0)
+                label = it.label
             )
         }
 
@@ -776,32 +526,6 @@ internal class MutationResolverTest {
         assertThat(mutations?.adds).isNullOrEmpty()
         assertThat(mutations?.removes).isNullOrEmpty()
         assertThat(mutations?.updates).isEqualTo(expectedUpdates)
-    }
-
-    @Test
-    fun `M return null W resolveMutation {Text wireframes types are not matching }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
-            forge.getForgery(MobileSegment.Wireframe.ShapeWireframe::class.java)
-        }
-
-        val fakeCurrentSnapshot = fakePrevSnapshot.map {
-            forge.getForgery(
-                MobileSegment.Wireframe
-                    .TextWireframe::class.java
-            ).copy(id = it.id)
-        }
-
-        // When
-        val mutations = testedMutationResolver.resolveMutations(
-            fakePrevSnapshot,
-            fakeCurrentSnapshot
-        )
-
-        // Then
-        assertThat(mutations).isNull()
     }
 
     // endregion
@@ -869,8 +593,566 @@ internal class MutationResolverTest {
             is MobileSegment.Wireframe.ShapeWireframe -> this.id
             is MobileSegment.Wireframe.TextWireframe -> this.id
             is MobileSegment.Wireframe.ImageWireframe -> this.id
+            is MobileSegment.Wireframe.PlaceholderWireframe -> this.id
         }
     }
 
     // endregion
+
+    data class MutationTestData(
+        val prevSnapshot: List<MobileSegment.Wireframe>,
+        val newSnapshot: List<MobileSegment.Wireframe>,
+        val expectedMutation: List<MobileSegment.WireframeUpdateMutation>
+    )
+
+    companion object {
+        val forge = Forge()
+
+        private fun MobileSegment.Wireframe.id(): Long {
+            return when (this) {
+                is MobileSegment.Wireframe.ShapeWireframe -> this.id
+                is MobileSegment.Wireframe.TextWireframe -> this.id
+                is MobileSegment.Wireframe.ImageWireframe -> this.id
+                is MobileSegment.Wireframe.PlaceholderWireframe -> this.id
+            }
+        }
+
+        @JvmStatic
+        fun positionMutationData(): List<MutationTestData> {
+            ForgeConfigurator().configure(forge)
+
+            val fakePrevShapeSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.ShapeWireframe>()
+            val fakeShapeUpdatedWireframes = forgeMutatedWireframes(fakePrevShapeSnapshot) {
+                it.copy(x = forge.aLong(), y = forge.aLong())
+            }
+            val fakeCurrentShapeSnapshot = fakeShapeUpdatedWireframes +
+                fakePrevShapeSnapshot.drop(fakeShapeUpdatedWireframes.size)
+            val expectedShapeUpdates = fakeShapeUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.ShapeWireframeUpdate(
+                    id = it.id(),
+                    x = it.x,
+                    y = it.y
+                )
+            }
+
+            val fakePrevTextSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.TextWireframe>()
+            val fakeTextUpdatedWireframes = forgeMutatedWireframes(fakePrevTextSnapshot) {
+                it.copy(x = forge.aLong(), y = forge.aLong())
+            }
+            val fakeCurrentTextSnapshot = fakeTextUpdatedWireframes +
+                fakePrevTextSnapshot.drop(fakeTextUpdatedWireframes.size)
+            val expectedTextUpdates = fakeTextUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
+                    id = it.id(),
+                    x = it.x,
+                    y = it.y
+                )
+            }
+
+            val fakePrevImageSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.ImageWireframe>()
+            val fakeImageUpdatedWireframes = forgeMutatedWireframes(fakePrevImageSnapshot) {
+                it.copy(x = forge.aLong(), y = forge.aLong())
+            }
+            val fakeCurrentImageSnapshot = fakeImageUpdatedWireframes +
+                fakePrevImageSnapshot.drop(fakeImageUpdatedWireframes.size)
+            val expectedImageUpdates = fakeImageUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.ImageWireframeUpdate(
+                    id = it.id(),
+                    x = it.x,
+                    y = it.y
+                )
+            }
+
+            val fakePrevPlaceholderSnapshot =
+                forgePrevSnapshot<MobileSegment.Wireframe.PlaceholderWireframe>()
+            val fakePlaceholderUpdateWireframes =
+                forgeMutatedWireframes(fakePrevPlaceholderSnapshot) {
+                    it.copy(x = forge.aLong(), y = forge.aLong())
+                }
+            val fakeCurrentPlaceholderSnapshot = fakePlaceholderUpdateWireframes +
+                fakePrevPlaceholderSnapshot.drop(fakePlaceholderUpdateWireframes.size)
+            val expectedPlaceholderUpdates = fakePlaceholderUpdateWireframes.map {
+                MobileSegment.WireframeUpdateMutation.PlaceholderWireframeUpdate(
+                    id = it.id(),
+                    x = it.x,
+                    y = it.y
+                )
+            }
+
+            return listOf(
+                MutationTestData(
+                    prevSnapshot = fakePrevShapeSnapshot,
+                    newSnapshot = fakeCurrentShapeSnapshot,
+                    expectedMutation = expectedShapeUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevTextSnapshot,
+                    newSnapshot = fakeCurrentTextSnapshot,
+                    expectedMutation = expectedTextUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevImageSnapshot,
+                    newSnapshot = fakeCurrentImageSnapshot,
+                    expectedMutation = expectedImageUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevPlaceholderSnapshot,
+                    newSnapshot = fakeCurrentPlaceholderSnapshot,
+                    expectedMutation = expectedPlaceholderUpdates
+                )
+            )
+        }
+
+        @JvmStatic
+        fun dimensionMutationData(): List<MutationTestData> {
+            ForgeConfigurator().configure(forge)
+
+            val fakePrevShapeSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.ShapeWireframe>()
+            val fakeShapeUpdatedWireframes = forgeMutatedWireframes(fakePrevShapeSnapshot) {
+                it.copy(width = forge.aLong(), height = forge.aLong())
+            }
+            val fakeCurrentShapeSnapshot = fakeShapeUpdatedWireframes +
+                fakePrevShapeSnapshot.drop(fakeShapeUpdatedWireframes.size)
+            val expectedShapeUpdates = fakeShapeUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.ShapeWireframeUpdate(
+                    id = it.id(),
+                    width = it.width,
+                    height = it.height
+                )
+            }
+
+            val fakePrevTextSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.TextWireframe>()
+            val fakeTextUpdatedWireframes = forgeMutatedWireframes(fakePrevTextSnapshot) {
+                it.copy(width = forge.aLong(), height = forge.aLong())
+            }
+            val fakeCurrentTextSnapshot = fakeTextUpdatedWireframes +
+                fakePrevTextSnapshot.drop(fakeTextUpdatedWireframes.size)
+            val expectedTextUpdates = fakeTextUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
+                    id = it.id(),
+                    width = it.width,
+                    height = it.height
+                )
+            }
+
+            val fakePrevImageSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.ImageWireframe>()
+            val fakeImageUpdatedWireframes = forgeMutatedWireframes(fakePrevImageSnapshot) {
+                it.copy(width = forge.aLong(), height = forge.aLong())
+            }
+            val fakeCurrentImageSnapshot = fakeImageUpdatedWireframes +
+                fakePrevImageSnapshot.drop(fakeImageUpdatedWireframes.size)
+            val expectedImageUpdates = fakeImageUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.ImageWireframeUpdate(
+                    id = it.id(),
+                    width = it.width,
+                    height = it.height
+                )
+            }
+
+            val fakePrevPlaceholderSnapshot =
+                forgePrevSnapshot<MobileSegment.Wireframe.PlaceholderWireframe>()
+            val fakePlaceholderUpdateWireframes =
+                forgeMutatedWireframes(fakePrevPlaceholderSnapshot) {
+                    it.copy(width = forge.aLong(), height = forge.aLong())
+                }
+            val fakeCurrentPlaceholderSnapshot = fakePlaceholderUpdateWireframes +
+                fakePrevPlaceholderSnapshot.drop(fakePlaceholderUpdateWireframes.size)
+            val expectedPlaceholderUpdates = fakePlaceholderUpdateWireframes.map {
+                MobileSegment.WireframeUpdateMutation.PlaceholderWireframeUpdate(
+                    id = it.id(),
+                    width = it.width,
+                    height = it.height
+                )
+            }
+
+            return listOf(
+                MutationTestData(
+                    prevSnapshot = fakePrevShapeSnapshot,
+                    newSnapshot = fakeCurrentShapeSnapshot,
+                    expectedMutation = expectedShapeUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevTextSnapshot,
+                    newSnapshot = fakeCurrentTextSnapshot,
+                    expectedMutation = expectedTextUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevImageSnapshot,
+                    newSnapshot = fakeCurrentImageSnapshot,
+                    expectedMutation = expectedImageUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevPlaceholderSnapshot,
+                    newSnapshot = fakeCurrentPlaceholderSnapshot,
+                    expectedMutation = expectedPlaceholderUpdates
+                )
+            )
+        }
+
+        @JvmStatic
+        fun clipMutationData(): List<MutationTestData> {
+            ForgeConfigurator().configure(forge)
+
+            val fakePrevShapeSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.ShapeWireframe>()
+            val fakeShapeUpdatedWireframes = forgeMutatedWireframes(fakePrevShapeSnapshot) {
+                it.copy(clip = forge.forgeDifferent(it.clip))
+            }
+            val fakeCurrentShapeSnapshot = fakeShapeUpdatedWireframes +
+                fakePrevShapeSnapshot.drop(fakeShapeUpdatedWireframes.size)
+            val expectedShapeUpdates = fakeShapeUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.ShapeWireframeUpdate(
+                    id = it.id(),
+                    clip = it.clip
+                )
+            }
+
+            val fakePrevTextSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.TextWireframe>()
+            val fakeTextUpdatedWireframes = forgeMutatedWireframes(fakePrevTextSnapshot) {
+                it.copy(clip = forge.forgeDifferent(it.clip))
+            }
+            val fakeCurrentTextSnapshot = fakeTextUpdatedWireframes +
+                fakePrevTextSnapshot.drop(fakeTextUpdatedWireframes.size)
+            val expectedTextUpdates = fakeTextUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
+                    id = it.id(),
+                    clip = it.clip
+                )
+            }
+
+            val fakePrevImageSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.ImageWireframe>()
+            val fakeImageUpdatedWireframes = forgeMutatedWireframes(fakePrevImageSnapshot) {
+                it.copy(clip = forge.forgeDifferent(it.clip))
+            }
+            val fakeCurrentImageSnapshot = fakeImageUpdatedWireframes +
+                fakePrevImageSnapshot.drop(fakeImageUpdatedWireframes.size)
+            val expectedImageUpdates = fakeImageUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.ImageWireframeUpdate(
+                    id = it.id(),
+                    clip = it.clip
+                )
+            }
+
+            val fakePrevPlaceholderSnapshot =
+                forgePrevSnapshot<MobileSegment.Wireframe.PlaceholderWireframe>()
+            val fakePlaceholderUpdateWireframes =
+                forgeMutatedWireframes(fakePrevPlaceholderSnapshot) {
+                    it.copy(clip = forge.forgeDifferent(it.clip))
+                }
+            val fakeCurrentPlaceholderSnapshot = fakePlaceholderUpdateWireframes +
+                fakePrevPlaceholderSnapshot.drop(fakePlaceholderUpdateWireframes.size)
+            val expectedPlaceholderUpdates = fakePlaceholderUpdateWireframes.map {
+                MobileSegment.WireframeUpdateMutation.PlaceholderWireframeUpdate(
+                    id = it.id(),
+                    clip = it.clip
+                )
+            }
+
+            return listOf(
+                MutationTestData(
+                    prevSnapshot = fakePrevShapeSnapshot,
+                    newSnapshot = fakeCurrentShapeSnapshot,
+                    expectedMutation = expectedShapeUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevTextSnapshot,
+                    newSnapshot = fakeCurrentTextSnapshot,
+                    expectedMutation = expectedTextUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevImageSnapshot,
+                    newSnapshot = fakeCurrentImageSnapshot,
+                    expectedMutation = expectedImageUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevPlaceholderSnapshot,
+                    newSnapshot = fakeCurrentPlaceholderSnapshot,
+                    expectedMutation = expectedPlaceholderUpdates
+                )
+            )
+        }
+
+        @JvmStatic
+        fun clipNullMutationData(): List<MutationTestData> {
+            ForgeConfigurator().configure(forge)
+
+            val fakePrevShapeSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.ShapeWireframe>()
+                .map { it.copy(clip = forge.getForgery()) }
+            val fakeShapeUpdatedWireframes = forgeMutatedWireframes(fakePrevShapeSnapshot) {
+                it.copy(clip = null)
+            }
+            val fakeCurrentShapeSnapshot = fakeShapeUpdatedWireframes +
+                fakePrevShapeSnapshot.drop(fakeShapeUpdatedWireframes.size)
+            val nullClipWireframe = MobileSegment.WireframeClip(0, 0, 0, 0)
+            val expectedShapeUpdates = fakeShapeUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.ShapeWireframeUpdate(
+                    id = it.id(),
+                    clip = nullClipWireframe
+                )
+            }
+
+            val fakePrevTextSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.TextWireframe>()
+                .map { it.copy(clip = forge.getForgery()) }
+            val fakeTextUpdatedWireframes = forgeMutatedWireframes(fakePrevTextSnapshot) {
+                it.copy(clip = null)
+            }
+            val fakeCurrentTextSnapshot = fakeTextUpdatedWireframes +
+                fakePrevTextSnapshot.drop(fakeTextUpdatedWireframes.size)
+            val expectedTextUpdates = fakeTextUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
+                    id = it.id(),
+                    clip = nullClipWireframe
+                )
+            }
+
+            val fakePrevImageSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.ImageWireframe>()
+                .map { it.copy(clip = forge.getForgery()) }
+            val fakeImageUpdatedWireframes = forgeMutatedWireframes(fakePrevImageSnapshot) {
+                it.copy(clip = null)
+            }
+            val fakeCurrentImageSnapshot = fakeImageUpdatedWireframes +
+                fakePrevImageSnapshot.drop(fakeImageUpdatedWireframes.size)
+            val expectedImageUpdates = fakeImageUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.ImageWireframeUpdate(
+                    id = it.id(),
+                    clip = nullClipWireframe
+                )
+            }
+
+            val fakePrevPlaceholderSnapshot =
+                forgePrevSnapshot<MobileSegment.Wireframe.PlaceholderWireframe>()
+                    .map { it.copy(clip = forge.getForgery()) }
+            val fakePlaceholderUpdateWireframes = forgeMutatedWireframes(fakePrevPlaceholderSnapshot) {
+                it.copy(clip = null)
+            }
+            val fakeCurrentPlaceholderSnapshot = fakePlaceholderUpdateWireframes +
+                fakePrevPlaceholderSnapshot.drop(fakePlaceholderUpdateWireframes.size)
+            val expectedPlaceholderUpdates = fakePlaceholderUpdateWireframes.map {
+                MobileSegment.WireframeUpdateMutation.PlaceholderWireframeUpdate(
+                    id = it.id(),
+                    clip = nullClipWireframe
+                )
+            }
+
+            return listOf(
+                MutationTestData(
+                    prevSnapshot = fakePrevShapeSnapshot,
+                    newSnapshot = fakeCurrentShapeSnapshot,
+                    expectedMutation = expectedShapeUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevTextSnapshot,
+                    newSnapshot = fakeCurrentTextSnapshot,
+                    expectedMutation = expectedTextUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevImageSnapshot,
+                    newSnapshot = fakeCurrentImageSnapshot,
+                    expectedMutation = expectedImageUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevPlaceholderSnapshot,
+                    newSnapshot = fakeCurrentPlaceholderSnapshot,
+                    expectedMutation = expectedPlaceholderUpdates
+                )
+            )
+        }
+
+        @JvmStatic
+        fun borderMutationData(): List<MutationTestData> {
+            ForgeConfigurator().configure(forge)
+
+            val fakePrevShapeSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.ShapeWireframe>()
+            val fakeShapeUpdatedWireframes = forgeMutatedWireframes(fakePrevShapeSnapshot) {
+                it.copy(border = forge.getForgery())
+            }
+            val fakeCurrentShapeSnapshot = fakeShapeUpdatedWireframes +
+                fakePrevShapeSnapshot.drop(fakeShapeUpdatedWireframes.size)
+            val expectedShapeUpdates = fakeShapeUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.ShapeWireframeUpdate(
+                    id = it.id(),
+                    border = it.border
+                )
+            }
+
+            val fakePrevTextSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.TextWireframe>()
+            val fakeTextUpdatedWireframes = forgeMutatedWireframes(fakePrevTextSnapshot) {
+                it.copy(border = forge.getForgery())
+            }
+            val fakeCurrentTextSnapshot = fakeTextUpdatedWireframes +
+                fakePrevTextSnapshot.drop(fakeTextUpdatedWireframes.size)
+            val expectedTextUpdates = fakeTextUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
+                    id = it.id(),
+                    border = it.border
+                )
+            }
+
+            val fakePrevImageSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.ImageWireframe>()
+            val fakeImageUpdatedWireframes = forgeMutatedWireframes(fakePrevImageSnapshot) {
+                it.copy(border = forge.getForgery())
+            }
+            val fakeCurrentImageSnapshot = fakeImageUpdatedWireframes +
+                fakePrevImageSnapshot.drop(fakeImageUpdatedWireframes.size)
+            val expectedImageUpdates = fakeImageUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.ImageWireframeUpdate(
+                    id = it.id(),
+                    border = it.border
+                )
+            }
+
+            return listOf(
+                MutationTestData(
+                    prevSnapshot = fakePrevShapeSnapshot,
+                    newSnapshot = fakeCurrentShapeSnapshot,
+                    expectedMutation = expectedShapeUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevTextSnapshot,
+                    newSnapshot = fakeCurrentTextSnapshot,
+                    expectedMutation = expectedTextUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevImageSnapshot,
+                    newSnapshot = fakeCurrentImageSnapshot,
+                    expectedMutation = expectedImageUpdates
+                )
+            )
+        }
+
+        @JvmStatic
+        fun shapeStyleMutationData(): List<MutationTestData> {
+            ForgeConfigurator().configure(forge)
+
+            val fakePrevShapeSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.ShapeWireframe>()
+            val fakeShapeUpdatedWireframes = forgeMutatedWireframes(fakePrevShapeSnapshot) {
+                it.copy(shapeStyle = forge.getForgery())
+            }
+            val fakeCurrentShapeSnapshot = fakeShapeUpdatedWireframes +
+                fakePrevShapeSnapshot.drop(fakeShapeUpdatedWireframes.size)
+            val expectedShapeUpdates = fakeShapeUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.ShapeWireframeUpdate(
+                    id = it.id(),
+                    shapeStyle = it.shapeStyle
+                )
+            }
+
+            val fakePrevTextSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.TextWireframe>()
+            val fakeTextUpdatedWireframes = forgeMutatedWireframes(fakePrevTextSnapshot) {
+                it.copy(shapeStyle = forge.getForgery())
+            }
+            val fakeCurrentTextSnapshot = fakeTextUpdatedWireframes +
+                fakePrevTextSnapshot.drop(fakeTextUpdatedWireframes.size)
+            val expectedTextUpdates = fakeTextUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
+                    id = it.id(),
+                    shapeStyle = it.shapeStyle
+                )
+            }
+
+            val fakePrevImageSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.ImageWireframe>()
+            val fakeImageUpdatedWireframes = forgeMutatedWireframes(fakePrevImageSnapshot) {
+                it.copy(shapeStyle = forge.getForgery())
+            }
+            val fakeCurrentImageSnapshot = fakeImageUpdatedWireframes +
+                fakePrevImageSnapshot.drop(fakeImageUpdatedWireframes.size)
+            val expectedImageUpdates = fakeImageUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.ImageWireframeUpdate(
+                    id = it.id(),
+                    shapeStyle = it.shapeStyle
+                )
+            }
+
+            return listOf(
+                MutationTestData(
+                    prevSnapshot = fakePrevShapeSnapshot,
+                    newSnapshot = fakeCurrentShapeSnapshot,
+                    expectedMutation = expectedShapeUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevTextSnapshot,
+                    newSnapshot = fakeCurrentTextSnapshot,
+                    expectedMutation = expectedTextUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevImageSnapshot,
+                    newSnapshot = fakeCurrentImageSnapshot,
+                    expectedMutation = expectedImageUpdates
+                )
+            )
+        }
+
+        @JvmStatic
+        fun typeMutationData(): List<MutationTestData> {
+            ForgeConfigurator().configure(forge)
+
+            val fakePrevShapeSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.ShapeWireframe>()
+            val fakeCurrentShapeSnapshot = fakePrevShapeSnapshot.map {
+                forge.getForgery<MobileSegment.Wireframe.ImageWireframe>().copy(id = it.id)
+            }
+
+            val fakePrevTextSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.TextWireframe>()
+            val fakeCurrentTextSnapshot = fakePrevTextSnapshot.map {
+                forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>().copy(id = it.id)
+            }
+
+            val fakePrevImageSnapshot = forgePrevSnapshot<MobileSegment.Wireframe.ImageWireframe>()
+            val fakeCurrentImageSnapshot = fakePrevImageSnapshot.map {
+                forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>().copy(id = it.id)
+            }
+
+            val fakePrevPlaceholderSnapshot =
+                forgePrevSnapshot<MobileSegment.Wireframe.PlaceholderWireframe>()
+            val fakeCurrentPlaceholderSnapshot = fakePrevPlaceholderSnapshot.map {
+                forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>().copy(id = it.id)
+            }
+
+            return listOf(
+                MutationTestData(
+                    prevSnapshot = fakePrevShapeSnapshot,
+                    newSnapshot = fakeCurrentShapeSnapshot,
+                    expectedMutation = emptyList()
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevTextSnapshot,
+                    newSnapshot = fakeCurrentTextSnapshot,
+                    expectedMutation = emptyList()
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevImageSnapshot,
+                    newSnapshot = fakeCurrentImageSnapshot,
+                    expectedMutation = emptyList()
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevPlaceholderSnapshot,
+                    newSnapshot = fakeCurrentPlaceholderSnapshot,
+                    expectedMutation = emptyList()
+                )
+            )
+        }
+
+        private fun Forge.forgeDifferent(wireframeClip: MobileSegment.WireframeClip?):
+            MobileSegment.WireframeClip {
+            while (true) {
+                val differentClip: MobileSegment.WireframeClip = getForgery()
+                if (differentClip != wireframeClip) {
+                    return differentClip
+                }
+            }
+        }
+
+        private inline fun <reified T : MobileSegment.Wireframe> forgePrevSnapshot() =
+            forge.aList(size = forge.anInt(min = 2, max = 10)) {
+                forge.getForgery(T::class.java)
+            }
+
+        private inline fun <reified T : MobileSegment.Wireframe> forgeMutatedWireframes(
+            prevSnapshot: List<T>,
+            mutation: (T) -> T
+        ): List<T> {
+            val fakeUpdateSize = forge.anInt(min = 1, max = prevSnapshot.size)
+            return prevSnapshot
+                .take(fakeUpdateSize)
+                .map { mutation(it) }
+        }
+    }
 }

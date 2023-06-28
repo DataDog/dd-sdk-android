@@ -85,6 +85,11 @@
               "description": "Whether this error crashed the host application",
               "readOnly": true
             },
+            "fingerprint": {
+              "type": "string",
+              "description": "Fingerprint used for Error Tracking custom grouping",
+              "readOnly": false
+            },
             "type": {
               "type": "string",
               "description": "The type of the error",
