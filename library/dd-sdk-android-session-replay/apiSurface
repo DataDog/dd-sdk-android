@@ -31,12 +31,25 @@ interface com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDete
   fun isOptionSelector(android.view.ViewGroup): Boolean
 data class com.datadog.android.sessionreplay.internal.recorder.SystemInformation
   constructor(GlobalBounds, Int = Configuration.ORIENTATION_UNDEFINED, Float, String? = null)
-abstract class com.datadog.android.sessionreplay.internal.recorder.mapper.BaseWireframeMapper<T: android.view.View, S: com.datadog.android.sessionreplay.model.MobileSegment.Wireframe> : WireframeMapper<T, S>
-  constructor(com.datadog.android.sessionreplay.utils.StringUtils = StringUtils, com.datadog.android.sessionreplay.utils.ViewUtils = ViewUtils)
+class com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
+interface com.datadog.android.sessionreplay.internal.recorder.base64.ImageCompression
+  fun getMimeType(): String?
+  fun compressBitmapToStream(android.graphics.Bitmap): java.io.ByteArrayOutputStream
+class com.datadog.android.sessionreplay.internal.recorder.base64.WebPImageCompression : ImageCompression
+  override fun getMimeType(): String?
+  override fun compressBitmapToStream(android.graphics.Bitmap): java.io.ByteArrayOutputStream
+  companion object 
+abstract class com.datadog.android.sessionreplay.internal.recorder.mapper.BaseWireframeMapper<T: android.view.View, S: com.datadog.android.sessionreplay.model.MobileSegment.Wireframe> : WireframeMapper<T, S>, com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
+  constructor(com.datadog.android.sessionreplay.utils.StringUtils = StringUtils, com.datadog.android.sessionreplay.utils.ViewUtils = ViewUtils, com.datadog.android.sessionreplay.internal.recorder.base64.ImageCompression = WebPImageCompression(), com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator = UniqueIdentifierGenerator, com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer = Base64Serializer.Builder().build())
   protected fun resolveViewId(android.view.View): Long
   protected fun colorAndAlphaAsStringHexa(Int, Int): String
   protected fun resolveViewGlobalBounds(android.view.View, Float): com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
   protected fun resolveShapeStyleAndBorder(Float): Pair<com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle?, com.datadog.android.sessionreplay.model.MobileSegment.ShapeBorder?>?
+  protected fun resolveChildDrawableUniqueIdentifier(android.view.View): Long?
+  protected fun getWebPMimeType(): String?
+  protected fun handleBitmap(android.util.DisplayMetrics, android.graphics.drawable.Drawable, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ImageWireframe)
+  override fun startProcessingImage()
+  override fun finishProcessingImage()
   companion object 
 class com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllTextViewMapper : TextViewMapper
   constructor()

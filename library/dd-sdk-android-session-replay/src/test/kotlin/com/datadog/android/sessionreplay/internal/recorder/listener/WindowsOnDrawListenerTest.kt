@@ -13,6 +13,7 @@ import android.content.res.Resources.Theme
 import android.view.View
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
+import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.Node
@@ -80,6 +81,9 @@ internal class WindowsOnDrawListenerTest {
     @Mock
     lateinit var mockMiscUtils: MiscUtils
 
+    @Mock
+    lateinit var mockRecordedDataQueueRefs: RecordedDataQueueRefs
+
     @Forgery
     lateinit var fakeSystemInformation: SystemInformation
 
@@ -97,7 +101,13 @@ internal class WindowsOnDrawListenerTest {
         fakeWindowsSnapshots = fakeMockedDecorViews.map { forge.getForgery() }
         whenever(mockContext.theme).thenReturn(mockTheme)
         fakeMockedDecorViews.forEachIndexed { index, decorView ->
-            whenever(mockSnapshotProducer.produce(decorView, fakeSystemInformation))
+            whenever(
+                mockSnapshotProducer.produce(
+                    decorView,
+                    fakeSystemInformation,
+                    mockRecordedDataQueueRefs
+                )
+            )
                 .thenReturn(fakeWindowsSnapshots[index])
         }
         whenever(mockDecorView.width).thenReturn(fakeDecorWidth)
@@ -119,7 +129,8 @@ internal class WindowsOnDrawListenerTest {
             mockRecordedDataQueueHandler,
             mockSnapshotProducer,
             mockDebouncer,
-            mockMiscUtils
+            mockMiscUtils,
+            mockRecordedDataQueueRefs
         )
     }
 

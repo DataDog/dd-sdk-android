@@ -7,8 +7,10 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
+import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.QueueableViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -23,7 +25,8 @@ internal class TreeViewTraversal(
     @Suppress("ReturnCount")
     fun traverse(
         view: View,
-        mappingContext: MappingContext
+        mappingContext: MappingContext,
+        recordedDataQueueRefs: RecordedDataQueueRefs
     ): TraversedTreeView {
         if (viewUtilsInternal.isNotVisible(view) ||
             viewUtilsInternal.isSystemNoise(view)
@@ -38,8 +41,9 @@ internal class TreeViewTraversal(
         val exhaustiveTypeMapper = mappers.findFirstForType(view::class.java)
 
         if (exhaustiveTypeMapper != null) {
+            val queueableViewMapper = QueueableViewMapper(exhaustiveTypeMapper, recordedDataQueueRefs)
             traversalStrategy = TraversalStrategy.STOP_AND_RETURN_NODE
-            resolvedWireframes = exhaustiveTypeMapper.map(view, mappingContext)
+            resolvedWireframes = queueableViewMapper.map(view, mappingContext)
         } else if (isDecorView(view)) {
             traversalStrategy = TraversalStrategy.TRAVERSE_ALL_CHILDREN
             resolvedWireframes = decorViewMapper.map(view, mappingContext)
