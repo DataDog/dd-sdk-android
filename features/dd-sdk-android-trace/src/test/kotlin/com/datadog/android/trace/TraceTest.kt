@@ -35,7 +35,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class TracesTest {
+internal class TraceTest {
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
@@ -48,10 +48,10 @@ internal class TracesTest {
     @Test
     fun `𝕄 register traces feature 𝕎 enable()`(
         @StringForgery fakePackageName: String,
-        @Forgery fakeTracesConfiguration: TracesConfiguration
+        @Forgery fakeTraceConfiguration: TraceConfiguration
     ) {
         // When
-        Traces.enable(fakeTracesConfiguration, mockSdkCore)
+        Trace.enable(fakeTraceConfiguration, mockSdkCore)
 
         // Then
         argumentCaptor<TracingFeature> {
@@ -60,9 +60,9 @@ internal class TracesTest {
             lastValue.onInitialize(
                 appContext = mock { whenever(it.packageName) doReturn fakePackageName }
             )
-            assertThat(lastValue.spanEventMapper).isEqualTo(fakeTracesConfiguration.eventMapper)
+            assertThat(lastValue.spanEventMapper).isEqualTo(fakeTraceConfiguration.eventMapper)
             assertThat((lastValue.requestFactory as TracesRequestFactory).customEndpointUrl)
-                .isEqualTo(fakeTracesConfiguration.customEndpointUrl)
+                .isEqualTo(fakeTraceConfiguration.customEndpointUrl)
         }
     }
 }

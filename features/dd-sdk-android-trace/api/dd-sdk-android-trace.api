@@ -25,26 +25,26 @@ public final class com/datadog/android/trace/AndroidTracer$Companion {
 	public final fun logThrowable (Lio/opentracing/Span;Ljava/lang/Throwable;)V
 }
 
-public final class com/datadog/android/trace/Traces {
-	public static final field INSTANCE Lcom/datadog/android/trace/Traces;
-	public static final fun enable (Lcom/datadog/android/trace/TracesConfiguration;)V
-	public static final fun enable (Lcom/datadog/android/trace/TracesConfiguration;Lcom/datadog/android/v2/api/SdkCore;)V
-	public static synthetic fun enable$default (Lcom/datadog/android/trace/TracesConfiguration;Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)V
+public final class com/datadog/android/trace/Trace {
+	public static final field INSTANCE Lcom/datadog/android/trace/Trace;
+	public static final fun enable (Lcom/datadog/android/trace/TraceConfiguration;)V
+	public static final fun enable (Lcom/datadog/android/trace/TraceConfiguration;Lcom/datadog/android/v2/api/SdkCore;)V
+	public static synthetic fun enable$default (Lcom/datadog/android/trace/TraceConfiguration;Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)V
 }
 
-public final class com/datadog/android/trace/TracesConfiguration {
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/trace/event/SpanEventMapper;)Lcom/datadog/android/trace/TracesConfiguration;
-	public static synthetic fun copy$default (Lcom/datadog/android/trace/TracesConfiguration;Ljava/lang/String;Lcom/datadog/android/trace/event/SpanEventMapper;ILjava/lang/Object;)Lcom/datadog/android/trace/TracesConfiguration;
+public final class com/datadog/android/trace/TraceConfiguration {
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/trace/event/SpanEventMapper;)Lcom/datadog/android/trace/TraceConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/trace/TraceConfiguration;Ljava/lang/String;Lcom/datadog/android/trace/event/SpanEventMapper;ILjava/lang/Object;)Lcom/datadog/android/trace/TraceConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/datadog/android/trace/TracesConfiguration$Builder {
+public final class com/datadog/android/trace/TraceConfiguration$Builder {
 	public fun <init> ()V
-	public final fun build ()Lcom/datadog/android/trace/TracesConfiguration;
-	public final fun setSpanEventMapper (Lcom/datadog/android/trace/event/SpanEventMapper;)Lcom/datadog/android/trace/TracesConfiguration$Builder;
-	public final fun useCustomEndpoint (Ljava/lang/String;)Lcom/datadog/android/trace/TracesConfiguration$Builder;
+	public final fun build ()Lcom/datadog/android/trace/TraceConfiguration;
+	public final fun setEventMapper (Lcom/datadog/android/trace/event/SpanEventMapper;)Lcom/datadog/android/trace/TraceConfiguration$Builder;
+	public final fun useCustomEndpoint (Ljava/lang/String;)Lcom/datadog/android/trace/TraceConfiguration$Builder;
 }
 
 public abstract interface class com/datadog/android/trace/event/SpanEventMapper : com/datadog/android/event/EventMapper {

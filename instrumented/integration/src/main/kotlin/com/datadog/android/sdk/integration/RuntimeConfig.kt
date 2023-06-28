@@ -16,7 +16,7 @@ import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.trace.AndroidTracer
-import com.datadog.android.trace.TracesConfiguration
+import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.v2.api.SdkCore
 import java.util.UUID
 
@@ -91,8 +91,8 @@ internal object RuntimeConfig {
             .useCustomEndpoint(logsEndpointUrl)
     }
 
-    fun tracesConfigBuilder(): TracesConfiguration.Builder {
-        return TracesConfiguration.Builder()
+    fun tracesConfigBuilder(): TraceConfiguration.Builder {
+        return TraceConfiguration.Builder()
             .useCustomEndpoint(tracesEndpointUrl)
     }
 

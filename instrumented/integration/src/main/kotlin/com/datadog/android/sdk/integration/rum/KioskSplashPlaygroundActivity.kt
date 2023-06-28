@@ -19,7 +19,7 @@ import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getForgeSeed
-import com.datadog.android.trace.Traces
+import com.datadog.android.trace.Trace
 import java.util.Random
 
 internal class KioskSplashPlaygroundActivity : AppCompatActivity() {
@@ -48,7 +48,7 @@ internal class KioskSplashPlaygroundActivity : AppCompatActivity() {
                 Rum.enable(rumConfig, sdkCore)
             },
             { Logs.enable(RuntimeConfig.logsConfigBuilder().build(), sdkCore) },
-            { Traces.enable(RuntimeConfig.tracesConfigBuilder().build(), sdkCore) }
+            { Trace.enable(RuntimeConfig.tracesConfigBuilder().build(), sdkCore) }
         )
         featureActivations.shuffled(Random(intent.getForgeSeed())).forEach { it() }
 

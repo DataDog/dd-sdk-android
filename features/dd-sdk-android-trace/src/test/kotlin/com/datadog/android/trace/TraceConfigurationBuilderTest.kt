@@ -33,9 +33,9 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class TracesConfigurationBuilderTest {
+internal class TraceConfigurationBuilderTest {
 
-    private val testedBuilder: TracesConfiguration.Builder = TracesConfiguration.Builder()
+    private val testedBuilder: TraceConfiguration.Builder = TraceConfiguration.Builder()
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
@@ -51,11 +51,11 @@ internal class TracesConfigurationBuilderTest {
     @Test
     fun `𝕄 use sensible defaults 𝕎 build()`() {
         // When
-        val tracesConfiguration = testedBuilder.build()
+        val traceConfiguration = testedBuilder.build()
 
         // Then
-        assertThat(tracesConfiguration.customEndpointUrl).isNull()
-        assertThat(tracesConfiguration.eventMapper)
+        assertThat(traceConfiguration.customEndpointUrl).isNull()
+        assertThat(traceConfiguration.eventMapper)
             .isInstanceOf(NoOpSpanEventMapper::class.java)
     }
 
@@ -64,26 +64,26 @@ internal class TracesConfigurationBuilderTest {
         @StringForgery(regex = "https://[a-z]+\\.com") tracesEndpointUrl: String
     ) {
         // When
-        val tracesConfiguration = testedBuilder.useCustomEndpoint(tracesEndpointUrl).build()
+        val traceConfiguration = testedBuilder.useCustomEndpoint(tracesEndpointUrl).build()
 
         // Then
-        assertThat(tracesConfiguration.customEndpointUrl).isEqualTo(tracesEndpointUrl)
-        assertThat(tracesConfiguration.eventMapper)
+        assertThat(traceConfiguration.customEndpointUrl).isEqualTo(tracesEndpointUrl)
+        assertThat(traceConfiguration.eventMapper)
             .isInstanceOf(NoOpSpanEventMapper::class.java)
     }
 
     @Test
-    fun `𝕄 build configuration with Span eventMapper 𝕎 setSpanEventMapper() and build()`() {
+    fun `𝕄 build configuration with Span eventMapper 𝕎 setEventMapper() and build()`() {
         // Given
         val mockEventMapper = mock<SpanEventMapper>()
 
         // When
-        val tracesConfiguration = testedBuilder
-            .setSpanEventMapper(mockEventMapper)
+        val traceConfiguration = testedBuilder
+            .setEventMapper(mockEventMapper)
             .build()
 
         // Then
-        assertThat(tracesConfiguration.customEndpointUrl).isNull()
-        assertThat(tracesConfiguration.eventMapper).isEqualTo(mockEventMapper)
+        assertThat(traceConfiguration.customEndpointUrl).isNull()
+        assertThat(traceConfiguration.eventMapper).isEqualTo(mockEventMapper)
     }
 }

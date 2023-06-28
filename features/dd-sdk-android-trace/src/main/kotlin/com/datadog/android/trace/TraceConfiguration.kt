@@ -12,13 +12,13 @@ import com.datadog.android.trace.event.SpanEventMapper
 /**
  * Describes configuration to be used for the Traces feature.
  */
-data class TracesConfiguration internal constructor(
+data class TraceConfiguration internal constructor(
     internal val customEndpointUrl: String?,
     internal val eventMapper: SpanEventMapper
 ) {
 
     /**
-     * A Builder class for a [TracesConfiguration].
+     * A Builder class for a [TraceConfiguration].
      */
     class Builder {
         private var customEndpointUrl: String? = null
@@ -39,16 +39,16 @@ data class TracesConfiguration internal constructor(
          *
          * @param eventMapper the [SpanEventMapper] implementation.
          */
-        fun setSpanEventMapper(eventMapper: SpanEventMapper): Builder {
+        fun setEventMapper(eventMapper: SpanEventMapper): Builder {
             spanEventMapper = eventMapper
             return this
         }
 
         /**
-         * Builds a [TracesConfiguration] based on the current state of this Builder.
+         * Builds a [TraceConfiguration] based on the current state of this Builder.
          */
-        fun build(): TracesConfiguration {
-            return TracesConfiguration(
+        fun build(): TraceConfiguration {
+            return TraceConfiguration(
                 customEndpointUrl = customEndpointUrl,
                 eventMapper = spanEventMapper
             )

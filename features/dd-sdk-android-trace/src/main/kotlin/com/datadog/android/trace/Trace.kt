@@ -14,22 +14,22 @@ import com.datadog.android.v2.api.SdkCore
 /**
  * An entry point to Datadog Traces feature.
  */
-object Traces {
+object Trace {
 
     /**
      * Enables a Traces feature based on the configuration provided.
      *
-     * @param tracesConfiguration Configuration to use for the feature.
+     * @param traceConfiguration Configuration to use for the feature.
      * @param sdkCore SDK instance to register feature in. If not provided, default SDK instance
      * will be used.
      */
     @JvmOverloads
     @JvmStatic
-    fun enable(tracesConfiguration: TracesConfiguration, sdkCore: SdkCore = Datadog.getInstance()) {
+    fun enable(traceConfiguration: TraceConfiguration, sdkCore: SdkCore = Datadog.getInstance()) {
         val tracingFeature = TracingFeature(
             sdkCore = sdkCore as FeatureSdkCore,
-            customEndpointUrl = tracesConfiguration.customEndpointUrl,
-            spanEventMapper = tracesConfiguration.eventMapper
+            customEndpointUrl = traceConfiguration.customEndpointUrl,
+            spanEventMapper = traceConfiguration.eventMapper
         )
 
         sdkCore.registerFeature(tracingFeature)
