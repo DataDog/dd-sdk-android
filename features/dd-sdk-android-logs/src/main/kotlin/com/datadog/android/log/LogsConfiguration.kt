@@ -40,7 +40,7 @@ data class LogsConfiguration internal constructor(
          *
          * @param eventMapper the [EventMapper] implementation.
          */
-        fun setLogEventMapper(eventMapper: EventMapper<LogEvent>): Builder {
+        fun setEventMapper(eventMapper: EventMapper<LogEvent>): Builder {
             logsEventMapper = eventMapper
             return this
         }

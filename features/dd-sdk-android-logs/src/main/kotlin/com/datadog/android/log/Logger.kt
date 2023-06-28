@@ -206,7 +206,6 @@ internal constructor(internal var handler: LogHandler) {
 
         private var serviceName: String? = null
         private var loggerName: String? = null
-        private var datadogLogsEnabled: Boolean = true
         private var logcatLogsEnabled: Boolean = false
         private var networkInfoEnabled: Boolean = false
         private var bundleWithTraceEnabled: Boolean = true
@@ -221,6 +220,7 @@ internal constructor(internal var handler: LogHandler) {
             val logsFeature = sdkCore
                 .getFeature(Feature.LOGS_FEATURE_NAME)
                 ?.unwrap<LogsFeature>()
+            val datadogLogsEnabled = sampleRate > 0
             val handler = when {
                 datadogLogsEnabled && logcatLogsEnabled -> {
                     CombinedLogHandler(
@@ -246,23 +246,12 @@ internal constructor(internal var handler: LogHandler) {
         }
 
         /**
-         * Enables your logs to be sent to the Datadog servers.
-         * You can use this feature to disable Datadog logs based on a configuration or an
-         * application flavor.
-         * @param enabled true by default
-         */
-        fun setDatadogLogsEnabled(enabled: Boolean): Builder {
-            datadogLogsEnabled = enabled
-            return this
-        }
-
-        /**
-         * Sets a minimum priority for the log to be sent to the Datadog servers. If log priority
+         * Sets a minimum threshold (priority) for the log to be sent to the Datadog servers. If log priority
          * is below this one, then it won't be sent. Default value is -1 (allow all).
-         * @param minLogPriority Minimum log priority to be sent to the Datadog servers.
+         * @param minLogThreshold Minimum log threshold to be sent to the Datadog servers.
          */
-        fun setDatadogLogsMinPriority(minLogPriority: Int): Builder {
-            minDatadogLogsPriority = minLogPriority
+        fun setRemoteLogThreshold(minLogThreshold: Int): Builder {
+            minDatadogLogsPriority = minLogThreshold
             return this
         }
 
@@ -288,7 +277,7 @@ internal constructor(internal var handler: LogHandler) {
          * Sets the logger name that will appear in your logs when a throwable is attached.
          * @param name the logger custom name (default = application package name)
          */
-        fun setLoggerName(name: String): Builder {
+        fun setName(name: String): Builder {
             loggerName = name
             return this
         }
@@ -318,10 +307,11 @@ internal constructor(internal var handler: LogHandler) {
         /**
          * Sets the sample rate for this Logger.
          * @param sampleRate the sample rate, in percent.
-         * A value of `30` means we'll send 30% of the logs.
+         * A value of `30` means we'll send 30% of the logs. If value is `0`, no logs will be sent
+         * to Datadog.
          * Default is 100.0 (ie: all logs are sent).
          */
-        fun setSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): Builder {
+        fun setRemoteSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): Builder {
             this.sampleRate = sampleRate
             return this
         }

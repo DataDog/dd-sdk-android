@@ -156,7 +156,7 @@ object LogAttributes {
     /**
      * The name of the logger. (String)
      * This value is filled automatically by the [Logger].
-     * @see [Logger.Builder.setLoggerName]
+     * @see [Logger.Builder.setName]
      */
     const val LOGGER_NAME: String = "logger.name"
 

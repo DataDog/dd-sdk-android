@@ -45,12 +45,11 @@ public final class com/datadog/android/log/Logger$Builder {
 	public final fun build ()Lcom/datadog/android/log/Logger;
 	public final fun setBundleWithRumEnabled (Z)Lcom/datadog/android/log/Logger$Builder;
 	public final fun setBundleWithTraceEnabled (Z)Lcom/datadog/android/log/Logger$Builder;
-	public final fun setDatadogLogsEnabled (Z)Lcom/datadog/android/log/Logger$Builder;
-	public final fun setDatadogLogsMinPriority (I)Lcom/datadog/android/log/Logger$Builder;
 	public final fun setLogcatLogsEnabled (Z)Lcom/datadog/android/log/Logger$Builder;
-	public final fun setLoggerName (Ljava/lang/String;)Lcom/datadog/android/log/Logger$Builder;
+	public final fun setName (Ljava/lang/String;)Lcom/datadog/android/log/Logger$Builder;
 	public final fun setNetworkInfoEnabled (Z)Lcom/datadog/android/log/Logger$Builder;
-	public final fun setSampleRate (F)Lcom/datadog/android/log/Logger$Builder;
+	public final fun setRemoteLogThreshold (I)Lcom/datadog/android/log/Logger$Builder;
+	public final fun setRemoteSampleRate (F)Lcom/datadog/android/log/Logger$Builder;
 	public final fun setService (Ljava/lang/String;)Lcom/datadog/android/log/Logger$Builder;
 }
 
@@ -72,7 +71,7 @@ public final class com/datadog/android/log/LogsConfiguration {
 public final class com/datadog/android/log/LogsConfiguration$Builder {
 	public fun <init> ()V
 	public final fun build ()Lcom/datadog/android/log/LogsConfiguration;
-	public final fun setLogEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/log/LogsConfiguration$Builder;
+	public final fun setEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/log/LogsConfiguration$Builder;
 	public final fun useCustomEndpoint (Ljava/lang/String;)Lcom/datadog/android/log/LogsConfiguration$Builder;
 }
 

@@ -70,7 +70,7 @@ class LoggerE2ETests {
             forgeSeed = forge.seed
         )
         logger = Logger.Builder(sdkCore)
-            .setLoggerName(LOGGER_NAME)
+            .setName(LOGGER_NAME)
             .build()
     }
 

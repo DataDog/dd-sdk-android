@@ -242,7 +242,7 @@ class SampleApplication : Application() {
     @Suppress("TooGenericExceptionCaught", "CheckInternal")
     private fun initializeTimber() {
         val logger = Logger.Builder()
-            .setLoggerName("timber")
+            .setName("timber")
             .setNetworkInfoEnabled(true)
             .build()
 

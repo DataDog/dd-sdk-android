@@ -125,7 +125,7 @@ internal class LoggerBuilderTest {
     }
 
     @Test
-    fun `builder can set a ServiceName`(@Forgery forge: Forge) {
+    fun `builder can set a service name`(@Forgery forge: Forge) {
         val serviceName = forge.anAlphabeticalString()
 
         val logger = Logger.Builder(mockSdkCore)
@@ -139,10 +139,8 @@ internal class LoggerBuilderTest {
 
     @Test
     fun `builder can disable datadog logs`() {
-        val datadogLogsEnabled = false
-
         val logger: Logger = Logger.Builder(mockSdkCore)
-            .setDatadogLogsEnabled(datadogLogsEnabled)
+            .setRemoteSampleRate(0f)
             .build()
 
         val handler: LogHandler = logger.handler
@@ -151,14 +149,14 @@ internal class LoggerBuilderTest {
 
     @Test
     fun `builder can set min datadog logs priority`(
-        @IntForgery minLogPriority: Int
+        @IntForgery minLogThreshold: Int
     ) {
         val logger: Logger = Logger.Builder(mockSdkCore)
-            .setDatadogLogsMinPriority(minLogPriority)
+            .setRemoteLogThreshold(minLogThreshold)
             .build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
-        assertThat(handler.minLogPriority).isEqualTo(minLogPriority)
+        assertThat(handler.minLogPriority).isEqualTo(minLogThreshold)
     }
 
     @Test
@@ -185,7 +183,7 @@ internal class LoggerBuilderTest {
         val fakeServiceName = forge.anAlphaNumericalString()
 
         val logger = Logger.Builder(mockSdkCore)
-            .setDatadogLogsEnabled(false)
+            .setRemoteSampleRate(0f)
             .setLogcatLogsEnabled(logcatLogsEnabled)
             .setService(fakeServiceName)
             .build()
@@ -216,7 +214,7 @@ internal class LoggerBuilderTest {
         val loggerName = forge.anAlphabeticalString()
 
         val logger = Logger.Builder(mockSdkCore)
-            .setLoggerName(loggerName)
+            .setName(loggerName)
             .build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
@@ -237,7 +235,7 @@ internal class LoggerBuilderTest {
     fun `builder can set a sample rate`(@Forgery forge: Forge) {
         val expectedSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 
-        val logger = Logger.Builder(mockSdkCore).setSampleRate(expectedSampleRate).build()
+        val logger = Logger.Builder(mockSdkCore).setRemoteSampleRate(expectedSampleRate).build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
         val sampler = handler.sampler

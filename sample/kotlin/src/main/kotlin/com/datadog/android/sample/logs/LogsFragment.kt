@@ -26,7 +26,7 @@ internal class LogsFragment :
     @Suppress("CheckInternal")
     private val logger: Logger by lazy {
         Logger.Builder()
-            .setLoggerName("logs_fragment")
+            .setName("logs_fragment")
             .setLogcatLogsEnabled(true)
             .build()
             .apply {
