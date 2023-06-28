@@ -10,29 +10,26 @@ import android.view.View
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.ViewUtils
 
-internal class UnsupportedViewMapper :
-    BaseWireframeMapper<View, MobileSegment.Wireframe.TextWireframe>() {
+internal class UnsupportedViewMapper(viewUtils: ViewUtils = ViewUtils) :
+    BaseWireframeMapper<View, MobileSegment.Wireframe.PlaceholderWireframe>(viewUtils = viewUtils) {
 
     override fun map(view: View, mappingContext: MappingContext):
-        List<MobileSegment.Wireframe.TextWireframe> {
+        List<MobileSegment.Wireframe.PlaceholderWireframe> {
         val viewGlobalBounds = resolveViewGlobalBounds(
             view,
             mappingContext.systemInformation.screenDensity
         )
 
         return listOf(
-            MobileSegment.Wireframe.TextWireframe(
+            MobileSegment.Wireframe.PlaceholderWireframe(
                 id = resolveViewId(view),
                 x = viewGlobalBounds.x,
                 y = viewGlobalBounds.y,
                 width = viewGlobalBounds.width,
                 height = viewGlobalBounds.height,
-                shapeStyle = resolveShapeStyle(view),
-                border = resolveBorder(),
-                text = resolveViewTitle(view),
-                textStyle = resolveTextStyle(),
-                textPosition = resolveTextPosition()
+                label = resolveViewTitle(view)
             )
         )
     }
@@ -48,52 +45,9 @@ internal class UnsupportedViewMapper :
         }
     }
 
-    private fun resolveTextStyle():
-        MobileSegment.TextStyle {
-        return MobileSegment.TextStyle(
-            family = SANS_SERIF_FAMILY_NAME,
-            size = LABEL_TEXT_SIZE,
-            color = TEXT_COLOR
-        )
-    }
-
-    private fun resolveTextPosition():
-        MobileSegment.TextPosition {
-        return MobileSegment.TextPosition(
-            alignment = MobileSegment.Alignment(
-                horizontal = MobileSegment.Horizontal.CENTER,
-                vertical = MobileSegment.Vertical.CENTER
-            )
-        )
-    }
-
-    private fun resolveBorder():
-        MobileSegment.ShapeBorder {
-        return MobileSegment.ShapeBorder(
-            color = BORDER_COLOR,
-            width = BORDER_WIDTH
-        )
-    }
-
-    private fun resolveShapeStyle(view: View):
-        MobileSegment.ShapeStyle {
-        return MobileSegment.ShapeStyle(
-            backgroundColor = BACKGROUND_COLOR,
-            opacity = view.alpha,
-            cornerRadius = CORNER_RADIUS
-        )
-    }
-
     // endregion
 
     companion object {
-        internal const val TEXT_COLOR = "#FF0000FF"
-        internal const val BACKGROUND_COLOR = "#F1F1F3FF"
-        internal const val CORNER_RADIUS = 4
-        internal const val SANS_SERIF_FAMILY_NAME = "roboto, sans-serif"
-        internal const val BORDER_COLOR = "#D3D3D3FF"
-        internal const val BORDER_WIDTH = 1L
-        internal const val LABEL_TEXT_SIZE = 10L
         internal const val TOOLBAR_LABEL = "Toolbar"
         internal const val DEFAULT_LABEL = "Unsupported view"
     }

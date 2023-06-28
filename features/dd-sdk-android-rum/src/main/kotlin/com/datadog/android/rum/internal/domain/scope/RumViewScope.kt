@@ -379,11 +379,10 @@ internal open class RumViewScope(
             ?.withWriteContext { datadogContext, eventBatchWriter ->
 
                 val user = datadogContext.userInfo
-                val hasReplay = featuresContextResolver.resolveHasReplay(
+                val hasReplay = featuresContextResolver.resolveViewHasReplay(
                     datadogContext,
                     rumContext.viewId.orEmpty()
                 )
-
                 val errorEvent = ErrorEvent(
                     date = event.eventTime.timestamp + serverTimeOffsetInMs,
                     featureFlags = ErrorEvent.Context(featureFlags),
@@ -693,14 +692,22 @@ internal open class RumViewScope(
 
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
+                val currentViewId = rumContext.viewId.orEmpty()
                 val user = datadogContext.userInfo
-                val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext, viewId)
-
+                val hasReplay = featuresContextResolver.resolveViewHasReplay(
+                    datadogContext,
+                    currentViewId
+                )
+                val sessionReplayRecordsCount = featuresContextResolver.resolveViewRecordsCount(
+                    datadogContext,
+                    currentViewId
+                )
+                val replayStats = ViewEvent.ReplayStats(recordsCount = sessionReplayRecordsCount)
                 val viewEvent = ViewEvent(
                     date = eventTimestamp,
                     featureFlags = ViewEvent.Context(additionalProperties = featureFlags),
                     view = ViewEvent.View(
-                        id = rumContext.viewId.orEmpty(),
+                        id = currentViewId,
                         name = rumContext.viewName,
                         url = rumContext.viewUrl.orEmpty(),
                         loadingTime = eventLoadingTime,
@@ -766,7 +773,8 @@ internal open class RumViewScope(
                     context = ViewEvent.Context(additionalProperties = attributes),
                     dd = ViewEvent.Dd(
                         documentVersion = eventVersion,
-                        session = ViewEvent.DdSession(plan = ViewEvent.Plan.PLAN_1)
+                        session = ViewEvent.DdSession(plan = ViewEvent.Plan.PLAN_1),
+                        replayStats = replayStats
                     ),
                     connectivity = datadogContext.networkInfo.toViewConnectivity(),
                     service = datadogContext.service,
@@ -918,13 +926,14 @@ internal open class RumViewScope(
         )
         val timestamp = event.eventTime.timestamp + serverTimeOffsetInMs
         val isFrozenFrame = event.durationNs > FROZEN_FRAME_THRESHOLD_NS
-
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
 
                 val user = datadogContext.userInfo
-                val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext, viewId)
-
+                val hasReplay = featuresContextResolver.resolveViewHasReplay(
+                    datadogContext,
+                    rumContext.viewId.orEmpty()
+                )
                 val longTaskEvent = LongTaskEvent(
                     date = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
                     longTask = LongTaskEvent.LongTask(

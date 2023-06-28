@@ -63,8 +63,6 @@ internal class UnsupportedViewMapperTest : BaseTextViewWireframeMapperTest() {
     @Forgery
     lateinit var fakeViewGlobalBounds: GlobalBounds
 
-    lateinit var actualWireframe: MobileSegment.Wireframe.TextWireframe
-
     @BeforeEach
     fun setup() {
         whenever(
@@ -73,113 +71,131 @@ internal class UnsupportedViewMapperTest : BaseTextViewWireframeMapperTest() {
                 fakeMappingContext.systemInformation.screenDensity
             )
         ).thenReturn(fakeViewGlobalBounds)
+        whenever(
+            mockViewUtils.resolveViewGlobalBounds(
+                mockToolbarSubclass,
+                fakeMappingContext.systemInformation.screenDensity
+            )
+        ).thenReturn(fakeViewGlobalBounds)
+        whenever(
+            mockViewUtils.resolveViewGlobalBounds(
+                mockToolbar,
+                fakeMappingContext.systemInformation.screenDensity
+            )
+        ).thenReturn(fakeViewGlobalBounds)
+        whenever(
+            mockViewUtils.resolveViewGlobalBounds(
+                mockActionBarContainer,
+                fakeMappingContext.systemInformation.screenDensity
+            )
+        ).thenReturn(fakeViewGlobalBounds)
+        whenever(
+            mockViewUtils.resolveViewGlobalBounds(
+                mockAppcompatSubclass,
+                fakeMappingContext.systemInformation.screenDensity
+            )
+        ).thenReturn(fakeViewGlobalBounds)
 
-        testedUnsupportedViewMapper = UnsupportedViewMapper()
-
-        actualWireframe = getWireframe(mockAppCompatToolbar)
+        testedUnsupportedViewMapper = UnsupportedViewMapper(mockViewUtils)
     }
 
     @Test
     fun `M resolve with the toolbar label as text W map { AppCompatToolbar }`() {
+        // Given
+        val expectedWireframe = MobileSegment.Wireframe.PlaceholderWireframe(
+            id = System.identityHashCode(mockAppCompatToolbar).toLong(),
+            x = fakeViewGlobalBounds.x,
+            y = fakeViewGlobalBounds.y,
+            width = fakeViewGlobalBounds.width,
+            height = fakeViewGlobalBounds.height,
+            label = UnsupportedViewMapper.TOOLBAR_LABEL
+        )
+        // When
+        val actualWireframe = getWireframe(mockAppCompatToolbar)
+
         // Then
-        assertThat(actualWireframe.text)
-            .isEqualTo(UnsupportedViewMapper.TOOLBAR_LABEL)
+        assertThat(actualWireframe).isEqualTo(expectedWireframe)
     }
 
     @Test
     fun `M resolve with the toolbar label as text W map { Subclass of AppCompatToolbar }`() {
         // Given
-        actualWireframe = getWireframe(mockAppcompatSubclass)
+        val expectedWireframe = MobileSegment.Wireframe.PlaceholderWireframe(
+            id = System.identityHashCode(mockAppcompatSubclass).toLong(),
+            x = fakeViewGlobalBounds.x,
+            y = fakeViewGlobalBounds.y,
+            width = fakeViewGlobalBounds.width,
+            height = fakeViewGlobalBounds.height,
+            label = UnsupportedViewMapper.TOOLBAR_LABEL
+        )
+
+        // When
+        val actualWireframe = getWireframe(mockAppcompatSubclass)
 
         // Then
-        assertThat(actualWireframe.text)
-            .isEqualTo(UnsupportedViewMapper.TOOLBAR_LABEL)
+        assertThat(actualWireframe).isEqualTo(expectedWireframe)
     }
 
     @Test
     fun `M resolve with the toolbar label as text W map { Subclass of Toolbar }`() {
         // Given
-        actualWireframe = getWireframe(mockToolbarSubclass)
+        val expectedWireframe = MobileSegment.Wireframe.PlaceholderWireframe(
+            id = System.identityHashCode(mockToolbarSubclass).toLong(),
+            x = fakeViewGlobalBounds.x,
+            y = fakeViewGlobalBounds.y,
+            width = fakeViewGlobalBounds.width,
+            height = fakeViewGlobalBounds.height,
+            label = UnsupportedViewMapper.TOOLBAR_LABEL
+        )
+
+        // When
+        val actualWireframe = getWireframe(mockToolbarSubclass)
 
         // Then
-        assertThat(actualWireframe.text)
-            .isEqualTo(UnsupportedViewMapper.TOOLBAR_LABEL)
+        assertThat(actualWireframe).isEqualTo(expectedWireframe)
     }
 
     @Test
     fun `M resolve with the toolbar label as text W map { Toolbar }`() {
         // Given
-        actualWireframe = getWireframe(mockToolbar)
+        val expectedWireframe = MobileSegment.Wireframe.PlaceholderWireframe(
+            id = System.identityHashCode(mockToolbar).toLong(),
+            x = fakeViewGlobalBounds.x,
+            y = fakeViewGlobalBounds.y,
+            width = fakeViewGlobalBounds.width,
+            height = fakeViewGlobalBounds.height,
+            label = UnsupportedViewMapper.TOOLBAR_LABEL
+        )
+
+        // When
+        val actualWireframe = getWireframe(mockToolbar)
 
         // Then
-        assertThat(actualWireframe.text)
-            .isEqualTo(UnsupportedViewMapper.TOOLBAR_LABEL)
+        assertThat(actualWireframe).isEqualTo(expectedWireframe)
     }
 
     @Test
     fun `M resolve with the default label as text W map { default unsupported view }`() {
+        // Given
+        val expectedWireframe = MobileSegment.Wireframe.PlaceholderWireframe(
+            id = System.identityHashCode(mockActionBarContainer).toLong(),
+            x = fakeViewGlobalBounds.x,
+            y = fakeViewGlobalBounds.y,
+            width = fakeViewGlobalBounds.width,
+            height = fakeViewGlobalBounds.height,
+            label = UnsupportedViewMapper.DEFAULT_LABEL
+        )
+
         // When
-        actualWireframe = getWireframe(mockActionBarContainer)
+        val actualWireframe = getWireframe(mockActionBarContainer)
 
         // Then
-        assertThat(actualWireframe.text)
-            .isEqualTo(UnsupportedViewMapper.DEFAULT_LABEL)
-    }
-
-    @Test
-    fun `M resolve with the correct textstyle W map`() {
-        val expectedTextStyle = MobileSegment.TextStyle(
-            family = UnsupportedViewMapper.SANS_SERIF_FAMILY_NAME,
-            size = UnsupportedViewMapper.LABEL_TEXT_SIZE,
-            color = UnsupportedViewMapper.TEXT_COLOR
-        )
-
-        assertThat(actualWireframe.textStyle)
-            .isEqualTo(expectedTextStyle)
-    }
-
-    @Test
-    fun `M resolve the correct textposition W map`() {
-        val expectedTextPosition = MobileSegment.TextPosition(
-            alignment = MobileSegment.Alignment(
-                horizontal = MobileSegment.Horizontal.CENTER,
-                vertical = MobileSegment.Vertical.CENTER
-            )
-        )
-
-        assertThat(actualWireframe.textPosition)
-            .isEqualTo(expectedTextPosition)
-    }
-
-    @Test
-    fun `M resolve with the correct shapestyle W map`() {
-        // Given
-        val expectedShapeStyle = MobileSegment.ShapeStyle(
-            backgroundColor = UnsupportedViewMapper.BACKGROUND_COLOR,
-            opacity = mockAppCompatToolbar.alpha,
-            cornerRadius = UnsupportedViewMapper.CORNER_RADIUS
-        )
-
-        // Then
-        assertThat(actualWireframe.shapeStyle)
-            .isEqualTo(expectedShapeStyle)
-    }
-
-    @Test
-    fun `M resolve with the correct border W map`() {
-        // Given
-        val expectedBorder = MobileSegment.ShapeBorder(
-            color = UnsupportedViewMapper.BORDER_COLOR,
-            width = UnsupportedViewMapper.BORDER_WIDTH
-        )
-
-        // Then
-        assertThat(actualWireframe.border)
-            .isEqualTo(expectedBorder)
+        assertThat(actualWireframe).isEqualTo(expectedWireframe)
     }
 
     // region Internal
-    private fun getWireframe(view: View): MobileSegment.Wireframe.TextWireframe {
+
+    private fun getWireframe(view: View): MobileSegment.Wireframe.PlaceholderWireframe {
         return testedUnsupportedViewMapper.map(
             view,
             fakeMappingContext

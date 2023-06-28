@@ -194,7 +194,7 @@ internal class MutationResolver {
 
     // TODO: RUMM-2481 Use the `diff` method int the ShapeWireframe type when available
     @Suppress("ComplexMethod")
-    private fun resolveShapeUpdateMutation(
+    private fun resolveShapeMutation(
         prevWireframe: MobileSegment.Wireframe.ShapeWireframe,
         currentWireframe: MobileSegment.Wireframe.ShapeWireframe
     ): MobileSegment.WireframeUpdateMutation {
@@ -228,7 +228,38 @@ internal class MutationResolver {
         return mutation
     }
 
-    private fun resolveImageUpdateMutation(
+    private fun resolvePlaceholderMutation(
+        prevWireframe: MobileSegment.Wireframe.PlaceholderWireframe,
+        currentWireframe: MobileSegment.Wireframe.PlaceholderWireframe
+    ): MobileSegment.WireframeUpdateMutation {
+        var mutation = MobileSegment.WireframeUpdateMutation
+            .PlaceholderWireframeUpdate(currentWireframe.id)
+        if (prevWireframe.x != currentWireframe.x) {
+            mutation = mutation.copy(x = currentWireframe.x)
+        }
+        if (prevWireframe.y != currentWireframe.y) {
+            mutation = mutation.copy(y = currentWireframe.y)
+        }
+        if (prevWireframe.width != currentWireframe.width) {
+            mutation = mutation.copy(width = currentWireframe.width)
+        }
+        if (prevWireframe.height != currentWireframe.height) {
+            mutation = mutation.copy(height = currentWireframe.height)
+        }
+        if (prevWireframe.label != currentWireframe.label) {
+            mutation = mutation.copy(label = currentWireframe.label)
+        }
+        if (prevWireframe.clip != currentWireframe.clip) {
+            mutation = mutation.copy(
+                clip = currentWireframe.clip
+                    ?: MobileSegment.WireframeClip(0, 0, 0, 0)
+            )
+        }
+
+        return mutation
+    }
+
+    private fun resolveImageMutation(
         prevWireframe: MobileSegment.Wireframe.ImageWireframe,
         currentWireframe: MobileSegment.Wireframe.ImageWireframe
     ): MobileSegment.WireframeUpdateMutation {
@@ -282,17 +313,21 @@ internal class MutationResolver {
             null
         } else {
             when (prevWireframe) {
-                is MobileSegment.Wireframe.TextWireframe -> resolveTextUpdateMutation(
+                is MobileSegment.Wireframe.TextWireframe -> resolveTextMutation(
                     prevWireframe,
                     currentWireframe as MobileSegment.Wireframe.TextWireframe
                 )
-                is MobileSegment.Wireframe.ShapeWireframe -> resolveShapeUpdateMutation(
+                is MobileSegment.Wireframe.ShapeWireframe -> resolveShapeMutation(
                     prevWireframe,
                     currentWireframe as MobileSegment.Wireframe.ShapeWireframe
                 )
-                is MobileSegment.Wireframe.ImageWireframe -> resolveImageUpdateMutation(
+                is MobileSegment.Wireframe.ImageWireframe -> resolveImageMutation(
                     prevWireframe,
                     currentWireframe as MobileSegment.Wireframe.ImageWireframe
+                )
+                is MobileSegment.Wireframe.PlaceholderWireframe -> resolvePlaceholderMutation(
+                    prevWireframe,
+                    currentWireframe as MobileSegment.Wireframe.PlaceholderWireframe
                 )
             }
         }
@@ -300,7 +335,7 @@ internal class MutationResolver {
 
     // TODO: RUMM-2481 Use the `diff` method int the TextWireframe type when available
     @Suppress("ComplexMethod")
-    private fun resolveTextUpdateMutation(
+    private fun resolveTextMutation(
         prevWireframe: MobileSegment.Wireframe.TextWireframe,
         currentWireframe: MobileSegment.Wireframe.TextWireframe
     ): MobileSegment.WireframeUpdateMutation {
@@ -349,6 +384,7 @@ internal class MutationResolver {
             is MobileSegment.Wireframe.ShapeWireframe -> this.id
             is MobileSegment.Wireframe.TextWireframe -> this.id
             is MobileSegment.Wireframe.ImageWireframe -> this.id
+            is MobileSegment.Wireframe.PlaceholderWireframe -> this.id
         }
     }
 

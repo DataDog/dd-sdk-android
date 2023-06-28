@@ -170,7 +170,7 @@ internal class RumResourceScopeTest {
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         doAnswer { false }.whenever(mockResolver).isFirstPartyUrl(any<String>())
         whenever(
-            mockFeaturesContextResolver.resolveHasReplay(
+            mockFeaturesContextResolver.resolveViewHasReplay(
                 fakeDatadogContext,
                 fakeParentContext.viewId.orEmpty()
             )

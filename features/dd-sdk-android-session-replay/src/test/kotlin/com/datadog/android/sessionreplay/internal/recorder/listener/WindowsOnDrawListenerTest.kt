@@ -12,7 +12,8 @@ import android.content.res.Resources
 import android.content.res.Resources.Theme
 import android.view.View
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.processor.Processor
+import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
+import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
@@ -23,6 +24,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -32,6 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -56,7 +59,7 @@ internal class WindowsOnDrawListenerTest {
     lateinit var mockSnapshotProducer: SnapshotProducer
 
     @Mock
-    lateinit var mockProcessor: Processor
+    lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
 
     @Mock
     lateinit var mockDebouncer: Debouncer
@@ -79,6 +82,9 @@ internal class WindowsOnDrawListenerTest {
 
     @Forgery
     lateinit var fakeSystemInformation: SystemInformation
+
+    @Forgery
+    lateinit var fakeSnapshotQueueItem: SnapshotRecordedDataQueueItem
 
     @Mock
     lateinit var mockContext: Context
@@ -110,7 +116,7 @@ internal class WindowsOnDrawListenerTest {
         testedListener = WindowsOnDrawListener(
             mockContext,
             fakeMockedDecorViews,
-            mockProcessor,
+            mockRecordedDataQueueHandler,
             mockSnapshotProducer,
             mockDebouncer,
             mockMiscUtils
@@ -118,18 +124,36 @@ internal class WindowsOnDrawListenerTest {
     }
 
     @Test
-    fun `M take and process snapshot W onDraw()`() {
+    fun `M take and add to queue W onDraw()`() {
         // Given
         stubDebouncer()
+
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(fakeSnapshotQueueItem)
 
         // When
         testedListener.onDraw()
 
         // Then
-        verify(mockProcessor).processScreenSnapshots(
-            fakeWindowsSnapshots,
-            fakeSystemInformation
-        )
+        verify(mockRecordedDataQueueHandler).addSnapshotItem(fakeSystemInformation)
+    }
+
+    @Test
+    fun `M update queue with correct nodes W onDraw()`() {
+        // Given
+        stubDebouncer()
+
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(fakeSnapshotQueueItem)
+
+        fakeSnapshotQueueItem.pendingImages.set(0)
+
+        // When
+        testedListener.onDraw()
+
+        // Then
+        assertThat(fakeSnapshotQueueItem.nodes).isEqualTo(fakeWindowsSnapshots)
+        verify(mockRecordedDataQueueHandler).tryToConsumeItems()
     }
 
     @Test
@@ -139,7 +163,7 @@ internal class WindowsOnDrawListenerTest {
         testedListener = WindowsOnDrawListener(
             mockContext,
             emptyList(),
-            mockProcessor,
+            mockRecordedDataQueueHandler,
             mockSnapshotProducer,
             mockDebouncer
         )
@@ -148,7 +172,7 @@ internal class WindowsOnDrawListenerTest {
         testedListener.onDraw()
 
         // Then
-        verifyNoInteractions(mockProcessor)
+        verifyNoInteractions(mockRecordedDataQueueHandler)
         verifyNoInteractions(mockSnapshotProducer)
     }
 
@@ -162,8 +186,7 @@ internal class WindowsOnDrawListenerTest {
         testedListener.onDraw()
 
         // Then
-        verifyNoInteractions(mockProcessor)
-        verifyNoInteractions(mockSnapshotProducer)
+        verify(mockRecordedDataQueueHandler, never()).tryToConsumeItems()
     }
 
     // region Internal
