@@ -302,16 +302,21 @@
           "description": "Session properties",
           "required": [],
           "properties": {
-            "start_reason": {
+            "start_precondition": {
               "type": "string",
               "description": "The precondition that led to the creation of the session",
-              "enum": ["app_start", "inactivity_timeout", "max_duration", "stop_api", "background_event"],
+              "enum": ["app_launch", "inactivity_timeout", "max_duration", "explicit_stop", "background_event"],
               "readOnly": true
             },
             "is_active": {
               "type": "boolean",
               "description": "Whether this session is currently active. Set to false to manually stop a session",
               "default": true,
+              "readOnly": true
+            },
+            "sampled_for_replay": {
+              "type": "boolean",
+              "description": "Whether this session has been sampled for replay",
               "readOnly": true
             }
           },
@@ -333,6 +338,54 @@
               "description": "Version of the update of the view event",
               "minimum": 0,
               "readOnly": true
+            },
+            "page_states": {
+              "type": "array",
+              "description": "List of the page states during the view",
+              "items": {
+                "type": "object",
+                "description": "Properties of the page state",
+                "required": ["state", "start"],
+                "properties": {
+                  "state": {
+                    "enum": ["active", "passive", "hidden", "frozen", "terminated"],
+                    "description": "Page state name",
+                    "readOnly": true
+                  },
+                  "start": {
+                    "type": "integer",
+                    "description": "Duration in ns between start of the view and start of the page state",
+                    "minimum": 0,
+                    "readOnly": true
+                  }
+                },
+                "readOnly": true
+              },
+              "readOnly": true
+            },
+            "replay_stats": {
+              "type": "object",
+              "description": "Debug metadata for Replay Sessions",
+              "properties": {
+                "records_count": {
+                  "type": "integer",
+                  "description": "The number of records produced during this view lifetime",
+                  "default": 0,
+                  "minimum": 0
+                },
+                "segments_count": {
+                  "type": "integer",
+                  "description": "The number of segments sent during this view lifetime",
+                  "minimum": 0,
+                  "default": 0
+                },
+                "segments_total_raw_size": {
+                  "type": "integer",
+                  "description": "The total size in bytes of the segments sent during this view lifetime",
+                  "minimum": 0,
+                  "default": 0
+                }
+              }
             }
           },
           "readOnly": true

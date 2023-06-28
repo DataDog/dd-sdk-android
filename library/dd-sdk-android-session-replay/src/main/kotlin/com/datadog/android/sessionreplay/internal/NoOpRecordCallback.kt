@@ -6,8 +6,10 @@
 
 package com.datadog.android.sessionreplay.internal
 
+import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
+
 internal class NoOpRecordCallback : RecordCallback {
 
-    override fun onRecordForViewSent(viewId: String) {
+    override fun onRecordForViewSent(record: EnrichedRecord) {
     }
 }

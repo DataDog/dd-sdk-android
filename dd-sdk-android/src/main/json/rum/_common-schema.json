@@ -287,11 +287,10 @@
         "session": {
           "type": "object",
           "description": "Session-related internal properties",
-          "required": ["plan"],
           "properties": {
             "plan": {
               "type": "number",
-              "description": "Session plan: 1 is the plan without replay, 2 is the plan with replay",
+              "description": "Session plan: 1 is the plan without replay, 2 is the plan with replay (deprecated)",
               "enum": [1, 2]
             }
           }

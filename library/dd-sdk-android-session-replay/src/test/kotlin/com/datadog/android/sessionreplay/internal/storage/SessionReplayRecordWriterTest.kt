@@ -88,7 +88,7 @@ internal class SessionReplayRecordWriterTest {
         verify(mockEventBatchWriter).write(fakeRecord.toJson().toByteArray(), null)
         verifyNoMoreInteractions(mockEventBatchWriter)
 
-        verify(mockRecordCallback).onRecordForViewSent(fakeRecord.viewId)
+        verify(mockRecordCallback).onRecordForViewSent(fakeRecord)
         verifyNoMoreInteractions(mockRecordCallback)
     }
 
@@ -130,8 +130,8 @@ internal class SessionReplayRecordWriterTest {
         verify(mockEventBatchWriter).write(fakeRecord2.toJson().toByteArray(), null)
         verifyNoMoreInteractions(mockEventBatchWriter)
 
-        verify(mockRecordCallback).onRecordForViewSent(fakeRecord1.viewId)
-        verify(mockRecordCallback).onRecordForViewSent(fakeRecord2.viewId)
+        verify(mockRecordCallback).onRecordForViewSent(fakeRecord1)
+        verify(mockRecordCallback).onRecordForViewSent(fakeRecord2)
         verifyNoMoreInteractions(mockRecordCallback)
     }
 

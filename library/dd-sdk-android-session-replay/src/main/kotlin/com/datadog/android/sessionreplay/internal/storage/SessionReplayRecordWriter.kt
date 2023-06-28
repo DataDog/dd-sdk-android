@@ -38,7 +38,7 @@ internal class SessionReplayRecordWriter(
          * sending, and not optimized away in the processor. Depending upon the amount of time
          * that it takes to process the nodes, the view may not be relevant anymore.
          */
-        recordCallback.onRecordForViewSent(record.viewId)
+        recordCallback.onRecordForViewSent(record)
     }
 
     private fun resolveForceNewBatch(record: EnrichedRecord): Boolean {

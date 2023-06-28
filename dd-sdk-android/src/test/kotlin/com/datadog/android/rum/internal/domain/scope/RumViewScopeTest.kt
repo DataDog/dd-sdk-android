@@ -185,6 +185,9 @@ internal class RumViewScopeTest {
     @BoolForgery
     var fakeHasReplay: Boolean = false
 
+    @LongForgery(min = 0)
+    var fakeReplayRecordsCount: Long = 0
+
     @Mock
     lateinit var mockFeaturesContextResolver: FeaturesContextResolver
 
@@ -193,6 +196,8 @@ internal class RumViewScopeTest {
 
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
+
+    lateinit var fakeReplayStats: ViewEvent.ReplayStats
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -261,7 +266,7 @@ internal class RumViewScopeTest {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
-
+        fakeReplayStats = ViewEvent.ReplayStats(recordsCount = fakeReplayRecordsCount)
         testedScope = RumViewScope(
             mockParentScope,
             mockSdkCore,
@@ -280,11 +285,7 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             trackFrustrations = true
         )
-        whenever(
-            mockFeaturesContextResolver
-                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
-        )
-            .thenReturn(fakeHasReplay)
+        mockSessionReplayContext(testedScope)
     }
 
     // region Context
@@ -388,11 +389,6 @@ internal class RumViewScopeTest {
             type = fakeViewEventType,
             trackFrustrations = fakeTrackFrustrations
         )
-        whenever(
-            mockFeaturesContextResolver
-                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
-        )
-            .thenReturn(fakeHasReplay)
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
@@ -846,6 +842,7 @@ internal class RumViewScopeTest {
                 hasSessionId(fakeParentContext.sessionId)
                 hasLiteSessionPlan()
                 hasReplay(fakeHasReplay)
+                hasReplayStats(fakeReplayStats)
                 hasSource(fakeSourceViewEvent)
                 containsExactlyContextAttributes(fakeAttributes)
                 hasDeviceInfo(
@@ -917,6 +914,7 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -987,6 +985,7 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(expectedAttributes)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -1063,6 +1062,7 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -1136,6 +1136,7 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -1209,6 +1210,7 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -1269,6 +1271,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -1322,11 +1325,7 @@ internal class RumViewScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
         )
-        whenever(
-            mockFeaturesContextResolver
-                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
-        )
-            .thenReturn(fakeHasReplay)
+        mockSessionReplayContext(testedScope)
         fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
 
         // When
@@ -1364,6 +1363,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -1436,6 +1436,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -1487,11 +1488,7 @@ internal class RumViewScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
         )
-        whenever(
-            mockFeaturesContextResolver
-                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
-        )
-            .thenReturn(fakeHasReplay)
+        mockSessionReplayContext(testedScope)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.put(fakeGlobalAttributeKey, fakeGlobalAttributeValue)
@@ -1532,6 +1529,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -1585,11 +1583,7 @@ internal class RumViewScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
         )
-        whenever(
-            mockFeaturesContextResolver
-                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
-        )
-            .thenReturn(fakeHasReplay)
+        mockSessionReplayContext(testedScope)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.put(fakeGlobalAttributeKey, fakeGlobalAttributeNewValue)
@@ -1630,6 +1624,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -1703,6 +1698,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -1775,6 +1771,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -1840,6 +1837,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -1948,6 +1946,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -2033,6 +2032,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -2119,6 +2119,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -2207,6 +2208,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -2275,6 +2277,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -2416,6 +2419,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -2501,6 +2505,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -2588,6 +2593,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -2674,6 +2680,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -2886,6 +2893,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -4151,6 +4159,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -4336,6 +4345,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -4465,6 +4475,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -4722,6 +4733,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes + attributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -5323,6 +5335,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -5393,6 +5406,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -5482,6 +5496,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -5554,6 +5569,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -5604,6 +5620,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -5706,6 +5723,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -5778,6 +5796,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -5849,6 +5868,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -5930,6 +5950,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -6011,6 +6032,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -6067,11 +6089,7 @@ internal class RumViewScopeTest {
             viewUpdatePredicate = mockViewUpdatePredicate,
             trackFrustrations = fakeTrackFrustrations
         )
-        whenever(
-            mockFeaturesContextResolver
-                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
-        )
-            .thenReturn(fakeHasReplay)
+        mockSessionReplayContext(testedScope)
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
         }
@@ -6111,6 +6129,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -6167,11 +6186,7 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
         )
-        whenever(
-            mockFeaturesContextResolver
-                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
-        )
-            .thenReturn(fakeHasReplay)
+        mockSessionReplayContext(testedScope)
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
         }
@@ -6211,6 +6226,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -6233,6 +6249,21 @@ internal class RumViewScopeTest {
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
+    }
+
+    private fun mockSessionReplayContext(testedScope: RumViewScope) {
+        whenever(
+            mockFeaturesContextResolver.resolveViewHasReplay(
+                fakeDatadogContext,
+                testedScope.viewId
+            )
+        ).thenReturn(fakeHasReplay)
+        whenever(
+            mockFeaturesContextResolver.resolveViewRecordsCount(
+                fakeDatadogContext,
+                testedScope.viewId
+            )
+        ).thenReturn(fakeReplayRecordsCount)
     }
 
     @Test
@@ -6269,11 +6300,7 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
         )
-        whenever(
-            mockFeaturesContextResolver
-                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
-        )
-            .thenReturn(fakeHasReplay)
+        mockSessionReplayContext(testedScope)
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
         }
@@ -6313,6 +6340,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
@@ -6371,11 +6399,7 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
         )
-        whenever(
-            mockFeaturesContextResolver
-                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
-        )
-            .thenReturn(fakeHasReplay)
+        mockSessionReplayContext(testedScope)
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
         }
@@ -6474,11 +6498,7 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
         )
-        whenever(
-            mockFeaturesContextResolver
-                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
-        )
-            .thenReturn(fakeHasReplay)
+        mockSessionReplayContext(testedScope)
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
         }
@@ -6577,11 +6597,7 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
         )
-        whenever(
-            mockFeaturesContextResolver
-                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
-        )
-            .thenReturn(fakeHasReplay)
+        mockSessionReplayContext(testedScope)
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
         }
@@ -6679,12 +6695,7 @@ internal class RumViewScopeTest {
             viewUpdatePredicate = mockViewUpdatePredicate,
             trackFrustrations = fakeTrackFrustrations
         )
-        whenever(
-            mockFeaturesContextResolver.resolveHasReplay(
-                fakeDatadogContext,
-                testedScope.viewId
-            )
-        ) doReturn fakeHasReplay
+        mockSessionReplayContext(testedScope)
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
         }
