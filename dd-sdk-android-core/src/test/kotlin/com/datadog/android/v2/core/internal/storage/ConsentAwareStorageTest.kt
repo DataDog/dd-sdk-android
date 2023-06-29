@@ -20,6 +20,7 @@ import com.datadog.android.v2.api.context.DatadogContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -34,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -49,6 +51,7 @@ import java.io.File
 import java.util.Locale
 import java.util.concurrent.AbstractExecutorService
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit
 
@@ -279,6 +282,69 @@ internal class ConsentAwareStorageTest {
             isA<RejectedExecutionException>(),
             eq(false)
         )
+    }
+
+    @Test
+    fun `𝕄 do sequential metadata write 𝕎 writeCurrentBatch() { multithreaded }`(
+        @IntForgery(min = 2, max = 10) threadsCount: Int,
+        @BoolForgery forceNewBatch: Boolean,
+        @Forgery file: File,
+        forge: Forge
+    ) {
+        // Given
+        val executor = Executors.newFixedThreadPool(threadsCount)
+        testedStorage = ConsentAwareStorage(
+            executor,
+            mockGrantedOrchestrator,
+            mockPendingOrchestrator,
+            mockBatchReaderWriter,
+            mockMetaReaderWriter,
+            mockFileMover,
+            mockInternalLogger,
+            mockFilePersistenceConfig
+        )
+        var accumulator: Byte = 0
+        val event = forge.aString().toByteArray()
+        // each write operation is going to increase value in meta by 1
+        // in the end if some write operation was parallel to another, total number in meta
+        // won't be equal to the number of threads
+        // if write operations are parallel, there is a chance that there will be a conflict
+        // updating the meta (applying different updates to the same original state).
+        val callback: (EventBatchWriter) -> Unit = {
+            val value = it.currentMetadata()?.first() ?: 0
+            it.write(
+                event = event,
+                newMetadata = byteArrayOf((value + 1).toByte())
+            )
+        }
+        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
+        whenever(mockGrantedOrchestrator.getWritableFile(forceNewBatch)) doReturn file
+        val mockMetaFile = mock<File>().apply { whenever(exists()) doReturn true }
+        whenever(mockMetaReaderWriter.readData(mockMetaFile)) doAnswer {
+            byteArrayOf(accumulator)
+        }
+        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
+        whenever(
+            mockBatchReaderWriter.writeData(eq(file), data = any(), append = any())
+        ) doReturn true
+        whenever(
+            mockMetaReaderWriter.writeData(eq(mockMetaFile), data = any(), append = any())
+        ) doAnswer {
+            val value = it.getArgument<ByteArray>(1).first()
+            accumulator = value
+            true
+        }
+        whenever(mockFilePersistenceConfig.maxItemSize) doReturn (event.size + 1).toLong()
+
+        // When
+        repeat(threadsCount) {
+            testedStorage.writeCurrentBatch(sdkContext, forceNewBatch, callback = callback)
+        }
+        executor.shutdown()
+        executor.awaitTermination(1, TimeUnit.SECONDS)
+
+        // Then
+        assertThat(accumulator).isEqualTo(threadsCount.toByte())
     }
 
     // region readNextBatch
