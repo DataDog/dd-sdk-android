@@ -115,13 +115,12 @@ class SampleApplication : Application() {
         val rumConfig = createRumConfiguration()
         Rum.enable(rumConfig)
 
-        val sessionReplayConfig = SessionReplayConfiguration.Builder()
+        val sessionReplayConfig = SessionReplayConfiguration.Builder(SAMPLE_IN_ALL_SESSIONS)
             .apply {
                 if (BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL.isNotBlank()) {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
                 }
             }
-            .setSessionReplaySampleRate(SAMPLE_IN_ALL_SESSIONS)
             .addExtensionSupport(MaterialExtensionSupport())
             .build()
         SessionReplay.enable(sessionReplayConfig)

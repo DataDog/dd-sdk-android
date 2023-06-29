@@ -72,7 +72,12 @@ internal class EncryptionTest {
             },
             { Logs.enable(LogsConfiguration.Builder().build(), sdkCore) },
             { Trace.enable(TraceConfiguration.Builder().build(), sdkCore) },
-            { SessionReplay.enable(SessionReplayConfiguration.Builder().build(), sdkCore) }
+            {
+                val sessionReplayConfiguration = SessionReplayConfiguration
+                    .Builder(100f)
+                    .build()
+                SessionReplay.enable(sessionReplayConfiguration, sdkCore)
+            }
         )
         featureActivations.shuffled(Random(forge.seed)).forEach { it() }
 

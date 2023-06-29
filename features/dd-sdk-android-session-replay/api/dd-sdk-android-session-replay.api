@@ -19,11 +19,10 @@ public final class com/datadog/android/sessionreplay/SessionReplayConfiguration 
 }
 
 public final class com/datadog/android/sessionreplay/SessionReplayConfiguration$Builder {
-	public fun <init> ()V
+	public fun <init> (F)V
 	public final fun addExtensionSupport (Lcom/datadog/android/sessionreplay/ExtensionSupport;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun build ()Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
 	public final fun setPrivacy (Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
-	public final fun setSessionReplaySampleRate (F)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun useCustomEndpoint (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 }
 
