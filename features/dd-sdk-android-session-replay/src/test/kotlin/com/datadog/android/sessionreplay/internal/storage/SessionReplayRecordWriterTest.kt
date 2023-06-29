@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.storage
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.RecordCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.v2.api.EventBatchWriter
@@ -25,10 +26,10 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -47,6 +48,9 @@ internal class SessionReplayRecordWriterTest {
     lateinit var mockSdkCore: FeatureSdkCore
 
     @Mock
+    lateinit var mockRecordCallback: RecordCallback
+
+    @Mock
     lateinit var mockSessionReplayFeature: FeatureScope
 
     @Forgery
@@ -57,9 +61,13 @@ internal class SessionReplayRecordWriterTest {
 
     @BeforeEach
     fun `set up`() {
+        whenever(mockEventBatchWriter.write(anyOrNull(), anyOrNull()))
+            .thenReturn(true)
+
         whenever(mockSdkCore.getFeature(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME))
             .thenReturn(mockSessionReplayFeature)
-        testedWriter = SessionReplayRecordWriter(mockSdkCore)
+
+        testedWriter = SessionReplayRecordWriter(mockSdkCore, mockRecordCallback)
     }
 
     @Test
@@ -77,6 +85,9 @@ internal class SessionReplayRecordWriterTest {
         // Then
         verify(mockEventBatchWriter).write(fakeRecord.toJson().toByteArray(), null)
         verifyNoMoreInteractions(mockEventBatchWriter)
+
+        verify(mockRecordCallback).onRecordForViewSent(fakeRecord)
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     @Test
@@ -84,6 +95,7 @@ internal class SessionReplayRecordWriterTest {
         // Given
         val fakeRecord1 = forge.forgeEnrichedRecord()
         val fakeRecord2 = fakeRecord1.copy()
+
         testedWriter.write(fakeRecord1)
 
         // When
@@ -115,6 +127,10 @@ internal class SessionReplayRecordWriterTest {
         verify(mockEventBatchWriter).write(fakeRecord1.toJson().toByteArray(), null)
         verify(mockEventBatchWriter).write(fakeRecord2.toJson().toByteArray(), null)
         verifyNoMoreInteractions(mockEventBatchWriter)
+
+        verify(mockRecordCallback).onRecordForViewSent(fakeRecord1)
+        verify(mockRecordCallback).onRecordForViewSent(fakeRecord2)
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     @Test
@@ -128,7 +144,30 @@ internal class SessionReplayRecordWriterTest {
         testedWriter.write(fakeRecord)
 
         // Then
-        verifyNoInteractions(mockSessionReplayFeature)
+        verifyNoMoreInteractions(mockSessionReplayFeature)
+        verifyNoMoreInteractions(mockRecordCallback)
+    }
+
+    @Test
+    fun `M not call record callback W write { eventBatchWriter write failed }`(forge: Forge) {
+        // Given
+        whenever(mockEventBatchWriter.write(anyOrNull(), anyOrNull()))
+            .thenReturn(false)
+
+        val fakeRecord = forge.forgeEnrichedRecord()
+        whenever(mockSessionReplayFeature.withWriteContext(eq(true), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
+            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+        }
+
+        // When
+        testedWriter.write(fakeRecord)
+
+        // Then
+        verify(mockEventBatchWriter).write(fakeRecord.toJson().toByteArray(), null)
+        verifyNoMoreInteractions(mockEventBatchWriter)
+
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     private fun Forge.forgeEnrichedRecord(): EnrichedRecord {

@@ -60,7 +60,6 @@ internal class SessionReplayFeature constructor(
                 privacy = privacy,
                 recordWriter = recordWriter,
                 timeProvider = SessionReplayTimeProvider(sdkCore),
-                recordCallback = SessionReplayRecordCallback(sdkCore),
                 customMappers = customMappers,
                 customOptionSelectorDetectors = customOptionSelectorDetectors
             )
@@ -174,6 +173,9 @@ internal class SessionReplayFeature constructor(
         }
     }
 
+    /**
+     * Resumes the replay recorder.
+     */
     internal fun startRecording() {
         if (!initialized.get()) {
             sdkCore.internalLogger.log(
@@ -189,9 +191,13 @@ internal class SessionReplayFeature constructor(
     }
 
     private fun createDataWriter(): RecordWriter {
-        return SessionReplayRecordWriter(sdkCore)
+        val recordCallback = SessionReplayRecordCallback(sdkCore)
+        return SessionReplayRecordWriter(sdkCore, recordCallback)
     }
 
+    /**
+     * Stops the replay recorder.
+     */
     internal fun stopRecording() {
         if (isRecording.getAndSet(false)) {
             sessionReplayRecorder.stopRecorders()

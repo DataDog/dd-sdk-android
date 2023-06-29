@@ -206,11 +206,10 @@ internal class RumActionScope(
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val user = datadogContext.userInfo
-                val hasReplay = featuresContextResolver.resolveHasReplay(
+                val hasReplay = featuresContextResolver.resolveViewHasReplay(
                     datadogContext,
                     rumContext.viewId.orEmpty()
                 )
-
                 val frustrations = mutableListOf<ActionEvent.Type>()
                 if (trackFrustrations && eventErrorCount > 0 && actualType == RumActionType.TAP) {
                     frustrations.add(ActionEvent.Type.ERROR_TAP)

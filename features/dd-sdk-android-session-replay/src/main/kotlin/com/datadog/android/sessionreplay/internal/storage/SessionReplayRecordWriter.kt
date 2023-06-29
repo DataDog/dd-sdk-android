@@ -6,12 +6,16 @@
 
 package com.datadog.android.sessionreplay.internal.storage
 
+import com.datadog.android.sessionreplay.internal.RecordCallback
 import com.datadog.android.sessionreplay.internal.RecordWriter
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.v2.api.FeatureSdkCore
 
-internal class SessionReplayRecordWriter(private val sdkCore: FeatureSdkCore) : RecordWriter {
+internal class SessionReplayRecordWriter(
+    private val sdkCore: FeatureSdkCore,
+    private val recordCallback: RecordCallback
+) : RecordWriter {
     private var lastRumContextId: String = ""
     override fun write(record: EnrichedRecord) {
         val forceNewBatch = resolveForceNewBatch(record)
@@ -20,9 +24,21 @@ internal class SessionReplayRecordWriter(private val sdkCore: FeatureSdkCore) : 
                 val serializedRecord = record.toJson().toByteArray(Charsets.UTF_8)
                 synchronized(this) {
                     @Suppress("ThreadSafety") // called from the worker thread
-                    eventBatchWriter.write(serializedRecord, null)
+                    if (eventBatchWriter.write(serializedRecord, null)) {
+                        updateViewSent(record)
+                    }
                 }
             }
+    }
+
+    private fun updateViewSent(record: EnrichedRecord) {
+        /**
+         * We have to see whether it's ok that this method is being called from the background.
+         * However this gives us the most certainty that the records were actually queued for
+         * sending, and not optimized away in the processor. Depending upon the amount of time
+         * that it takes to process the nodes, the view may not be relevant anymore.
+         */
+        recordCallback.onRecordForViewSent(record)
     }
 
     private fun resolveForceNewBatch(record: EnrichedRecord): Boolean {

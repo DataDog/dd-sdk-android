@@ -179,11 +179,10 @@ internal class RumResourceScope(
         val finalTiming = timing ?: extractResourceTiming(
             attributes.remove(RumAttributes.RESOURCE_TIMINGS) as? Map<String, Any?>
         )
-
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val user = datadogContext.userInfo
-                val hasReplay = featuresContextResolver.resolveHasReplay(
+                val hasReplay = featuresContextResolver.resolveViewHasReplay(
                     datadogContext,
                     rumContext.viewId.orEmpty()
                 )
@@ -299,11 +298,10 @@ internal class RumResourceScope(
         attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
 
         val rumContext = getRumContext()
-
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val user = datadogContext.userInfo
-                val hasReplay = featuresContextResolver.resolveHasReplay(
+                val hasReplay = featuresContextResolver.resolveViewHasReplay(
                     datadogContext,
                     rumContext.viewId.orEmpty()
                 )

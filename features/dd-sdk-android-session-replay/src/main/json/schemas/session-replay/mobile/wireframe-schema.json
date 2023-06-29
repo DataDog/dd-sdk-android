@@ -13,6 +13,9 @@
     },
     {
       "$ref": "image-wireframe-schema.json"
+    },
+    {
+      "$ref": "placeholder-wireframe-schema.json"
     }
   ]
 }

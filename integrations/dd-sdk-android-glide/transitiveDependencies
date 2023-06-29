@@ -39,11 +39,13 @@ com.github.bumptech.glide:disklrucache:4.11.0                   :   19 Kb
 com.github.bumptech.glide:gifdecoder:4.11.0                     :   17 Kb
 com.github.bumptech.glide:glide:4.11.0                          :  614 Kb
 com.github.bumptech.glide:okhttp3-integration:4.11.0            :    8 Kb
-com.squareup.okhttp3:okhttp:3.12.13                             :  417 Kb
-com.squareup.okio:okio:1.15.0                                   :   86 Kb
+com.squareup.okhttp3:okhttp:4.11.0                              :  768 Kb
+com.squareup.okio:okio-jvm:3.2.0                                :  337 Kb
 org.jetbrains.kotlin:kotlin-stdlib-common:1.8.10                :  212 Kb
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.10                  :  963 b 
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.10                  :  969 b 
 org.jetbrains.kotlin:kotlin-stdlib:1.8.10                       : 1598 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
 
-Total transitive dependencies size                              :    4 Mb
+Total transitive dependencies size                              :    5 Mb
 
