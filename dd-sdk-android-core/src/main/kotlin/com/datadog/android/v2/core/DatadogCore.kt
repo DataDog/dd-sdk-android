@@ -299,7 +299,9 @@ internal class DatadogCore(
 
         applyAdditionalConfiguration(mutableConfig.additionalConfig)
 
-        initializeCrashReportFeature(mutableConfig.crashReportConfig)
+        if (mutableConfig.crashReportsEnabled) {
+            initializeCrashReportFeature()
+        }
 
         setupLifecycleMonitorCallback(context)
 
@@ -307,11 +309,9 @@ internal class DatadogCore(
         sendCoreConfigurationTelemetryEvent(configuration)
     }
 
-    private fun initializeCrashReportFeature(configuration: Configuration.Feature.CrashReport?) {
-        if (configuration != null) {
-            val crashReportsFeature = CrashReportsFeature(this)
-            registerFeature(crashReportsFeature)
-        }
+    private fun initializeCrashReportFeature() {
+        val crashReportsFeature = CrashReportsFeature(this)
+        registerFeature(crashReportsFeature)
     }
 
     @Suppress("FunctionMaxLength")
@@ -412,7 +412,7 @@ internal class DatadogCore(
             val rumFeature = getFeature(Feature.RUM_FEATURE_NAME) ?: return@Runnable
             val coreConfigurationEvent = mapOf(
                 "type" to "telemetry_configuration",
-                "track_errors" to (configuration.crashReportConfig != null),
+                "track_errors" to (configuration.crashReportsEnabled),
                 "batch_size" to configuration.coreConfig.batchSize.windowDurationMs,
                 "batch_upload_frequency" to configuration.coreConfig.uploadFrequency.baseStepMs,
                 "use_proxy" to (configuration.coreConfig.proxy != null),

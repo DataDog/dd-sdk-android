@@ -74,8 +74,8 @@ public final class com/datadog/android/core/configuration/BatchSize : java/lang/
 }
 
 public final class com/datadog/android/core/configuration/Configuration {
-	public final fun copy (Lcom/datadog/android/core/configuration/Configuration$Core;Lcom/datadog/android/core/configuration/Configuration$Feature$CrashReport;Ljava/util/Map;)Lcom/datadog/android/core/configuration/Configuration;
-	public static synthetic fun copy$default (Lcom/datadog/android/core/configuration/Configuration;Lcom/datadog/android/core/configuration/Configuration$Core;Lcom/datadog/android/core/configuration/Configuration$Feature$CrashReport;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/core/configuration/Configuration;
+	public final fun copy (Lcom/datadog/android/core/configuration/Configuration$Core;ZLjava/util/Map;)Lcom/datadog/android/core/configuration/Configuration;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/configuration/Configuration;Lcom/datadog/android/core/configuration/Configuration$Core;ZLjava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/core/configuration/Configuration;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -93,7 +93,6 @@ public final class com/datadog/android/core/configuration/Configuration$Builder 
 	public final fun setProxy (Ljava/net/Proxy;Lokhttp3/Authenticator;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setUploadFrequency (Lcom/datadog/android/core/configuration/UploadFrequency;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setUseDeveloperModeWhenDebuggable (Z)Lcom/datadog/android/core/configuration/Configuration$Builder;
-	public final fun useCustomCrashReportsEndpoint (Ljava/lang/String;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun useSite (Lcom/datadog/android/DatadogSite;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 }
 
@@ -320,12 +319,6 @@ public final class com/datadog/android/log/LogAttributes {
 	public static final field USR_ID Ljava/lang/String;
 	public static final field USR_NAME Ljava/lang/String;
 	public static final field VARIANT Ljava/lang/String;
-}
-
-public final class com/datadog/android/plugin/Feature : java/lang/Enum {
-	public static final field CRASH Lcom/datadog/android/plugin/Feature;
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/plugin/Feature;
-	public static fun values ()[Lcom/datadog/android/plugin/Feature;
 }
 
 public final class com/datadog/android/privacy/TrackingConsent : java/lang/Enum {

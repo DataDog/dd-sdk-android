@@ -8,14 +8,10 @@ package com.datadog.android.core.configuration
 
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
-import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.security.Encryption
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.v2.api.InternalLogger
 import okhttp3.Authenticator
 import java.net.Proxy
-import java.util.Locale
-import com.datadog.android.plugin.Feature as PluginFeature
 
 /**
  * An object describing the configuration of the Datadog SDK.
@@ -25,7 +21,7 @@ import com.datadog.android.plugin.Feature as PluginFeature
 data class Configuration
 internal constructor(
     internal val coreConfig: Core,
-    internal val crashReportConfig: Feature.CrashReport?,
+    internal val crashReportsEnabled: Boolean,
     internal val additionalConfig: Map<String, Any>
 ) {
 
@@ -41,14 +37,6 @@ internal constructor(
         val site: DatadogSite
     )
 
-    internal sealed class Feature {
-        abstract val endpointUrl: String
-
-        internal data class CrashReport(
-            override val endpointUrl: String
-        ) : Feature()
-    }
-
     // region Builder
 
     /**
@@ -59,7 +47,6 @@ internal constructor(
     class Builder(
         val crashReportsEnabled: Boolean
     ) {
-        private var crashReportConfig: Feature.CrashReport = DEFAULT_CRASH_CONFIG
         private var additionalConfig: Map<String, Any> = emptyMap()
 
         private var coreConfig = DEFAULT_CORE_CONFIG
@@ -72,7 +59,7 @@ internal constructor(
         fun build(): Configuration {
             return Configuration(
                 coreConfig = coreConfig,
-                crashReportConfig = if (crashReportsEnabled) crashReportConfig else null,
+                crashReportsEnabled = crashReportsEnabled,
                 additionalConfig = additionalConfig
             )
         }
@@ -138,19 +125,7 @@ internal constructor(
          * Let the SDK target your preferred Datadog's site.
          */
         fun useSite(site: DatadogSite): Builder {
-            crashReportConfig = crashReportConfig.copy(endpointUrl = site.intakeEndpoint)
             coreConfig = coreConfig.copy(needsClearTextHttp = false, site = site)
-            return this
-        }
-
-        /**
-         * Let the SDK target a custom server for the crash reports feature.
-         */
-        fun useCustomCrashReportsEndpoint(endpoint: String): Builder {
-            applyIfFeatureEnabled(PluginFeature.CRASH, "useCustomCrashReportsEndpoint") {
-                crashReportConfig = crashReportConfig.copy(endpointUrl = endpoint)
-                checkCustomEndpoint(endpoint)
-            }
             return this
         }
 
@@ -214,32 +189,6 @@ internal constructor(
             )
             return this
         }
-
-        private fun checkCustomEndpoint(endpoint: String) {
-            if (endpoint.startsWith("http://")) {
-                coreConfig = coreConfig.copy(needsClearTextHttp = true)
-            }
-        }
-
-        private fun applyIfFeatureEnabled(
-            feature: PluginFeature,
-            method: String,
-            block: () -> Unit
-        ) {
-            val featureEnabled = when (feature) {
-                PluginFeature.CRASH -> crashReportsEnabled
-            }
-            if (featureEnabled) {
-                @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
-                block()
-            } else {
-                unboundInternalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.USER,
-                    { ERROR_FEATURE_DISABLED.format(Locale.US, feature.featureName, method) }
-                )
-            }
-        }
     }
 
     // endregion
@@ -257,14 +206,6 @@ internal constructor(
             encryption = null,
             site = DatadogSite.US1
         )
-
-        internal val DEFAULT_CRASH_CONFIG = Feature.CrashReport(
-            endpointUrl = DatadogSite.US1.intakeEndpoint
-        )
-
-        internal const val ERROR_FEATURE_DISABLED = "The %s feature has been disabled in your " +
-            "Configuration.Builder, but you're trying to edit the RUM configuration with the " +
-            "%s() method."
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network requests"
     }

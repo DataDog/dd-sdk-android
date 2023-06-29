@@ -7,13 +7,10 @@
 package com.datadog.android.core.configuration
 
 import com.datadog.android.DatadogSite
-import com.datadog.android.plugin.Feature
 import com.datadog.android.security.Encryption
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.verifyLog
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -36,7 +33,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.net.Proxy
 import java.net.URL
-import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -76,11 +72,7 @@ internal class ConfigurationBuilderTest {
                 site = DatadogSite.US1
             )
         )
-        assertThat(config.crashReportConfig).isEqualTo(
-            Configuration.Feature.CrashReport(
-                endpointUrl = DatadogSite.US1.intakeEndpoint
-            )
-        )
+        assertThat(config.crashReportsEnabled).isTrue
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -95,7 +87,7 @@ internal class ConfigurationBuilderTest {
         val config = testedBuilder.build()
 
         // Then
-        assertThat(config.crashReportConfig).isNull()
+        assertThat(config.crashReportsEnabled).isFalse
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -110,76 +102,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(site = site)
         )
-        assertThat(config.crashReportConfig).isEqualTo(
-            Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = site.intakeEndpoint)
-        )
         assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config with custom endpoints 𝕎 useCustomXXXEndpoint() and build()`(
-        @StringForgery(regex = "https://[a-z]+\\.com") crashReportsUrl: String
-    ) {
-        // When
-        val config = testedBuilder
-            .useCustomCrashReportsEndpoint(crashReportsUrl)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(
-                needsClearTextHttp = false
-            )
-        )
-        assertThat(config.crashReportConfig).isEqualTo(
-            Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = crashReportsUrl)
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 build config with custom cleartext endpoints 𝕎 useCustomXXXEndpoint() and build()`(
-        @StringForgery(regex = "http://[a-z]+\\.com") crashReportsUrl: String
-    ) {
-        // When
-        val config = testedBuilder
-            .useCustomCrashReportsEndpoint(crashReportsUrl)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(
-                needsClearTextHttp = true
-            )
-        )
-        assertThat(config.crashReportConfig).isEqualTo(
-            Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = crashReportsUrl)
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `𝕄 warn user 𝕎 useCustomCrashReportsEndpoint() {Crash feature disabled}`(
-        @StringForgery(regex = "https://[a-z]+\\.com") url: String
-    ) {
-        // Given
-        testedBuilder = Configuration.Builder(
-            crashReportsEnabled = false
-        )
-
-        // When
-        testedBuilder.useCustomCrashReportsEndpoint(url)
-
-        // Then
-        logger.mockInternalLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            Configuration.ERROR_FEATURE_DISABLED.format(
-                Locale.US,
-                Feature.CRASH.featureName,
-                "useCustomCrashReportsEndpoint"
-            )
-        )
     }
 
     @Test
@@ -201,7 +124,6 @@ internal class ConfigurationBuilderTest {
                 hosts.associateWith { setOf(TracingHeaderType.DATADOG) }
             )
         )
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -227,7 +149,7 @@ internal class ConfigurationBuilderTest {
                 }
             )
         )
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.crashReportsEnabled).isTrue
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -249,7 +171,7 @@ internal class ConfigurationBuilderTest {
                 hosts.associate { URL(it).host to setOf(TracingHeaderType.DATADOG) }
             )
         )
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.crashReportsEnabled).isTrue
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -296,7 +218,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHostsWithHeaderTypes = hostWithHeaderTypes)
         )
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.crashReportsEnabled).isTrue
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -313,7 +235,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(batchSize = batchSize)
         )
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.crashReportsEnabled).isTrue
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -347,7 +269,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(uploadFrequency = uploadFrequency)
         )
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.crashReportsEnabled).isTrue
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -367,7 +289,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.additionalConfig).isEqualTo(additionalConfig)
 
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.crashReportsEnabled).isTrue
     }
 
     @Test

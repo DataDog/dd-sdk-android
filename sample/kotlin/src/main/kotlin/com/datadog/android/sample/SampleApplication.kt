@@ -233,9 +233,6 @@ class SampleApplication : Application() {
             Timber.e("Error setting site to ${BuildConfig.DD_SITE_NAME}")
         }
 
-        if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
-            configBuilder.useCustomCrashReportsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
-        }
         return configBuilder.build()
     }
 
