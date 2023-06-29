@@ -43,7 +43,6 @@ data class com.datadog.android.core.configuration.Configuration
     fun setFirstPartyHosts(List<String>): Builder
     fun setFirstPartyHostsWithHeaderType(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>): Builder
     fun useSite(com.datadog.android.DatadogSite): Builder
-    fun useCustomCrashReportsEndpoint(String): Builder
     fun setBatchSize(BatchSize): Builder
     fun setUploadFrequency(UploadFrequency): Builder
     fun setAdditionalConfiguration(Map<String, Any>): Builder
@@ -179,9 +178,6 @@ object com.datadog.android.log.LogAttributes
   const val USR_ID: String
   const val USR_NAME: String
   const val VARIANT: String
-enum com.datadog.android.plugin.Feature
-  constructor(String)
-  - CRASH
 enum com.datadog.android.privacy.TrackingConsent
   - GRANTED
   - NOT_GRANTED
