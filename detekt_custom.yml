@@ -613,6 +613,7 @@ datadog:
       - "kotlin.collections.List.toSet()"
       - "kotlin.collections.List.withIndex()"
       - "kotlin.collections.Map.containsKey(kotlin.String)"
+      - "kotlin.collections.MutableMap.containsKey(android.view.Window)"
       - "kotlin.collections.Map.filter(kotlin.Function1)"
       - "kotlin.collections.Map.filterKeys(kotlin.Function1)"
       - "kotlin.collections.Map.filterValues(kotlin.Function1)"
