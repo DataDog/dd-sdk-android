@@ -24,12 +24,13 @@ data class SessionReplayConfiguration internal constructor(
 
     /**
      * A Builder class for a [SessionReplayConfiguration].
+     * @param sampleRate must be a value between 0 and 100. A value of 0
+     * means no session will be recorded, 100 means all sessions will be recorded.
      */
-    class Builder {
+    class Builder(@FloatRange(from = 0.0, to = 100.0)private val sampleRate: Float) {
         private var customEndpointUrl: String? = null
         private var privacy = SessionReplayPrivacy.MASK_ALL
         private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
-        private var sampleRate: Float = DEFAULT_SAMPLE_RATE
 
         /**
          * Adds an extension support implementation. This is mostly used when you want to provide
@@ -62,22 +63,7 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         /**
-         * Sets the sample rate for Session Replay recorded Sessions. Please note that this
-         * sample rate will be applied on top of the already sampled in RUM session.
-         *
-         * @param sampleRate must be a value between 0 and 100. A value of 0
-         * means no session will be recorded, 100 means all sessions will be recorded.
-         * The default value for the sample rate will be 0 meaning that no session replay will be
-         * recorded if the sample rate will not be explicitly set.
-         */
-        fun setSessionReplaySampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float):
-            Builder {
-            this.sampleRate = sampleRate
-            return this
-        }
-
-        /**
-         * * Builds a [SessionReplayConfiguration] based on the current state of this Builder.
+         * Builds a [SessionReplayConfiguration] based on the current state of this Builder.
          */
         fun build(): SessionReplayConfiguration {
             return SessionReplayConfiguration(
@@ -100,9 +86,5 @@ data class SessionReplayConfiguration internal constructor(
             }
             return emptyList()
         }
-    }
-
-    internal companion object {
-        internal const val DEFAULT_SAMPLE_RATE = 0f
     }
 }

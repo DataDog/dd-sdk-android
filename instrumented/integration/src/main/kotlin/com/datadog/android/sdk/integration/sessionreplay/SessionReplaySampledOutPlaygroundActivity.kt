@@ -13,9 +13,8 @@ import com.datadog.android.sessionreplay.SessionReplayPrivacy
 internal class SessionReplaySampledOutPlaygroundActivity : SessionReplayPlaygroundActivity() {
 
     override fun sessionReplayConfiguration(): SessionReplayConfiguration =
-        RuntimeConfig.sessionReplayConfigBuilder()
+        RuntimeConfig.sessionReplayConfigBuilder(0f)
             .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
-            .setSessionReplaySampleRate(0f)
             .build()
 
     @Suppress("LongMethod")

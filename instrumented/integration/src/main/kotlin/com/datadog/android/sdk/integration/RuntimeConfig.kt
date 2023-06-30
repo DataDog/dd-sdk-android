@@ -81,8 +81,8 @@ internal object RuntimeConfig {
             .useCustomEndpoint(rumEndpointUrl)
     }
 
-    fun sessionReplayConfigBuilder(): SessionReplayConfiguration.Builder {
-        return SessionReplayConfiguration.Builder()
+    fun sessionReplayConfigBuilder(sampleRate: Float): SessionReplayConfiguration.Builder {
+        return SessionReplayConfiguration.Builder(sampleRate)
             .useCustomEndpoint(sessionReplayEndpointUrl)
     }
 
