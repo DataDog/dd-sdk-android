@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class BatchFileOrchestratorTest {
 
-    lateinit var testedOrchestrator: FileOrchestrator
+    private lateinit var testedOrchestrator: FileOrchestrator
 
     @TempDir
     lateinit var tempDir: File
@@ -200,6 +200,81 @@ internal class BatchFileOrchestratorTest {
         assertThat(oldFile).doesNotExist()
         assertThat(oldFileMeta).doesNotExist()
         assertThat(youngFile).exists()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `𝕄 respect time threshold to delete obsolete files 𝕎 getWritableFile() { below threshold }`(
+        forceNewFile: Boolean,
+        @LongForgery(min = OLD_FILE_THRESHOLD, max = Int.MAX_VALUE.toLong()) oldFileAge: Long
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val oldTimestamp = System.currentTimeMillis() - oldFileAge
+        val oldFile = File(fakeRootDir, oldTimestamp.toString())
+        oldFile.createNewFile()
+        val oldFileMeta = File("${oldFile.path}_metadata")
+        oldFileMeta.createNewFile()
+        val youngTimestamp = System.currentTimeMillis() - RECENT_DELAY_MS - 1
+        val youngFile = File(fakeRootDir, youngTimestamp.toString())
+        youngFile.createNewFile()
+
+        // When
+        val start = System.currentTimeMillis()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
+        val end = System.currentTimeMillis()
+        // let's add very old file after the previous cleanup call. If threshold is respected,
+        // cleanup shouldn't be performed during the next getWritableFile call
+        val evenOlderFile = File(fakeRootDir, (oldTimestamp - 1).toString())
+        evenOlderFile.createNewFile()
+        testedOrchestrator.getWritableFile(forceNewFile)
+
+        // Then
+        checkNotNull(result)
+        assertThat(result)
+            .doesNotExist()
+            .hasParent(fakeRootDir)
+        assertThat(result.name.toLong())
+            .isBetween(start, end)
+        assertThat(oldFile).doesNotExist()
+        assertThat(oldFileMeta).doesNotExist()
+        assertThat(youngFile).exists()
+        assertThat(evenOlderFile).exists()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `𝕄 respect time threshold to delete obsolete files 𝕎 getWritableFile() { above threshold }`(
+        forceNewFile: Boolean,
+        @LongForgery(min = OLD_FILE_THRESHOLD, max = Int.MAX_VALUE.toLong()) oldFileAge: Long
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val oldTimestamp = System.currentTimeMillis() - oldFileAge
+        val oldFile = File(fakeRootDir, oldTimestamp.toString())
+        oldFile.createNewFile()
+        val oldFileMeta = File("${oldFile.path}_metadata")
+        oldFileMeta.createNewFile()
+
+        // When
+        val start = System.currentTimeMillis()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
+        val end = System.currentTimeMillis()
+        Thread.sleep(CLEANUP_FREQUENCY_THRESHOLD_MS + 1)
+        val evenOlderFile = File(fakeRootDir, (oldTimestamp - 1).toString())
+        evenOlderFile.createNewFile()
+        testedOrchestrator.getWritableFile(forceNewFile)
+
+        // Then
+        checkNotNull(result)
+        assertThat(result)
+            .doesNotExist()
+            .hasParent(fakeRootDir)
+        assertThat(result.name.toLong())
+            .isBetween(start, end)
+        assertThat(oldFile).doesNotExist()
+        assertThat(oldFileMeta).doesNotExist()
+        assertThat(evenOlderFile).doesNotExist()
     }
 
     @ParameterizedTest
@@ -413,6 +488,7 @@ internal class BatchFileOrchestratorTest {
         }
 
         // When
+        Thread.sleep(CLEANUP_FREQUENCY_THRESHOLD_MS + 1)
         val start = System.currentTimeMillis()
         val result = testedOrchestrator.getWritableFile(forceNewFile)
         val end = System.currentTimeMillis()
@@ -1021,13 +1097,16 @@ internal class BatchFileOrchestratorTest {
         private const val OLD_FILE_THRESHOLD: Long = RECENT_DELAY_MS * 4
         private const val MAX_DISK_SPACE = MAX_BATCH_SIZE * 4
 
+        private const val CLEANUP_FREQUENCY_THRESHOLD_MS = 50L
+
         private val TEST_PERSISTENCE_CONFIG = FilePersistenceConfig(
             RECENT_DELAY_MS,
             MAX_BATCH_SIZE.toLong(),
             MAX_ITEM_SIZE.toLong(),
             MAX_ITEM_PER_BATCH,
             OLD_FILE_THRESHOLD,
-            MAX_DISK_SPACE.toLong()
+            MAX_DISK_SPACE.toLong(),
+            CLEANUP_FREQUENCY_THRESHOLD_MS
         )
     }
 }
