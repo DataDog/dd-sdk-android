@@ -7,13 +7,13 @@
 package com.datadog.android.core.internal.persistence.file.single
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.serializeToByteArray
-import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 
 internal open class SingleItemDataWriter<T : Any>(

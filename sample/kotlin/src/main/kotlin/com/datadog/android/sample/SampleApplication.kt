@@ -12,6 +12,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.sampling.RateBasedSampler
@@ -46,7 +47,6 @@ import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.v2.api.context.UserInfo
 import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray

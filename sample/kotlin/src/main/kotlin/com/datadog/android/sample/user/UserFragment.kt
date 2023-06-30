@@ -13,10 +13,10 @@ import android.view.ViewGroup
 import android.widget.EditText
 import androidx.fragment.app.Fragment
 import com.datadog.android.Datadog
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.ktx.tracing.withinSpan
 import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.R
-import com.datadog.android.v2.api.context.UserInfo
 import com.google.android.material.snackbar.Snackbar
 
 internal class UserFragment : Fragment(), View.OnClickListener {

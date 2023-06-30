@@ -6,7 +6,7 @@
 
 package com.datadog.android.trace.internal.storage
 
-import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.api.context.DatadogContext
 
 /**
  * A class which can transform an object of type [T] into a formatted String.

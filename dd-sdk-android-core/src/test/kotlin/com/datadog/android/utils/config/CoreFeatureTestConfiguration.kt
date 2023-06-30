@@ -10,6 +10,7 @@ import android.content.Context
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -21,7 +22,6 @@ import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.lyft.kronos.KronosClock

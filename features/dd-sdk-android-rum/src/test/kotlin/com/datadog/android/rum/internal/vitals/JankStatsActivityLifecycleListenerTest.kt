@@ -11,9 +11,9 @@ import android.os.Build
 import android.view.Display
 import android.view.Window
 import androidx.metrics.performance.FrameData
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.LongForgery

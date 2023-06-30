@@ -4,11 +4,11 @@ fun <T: Any?> kotlinx.coroutines.CoroutineScope.asyncTraced(String, kotlin.corou
 fun <T: Any?> kotlinx.coroutines.Deferred<T>.awaitTraced(String): T
 fun <T: Any?> withContextTraced(String, kotlin.coroutines.CoroutineContext, CoroutineScopeSpan.() -> T): T
 interface com.datadog.android.ktx.coroutine.CoroutineScopeSpan : kotlinx.coroutines.CoroutineScope, io.opentracing.Span
-fun <T> kotlinx.coroutines.flow.Flow<T>.sendErrorToDatadog(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): kotlinx.coroutines.flow.Flow<T>
-fun <T: java.io.Closeable, R> T.useMonitored(com.datadog.android.v2.api.SdkCore = Datadog.getInstance(), (T) -> R): R
-fun android.content.Context.getAssetAsRumResource(String, Int = AssetManager.ACCESS_STREAMING, com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): java.io.InputStream
-fun android.content.Context.getRawResAsRumResource(Int, com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): java.io.InputStream
-fun java.io.InputStream.asRumResource(String, com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): java.io.InputStream
+fun <T> kotlinx.coroutines.flow.Flow<T>.sendErrorToDatadog(com.datadog.android.api.SdkCore = Datadog.getInstance()): kotlinx.coroutines.flow.Flow<T>
+fun <T: java.io.Closeable, R> T.useMonitored(com.datadog.android.api.SdkCore = Datadog.getInstance(), (T) -> R): R
+fun android.content.Context.getAssetAsRumResource(String, Int = AssetManager.ACCESS_STREAMING, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
+fun android.content.Context.getRawResAsRumResource(Int, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
+fun java.io.InputStream.asRumResource(String, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun <T> android.database.sqlite.SQLiteDatabase.transactionTraced(String, Boolean = true, io.opentracing.Span.(android.database.sqlite.SQLiteDatabase) -> T): T
 fun okhttp3.Request.Builder.parentSpan(io.opentracing.Span): okhttp3.Request.Builder
 fun io.opentracing.Span.setError(Throwable)

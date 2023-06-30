@@ -6,9 +6,9 @@
 
 package com.datadog.android.rum.internal
 
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.context.DatadogContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

@@ -8,7 +8,7 @@ class com.datadog.android.log.Logger
   fun log(Int, String, Throwable? = null, Map<String, Any?> = emptyMap())
   fun log(Int, String, String?, String?, String?, Map<String, Any?> = emptyMap())
   class Builder
-    constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+    constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
     fun build(): Logger
     fun setService(String): Builder
     fun setRemoteLogThreshold(Int): Builder
@@ -25,7 +25,7 @@ class com.datadog.android.log.Logger
   fun removeTag(String)
   fun removeTagsWithKey(String)
 object com.datadog.android.log.Logs
-  fun enable(LogsConfiguration, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+  fun enable(LogsConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
 data class com.datadog.android.log.LogsConfiguration
   class Builder
     fun useCustomEndpoint(String): Builder

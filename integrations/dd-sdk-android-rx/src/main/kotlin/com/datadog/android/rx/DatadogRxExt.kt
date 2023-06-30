@@ -7,7 +7,7 @@
 package com.datadog.android.rx
 
 import com.datadog.android.Datadog
-import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.api.SdkCore
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Maybe

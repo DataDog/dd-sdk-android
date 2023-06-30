@@ -16,8 +16,8 @@ import android.view.WindowManager
 import androidx.annotation.MainThread
 import androidx.metrics.performance.FrameData
 import androidx.metrics.performance.JankStats
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.v2.api.InternalLogger
 import java.util.concurrent.TimeUnit
 
 /**

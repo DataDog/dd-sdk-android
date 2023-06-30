@@ -9,14 +9,14 @@ package com.datadog.android.event
 import com.datadog.android.core.persistence.Serializer
 
 /**
- * Combines [EventMapper] and [Serializer]. First mapping is dne, then serialization.
+ * Combines [EventMapper] and [Serializer]. First mapping is done, then serialization.
  *
  * @param T type of the data to map and serialize.
  * @param eventMapper Event mapper to use.
  * @param serializer Serializer to use.
  */
 class MapperSerializer<T : Any>(
-    val eventMapper: EventMapper<T>,
+    private val eventMapper: EventMapper<T>,
     private val serializer: Serializer<T>
 ) : Serializer<T> {
 

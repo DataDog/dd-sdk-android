@@ -14,6 +14,7 @@ import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Process
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
@@ -29,14 +30,11 @@ import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
-import com.datadog.android.ndk.DatadogNdkCrashHandler
-import com.datadog.android.ndk.NoOpNdkCrashHandler
+import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
+import com.datadog.android.ndk.internal.NoOpNdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.internal.DatadogContextProvider
-import com.datadog.android.v2.core.internal.NoOpContextProvider
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.assertj.containsInstanceOf

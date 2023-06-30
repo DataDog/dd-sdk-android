@@ -16,6 +16,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.RumFeature
@@ -25,7 +26,6 @@ import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallba
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
-import com.datadog.android.v2.api.Feature
 import java.lang.IllegalStateException
 import java.util.WeakHashMap
 

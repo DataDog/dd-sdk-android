@@ -6,11 +6,11 @@
 
 package com.datadog.android.rum
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
 import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
 import fr.xgouchet.elmyr.annotation.StringForgery

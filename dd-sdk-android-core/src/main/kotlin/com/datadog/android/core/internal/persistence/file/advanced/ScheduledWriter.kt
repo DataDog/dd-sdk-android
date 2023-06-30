@@ -7,9 +7,9 @@
 package com.datadog.android.core.internal.persistence.file.advanced
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.utils.submitSafe
-import com.datadog.android.v2.api.InternalLogger
 import java.util.concurrent.ExecutorService
 
 internal class ScheduledWriter<T : Any>(

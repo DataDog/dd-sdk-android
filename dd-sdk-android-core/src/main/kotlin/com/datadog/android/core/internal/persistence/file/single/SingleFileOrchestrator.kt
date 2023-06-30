@@ -7,9 +7,9 @@
 package com.datadog.android.core.internal.persistence.file.single
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.mkdirsSafe
-import com.datadog.android.v2.api.InternalLogger
 import java.io.File
 
 internal class SingleFileOrchestrator(

@@ -6,6 +6,13 @@
 
 package com.datadog.android.telemetry.internal
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.rum.internal.RumFeature
@@ -23,13 +30,6 @@ import com.datadog.android.telemetry.assertj.TelemetryErrorEventAssert.Companion
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
-import com.datadog.android.v2.api.EventBatchWriter
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge

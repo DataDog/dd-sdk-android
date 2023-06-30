@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.utils
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.tracking.ComponentPredicate
-import com.datadog.android.v2.api.InternalLogger
 
 /**
  * Executes the provided operation if the predicate verifies the argument.

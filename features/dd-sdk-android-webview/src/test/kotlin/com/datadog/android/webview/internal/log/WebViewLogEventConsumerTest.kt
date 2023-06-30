@@ -6,15 +6,15 @@
 
 package com.datadog.android.webview.internal.log
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
-import com.datadog.android.v2.api.EventBatchWriter
-import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
 import com.datadog.android.webview.internal.rum.domain.RumContext

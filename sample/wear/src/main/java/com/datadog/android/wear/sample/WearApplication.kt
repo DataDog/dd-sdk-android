@@ -10,6 +10,7 @@ import android.app.Application
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.log.Logs
@@ -21,7 +22,6 @@ import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.v2.api.context.UserInfo
 import io.opentracing.util.GlobalTracer
 import timber.log.Timber
 

@@ -6,8 +6,8 @@
 
 package com.datadog.android.core.internal.persistence.file
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.security.Encryption
-import com.datadog.android.v2.api.InternalLogger
 
 internal interface FileReaderWriter : FileWriter, FileReader {
     companion object {

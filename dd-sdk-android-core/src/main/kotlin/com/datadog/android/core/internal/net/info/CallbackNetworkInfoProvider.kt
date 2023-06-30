@@ -13,11 +13,11 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.NetworkInfo
 
 @TargetApi(Build.VERSION_CODES.N)
 internal class CallbackNetworkInfoProvider(

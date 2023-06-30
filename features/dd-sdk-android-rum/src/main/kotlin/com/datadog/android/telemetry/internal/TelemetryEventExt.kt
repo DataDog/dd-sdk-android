@@ -6,10 +6,10 @@
 
 package com.datadog.android.telemetry.internal
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
-import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 
 internal fun TelemetryDebugEvent.Source.Companion.tryFromSource(

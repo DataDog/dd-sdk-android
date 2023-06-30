@@ -6,9 +6,9 @@
 
 package com.datadog.android.trace.internal.utils
 
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.FeatureSdkCore
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.scopemanager.ScopeTestHelper
 import fr.xgouchet.elmyr.Forge

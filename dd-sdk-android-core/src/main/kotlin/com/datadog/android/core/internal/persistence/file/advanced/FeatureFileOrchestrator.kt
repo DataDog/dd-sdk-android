@@ -6,13 +6,13 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.v2.api.InternalLogger
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService

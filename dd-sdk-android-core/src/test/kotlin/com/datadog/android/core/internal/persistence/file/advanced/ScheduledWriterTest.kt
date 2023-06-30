@@ -6,10 +6,10 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
-import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

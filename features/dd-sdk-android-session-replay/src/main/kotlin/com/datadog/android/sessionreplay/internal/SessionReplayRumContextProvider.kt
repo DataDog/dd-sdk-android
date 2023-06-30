@@ -6,10 +6,10 @@
 
 package com.datadog.android.sessionreplay.internal
 
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureSdkCore
 import java.util.UUID
 
 internal class SessionReplayRumContextProvider(

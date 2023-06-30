@@ -6,9 +6,9 @@
 
 package com.datadog.android.sessionreplay.internal.time
 
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureSdkCore
 
 internal class SessionReplayTimeProvider(
     private val sdkCore: FeatureSdkCore,

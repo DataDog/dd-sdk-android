@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.persistence.file
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.api.InternalLogger
 import java.io.File
 import java.io.FileNotFoundException
 import java.util.Locale

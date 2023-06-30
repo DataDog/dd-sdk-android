@@ -7,6 +7,9 @@
 package com.datadog.android.rum.internal.domain
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.serializeToByteArray
 import com.datadog.android.rum.GlobalRumMonitor
@@ -17,9 +20,6 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.v2.api.EventBatchWriter
-import com.datadog.android.v2.core.InternalSdkCore
-import com.datadog.android.v2.core.storage.DataWriter
 
 internal class RumDataWriter(
     internal val serializer: Serializer<Any>,

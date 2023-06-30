@@ -25,11 +25,11 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.v2.api.SdkCore
 import kotlinx.coroutines.flow.FlowCollector
 import java.lang.Exception
 import kotlin.coroutines.cancellation.CancellationException

@@ -6,6 +6,10 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.AppStartTimeProvider
@@ -13,10 +17,6 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.storage.NoOpDataWriter
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.core.InternalSdkCore
-import com.datadog.android.v2.core.storage.DataWriter
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery

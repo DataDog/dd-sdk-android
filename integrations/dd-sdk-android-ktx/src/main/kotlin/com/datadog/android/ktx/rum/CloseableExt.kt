@@ -7,9 +7,9 @@
 package com.datadog.android.ktx.rum
 
 import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.v2.api.SdkCore
 import java.io.Closeable
 
 internal const val CLOSABLE_ERROR_MESSAGE = "Error while using the closeable"

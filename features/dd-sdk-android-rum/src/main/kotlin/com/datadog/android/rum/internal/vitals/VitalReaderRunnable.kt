@@ -6,10 +6,10 @@
 
 package com.datadog.android.rum.internal.vitals
 
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureSdkCore
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 

@@ -6,6 +6,13 @@
 
 package com.datadog.android.webview.internal.rum
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -14,13 +21,6 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aRumEventAsJson
 import com.datadog.android.utils.verifyLog
-import com.datadog.android.v2.api.EventBatchWriter
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.core.storage.DataWriter
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonArray

@@ -6,9 +6,9 @@
 
 package com.datadog.android.webview.internal.rum
 
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.webview.internal.rum.domain.RumContext
 
 internal class WebViewRumEventContextProvider(private val internalLogger: InternalLogger) {

@@ -6,10 +6,10 @@
 
 package com.datadog.android.rx
 
+import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

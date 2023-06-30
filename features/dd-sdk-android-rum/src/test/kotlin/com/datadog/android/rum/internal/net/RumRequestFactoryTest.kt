@@ -6,12 +6,12 @@
 
 package com.datadog.android.rum.internal.net
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.api.context.DatadogContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery

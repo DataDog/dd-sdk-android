@@ -6,10 +6,10 @@
 
 package com.datadog.android.telemetry.internal
 
+import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
-import com.datadog.android.v2.api.SdkCore
 
 internal class Telemetry(
     private val sdkCore: SdkCore

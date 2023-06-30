@@ -6,9 +6,9 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
-import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery

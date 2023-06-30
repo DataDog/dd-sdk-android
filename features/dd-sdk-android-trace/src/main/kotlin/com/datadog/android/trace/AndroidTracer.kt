@@ -8,14 +8,14 @@ package com.datadog.android.trace
 
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.TracingFeature
 import com.datadog.android.trace.internal.data.NoOpWriter
 import com.datadog.android.trace.internal.handlers.AndroidSpanLogsHandler
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDTracer
 import com.datadog.opentracing.LogHandler
 import com.datadog.trace.api.Config

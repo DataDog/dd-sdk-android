@@ -7,12 +7,12 @@
 package com.datadog.android.log.internal.storage
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.serializeToByteArray
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.v2.api.EventBatchWriter
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.storage.DataWriter
 
 internal class LogsDataWriter(
     internal val serializer: Serializer<LogEvent>,

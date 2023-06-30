@@ -7,7 +7,7 @@
 package com.datadog.android.core.sampling
 
 import androidx.annotation.FloatRange
-import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.api.InternalLogger
 import java.security.SecureRandom
 
 /**
@@ -16,7 +16,7 @@ import java.security.SecureRandom
  * @param sampleRateProvider Provider for the sample rate value which will be called each time
  * the sampling decision needs to be made. All the values should be on the scale [0;100].
  */
-class RateBasedSampler(internal val sampleRateProvider: () -> Float) : Sampler {
+class RateBasedSampler(private val sampleRateProvider: () -> Float) : Sampler {
 
     /**
      * Creates a new instance of [RateBasedSampler] with the given sample rate.

@@ -7,9 +7,9 @@
 package com.datadog.android.log
 
 import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.SdkCore
 
 /**
  * An entry point to Datadog Logs feature.

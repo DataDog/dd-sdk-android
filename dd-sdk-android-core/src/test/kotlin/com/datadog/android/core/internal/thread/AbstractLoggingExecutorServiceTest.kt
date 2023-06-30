@@ -6,9 +6,9 @@
 
 package com.datadog.android.core.internal.thread
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

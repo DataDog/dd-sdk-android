@@ -6,8 +6,8 @@
 
 package com.datadog.android.ktx.rum
 
+import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.resource.RumResourceInputStream
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

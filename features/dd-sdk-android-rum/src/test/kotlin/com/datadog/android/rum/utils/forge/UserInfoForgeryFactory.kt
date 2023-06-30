@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.v2.api.context.UserInfo
+import com.datadog.android.api.context.UserInfo
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory

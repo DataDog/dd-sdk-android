@@ -6,7 +6,7 @@
 
 package com.datadog.android.trace.internal.domain.event
 
-import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.api.context.DatadogContext
 
 internal interface ContextAwareMapper<R, T> {
 

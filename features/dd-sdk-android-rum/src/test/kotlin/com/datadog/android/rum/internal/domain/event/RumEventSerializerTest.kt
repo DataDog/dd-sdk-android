@@ -6,6 +6,8 @@
 
 package com.datadog.android.rum.internal.domain.event
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.constraints.DataConstraints
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.model.ActionEvent
@@ -17,8 +19,6 @@ import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser

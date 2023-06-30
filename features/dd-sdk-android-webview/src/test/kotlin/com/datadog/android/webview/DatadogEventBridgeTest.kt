@@ -8,16 +8,16 @@ package com.datadog.android.webview
 
 import android.webkit.WebSettings
 import android.webkit.WebView
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.feature.StorageBackedFeature
+import com.datadog.android.api.net.RequestFactory
+import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
-import com.datadog.android.v2.api.EventBatchWriter
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.api.StorageBackedFeature
-import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogsFeature

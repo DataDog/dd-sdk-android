@@ -8,10 +8,10 @@ package com.datadog.android.nightly.services
 
 import android.app.Service
 import android.os.Bundle
+import com.datadog.android.api.SdkCore
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.nightly.BuildConfig
 import com.datadog.android.rum.GlobalRumMonitor
-import com.datadog.android.v2.api.SdkCore
 
 internal abstract class CrashService : Service() {
 

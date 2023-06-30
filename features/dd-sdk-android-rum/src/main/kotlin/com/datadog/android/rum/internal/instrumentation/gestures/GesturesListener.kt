@@ -14,14 +14,14 @@ import android.view.ViewGroup
 import android.view.Window
 import android.widget.AbsListView
 import androidx.core.view.ScrollingView
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 import java.util.LinkedList

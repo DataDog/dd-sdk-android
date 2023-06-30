@@ -12,6 +12,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -24,7 +25,6 @@ import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.v2.api.SdkCore
 
 internal open class NdkCrashService : CrashService() {
 

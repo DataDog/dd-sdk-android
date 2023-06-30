@@ -7,6 +7,9 @@
 package com.datadog.android.rum
 
 import android.os.Looper
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
@@ -17,9 +20,6 @@ import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.utils.config.MainLooperTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration

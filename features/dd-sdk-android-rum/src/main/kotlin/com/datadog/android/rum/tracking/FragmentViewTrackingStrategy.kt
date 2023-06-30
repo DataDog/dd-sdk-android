@@ -11,6 +11,7 @@ import android.os.Build
 import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -19,7 +20,6 @@ import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallba
 import com.datadog.android.rum.internal.tracking.FragmentLifecycleCallbacks
 import com.datadog.android.rum.internal.tracking.NoOpFragmentLifecycleCallbacks
 import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
-import com.datadog.android.v2.api.Feature
 
 /**
  * A [ViewTrackingStrategy] that will track [Fragment]s as RUM Views.

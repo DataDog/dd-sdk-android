@@ -1,7 +1,7 @@
 object com.datadog.android.Datadog
-  fun initialize(String?, android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.v2.api.SdkCore?
-  fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.v2.api.SdkCore?
-  fun getInstance(String? = null): com.datadog.android.v2.api.SdkCore
+  fun initialize(String?, android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
+  fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
+  fun getInstance(String? = null): com.datadog.android.api.SdkCore
   fun isInitialized(String? = null): Boolean
   fun stopInstance(String? = null)
   fun setVerbosity(Int)
@@ -18,9 +18,6 @@ enum com.datadog.android.DatadogSite
   - STAGING
   constructor(String)
   val intakeEndpoint: String
-class com.datadog.android.SdkReference
-  constructor(String? = null, (com.datadog.android.v2.api.SdkCore) -> Unit = {})
-  fun get(): com.datadog.android.v2.api.SdkCore?
 class com.datadog.android._InternalProxy
   class _TelemetryProxy
     fun debug(String)
@@ -30,6 +27,122 @@ class com.datadog.android._InternalProxy
   fun setCustomAppVersion(String)
   companion object 
     fun allowClearTextHttp(com.datadog.android.core.configuration.Configuration.Builder): com.datadog.android.core.configuration.Configuration.Builder
+interface com.datadog.android.api.InternalLogger
+  enum Level
+    - VERBOSE
+    - DEBUG
+    - INFO
+    - WARN
+    - ERROR
+  enum Target
+    - USER
+    - MAINTAINER
+    - TELEMETRY
+  fun log(Level, Target, () -> String, Throwable? = null, Boolean = false)
+  fun log(Level, List<Target>, () -> String, Throwable? = null, Boolean = false)
+  companion object 
+    val UNBOUND: InternalLogger
+interface com.datadog.android.api.SdkCore
+  val name: String
+  val time: com.datadog.android.api.context.TimeInfo
+  val service: String
+  fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+  fun setUserInfo(com.datadog.android.api.context.UserInfo)
+  fun addUserProperties(Map<String, Any?>)
+  fun clearAllData()
+data class com.datadog.android.api.context.DatadogContext
+  constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, Map<String, Map<String, Any?>>)
+data class com.datadog.android.api.context.DeviceInfo
+  constructor(String, String, String, DeviceType, String, String, String, String, String)
+enum com.datadog.android.api.context.DeviceType
+  - MOBILE
+  - TABLET
+  - TV
+  - DESKTOP
+  - OTHER
+data class com.datadog.android.api.context.NetworkInfo
+  constructor(Connectivity = Connectivity.NETWORK_NOT_CONNECTED, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null)
+  enum Connectivity
+    constructor(kotlin.String)
+    - NETWORK_NOT_CONNECTED
+    - NETWORK_ETHERNET
+    - NETWORK_WIFI
+    - NETWORK_WIMAX
+    - NETWORK_BLUETOOTH
+    - NETWORK_2G
+    - NETWORK_3G
+    - NETWORK_4G
+    - NETWORK_5G
+    - NETWORK_MOBILE_OTHER
+    - NETWORK_CELLULAR
+    - NETWORK_OTHER
+data class com.datadog.android.api.context.ProcessInfo
+  constructor(Boolean)
+data class com.datadog.android.api.context.TimeInfo
+  constructor(Long, Long, Long, Long)
+data class com.datadog.android.api.context.UserInfo
+  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, Map<kotlin.String, kotlin.Any?> = emptyMap())
+interface com.datadog.android.api.feature.Feature
+  val name: String
+  fun onInitialize(android.content.Context)
+  fun onStop()
+  companion object 
+    const val LOGS_FEATURE_NAME: String
+    const val RUM_FEATURE_NAME: String
+    const val TRACING_FEATURE_NAME: String
+    const val SESSION_REPLAY_FEATURE_NAME: String
+interface com.datadog.android.api.feature.FeatureEventReceiver
+  fun onReceive(Any)
+interface com.datadog.android.api.feature.FeatureScope
+  fun withWriteContext(Boolean = false, (com.datadog.android.api.context.DatadogContext, com.datadog.android.api.storage.EventBatchWriter) -> Unit)
+  fun sendEvent(Any)
+  fun <T: Feature> unwrap(): T
+interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.api.SdkCore
+  val internalLogger: com.datadog.android.api.InternalLogger
+  fun registerFeature(Feature)
+  fun getFeature(String): FeatureScope?
+  fun updateFeatureContext(String, (MutableMap<String, Any?>) -> Unit)
+  fun getFeatureContext(String): Map<String, Any?>
+  fun setEventReceiver(String, FeatureEventReceiver)
+  fun removeEventReceiver(String)
+interface com.datadog.android.api.feature.StorageBackedFeature : Feature
+  val requestFactory: com.datadog.android.api.net.RequestFactory
+  val storageConfiguration: com.datadog.android.api.storage.FeatureStorageConfiguration
+data class com.datadog.android.api.net.Request
+  constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
+interface com.datadog.android.api.net.RequestFactory
+  fun create(com.datadog.android.api.context.DatadogContext, List<ByteArray>, ByteArray?): Request
+  companion object 
+    const val CONTENT_TYPE_JSON: String
+    const val CONTENT_TYPE_TEXT_UTF8: String
+    const val HEADER_API_KEY: String
+    const val HEADER_EVP_ORIGIN: String
+    const val HEADER_EVP_ORIGIN_VERSION: String
+    const val HEADER_REQUEST_ID: String
+    const val QUERY_PARAM_SOURCE: String
+    const val QUERY_PARAM_TAGS: String
+interface com.datadog.android.api.storage.DataWriter<T>
+  fun write(EventBatchWriter, T): Boolean
+interface com.datadog.android.api.storage.EventBatchWriter
+  fun currentMetadata(): ByteArray?
+  fun write(ByteArray, ByteArray?): Boolean
+data class com.datadog.android.api.storage.FeatureStorageConfiguration
+  constructor(Long, Int, Long, Long)
+  companion object 
+    val DEFAULT: FeatureStorageConfiguration
+interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.feature.FeatureSdkCore
+  val networkInfo: com.datadog.android.api.context.NetworkInfo
+  val trackingConsent: com.datadog.android.privacy.TrackingConsent
+  val rootStorageDir: java.io.File?
+  val isDeveloperModeEnabled: Boolean
+  val firstPartyHostResolver: com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+  fun writeLastViewEvent(ByteArray)
+  fun getPersistenceExecutorService(): java.util.concurrent.ExecutorService
+  fun getAllFeatures(): List<com.datadog.android.api.feature.FeatureScope>
+  fun getDatadogContext(): com.datadog.android.api.context.DatadogContext?
+class com.datadog.android.core.SdkReference
+  constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
+  fun get(): com.datadog.android.api.SdkCore?
 enum com.datadog.android.core.configuration.BatchSize
   constructor(Long)
   - SMALL
@@ -64,7 +177,7 @@ interface com.datadog.android.core.constraints.DataConstraints
   fun validateTags(List<String>): List<String>
   fun validateTimings(Map<String, Long>): MutableMap<String, Long>
 class com.datadog.android.core.constraints.DatadogDataConstraints : DataConstraints
-  constructor(com.datadog.android.v2.api.InternalLogger)
+  constructor(com.datadog.android.api.InternalLogger)
   override fun validateTags(List<String>): List<String>
   override fun <T: Any?> validateAttributes(Map<String, T>, String?, String?, Set<String>): MutableMap<String, T>
   override fun validateTimings(Map<String, Long>): MutableMap<String, Long>
@@ -85,21 +198,21 @@ interface com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
   fun isEmpty(): Boolean
 interface com.datadog.android.core.internal.persistence.Deserializer<P: Any, R: Any>
   fun deserialize(P): R?
-fun java.io.File.canReadSafe(com.datadog.android.v2.api.InternalLogger): Boolean
-fun java.io.File.existsSafe(com.datadog.android.v2.api.InternalLogger): Boolean
-fun java.io.File.readTextSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.v2.api.InternalLogger): String?
-fun java.io.File.readLinesSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.v2.api.InternalLogger): List<String>?
+fun java.io.File.canReadSafe(com.datadog.android.api.InternalLogger): Boolean
+fun java.io.File.existsSafe(com.datadog.android.api.InternalLogger): Boolean
+fun java.io.File.readTextSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): String?
+fun java.io.File.readLinesSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): List<String>?
 interface com.datadog.android.core.internal.system.BuildSdkVersionProvider
   fun version(): Int
 class com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider : BuildSdkVersionProvider
   override fun version(): Int
 class com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor : java.util.concurrent.ScheduledThreadPoolExecutor
-  constructor(Int, com.datadog.android.v2.api.InternalLogger)
+  constructor(Int, com.datadog.android.api.InternalLogger)
   override fun afterExecute(Runnable?, Throwable?)
-fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.v2.api.InternalLogger): ByteArray
-fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.v2.api.InternalLogger, Runnable)
-fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.v2.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
-fun java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.v2.api.InternalLogger, Runnable): java.util.concurrent.Future<*>?
+fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.api.InternalLogger): ByteArray
+fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)
+fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
+fun java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.Future<*>?
 val NULL_MAP_VALUE: Object
 object com.datadog.android.core.internal.utils.JsonSerializer
   fun toJsonElement(Any?): com.google.gson.JsonElement
@@ -110,7 +223,7 @@ fun Throwable.loggableStackTrace(): String
 interface com.datadog.android.core.persistence.Serializer<T: Any>
   fun serialize(T): String?
   companion object 
-fun <T: Any> Serializer<T>.serializeToByteArray(T, com.datadog.android.v2.api.InternalLogger): ByteArray?
+fun <T: Any> Serializer<T>.serializeToByteArray(T, com.datadog.android.api.InternalLogger): ByteArray?
 class com.datadog.android.core.sampling.RateBasedSampler : Sampler
   constructor(() -> Float)
   constructor(Float)
@@ -193,123 +306,4 @@ enum com.datadog.android.trace.TracingHeaderType
   - B3
   - B3MULTI
   - TRACECONTEXT
-interface com.datadog.android.v2.api.EventBatchWriter
-  fun currentMetadata(): ByteArray?
-  fun write(ByteArray, ByteArray?): Boolean
-interface com.datadog.android.v2.api.Feature
-  val name: String
-  fun onInitialize(android.content.Context)
-  fun onStop()
-  companion object 
-    const val LOGS_FEATURE_NAME: String
-    const val RUM_FEATURE_NAME: String
-    const val TRACING_FEATURE_NAME: String
-    const val SESSION_REPLAY_FEATURE_NAME: String
-interface com.datadog.android.v2.api.FeatureConfiguration
-  fun register(SdkCore)
-interface com.datadog.android.v2.api.FeatureEventReceiver
-  fun onReceive(Any)
-interface com.datadog.android.v2.api.FeatureScope
-  fun withWriteContext(Boolean = false, (com.datadog.android.v2.api.context.DatadogContext, EventBatchWriter) -> Unit)
-  fun sendEvent(Any)
-  fun <T: Feature> unwrap(): T
-interface com.datadog.android.v2.api.FeatureSdkCore : SdkCore
-  val internalLogger: InternalLogger
-  fun registerFeature(Feature)
-  fun getFeature(String): FeatureScope?
-  fun updateFeatureContext(String, (MutableMap<String, Any?>) -> Unit)
-  fun getFeatureContext(String): Map<String, Any?>
-  fun setEventReceiver(String, FeatureEventReceiver)
-  fun removeEventReceiver(String)
-data class com.datadog.android.v2.api.FeatureStorageConfiguration
-  constructor(Long, Int, Long, Long)
-  companion object 
-    val DEFAULT: FeatureStorageConfiguration
-data class com.datadog.android.v2.api.FeatureUploadConfiguration
-  constructor(RequestFactory)
-interface com.datadog.android.v2.api.InternalLogger
-  enum Level
-    - VERBOSE
-    - DEBUG
-    - INFO
-    - WARN
-    - ERROR
-  enum Target
-    - USER
-    - MAINTAINER
-    - TELEMETRY
-  fun log(Level, Target, () -> String, Throwable? = null, Boolean = false)
-  fun log(Level, List<Target>, () -> String, Throwable? = null, Boolean = false)
-  companion object 
-    val UNBOUND: InternalLogger
-data class com.datadog.android.v2.api.Request
-  constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
-interface com.datadog.android.v2.api.RequestFactory
-  fun create(com.datadog.android.v2.api.context.DatadogContext, List<ByteArray>, ByteArray?): Request
-  companion object 
-    const val CONTENT_TYPE_JSON: String
-    const val CONTENT_TYPE_TEXT_UTF8: String
-    const val HEADER_API_KEY: String
-    const val HEADER_EVP_ORIGIN: String
-    const val HEADER_EVP_ORIGIN_VERSION: String
-    const val HEADER_REQUEST_ID: String
-    const val QUERY_PARAM_SOURCE: String
-    const val QUERY_PARAM_TAGS: String
-interface com.datadog.android.v2.api.SdkCore
-  val name: String
-  val time: com.datadog.android.v2.api.context.TimeInfo
-  val service: String
-  fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
-  fun setUserInfo(com.datadog.android.v2.api.context.UserInfo)
-  fun addUserProperties(Map<String, Any?>)
-  fun clearAllData()
-interface com.datadog.android.v2.api.StorageBackedFeature : Feature
-  val requestFactory: RequestFactory
-  val storageConfiguration: FeatureStorageConfiguration
-data class com.datadog.android.v2.api.context.CarrierInfo
-  constructor(String?, String?)
-data class com.datadog.android.v2.api.context.DatadogContext
-  constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, Map<String, Map<String, Any?>>)
-data class com.datadog.android.v2.api.context.DeviceInfo
-  constructor(String, String, String, DeviceType, String, String, String, String, String)
-enum com.datadog.android.v2.api.context.DeviceType
-  - MOBILE
-  - TABLET
-  - TV
-  - DESKTOP
-  - OTHER
-data class com.datadog.android.v2.api.context.NetworkInfo
-  constructor(Connectivity = Connectivity.NETWORK_NOT_CONNECTED, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null)
-  enum Connectivity
-    constructor(kotlin.String)
-    - NETWORK_NOT_CONNECTED
-    - NETWORK_ETHERNET
-    - NETWORK_WIFI
-    - NETWORK_WIMAX
-    - NETWORK_BLUETOOTH
-    - NETWORK_2G
-    - NETWORK_3G
-    - NETWORK_4G
-    - NETWORK_5G
-    - NETWORK_MOBILE_OTHER
-    - NETWORK_CELLULAR
-    - NETWORK_OTHER
-data class com.datadog.android.v2.api.context.ProcessInfo
-  constructor(Boolean)
-data class com.datadog.android.v2.api.context.TimeInfo
-  constructor(Long, Long, Long, Long)
-data class com.datadog.android.v2.api.context.UserInfo
-  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, Map<kotlin.String, kotlin.Any?> = emptyMap())
-interface com.datadog.android.v2.core.InternalSdkCore : com.datadog.android.v2.api.FeatureSdkCore
-  val networkInfo: com.datadog.android.v2.api.context.NetworkInfo
-  val trackingConsent: com.datadog.android.privacy.TrackingConsent
-  val rootStorageDir: java.io.File?
-  val isDeveloperModeEnabled: Boolean
-  val firstPartyHostResolver: com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-  fun writeLastViewEvent(ByteArray)
-  fun getPersistenceExecutorService(): java.util.concurrent.ExecutorService
-  fun getAllFeatures(): List<com.datadog.android.v2.api.FeatureScope>
-  fun getDatadogContext(): com.datadog.android.v2.api.context.DatadogContext?
-interface com.datadog.android.v2.core.storage.DataWriter<T>
-  fun write(com.datadog.android.v2.api.EventBatchWriter, T): Boolean
 annotation com.datadog.tools.annotation.NoOpImplementation

@@ -6,11 +6,11 @@
 
 package com.datadog.android.trace.internal.net
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.net.Request
+import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.core.internal.utils.join
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.Request
-import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.api.context.DatadogContext
 import java.util.Locale
 import java.util.UUID
 

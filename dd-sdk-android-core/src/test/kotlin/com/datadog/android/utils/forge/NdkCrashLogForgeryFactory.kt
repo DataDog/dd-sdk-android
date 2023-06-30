@@ -6,7 +6,7 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.ndk.NdkCrashLog
+import com.datadog.android.ndk.internal.NdkCrashLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 

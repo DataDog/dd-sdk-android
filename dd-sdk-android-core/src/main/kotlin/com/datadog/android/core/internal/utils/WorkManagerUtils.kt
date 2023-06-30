@@ -12,8 +12,8 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.data.upload.UploadWorker
-import com.datadog.android.v2.api.InternalLogger
 import java.lang.IllegalStateException
 import java.util.concurrent.TimeUnit
 

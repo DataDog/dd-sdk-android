@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.canWriteSafe
@@ -16,7 +17,6 @@ import com.datadog.android.core.internal.persistence.file.isFileSafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.mkdirsSafe
-import com.datadog.android.v2.api.InternalLogger
 import java.io.File
 import java.io.FileFilter
 import java.util.Locale

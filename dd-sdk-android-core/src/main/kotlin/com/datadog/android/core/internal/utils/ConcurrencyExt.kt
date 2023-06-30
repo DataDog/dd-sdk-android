@@ -6,8 +6,8 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.lint.InternalApi
-import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService

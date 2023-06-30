@@ -6,13 +6,13 @@
 
 package com.datadog.android.okhttp
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorTest
 import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.Forgery

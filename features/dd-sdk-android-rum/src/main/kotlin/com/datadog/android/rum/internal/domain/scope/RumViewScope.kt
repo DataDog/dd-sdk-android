@@ -6,9 +6,11 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import android.app.Activity
 import androidx.annotation.WorkerThread
-import androidx.navigation.NavController
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRumMonitor
@@ -28,10 +30,6 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.hasUserData
 import com.datadog.android.rum.utils.resolveViewUrl
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.InternalSdkCore
-import com.datadog.android.v2.core.storage.DataWriter
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 import java.util.Locale
@@ -1037,7 +1035,6 @@ internal open class RumViewScope(
     // endregion
 
     companion object {
-        internal const val STANDARD_FPS = 60.0
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
 
         internal const val ACTION_DROPPED_WARNING = "RUM Action (%s on %s) was dropped, because" +
@@ -1054,10 +1051,6 @@ internal open class RumViewScope(
         internal const val SLOW_RENDERED_THRESHOLD_FPS = 55
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for the " +
             "view: %s was 0 or negative. In order to keep the view we forced it to 1ns."
-
-        val navControllerActivityField = NavController::class.java.declaredFields.firstOrNull {
-            it.type == Activity::class.java
-        }
 
         internal fun fromEvent(
             parentScope: RumScope,

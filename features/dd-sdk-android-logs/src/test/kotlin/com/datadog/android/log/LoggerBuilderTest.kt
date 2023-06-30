@@ -6,6 +6,11 @@
 
 package com.datadog.android.log
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
@@ -16,11 +21,6 @@ import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.storage.DataWriter
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery

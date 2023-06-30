@@ -6,12 +6,12 @@
 
 package com.datadog.android.sessionreplay.internal.domain
 
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.net.Request
+import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
-import com.datadog.android.v2.api.Request
-import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.api.context.DatadogContext
 import okhttp3.RequestBody
 import okio.Buffer
 import java.util.Locale

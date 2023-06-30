@@ -10,6 +10,7 @@ import android.content.Context
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.log.Logs
@@ -26,7 +27,6 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.setStaticValue

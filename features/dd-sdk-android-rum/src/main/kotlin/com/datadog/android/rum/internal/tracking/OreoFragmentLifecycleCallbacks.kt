@@ -10,6 +10,9 @@ import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import androidx.annotation.RequiresApi
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.rum.RumMonitor
@@ -19,9 +22,6 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 
 @Suppress("DEPRECATION")
 @RequiresApi(Build.VERSION_CODES.O)

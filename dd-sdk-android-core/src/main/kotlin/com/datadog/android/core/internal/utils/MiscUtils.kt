@@ -6,8 +6,8 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.lint.InternalApi
-import com.datadog.android.v2.api.InternalLogger
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
@@ -154,12 +154,4 @@ internal fun JsonObject.asDeepMap(): Map<String, Any?> {
         map[it.key] = it.value.fromJsonElement()
     }
     return map
-}
-
-internal fun JsonElement?.asDeepMap(): Map<String, Any?> {
-    return if (this is JsonObject) {
-        this.asDeepMap()
-    } else {
-        emptyMap()
-    }
 }

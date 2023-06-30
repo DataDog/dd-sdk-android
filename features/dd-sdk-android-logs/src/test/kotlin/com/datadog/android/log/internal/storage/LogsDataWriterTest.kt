@@ -6,11 +6,11 @@
 
 package com.datadog.android.log.internal.storage
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.EventBatchWriter
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery

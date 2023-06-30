@@ -21,11 +21,11 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.AcceptAllNavDestinations
 import com.datadog.android.rum.tracking.ComponentPredicate
-import com.datadog.android.v2.api.SdkCore
 
 internal class ComposeNavigationObserver(
     private val trackArguments: Boolean = true,

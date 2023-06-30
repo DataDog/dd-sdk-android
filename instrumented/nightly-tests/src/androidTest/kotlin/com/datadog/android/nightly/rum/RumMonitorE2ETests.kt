@@ -9,6 +9,7 @@ package com.datadog.android.nightly.rum
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.api.SdkCore
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.aResourceErrorMessage
 import com.datadog.android.nightly.utils.aResourceKey
@@ -28,7 +29,6 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.Before
@@ -49,15 +49,15 @@ class RumMonitorE2ETests {
     lateinit var sdkCore: SdkCore
 
     /**
-     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.v2.api.SdkCore?
-     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(String?, android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.v2.api.SdkCore?
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(String?, android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
      * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#constructor(String)
      * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun build(): RumConfiguration
-     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun get(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): RumMonitor
-     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun isRegistered(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): Boolean
-     * apiMethodSignature: com.datadog.android.rum.Rum#fun enable(RumConfiguration, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun get(com.datadog.android.api.SdkCore = Datadog.getInstance()): RumMonitor
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun isRegistered(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
+     * apiMethodSignature: com.datadog.android.rum.Rum#fun enable(RumConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
      */
     @Before
     fun setUp() {
@@ -71,7 +71,7 @@ class RumMonitorE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun startView(Any, String, Map<String, Any?> = emptyMap())
-     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun get(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): RumMonitor
+     * apiMethodSignature: com.datadog.android.rum.GlobalRumMonitor#fun get(com.datadog.android.api.SdkCore = Datadog.getInstance()): RumMonitor
      */
     @Test
     fun rum_rummonitor_start_view() {

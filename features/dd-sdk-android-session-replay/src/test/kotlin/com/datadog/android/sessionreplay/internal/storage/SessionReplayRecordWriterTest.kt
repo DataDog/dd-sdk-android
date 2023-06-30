@@ -6,14 +6,14 @@
 
 package com.datadog.android.sessionreplay.internal.storage
 
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.RecordCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
-import com.datadog.android.v2.api.EventBatchWriter
-import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.context.DatadogContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

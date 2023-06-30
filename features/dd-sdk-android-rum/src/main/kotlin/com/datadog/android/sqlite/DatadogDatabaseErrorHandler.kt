@@ -9,11 +9,11 @@ package com.datadog.android.sqlite
 import android.database.DatabaseErrorHandler
 import android.database.DefaultDatabaseErrorHandler
 import android.database.sqlite.SQLiteDatabase
-import com.datadog.android.SdkReference
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.SdkReference
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 
 /**

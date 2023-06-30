@@ -9,14 +9,14 @@ package com.datadog.android.rum
 import android.os.Handler
 import android.os.Looper
 import com.datadog.android.Datadog
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.InternalSdkCore
 
 /**
  * An entry point to Datadog RUM feature.

@@ -9,10 +9,10 @@ package com.datadog.android.rum.internal.instrumentation
 import android.content.Context
 import android.os.Looper
 import android.util.Printer
+import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.TrackingStrategy
-import com.datadog.android.v2.api.SdkCore
 import java.util.concurrent.TimeUnit
 
 internal class MainLooperLongTaskStrategy(

@@ -13,6 +13,7 @@ import androidx.test.core.app.ActivityScenario.launch
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.api.SdkCore
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.event.EventMapper
@@ -47,7 +48,6 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ComponentPredicate
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.Rule

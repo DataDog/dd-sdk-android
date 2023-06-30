@@ -6,8 +6,8 @@
 
 package com.datadog.android.ndk
 
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.ndk.internal.NdkCrashReportsFeature
-import com.datadog.android.v2.api.FeatureSdkCore
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith

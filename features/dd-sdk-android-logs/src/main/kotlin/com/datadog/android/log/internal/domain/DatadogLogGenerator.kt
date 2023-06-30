@@ -6,13 +6,13 @@
 
 package com.datadog.android.log.internal.domain
 
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.api.context.UserInfo
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.utils.buildLogDateFormat
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.api.context.NetworkInfo
-import com.datadog.android.v2.api.context.UserInfo
 import java.util.Date
 
 @Suppress("TooManyFunctions")

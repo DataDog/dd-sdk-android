@@ -6,6 +6,9 @@
 
 package com.datadog.android.okhttp.trace
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.RateBasedSampler
@@ -14,9 +17,6 @@ import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider

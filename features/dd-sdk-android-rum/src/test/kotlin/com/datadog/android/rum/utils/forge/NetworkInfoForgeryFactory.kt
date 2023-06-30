@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.v2.api.context.NetworkInfo
+import com.datadog.android.api.context.NetworkInfo
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 

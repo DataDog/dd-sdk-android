@@ -6,12 +6,12 @@
 
 package com.datadog.android
 
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.core.DatadogCore
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.core.DatadogCore
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

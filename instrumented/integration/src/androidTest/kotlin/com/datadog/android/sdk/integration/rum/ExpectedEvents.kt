@@ -7,7 +7,7 @@
 package com.datadog.android.sdk.integration.rum
 
 import com.datadog.android.Datadog
-import com.datadog.android.v2.api.FeatureSdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.google.gson.JsonElement
 
 internal data class ExpectedRumContext(

@@ -6,10 +6,10 @@
 
 package com.datadog.android.log.internal.domain
 
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.api.context.NetworkInfo
-import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation

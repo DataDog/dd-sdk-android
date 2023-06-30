@@ -6,9 +6,9 @@
 
 package com.datadog.android.trace.assertj
 
+import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.trace.model.SpanEvent
-import com.datadog.android.v2.api.context.NetworkInfo
-import com.datadog.android.v2.api.context.UserInfo
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 

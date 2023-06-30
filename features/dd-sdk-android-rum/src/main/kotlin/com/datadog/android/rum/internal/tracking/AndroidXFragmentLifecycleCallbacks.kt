@@ -12,6 +12,9 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -19,9 +22,6 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 
 internal open class AndroidXFragmentLifecycleCallbacks(
     internal val argumentsProvider: (Fragment) -> Map<String, Any?>,

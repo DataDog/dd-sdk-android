@@ -7,12 +7,12 @@
 package com.datadog.android.webview.internal.log
 
 import android.content.Context
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.FeatureStorageConfiguration
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.api.StorageBackedFeature
-import com.datadog.android.v2.core.storage.DataWriter
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.feature.StorageBackedFeature
+import com.datadog.android.api.net.RequestFactory
+import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.webview.internal.storage.NoOpDataWriter
 import com.datadog.android.webview.internal.storage.WebViewDataWriter
 import com.datadog.android.webview.internal.storage.WebViewEventSerializer

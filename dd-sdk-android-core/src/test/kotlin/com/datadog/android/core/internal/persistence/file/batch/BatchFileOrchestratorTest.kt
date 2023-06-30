@@ -6,11 +6,11 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
-import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery

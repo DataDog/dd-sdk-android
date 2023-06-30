@@ -12,8 +12,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.PowerManager
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
-import com.datadog.android.v2.api.InternalLogger
 import kotlin.math.roundToInt
 
 internal class BroadcastReceiverSystemInfoProvider(

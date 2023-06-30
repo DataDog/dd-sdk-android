@@ -6,10 +6,10 @@
 
 package com.datadog.android.log.assertj
 
+import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.v2.api.context.NetworkInfo
-import com.datadog.android.v2.api.context.UserInfo
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset

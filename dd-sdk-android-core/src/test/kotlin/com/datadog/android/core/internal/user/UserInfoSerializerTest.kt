@@ -6,9 +6,9 @@
 
 package com.datadog.android.core.internal.user
 
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.utils.assertj.DeserializedMapAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.context.UserInfo
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

@@ -7,20 +7,20 @@
 package com.datadog.android
 
 import android.content.Context
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.DatadogCore
+import com.datadog.android.core.NoOpInternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.core.internal.HashGenerator
+import com.datadog.android.core.internal.SdkCoreRegistry
+import com.datadog.android.core.internal.Sha256HashGenerator
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.NoOpInternalSdkCore
-import com.datadog.android.v2.core.internal.HashGenerator
-import com.datadog.android.v2.core.internal.SdkCoreRegistry
-import com.datadog.android.v2.core.internal.Sha256HashGenerator
 import java.util.Locale
 
 /**

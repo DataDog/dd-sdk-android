@@ -7,6 +7,9 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DeviceType
+import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -17,9 +20,6 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.DeviceType
-import com.datadog.android.v2.api.context.NetworkInfo
 import java.util.Locale
 
 internal fun String.toMethod(internalLogger: InternalLogger): ResourceEvent.Method {

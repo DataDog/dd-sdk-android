@@ -6,9 +6,9 @@
 
 package com.datadog.android.core.internal.net.info
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.NetworkInfo
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

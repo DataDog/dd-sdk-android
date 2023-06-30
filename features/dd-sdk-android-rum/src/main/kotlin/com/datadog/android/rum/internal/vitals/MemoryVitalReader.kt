@@ -6,10 +6,10 @@
 
 package com.datadog.android.rum.internal.vitals
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.canReadSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.readLinesSafe
-import com.datadog.android.v2.api.InternalLogger
 import java.io.File
 
 /**
