@@ -38,6 +38,8 @@ internal class ConsentAwareStorage(
      */
     private val lockedBatches: MutableSet<Batch> = mutableSetOf()
 
+    private val writeLock = Any()
+
     /** @inheritdoc */
     @WorkerThread
     override fun writeCurrentBatch(
@@ -52,25 +54,27 @@ internal class ConsentAwareStorage(
         }
 
         executorService.submitSafe("Data write", internalLogger) {
-            val batchFile = orchestrator?.getWritableFile(forceNewBatch)
-            val metadataFile = if (batchFile != null) {
-                orchestrator.getMetadataFile(batchFile)
-            } else {
-                null
+            synchronized(writeLock) {
+                val batchFile = orchestrator?.getWritableFile(forceNewBatch)
+                val metadataFile = if (batchFile != null) {
+                    orchestrator.getMetadataFile(batchFile)
+                } else {
+                    null
+                }
+                val writer = if (orchestrator == null || batchFile == null) {
+                    NoOpEventBatchWriter()
+                } else {
+                    FileEventBatchWriter(
+                        batchFile = batchFile,
+                        metadataFile = metadataFile,
+                        eventsWriter = batchEventsReaderWriter,
+                        metadataReaderWriter = batchMetadataReaderWriter,
+                        filePersistenceConfig = filePersistenceConfig,
+                        internalLogger = internalLogger
+                    )
+                }
+                callback.invoke(writer)
             }
-            val writer = if (orchestrator == null || batchFile == null) {
-                NoOpEventBatchWriter()
-            } else {
-                FileEventBatchWriter(
-                    batchFile = batchFile,
-                    metadataFile = metadataFile,
-                    eventsWriter = batchEventsReaderWriter,
-                    metadataReaderWriter = batchMetadataReaderWriter,
-                    filePersistenceConfig = filePersistenceConfig,
-                    internalLogger = internalLogger
-                )
-            }
-            callback.invoke(writer)
         }
     }
 
