@@ -6,18 +6,16 @@
 
 package com.datadog.android.rum.internal.vitals
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application.ActivityLifecycleCallbacks
-import android.content.Context
-import android.os.Build
 import android.os.Bundle
-import android.view.WindowManager
+import android.view.Window
 import androidx.annotation.MainThread
 import androidx.metrics.performance.FrameData
 import androidx.metrics.performance.JankStats
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.v2.api.InternalLogger
+import java.lang.ref.WeakReference
+import java.util.WeakHashMap
 import java.util.concurrent.TimeUnit
 
 /**
@@ -25,39 +23,48 @@ import java.util.concurrent.TimeUnit
  */
 internal class JankStatsActivityLifecycleListener(
     private val vitalObserver: VitalObserver,
-    private val buildSdkVersionProvider: BuildSdkVersionProvider,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val jankStatsProvider: JankStatsProvider = JankStatsProvider.DEFAULT
 ) : ActivityLifecycleCallbacks, JankStats.OnFrameListener {
 
-    private var displayRefreshRateScale: Float = 1.0f
+    private val activeWindowsListener = WeakHashMap<Window, JankStats>()
+    private val activeActivities = WeakHashMap<Window, MutableList<WeakReference<Activity>>>()
 
     // region ActivityLifecycleCallbacks
-
-    @Suppress("DEPRECATION")
-    @SuppressLint("NewApi")
     @MainThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-        try {
-            val display = if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.R) {
-                activity.display
-            } else {
-                (activity.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.defaultDisplay
-            }
-            val displayRefreshRate = display?.refreshRate ?: STANDARD_FPS.toFloat()
-            displayRefreshRateScale = STANDARD_FPS / displayRefreshRate
-            JankStats.createAndTrack(activity.window, this)
-        } catch (e: IllegalStateException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                "Unable to attach JankStats to the current window.",
-                e
-            )
-        }
     }
 
     @MainThread
     override fun onActivityStarted(activity: Activity) {
+        val window = activity.window
+        trackActivity(window, activity)
+
+        val knownJankStats = activeWindowsListener[window]
+        if (knownJankStats != null) {
+            internalLogger.log(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.MAINTAINER,
+                "Resuming jankStats for window $window"
+            )
+            knownJankStats.isTrackingEnabled = true
+        } else {
+            internalLogger.log(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.MAINTAINER,
+                "Starting jankStats for window $window"
+            )
+            val jankStats = jankStatsProvider.createJankStatsAndTrack(window, this, internalLogger)
+            if (jankStats == null) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.MAINTAINER,
+                    "Unable to create JankStats"
+                )
+            } else {
+                activeWindowsListener[window] = jankStats
+            }
+        }
     }
 
     @MainThread
@@ -70,6 +77,27 @@ internal class JankStatsActivityLifecycleListener(
 
     @MainThread
     override fun onActivityStopped(activity: Activity) {
+        val window = activity.window
+        if (!activeActivities.containsKey(window)) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                "Activity stopped but window was not tracked"
+            )
+        }
+        val list = activeActivities[window] ?: mutableListOf()
+        list.removeAll {
+            it.get() == null || it.get() == activity
+        }
+        activeActivities[window] = list
+        if (list.isEmpty()) {
+            internalLogger.log(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.MAINTAINER,
+                "Disabling jankStats for window $window"
+            )
+            activeWindowsListener[window]?.isTrackingEnabled = false
+        }
     }
 
     @MainThread
@@ -87,7 +115,7 @@ internal class JankStatsActivityLifecycleListener(
     override fun onFrame(volatileFrameData: FrameData) {
         val durationNs = volatileFrameData.frameDurationUiNanos
         if (durationNs > 0.0) {
-            val frameRate = (ONE_SECOND_NS / durationNs) * displayRefreshRateScale
+            val frameRate = (ONE_SECOND_NS / durationNs)
             if (frameRate in VALID_FPS_RANGE) {
                 vitalObserver.onNewSample(frameRate)
             }
@@ -96,12 +124,21 @@ internal class JankStatsActivityLifecycleListener(
 
     // endregion
 
+    // region Internal
+
+    private fun trackActivity(window: Window, activity: Activity) {
+        val list = activeActivities[window] ?: mutableListOf()
+        list.add(WeakReference(activity))
+        activeActivities[window] = list
+    }
+
+    // endregion
+
     companion object {
-        val ONE_SECOND_NS: Double = TimeUnit.SECONDS.toNanos(1).toDouble()
+        private val ONE_SECOND_NS: Double = TimeUnit.SECONDS.toNanos(1).toDouble()
 
         private const val MIN_FPS: Double = 1.0
         private const val MAX_FPS: Double = 240.0
-        private const val STANDARD_FPS: Float = 60.0f
-        val VALID_FPS_RANGE = MIN_FPS.rangeTo(MAX_FPS)
+        private val VALID_FPS_RANGE = MIN_FPS.rangeTo(MAX_FPS)
     }
 }

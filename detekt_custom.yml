@@ -674,6 +674,7 @@ datadog:
       - "kotlin.collections.MutableList?.firstOrNull(kotlin.Function1)"
       - "kotlin.collections.MutableMap.clear()"
       - "kotlin.collections.MutableMap.containsKey(kotlin.Long)"
+      - "kotlin.collections.MutableMap.containsKey(android.view.Window)"
       - "kotlin.collections.MutableMap.filterKeys(kotlin.Function1)"
       - "kotlin.collections.MutableMap.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableMap?.forEach(kotlin.Function1)"
