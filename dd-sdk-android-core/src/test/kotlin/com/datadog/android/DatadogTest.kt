@@ -10,6 +10,8 @@ import android.app.Application
 import android.content.Context
 import android.net.ConnectivityManager
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.DatadogCore
 import com.datadog.android.core.NoOpInternalSdkCore
 import com.datadog.android.core.configuration.Configuration
@@ -29,8 +31,10 @@ import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -47,6 +51,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -523,6 +528,61 @@ internal class DatadogTest {
 
         // Then
         verifyNoInteractions(appContext.mockInstance)
+    }
+
+    @Test
+    fun `𝕄 set tracking consent 𝕎 setTrackingConsent()`(
+        @Forgery fakeTrackingConsent: TrackingConsent
+    ) {
+        // Given
+        val mockSdkCore = mock<SdkCore>()
+
+        // When
+        Datadog.setTrackingConsent(fakeTrackingConsent, mockSdkCore)
+
+        // Then
+        verify(mockSdkCore).setTrackingConsent(fakeTrackingConsent)
+    }
+
+    @Test
+    fun `𝕄 set user info 𝕎 setUserInfo()`(@Forgery fakeUserInfo: UserInfo) {
+        // Given
+        val mockSdkCore = mock<SdkCore>()
+
+        // When
+        Datadog.setUserInfo(fakeUserInfo, mockSdkCore)
+
+        // Then
+        verify(mockSdkCore).setUserInfo(fakeUserInfo)
+    }
+
+    @Test
+    fun `𝕄 add user properties 𝕎 addUserProperties()`(
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
+        ) fakeUserProperties: Map<String, String>
+    ) {
+        // Given
+        val mockSdkCore = mock<SdkCore>()
+
+        // When
+        Datadog.addUserProperties(fakeUserProperties, mockSdkCore)
+
+        // Then
+        verify(mockSdkCore).addUserProperties(fakeUserProperties)
+    }
+
+    @Test
+    fun `𝕄 clear all data 𝕎 clearAllData()`() {
+        // Given
+        val mockSdkCore = mock<SdkCore>()
+
+        // When
+        Datadog.clearAllData(mockSdkCore)
+
+        // Then
+        verify(mockSdkCore).clearAllData()
     }
 
     companion object {

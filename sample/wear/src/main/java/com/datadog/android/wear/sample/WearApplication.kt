@@ -76,7 +76,7 @@ class WearApplication : Application() {
             .build()
         Trace.enable(tracesConfig)
 
-        Datadog.getInstance().setUserInfo(
+        Datadog.setUserInfo(
             UserInfo(
                 id = "wear 42",
                 name = null,

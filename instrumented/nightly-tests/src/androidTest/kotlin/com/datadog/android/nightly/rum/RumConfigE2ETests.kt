@@ -655,7 +655,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setEncryption(Encryption): Builder
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setEncryption(com.datadog.android.security.Encryption): Builder
      * apiMethodSignature: com.datadog.android.security.Encryption#fun encrypt(ByteArray): ByteArray
      * apiMethodSignature: com.datadog.android.security.Encryption#fun decrypt(ByteArray): ByteArray
      */

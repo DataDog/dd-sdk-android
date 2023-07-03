@@ -6,6 +6,10 @@ object com.datadog.android.Datadog
   fun stopInstance(String? = null)
   fun setVerbosity(Int)
   fun getVerbosity(): Int
+  fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
+  fun setUserInfo(com.datadog.android.api.context.UserInfo, com.datadog.android.api.SdkCore = getInstance())
+  fun addUserProperties(Map<String, Any?>, com.datadog.android.api.SdkCore = getInstance())
+  fun clearAllData(com.datadog.android.api.SdkCore = getInstance())
   fun _internalProxy(String? = null): _InternalProxy
 enum com.datadog.android.DatadogSite
   constructor(String, String)

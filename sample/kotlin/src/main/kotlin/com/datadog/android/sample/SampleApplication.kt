@@ -141,7 +141,7 @@ class SampleApplication : Application() {
 
         NdkCrashReports.enable()
 
-        Datadog.getInstance().setUserInfo(
+        Datadog.setUserInfo(
             UserInfo(
                 preferences.getUserId(),
                 preferences.getUserName(),

@@ -12,6 +12,12 @@ public final class com/datadog/android/Datadog {
 	public static final field INSTANCE Lcom/datadog/android/Datadog;
 	public final fun _internalProxy (Ljava/lang/String;)Lcom/datadog/android/_InternalProxy;
 	public static synthetic fun _internalProxy$default (Lcom/datadog/android/Datadog;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/_InternalProxy;
+	public static final fun addUserProperties (Ljava/util/Map;)V
+	public static final fun addUserProperties (Ljava/util/Map;Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun addUserProperties$default (Ljava/util/Map;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
+	public static final fun clearAllData ()V
+	public static final fun clearAllData (Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun clearAllData$default (Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 	public static final fun getInstance ()Lcom/datadog/android/api/SdkCore;
 	public static final fun getInstance (Ljava/lang/String;)Lcom/datadog/android/api/SdkCore;
 	public static synthetic fun getInstance$default (Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/api/SdkCore;
@@ -21,6 +27,12 @@ public final class com/datadog/android/Datadog {
 	public static final fun isInitialized ()Z
 	public static final fun isInitialized (Ljava/lang/String;)Z
 	public static synthetic fun isInitialized$default (Ljava/lang/String;ILjava/lang/Object;)Z
+	public static final fun setTrackingConsent (Lcom/datadog/android/privacy/TrackingConsent;)V
+	public static final fun setTrackingConsent (Lcom/datadog/android/privacy/TrackingConsent;Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun setTrackingConsent$default (Lcom/datadog/android/privacy/TrackingConsent;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
+	public static final fun setUserInfo (Lcom/datadog/android/api/context/UserInfo;)V
+	public static final fun setUserInfo (Lcom/datadog/android/api/context/UserInfo;Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun setUserInfo$default (Lcom/datadog/android/api/context/UserInfo;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 	public static final fun setVerbosity (I)V
 	public static final fun stopInstance ()V
 	public static final fun stopInstance (Ljava/lang/String;)V

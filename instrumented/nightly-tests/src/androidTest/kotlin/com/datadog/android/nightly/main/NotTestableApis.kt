@@ -11,9 +11,9 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android._InternalProxy$_TelemetryProxy#fun error(String, String?, String?)
  * apiMethodSignature: com.datadog.android._InternalProxy$_TelemetryProxy#fun error(String, Throwable? = null)
  * apiMethodSignature: com.datadog.android._InternalProxy#fun setCustomAppVersion(String)
- * apiMethodSignature: com.datadog.android.Datadog#fun addUserExtraInfo(Map<String, Any?> = emptyMap())
- * apiMethodSignature: com.datadog.android.Datadog#fun clearAllData()
- * apiMethodSignature: com.datadog.android.Datadog#fun isInitialized(): Boolean
+ * apiMethodSignature: com.datadog.android.Datadog#fun addUserProperties(Map<String, Any?>, com.datadog.android.api.SdkCore = getInstance())
+ * apiMethodSignature: com.datadog.android.Datadog#fun clearAllData(com.datadog.android.api.SdkCore = getInstance())
+ * apiMethodSignature: com.datadog.android.Datadog#fun isInitialized(String? = null): Boolean
  * apiMethodSignature: com.datadog.android.Datadog#fun setVerbosity(Int)
  * apiMethodSignature: com.datadog.android.Datadog#fun stopInstance(String? = null)
  * apiMethodSignature: com.datadog.android.Datadog#fun stopSession()

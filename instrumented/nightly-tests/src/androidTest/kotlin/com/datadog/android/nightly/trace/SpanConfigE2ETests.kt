@@ -319,8 +319,8 @@ class SpanConfigE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.Datadog#fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
-     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.api.SdkCore?
+     * apiMethodSignature: com.datadog.android.Datadog#fun setUserInfo(com.datadog.android.api.context.UserInfo, com.datadog.android.api.SdkCore = getInstance())
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.api.SdkCore
      */
     @Test
     fun trace_config_set_user_info() {
@@ -341,7 +341,7 @@ class SpanConfigE2ETests {
         )
 
         measure(testMethodName) {
-            Datadog.getInstance().setUserInfo(
+            Datadog.setUserInfo(
                 UserInfo(
                     userId,
                     userName,
@@ -354,7 +354,7 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setEncryption(Encryption): Builder
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setEncryption(com.datadog.android.security.Encryption): Builder
      * apiMethodSignature: com.datadog.android.security.Encryption#fun encrypt(ByteArray): ByteArray
      * apiMethodSignature: com.datadog.android.security.Encryption#fun decrypt(ByteArray): ByteArray
      */

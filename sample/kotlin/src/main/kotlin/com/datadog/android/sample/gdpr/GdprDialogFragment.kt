@@ -40,7 +40,7 @@ internal class GdprDialogFragment : DialogFragment() {
                 R.id.granted -> TrackingConsent.GRANTED
                 else -> TrackingConsent.NOT_GRANTED
             }
-            Datadog.getInstance().setTrackingConsent(trackingConsent)
+            Datadog.setTrackingConsent(trackingConsent)
             Preferences.defaultPreferences(requireContext()).setTrackingConsent(trackingConsent)
             (activity as? TrackingConsentChangeListener)?.onTrackingConsentChanged(trackingConsent)
         }

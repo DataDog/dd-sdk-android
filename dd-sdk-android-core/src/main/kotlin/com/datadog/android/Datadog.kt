@@ -9,6 +9,7 @@ package com.datadog.android
 import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.DatadogCore
@@ -26,6 +27,7 @@ import java.util.Locale
 /**
  * This class initializes the Datadog SDK, and sets up communication with the server.
  */
+@Suppress("TooManyFunctions")
 object Datadog {
 
     internal val registry = SdkCoreRegistry(unboundInternalLogger)
@@ -181,6 +183,10 @@ object Datadog {
         }
     }
 
+    // endregion
+
+    // region Global methods
+
     /**
      * Sets the verbosity of this instance of the Datadog SDK.
      *
@@ -209,9 +215,61 @@ object Datadog {
     @JvmStatic
     fun getVerbosity(): Int = libraryVerbosity
 
-    // endregion
+    /**
+     * Sets the tracking consent regarding the data collection for this instance of the Datadog SDK.
+     *
+     * @param consent which can take one of the values
+     * ([TrackingConsent.PENDING], [TrackingConsent.GRANTED], [TrackingConsent.NOT_GRANTED])
+     * @param sdkCore SDK instance to set tracking consent in. If not provided, default SDK instance
+     * will be used.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun setTrackingConsent(consent: TrackingConsent, sdkCore: SdkCore = getInstance()) {
+        sdkCore.setTrackingConsent(consent)
+    }
 
-    // region Global methods
+    /**
+     * Sets the user information.
+     *
+     * @param userInfo the new user info to set, or null
+     * @param sdkCore SDK instance to set user info in. If not provided, default SDK instance
+     * will be used.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun setUserInfo(userInfo: UserInfo, sdkCore: SdkCore = getInstance()) {
+        sdkCore.setUserInfo(userInfo)
+    }
+
+    /**
+     * Sets additional information on the [UserInfo] object
+     *
+     * If properties had originally been set with [SdkCore.setUserInfo], they will be preserved.
+     * In the event of a conflict on key, the new property will prevail.
+     *
+     * @param extraInfo additional information. An extra information can be
+     * nested up to 8 levels deep. Keys using more than 8 levels will be sanitized by SDK.
+     * @param sdkCore SDK instance to add user properties. If not provided, default SDK instance
+     * will be used.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun addUserProperties(extraInfo: Map<String, Any?>, sdkCore: SdkCore = getInstance()) {
+        sdkCore.addUserProperties(extraInfo)
+    }
+
+    /**
+     * Clears all unsent data in all registered features.
+     *
+     * @param sdkCore SDK instance to clear the data. If not provided, default SDK instance
+     * will be used.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun clearAllData(sdkCore: SdkCore = getInstance()) {
+        sdkCore.clearAllData()
+    }
 
     // Executes all the pending queues in the upload/persistence executors.
     // Tries to send all the granted data for each feature and then clears the folders and shuts
