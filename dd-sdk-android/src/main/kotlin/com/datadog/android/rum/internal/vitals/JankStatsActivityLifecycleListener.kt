@@ -15,6 +15,7 @@ import androidx.metrics.performance.FrameData
 import androidx.metrics.performance.JankStats
 import com.datadog.android.v2.api.InternalLogger
 import java.lang.ref.WeakReference
+import java.util.WeakHashMap
 import java.util.concurrent.TimeUnit
 
 /**
@@ -26,8 +27,8 @@ internal class JankStatsActivityLifecycleListener(
     private val jankStatsProvider: JankStatsProvider = JankStatsProvider.DEFAULT
 ) : ActivityLifecycleCallbacks, JankStats.OnFrameListener {
 
-    private val activeWindowsListener = mutableMapOf<Window, JankStats>()
-    private val activeActivities = mutableMapOf<Window, MutableList<WeakReference<Activity>>>()
+    private val activeWindowsListener = WeakHashMap<Window, JankStats>()
+    private val activeActivities = WeakHashMap<Window, MutableList<WeakReference<Activity>>>()
 
     // region ActivityLifecycleCallbacks
     @MainThread
