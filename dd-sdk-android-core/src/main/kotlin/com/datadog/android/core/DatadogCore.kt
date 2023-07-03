@@ -24,7 +24,6 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.CoreFeature
@@ -48,7 +47,6 @@ import java.util.concurrent.TimeUnit
 /**
  * Internal implementation of the [SdkCore] interface.
  * @param context the application's Android [Context]
- * @param credentials the Datadog credentials for this instance
  * @param instanceId the unique identifier for this instance
  * @param name the name of this instance
  * @param internalLoggerProvider Provider for [InternalLogger] instance.
@@ -57,7 +55,6 @@ import java.util.concurrent.TimeUnit
 @Suppress("TooManyFunctions")
 internal class DatadogCore(
     context: Context,
-    internal val credentials: Credentials,
     internal val instanceId: String,
     override val name: String,
     internalLoggerProvider: (FeatureSdkCore) -> InternalLogger = { SdkInternalLogger(it) },
@@ -88,13 +85,6 @@ internal class DatadogCore(
             internalLogger = internalLogger,
             encryption = coreFeature.localDataEncryption
         )
-    }
-
-    init {
-        if (!isEnvironmentNameValid(credentials.env)) {
-            @Suppress("ThrowingInternalException")
-            throw IllegalArgumentException(MESSAGE_ENV_NAME_NOT_VALID)
-        }
     }
 
     // region SdkCore
@@ -274,6 +264,11 @@ internal class DatadogCore(
     // region Internal
 
     internal fun initialize(configuration: Configuration) {
+        if (!isEnvironmentNameValid(configuration.env)) {
+            @Suppress("ThrowingInternalException")
+            throw IllegalArgumentException(MESSAGE_ENV_NAME_NOT_VALID)
+        }
+
         val isDebug = isAppDebuggable(context)
 
         var mutableConfig = configuration
@@ -292,8 +287,7 @@ internal class DatadogCore(
         coreFeature.initialize(
             context,
             instanceId,
-            credentials,
-            mutableConfig.coreConfig,
+            mutableConfig,
             TrackingConsent.PENDING
         )
 

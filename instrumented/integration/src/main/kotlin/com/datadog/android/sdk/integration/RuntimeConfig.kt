@@ -10,7 +10,6 @@ import android.os.Build
 import com.datadog.android._InternalProxy
 import com.datadog.android.api.SdkCore
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.log.Logger
 import com.datadog.android.log.LogsConfiguration
@@ -58,17 +57,10 @@ internal object RuntimeConfig {
         return AndroidTracer.Builder(sdkCore).build()
     }
 
-    fun credentials(): Credentials {
-        return Credentials(
-            clientToken = DD_TOKEN,
-            env = INTEGRATION_TESTS_ENVIRONMENT,
-            variant = Credentials.NO_VARIANT
-        )
-    }
-
     fun configBuilder(): Configuration.Builder {
         return Configuration.Builder(
-            crashReportsEnabled = true
+            clientToken = DD_TOKEN,
+            env = INTEGRATION_TESTS_ENVIRONMENT
         )
             .apply {
                 _InternalProxy.allowClearTextHttp(this)

@@ -16,6 +16,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
+import com.datadog.android.nightly.BuildConfig
 import com.datadog.android.nightly.activities.CRASH_DELAY_MS
 import com.datadog.android.nightly.activities.HUNDRED_PERCENT
 import com.datadog.android.nightly.exceptions.RumDisabledException
@@ -70,12 +71,14 @@ internal open class JvmCrashService : CrashService() {
         rumEnabled: Boolean = true
     ): SdkCore {
         val configBuilder = Configuration.Builder(
-            crashReportsEnabled = crashReportsEnabled
+            clientToken = BuildConfig.NIGHTLY_TESTS_TOKEN,
+            env = "instrumentation",
+            variant = ""
         )
+            .setCrashReportsEnabled(crashReportsEnabled)
         Datadog.setVerbosity(Log.VERBOSE)
         val sdkCore = Datadog.initialize(
             this,
-            getCredentials(),
             configBuilder.build(),
             TrackingConsent.GRANTED
         )

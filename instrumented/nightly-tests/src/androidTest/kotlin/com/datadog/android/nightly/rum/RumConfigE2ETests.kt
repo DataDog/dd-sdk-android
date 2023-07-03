@@ -20,6 +20,9 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
 import com.datadog.android.nightly.activities.ViewTrackingActivity
 import com.datadog.android.nightly.rules.NightlyTestRule
+import com.datadog.android.nightly.utils.DEFAULT_CLIENT_TOKEN
+import com.datadog.android.nightly.utils.DEFAULT_ENV_NAME
+import com.datadog.android.nightly.utils.DEFAULT_VARIANT_NAME
 import com.datadog.android.nightly.utils.TestEncryption
 import com.datadog.android.nightly.utils.aResourceKey
 import com.datadog.android.nightly.utils.aResourceMethod
@@ -67,7 +70,7 @@ class RumConfigE2ETests {
     // region Enable/Disable Feature
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
      */
     @Test
     fun rum_config_rum_feature_enabled() {
@@ -103,7 +106,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
      */
     @Test
     fun rum_config_rum_feature_disabled() {
@@ -668,7 +671,9 @@ class RumConfigE2ETests {
                 forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 Configuration.Builder(
-                    crashReportsEnabled = true
+                    clientToken = DEFAULT_CLIENT_TOKEN,
+                    env = DEFAULT_ENV_NAME,
+                    variant = DEFAULT_VARIANT_NAME
                 ).setEncryption(TestEncryption()).build()
 
             )
@@ -699,7 +704,9 @@ class RumConfigE2ETests {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             measureSdkInitialize {
                 val config = Configuration.Builder(
-                    crashReportsEnabled = true
+                    clientToken = DEFAULT_CLIENT_TOKEN,
+                    env = DEFAULT_ENV_NAME,
+                    variant = DEFAULT_VARIANT_NAME
                 ).build()
                 initializeSdk(
                     InstrumentationRegistry.getInstrumentation().targetContext,
@@ -750,7 +757,9 @@ class RumConfigE2ETests {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             measureSdkInitialize {
                 val config = Configuration.Builder(
-                    crashReportsEnabled = true
+                    clientToken = DEFAULT_CLIENT_TOKEN,
+                    env = DEFAULT_ENV_NAME,
+                    variant = DEFAULT_VARIANT_NAME
                 ).build()
                 initializeSdk(
                     InstrumentationRegistry.getInstrumentation().targetContext,

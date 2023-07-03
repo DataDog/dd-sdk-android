@@ -16,6 +16,9 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.nightly.rules.NightlyTestRule
+import com.datadog.android.nightly.utils.DEFAULT_CLIENT_TOKEN
+import com.datadog.android.nightly.utils.DEFAULT_ENV_NAME
+import com.datadog.android.nightly.utils.DEFAULT_VARIANT_NAME
 import com.datadog.android.nightly.utils.TestEncryption
 import com.datadog.android.nightly.utils.defaultConfigurationBuilder
 import com.datadog.android.nightly.utils.initializeSdk
@@ -41,7 +44,7 @@ class LogsConfigE2ETests {
     lateinit var logger: Logger
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
      */
     @Test
     fun logs_config_feature_enabled() {
@@ -85,7 +88,7 @@ class LogsConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
      */
     @Test
     fun logs_config_logs_feature_disabled() {
@@ -193,7 +196,9 @@ class LogsConfigE2ETests {
                 TrackingConsent.GRANTED,
                 Configuration
                     .Builder(
-                        crashReportsEnabled = true
+                        clientToken = DEFAULT_CLIENT_TOKEN,
+                        env = DEFAULT_ENV_NAME,
+                        variant = DEFAULT_VARIANT_NAME
                     )
                     .setEncryption(TestEncryption())
                     .build()

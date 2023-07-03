@@ -22,8 +22,8 @@ public final class com/datadog/android/Datadog {
 	public static final fun getInstance (Ljava/lang/String;)Lcom/datadog/android/api/SdkCore;
 	public static synthetic fun getInstance$default (Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/api/SdkCore;
 	public static final fun getVerbosity ()I
-	public static final fun initialize (Landroid/content/Context;Lcom/datadog/android/core/configuration/Credentials;Lcom/datadog/android/core/configuration/Configuration;Lcom/datadog/android/privacy/TrackingConsent;)Lcom/datadog/android/api/SdkCore;
-	public static final fun initialize (Ljava/lang/String;Landroid/content/Context;Lcom/datadog/android/core/configuration/Credentials;Lcom/datadog/android/core/configuration/Configuration;Lcom/datadog/android/privacy/TrackingConsent;)Lcom/datadog/android/api/SdkCore;
+	public static final fun initialize (Landroid/content/Context;Lcom/datadog/android/core/configuration/Configuration;Lcom/datadog/android/privacy/TrackingConsent;)Lcom/datadog/android/api/SdkCore;
+	public static final fun initialize (Ljava/lang/String;Landroid/content/Context;Lcom/datadog/android/core/configuration/Configuration;Lcom/datadog/android/privacy/TrackingConsent;)Lcom/datadog/android/api/SdkCore;
 	public static final fun isInitialized ()Z
 	public static final fun isInitialized (Ljava/lang/String;)Z
 	public static synthetic fun isInitialized$default (Ljava/lang/String;ILjava/lang/Object;)Z
@@ -435,19 +435,23 @@ public final class com/datadog/android/core/configuration/BatchSize : java/lang/
 }
 
 public final class com/datadog/android/core/configuration/Configuration {
-	public final fun copy (Lcom/datadog/android/core/configuration/Configuration$Core;ZLjava/util/Map;)Lcom/datadog/android/core/configuration/Configuration;
-	public static synthetic fun copy$default (Lcom/datadog/android/core/configuration/Configuration;Lcom/datadog/android/core/configuration/Configuration$Core;ZLjava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/core/configuration/Configuration;
+	public static final field Companion Lcom/datadog/android/core/configuration/Configuration$Companion;
+	public final fun copy (Lcom/datadog/android/core/configuration/Configuration$Core;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;)Lcom/datadog/android/core/configuration/Configuration;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/configuration/Configuration;Lcom/datadog/android/core/configuration/Configuration$Core;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/core/configuration/Configuration;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/datadog/android/core/configuration/Configuration$Builder {
-	public fun <init> (Z)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun build ()Lcom/datadog/android/core/configuration/Configuration;
-	public final fun getCrashReportsEnabled ()Z
 	public final fun setAdditionalConfiguration (Ljava/util/Map;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setBatchSize (Lcom/datadog/android/core/configuration/BatchSize;)Lcom/datadog/android/core/configuration/Configuration$Builder;
+	public final fun setCrashReportsEnabled (Z)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setEncryption (Lcom/datadog/android/security/Encryption;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setFirstPartyHosts (Ljava/util/List;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setFirstPartyHostsWithHeaderType (Ljava/util/Map;)Lcom/datadog/android/core/configuration/Configuration$Builder;
@@ -457,27 +461,7 @@ public final class com/datadog/android/core/configuration/Configuration$Builder 
 	public final fun useSite (Lcom/datadog/android/DatadogSite;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 }
 
-public final class com/datadog/android/core/configuration/Credentials {
-	public static final field Companion Lcom/datadog/android/core/configuration/Credentials$Companion;
-	public static final field NO_VARIANT Ljava/lang/String;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/core/configuration/Credentials;
-	public static synthetic fun copy$default (Lcom/datadog/android/core/configuration/Credentials;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/core/configuration/Credentials;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getClientToken ()Ljava/lang/String;
-	public final fun getEnv ()Ljava/lang/String;
-	public final fun getService ()Ljava/lang/String;
-	public final fun getVariant ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/core/configuration/Credentials$Companion {
+public final class com/datadog/android/core/configuration/Configuration$Companion {
 }
 
 public final class com/datadog/android/core/configuration/HostsSanitizer {

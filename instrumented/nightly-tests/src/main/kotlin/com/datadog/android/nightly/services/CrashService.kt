@@ -9,7 +9,6 @@ package com.datadog.android.nightly.services
 import android.app.Service
 import android.os.Bundle
 import com.datadog.android.api.SdkCore
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.nightly.BuildConfig
 import com.datadog.android.rum.GlobalRumMonitor
 
@@ -31,12 +30,6 @@ internal abstract class CrashService : Service() {
     }
 
     protected val rumApplicationId = BuildConfig.NIGHTLY_TESTS_RUM_APP_ID
-
-    protected fun getCredentials() = Credentials(
-        clientToken = BuildConfig.NIGHTLY_TESTS_TOKEN,
-        env = "instrumentation",
-        variant = ""
-    )
 
     companion object {
         const val CRASH_HANDLER_DISABLED_SCENARIO = "crash_handler_disabled_scenario"

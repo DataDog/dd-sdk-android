@@ -16,7 +16,6 @@ import android.os.Build
 import android.os.Process
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
@@ -107,10 +106,7 @@ internal class CoreFeatureTest {
     lateinit var mockPersistenceExecutorService: ExecutorService
 
     @Forgery
-    lateinit var fakeCredentials: Credentials
-
-    @Forgery
-    lateinit var fakeConfig: Configuration.Core
+    lateinit var fakeConfig: Configuration
 
     @Forgery
     lateinit var fakeConsent: TrackingConsent
@@ -149,7 +145,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -164,7 +159,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -180,7 +174,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -196,7 +189,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -219,7 +211,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -244,7 +235,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -260,7 +250,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -278,7 +267,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -294,14 +282,19 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
         assertThat(testedFeature.firstPartyHostHeaderTypeResolver.knownHosts.keys)
-            .containsAll(fakeConfig.firstPartyHostsWithHeaderTypes.keys.map { it.lowercase(Locale.US) })
+            .containsAll(
+                fakeConfig.coreConfig.firstPartyHostsWithHeaderTypes.keys.map {
+                    it.lowercase(
+                        Locale.US
+                    )
+                }
+            )
     }
 
     @Test
@@ -310,21 +303,20 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(testedFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version).isEqualTo(appContext.fakeVersionName)
-        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.service)
-        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.env)
-        assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
+        assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
+        assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
-        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
-        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
     }
 
     @Test
@@ -334,22 +326,21 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(testedFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(appContext.fakeVersionName)
-        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.service)
-        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.env)
-        assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
+        assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
+        assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
-        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
-        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
     }
 
     @Test
@@ -358,22 +349,21 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials.copy(service = null),
-            fakeConfig,
+            fakeConfig.copy(service = null),
             fakeConsent
         )
 
         // Then
-        assertThat(testedFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(appContext.fakeVersionName)
         assertThat(testedFeature.serviceName).isEqualTo(appContext.fakePackageName)
-        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.env)
-        assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
+        assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
-        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
-        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
     }
 
     @Test
@@ -387,22 +377,21 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(testedFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(appContext.fakeVersionCode.toString())
-        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.service)
-        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.env)
-        assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
+        assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
+        assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
-        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
-        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
     }
 
     @Test
@@ -418,22 +407,21 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(testedFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(CoreFeature.DEFAULT_APP_VERSION)
-        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.service)
-        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.env)
-        assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
+        assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
+        assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
-        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
-        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
     }
 
     @Test
@@ -454,23 +442,22 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(testedFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version).isEqualTo(
             CoreFeature.DEFAULT_APP_VERSION
         )
-        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.service)
-        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.env)
-        assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
+        assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
+        assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
-        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
-        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
     }
 
     @Test
@@ -479,8 +466,7 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
-            fakeConfig.copy(needsClearTextHttp = false),
+            fakeConfig.copy(coreConfig = fakeConfig.coreConfig.copy(needsClearTextHttp = false)),
             fakeConsent
         )
 
@@ -515,8 +501,7 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
-            fakeConfig.copy(needsClearTextHttp = true),
+            fakeConfig.copy(coreConfig = fakeConfig.coreConfig.copy(needsClearTextHttp = true)),
             fakeConsent
         )
 
@@ -538,8 +523,12 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
-            fakeConfig.copy(proxy = proxy, proxyAuth = proxyAuth),
+            fakeConfig.copy(
+                coreConfig = fakeConfig.coreConfig.copy(
+                    proxy = proxy,
+                    proxyAuth = proxyAuth
+                )
+            ),
             fakeConsent
         )
 
@@ -555,8 +544,7 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
-            fakeConfig.copy(proxy = null),
+            fakeConfig.copy(coreConfig = fakeConfig.coreConfig.copy(proxy = null)),
             fakeConsent
         )
 
@@ -572,7 +560,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -584,13 +571,12 @@ internal class CoreFeatureTest {
 
     @Test
     fun `𝕄 initialize only once 𝕎 initialize() twice`(
-        @Forgery otherCredentials: Credentials
+        @Forgery otherConfig: Configuration
     ) {
         // Given
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -599,22 +585,21 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            otherCredentials,
-            fakeConfig,
+            otherConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(testedFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(appContext.fakeVersionName)
-        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.service)
-        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.env)
-        assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
+        assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
+        assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
-        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
-        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
     }
 
     @Test
@@ -641,7 +626,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -671,7 +655,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -700,7 +683,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -715,7 +697,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -733,7 +714,7 @@ internal class CoreFeatureTest {
         assertThat(config.maxItemsPerBatch)
             .isEqualTo(FilePersistenceConfig.MAX_ITEMS_PER_BATCH)
         assertThat(config.recentDelayMs)
-            .isEqualTo(fakeConfig.batchSize.windowDurationMs)
+            .isEqualTo(fakeConfig.coreConfig.batchSize.windowDurationMs)
     }
 
     @Test
@@ -762,7 +743,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -796,7 +776,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -816,7 +795,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -840,7 +818,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -858,7 +835,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -882,7 +858,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -913,7 +888,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -936,7 +910,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -962,7 +935,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -981,7 +953,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -1006,7 +977,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -1031,7 +1001,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )
@@ -1055,7 +1024,6 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeCredentials,
             fakeConfig,
             fakeConsent
         )

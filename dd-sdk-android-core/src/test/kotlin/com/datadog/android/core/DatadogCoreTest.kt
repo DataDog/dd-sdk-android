@@ -14,7 +14,6 @@ import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
@@ -92,9 +91,6 @@ internal class DatadogCoreTest {
     lateinit var mockPersistenceExecutorService: ExecutorService
 
     @Forgery
-    lateinit var fakeCredentials: Credentials
-
-    @Forgery
     lateinit var fakeConfiguration: Configuration
 
     @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
@@ -116,7 +112,6 @@ internal class DatadogCoreTest {
 
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             internalLoggerProvider = { mockInternalLogger },

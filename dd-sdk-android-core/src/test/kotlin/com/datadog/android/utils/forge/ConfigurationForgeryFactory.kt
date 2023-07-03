@@ -15,6 +15,10 @@ internal class ConfigurationForgeryFactory :
     override fun getForgery(forge: Forge): Configuration {
         return Configuration(
             coreConfig = forge.getForgery(),
+            clientToken = forge.anHexadecimalString(),
+            env = forge.aStringMatching("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]"),
+            variant = forge.anElementFrom(forge.anAlphabeticalString(), ""),
+            service = forge.aStringMatching("[a-z]+(\\.[a-z]+)+"),
             crashReportsEnabled = forge.aBool(),
             additionalConfig = forge.aMap { aString() to aString() }
         )

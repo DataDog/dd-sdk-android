@@ -17,6 +17,9 @@ import com.datadog.android.nightly.services.NdkCrashService
 import com.datadog.android.nightly.services.NdkHandlerDisabledNdkCrashService
 import com.datadog.android.nightly.services.RumEnabledNdkCrashService
 import com.datadog.android.nightly.services.RumEncryptionEnabledNdkCrashService
+import com.datadog.android.nightly.utils.DEFAULT_CLIENT_TOKEN
+import com.datadog.android.nightly.utils.DEFAULT_ENV_NAME
+import com.datadog.android.nightly.utils.DEFAULT_VARIANT_NAME
 import com.datadog.android.nightly.utils.NeverUseThatEncryption
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.stopSdk
@@ -98,8 +101,11 @@ class NdkCrashHandlerE2ETests {
             // need that to be able to read encrypted data written by NDK crash service
             config = Configuration
                 .Builder(
-                    crashReportsEnabled = true
+                    clientToken = DEFAULT_CLIENT_TOKEN,
+                    env = DEFAULT_ENV_NAME,
+                    variant = DEFAULT_VARIANT_NAME
                 )
+                .setCrashReportsEnabled(true)
                 .setEncryption(NeverUseThatEncryption())
                 .build()
         )

@@ -15,7 +15,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.DatadogCore
 import com.datadog.android.core.NoOpInternalSdkCore
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.HashGenerator
 import com.datadog.android.core.internal.SdkCoreRegistry
 import com.datadog.android.core.internal.Sha256HashGenerator
@@ -43,12 +42,10 @@ object Datadog {
      * @param instanceName the name of the instance (or null to initialize the default instance).
      * Note that the instance name should be stable across builds.
      * @param context your application context
-     * @param credentials your organization credentials
      * @param configuration the configuration for the SDK library
      * @param trackingConsent as the initial state of the tracking consent flag
      * @return the initialized SDK instance, or null if something prevents the SDK from
      * being initialized
-     * @see [Credentials]
      * @see [Configuration]
      * @see [TrackingConsent]
      * @throws IllegalArgumentException if the env name is using illegal characters and your
@@ -59,7 +56,6 @@ object Datadog {
     fun initialize(
         instanceName: String?,
         context: Context,
-        credentials: Credentials,
         configuration: Configuration,
         trackingConsent: TrackingConsent
     ): SdkCore? {
@@ -90,7 +86,6 @@ object Datadog {
             val sdkInstanceName = instanceName ?: SdkCoreRegistry.DEFAULT_INSTANCE_NAME
             val sdkCore = DatadogCore(
                 context,
-                credentials,
                 sdkInstanceId,
                 sdkInstanceName
             ).apply {
@@ -106,12 +101,10 @@ object Datadog {
     /**
      * Initializes the Datadog SDK.
      * @param context your application context
-     * @param credentials your organization credentials
      * @param configuration the configuration for the SDK library
      * @param trackingConsent as the initial state of the tracking consent flag
      * @return the initialized SDK instance, or null if something prevents the SDK from
      * being initialized
-     * @see [Credentials]
      * @see [Configuration]
      * @see [TrackingConsent]
      * @throws IllegalArgumentException if the env name is using illegal characters and your
@@ -120,11 +113,10 @@ object Datadog {
     @JvmStatic
     fun initialize(
         context: Context,
-        credentials: Credentials,
         configuration: Configuration,
         trackingConsent: TrackingConsent
     ): SdkCore? {
-        return initialize(null, context, credentials, configuration, trackingConsent)
+        return initialize(null, context, configuration, trackingConsent)
     }
 
     /**

@@ -29,7 +29,6 @@ internal class GesturesTrackingActivityTestRule<T : Activity>(
 
         val sdkCore = Datadog.initialize(
             InstrumentationRegistry.getInstrumentation().targetContext.applicationContext,
-            RuntimeConfig.credentials(),
             config,
             trackingConsent
         )

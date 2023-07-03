@@ -14,7 +14,6 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.Logger
@@ -107,7 +106,6 @@ class SampleApplication : Application() {
         Datadog.setVerbosity(Log.VERBOSE)
         Datadog.initialize(
             this,
-            createDatadogCredentials(),
             createDatadogConfiguration(),
             preferences.getTrackingConsent()
         )
@@ -162,14 +160,6 @@ class SampleApplication : Application() {
         TracingRxJava3Utils.enableTracing(GlobalTracer.get())
     }
 
-    private fun createDatadogCredentials(): Credentials {
-        return Credentials(
-            clientToken = BuildConfig.DD_CLIENT_TOKEN,
-            env = BuildConfig.BUILD_TYPE,
-            variant = BuildConfig.FLAVOR
-        )
-    }
-
     private fun createRumConfiguration(): RumConfiguration {
         return RumConfiguration.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
             .apply {
@@ -222,7 +212,9 @@ class SampleApplication : Application() {
 
     private fun createDatadogConfiguration(): Configuration {
         val configBuilder = Configuration.Builder(
-            crashReportsEnabled = true
+            clientToken = BuildConfig.DD_CLIENT_TOKEN,
+            env = BuildConfig.BUILD_TYPE,
+            variant = BuildConfig.FLAVOR
         )
             .setFirstPartyHosts(tracedHosts)
 

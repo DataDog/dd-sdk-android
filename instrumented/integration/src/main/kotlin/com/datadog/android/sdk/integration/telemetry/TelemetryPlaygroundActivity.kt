@@ -37,14 +37,13 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val credentials = RuntimeConfig.credentials()
         val config = RuntimeConfig.configBuilder()
             .build()
 
         val trackingConsent = intent.getTrackingConsent()
 
         Datadog.setVerbosity(Log.VERBOSE)
-        val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
+        val sdkCore = Datadog.initialize(this, config, trackingConsent)
         checkNotNull(sdkCore)
 
         // we will use a large long task threshold to make sure we will not have LongTask events

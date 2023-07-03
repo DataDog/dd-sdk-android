@@ -24,14 +24,13 @@ internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val credentials = RuntimeConfig.credentials()
         // we will use a large long task threshold to make sure we will not have LongTask events
         // noise in our integration tests.
         val config = RuntimeConfig.configBuilder().build()
         val trackingConsent = intent.getTrackingConsent()
 
         Datadog.setVerbosity(Log.VERBOSE)
-        val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
+        val sdkCore = Datadog.initialize(this, config, trackingConsent)
         checkNotNull(sdkCore)
 
         val rumConfig = RuntimeConfig.rumConfigBuilder()

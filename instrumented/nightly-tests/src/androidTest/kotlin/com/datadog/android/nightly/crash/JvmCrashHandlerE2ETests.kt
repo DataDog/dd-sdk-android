@@ -36,7 +36,8 @@ class JvmCrashHandlerE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(String, String, String = NO_VARIANT, String? = null)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setCrashReportsEnabled(Boolean): Builder
      * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#constructor(String)
      * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun build(): RumConfiguration
      */
@@ -62,7 +63,8 @@ class JvmCrashHandlerE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(String, String, String = NO_VARIANT, String? = null)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setCrashReportsEnabled(Boolean): Builder
      */
     @Test
     fun crash_reports_rum_disabled() {
@@ -81,7 +83,8 @@ class JvmCrashHandlerE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(String, String, String = NO_VARIANT, String? = null)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setCrashReportsEnabled(Boolean): Builder
      */
     @Test
     fun crash_reports_feature_disabled() {

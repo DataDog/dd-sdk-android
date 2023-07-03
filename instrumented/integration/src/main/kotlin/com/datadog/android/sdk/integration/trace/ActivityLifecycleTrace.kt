@@ -39,12 +39,11 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val credentials = RuntimeConfig.credentials()
         val config = RuntimeConfig.configBuilder().build()
         val trackingConsent = intent.getTrackingConsent()
 
         Datadog.setVerbosity(Log.VERBOSE)
-        val sdkCore = Datadog.initialize(this, credentials, config, trackingConsent)
+        val sdkCore = Datadog.initialize(this, config, trackingConsent)
         checkNotNull(sdkCore)
         mutableListOf(
             { Logs.enable(RuntimeConfig.logsConfigBuilder().build(), sdkCore) },

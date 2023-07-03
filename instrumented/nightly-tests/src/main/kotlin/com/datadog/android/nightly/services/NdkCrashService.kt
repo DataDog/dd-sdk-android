@@ -17,6 +17,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.ndk.NdkCrashReports
+import com.datadog.android.nightly.BuildConfig
 import com.datadog.android.nightly.activities.CRASH_DELAY_MS
 import com.datadog.android.nightly.activities.HUNDRED_PERCENT
 import com.datadog.android.nightly.utils.NeverUseThatEncryption
@@ -76,15 +77,17 @@ internal open class NdkCrashService : CrashService() {
         rumEnabled: Boolean = true
     ): SdkCore {
         val configBuilder = Configuration.Builder(
-            crashReportsEnabled = true
+            clientToken = BuildConfig.NIGHTLY_TESTS_TOKEN,
+            env = "instrumentation",
+            variant = ""
         )
+            .setCrashReportsEnabled(true)
         if (encryptionEnabled) {
             configBuilder.setEncryption(NeverUseThatEncryption())
         }
         Datadog.setVerbosity(Log.VERBOSE)
         val sdkCore = Datadog.initialize(
             this,
-            getCredentials(),
             configBuilder.build(),
             TrackingConsent.GRANTED
         )
