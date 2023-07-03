@@ -15,7 +15,7 @@ import android.webkit.WebViewClient
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
-import com.datadog.android.webview.DatadogEventBridge
+import com.datadog.android.webview.WebViewTracking
 
 internal class WebFragment : Fragment() {
 
@@ -38,7 +38,7 @@ internal class WebFragment : Fragment() {
         webView = rootView.findViewById(R.id.webview)
         webView.webViewClient = WebViewClient()
         webView.settings.javaScriptEnabled = true
-        DatadogEventBridge.setup(webView, webViewTrackingHosts)
+        WebViewTracking.enable(webView, webViewTrackingHosts)
         return rootView
     }
 
