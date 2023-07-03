@@ -258,7 +258,7 @@ class SpanConfigE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun addGlobalTag(String, String): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun addTag(String, String): Builder
      */
     @Test
     fun trace_config_add_global_tag() {
@@ -268,7 +268,7 @@ class SpanConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 tracerProvider = { sdkCore ->
-                    AndroidTracer.Builder(sdkCore).addGlobalTag(
+                    AndroidTracer.Builder(sdkCore).addTag(
                         SPECIAL_STRING_TAG_NAME,
                         "str${forge.anAlphaNumericalString()}"
                     ).build()

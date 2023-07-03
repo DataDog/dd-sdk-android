@@ -492,7 +492,28 @@ internal class AndroidTracerTest {
     }
 
     @Test
-    fun `it will build a valid Tracer with global tags`(
+    fun `it will build a valid Tracer with global tags { addGlobalTag }`(
+        @StringForgery operation: String,
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) value: String,
+        @StringForgery serviceName: String
+    ) {
+        // When
+        @Suppress("DEPRECATION")
+        val tracer = testedTracerBuilder
+            .setService(serviceName)
+            .addGlobalTag(key, value)
+            .build()
+
+        // Then
+        assertThat(tracer).isNotNull()
+        val span = tracer.buildSpan(operation).start() as DDSpan
+        assertThat(span.serviceName).isEqualTo(serviceName)
+        assertThat(span.tags).containsEntry(key, value)
+    }
+
+    @Test
+    fun `it will build a valid Tracer with global tags { addTag }`(
         @StringForgery operation: String,
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.HEXADECIMAL) value: String,
@@ -501,7 +522,7 @@ internal class AndroidTracerTest {
         // When
         val tracer = testedTracerBuilder
             .setService(serviceName)
-            .addGlobalTag(key, value)
+            .addTag(key, value)
             .build()
 
         // Then
