@@ -11,18 +11,18 @@ public final class com/datadog/android/rum/DdRumContentProvider : android/conten
 public final class com/datadog/android/rum/GlobalRumMonitor {
 	public static final field INSTANCE Lcom/datadog/android/rum/GlobalRumMonitor;
 	public static final fun get ()Lcom/datadog/android/rum/RumMonitor;
-	public static final fun get (Lcom/datadog/android/v2/api/SdkCore;)Lcom/datadog/android/rum/RumMonitor;
-	public static synthetic fun get$default (Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Lcom/datadog/android/rum/RumMonitor;
+	public static final fun get (Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/rum/RumMonitor;
+	public static synthetic fun get$default (Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Lcom/datadog/android/rum/RumMonitor;
 	public static final fun isRegistered ()Z
-	public static final fun isRegistered (Lcom/datadog/android/v2/api/SdkCore;)Z
-	public static synthetic fun isRegistered$default (Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)Z
+	public static final fun isRegistered (Lcom/datadog/android/api/SdkCore;)Z
+	public static synthetic fun isRegistered$default (Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Z
 }
 
 public final class com/datadog/android/rum/Rum {
 	public static final field INSTANCE Lcom/datadog/android/rum/Rum;
 	public static final fun enable (Lcom/datadog/android/rum/RumConfiguration;)V
-	public static final fun enable (Lcom/datadog/android/rum/RumConfiguration;Lcom/datadog/android/v2/api/SdkCore;)V
-	public static synthetic fun enable$default (Lcom/datadog/android/rum/RumConfiguration;Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)V
+	public static final fun enable (Lcom/datadog/android/rum/RumConfiguration;Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun enable$default (Lcom/datadog/android/rum/RumConfiguration;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/rum/RumActionType : java/lang/Enum {
@@ -4183,12 +4183,12 @@ public final class com/datadog/android/rum/model/ViewEvent$Viewport$Companion {
 
 public final class com/datadog/android/rum/resource/RumResourceInputStream : java/io/InputStream {
 	public fun <init> (Ljava/io/InputStream;Ljava/lang/String;)V
-	public fun <init> (Ljava/io/InputStream;Ljava/lang/String;Lcom/datadog/android/v2/api/SdkCore;)V
-	public synthetic fun <init> (Ljava/io/InputStream;Ljava/lang/String;Lcom/datadog/android/v2/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/io/InputStream;Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)V
+	public synthetic fun <init> (Ljava/io/InputStream;Ljava/lang/String;Lcom/datadog/android/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun available ()I
 	public fun close ()V
 	public final fun getDelegate ()Ljava/io/InputStream;
-	public final fun getSdkCore ()Lcom/datadog/android/v2/api/SdkCore;
+	public final fun getSdkCore ()Lcom/datadog/android/api/SdkCore;
 	public final fun getUrl ()Ljava/lang/String;
 	public fun mark (I)V
 	public fun markSupported ()Z
@@ -4250,7 +4250,7 @@ public abstract class com/datadog/android/rum/tracking/ActivityLifecycleTracking
 	public fun onActivitySaveInstanceState (Landroid/app/Activity;Landroid/os/Bundle;)V
 	public fun onActivityStarted (Landroid/app/Activity;)V
 	public fun onActivityStopped (Landroid/app/Activity;)V
-	public fun register (Lcom/datadog/android/v2/api/SdkCore;Landroid/content/Context;)V
+	public fun register (Lcom/datadog/android/api/SdkCore;Landroid/content/Context;)V
 	public fun unregister (Landroid/content/Context;)V
 	protected final fun withSdkCore (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 }
@@ -4303,7 +4303,7 @@ public final class com/datadog/android/rum/tracking/MixedViewTrackingStrategy : 
 	public fun onActivityResumed (Landroid/app/Activity;)V
 	public fun onActivityStarted (Landroid/app/Activity;)V
 	public fun onActivityStopped (Landroid/app/Activity;)V
-	public fun register (Lcom/datadog/android/v2/api/SdkCore;Landroid/content/Context;)V
+	public fun register (Lcom/datadog/android/api/SdkCore;Landroid/content/Context;)V
 	public fun unregister (Landroid/content/Context;)V
 }
 
@@ -4319,7 +4319,7 @@ public final class com/datadog/android/rum/tracking/NavigationViewTrackingStrate
 }
 
 public abstract interface class com/datadog/android/rum/tracking/TrackingStrategy {
-	public abstract fun register (Lcom/datadog/android/v2/api/SdkCore;Landroid/content/Context;)V
+	public abstract fun register (Lcom/datadog/android/api/SdkCore;Landroid/content/Context;)V
 	public abstract fun unregister (Landroid/content/Context;)V
 }
 

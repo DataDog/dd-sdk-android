@@ -7,14 +7,13 @@
 package com.datadog.android.core.internal.data.upload
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.net.DataUploader
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.utils.join
-import com.datadog.android.v2.api.InternalLogger
 
 internal class DataFlusher(
     internal val fileOrchestrator: FileOrchestrator,

@@ -7,9 +7,9 @@
 package com.datadog.android.ndk
 
 import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.ndk.internal.NdkCrashReportsFeature
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.SdkCore
 
 /**
  * An entry point to Datadog NDK Crash Reports feature.

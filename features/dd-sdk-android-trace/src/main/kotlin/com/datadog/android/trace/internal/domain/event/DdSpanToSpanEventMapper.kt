@@ -6,10 +6,10 @@
 
 package com.datadog.android.trace.internal.domain.event
 
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.trace.model.SpanEvent
-import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.opentracing.DDSpan
 
 internal class DdSpanToSpanEventMapper : ContextAwareMapper<DDSpan, SpanEvent> {

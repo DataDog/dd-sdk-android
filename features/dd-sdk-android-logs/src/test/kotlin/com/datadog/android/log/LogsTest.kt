@@ -6,10 +6,10 @@
 
 package com.datadog.android.log
 
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.net.LogsRequestFactory
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.FeatureSdkCore
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

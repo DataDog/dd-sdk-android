@@ -6,9 +6,9 @@
 
 package com.datadog.android.webview.internal
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.google.gson.JsonObject

@@ -7,9 +7,9 @@
 package com.datadog.android.ndk.internal
 
 import android.content.Context
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.setFieldValue
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat

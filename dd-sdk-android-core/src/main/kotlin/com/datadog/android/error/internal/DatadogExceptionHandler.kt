@@ -8,12 +8,12 @@ package com.datadog.android.error.internal
 
 import android.content.Context
 import androidx.work.WorkManager
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.triggerUploadWorker
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.InternalSdkCore
 import java.lang.ref.WeakReference
 import java.util.concurrent.ThreadPoolExecutor
 

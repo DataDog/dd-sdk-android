@@ -7,6 +7,10 @@
 package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.submitSafe
@@ -36,10 +40,6 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.telemetry.internal.TelemetryType
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.InternalSdkCore
-import com.datadog.android.v2.core.storage.DataWriter
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch

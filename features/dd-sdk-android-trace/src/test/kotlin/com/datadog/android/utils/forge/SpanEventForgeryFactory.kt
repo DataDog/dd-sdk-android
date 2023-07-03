@@ -6,10 +6,10 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.trace.model.SpanEvent
-import com.datadog.android.v2.api.context.NetworkInfo
-import com.datadog.android.v2.api.context.UserInfo
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.concurrent.TimeUnit

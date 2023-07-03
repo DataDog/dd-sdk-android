@@ -6,9 +6,9 @@
 
 package com.datadog.android.sessionreplay.internal
 
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
-import com.datadog.android.v2.api.FeatureSdkCore
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

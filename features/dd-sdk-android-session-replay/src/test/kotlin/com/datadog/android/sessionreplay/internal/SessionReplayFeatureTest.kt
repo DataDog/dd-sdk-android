@@ -7,6 +7,9 @@
 package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.sessionreplay.NoOpRecorder
 import com.datadog.android.sessionreplay.Recorder
@@ -18,9 +21,6 @@ import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.sessionreplay.utils.verifyLog
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.FeatureStorageConfiguration
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration

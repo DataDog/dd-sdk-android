@@ -6,9 +6,9 @@
 
 package com.datadog.android.core.internal.user
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.UserInfo
 import com.google.gson.JsonParseException
 import java.util.Locale
 

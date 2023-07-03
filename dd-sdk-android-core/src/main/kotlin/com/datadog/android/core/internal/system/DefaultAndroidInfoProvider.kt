@@ -12,7 +12,7 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
 import android.telephony.TelephonyManager
-import com.datadog.android.v2.api.context.DeviceType
+import com.datadog.android.api.context.DeviceType
 import java.util.Locale
 
 internal class DefaultAndroidInfoProvider(

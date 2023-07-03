@@ -6,16 +6,16 @@
 
 package com.datadog.android.log.internal.domain
 
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.api.context.UserInfo
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.extension.asLogStatus
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.api.context.NetworkInfo
-import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery

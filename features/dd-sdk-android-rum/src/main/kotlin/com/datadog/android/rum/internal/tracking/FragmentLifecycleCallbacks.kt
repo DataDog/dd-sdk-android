@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.tracking
 
 import android.app.Activity
-import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.api.SdkCore
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation

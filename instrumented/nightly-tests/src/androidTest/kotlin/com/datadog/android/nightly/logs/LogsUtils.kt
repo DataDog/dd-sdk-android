@@ -7,9 +7,9 @@
 package com.datadog.android.nightly.logs
 
 import android.util.Log
+import com.datadog.android.api.SdkCore
 import com.datadog.android.log.Logger
 import com.datadog.android.nightly.utils.defaultTestAttributes
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 

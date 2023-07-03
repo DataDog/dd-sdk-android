@@ -9,11 +9,11 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 import android.app.Activity
 import android.view.View
 import android.view.Window
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.ObjectTest
 import fr.xgouchet.elmyr.Forge
 import org.assertj.core.api.Assertions.assertThat

@@ -40,8 +40,8 @@ public final class com/datadog/android/log/Logger {
 
 public final class com/datadog/android/log/Logger$Builder {
 	public fun <init> ()V
-	public fun <init> (Lcom/datadog/android/v2/api/SdkCore;)V
-	public synthetic fun <init> (Lcom/datadog/android/v2/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/api/SdkCore;)V
+	public synthetic fun <init> (Lcom/datadog/android/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun build ()Lcom/datadog/android/log/Logger;
 	public final fun setBundleWithRumEnabled (Z)Lcom/datadog/android/log/Logger$Builder;
 	public final fun setBundleWithTraceEnabled (Z)Lcom/datadog/android/log/Logger$Builder;
@@ -56,8 +56,8 @@ public final class com/datadog/android/log/Logger$Builder {
 public final class com/datadog/android/log/Logs {
 	public static final field INSTANCE Lcom/datadog/android/log/Logs;
 	public static final fun enable (Lcom/datadog/android/log/LogsConfiguration;)V
-	public static final fun enable (Lcom/datadog/android/log/LogsConfiguration;Lcom/datadog/android/v2/api/SdkCore;)V
-	public static synthetic fun enable$default (Lcom/datadog/android/log/LogsConfiguration;Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)V
+	public static final fun enable (Lcom/datadog/android/log/LogsConfiguration;Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun enable$default (Lcom/datadog/android/log/LogsConfiguration;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/log/LogsConfiguration {

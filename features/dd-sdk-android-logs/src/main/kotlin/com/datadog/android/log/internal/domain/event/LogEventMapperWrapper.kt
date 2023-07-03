@@ -6,9 +6,9 @@
 
 package com.datadog.android.log.internal.domain.event
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 
 internal class LogEventMapperWrapper(

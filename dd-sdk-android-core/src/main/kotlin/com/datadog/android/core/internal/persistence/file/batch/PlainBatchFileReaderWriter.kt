@@ -7,10 +7,10 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.EventMeta
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.utils.use
-import com.datadog.android.v2.api.InternalLogger
 import com.google.gson.JsonParseException
 import java.io.File
 import java.io.FileOutputStream

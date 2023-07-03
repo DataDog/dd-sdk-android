@@ -6,8 +6,8 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.v2.api.context.DeviceInfo
-import com.datadog.android.v2.api.context.DeviceType
+import com.datadog.android.api.context.DeviceInfo
+import com.datadog.android.api.context.DeviceType
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 

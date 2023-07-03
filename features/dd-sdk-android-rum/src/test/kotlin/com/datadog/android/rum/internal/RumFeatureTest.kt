@@ -8,6 +8,8 @@ package com.datadog.android.rum.internal
 
 import android.app.Application
 import android.os.Build
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.rum.GlobalRumMonitor
@@ -37,8 +39,6 @@ import com.datadog.android.rum.utils.config.MainLooperTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension

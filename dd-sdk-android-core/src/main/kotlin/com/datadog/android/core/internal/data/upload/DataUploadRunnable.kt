@@ -7,15 +7,14 @@
 package com.datadog.android.core.internal.data.upload
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.core.configuration.UploadFrequency
-import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.Batch
 import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.NetworkInfo
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import kotlin.math.max

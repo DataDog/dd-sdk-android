@@ -6,11 +6,11 @@
 
 package com.datadog.android.webview.internal.rum
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.webview.internal.rum.domain.RumContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery

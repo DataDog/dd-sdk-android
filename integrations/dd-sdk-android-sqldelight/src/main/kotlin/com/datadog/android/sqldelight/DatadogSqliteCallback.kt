@@ -8,10 +8,10 @@ package com.datadog.android.sqldelight
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.v2.api.SdkCore
 import com.squareup.sqldelight.android.AndroidSqliteDriver
 import com.squareup.sqldelight.db.SqlDriver
 import java.util.Locale

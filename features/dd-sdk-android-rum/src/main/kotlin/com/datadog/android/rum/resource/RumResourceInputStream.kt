@@ -7,12 +7,12 @@
 package com.datadog.android.rum.resource
 
 import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.v2.api.SdkCore
 import java.io.InputStream
 
 /**

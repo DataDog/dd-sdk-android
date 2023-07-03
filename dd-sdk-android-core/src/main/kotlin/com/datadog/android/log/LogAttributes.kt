@@ -6,8 +6,8 @@
 
 package com.datadog.android.log
 
+import com.datadog.android.api.SdkCore
 import com.datadog.android.core.configuration.Credentials
-import com.datadog.android.v2.api.SdkCore
 
 /**
  * This class holds constant log attribute keys.

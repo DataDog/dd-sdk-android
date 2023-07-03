@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.internal.storage
 
-import com.datadog.android.v2.api.EventBatchWriter
-import com.datadog.android.v2.core.storage.DataWriter
+import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventBatchWriter
 
 internal class NoOpDataWriter<T> : DataWriter<T> {
     override fun write(writer: EventBatchWriter, element: T): Boolean = false

@@ -6,7 +6,12 @@
 
 package com.datadog.android.okhttp.trace
 
-import com.datadog.android.SdkReference
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.SdkReference
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
@@ -15,11 +20,6 @@ import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.InternalSdkCore
 import com.datadog.opentracing.DDTracer
 import com.datadog.trace.api.DDTags
 import com.datadog.trace.api.interceptor.MutableSpan

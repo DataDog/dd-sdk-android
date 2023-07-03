@@ -6,10 +6,10 @@
 
 package com.datadog.android.sessionreplay
 
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
-import com.datadog.android.v2.api.FeatureSdkCore
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

@@ -6,9 +6,9 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.v2.api.context.NetworkInfo
-import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge

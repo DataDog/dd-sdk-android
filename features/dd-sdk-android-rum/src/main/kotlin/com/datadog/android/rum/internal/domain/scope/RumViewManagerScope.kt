@@ -8,6 +8,9 @@ package com.datadog.android.rum.internal.domain.scope
 
 import android.app.ActivityManager
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.internal.AppStartTimeProvider
@@ -17,9 +20,6 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.core.InternalSdkCore
-import com.datadog.android.v2.core.storage.DataWriter
 import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 

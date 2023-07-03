@@ -6,10 +6,10 @@
 
 package com.datadog.android.log.internal.domain.event
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.log.assertj.containsExtraAttributes
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.assertj.JsonObjectAssert
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonParser

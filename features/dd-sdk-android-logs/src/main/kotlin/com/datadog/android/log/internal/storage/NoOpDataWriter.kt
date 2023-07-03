@@ -6,9 +6,9 @@
 
 package com.datadog.android.log.internal.storage
 
+import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.v2.api.EventBatchWriter
-import com.datadog.android.v2.core.storage.DataWriter
 
 // TODO RUMM-0000 Support generating NoOpImplementation as public?
 internal class NoOpDataWriter : DataWriter<LogEvent> {

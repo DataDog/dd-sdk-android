@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.persistence
 
-import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.api.InternalLogger
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser

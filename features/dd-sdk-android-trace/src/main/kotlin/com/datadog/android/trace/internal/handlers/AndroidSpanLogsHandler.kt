@@ -6,11 +6,11 @@
 
 package com.datadog.android.trace.internal.handlers
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
 import com.datadog.trace.api.DDTags

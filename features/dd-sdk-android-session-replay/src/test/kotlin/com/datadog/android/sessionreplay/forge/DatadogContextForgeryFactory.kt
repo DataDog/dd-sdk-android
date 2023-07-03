@@ -7,14 +7,14 @@
 package com.datadog.android.sessionreplay.forge
 
 import com.datadog.android.DatadogSite
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.context.DeviceInfo
+import com.datadog.android.api.context.DeviceType
+import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.api.context.ProcessInfo
+import com.datadog.android.api.context.TimeInfo
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.api.context.DeviceInfo
-import com.datadog.android.v2.api.context.DeviceType
-import com.datadog.android.v2.api.context.NetworkInfo
-import com.datadog.android.v2.api.context.ProcessInfo
-import com.datadog.android.v2.api.context.TimeInfo
-import com.datadog.android.v2.api.context.UserInfo
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.Locale

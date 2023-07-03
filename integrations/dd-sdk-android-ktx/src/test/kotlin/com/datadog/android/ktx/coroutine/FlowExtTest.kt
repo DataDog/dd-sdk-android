@@ -6,10 +6,10 @@
 
 package com.datadog.android.ktx.coroutine
 
+import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.v2.api.SdkCore
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import kotlinx.coroutines.Dispatchers

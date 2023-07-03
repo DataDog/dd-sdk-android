@@ -15,8 +15,8 @@ import com.bumptech.glide.load.engine.executor.GlideExecutor
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.load.model.ModelLoaderFactory
 import com.bumptech.glide.module.AppGlideModule
+import com.datadog.android.api.SdkCore
 import com.datadog.android.okhttp.DatadogInterceptor
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.assertj.containsInstanceOf
 import com.datadog.tools.unit.getFieldValue
 import fr.xgouchet.elmyr.annotation.StringForgery

@@ -6,7 +6,7 @@
 
 package com.datadog.android.telemetry.internal
 
-import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.api.InternalLogger
 
 internal data class TelemetryCoreConfiguration(
     val trackErrors: Boolean,

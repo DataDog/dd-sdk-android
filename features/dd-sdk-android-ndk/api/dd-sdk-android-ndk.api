@@ -1,7 +1,7 @@
 public final class com/datadog/android/ndk/NdkCrashReports {
 	public static final field INSTANCE Lcom/datadog/android/ndk/NdkCrashReports;
 	public static final fun enable ()V
-	public static final fun enable (Lcom/datadog/android/v2/api/SdkCore;)V
-	public static synthetic fun enable$default (Lcom/datadog/android/v2/api/SdkCore;ILjava/lang/Object;)V
+	public static final fun enable (Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun enable$default (Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 }
 

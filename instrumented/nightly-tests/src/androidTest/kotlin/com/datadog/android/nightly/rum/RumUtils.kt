@@ -9,6 +9,7 @@ package com.datadog.android.nightly.rum
 import android.os.Handler
 import android.os.Looper
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.api.SdkCore
 import com.datadog.android.nightly.INITIALIZE_RUMMONITOR_TEST_METHOD_NAME
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
 import com.datadog.android.nightly.utils.aResourceKey
@@ -25,7 +26,6 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 

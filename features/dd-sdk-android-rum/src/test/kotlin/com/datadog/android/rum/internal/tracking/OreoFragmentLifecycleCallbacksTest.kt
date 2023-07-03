@@ -15,6 +15,7 @@ import android.app.Fragment
 import android.app.FragmentManager
 import android.os.Build
 import android.view.Window
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
@@ -23,7 +24,6 @@ import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewUrl
-import com.datadog.android.v2.api.FeatureSdkCore
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery

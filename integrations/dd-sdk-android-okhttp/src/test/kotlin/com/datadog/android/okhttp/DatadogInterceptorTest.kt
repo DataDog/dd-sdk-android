@@ -6,6 +6,8 @@
 
 package com.datadog.android.okhttp
 
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.okhttp.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
@@ -17,8 +19,6 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes

@@ -1,7 +1,7 @@
 public final class com/datadog/android/fresco/DatadogFrescoCacheListener : com/facebook/cache/common/CacheEventListener {
 	public fun <init> ()V
-	public fun <init> (Lcom/datadog/android/v2/api/SdkCore;)V
-	public synthetic fun <init> (Lcom/datadog/android/v2/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/api/SdkCore;)V
+	public synthetic fun <init> (Lcom/datadog/android/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun onCleared ()V
 	public fun onEviction (Lcom/facebook/cache/common/CacheEvent;)V
 	public fun onHit (Lcom/facebook/cache/common/CacheEvent;)V

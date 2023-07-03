@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.event
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -14,7 +15,6 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
-import com.datadog.android.v2.api.InternalLogger
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import java.util.Locale

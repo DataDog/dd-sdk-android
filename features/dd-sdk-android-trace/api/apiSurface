@@ -1,7 +1,7 @@
 class com.datadog.android.trace.AndroidTracer : com.datadog.opentracing.DDTracer
   override fun buildSpan(String): DDSpanBuilder
   class Builder
-    constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+    constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
     fun build(): AndroidTracer
     fun setTracingHeaderTypes(Set<TracingHeaderType>): Builder
     fun setService(String): Builder
@@ -14,7 +14,7 @@ class com.datadog.android.trace.AndroidTracer : com.datadog.opentracing.DDTracer
     fun logThrowable(io.opentracing.Span, Throwable)
     fun logErrorMessage(io.opentracing.Span, String)
 object com.datadog.android.trace.Trace
-  fun enable(TraceConfiguration, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+  fun enable(TraceConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
 data class com.datadog.android.trace.TraceConfiguration
   class Builder
     fun useCustomEndpoint(String): Builder

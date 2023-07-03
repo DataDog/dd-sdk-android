@@ -7,8 +7,8 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureSdkCore
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class CrashReportsFeature(private val sdkCore: FeatureSdkCore) : Feature {

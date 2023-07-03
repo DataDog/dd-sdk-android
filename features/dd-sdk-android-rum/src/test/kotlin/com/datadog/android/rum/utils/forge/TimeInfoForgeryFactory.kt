@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.v2.api.context.TimeInfo
+import com.datadog.android.api.context.TimeInfo
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 

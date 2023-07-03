@@ -6,10 +6,10 @@
 
 package com.datadog.android.fresco
 
+import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.forge.aThrowable
 import com.facebook.cache.common.CacheEvent

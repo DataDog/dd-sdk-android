@@ -6,9 +6,9 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.single.SingleFileOrchestrator
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

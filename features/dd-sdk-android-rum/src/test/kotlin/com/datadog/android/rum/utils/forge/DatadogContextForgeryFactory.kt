@@ -7,8 +7,8 @@
 package com.datadog.android.rum.utils.forge
 
 import com.datadog.android.DatadogSite
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory

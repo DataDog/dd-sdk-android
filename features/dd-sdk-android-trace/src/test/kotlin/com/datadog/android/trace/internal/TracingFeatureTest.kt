@@ -6,15 +6,15 @@
 
 package com.datadog.android.trace.internal
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.trace.internal.data.TraceWriter
 import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.net.TracesRequestFactory
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.FeatureStorageConfiguration
-import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

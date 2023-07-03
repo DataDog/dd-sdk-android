@@ -6,13 +6,12 @@
 
 package com.datadog.android.core.internal.data.upload
 
-import com.datadog.android.core.internal.net.DataUploader
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.InternalLogger
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

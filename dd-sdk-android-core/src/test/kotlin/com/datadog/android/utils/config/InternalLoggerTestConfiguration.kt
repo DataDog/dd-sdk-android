@@ -6,8 +6,8 @@
 
 package com.datadog.android.utils.config
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.unboundInternalLogger
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import org.mockito.kotlin.mock

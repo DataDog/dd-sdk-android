@@ -1,5 +1,5 @@
 class com.datadog.android.fresco.DatadogFrescoCacheListener : com.facebook.cache.common.CacheEventListener
-  constructor(com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+  constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
   override fun onMiss(com.facebook.cache.common.CacheEvent)
   override fun onReadException(com.facebook.cache.common.CacheEvent)
   override fun onEviction(com.facebook.cache.common.CacheEvent)

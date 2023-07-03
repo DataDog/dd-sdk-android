@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.system
 
-import com.datadog.android.v2.api.context.DeviceType
+import com.datadog.android.api.context.DeviceType
 
 internal interface AndroidInfoProvider {
 

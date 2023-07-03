@@ -45,10 +45,10 @@ internal class WebViewTrackingE2ETests {
     // region Tests
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(List<String>, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(List<String>, com.datadog.android.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#fun consumeWebviewEvent(String)
      */
     @Test
@@ -64,10 +64,10 @@ internal class WebViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(List<String>, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(List<String>, com.datadog.android.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#fun consumeWebviewEvent(String)
      */
     @Test
@@ -83,9 +83,9 @@ internal class WebViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(List<String>, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(List<String>, com.datadog.android.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#fun consumeWebviewEvent(String)
      */
     @Test
@@ -102,10 +102,10 @@ internal class WebViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(List<String>, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(List<String>, com.datadog.android.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#fun consumeWebviewEvent(String)
      */
     @Test
@@ -117,10 +117,10 @@ internal class WebViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(List<String>, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(List<String>, com.datadog.android.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#fun consumeWebviewEvent(String)
      */
     @Test
@@ -133,10 +133,10 @@ internal class WebViewTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(List<String>, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#constructor(List<String>, com.datadog.android.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun getAllowedWebViewHosts(): String
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge#fun send(String)
-     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#constructor(com.datadog.android.v2.api.SdkCore)
+     * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#constructor(com.datadog.android.api.SdkCore)
      * apiMethodSignature: com.datadog.android.webview.DatadogEventBridge$_InternalWebViewProxy#fun consumeWebviewEvent(String)
      */
     @Test

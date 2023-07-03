@@ -7,9 +7,9 @@
 package com.datadog.android.rx
 
 import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.v2.api.SdkCore
 import io.reactivex.rxjava3.functions.Consumer
 
 /**

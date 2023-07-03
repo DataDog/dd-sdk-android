@@ -7,6 +7,11 @@
 package com.datadog.android.trace.internal
 
 import android.content.Context
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.feature.StorageBackedFeature
+import com.datadog.android.api.net.RequestFactory
+import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.trace.internal.data.NoOpWriter
 import com.datadog.android.trace.internal.data.TraceWriter
@@ -14,11 +19,6 @@ import com.datadog.android.trace.internal.domain.event.DdSpanToSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.domain.event.SpanEventSerializer
 import com.datadog.android.trace.internal.net.TracesRequestFactory
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.FeatureStorageConfiguration
-import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.api.StorageBackedFeature
 import com.datadog.trace.common.writer.Writer
 import java.util.concurrent.atomic.AtomicBoolean
 

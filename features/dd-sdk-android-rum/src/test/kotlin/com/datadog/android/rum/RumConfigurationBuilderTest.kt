@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum
 
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.assertj.ConfigurationRumAssert
@@ -25,7 +26,6 @@ import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
-import com.datadog.android.v2.api.FeatureSdkCore
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery

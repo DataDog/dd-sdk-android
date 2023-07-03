@@ -6,8 +6,9 @@
 
 package com.datadog.android.core.configuration
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.unboundInternalLogger
-import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.lint.InternalApi
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.Locale
@@ -23,6 +24,7 @@ class HostsSanitizer {
      * @param hosts Hosts to sanitize.
      * @param feature SDK feature requesting the sanitization.
      */
+    @InternalApi
     fun sanitizeHosts(
         hosts: List<String>,
         feature: String

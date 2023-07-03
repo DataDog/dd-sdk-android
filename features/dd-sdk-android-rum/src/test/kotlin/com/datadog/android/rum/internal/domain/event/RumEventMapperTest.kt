@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.event
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
@@ -21,7 +22,6 @@ import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration

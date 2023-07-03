@@ -6,18 +6,18 @@
 
 package com.datadog.android.trace.internal.data
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.event.EventMapper
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.EventBatchWriter
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge

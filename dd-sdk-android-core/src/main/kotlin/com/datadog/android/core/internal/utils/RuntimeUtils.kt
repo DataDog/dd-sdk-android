@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.utils
 
-import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.api.InternalLogger
 
 // Use it only when there is no way to access the SDK-specific logger.
 internal var unboundInternalLogger: InternalLogger = InternalLogger.UNBOUND

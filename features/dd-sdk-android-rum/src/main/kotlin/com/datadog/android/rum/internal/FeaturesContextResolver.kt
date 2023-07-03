@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.internal
 
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
 
 internal class FeaturesContextResolver {
 

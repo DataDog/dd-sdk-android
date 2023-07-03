@@ -7,10 +7,10 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
   override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
 typealias GlobalRum = GlobalRumMonitor
 object com.datadog.android.rum.GlobalRumMonitor
-  fun isRegistered(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): Boolean
-  fun get(com.datadog.android.v2.api.SdkCore = Datadog.getInstance()): RumMonitor
+  fun isRegistered(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
+  fun get(com.datadog.android.api.SdkCore = Datadog.getInstance()): RumMonitor
 object com.datadog.android.rum.Rum
-  fun enable(RumConfiguration, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+  fun enable(RumConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
 enum com.datadog.android.rum.RumActionType
   - TAP
   - SCROLL
@@ -148,7 +148,7 @@ interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
   fun addResourceTiming(String, com.datadog.android.rum.internal.domain.event.ResourceTiming)
   fun notifyInterceptorInstantiated()
 class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStream
-  constructor(java.io.InputStream, String, com.datadog.android.v2.api.SdkCore = Datadog.getInstance())
+  constructor(java.io.InputStream, String, com.datadog.android.api.SdkCore = Datadog.getInstance())
   override fun read(): Int
   override fun read(ByteArray): Int
   override fun read(ByteArray, Int, Int): Int
@@ -179,7 +179,7 @@ open class com.datadog.android.rum.tracking.AcceptAllSupportFragments : Componen
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
 abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy : android.app.Application.ActivityLifecycleCallbacks, TrackingStrategy
-  override fun register(com.datadog.android.v2.api.SdkCore, android.content.Context)
+  override fun register(com.datadog.android.api.SdkCore, android.content.Context)
   override fun unregister(android.content.Context?)
   override fun onActivityPaused(android.app.Activity)
   override fun onActivityStarted(android.app.Activity)
@@ -190,7 +190,7 @@ abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrateg
   override fun onActivityResumed(android.app.Activity)
   protected fun convertToRumAttributes(android.content.Intent?): Map<String, Any?>
   protected fun convertToRumAttributes(android.os.Bundle?): Map<String, Any?>
-  protected fun <T> withSdkCore((com.datadog.android.v2.api.FeatureSdkCore) -> T): T?
+  protected fun <T> withSdkCore((com.datadog.android.api.feature.FeatureSdkCore) -> T): T?
 class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
   constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
@@ -214,7 +214,7 @@ interface com.datadog.android.rum.tracking.InteractionPredicate
   fun getTargetName(Any): String?
 class com.datadog.android.rum.tracking.MixedViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
   constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities(), ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
-  override fun register(com.datadog.android.v2.api.SdkCore, android.content.Context)
+  override fun register(com.datadog.android.api.SdkCore, android.content.Context)
   override fun unregister(android.content.Context?)
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
   override fun onActivityStarted(android.app.Activity)
@@ -233,7 +233,7 @@ class com.datadog.android.rum.tracking.NavigationViewTrackingStrategy : Activity
   fun startTracking()
   fun stopTracking()
 interface com.datadog.android.rum.tracking.TrackingStrategy
-  fun register(com.datadog.android.v2.api.SdkCore, android.content.Context)
+  fun register(com.datadog.android.api.SdkCore, android.content.Context)
   fun unregister(android.content.Context?)
 interface com.datadog.android.rum.tracking.ViewAttributesProvider
   fun extractAttributes(android.view.View, MutableMap<String, Any?>)

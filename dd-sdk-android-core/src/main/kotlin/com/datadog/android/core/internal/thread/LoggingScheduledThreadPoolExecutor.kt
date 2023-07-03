@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.thread
 
-import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.api.InternalLogger
 import java.util.concurrent.ScheduledThreadPoolExecutor
 
 /**

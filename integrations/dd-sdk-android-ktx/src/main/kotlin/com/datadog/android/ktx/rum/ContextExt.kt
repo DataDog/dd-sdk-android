@@ -11,8 +11,8 @@ import android.content.res.AssetManager
 import android.content.res.Resources
 import androidx.annotation.RawRes
 import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.resource.RumResourceInputStream
-import com.datadog.android.v2.api.SdkCore
 import java.io.InputStream
 
 internal const val HEX_RADIX = 16

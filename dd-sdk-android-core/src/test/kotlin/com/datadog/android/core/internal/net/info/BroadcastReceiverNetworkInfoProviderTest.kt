@@ -13,11 +13,11 @@ import android.content.Intent
 import android.net.ConnectivityManager
 import android.os.Build
 import android.telephony.TelephonyManager
+import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.utils.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.context.NetworkInfo
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

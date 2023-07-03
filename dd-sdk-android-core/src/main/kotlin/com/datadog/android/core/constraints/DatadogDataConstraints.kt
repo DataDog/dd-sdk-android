@@ -6,8 +6,8 @@
 
 package com.datadog.android.core.constraints
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.toMutableMap
-import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 
 internal typealias StringTransform = (String) -> String?
@@ -153,7 +153,7 @@ class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataC
         { it.lowercase(Locale.US) },
         // Tags must start with a letter
         { if (it.getOrNull(0) !in 'a'..'z') null else it },
-        // Tags convert illegal characters to underscode
+        // Tags convert illegal characters to underscore
         { it.replace(Regex("[^a-z0-9_:./-]"), "_") },
         // Tags cannot end with a colon
         { if (it.endsWith(':')) it.substring(0, it.lastIndex) else it },

@@ -8,6 +8,7 @@ package com.datadog.android.sdk.integration
 
 import android.os.Build
 import com.datadog.android._InternalProxy
+import com.datadog.android.api.SdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
@@ -17,7 +18,6 @@ import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.v2.api.SdkCore
 import java.util.UUID
 
 internal object RuntimeConfig {

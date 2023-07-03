@@ -6,17 +6,17 @@
 
 package com.datadog.android.rum.internal.ndk
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.internal.domain.scope.tryFromSource
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.core.storage.DataWriter
 import com.google.gson.JsonObject
 import java.util.concurrent.TimeUnit
 

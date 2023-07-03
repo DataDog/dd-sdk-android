@@ -8,6 +8,13 @@ package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
 import android.content.Context
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureEventReceiver
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.feature.StorageBackedFeature
+import com.datadog.android.api.net.RequestFactory
+import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.sessionreplay.NoOpRecorder
@@ -20,13 +27,6 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrap
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureEventReceiver
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.FeatureStorageConfiguration
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.api.StorageBackedFeature
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 

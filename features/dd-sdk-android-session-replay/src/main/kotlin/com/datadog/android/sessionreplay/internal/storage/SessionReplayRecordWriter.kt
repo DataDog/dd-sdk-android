@@ -6,11 +6,11 @@
 
 package com.datadog.android.sessionreplay.internal.storage
 
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.internal.RecordCallback
 import com.datadog.android.sessionreplay.internal.RecordWriter
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
-import com.datadog.android.v2.api.FeatureSdkCore
 
 internal class SessionReplayRecordWriter(
     private val sdkCore: FeatureSdkCore,

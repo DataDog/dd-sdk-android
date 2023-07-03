@@ -6,6 +6,11 @@
 
 package com.datadog.android.okhttp
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
@@ -24,11 +29,6 @@ import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.InternalSdkCore
 import io.opentracing.Span
 import io.opentracing.Tracer
 import okhttp3.Interceptor

@@ -6,9 +6,9 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.datadog.android.core.LogcatLogHandler
+import com.datadog.android.core.SdkInternalLogger
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.core.LogcatLogHandler
-import com.datadog.android.v2.core.SdkInternalLogger
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

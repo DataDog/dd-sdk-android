@@ -11,7 +11,7 @@ import android.content.Context
 import android.os.Bundle
 import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
-import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.api.SdkCore
 
 /**
  * A [ViewTrackingStrategy] that will track [Activity] and [Fragment] as RUM View Events.

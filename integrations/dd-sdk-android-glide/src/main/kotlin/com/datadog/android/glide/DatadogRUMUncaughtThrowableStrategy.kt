@@ -7,11 +7,11 @@
 package com.datadog.android.glide
 
 import com.bumptech.glide.load.engine.executor.GlideExecutor
-import com.datadog.android.SdkReference
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.SdkReference
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.v2.api.InternalLogger
 
 /**
  * A [GlideExecutor.UncaughtThrowableStrategy] implementation that will forward all errors

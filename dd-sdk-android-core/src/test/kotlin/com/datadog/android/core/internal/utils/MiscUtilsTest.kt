@@ -6,8 +6,8 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement

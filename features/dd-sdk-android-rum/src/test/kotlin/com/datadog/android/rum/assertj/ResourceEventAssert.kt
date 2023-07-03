@@ -6,6 +6,8 @@
 
 package com.datadog.android.rum.assertj
 
+import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -13,8 +15,6 @@ import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.internal.domain.scope.toMethod
 import com.datadog.android.rum.internal.domain.scope.toSchemaType
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.v2.api.context.NetworkInfo
-import com.datadog.android.v2.api.context.UserInfo
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset

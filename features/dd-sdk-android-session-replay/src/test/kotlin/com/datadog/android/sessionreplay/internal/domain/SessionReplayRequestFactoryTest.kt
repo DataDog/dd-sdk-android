@@ -6,13 +6,13 @@
 
 package com.datadog.android.sessionreplay.internal.domain
 
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.api.context.DatadogContext
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery

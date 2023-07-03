@@ -7,9 +7,9 @@
 package com.datadog.android.ktx.rum
 
 import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.resource.RumResourceInputStream
-import com.datadog.android.v2.api.SdkCore
 import java.io.InputStream
 
 /**

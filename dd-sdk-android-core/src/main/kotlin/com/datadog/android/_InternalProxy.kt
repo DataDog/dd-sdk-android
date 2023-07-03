@@ -6,13 +6,13 @@
 
 package com.datadog.android
 
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.DatadogCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.lint.InternalApi
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureScope
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.DatadogCore
 
 /**
  * This class exposes internal methods that are used by other Datadog modules and cross platform

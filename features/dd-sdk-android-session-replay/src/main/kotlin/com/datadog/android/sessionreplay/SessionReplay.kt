@@ -7,9 +7,9 @@
 package com.datadog.android.sessionreplay
 
 import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.SdkCore
 
 /**
  * An entry point to Datadog Session Replay feature.

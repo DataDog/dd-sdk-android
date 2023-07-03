@@ -6,6 +6,8 @@
 
 package com.datadog.android.okhttp
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.trace.TracedRequestListener
@@ -17,8 +19,6 @@ import com.datadog.android.okhttp.utils.identifyRequest
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer

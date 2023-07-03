@@ -6,13 +6,13 @@
 
 package com.datadog.android.trace.internal.domain.event
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.constraints.DataConstraints
 import com.datadog.android.core.constraints.DatadogDataConstraints
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.DatadogContext
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive

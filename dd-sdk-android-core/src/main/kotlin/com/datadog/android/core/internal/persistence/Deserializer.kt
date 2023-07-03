@@ -6,6 +6,8 @@
 
 package com.datadog.android.core.internal.persistence
 
+import com.datadog.android.lint.InternalApi
+
 /**
  * The Deserializer<P, R> generic interface. Should be implemented by any custom deserializer.
  *
@@ -18,5 +20,6 @@ interface Deserializer<P : Any, R : Any> {
      * @return the model represented by the given payload, or null when deserialization
      * is impossible.
      */
+    @InternalApi
     fun deserialize(model: P): R?
 }

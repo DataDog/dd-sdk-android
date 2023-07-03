@@ -7,12 +7,12 @@
 package com.datadog.android.rum
 
 import android.os.Bundle
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
 import com.datadog.android.rum.tracking.StubComponentPredicate
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.v2.api.FeatureSdkCore
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

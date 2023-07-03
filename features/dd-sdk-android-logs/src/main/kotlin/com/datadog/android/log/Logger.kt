@@ -8,6 +8,10 @@ package com.datadog.android.log
 
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.log.internal.LogsFeature
@@ -17,10 +21,6 @@ import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.SdkCore
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArraySet
 import android.util.Log as AndroidLog
@@ -463,7 +463,7 @@ internal constructor(internal var handler: LogHandler) {
     }
 
     @Suppress("LongParameterList")
-    internal fun internalLog(
+    private fun internalLog(
         level: Int,
         message: String,
         errorKind: String?,

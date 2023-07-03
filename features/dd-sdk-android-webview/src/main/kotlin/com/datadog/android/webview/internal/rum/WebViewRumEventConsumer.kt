@@ -7,11 +7,11 @@
 package com.datadog.android.webview.internal.rum
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.v2.api.Feature
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.core.storage.DataWriter
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonObject

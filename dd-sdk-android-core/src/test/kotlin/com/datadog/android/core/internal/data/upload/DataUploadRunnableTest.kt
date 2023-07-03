@@ -6,17 +6,15 @@
 
 package com.datadog.android.core.internal.data.upload
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.core.configuration.UploadFrequency
-import com.datadog.android.core.internal.net.DataUploader
-import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.Batch
 import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.InternalLogger
-import com.datadog.android.v2.api.context.NetworkInfo
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery

@@ -24,10 +24,10 @@ import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import androidx.core.view.setPadding
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
-import com.datadog.android.v2.api.FeatureSdkCore
-import com.datadog.android.v2.api.InternalLogger
 import kotlin.math.pow
 
 internal class UiRumDebugListener(
@@ -192,9 +192,6 @@ internal class UiRumDebugListener(
     companion object {
         const val CANNOT_FIND_CONTENT_VIEW_MESSAGE =
             "Cannot enable RUM debugging, because root content view can't be found"
-        const val MISSING_RUM_MONITOR_TYPE =
-            "Cannot enable RUM debugging, because global RUM monitor" +
-                " doesn't implement %s"
         const val DEFAULT_ALPHA = 200
         val ACTIVE_COLOR = Color.rgb(99, 44, 166)
     }
