@@ -24,10 +24,10 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class MaskAllRadioButtonMapperTest : BaseRadioButtonMapperTest() {
+internal class MaskRadioButtonMapperTest : BaseRadioButtonMapperTest() {
 
     override fun setupTestedMapper(): RadioButtonMapper {
-        return MaskAllRadioButtonMapper(
+        return MaskRadioButtonMapper(
             textWireframeMapper = mockTextWireframeMapper,
             uniqueIdentifierGenerator = mockuniqueIdentifierGenerator,
             viewUtils = mockViewUtils

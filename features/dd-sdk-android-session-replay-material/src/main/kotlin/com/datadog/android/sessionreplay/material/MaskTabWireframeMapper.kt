@@ -7,15 +7,15 @@
 package com.datadog.android.sessionreplay.material
 
 import android.widget.TextView
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
-internal class MaskAllTabWireframeMapper(
+internal class MaskTabWireframeMapper(
     viewUtils: ViewUtils = ViewUtils,
     uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
     textViewMapper: WireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe> =
-        MaskAllTextViewMapper()
+        MaskTextViewMapper()
 ) : TabWireframeMapper(viewUtils, uniqueIdentifierGenerator, textViewMapper)

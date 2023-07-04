@@ -22,23 +22,23 @@ class MaterialExtensionSupport : ExtensionSupport {
     @Suppress("UNCHECKED_CAST")
     override fun getCustomViewMappers():
         Map<SessionReplayPrivacy, Map<Class<*>, WireframeMapper<View, *>>> {
-        val maskUserInputSliderMapper = MaskAllSliderWireframeMapper() as WireframeMapper<View, *>
-        val maskAllSliderMapper = MaskAllSliderWireframeMapper() as WireframeMapper<View, *>
-        val allowAllSliderMapper = SliderWireframeMapper() as WireframeMapper<View, *>
-        val maskAllTabWireframeMapper = MaskAllTabWireframeMapper() as WireframeMapper<View, *>
-        val allowAllTabWireframeMapper = TabWireframeMapper() as WireframeMapper<View, *>
+        val maskUserInputSliderMapper = MaskSliderWireframeMapper() as WireframeMapper<View, *>
+        val maskSliderMapper = MaskSliderWireframeMapper() as WireframeMapper<View, *>
+        val allowSliderMapper = SliderWireframeMapper() as WireframeMapper<View, *>
+        val maskTabWireframeMapper = MaskTabWireframeMapper() as WireframeMapper<View, *>
+        val allowTabWireframeMapper = TabWireframeMapper() as WireframeMapper<View, *>
         return mapOf(
-            SessionReplayPrivacy.ALLOW_ALL to mapOf(
-                Slider::class.java to allowAllSliderMapper,
-                TabLayout.TabView::class.java to allowAllTabWireframeMapper
+            SessionReplayPrivacy.ALLOW to mapOf(
+                Slider::class.java to allowSliderMapper,
+                TabLayout.TabView::class.java to allowTabWireframeMapper
             ),
-            SessionReplayPrivacy.MASK_ALL to mapOf(
-                Slider::class.java to maskAllSliderMapper,
-                TabLayout.TabView::class.java to maskAllTabWireframeMapper
+            SessionReplayPrivacy.MASK to mapOf(
+                Slider::class.java to maskSliderMapper,
+                TabLayout.TabView::class.java to maskTabWireframeMapper
             ),
             SessionReplayPrivacy.MASK_USER_INPUT to mapOf(
                 Slider::class.java to maskUserInputSliderMapper,
-                TabLayout.TabView::class.java to allowAllTabWireframeMapper
+                TabLayout.TabView::class.java to allowTabWireframeMapper
             )
         )
     }

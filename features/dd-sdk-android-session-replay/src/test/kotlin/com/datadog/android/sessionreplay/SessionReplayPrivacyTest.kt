@@ -24,14 +24,14 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckedTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.EditTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckBoxMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckedTextViewMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllNumberPickerMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllRadioButtonMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllSeekBarWireframeMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllSwitchCompatMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskCheckBoxMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskCheckedTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskInputTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskNumberPickerMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskRadioButtonMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskSeekBarWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskSwitchCompatMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.NumberPickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.RadioButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWireframeMapper
@@ -77,8 +77,8 @@ internal class SessionReplayPrivacyTest {
 
         // When
         val actualMappers = when (maskLevel) {
-            SessionReplayPrivacy.ALLOW_ALL.toString() -> SessionReplayPrivacy.ALLOW_ALL.mappers()
-            SessionReplayPrivacy.MASK_ALL.toString() -> SessionReplayPrivacy.MASK_ALL.mappers()
+            SessionReplayPrivacy.ALLOW.toString() -> SessionReplayPrivacy.ALLOW.mappers()
+            SessionReplayPrivacy.MASK.toString() -> SessionReplayPrivacy.MASK.mappers()
             SessionReplayPrivacy.MASK_USER_INPUT.toString() -> SessionReplayPrivacy.MASK_USER_INPUT.mappers()
             else -> throw IllegalArgumentException("Unknown masking level")
         }
@@ -120,7 +120,7 @@ internal class SessionReplayPrivacyTest {
             MapperTypeWrapper(AppCompatToolbar::class.java, mockUnsupportedViewMapper.toGenericMapper())
         )
 
-        // ALLOW_ALL
+        // ALLOW
         private val mockTextViewMapper: TextViewMapper = mock()
         private val mockSwitchCompatMapper: SwitchCompatMapper = mock()
         private val mockCheckedTextViewMapper: CheckedTextViewMapper = mock()
@@ -129,7 +129,7 @@ internal class SessionReplayPrivacyTest {
         private val mockSeekBarMapper: SeekBarWireframeMapper = mock()
         private val mockNumberPickerMapper: NumberPickerMapper = mock()
 
-        private val allowAll = baseMappers + listOf(
+        private val allow = baseMappers + listOf(
             MapperTypeWrapper(TextView::class.java, mockTextViewMapper.toGenericMapper()),
             MapperTypeWrapper(CheckedTextView::class.java, mockCheckedTextViewMapper.toGenericMapper()),
             MapperTypeWrapper(CheckBox::class.java, mockCheckBoxMapper.toGenericMapper()),
@@ -137,45 +137,45 @@ internal class SessionReplayPrivacyTest {
             MapperTypeWrapper(SwitchCompat::class.java, mockSwitchCompatMapper.toGenericMapper())
         )
 
-        private val allowAllFromApi21 = allowAll + listOf(
+        private val allowFromApi21 = allow + listOf(
             MapperTypeWrapper(Toolbar::class.java, mockUnsupportedViewMapper.toGenericMapper())
         )
 
-        private val allowAllFromApi26 = allowAllFromApi21 + listOf(
+        private val allowFromApi26 = allowFromApi21 + listOf(
             MapperTypeWrapper(SeekBar::class.java, mockSeekBarMapper.toGenericMapper())
         )
 
-        private val allowAllFromApi29 = allowAllFromApi26 + listOf(
+        private val allowFromApi29 = allowFromApi26 + listOf(
             MapperTypeWrapper(NumberPicker::class.java, mockNumberPickerMapper.toGenericMapper())
         )
 
-        // MASK_ALL
-        private val mockMaskAllTextViewMapper: MaskAllTextViewMapper = mock()
-        private val mockMaskAllCheckedTextViewMapper: MaskAllCheckedTextViewMapper = mock()
-        private val mockMaskAllCheckBoxMapper: MaskAllCheckBoxMapper = mock()
-        private val mockMaskAllRadioButtonMapper: MaskAllRadioButtonMapper = mock()
-        private val mockMaskAllSwitchCompatMapper: MaskAllSwitchCompatMapper = mock()
-        private val mockMaskAllSeekBarWireframeMapper: MaskAllSeekBarWireframeMapper = mock()
-        private val mockMaskAllNumberPickerMapper: MaskAllNumberPickerMapper = mock()
+        // MASK
+        private val mockMaskTextViewMapper: MaskTextViewMapper = mock()
+        private val mockMaskCheckedTextViewMapper: MaskCheckedTextViewMapper = mock()
+        private val mockMaskCheckBoxMapper: MaskCheckBoxMapper = mock()
+        private val mockMaskRadioButtonMapper: MaskRadioButtonMapper = mock()
+        private val mockMaskSwitchCompatMapper: MaskSwitchCompatMapper = mock()
+        private val mockMaskSeekBarWireframeMapper: MaskSeekBarWireframeMapper = mock()
+        private val mockMaskNumberPickerMapper: MaskNumberPickerMapper = mock()
 
-        private val maskAll = baseMappers + listOf(
-            MapperTypeWrapper(TextView::class.java, mockMaskAllTextViewMapper.toGenericMapper()),
-            MapperTypeWrapper(CheckedTextView::class.java, mockMaskAllCheckedTextViewMapper.toGenericMapper()),
-            MapperTypeWrapper(CheckBox::class.java, mockMaskAllCheckBoxMapper.toGenericMapper()),
-            MapperTypeWrapper(RadioButton::class.java, mockMaskAllRadioButtonMapper.toGenericMapper()),
-            MapperTypeWrapper(SwitchCompat::class.java, mockMaskAllSwitchCompatMapper.toGenericMapper())
+        private val mask = baseMappers + listOf(
+            MapperTypeWrapper(TextView::class.java, mockMaskTextViewMapper.toGenericMapper()),
+            MapperTypeWrapper(CheckedTextView::class.java, mockMaskCheckedTextViewMapper.toGenericMapper()),
+            MapperTypeWrapper(CheckBox::class.java, mockMaskCheckBoxMapper.toGenericMapper()),
+            MapperTypeWrapper(RadioButton::class.java, mockMaskRadioButtonMapper.toGenericMapper()),
+            MapperTypeWrapper(SwitchCompat::class.java, mockMaskSwitchCompatMapper.toGenericMapper())
         )
 
-        private val maskAllFromApi21 = maskAll + listOf(
+        private val maskFromApi21 = mask + listOf(
             MapperTypeWrapper(Toolbar::class.java, mockUnsupportedViewMapper.toGenericMapper())
         )
 
-        private val maskAllFromApi26 = maskAllFromApi21 + listOf(
-            MapperTypeWrapper(SeekBar::class.java, mockMaskAllSeekBarWireframeMapper.toGenericMapper())
+        private val maskFromApi26 = maskFromApi21 + listOf(
+            MapperTypeWrapper(SeekBar::class.java, mockMaskSeekBarWireframeMapper.toGenericMapper())
         )
 
-        private val maskAllFromApi29 = maskAllFromApi26 + listOf(
-            MapperTypeWrapper(NumberPicker::class.java, mockMaskAllNumberPickerMapper.toGenericMapper())
+        private val maskFromApi29 = maskFromApi26 + listOf(
+            MapperTypeWrapper(NumberPicker::class.java, mockMaskNumberPickerMapper.toGenericMapper())
         )
 
         // MASK_USER_INPUT
@@ -183,10 +183,10 @@ internal class SessionReplayPrivacyTest {
 
         private val maskUserInput = baseMappers + listOf(
             MapperTypeWrapper(TextView::class.java, mockMaskInputTextViewMapper.toGenericMapper()),
-            MapperTypeWrapper(CheckedTextView::class.java, mockMaskAllCheckedTextViewMapper.toGenericMapper()),
-            MapperTypeWrapper(CheckBox::class.java, mockMaskAllCheckBoxMapper.toGenericMapper()),
-            MapperTypeWrapper(RadioButton::class.java, mockMaskAllRadioButtonMapper.toGenericMapper()),
-            MapperTypeWrapper(SwitchCompat::class.java, mockMaskAllSwitchCompatMapper.toGenericMapper())
+            MapperTypeWrapper(CheckedTextView::class.java, mockMaskCheckedTextViewMapper.toGenericMapper()),
+            MapperTypeWrapper(CheckBox::class.java, mockMaskCheckBoxMapper.toGenericMapper()),
+            MapperTypeWrapper(RadioButton::class.java, mockMaskRadioButtonMapper.toGenericMapper()),
+            MapperTypeWrapper(SwitchCompat::class.java, mockMaskSwitchCompatMapper.toGenericMapper())
         )
 
         private val maskUserInputFromApi21 = maskUserInput + listOf(
@@ -194,27 +194,27 @@ internal class SessionReplayPrivacyTest {
         )
 
         private val maskUserInputFromApi26 = maskUserInputFromApi21 + listOf(
-            MapperTypeWrapper(SeekBar::class.java, mockMaskAllSeekBarWireframeMapper.toGenericMapper())
+            MapperTypeWrapper(SeekBar::class.java, mockMaskSeekBarWireframeMapper.toGenericMapper())
         )
 
         private val maskUserInputFromApi29 = maskUserInputFromApi26 + listOf(
-            MapperTypeWrapper(NumberPicker::class.java, mockMaskAllNumberPickerMapper.toGenericMapper())
+            MapperTypeWrapper(NumberPicker::class.java, mockMaskNumberPickerMapper.toGenericMapper())
         )
 
         @JvmStatic
         @Parameterized.Parameters
         fun provideTestArguments(): Stream<Arguments> {
-            val allowAllLevel = SessionReplayPrivacy.ALLOW_ALL.toString()
-            val maskAllLevel = SessionReplayPrivacy.MASK_ALL.toString()
+            val allowLevel = SessionReplayPrivacy.ALLOW.toString()
+            val maskLevel = SessionReplayPrivacy.MASK.toString()
             val maskUserInputLevel = SessionReplayPrivacy.MASK_USER_INPUT.toString()
 
             return Stream.of(
-                Arguments.of(Build.VERSION_CODES.LOLLIPOP, allowAllLevel, allowAllFromApi21),
-                Arguments.of(Build.VERSION_CODES.O, allowAllLevel, allowAllFromApi26),
-                Arguments.of(Build.VERSION_CODES.Q, allowAllLevel, allowAllFromApi29),
-                Arguments.of(Build.VERSION_CODES.LOLLIPOP, maskAllLevel, maskAllFromApi21),
-                Arguments.of(Build.VERSION_CODES.O, maskAllLevel, maskAllFromApi26),
-                Arguments.of(Build.VERSION_CODES.Q, maskAllLevel, maskAllFromApi29),
+                Arguments.of(Build.VERSION_CODES.LOLLIPOP, allowLevel, allowFromApi21),
+                Arguments.of(Build.VERSION_CODES.O, allowLevel, allowFromApi26),
+                Arguments.of(Build.VERSION_CODES.Q, allowLevel, allowFromApi29),
+                Arguments.of(Build.VERSION_CODES.LOLLIPOP, maskLevel, maskFromApi21),
+                Arguments.of(Build.VERSION_CODES.O, maskLevel, maskFromApi26),
+                Arguments.of(Build.VERSION_CODES.Q, maskLevel, maskFromApi29),
                 Arguments.of(Build.VERSION_CODES.LOLLIPOP, maskUserInputLevel, maskUserInputFromApi21),
                 Arguments.of(Build.VERSION_CODES.O, maskUserInputLevel, maskUserInputFromApi26),
                 Arguments.of(Build.VERSION_CODES.Q, maskUserInputLevel, maskUserInputFromApi29)

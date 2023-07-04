@@ -25,14 +25,14 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckedTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.EditTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckBoxMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllCheckedTextViewMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllNumberPickerMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllRadioButtonMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllSeekBarWireframeMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllSwitchCompatMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskCheckBoxMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskCheckedTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskInputTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskNumberPickerMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskRadioButtonMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskSeekBarWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskSwitchCompatMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.NumberPickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.RadioButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWireframeMapper
@@ -46,8 +46,8 @@ import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 
 /**
  * Defines the Session Replay privacy policy when recording the sessions.
- * @see SessionReplayPrivacy.ALLOW_ALL
- * @see SessionReplayPrivacy.MASK_ALL
+ * @see SessionReplayPrivacy.ALLOW
+ * @see SessionReplayPrivacy.MASK
  * @see SessionReplayPrivacy.MASK_USER_INPUT
  *
  */
@@ -58,14 +58,14 @@ enum class SessionReplayPrivacy {
      * inputType will be masked no matter what the privacy option with space-preserving "x" mask
      * (each char individually)
      **/
-    ALLOW_ALL,
+    ALLOW,
 
     /**
      *  Masks all the elements. All the characters in texts will be replaced by X, images will be
      *  replaced with just a placeholder and switch buttons, check boxes and radio buttons will also
      *  be masked. This is the default privacy rule.
      **/
-    MASK_ALL,
+    MASK,
 
     /**
      * Masks most form fields such as inputs, checkboxes, radio buttons, switchers, sliders, etc.
@@ -88,7 +88,7 @@ enum class SessionReplayPrivacy {
         val seekBarMapper: SeekBarWireframeMapper?
         val numberPickerMapper: BasePickerMapper?
         when (this) {
-            ALLOW_ALL -> {
+            ALLOW -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
                 textMapper = TextViewMapper()
                 buttonMapper = ButtonMapper(textMapper)
@@ -100,29 +100,29 @@ enum class SessionReplayPrivacy {
                 seekBarMapper = getSeekBarMapper()
                 numberPickerMapper = getNumberPickerMapper()
             }
-            MASK_ALL -> {
+            MASK -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
-                textMapper = MaskAllTextViewMapper()
+                textMapper = MaskTextViewMapper()
                 buttonMapper = ButtonMapper(textMapper)
                 editTextViewMapper = EditTextViewMapper(textMapper)
-                checkedTextViewMapper = MaskAllCheckedTextViewMapper(textMapper)
-                checkBoxMapper = MaskAllCheckBoxMapper(textMapper)
-                radioButtonMapper = MaskAllRadioButtonMapper(textMapper)
-                switchCompatMapper = MaskAllSwitchCompatMapper(textMapper)
-                seekBarMapper = getMaskAllSeekBarMapper()
-                numberPickerMapper = getMaskAllNumberPickerMapper()
+                checkedTextViewMapper = MaskCheckedTextViewMapper(textMapper)
+                checkBoxMapper = MaskCheckBoxMapper(textMapper)
+                radioButtonMapper = MaskRadioButtonMapper(textMapper)
+                switchCompatMapper = MaskSwitchCompatMapper(textMapper)
+                seekBarMapper = getMaskSeekBarMapper()
+                numberPickerMapper = getMaskNumberPickerMapper()
             }
             MASK_USER_INPUT -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
                 textMapper = MaskInputTextViewMapper()
                 buttonMapper = ButtonMapper(textMapper)
                 editTextViewMapper = EditTextViewMapper(textMapper)
-                checkedTextViewMapper = MaskAllCheckedTextViewMapper(textMapper)
-                checkBoxMapper = MaskAllCheckBoxMapper(textMapper)
-                radioButtonMapper = MaskAllRadioButtonMapper(textMapper)
-                switchCompatMapper = MaskAllSwitchCompatMapper(textMapper)
-                seekBarMapper = getMaskAllSeekBarMapper()
-                numberPickerMapper = getMaskAllNumberPickerMapper()
+                checkedTextViewMapper = MaskCheckedTextViewMapper(textMapper)
+                checkBoxMapper = MaskCheckBoxMapper(textMapper)
+                radioButtonMapper = MaskRadioButtonMapper(textMapper)
+                switchCompatMapper = MaskSwitchCompatMapper(textMapper)
+                seekBarMapper = getMaskSeekBarMapper()
+                numberPickerMapper = getMaskNumberPickerMapper()
             }
         }
         val mappersList = mutableListOf(
@@ -157,9 +157,9 @@ enum class SessionReplayPrivacy {
         return mappersList
     }
 
-    private fun getMaskAllSeekBarMapper(): MaskAllSeekBarWireframeMapper? {
+    private fun getMaskSeekBarMapper(): MaskSeekBarWireframeMapper? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            MaskAllSeekBarWireframeMapper()
+            MaskSeekBarWireframeMapper()
         } else {
             null
         }
@@ -181,9 +181,9 @@ enum class SessionReplayPrivacy {
         }
     }
 
-    private fun getMaskAllNumberPickerMapper(): BasePickerMapper? {
+    private fun getMaskNumberPickerMapper(): BasePickerMapper? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            MaskAllNumberPickerMapper()
+            MaskNumberPickerMapper()
         } else {
             null
         }

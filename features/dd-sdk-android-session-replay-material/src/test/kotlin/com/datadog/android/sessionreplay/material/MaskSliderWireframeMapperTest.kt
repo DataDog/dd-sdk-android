@@ -24,10 +24,10 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class MaskAllSliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
+internal class MaskSliderWireframeMapperTest : BaseSliderWireframeMapperTest() {
 
     override fun provideTestInstance(): SliderWireframeMapper {
-        return MaskAllSliderWireframeMapper(
+        return MaskSliderWireframeMapper(
             viewUtils = mockViewUtils,
             stringUtils = mockStringUtils,
             uniqueIdentifierGenerator = mockUniqueIdentifierGenerator

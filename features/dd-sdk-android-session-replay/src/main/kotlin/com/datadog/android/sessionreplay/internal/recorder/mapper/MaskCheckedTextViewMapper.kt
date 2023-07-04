@@ -6,30 +6,30 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.widget.RadioButton
+import android.widget.CheckedTextView
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
-internal class MaskAllRadioButtonMapper(
+internal class MaskCheckedTextViewMapper(
     textWireframeMapper: TextViewMapper,
     stringUtils: StringUtils = StringUtils,
-    uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
+    uniqueIdentifierGenerator: UniqueIdentifierGenerator =
+        UniqueIdentifierGenerator,
     viewUtils: ViewUtils = ViewUtils
-) : RadioButtonMapper(
+) : CheckedTextViewMapper(
     textWireframeMapper,
     stringUtils,
     uniqueIdentifierGenerator,
     viewUtils
 ) {
 
-    override fun resolveCheckedShapeStyle(view: RadioButton, checkBoxColor: String):
-        MobileSegment.ShapeStyle {
-        return MobileSegment.ShapeStyle(
-            backgroundColor = null,
-            view.alpha,
-            cornerRadius = CORNER_RADIUS
-        )
+    override fun resolveCheckedShapeStyle(view: CheckedTextView, checkBoxColor: String):
+        MobileSegment.ShapeStyle? {
+        // in case the MASK rule is applied we do not want to show the selection in the
+        // checkbox related wireframe and in order to achieve that we need to provide
+        // a null value for the `ShapeStyle` and only keep the `ShapeBorder`.
+        return null
     }
 }

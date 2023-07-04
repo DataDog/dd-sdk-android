@@ -66,7 +66,7 @@ internal open class SessionReplayPlaygroundActivity : AppCompatActivity() {
 
     open fun sessionReplayConfiguration(): SessionReplayConfiguration =
         RuntimeConfig.sessionReplayConfigBuilder(SAMPLE_IN_ALL_SESSIONS)
-            .setPrivacy(SessionReplayPrivacy.ALLOW_ALL)
+            .setPrivacy(SessionReplayPrivacy.ALLOW)
             .build()
 
     @Suppress("LongMethod")

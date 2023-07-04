@@ -7,10 +7,12 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.MaskObfuscationRule
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
@@ -24,17 +26,19 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class MaskAllCheckedTextViewMapperTest : BaseCheckedTextViewMapperTest() {
+internal class MaskTextViewMapperTest : BaseTextViewWireframeMapperTest() {
 
-    override fun setupTestedMapper(): CheckedTextViewMapper {
-        return MaskAllCheckedTextViewMapper(
-            textWireframeMapper = mockTextWireframeMapper,
-            uniqueIdentifierGenerator = mockuniqueIdentifierGenerator,
-            viewUtils = mockViewUtils
-        )
+    override fun initTestedMapper(): TextViewMapper {
+        return MaskTextViewMapper(mockObfuscationRule)
     }
 
-    override fun expectedCheckedShapeStyle(checkBoxColor: String): MobileSegment.ShapeStyle? {
-        return null
+    @Test
+    fun `M use the MaskObfuscationRule as defaultObfuscator when initialized`() {
+        // When
+        val textViewMapper = MaskTextViewMapper()
+
+        // Then
+        assertThat(textViewMapper.textValueObfuscationRule)
+            .isInstanceOf(MaskObfuscationRule::class.java)
     }
 }

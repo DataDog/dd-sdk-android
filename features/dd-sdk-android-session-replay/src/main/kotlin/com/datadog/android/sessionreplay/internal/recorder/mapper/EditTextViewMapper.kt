@@ -16,7 +16,7 @@ import com.datadog.android.sessionreplay.utils.ViewUtils
 
 /**
  * A [WireframeMapper] implementation to map a [EditText] component in case the
- * [SessionReplayPrivacy.ALLOW_ALL] rule was used in the configuration.
+ * [SessionReplayPrivacy.ALLOW] rule was used in the configuration.
  * In this case the mapper will use the provided [textViewMapper] used for the current privacy
  * level and will only mask the [EditText] for which the input type is considered sensible
  * (password, email, address, postal address, numeric password) with the static mask: [***].

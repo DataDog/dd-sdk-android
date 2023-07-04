@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.material
 
-import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskAllTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskTextViewMapper
 import com.datadog.android.sessionreplay.material.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -24,10 +24,10 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class MaskAllTabWireframeMapperTest : BaseTabWireframeMapperTest() {
+internal class MaskTabWireframeMapperTest : BaseTabWireframeMapperTest() {
 
     override fun provideTestInstance(): TabWireframeMapper {
-        return MaskAllTabWireframeMapper(
+        return MaskTabWireframeMapper(
             viewUtils = mockViewUtils,
             uniqueIdentifierGenerator = mockUniqueIdentifierGenerator,
             textViewMapper = mockTextWireframeMapper
@@ -35,12 +35,12 @@ internal class MaskAllTabWireframeMapperTest : BaseTabWireframeMapperTest() {
     }
 
     @Test
-    fun `M use a MaskAllTextViewMapper when initialized`() {
+    fun `M use a MaskTextViewMapper when initialized`() {
         // Given
-        val maskAllTabWireframeMapper = MaskAllTabWireframeMapper()
+        val maskTabWireframeMapper = MaskTabWireframeMapper()
 
         // Then
-        assertThat(maskAllTabWireframeMapper.textViewMapper)
-            .isInstanceOf(MaskAllTextViewMapper::class.java)
+        assertThat(maskTabWireframeMapper.textViewMapper)
+            .isInstanceOf(MaskTextViewMapper::class.java)
     }
 }
