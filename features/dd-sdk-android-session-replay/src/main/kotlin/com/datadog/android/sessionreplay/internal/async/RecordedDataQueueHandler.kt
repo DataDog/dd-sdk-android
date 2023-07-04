@@ -49,7 +49,8 @@ internal class RecordedDataQueueHandler {
          * if we ever decide to make the poolsize greater than 1, we need to ensure
          * synchronization works correctly in the triggerProcessingLoop method below
          */
-        executorService = ThreadPoolExecutor(
+        // all parameters are non-negative and queue is not null
+        executorService = @Suppress("UnsafeThirdPartyFunctionCall") ThreadPoolExecutor(
             CORE_DEFAULT_POOL_SIZE,
             CORE_DEFAULT_POOL_SIZE,
             THREAD_POOL_MAX_KEEP_ALIVE_MS,
@@ -128,6 +129,7 @@ internal class RecordedDataQueueHandler {
         @Suppress("SwallowedException", "TooGenericExceptionCaught")
         try {
             executorService.execute {
+                @Suppress("ThreadSafety") // already in the worker thread context
                 triggerProcessingLoop(currentTime)
             }
         } catch (e: RejectedExecutionException) {
@@ -161,6 +163,7 @@ internal class RecordedDataQueueHandler {
         }
     }
 
+    @WorkerThread
     private fun processItem(nextItem: RecordedDataQueueItem?) {
         when (nextItem) {
             is SnapshotRecordedDataQueueItem ->
@@ -170,10 +173,12 @@ internal class RecordedDataQueueHandler {
         }
     }
 
+    @WorkerThread
     private fun processSnapshotEvent(item: SnapshotRecordedDataQueueItem) {
         processor.processScreenSnapshots(item)
     }
 
+    @WorkerThread
     private fun processTouchEvent(item: TouchEventRecordedDataQueueItem) {
         processor.processTouchEventsRecords(item)
     }

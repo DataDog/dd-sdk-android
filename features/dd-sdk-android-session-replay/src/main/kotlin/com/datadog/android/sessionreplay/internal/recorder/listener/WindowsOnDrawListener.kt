@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.listener
 import android.content.Context
 import android.view.View
 import android.view.ViewTreeObserver
+import androidx.annotation.MainThread
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
@@ -30,10 +31,12 @@ internal class WindowsOnDrawListener(
         weakReferencedDecorViews = zOrderedDecorViews.map { WeakReference(it) }
     }
 
+    @MainThread
     override fun onDraw() {
         debouncer.debounce(resolveTakeSnapshotRunnable())
     }
 
+    @MainThread
     private fun resolveTakeSnapshotRunnable(): Runnable = Runnable {
         if (weakReferencedDecorViews.isEmpty()) {
             return@Runnable

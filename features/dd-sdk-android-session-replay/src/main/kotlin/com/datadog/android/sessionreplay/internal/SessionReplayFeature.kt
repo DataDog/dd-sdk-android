@@ -91,6 +91,7 @@ internal class SessionReplayFeature constructor(
         sdkCore.setEventReceiver(SESSION_REPLAY_FEATURE_NAME, this)
         dataWriter = createDataWriter()
         sessionReplayRecorder = sessionReplayRecorderProvider(dataWriter, appContext)
+        @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from worker thread
         sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
     }
@@ -103,6 +104,7 @@ internal class SessionReplayFeature constructor(
 
     override fun onStop() {
         stopRecording()
+        @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from worker thread
         sessionReplayRecorder.unregisterCallbacks()
         dataWriter = NoOpRecordWriter()
         sessionReplayRecorder = NoOpRecorder()
@@ -186,6 +188,7 @@ internal class SessionReplayFeature constructor(
             return
         }
         if (!isRecording.getAndSet(true)) {
+            @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from worker thread
             sessionReplayRecorder.resumeRecorders()
         }
     }
@@ -200,6 +203,7 @@ internal class SessionReplayFeature constructor(
      */
     internal fun stopRecording() {
         if (isRecording.getAndSet(false)) {
+            @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from worker thread
             sessionReplayRecorder.stopRecorders()
         }
     }

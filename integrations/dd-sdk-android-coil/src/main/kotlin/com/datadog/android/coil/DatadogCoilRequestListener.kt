@@ -58,8 +58,10 @@ class DatadogCoilRequestListener @JvmOverloads constructor(
                 )
             }
             is HttpUrl -> {
+                @Suppress("UnsafeThirdPartyFunctionCall") // valid HTTP url during toUrl call
+                val urlValue = (request.data as HttpUrl).toUrl().toString()
                 mapOf(
-                    REQUEST_PATH_TAG to (request.data as HttpUrl).toUrl().toString()
+                    REQUEST_PATH_TAG to urlValue
                 )
             }
             is File -> {

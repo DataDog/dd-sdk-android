@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.callback
 import android.content.Context
 import android.view.MotionEvent
 import android.view.Window
+import androidx.annotation.MainThread
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
@@ -41,6 +42,7 @@ internal class RecorderWindowCallback(
 
     // region Window.Callback
 
+    @MainThread
     override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
         if (event != null) {
             // we copy it and delegate it to the gesture detector for analysis
@@ -70,6 +72,7 @@ internal class RecorderWindowCallback(
 
     // region Internal
 
+    @MainThread
     private fun handleEvent(event: MotionEvent) {
         when (event.action.and(MotionEvent.ACTION_MASK)) {
             MotionEvent.ACTION_DOWN -> {
@@ -119,6 +122,7 @@ internal class RecorderWindowCallback(
         }
     }
 
+    @MainThread
     private fun flushPositions() {
         if (pointerInteractions.isEmpty()) {
             return
