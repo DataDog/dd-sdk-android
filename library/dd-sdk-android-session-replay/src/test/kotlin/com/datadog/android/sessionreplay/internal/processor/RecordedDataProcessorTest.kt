@@ -19,7 +19,6 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileIncrementalData
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -38,8 +37,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -55,9 +52,6 @@ internal class RecordedDataProcessorTest {
 
     @Mock
     lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
-    lateinit var mockExecutorService: ExecutorService
 
     @Mock
     lateinit var mockMutationResolver: MutationResolver
@@ -141,10 +135,6 @@ internal class RecordedDataProcessorTest {
             .thenReturn(forge.aList { forge.getForgery() })
         whenever(mockMutationResolver.resolveMutations(any(), any()))
             .thenReturn(forge.getForgery())
-        whenever(mockExecutorService.submit(any())).then {
-            (it.arguments[0] as Runnable).run()
-            mock<Future<Boolean>>()
-        }
         whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTimestamp)
         testedProcessor = RecordedDataProcessor(
             mockWriter,
