@@ -191,9 +191,18 @@
                 >
 
                 <androidx.appcompat.widget.AppCompatImageButton
-                    android:id="@+id/imageButton"
-                    android:layout_width="200dp"
-                    android:layout_height="200dp"
+                    android:id="@+id/imageButtonBundled"
+                    android:layout_width="160dp"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_dd_icon_rgb"
+                    android:contentDescription="@string/title_imagebuttons"
+                    />
+
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/imageButtonBundledStatelist"
+                    android:layout_width="160dp"
+                    android:layout_height="match_parent"
                     android:scaleType="centerCrop"
                     android:src="@drawable/ic_dd_statelist"
                     android:contentDescription="@string/title_imagebuttons"

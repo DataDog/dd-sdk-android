@@ -10,6 +10,7 @@ import android.content.Context
 import android.view.View
 import android.view.ViewTreeObserver
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
+import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
@@ -21,7 +22,9 @@ internal class WindowsOnDrawListener(
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val snapshotProducer: SnapshotProducer,
     private val debouncer: Debouncer = Debouncer(),
-    private val miscUtils: MiscUtils = MiscUtils
+    private val miscUtils: MiscUtils = MiscUtils,
+    private val recordedDataQueueRefs: RecordedDataQueueRefs =
+        RecordedDataQueueRefs(recordedDataQueueHandler)
 ) : ViewTreeObserver.OnDrawListener {
 
     internal val weakReferencedDecorViews: List<WeakReference<View>>
@@ -44,10 +47,12 @@ internal class WindowsOnDrawListener(
         val item = recordedDataQueueHandler.addSnapshotItem(systemInformation)
             ?: return@Runnable
 
+        recordedDataQueueRefs.recordedDataQueueItem = item
+
         val nodes = weakReferencedDecorViews
             .mapNotNull { it.get() }
             .mapNotNull {
-                snapshotProducer.produce(it, systemInformation)
+                snapshotProducer.produce(it, systemInformation, recordedDataQueueRefs)
             }
 
         if (nodes.isNotEmpty()) {

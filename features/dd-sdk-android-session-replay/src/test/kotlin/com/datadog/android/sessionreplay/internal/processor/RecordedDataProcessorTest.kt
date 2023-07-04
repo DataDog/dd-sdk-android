@@ -33,13 +33,10 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -55,9 +52,6 @@ internal class RecordedDataProcessorTest {
 
     @Mock
     lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
-    lateinit var mockExecutorService: ExecutorService
 
     @Mock
     lateinit var mockMutationResolver: MutationResolver
@@ -141,10 +135,6 @@ internal class RecordedDataProcessorTest {
             .thenReturn(forge.aList { forge.getForgery() })
         whenever(mockMutationResolver.resolveMutations(any(), any()))
             .thenReturn(forge.getForgery())
-        whenever(mockExecutorService.submit(any())).then {
-            (it.arguments[0] as Runnable).run()
-            mock<Future<Boolean>>()
-        }
         whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTimestamp)
         testedProcessor = RecordedDataProcessor(
             mockWriter,

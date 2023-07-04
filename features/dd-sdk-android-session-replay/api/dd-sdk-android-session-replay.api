@@ -87,14 +87,41 @@ public final class com/datadog/android/sessionreplay/internal/recorder/SystemInf
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract class com/datadog/android/sessionreplay/internal/recorder/mapper/BaseWireframeMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper {
+public final class com/datadog/android/sessionreplay/internal/recorder/base64/Base64Serializer {
+	public synthetic fun <init> (Ljava/util/concurrent/ExecutorService;Lcom/datadog/android/sessionreplay/internal/utils/DrawableUtils;Lcom/datadog/android/sessionreplay/internal/utils/Base64Utils;Lcom/datadog/android/sessionreplay/internal/recorder/base64/ImageCompression;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
+public abstract interface class com/datadog/android/sessionreplay/internal/recorder/base64/ImageCompression {
+	public abstract fun compressBitmapToStream (Landroid/graphics/Bitmap;)Ljava/io/ByteArrayOutputStream;
+	public abstract fun getMimeType ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/internal/recorder/base64/WebPImageCompression : com/datadog/android/sessionreplay/internal/recorder/base64/ImageCompression {
+	public static final field Companion Lcom/datadog/android/sessionreplay/internal/recorder/base64/WebPImageCompression$Companion;
+	public fun compressBitmapToStream (Landroid/graphics/Bitmap;)Ljava/io/ByteArrayOutputStream;
+	public fun getMimeType ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/internal/recorder/base64/WebPImageCompression$Companion {
+}
+
+public abstract class com/datadog/android/sessionreplay/internal/recorder/mapper/BaseWireframeMapper : com/datadog/android/sessionreplay/internal/AsyncImageProcessingCallback, com/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper {
+	public static final field Companion Lcom/datadog/android/sessionreplay/internal/recorder/mapper/BaseWireframeMapper$Companion;
 	public fun <init> ()V
-	public fun <init> (Lcom/datadog/android/sessionreplay/utils/StringUtils;Lcom/datadog/android/sessionreplay/utils/ViewUtils;)V
-	public synthetic fun <init> (Lcom/datadog/android/sessionreplay/utils/StringUtils;Lcom/datadog/android/sessionreplay/utils/ViewUtils;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/sessionreplay/utils/StringUtils;Lcom/datadog/android/sessionreplay/utils/ViewUtils;Lcom/datadog/android/sessionreplay/internal/recorder/base64/ImageCompression;Lcom/datadog/android/sessionreplay/utils/UniqueIdentifierGenerator;Lcom/datadog/android/sessionreplay/internal/recorder/base64/Base64Serializer;)V
+	public synthetic fun <init> (Lcom/datadog/android/sessionreplay/utils/StringUtils;Lcom/datadog/android/sessionreplay/utils/ViewUtils;Lcom/datadog/android/sessionreplay/internal/recorder/base64/ImageCompression;Lcom/datadog/android/sessionreplay/utils/UniqueIdentifierGenerator;Lcom/datadog/android/sessionreplay/internal/recorder/base64/Base64Serializer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	protected final fun colorAndAlphaAsStringHexa (II)Ljava/lang/String;
+	public fun finishProcessingImage ()V
+	protected final fun getWebPMimeType ()Ljava/lang/String;
+	protected final fun handleBitmap (Landroid/util/DisplayMetrics;Landroid/graphics/drawable/Drawable;Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe;)V
+	protected final fun resolveChildDrawableUniqueIdentifier (Landroid/view/View;)Ljava/lang/Long;
 	protected final fun resolveShapeStyleAndBorder (Landroid/graphics/drawable/Drawable;F)Lkotlin/Pair;
 	protected final fun resolveViewGlobalBounds (Landroid/view/View;F)Lcom/datadog/android/sessionreplay/internal/recorder/GlobalBounds;
 	protected final fun resolveViewId (Landroid/view/View;)J
+	public fun startProcessingImage ()V
+}
+
+public final class com/datadog/android/sessionreplay/internal/recorder/mapper/BaseWireframeMapper$Companion {
 }
 
 public final class com/datadog/android/sessionreplay/internal/recorder/mapper/MaskInputTextViewMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/TextViewMapper {

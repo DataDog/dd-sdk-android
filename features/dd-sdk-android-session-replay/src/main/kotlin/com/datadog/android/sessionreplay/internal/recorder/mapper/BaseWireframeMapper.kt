@@ -11,17 +11,27 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.RippleDrawable
 import android.os.Build
+import android.util.DisplayMetrics
 import android.view.View
+import com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
+import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
+import com.datadog.android.sessionreplay.internal.recorder.base64.ImageCompression
+import com.datadog.android.sessionreplay.internal.recorder.base64.WebPImageCompression
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.StringUtils
+import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
 @Suppress("UndocumentedPublicClass")
 abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
     private val stringUtils: StringUtils = StringUtils,
-    private val viewUtils: ViewUtils = ViewUtils
-) : WireframeMapper<T, S> {
+    private val viewUtils: ViewUtils = ViewUtils,
+    private val webPImageCompression: ImageCompression = WebPImageCompression(),
+    private val uniqueIdentiferGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
+    // TODO: REPLAY-1856 find a way to remove base64 dependency from the constructor
+    private val base64Serializer: Base64Serializer = Base64Serializer.Builder().build()
+) : WireframeMapper<T, S>, AsyncImageProcessingCallback {
 
     /**
      * Resolves the [View] unique id to be used in the mapped [MobileSegment.Wireframe].
@@ -75,7 +85,43 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
         }
     }
 
-    internal companion object {
+    /**
+     * Resolve a unique identifier for a view.
+     */
+    protected fun resolveChildDrawableUniqueIdentifier(view: View): Long? =
+        uniqueIdentiferGenerator.resolveChildUniqueIdentifier(view, DRAWABLE_CHILD_NAME)
+
+    /**
+     * Resolve a mimetype from an extension.
+     */
+    protected fun getWebPMimeType(): String? =
+        webPImageCompression.getMimeType()
+
+    /**
+     * Resolve drawable and update image wireframe.
+     */
+    protected fun handleBitmap(
+        displayMetrics: DisplayMetrics,
+        drawable: Drawable,
+        imageWireframe: MobileSegment.Wireframe.ImageWireframe
+    ) =
+        base64Serializer.handleBitmap(
+            displayMetrics,
+            drawable,
+            imageWireframe
+        )
+
+    internal fun registerAsyncImageProcessingCallback(
+        asyncImageProcessingCallback: AsyncImageProcessingCallback
+    ) {
+        base64Serializer.registerAsyncLoadingCallback(asyncImageProcessingCallback)
+    }
+
+    override fun startProcessingImage() {}
+    override fun finishProcessingImage() {}
+
+    companion object {
         internal const val OPAQUE_ALPHA_VALUE: Int = 255
+        private const val DRAWABLE_CHILD_NAME = "drawable"
     }
 }
