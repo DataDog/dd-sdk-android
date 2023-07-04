@@ -37,11 +37,11 @@ class SpanE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
-     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
-     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(String?, android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(String?, android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
      * apiMethodSignature: com.datadog.android.trace.TraceConfiguration$Builder#fun build(): TraceConfiguration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(String, String, String = NO_VARIANT, String? = null)
      */
     @Before
     fun setUp() {

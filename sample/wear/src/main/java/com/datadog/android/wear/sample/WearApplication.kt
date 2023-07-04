@@ -12,7 +12,6 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.privacy.TrackingConsent
@@ -40,7 +39,6 @@ class WearApplication : Application() {
         Datadog.setVerbosity(Log.VERBOSE)
         Datadog.initialize(
             this,
-            createDatadogCredentials(),
             createDatadogConfiguration(),
             TrackingConsent.GRANTED
         )
@@ -76,7 +74,7 @@ class WearApplication : Application() {
             .build()
         Trace.enable(tracesConfig)
 
-        Datadog.getInstance().setUserInfo(
+        Datadog.setUserInfo(
             UserInfo(
                 id = "wear 42",
                 name = null,
@@ -91,17 +89,11 @@ class WearApplication : Application() {
         )
     }
 
-    private fun createDatadogCredentials(): Credentials {
-        return Credentials(
+    private fun createDatadogConfiguration(): Configuration {
+        val configBuilder = Configuration.Builder(
             clientToken = BuildConfig.DD_CLIENT_TOKEN,
             env = BuildConfig.BUILD_TYPE,
             variant = BuildConfig.FLAVOR
-        )
-    }
-
-    private fun createDatadogConfiguration(): Configuration {
-        val configBuilder = Configuration.Builder(
-            crashReportsEnabled = true
         )
 
         try {

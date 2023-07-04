@@ -191,10 +191,25 @@ class AndroidTracer internal constructor(
 
         /**
          * Adds a global tag which will be appended to all spans created with the built tracer.
+         *
          * @param key the tag key
          * @param value the tag value
          */
+        @Deprecated(
+            replaceWith = ReplaceWith("addTag"),
+            message = "addGlobalTag is deprecated, please use addTag instead",
+            level = DeprecationLevel.WARNING
+        )
         fun addGlobalTag(key: String, value: String): Builder {
+            return addTag(key, value)
+        }
+
+        /**
+         * Adds a global tag which will be appended to all spans created with the built tracer.
+         * @param key the tag key
+         * @param value the tag value
+         */
+        fun addTag(key: String, value: String): Builder {
             this.globalTags[key] = value
             return this
         }

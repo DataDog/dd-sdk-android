@@ -11,7 +11,6 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -58,11 +57,10 @@ internal class EncryptionTest {
         val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
 
         val configuration = createSdkConfiguration()
-        val credentials = createCredentials()
 
         Datadog.setVerbosity(Log.VERBOSE)
         val sdkCore =
-            Datadog.initialize(targetContext, credentials, configuration, TrackingConsent.PENDING)
+            Datadog.initialize(targetContext, configuration, TrackingConsent.PENDING)
         checkNotNull(sdkCore)
         val featureActivations = mutableListOf(
             {
@@ -140,14 +138,6 @@ internal class EncryptionTest {
 
     // region private
 
-    private fun createCredentials(): Credentials {
-        return Credentials(
-            clientToken = forge.anAlphaNumericalString(),
-            env = forge.anAlphaNumericalString(),
-            variant = Credentials.NO_VARIANT
-        )
-    }
-
     private fun createSdkConfiguration(): Configuration {
         val encryption = object : Encryption {
             override fun encrypt(data: ByteArray): ByteArray {
@@ -161,7 +151,8 @@ internal class EncryptionTest {
 
         return Configuration
             .Builder(
-                crashReportsEnabled = true
+                clientToken = forge.anAlphaNumericalString(),
+                env = forge.anAlphaNumericalString()
             )
             .setEncryption(encryption)
             .build()

@@ -28,12 +28,10 @@ internal class KioskSplashPlaygroundActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val credentials = RuntimeConfig.credentials()
         val config = RuntimeConfig.configBuilder().build()
 
         val sdkCore = Datadog.initialize(
             this,
-            credentials,
             config,
             TrackingConsent.GRANTED
         )

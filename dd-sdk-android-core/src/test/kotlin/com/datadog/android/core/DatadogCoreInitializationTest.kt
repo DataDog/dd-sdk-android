@@ -13,7 +13,6 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
@@ -73,14 +72,14 @@ internal class DatadogCoreInitializationTest {
     @Mock
     lateinit var mockPersistenceExecutorService: ExecutorService
 
-    @Forgery
-    lateinit var fakeCredentials: Credentials
-
     @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
     lateinit var fakeInstanceId: String
 
     @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
     lateinit var fakeInstanceName: String
+
+    @Forgery
+    lateinit var fakeConfiguration: Configuration
 
     @BeforeEach
     fun `set up`() {
@@ -104,22 +103,16 @@ internal class DatadogCoreInitializationTest {
 
     @RepeatedTest(4)
     fun `𝕄 initialize requested features 𝕎 initialize()`(
-        @BoolForgery crashReportEnabled: Boolean
+        @BoolForgery crashReportsEnabled: Boolean
     ) {
-        // Given
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = crashReportEnabled
-        ).build()
-
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(fakeConfiguration.copy(crashReportsEnabled = crashReportsEnabled))
         }
 
         // Then
@@ -128,7 +121,7 @@ internal class DatadogCoreInitializationTest {
         assertThat(testedCore.contextProvider).isNotNull
 
         assertThat(testedCore.getFeature(CrashReportsFeature.CRASH_FEATURE_NAME)).let {
-            if (crashReportEnabled) {
+            if (crashReportsEnabled) {
                 it.isNotNull
             } else {
                 it.isNull()
@@ -143,17 +136,17 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         appContext.fakeAppInfo.flags = fakeFlags and ApplicationInfo.FLAG_DEBUGGABLE.inv()
-        fakeCredentials = fakeCredentials.copy(env = invalidEnvName)
 
         // When
         val exception = assertThrows<IllegalArgumentException> {
             // When
             testedCore = DatadogCore(
                 appContext.mockInstance,
-                fakeCredentials,
                 fakeInstanceId,
                 fakeInstanceName
-            )
+            ).apply {
+                initialize(fakeConfiguration.copy(env = invalidEnvName))
+            }
         }
 
         // Then
@@ -168,16 +161,17 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         appContext.fakeAppInfo.flags = fakeFlags or ApplicationInfo.FLAG_DEBUGGABLE
-        fakeCredentials = fakeCredentials.copy(env = invalidEnvName)
 
         // When
         val exception = assertThrows<IllegalArgumentException> {
             testedCore = DatadogCore(
                 appContext.mockInstance,
-                fakeCredentials,
                 fakeInstanceId,
                 fakeInstanceName
             )
+                .apply {
+                    initialize(fakeConfiguration.copy(env = invalidEnvName))
+                }
         }
 
         // Then
@@ -187,20 +181,14 @@ internal class DatadogCoreInitializationTest {
 
     @Test
     fun `𝕄 initialize the ConsentProvider with PENDING 𝕎 initializing()`() {
-        // Given
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        ).build()
-
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(fakeConfiguration)
         }
 
         // Then
@@ -215,21 +203,21 @@ internal class DatadogCoreInitializationTest {
         // Given
         Datadog.setVerbosity(Int.MAX_VALUE)
         appContext.fakeAppInfo.flags = fakeFlags and ApplicationInfo.FLAG_DEBUGGABLE.inv()
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        )
-            .setUseDeveloperModeWhenDebuggable(true)
-            .build()
 
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(
+                fakeConfiguration.copy(
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        enableDeveloperModeWhenDebuggable = true
+                    )
+                )
+            )
         }
 
         // Then
@@ -243,21 +231,21 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         appContext.fakeAppInfo.flags = fakeFlags or ApplicationInfo.FLAG_DEBUGGABLE
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        )
-            .setUseDeveloperModeWhenDebuggable(true)
-            .build()
 
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(
+                fakeConfiguration.copy(
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        enableDeveloperModeWhenDebuggable = true
+                    )
+                )
+            )
         }
 
         // Then
@@ -272,21 +260,21 @@ internal class DatadogCoreInitializationTest {
         // Given
         Datadog.setVerbosity(Int.MAX_VALUE)
         appContext.fakeAppInfo.flags = fakeFlags and ApplicationInfo.FLAG_DEBUGGABLE.inv()
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        )
-            .setUseDeveloperModeWhenDebuggable(true)
-            .build()
 
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(
+                fakeConfiguration.copy(
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        enableDeveloperModeWhenDebuggable = true
+                    )
+                )
+            )
         }
 
         // Then
@@ -300,21 +288,21 @@ internal class DatadogCoreInitializationTest {
     ) {
         // Given
         appContext.fakeAppInfo.flags = fakeFlags or ApplicationInfo.FLAG_DEBUGGABLE
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        )
-            .setUseDeveloperModeWhenDebuggable(true)
-            .build()
 
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(
+                fakeConfiguration.copy(
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        enableDeveloperModeWhenDebuggable = true
+                    )
+                )
+            )
         }
 
         // Then
@@ -334,7 +322,10 @@ internal class DatadogCoreInitializationTest {
         val uploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
 
         val configuration = Configuration.Builder(
-            crashReportsEnabled = trackErrors
+            clientToken = fakeConfiguration.clientToken,
+            env = fakeConfiguration.env,
+            variant = fakeConfiguration.variant,
+            service = fakeConfiguration.service
         ).apply {
             if (useProxy) {
                 setProxy(mock(), forge.aNullable { mock() })
@@ -348,12 +339,12 @@ internal class DatadogCoreInitializationTest {
         }
             .setBatchSize(batchSize)
             .setUploadFrequency(uploadFrequency)
+            .setCrashReportsEnabled(trackErrors)
             .build()
 
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
@@ -391,22 +382,14 @@ internal class DatadogCoreInitializationTest {
     fun `𝕄 apply source name 𝕎 applyAdditionalConfig(config) { with source name }`(
         @StringForgery(type = StringForgeryType.ALPHABETICAL) source: String
     ) {
-        // Given
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        )
-            .setAdditionalConfiguration(mapOf(Datadog.DD_SOURCE_TAG to source))
-            .build()
-
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(fakeConfiguration.copy(additionalConfig = mapOf(Datadog.DD_SOURCE_TAG to source)))
         }
 
         // Then
@@ -417,22 +400,16 @@ internal class DatadogCoreInitializationTest {
     fun `𝕄 use default source name 𝕎 applyAdditionalConfig(config) { with empty source name }`(
         @StringForgery(type = StringForgeryType.WHITESPACE) source: String
     ) {
-        // Given
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        )
-            .setAdditionalConfiguration(mapOf(Datadog.DD_SOURCE_TAG to source))
-            .build()
-
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(
+                fakeConfiguration.copy(additionalConfig = mapOf(Datadog.DD_SOURCE_TAG to source))
+            )
         }
 
         // Then
@@ -443,22 +420,16 @@ internal class DatadogCoreInitializationTest {
     fun `𝕄 use default source name 𝕎 applyAdditionalConfig(config) { with source name !string }`(
         @IntForgery source: Int
     ) {
-        // Given
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        )
-            .setAdditionalConfiguration(mapOf(Datadog.DD_SOURCE_TAG to source))
-            .build()
-
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(
+                fakeConfiguration.copy(additionalConfig = mapOf(Datadog.DD_SOURCE_TAG to source))
+            )
         }
 
         // Then
@@ -469,22 +440,14 @@ internal class DatadogCoreInitializationTest {
     fun `𝕄 use default source name 𝕎 applyAdditionalConfig(config) { without source name }`(
         @Forgery customAttributes: CustomAttributes
     ) {
-        // Given
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        )
-            .setAdditionalConfiguration(customAttributes.nonNullData)
-            .build()
-
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(fakeConfiguration.copy(additionalConfig = customAttributes.nonNullData))
         }
 
         // Then
@@ -495,22 +458,18 @@ internal class DatadogCoreInitializationTest {
     fun `𝕄 apply sdk version 𝕎 applyAdditionalConfig(config) { with sdk version }`(
         @StringForgery(regex = "[0-9]+(\\.[0-9]+)+") sdkVersion: String
     ) {
-        // Given
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        )
-            .setAdditionalConfiguration(mapOf(Datadog.DD_SDK_VERSION_TAG to sdkVersion))
-            .build()
-
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(
+                fakeConfiguration.copy(
+                    additionalConfig = mapOf(Datadog.DD_SDK_VERSION_TAG to sdkVersion)
+                )
+            )
         }
 
         // Then
@@ -521,24 +480,18 @@ internal class DatadogCoreInitializationTest {
     fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { with empty sdk version }`(
         @StringForgery(type = StringForgeryType.WHITESPACE) sdkVersion: String
     ) {
-        // Given
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        )
-            .setAdditionalConfiguration(
-                mapOf(Datadog.DD_SDK_VERSION_TAG to sdkVersion)
-            )
-            .build()
-
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(
+                fakeConfiguration.copy(
+                    additionalConfig = mapOf(Datadog.DD_SDK_VERSION_TAG to sdkVersion)
+                )
+            )
         }
 
         // Then
@@ -549,22 +502,18 @@ internal class DatadogCoreInitializationTest {
     fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { with sdk version !string }`(
         @Forgery sdkVersion: URL
     ) {
-        // Given
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        )
-            .setAdditionalConfiguration(mapOf(Datadog.DD_SDK_VERSION_TAG to sdkVersion))
-            .build()
-
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(
+                fakeConfiguration.copy(
+                    additionalConfig = mapOf(Datadog.DD_SDK_VERSION_TAG to sdkVersion)
+                )
+            )
         }
 
         // Then
@@ -575,22 +524,14 @@ internal class DatadogCoreInitializationTest {
     fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { without sdk version }`(
         @Forgery customAttributes: CustomAttributes
     ) {
-        // Given
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        )
-            .setAdditionalConfiguration(customAttributes.nonNullData)
-            .build()
-
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(fakeConfiguration.copy(additionalConfig = customAttributes.nonNullData))
         }
 
         // Then
@@ -601,22 +542,18 @@ internal class DatadogCoreInitializationTest {
     fun `𝕄 apply app version 𝕎 applyAdditionalConfig(config) { with app version }`(
         @StringForgery appVersion: String
     ) {
-        // Given
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        )
-            .setAdditionalConfiguration(mapOf(Datadog.DD_APP_VERSION_TAG to appVersion))
-            .build()
-
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(
+                fakeConfiguration.copy(
+                    additionalConfig = mapOf(Datadog.DD_APP_VERSION_TAG to appVersion)
+                )
+            )
         }
 
         // Then
@@ -627,24 +564,18 @@ internal class DatadogCoreInitializationTest {
     fun `𝕄 use default app version 𝕎 applyAdditionalConfig(config) { with empty app version }`(
         forge: Forge
     ) {
-        // Given
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        )
-            .setAdditionalConfiguration(
-                mapOf(Datadog.DD_APP_VERSION_TAG to forge.aWhitespaceString())
-            )
-            .build()
-
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(
+                fakeConfiguration.copy(
+                    additionalConfig = mapOf(Datadog.DD_APP_VERSION_TAG to forge.aWhitespaceString())
+                )
+            )
         }
 
         // Then
@@ -657,22 +588,18 @@ internal class DatadogCoreInitializationTest {
     fun `𝕄 use default app version 𝕎 applyAdditionalConfig(config) { with app version !string }`(
         forge: Forge
     ) {
-        // Given
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        )
-            .setAdditionalConfiguration(mapOf(Datadog.DD_APP_VERSION_TAG to forge.anInt()))
-            .build()
-
         // When
         testedCore = DatadogCore(
             appContext.mockInstance,
-            fakeCredentials,
             fakeInstanceId,
             fakeInstanceName,
             persistenceExecutorServiceFactory = { mockPersistenceExecutorService }
         ).apply {
-            initialize(configuration)
+            initialize(
+                fakeConfiguration.copy(
+                    additionalConfig = mapOf(Datadog.DD_APP_VERSION_TAG to forge.anInt())
+                )
+            )
         }
 
         // Then

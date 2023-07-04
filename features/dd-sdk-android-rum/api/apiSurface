@@ -73,7 +73,6 @@ data class com.datadog.android.rum.RumConfiguration
     fun trackFrustrations(Boolean): Builder
     fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
     fun useCustomEndpoint(String): Builder
-    fun setAdditionalConfiguration(Map<String, Any>): Builder
     fun setSessionListener(RumSessionListener): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
@@ -133,6 +132,7 @@ class com.datadog.android.rum._RumInternalProxy
   fun updatePerformanceMetric(RumPerformanceMetric, Double)
   companion object 
     fun setTelemetryConfigurationEventMapper(RumConfiguration.Builder, com.datadog.android.event.EventMapper<com.datadog.android.telemetry.model.TelemetryConfigurationEvent>): RumConfiguration.Builder
+    fun setAdditionalConfiguration(RumConfiguration.Builder, Map<String, Any>): RumConfiguration.Builder
 enum com.datadog.android.rum.configuration.VitalsUpdateFrequency
   constructor(Long)
   - FREQUENT

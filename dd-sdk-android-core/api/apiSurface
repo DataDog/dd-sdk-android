@@ -1,11 +1,15 @@
 object com.datadog.android.Datadog
-  fun initialize(String?, android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
-  fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
+  fun initialize(String?, android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
+  fun initialize(android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
   fun getInstance(String? = null): com.datadog.android.api.SdkCore
   fun isInitialized(String? = null): Boolean
   fun stopInstance(String? = null)
   fun setVerbosity(Int)
   fun getVerbosity(): Int
+  fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
+  fun setUserInfo(com.datadog.android.api.context.UserInfo, com.datadog.android.api.SdkCore = getInstance())
+  fun addUserProperties(Map<String, Any?>, com.datadog.android.api.SdkCore = getInstance())
+  fun clearAllData(com.datadog.android.api.SdkCore = getInstance())
   fun _internalProxy(String? = null): _InternalProxy
 enum com.datadog.android.DatadogSite
   constructor(String, String)
@@ -150,7 +154,7 @@ enum com.datadog.android.core.configuration.BatchSize
   - LARGE
 data class com.datadog.android.core.configuration.Configuration
   class Builder
-    constructor(Boolean)
+    constructor(String, String, String = NO_VARIANT, String? = null)
     fun build(): Configuration
     fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
     fun setFirstPartyHosts(List<String>): Builder
@@ -161,10 +165,8 @@ data class com.datadog.android.core.configuration.Configuration
     fun setAdditionalConfiguration(Map<String, Any>): Builder
     fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
     fun setEncryption(com.datadog.android.security.Encryption): Builder
-data class com.datadog.android.core.configuration.Credentials
-  constructor(String, String, String, String? = null)
+    fun setCrashReportsEnabled(Boolean): Builder
   companion object 
-    const val NO_VARIANT: String
 class com.datadog.android.core.configuration.HostsSanitizer
   fun sanitizeHosts(List<String>, String): List<String>
 enum com.datadog.android.core.configuration.UploadFrequency

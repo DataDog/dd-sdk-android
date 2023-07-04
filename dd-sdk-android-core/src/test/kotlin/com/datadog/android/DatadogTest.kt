@@ -10,10 +10,11 @@ import android.app.Application
 import android.content.Context
 import android.net.ConnectivityManager
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.DatadogCore
 import com.datadog.android.core.NoOpInternalSdkCore
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.HashGenerator
 import com.datadog.android.core.internal.SdkCoreRegistry
@@ -29,8 +30,10 @@ import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -47,6 +50,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -66,14 +70,8 @@ internal class DatadogTest {
     @Mock
     lateinit var mockConnectivityMgr: ConnectivityManager
 
-    @StringForgery(type = StringForgeryType.HEXADECIMAL)
-    lateinit var fakeToken: String
-
-    @StringForgery
-    lateinit var fakeVariant: String
-
-    @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
-    lateinit var fakeEnvName: String
+    @Forgery
+    lateinit var fakeConfiguration: Configuration
 
     @Forgery
     lateinit var fakeConsent: TrackingConsent
@@ -97,17 +95,10 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 return sdk instance 𝕎 initialize() + getInstance()`() {
-        // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        ).build()
-
         // When
         val initialized = Datadog.initialize(
             appContext.mockInstance,
-            credentials,
-            configuration,
+            fakeConfiguration,
             fakeConsent
         )
         val instance = Datadog.getInstance()
@@ -120,18 +111,11 @@ internal class DatadogTest {
     fun `𝕄 return sdk instance 𝕎 initialize(name) + getInstance(name)`(
         @StringForgery name: String
     ) {
-        // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        ).build()
-
         // When
         val initialized = Datadog.initialize(
             name,
             appContext.mockInstance,
-            credentials,
-            configuration,
+            fakeConfiguration,
             fakeConsent
         )
         val instance = Datadog.getInstance(name)
@@ -142,23 +126,15 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 warn 𝕎 initialize() + initialize()`() {
-        // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        ).build()
-
         // When
         val initialized1 = Datadog.initialize(
             appContext.mockInstance,
-            credentials,
-            configuration,
+            fakeConfiguration,
             fakeConsent
         )
         val initialized2 = Datadog.initialize(
             appContext.mockInstance,
-            credentials,
-            configuration,
+            fakeConfiguration,
             fakeConsent
         )
 
@@ -175,15 +151,9 @@ internal class DatadogTest {
     fun `𝕄 warn 𝕎 initialize(name) + initialize(name)`(
         @StringForgery name: String
     ) {
-        // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        ).build()
-
         // When
-        Datadog.initialize(name, appContext.mockInstance, credentials, configuration, fakeConsent)
-        Datadog.initialize(name, appContext.mockInstance, credentials, configuration, fakeConsent)
+        Datadog.initialize(name, appContext.mockInstance, fakeConfiguration, fakeConsent)
+        Datadog.initialize(name, appContext.mockInstance, fakeConfiguration, fakeConsent)
 
         // Then
         logger.mockInternalLogger.verifyLog(
@@ -195,7 +165,6 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 create instance ID 𝕎 initialize()`(
-        @Forgery fakeCredentials: Credentials,
         @Forgery fakeConfiguration: Configuration,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeHash: String
     ) {
@@ -211,7 +180,6 @@ internal class DatadogTest {
         // When
         val instance = Datadog.initialize(
             appContext.mockInstance,
-            fakeCredentials,
             fakeConfiguration,
             fakeConsent
         )
@@ -224,7 +192,6 @@ internal class DatadogTest {
     @Test
     fun `𝕄 create instance ID 𝕎 initialize(name)`(
         @StringForgery instanceName: String,
-        @Forgery fakeCredentials: Credentials,
         @Forgery fakeConfiguration: Configuration,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeHash: String
     ) {
@@ -241,7 +208,6 @@ internal class DatadogTest {
         val instance = Datadog.initialize(
             instanceName,
             appContext.mockInstance,
-            fakeCredentials,
             fakeConfiguration,
             fakeConsent
         )
@@ -253,7 +219,6 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 set tracking consent 𝕎 initialize()`(
-        @Forgery fakeCredentials: Credentials,
         @Forgery fakeConfiguration: Configuration,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeHash: String
     ) {
@@ -269,7 +234,6 @@ internal class DatadogTest {
         // When
         val instance = Datadog.initialize(
             appContext.mockInstance,
-            fakeCredentials,
             fakeConfiguration,
             fakeConsent
         )
@@ -282,7 +246,6 @@ internal class DatadogTest {
     @Test
     fun `𝕄 set tracking consent 𝕎 initialize(name)`(
         @StringForgery instanceName: String,
-        @Forgery fakeCredentials: Credentials,
         @Forgery fakeConfiguration: Configuration,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeHash: String
     ) {
@@ -299,7 +262,6 @@ internal class DatadogTest {
         val instance = Datadog.initialize(
             instanceName,
             appContext.mockInstance,
-            fakeCredentials,
             fakeConfiguration,
             fakeConsent
         )
@@ -314,16 +276,11 @@ internal class DatadogTest {
         // Given
         Datadog.hashGenerator = mock()
         whenever(Datadog.hashGenerator.generate(any())) doReturn null
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        ).build()
 
         // When
         val instance = Datadog.initialize(
             appContext.mockInstance,
-            credentials,
-            configuration,
+            fakeConfiguration,
             fakeConsent
         )
 
@@ -343,17 +300,12 @@ internal class DatadogTest {
         // Given
         Datadog.hashGenerator = mock()
         whenever(Datadog.hashGenerator.generate(any())) doReturn null
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        ).build()
 
         // When
         val instance = Datadog.initialize(
             name,
             appContext.mockInstance,
-            credentials,
-            configuration,
+            fakeConfiguration,
             fakeConsent
         )
 
@@ -369,12 +321,9 @@ internal class DatadogTest {
     @Test
     fun `𝕄 stop specific instance 𝕎 stopInstance()`() {
         // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
-        val configuration = Configuration.Builder(crashReportsEnabled = true).build()
         val sdk = Datadog.initialize(
             appContext.mockInstance,
-            credentials,
-            configuration,
+            fakeConfiguration,
             fakeConsent
         ) as? DatadogCore
         checkNotNull(sdk)
@@ -393,13 +342,10 @@ internal class DatadogTest {
         @StringForgery name: String
     ) {
         // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
-        val configuration = Configuration.Builder(crashReportsEnabled = true).build()
         val sdk = Datadog.initialize(
             name,
             appContext.mockInstance,
-            credentials,
-            configuration,
+            fakeConfiguration,
             fakeConsent
         ) as? DatadogCore
         checkNotNull(sdk)
@@ -419,13 +365,10 @@ internal class DatadogTest {
         @StringForgery name2: String
     ) {
         // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
-        val configuration = Configuration.Builder(crashReportsEnabled = true).build()
         val sdk = Datadog.initialize(
             name,
             appContext.mockInstance,
-            credentials,
-            configuration,
+            fakeConfiguration,
             fakeConsent
         ) as? DatadogCore
         checkNotNull(sdk)
@@ -481,16 +424,11 @@ internal class DatadogTest {
     ) {
         // Given
         val fakeInstanceName = forge.aNullable { anAlphabeticalString() }
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null)
-        val configuration = Configuration.Builder(
-            crashReportsEnabled = true
-        ).build()
 
         Datadog.initialize(
             fakeInstanceName,
             appContext.mockInstance,
-            credentials,
-            configuration,
+            fakeConfiguration,
             fakeConsent
         )
 
@@ -523,6 +461,61 @@ internal class DatadogTest {
 
         // Then
         verifyNoInteractions(appContext.mockInstance)
+    }
+
+    @Test
+    fun `𝕄 set tracking consent 𝕎 setTrackingConsent()`(
+        @Forgery fakeTrackingConsent: TrackingConsent
+    ) {
+        // Given
+        val mockSdkCore = mock<SdkCore>()
+
+        // When
+        Datadog.setTrackingConsent(fakeTrackingConsent, mockSdkCore)
+
+        // Then
+        verify(mockSdkCore).setTrackingConsent(fakeTrackingConsent)
+    }
+
+    @Test
+    fun `𝕄 set user info 𝕎 setUserInfo()`(@Forgery fakeUserInfo: UserInfo) {
+        // Given
+        val mockSdkCore = mock<SdkCore>()
+
+        // When
+        Datadog.setUserInfo(fakeUserInfo, mockSdkCore)
+
+        // Then
+        verify(mockSdkCore).setUserInfo(fakeUserInfo)
+    }
+
+    @Test
+    fun `𝕄 add user properties 𝕎 addUserProperties()`(
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
+        ) fakeUserProperties: Map<String, String>
+    ) {
+        // Given
+        val mockSdkCore = mock<SdkCore>()
+
+        // When
+        Datadog.addUserProperties(fakeUserProperties, mockSdkCore)
+
+        // Then
+        verify(mockSdkCore).addUserProperties(fakeUserProperties)
+    }
+
+    @Test
+    fun `𝕄 clear all data 𝕎 clearAllData()`() {
+        // Given
+        val mockSdkCore = mock<SdkCore>()
+
+        // When
+        Datadog.clearAllData(mockSdkCore)
+
+        // Then
+        verify(mockSdkCore).clearAllData()
     }
 
     companion object {

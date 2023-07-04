@@ -15,6 +15,9 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.nightly.SPECIAL_STRING_TAG_NAME
 import com.datadog.android.nightly.rules.NightlyTestRule
+import com.datadog.android.nightly.utils.DEFAULT_CLIENT_TOKEN
+import com.datadog.android.nightly.utils.DEFAULT_ENV_NAME
+import com.datadog.android.nightly.utils.DEFAULT_VARIANT_NAME
 import com.datadog.android.nightly.utils.TestEncryption
 import com.datadog.android.nightly.utils.defaultConfigurationBuilder
 import com.datadog.android.nightly.utils.initializeSdk
@@ -46,7 +49,6 @@ class SpanConfigE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
      */
     @Test
     fun trace_config_feature_enabled() {
@@ -84,7 +86,6 @@ class SpanConfigE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
      */
     @Test
     fun trace_config_feature_disabled() {
@@ -258,7 +259,7 @@ class SpanConfigE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun addGlobalTag(String, String): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun addTag(String, String): Builder
      */
     @Test
     fun trace_config_add_global_tag() {
@@ -268,7 +269,7 @@ class SpanConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 tracerProvider = { sdkCore ->
-                    AndroidTracer.Builder(sdkCore).addGlobalTag(
+                    AndroidTracer.Builder(sdkCore).addTag(
                         SPECIAL_STRING_TAG_NAME,
                         "str${forge.anAlphaNumericalString()}"
                     ).build()
@@ -319,8 +320,8 @@ class SpanConfigE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.Datadog#fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
-     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.api.SdkCore?
+     * apiMethodSignature: com.datadog.android.Datadog#fun setUserInfo(com.datadog.android.api.context.UserInfo, com.datadog.android.api.SdkCore = getInstance())
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.api.SdkCore
      */
     @Test
     fun trace_config_set_user_info() {
@@ -341,7 +342,7 @@ class SpanConfigE2ETests {
         )
 
         measure(testMethodName) {
-            Datadog.getInstance().setUserInfo(
+            Datadog.setUserInfo(
                 UserInfo(
                     userId,
                     userName,
@@ -354,7 +355,7 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setEncryption(Encryption): Builder
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setEncryption(com.datadog.android.security.Encryption): Builder
      * apiMethodSignature: com.datadog.android.security.Encryption#fun encrypt(ByteArray): ByteArray
      * apiMethodSignature: com.datadog.android.security.Encryption#fun decrypt(ByteArray): ByteArray
      */
@@ -366,7 +367,9 @@ class SpanConfigE2ETests {
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 forgeSeed = forge.seed,
                 config = Configuration.Builder(
-                    crashReportsEnabled = true
+                    clientToken = DEFAULT_CLIENT_TOKEN,
+                    env = DEFAULT_ENV_NAME,
+                    variant = DEFAULT_VARIANT_NAME
                 ).setEncryption(TestEncryption()).build()
             )
         }

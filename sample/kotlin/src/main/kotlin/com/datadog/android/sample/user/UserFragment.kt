@@ -67,9 +67,8 @@ internal class UserFragment : Fragment(), View.OnClickListener {
             val age: Int = Integer.valueOf(userAgeField.text.toString())
             Preferences.defaultPreferences(requireContext())
                 .setUserCredentials(id, name, email, gender, age)
-            val sdkCore = Datadog.getInstance()
-            sdkCore.setUserInfo(UserInfo(id, name, email, emptyMap()))
-            sdkCore.addUserProperties(
+            Datadog.setUserInfo(UserInfo(id, name, email, emptyMap()))
+            Datadog.addUserProperties(
                 mapOf<String, Any>(
                     GENDER_KEY to gender,
                     AGE_KEY to age

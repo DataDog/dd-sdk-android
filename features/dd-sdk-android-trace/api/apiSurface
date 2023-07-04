@@ -6,7 +6,8 @@ class com.datadog.android.trace.AndroidTracer : com.datadog.opentracing.DDTracer
     fun setTracingHeaderTypes(Set<TracingHeaderType>): Builder
     fun setService(String): Builder
     fun setPartialFlushThreshold(Int): Builder
-    fun addGlobalTag(String, String): Builder
+    DEPRECATED fun addGlobalTag(String, String): Builder
+    fun addTag(String, String): Builder
     fun setBundleWithRumEnabled(Boolean): Builder
     fun setSampleRate(Double): Builder
   override fun toString(): String

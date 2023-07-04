@@ -89,7 +89,6 @@ public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public final fun build ()Lcom/datadog/android/rum/RumConfiguration;
 	public final fun disableUserInteractionTracking ()Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setActionEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
-	public final fun setAdditionalConfiguration (Ljava/util/Map;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setErrorEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setLongTaskEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setResourceEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
@@ -200,6 +199,7 @@ public final class com/datadog/android/rum/_RumInternalProxy {
 }
 
 public final class com/datadog/android/rum/_RumInternalProxy$Companion {
+	public final fun setAdditionalConfiguration (Lcom/datadog/android/rum/RumConfiguration$Builder;Ljava/util/Map;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setTelemetryConfigurationEventMapper (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 }
 

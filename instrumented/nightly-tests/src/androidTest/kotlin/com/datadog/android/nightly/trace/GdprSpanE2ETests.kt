@@ -32,7 +32,6 @@ class GdprSpanE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
      */
     @Test
     fun span_config_consent_pending() {
@@ -52,7 +51,6 @@ class GdprSpanE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
      */
     @Test
     fun span_config_consent_granted() {
@@ -72,7 +70,6 @@ class GdprSpanE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
      */
     @Test
     fun span_config_consent_not_granted() {
@@ -92,7 +89,7 @@ class GdprSpanE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun span_config_consent_pending_to_granted() {
@@ -115,7 +112,7 @@ class GdprSpanE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun span_config_consent_pending_to_not_granted() {
@@ -138,7 +135,7 @@ class GdprSpanE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun span_config_consent_granted_to_not_granted() {
@@ -161,7 +158,7 @@ class GdprSpanE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun span_config_consent_not_granted_to_granted() {
@@ -184,7 +181,7 @@ class GdprSpanE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun span_config_consent_not_granted_to_pending() {
@@ -207,7 +204,7 @@ class GdprSpanE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun span_config_consent_granted_to_pending() {

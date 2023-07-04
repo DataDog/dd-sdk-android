@@ -34,7 +34,7 @@ class GdprLogsE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
      */
     @Test
     fun logs_config_consent_pending() {
@@ -56,7 +56,7 @@ class GdprLogsE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
      */
     @Test
     fun logs_config_consent_granted() {
@@ -78,7 +78,7 @@ class GdprLogsE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
      */
     @Test
     fun logs_config_consent_not_granted() {
@@ -97,7 +97,7 @@ class GdprLogsE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun logs_config_consent_pending_to_granted() {
@@ -119,7 +119,7 @@ class GdprLogsE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun logs_config_consent_pending_to_not_granted() {
@@ -141,7 +141,7 @@ class GdprLogsE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun logs_config_consent_granted_to_not_granted() {
@@ -163,7 +163,7 @@ class GdprLogsE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun logs_config_consent_not_granted_to_granted() {
@@ -185,7 +185,7 @@ class GdprLogsE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun logs_config_consent_not_granted_to_pending() {
@@ -207,7 +207,7 @@ class GdprLogsE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun logs_config_consent_granted_to_pending() {

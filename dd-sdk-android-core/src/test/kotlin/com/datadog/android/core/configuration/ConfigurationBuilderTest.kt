@@ -47,9 +47,12 @@ internal class ConfigurationBuilderTest {
     lateinit var testedBuilder: Configuration.Builder
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
         testedBuilder = Configuration.Builder(
-            crashReportsEnabled = true
+            clientToken = forge.anHexadecimalString(),
+            env = forge.aStringMatching("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]"),
+            variant = forge.anElementFrom(forge.anAlphabeticalString(), ""),
+            service = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         )
     }
 
@@ -77,11 +80,17 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config without crashReportConfig 𝕎 build() { crashReports disabled }`() {
+    fun `𝕄 build config without crashReportConfig 𝕎 build() { crashReports disabled }`(
+        forge: Forge
+    ) {
         // Given
         testedBuilder = Configuration.Builder(
-            crashReportsEnabled = false
+            clientToken = forge.anHexadecimalString(),
+            env = forge.aStringMatching("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]"),
+            variant = forge.anElementFrom(forge.anAlphabeticalString(), ""),
+            service = forge.aStringMatching("[a-z]+(\\.[a-z]+)+")
         )
+            .setCrashReportsEnabled(false)
 
         // When
         val config = testedBuilder.build()

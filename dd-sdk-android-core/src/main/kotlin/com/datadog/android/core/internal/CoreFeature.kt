@@ -19,7 +19,6 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.data.upload.CurlInterceptor
 import com.datadog.android.core.internal.data.upload.GzipRequestInterceptor
@@ -143,15 +142,14 @@ internal class CoreFeature(
     fun initialize(
         appContext: Context,
         sdkInstanceId: String,
-        credentials: Credentials,
-        configuration: Configuration.Core,
+        configuration: Configuration,
         consent: TrackingConsent
     ) {
         if (initialized.get()) {
             return
         }
-        readConfigurationSettings(configuration)
-        readApplicationInformation(appContext, credentials)
+        readConfigurationSettings(configuration.coreConfig)
+        readApplicationInformation(appContext, configuration)
         resolveProcessInfo(appContext)
         setupExecutors()
         persistenceExecutorService.submitSafe("NTP Sync initialization", unboundInternalLogger) {
@@ -159,9 +157,9 @@ internal class CoreFeature(
             @Suppress("ThreadSafety") // we are in the worker thread context
             initializeClockSync(appContext)
         }
-        setupOkHttpClient(configuration)
+        setupOkHttpClient(configuration.coreConfig)
         firstPartyHostHeaderTypeResolver
-            .addKnownHostsWithHeaderTypes(configuration.firstPartyHostsWithHeaderTypes)
+            .addKnownHostsWithHeaderTypes(configuration.coreConfig.firstPartyHostsWithHeaderTypes)
         androidInfoProvider = DefaultAndroidInfoProvider(appContext)
         storageDir = File(
             appContext.cacheDir,
@@ -311,7 +309,7 @@ internal class CoreFeature(
         return appContext.createDeviceProtectedStorageContext() ?: appContext
     }
 
-    private fun readApplicationInformation(appContext: Context, credentials: Credentials) {
+    private fun readApplicationInformation(appContext: Context, configuration: Configuration) {
         packageName = appContext.packageName
         packageVersionProvider = DefaultAppVersionProvider(
             getPackageInfo(appContext)?.let {
@@ -321,10 +319,10 @@ internal class CoreFeature(
                 it.versionName ?: it.versionCode.toString()
             } ?: DEFAULT_APP_VERSION
         )
-        clientToken = credentials.clientToken
-        serviceName = credentials.service ?: appContext.packageName
-        envName = credentials.env
-        variant = credentials.variant
+        clientToken = configuration.clientToken
+        serviceName = configuration.service ?: appContext.packageName
+        envName = configuration.env
+        variant = configuration.variant
         contextRef = WeakReference(appContext)
     }
 

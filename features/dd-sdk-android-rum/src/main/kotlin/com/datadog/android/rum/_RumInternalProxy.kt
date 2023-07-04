@@ -49,5 +49,12 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
         ): RumConfiguration.Builder {
             return builder.setTelemetryConfigurationEventMapper(eventMapper)
         }
+
+        fun setAdditionalConfiguration(
+            builder: RumConfiguration.Builder,
+            additionalConfig: Map<String, Any>
+        ): RumConfiguration.Builder {
+            return builder.setAdditionalConfiguration(additionalConfig)
+        }
     }
 }

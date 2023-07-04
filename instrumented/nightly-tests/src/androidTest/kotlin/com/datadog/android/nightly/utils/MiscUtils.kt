@@ -12,7 +12,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.nightly.BuildConfig
@@ -106,7 +105,6 @@ fun initializeSdk(
     Datadog.setVerbosity(Log.VERBOSE)
     val sdkCore = Datadog.initialize(
         targetContext,
-        createDatadogCredentials(),
         config,
         consent
     )
@@ -142,23 +140,24 @@ fun defaultConfigurationBuilder(
     crashReportsEnabled: Boolean = true
 ): Configuration.Builder {
     return Configuration.Builder(
-        crashReportsEnabled = crashReportsEnabled
+        clientToken = DEFAULT_CLIENT_TOKEN,
+        env = DEFAULT_ENV_NAME,
+        variant = DEFAULT_VARIANT_NAME
     )
+        .setCrashReportsEnabled(crashReportsEnabled)
 }
+
+const val DEFAULT_CLIENT_TOKEN = BuildConfig.NIGHTLY_TESTS_TOKEN
+
+const val DEFAULT_ENV_NAME = ENV_NAME
+
+const val DEFAULT_VARIANT_NAME = ""
 
 fun cleanStorageFiles() {
     InstrumentationRegistry
         .getInstrumentation()
         .targetContext
         .cacheDir.deleteRecursively()
-}
-
-private fun createDatadogCredentials(): Credentials {
-    return Credentials(
-        clientToken = BuildConfig.NIGHTLY_TESTS_TOKEN,
-        env = ENV_NAME,
-        variant = ""
-    )
 }
 
 private fun createDatadogDefaultConfiguration(): Configuration {

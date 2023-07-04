@@ -188,14 +188,6 @@ data class RumConfiguration internal constructor(
             return this
         }
 
-        @Suppress("FunctionMaxLength")
-        internal fun setTelemetryConfigurationEventMapper(
-            eventMapper: EventMapper<TelemetryConfigurationEvent>
-        ): Builder {
-            rumConfig = rumConfig.copy(telemetryConfigurationMapper = eventMapper)
-            return this
-        }
-
         /**
          * Enables/Disables tracking RUM event when no Activity is in foreground.
          *
@@ -242,15 +234,6 @@ data class RumConfiguration internal constructor(
         }
 
         /**
-         * Allows to provide additional configuration values which can be used by the RUM feature.
-         * @param additionalConfig Additional configuration values.
-         */
-        fun setAdditionalConfiguration(additionalConfig: Map<String, Any>): Builder {
-            rumConfig = rumConfig.copy(additionalConfig = additionalConfig)
-            return this
-        }
-
-        /**
          * Sets the Session listener.
          * @param sessionListener the listener to notify whenever a new Session starts.
          */
@@ -281,5 +264,26 @@ data class RumConfiguration internal constructor(
                 }
             )
         }
+
+        // region Internal
+
+        @Suppress("FunctionMaxLength")
+        internal fun setTelemetryConfigurationEventMapper(
+            eventMapper: EventMapper<TelemetryConfigurationEvent>
+        ): Builder {
+            rumConfig = rumConfig.copy(telemetryConfigurationMapper = eventMapper)
+            return this
+        }
+
+        /**
+         * Allows to provide additional configuration values which can be used by the RUM feature.
+         * @param additionalConfig Additional configuration values.
+         */
+        internal fun setAdditionalConfiguration(additionalConfig: Map<String, Any>): Builder {
+            rumConfig = rumConfig.copy(additionalConfig = additionalConfig)
+            return this
+        }
+
+        // endregion
     }
 }
