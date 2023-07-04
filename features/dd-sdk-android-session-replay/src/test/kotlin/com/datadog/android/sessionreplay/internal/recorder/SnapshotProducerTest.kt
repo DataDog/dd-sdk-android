@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -48,6 +49,9 @@ internal class SnapshotProducerTest {
     @Mock
     lateinit var mockTreeViewTraversal: TreeViewTraversal
 
+    @Mock
+    lateinit var mockRecordedDataQueueRefs: RecordedDataQueueRefs
+
     @Forgery
     lateinit var fakeViewWireframes: List<MobileSegment.Wireframe>
 
@@ -67,11 +71,15 @@ internal class SnapshotProducerTest {
             fakeViewWireframes,
             TreeViewTraversal.TraversalStrategy.STOP_AND_DROP_NODE
         )
-        whenever(mockTreeViewTraversal.traverse(eq(mockRoot), any()))
+        whenever(mockTreeViewTraversal.traverse(eq(mockRoot), any(), any()))
             .thenReturn(fakeTraversedTreeView)
 
         // When
-        val snapshot = testedSnapshotProducer.produce(mockRoot, fakeSystemInformation)
+        val snapshot = testedSnapshotProducer.produce(
+            mockRoot,
+            fakeSystemInformation,
+            mockRecordedDataQueueRefs
+        )
 
         // Then
         assertThat(snapshot).isNull()
@@ -87,12 +95,16 @@ internal class SnapshotProducerTest {
             fakeViewWireframes,
             TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE
         )
-        whenever(mockTreeViewTraversal.traverse(eq(fakeRoot), any()))
+        whenever(mockTreeViewTraversal.traverse(eq(fakeRoot), any(), any()))
             .thenReturn(fakeTraversedTreeView)
         val expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
 
         // When
-        val snapshot = testedSnapshotProducer.produce(fakeRoot, fakeSystemInformation)
+        val snapshot = testedSnapshotProducer.produce(
+            fakeRoot,
+            fakeSystemInformation,
+            mockRecordedDataQueueRefs
+        )
 
         // Then
         assertThat(snapshot).isEqualTo(expectedSnapshot)
@@ -108,12 +120,16 @@ internal class SnapshotProducerTest {
             fakeViewWireframes,
             TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE
         )
-        whenever(mockTreeViewTraversal.traverse(any(), any()))
+        whenever(mockTreeViewTraversal.traverse(any(), any(), any()))
             .thenReturn(fakeTraversedTreeView)
         val expectedSnapshot = Node(wireframes = fakeViewWireframes)
 
         // When
-        val snapshot = testedSnapshotProducer.produce(fakeRoot, fakeSystemInformation)
+        val snapshot = testedSnapshotProducer.produce(
+            fakeRoot,
+            fakeSystemInformation,
+            mockRecordedDataQueueRefs
+        )
 
         // Then
         assertThat(snapshot).isEqualTo(expectedSnapshot)
@@ -129,12 +145,16 @@ internal class SnapshotProducerTest {
             fakeViewWireframes,
             TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
         )
-        whenever(mockTreeViewTraversal.traverse(any(), any()))
+        whenever(mockTreeViewTraversal.traverse(any(), any(), any()))
             .thenReturn(fakeTraversedTreeView)
         val expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
 
         // When
-        val snapshot = testedSnapshotProducer.produce(fakeRoot, fakeSystemInformation)
+        val snapshot = testedSnapshotProducer.produce(
+            fakeRoot,
+            fakeSystemInformation,
+            mockRecordedDataQueueRefs
+        )
 
         // Then
         assertThat(snapshot).isEqualTo(expectedSnapshot)
@@ -154,15 +174,19 @@ internal class SnapshotProducerTest {
             fakeViewWireframes,
             TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
         )
-        whenever(mockTreeViewTraversal.traverse(any(), any())).thenReturn(fakeTraversedTreeView)
+        whenever(mockTreeViewTraversal.traverse(any(), any(), any())).thenReturn(fakeTraversedTreeView)
 
         // When
-        testedSnapshotProducer.produce(mockRoot, fakeSystemInformation)
+        testedSnapshotProducer.produce(
+            mockRoot,
+            fakeSystemInformation,
+            mockRecordedDataQueueRefs
+        )
 
         // Then
         val argumentCaptor = argumentCaptor<MappingContext>()
         verify(mockTreeViewTraversal, times(1 + mockChildren.size))
-            .traverse(any(), argumentCaptor.capture())
+            .traverse(any(), argumentCaptor.capture(), any())
         argumentCaptor.allValues.forEach {
             assertThat(it.systemInformation).isEqualTo(fakeSystemInformation)
         }
@@ -182,15 +206,19 @@ internal class SnapshotProducerTest {
             fakeViewWireframes,
             TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
         )
-        whenever(mockTreeViewTraversal.traverse(any(), any())).thenReturn(fakeTraversedTreeView)
+        whenever(mockTreeViewTraversal.traverse(any(), any(), any())).thenReturn(fakeTraversedTreeView)
         whenever(mockOptionSelectorDetector.isOptionSelector(mockRoot)).thenReturn(true)
 
         // When
-        testedSnapshotProducer.produce(mockRoot, fakeSystemInformation)
+        testedSnapshotProducer.produce(
+            mockRoot,
+            fakeSystemInformation,
+            mockRecordedDataQueueRefs
+        )
 
         val argumentCaptor = argumentCaptor<MappingContext>()
         mockChildren.forEach {
-            verify(mockTreeViewTraversal).traverse(eq(it), argumentCaptor.capture())
+            verify(mockTreeViewTraversal).traverse(eq(it), argumentCaptor.capture(), any())
         }
         argumentCaptor.allValues.forEach {
             assertThat(it.hasOptionSelectorParent).isTrue
@@ -211,15 +239,19 @@ internal class SnapshotProducerTest {
             fakeViewWireframes,
             TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
         )
-        whenever(mockTreeViewTraversal.traverse(any(), any())).thenReturn(fakeTraversedTreeView)
+        whenever(mockTreeViewTraversal.traverse(any(), any(), any())).thenReturn(fakeTraversedTreeView)
         whenever(mockOptionSelectorDetector.isOptionSelector(mockRoot)).thenReturn(false)
 
         // When
-        testedSnapshotProducer.produce(mockRoot, fakeSystemInformation)
+        testedSnapshotProducer.produce(
+            mockRoot,
+            fakeSystemInformation,
+            mockRecordedDataQueueRefs
+        )
 
         val argumentCaptor = argumentCaptor<MappingContext>()
         mockChildren.forEach {
-            verify(mockTreeViewTraversal).traverse(eq(it), argumentCaptor.capture())
+            verify(mockTreeViewTraversal).traverse(eq(it), argumentCaptor.capture(), any())
         }
         argumentCaptor.allValues.forEach {
             assertThat(it.hasOptionSelectorParent).isFalse
@@ -237,7 +269,7 @@ internal class SnapshotProducerTest {
             fakeViewWireframes,
             TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
         )
-        whenever(mockTreeViewTraversal.traverse(any(), any()))
+        whenever(mockTreeViewTraversal.traverse(any(), any(), any()))
             .thenReturn(fakeTraversedTreeView)
             .thenReturn(
                 fakeTraversedTreeView.copy(
@@ -253,7 +285,11 @@ internal class SnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedSnapshotProducer.produce(fakeRoot, fakeSystemInformation)
+        val snapshot = testedSnapshotProducer.produce(
+            fakeRoot,
+            fakeSystemInformation,
+            mockRecordedDataQueueRefs
+        )
 
         // Then
         assertThat(snapshot).isEqualTo(expectedSnapshot)
@@ -269,7 +305,7 @@ internal class SnapshotProducerTest {
             fakeViewWireframes,
             TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
         )
-        whenever(mockTreeViewTraversal.traverse(any(), any()))
+        whenever(mockTreeViewTraversal.traverse(any(), any(), any()))
             .thenReturn(fakeTraversedTreeView)
             .thenReturn(
                 fakeTraversedTreeView.copy(
@@ -280,7 +316,11 @@ internal class SnapshotProducerTest {
         val expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
             .copy(children = emptyList())
         // When
-        val snapshot = testedSnapshotProducer.produce(fakeRoot, fakeSystemInformation)
+        val snapshot = testedSnapshotProducer.produce(
+            fakeRoot,
+            fakeSystemInformation,
+            mockRecordedDataQueueRefs
+        )
 
         // Then
         assertThat(snapshot).isEqualTo(expectedSnapshot)

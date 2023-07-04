@@ -14,6 +14,7 @@ import android.widget.CompoundButton
 import android.widget.RadioButton
 import android.widget.TextView
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
@@ -58,6 +59,9 @@ internal class TreeViewTraversalTest {
     @Mock
     lateinit var mockViewUtilsInternal: ViewUtilsInternal
 
+    @Mock
+    lateinit var mockRecordedDataQueueRefs: RecordedDataQueueRefs
+
     @BeforeEach
     fun `set up`() {
         whenever(mockViewUtilsInternal.isNotVisible(any())).thenReturn(false)
@@ -101,7 +105,11 @@ internal class TreeViewTraversalTest {
         )
 
         // When
-        val traversedTreeView = testedTreeViewTraversal.traverse(mockView, fakeMappingContext)
+        val traversedTreeView = testedTreeViewTraversal.traverse(
+            mockView,
+            fakeMappingContext,
+            mockRecordedDataQueueRefs
+        )
 
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
@@ -137,7 +145,11 @@ internal class TreeViewTraversalTest {
         )
 
         // When
-        val traversedTreeView = testedTreeViewTraversal.traverse(mockView, fakeMappingContext)
+        val traversedTreeView = testedTreeViewTraversal.traverse(
+            mockView,
+            fakeMappingContext,
+            mockRecordedDataQueueRefs
+        )
 
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
@@ -165,7 +177,11 @@ internal class TreeViewTraversalTest {
         )
 
         // When
-        val traversedTreeView = testedTreeViewTraversal.traverse(mockView, fakeMappingContext)
+        val traversedTreeView = testedTreeViewTraversal.traverse(
+            mockView,
+            fakeMappingContext,
+            mockRecordedDataQueueRefs
+        )
 
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
@@ -194,7 +210,11 @@ internal class TreeViewTraversalTest {
         )
 
         // When
-        val traversedTreeView = testedTreeViewTraversal.traverse(mockView, fakeMappingContext)
+        val traversedTreeView = testedTreeViewTraversal.traverse(
+            mockView,
+            fakeMappingContext,
+            mockRecordedDataQueueRefs
+        )
 
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
@@ -214,7 +234,11 @@ internal class TreeViewTraversalTest {
         }
 
         // When
-        val traversedTreeView = testedTreeViewTraversal.traverse(fakeRoot, fakeMappingContext)
+        val traversedTreeView = testedTreeViewTraversal.traverse(
+            fakeRoot,
+            fakeMappingContext,
+            mockRecordedDataQueueRefs
+        )
 
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEmpty()
@@ -234,7 +258,11 @@ internal class TreeViewTraversalTest {
         }
 
         // When
-        val traversedTreeView = testedTreeViewTraversal.traverse(fakeRoot, fakeMappingContext)
+        val traversedTreeView = testedTreeViewTraversal.traverse(
+            fakeRoot,
+            fakeMappingContext,
+            mockRecordedDataQueueRefs
+        )
 
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEmpty()
