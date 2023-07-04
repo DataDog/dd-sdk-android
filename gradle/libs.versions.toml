@@ -21,6 +21,7 @@ androidXComposeNavigation = "2.6.0-beta01"
 androidXComposeUi = "1.4.2"
 androidXComposeMaterial = "1.4.2"
 androidXMetrics = "1.0.0-alpha04"
+androidXCollection = "1.1.0"
 googleAccompanist = "0.20.2"
 googleMaterial = "1.3.0"
 androidXLeanback = "1.0.0"
@@ -126,6 +127,7 @@ androidXComposeUi = { module = "androidx.compose.ui:ui", version.ref = "androidX
 androidXComposeUiTooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "androidXComposeUi" }
 androidXComposeMaterial = { module = "androidx.compose.material:material", version.ref = "androidXComposeMaterial" }
 androidXMetrics = { module = "androidx.metrics:metrics-performance", version.ref = "androidXMetrics" }
+androidXCollection = { module = "androidx.collection:collection", version.ref = "androidXCollection" }
 googleAccompanistAppCompatTheme = { module = "com.google.accompanist:accompanist-appcompat-theme", version.ref = "googleAccompanist" }
 googleAccompanistPager = { module = "com.google.accompanist:accompanist-pager", version.ref = "googleAccompanist" }
 googleAccompanistPagerIndicators = { module = "com.google.accompanist:accompanist-pager-indicators", version.ref = "googleAccompanist" }
