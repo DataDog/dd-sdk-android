@@ -30,58 +30,58 @@ class MaterialExtensionSupportTest {
     }
 
     @Test
-    fun `M return a SliderMapper W getCustomViewMappers() { ALLOW_ALL }`() {
+    fun `M return a SliderMapper W getCustomViewMappers() { ALLOW }`() {
         // When
         val customMappers = testedMaterialExtensionSupport.getCustomViewMappers()
 
         // Then
         assertThat(customMappers.entries.size).isEqualTo(3)
-        assertThat(customMappers[SessionReplayPrivacy.ALLOW_ALL]?.get(Slider::class.java))
+        assertThat(customMappers[SessionReplayPrivacy.ALLOW]?.get(Slider::class.java))
             .isInstanceOf(SliderWireframeMapper::class.java)
     }
 
     @Test
-    fun `M return a MaskAllSliderMapper W getCustomViewMappers() { MASK_ALL }`() {
+    fun `M return a MaskSliderMapper W getCustomViewMappers() { MASK }`() {
         // When
         val customMappers = testedMaterialExtensionSupport.getCustomViewMappers()
 
         // Then
         assertThat(customMappers.entries.size).isEqualTo(3)
-        assertThat(customMappers[SessionReplayPrivacy.MASK_ALL]?.get(Slider::class.java))
-            .isInstanceOf(MaskAllSliderWireframeMapper::class.java)
+        assertThat(customMappers[SessionReplayPrivacy.MASK]?.get(Slider::class.java))
+            .isInstanceOf(MaskSliderWireframeMapper::class.java)
     }
 
     @Test
-    fun `M return a MaskAllSliderMapper W getCustomViewMappers() { MASK_USER_INPUT }`() {
+    fun `M return a MaskSliderMapper W getCustomViewMappers() { MASK_USER_INPUT }`() {
         // When
         val customMappers = testedMaterialExtensionSupport.getCustomViewMappers()
 
         // Then
         assertThat(customMappers.entries.size).isEqualTo(3)
-        assertThat(customMappers[SessionReplayPrivacy.MASK_ALL]?.get(Slider::class.java))
-            .isInstanceOf(MaskAllSliderWireframeMapper::class.java)
+        assertThat(customMappers[SessionReplayPrivacy.MASK_USER_INPUT]?.get(Slider::class.java))
+            .isInstanceOf(MaskSliderWireframeMapper::class.java)
     }
 
     @Test
-    fun `M return a TabMapper W getCustomViewMappers() { ALLOW_ALL }`() {
+    fun `M return a TabMapper W getCustomViewMappers() { ALLOW }`() {
         // When
         val customMappers = testedMaterialExtensionSupport.getCustomViewMappers()
 
         // Then
         assertThat(customMappers.entries.size).isEqualTo(3)
-        assertThat(customMappers[SessionReplayPrivacy.ALLOW_ALL]?.get(TabView::class.java))
+        assertThat(customMappers[SessionReplayPrivacy.ALLOW]?.get(TabView::class.java))
             .isInstanceOf(TabWireframeMapper::class.java)
     }
 
     @Test
-    fun `M return a MaskAllTabMapper W getCustomViewMappers() { MASK_ALL  }`() {
+    fun `M return a MaskTabMapper W getCustomViewMappers() { MASK  }`() {
         // When
         val customMappers = testedMaterialExtensionSupport.getCustomViewMappers()
 
         // Then
         assertThat(customMappers.entries.size).isEqualTo(3)
-        assertThat(customMappers[SessionReplayPrivacy.MASK_ALL]?.get(TabView::class.java))
-            .isInstanceOf(MaskAllTabWireframeMapper::class.java)
+        assertThat(customMappers[SessionReplayPrivacy.MASK]?.get(TabView::class.java))
+            .isInstanceOf(MaskTabWireframeMapper::class.java)
     }
 
     @Test

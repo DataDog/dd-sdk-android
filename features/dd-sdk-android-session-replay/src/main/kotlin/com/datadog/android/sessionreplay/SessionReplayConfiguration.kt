@@ -29,7 +29,7 @@ data class SessionReplayConfiguration internal constructor(
      */
     class Builder(@FloatRange(from = 0.0, to = 100.0)private val sampleRate: Float) {
         private var customEndpointUrl: String? = null
-        private var privacy = SessionReplayPrivacy.MASK_ALL
+        private var privacy = SessionReplayPrivacy.MASK
         private var extensionSupport: ExtensionSupport = NoOpExtensionSupport()
 
         /**
@@ -53,9 +53,9 @@ data class SessionReplayConfiguration internal constructor(
 
         /**
          * Sets the privacy rule for the Session Replay feature.
-         * If not specified all the elements will be masked by default (MASK_ALL).
-         * @see SessionReplayPrivacy.ALLOW_ALL
-         * @see SessionReplayPrivacy.MASK_ALL
+         * If not specified all the elements will be masked by default (MASK).
+         * @see SessionReplayPrivacy.ALLOW
+         * @see SessionReplayPrivacy.MASK
          */
         fun setPrivacy(privacy: SessionReplayPrivacy): Builder {
             this.privacy = privacy

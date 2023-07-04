@@ -17,7 +17,7 @@ import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
 @RequiresApi(Build.VERSION_CODES.Q)
-internal open class MaskAllNumberPickerMapper(
+internal open class MaskNumberPickerMapper(
     stringUtils: StringUtils = StringUtils,
     private val viewUtils: ViewUtils = ViewUtils,
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator

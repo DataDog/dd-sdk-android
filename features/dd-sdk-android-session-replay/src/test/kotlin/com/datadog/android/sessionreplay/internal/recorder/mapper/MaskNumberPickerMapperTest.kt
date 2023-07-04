@@ -25,10 +25,10 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class MaskAllNumberPickerMapperTest : BaseNumberPickerMapperTest() {
+internal class MaskNumberPickerMapperTest : BaseNumberPickerMapperTest() {
 
     override fun provideTestInstance(): BasePickerMapper {
-        return MaskAllNumberPickerMapper(
+        return MaskNumberPickerMapper(
             mockStringUtils,
             mockViewUtils,
             mockUniqueIdentifierGenerator

@@ -9,15 +9,15 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.widget.TextView
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.MaskAllObfuscationRule
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.MaskObfuscationRule
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.TextValueObfuscationRule
 
 /**
  * A [WireframeMapper] implementation to map a [TextView] component and apply the
- * [SessionReplayPrivacy.MASK_ALL] masking rule.
+ * [SessionReplayPrivacy.MASK] masking rule.
  */
-class MaskAllTextViewMapper : TextViewMapper {
-    constructor() : super(textValueObfuscationRule = MaskAllObfuscationRule())
+class MaskTextViewMapper : TextViewMapper {
+    constructor() : super(textValueObfuscationRule = MaskObfuscationRule())
 
     @VisibleForTesting
     internal constructor(

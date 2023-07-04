@@ -14,8 +14,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.whenever
@@ -27,14 +25,15 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class AllowAllObfuscationRuleTest : BaseObfuscationRuleTest() {
+internal class MaskObfuscationRuleTest : BaseObfuscationRuleTest() {
 
-    lateinit var testedRule: AllowAllObfuscationRule
+    lateinit var testedRule: MaskObfuscationRule
 
     @BeforeEach
     fun `set up`() {
         super.setUp()
-        testedRule = AllowAllObfuscationRule(
+        testedRule = MaskObfuscationRule(
+            defaultStringObfuscator = mockDefaultStringObfuscator,
             fixedLengthStringObfuscator = mockFixedLengthStringObfuscator,
             textTypeResolver = mockTextTypeResolver,
             textValueResolver = mockTextValueResolver
@@ -55,24 +54,59 @@ internal class AllowAllObfuscationRuleTest : BaseObfuscationRuleTest() {
         assertThat(obfuscatedTextValue).isEqualTo(fakeFixedLengthMask)
     }
 
-    @ParameterizedTest
-    @EnumSource(
-        TextType::class,
-        names = ["SENSITIVE_TEXT"],
-        mode = EnumSource.Mode.EXCLUDE
-    )
-    fun `M resolve non obfuscated text W resolveObfuscatedValue { non SENSITIVE_TEXT }`(
-        textType: TextType
-    ) {
+    @Test
+    fun `M resolve as fix length mask W resolveObfuscatedValue { INPUT_TEXT }`() {
         // Given
         whenever(mockTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext))
-            .thenReturn(textType)
+            .thenReturn(TextType.INPUT_TEXT)
 
         // When
         val obfuscatedTextValue =
             testedRule.resolveObfuscatedValue(mockTextView, fakeMappingContext)
 
         // Then
-        assertThat(obfuscatedTextValue).isEqualTo(fakeTextValue)
+        assertThat(obfuscatedTextValue).isEqualTo(fakeFixedLengthMask)
+    }
+
+    @Test
+    fun `M resolve as fix length mask W resolveObfuscatedValue { OPTION_TEXT }`() {
+        // Given
+        whenever(mockTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext))
+            .thenReturn(TextType.OPTION_TEXT)
+
+        // When
+        val obfuscatedTextValue =
+            testedRule.resolveObfuscatedValue(mockTextView, fakeMappingContext)
+
+        // Then
+        assertThat(obfuscatedTextValue).isEqualTo(fakeFixedLengthMask)
+    }
+
+    @Test
+    fun `M resolve as fix length mask W resolveObfuscatedValue { HINTS_TEXT }`() {
+        // Given
+        whenever(mockTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext))
+            .thenReturn(TextType.HINTS_TEXT)
+
+        // When
+        val obfuscatedTextValue =
+            testedRule.resolveObfuscatedValue(mockTextView, fakeMappingContext)
+
+        // Then
+        assertThat(obfuscatedTextValue).isEqualTo(fakeFixedLengthMask)
+    }
+
+    @Test
+    fun `M resolve as preserved length text mask W resolveObfuscatedValue { STATIC_TEXT }`() {
+        // Given
+        whenever(mockTextTypeResolver.resolveTextType(mockTextView, fakeMappingContext))
+            .thenReturn(TextType.STATIC_TEXT)
+
+        // When
+        val obfuscatedTextValue =
+            testedRule.resolveObfuscatedValue(mockTextView, fakeMappingContext)
+
+        // Then
+        assertThat(obfuscatedTextValue).isEqualTo(fakeDefaultMask)
     }
 }

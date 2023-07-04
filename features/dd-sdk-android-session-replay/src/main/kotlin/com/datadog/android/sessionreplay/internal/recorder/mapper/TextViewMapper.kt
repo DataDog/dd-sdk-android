@@ -11,7 +11,7 @@ import android.view.Gravity
 import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.AllowAllObfuscationRule
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.AllowObfuscationRule
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.TextValueObfuscationRule
 import com.datadog.android.sessionreplay.model.MobileSegment
 
@@ -28,7 +28,7 @@ open class TextViewMapper :
     internal val textValueObfuscationRule: TextValueObfuscationRule
 
     constructor() {
-        textValueObfuscationRule = AllowAllObfuscationRule()
+        textValueObfuscationRule = AllowObfuscationRule()
     }
 
     internal constructor(textValueObfuscationRule: TextValueObfuscationRule) {

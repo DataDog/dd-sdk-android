@@ -4,19 +4,22 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.material
+package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
-internal open class MaskAllSliderWireframeMapper(
+@RequiresApi(Build.VERSION_CODES.O)
+internal class MaskSeekBarWireframeMapper(
     viewUtils: ViewUtils = ViewUtils,
     stringUtils: StringUtils = StringUtils,
     uniqueIdentifierGenerator: UniqueIdentifierGenerator =
         UniqueIdentifierGenerator
-) : SliderWireframeMapper(viewUtils, stringUtils, uniqueIdentifierGenerator) {
+) : SeekBarWireframeMapper(viewUtils, stringUtils, uniqueIdentifierGenerator) {
 
     override fun resolveViewAsWireframesList(
         nonActiveTrackWireframe: MobileSegment.Wireframe.ShapeWireframe,

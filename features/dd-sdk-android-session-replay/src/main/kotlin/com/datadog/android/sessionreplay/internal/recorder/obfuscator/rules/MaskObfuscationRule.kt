@@ -11,7 +11,7 @@ import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.DefaultStringObfuscator
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.FixedLengthStringObfuscator
 
-internal class MaskAllObfuscationRule(
+internal class MaskObfuscationRule(
     private val defaultStringObfuscator: DefaultStringObfuscator =
         DefaultStringObfuscator(),
     private val fixedLengthStringObfuscator: FixedLengthStringObfuscator =

@@ -13,7 +13,7 @@ import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 
-internal class MaskAllSwitchCompatMapper(
+internal class MaskSwitchCompatMapper(
     textWireframeMapper: TextViewMapper,
     stringUtils: StringUtils = StringUtils,
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,

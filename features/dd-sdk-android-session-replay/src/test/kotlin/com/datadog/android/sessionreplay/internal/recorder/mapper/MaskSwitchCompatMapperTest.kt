@@ -26,10 +26,10 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class MaskAllSwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
+internal class MaskSwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
 
     override fun setupTestedMapper(): SwitchCompatMapper {
-        return MaskAllSwitchCompatMapper(
+        return MaskSwitchCompatMapper(
             mockTextWireframeMapper,
             uniqueIdentifierGenerator = mockuniqueIdentifierGenerator,
             viewUtils = mockViewUtils

@@ -10,7 +10,7 @@ import android.widget.TextView
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.FixedLengthStringObfuscator
 
-internal class AllowAllObfuscationRule(
+internal class AllowObfuscationRule(
     private val fixedLengthStringObfuscator: FixedLengthStringObfuscator =
         FixedLengthStringObfuscator(),
     private val textTypeResolver: TextTypeResolver = TextTypeResolver(),

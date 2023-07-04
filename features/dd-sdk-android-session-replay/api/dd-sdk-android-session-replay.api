@@ -27,8 +27,8 @@ public final class com/datadog/android/sessionreplay/SessionReplayConfiguration$
 }
 
 public final class com/datadog/android/sessionreplay/SessionReplayPrivacy : java/lang/Enum {
-	public static final field ALLOW_ALL Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
-	public static final field MASK_ALL Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
+	public static final field ALLOW Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
+	public static final field MASK Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
 	public static final field MASK_USER_INPUT Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
@@ -97,11 +97,11 @@ public abstract class com/datadog/android/sessionreplay/internal/recorder/mapper
 	protected final fun resolveViewId (Landroid/view/View;)J
 }
 
-public final class com/datadog/android/sessionreplay/internal/recorder/mapper/MaskAllTextViewMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/TextViewMapper {
+public final class com/datadog/android/sessionreplay/internal/recorder/mapper/MaskInputTextViewMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/TextViewMapper {
 	public fun <init> ()V
 }
 
-public final class com/datadog/android/sessionreplay/internal/recorder/mapper/MaskInputTextViewMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/TextViewMapper {
+public final class com/datadog/android/sessionreplay/internal/recorder/mapper/MaskTextViewMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/TextViewMapper {
 	public fun <init> ()V
 }
 

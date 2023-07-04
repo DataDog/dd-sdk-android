@@ -30,10 +30,10 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class MaskAllSeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
+internal class MaskSeekBarWireframeMapperTest : BaseSeekBarWireframeMapperTest() {
 
     override fun provideTestInstance(): SeekBarWireframeMapper {
-        return MaskAllSeekBarWireframeMapper(
+        return MaskSeekBarWireframeMapper(
             viewUtils = mockViewUtils,
             stringUtils = mockStringUtils,
             uniqueIdentifierGenerator = mockUniqueIdentifierGenerator
