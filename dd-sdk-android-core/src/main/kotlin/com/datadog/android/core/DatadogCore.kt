@@ -154,8 +154,20 @@ internal class DatadogCore(
     }
 
     /** @inheritDoc */
-    override fun setUserInfo(userInfo: UserInfo) {
-        coreFeature.userInfoProvider.setUserInfo(userInfo)
+    override fun setUserInfo(
+        id: String?,
+        name: String?,
+        email: String?,
+        extraInfo: Map<String, Any?>
+    ) {
+        coreFeature.userInfoProvider.setUserInfo(
+            UserInfo(
+                id = id,
+                name = name,
+                email = email,
+                additionalProperties = extraInfo
+            )
+        )
     }
 
     /** @inheritDoc */

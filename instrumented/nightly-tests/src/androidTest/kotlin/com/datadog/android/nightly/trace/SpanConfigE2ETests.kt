@@ -10,7 +10,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
-import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.nightly.SPECIAL_STRING_TAG_NAME
@@ -320,7 +319,7 @@ class SpanConfigE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-     * apiMethodSignature: com.datadog.android.Datadog#fun setUserInfo(com.datadog.android.api.context.UserInfo, com.datadog.android.api.SdkCore = getInstance())
+     * apiMethodSignature: com.datadog.android.Datadog#fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
      * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.api.SdkCore
      */
     @Test
@@ -343,12 +342,10 @@ class SpanConfigE2ETests {
 
         measure(testMethodName) {
             Datadog.setUserInfo(
-                UserInfo(
-                    userId,
-                    userName,
-                    userEmail,
-                    userExtraInfo
-                )
+                userId,
+                userName,
+                userEmail,
+                userExtraInfo
             )
         }
         GlobalTracer.get().buildSpan(testMethodName).start().finish()

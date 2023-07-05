@@ -11,7 +11,6 @@ import android.content.Context
 import android.net.ConnectivityManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
-import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.DatadogCore
 import com.datadog.android.core.NoOpInternalSdkCore
 import com.datadog.android.core.configuration.Configuration
@@ -478,15 +477,23 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 set user info 𝕎 setUserInfo()`(@Forgery fakeUserInfo: UserInfo) {
+    fun `𝕄 set user info 𝕎 setUserInfo()`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery name: String,
+        @StringForgery(regex = "\\w+@\\w+") email: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
+        ) fakeUserProperties: Map<String, String>
+    ) {
         // Given
         val mockSdkCore = mock<SdkCore>()
 
         // When
-        Datadog.setUserInfo(fakeUserInfo, mockSdkCore)
+        Datadog.setUserInfo(id, name, email, fakeUserProperties, mockSdkCore)
 
         // Then
-        verify(mockSdkCore).setUserInfo(fakeUserInfo)
+        verify(mockSdkCore).setUserInfo(id, name, email, fakeUserProperties)
     }
 
     @Test

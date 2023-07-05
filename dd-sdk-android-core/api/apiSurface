@@ -7,7 +7,7 @@ object com.datadog.android.Datadog
   fun setVerbosity(Int)
   fun getVerbosity(): Int
   fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
-  fun setUserInfo(com.datadog.android.api.context.UserInfo, com.datadog.android.api.SdkCore = getInstance())
+  fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
   fun addUserProperties(Map<String, Any?>, com.datadog.android.api.SdkCore = getInstance())
   fun clearAllData(com.datadog.android.api.SdkCore = getInstance())
   fun _internalProxy(String? = null): _InternalProxy
@@ -51,7 +51,7 @@ interface com.datadog.android.api.SdkCore
   val time: com.datadog.android.api.context.TimeInfo
   val service: String
   fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
-  fun setUserInfo(com.datadog.android.api.context.UserInfo)
+  fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
   fun addUserProperties(Map<String, Any?>)
   fun clearAllData()
 data class com.datadog.android.api.context.DatadogContext

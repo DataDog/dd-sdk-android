@@ -12,7 +12,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
-import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.event.EventMapper
@@ -140,14 +139,12 @@ class SampleApplication : Application() {
         NdkCrashReports.enable()
 
         Datadog.setUserInfo(
-            UserInfo(
-                preferences.getUserId(),
-                preferences.getUserName(),
-                preferences.getUserEmail(),
-                mapOf(
-                    UserFragment.GENDER_KEY to preferences.getUserGender(),
-                    UserFragment.AGE_KEY to preferences.getUserAge()
-                )
+            id = preferences.getUserId(),
+            name = preferences.getUserName(),
+            email = preferences.getUserEmail(),
+            extraInfo = mapOf(
+                UserFragment.GENDER_KEY to preferences.getUserGender(),
+                UserFragment.AGE_KEY to preferences.getUserAge()
             )
         )
 

@@ -192,17 +192,30 @@ internal class DatadogCoreTest {
 
     @Test
     fun `𝕄 update userInfoProvider 𝕎 setUserInfo()`(
-        @Forgery userInfo: UserInfo
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery name: String,
+        @StringForgery(regex = "\\w+@\\w+") email: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
+        ) fakeUserProperties: Map<String, String>
     ) {
         // Given
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
         testedCore.coreFeature.userInfoProvider = mockUserInfoProvider
 
         // When
-        testedCore.setUserInfo(userInfo)
+        testedCore.setUserInfo(id, name, email, fakeUserProperties)
 
         // Then
-        verify(mockUserInfoProvider).setUserInfo(userInfo)
+        verify(mockUserInfoProvider).setUserInfo(
+            UserInfo(
+                id = id,
+                name = name,
+                email = email,
+                additionalProperties = fakeUserProperties
+            )
+        )
     }
 
     @Test
@@ -218,7 +231,7 @@ internal class DatadogCoreTest {
         whenever(testedCore.coreFeature.userInfoProvider) doReturn mockUserInfoProvider
 
         // When
-        testedCore.setUserInfo(UserInfo(id, name, email))
+        testedCore.setUserInfo(id, name, email)
         testedCore.addUserProperties(
             mapOf(
                 "key1" to 1,

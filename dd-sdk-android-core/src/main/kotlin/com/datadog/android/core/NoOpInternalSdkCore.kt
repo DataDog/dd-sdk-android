@@ -11,7 +11,6 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
-import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
@@ -65,7 +64,12 @@ internal class NoOpInternalSdkCore : InternalSdkCore {
 
     override fun setTrackingConsent(consent: TrackingConsent) = Unit
 
-    override fun setUserInfo(userInfo: UserInfo) = Unit
+    override fun setUserInfo(
+        id: String?,
+        name: String?,
+        email: String?,
+        extraInfo: Map<String, Any?>
+    ) = Unit
 
     override fun addUserProperties(extraInfo: Map<String, Any?>) = Unit
 
