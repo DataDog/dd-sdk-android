@@ -59,11 +59,13 @@ static-analysis:
   stage: analysis
   variables:
     DETEKT_PUBLIC_API: "true"
-    DETEKT_CUSTOM_RULES_BUILD_TASK: ":tools:detekt:jar"
+    DETEKT_CUSTOM_RULES_BUILD_TASK: "assembleAll :tools:detekt:jar"
     DETEKT_CUSTOM_RULES_JAR_PATH: "tools/detekt/build/libs/detekt.jar"
     DETEKT_CUSTOM_RULES_YML_PATH: "detekt_custom.yml"
+    DETEKT_GENERATE_CLASSPATH_BUILD_TASK: "printSdkDebugRuntimeClasspath"
+    DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
   trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v13971524-c0282e65/static-analysis.yml"
+    include: "https://gitlab-templates.ddbuild.io/mobile/v16647802-df6f90e7/static-analysis.yml"
     strategy: depend
 
 analysis:android-lint:

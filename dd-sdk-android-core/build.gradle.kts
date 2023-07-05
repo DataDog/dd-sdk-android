@@ -148,6 +148,7 @@ dependencies {
 
     // Android Instrumentation
     implementation(libs.androidXAnnotation)
+    implementation(libs.androidXCollection)
     implementation(libs.androidXWorkManager)
 
     // Generate NoOp implementations

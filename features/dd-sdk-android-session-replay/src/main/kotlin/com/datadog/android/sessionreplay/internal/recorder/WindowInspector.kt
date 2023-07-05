@@ -63,6 +63,7 @@ internal object WindowInspector {
                 viewsField.isAccessible = true
                 val decorViews = when (val views: Any? = viewsField.get(globalWmInstance)) {
                     is List<*> -> {
+                        @Suppress("UnsafeThirdPartyFunctionCall") // mapNotNull is a safe call
                         views.mapNotNull { it as? View }
                     }
                     is Array<*> -> {

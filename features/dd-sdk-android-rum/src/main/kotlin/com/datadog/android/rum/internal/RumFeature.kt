@@ -21,7 +21,6 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
@@ -351,7 +350,6 @@ internal class RumFeature constructor(
 
         jankStatsActivityLifecycleListener = JankStatsActivityLifecycleListener(
             frameRateVitalMonitor,
-            DefaultBuildSdkVersionProvider(),
             sdkCore.internalLogger
         )
         (appContext as? Application)?.registerActivityLifecycleCallbacks(

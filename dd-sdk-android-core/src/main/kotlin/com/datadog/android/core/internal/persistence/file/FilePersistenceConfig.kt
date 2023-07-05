@@ -15,7 +15,8 @@ internal data class FilePersistenceConfig(
     val maxItemSize: Long = MAX_ITEM_SIZE,
     val maxItemsPerBatch: Int = MAX_ITEMS_PER_BATCH,
     val oldFileThreshold: Long = OLD_FILE_THRESHOLD,
-    val maxDiskSpace: Long = MAX_DISK_SPACE
+    val maxDiskSpace: Long = MAX_DISK_SPACE,
+    val cleanupFrequencyThreshold: Long = CLEANUP_FREQUENCY_THRESHOLD_MS
 ) {
     companion object {
         internal const val MAX_BATCH_SIZE: Long = 4L * 1024 * 1024 // 4 MB
@@ -24,5 +25,6 @@ internal data class FilePersistenceConfig(
         internal const val OLD_FILE_THRESHOLD: Long = 18L * 60L * 60L * 1000L // 18 hours
         internal const val MAX_DISK_SPACE: Long = 128 * MAX_BATCH_SIZE // 512 MB
         internal const val MAX_DELAY_BETWEEN_MESSAGES_MS = 5000L
+        internal const val CLEANUP_FREQUENCY_THRESHOLD_MS = 1000L // 1s
     }
 }
