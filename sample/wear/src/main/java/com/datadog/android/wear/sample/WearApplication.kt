@@ -10,7 +10,6 @@ import android.app.Application
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
-import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -75,11 +74,9 @@ class WearApplication : Application() {
         Trace.enable(tracesConfig)
 
         Datadog.setUserInfo(
-            UserInfo(
-                id = "wear 42",
-                name = null,
-                email = null
-            )
+            id = "wear 42",
+            name = null,
+            email = null
         )
 
         GlobalTracer.registerIfAbsent(

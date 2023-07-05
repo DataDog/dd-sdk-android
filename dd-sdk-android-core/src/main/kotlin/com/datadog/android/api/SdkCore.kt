@@ -42,9 +42,18 @@ interface SdkCore {
     /**
      * Sets the user information.
      *
-     * @param userInfo the new user info to set, or null
+     * @param id (nullable) a unique user identifier (relevant to your business domain)
+     * @param name (nullable) the user name or alias
+     * @param email (nullable) the user email
+     * @param extraInfo additional information. An extra information can be
+     * nested up to 8 levels deep. Keys using more than 8 levels will be sanitized by SDK.
      */
-    fun setUserInfo(userInfo: UserInfo)
+    fun setUserInfo(
+        id: String? = null,
+        name: String? = null,
+        email: String? = null,
+        extraInfo: Map<String, Any?> = emptyMap()
+    )
 
     /**
      * Sets additional information on the [UserInfo] object
