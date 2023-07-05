@@ -32,7 +32,6 @@
         <activity android:name=".activities.ResourceTrackingFirstPartyHostsWithTracingHeaderTypeActivity"/>
         <activity android:name=".activities.ResourceTrackingTraceSamplingActivity"/>
         <activity android:name=".activities.WebViewTrackingActivity"/>
-        <activity android:name=".activities.WebViewTrackingBridgeHostsActivity"/>
         <service
             android:name=".services.CrashHandlerDisabledCrashService"
             android:process=":crashhandler.disabled" />

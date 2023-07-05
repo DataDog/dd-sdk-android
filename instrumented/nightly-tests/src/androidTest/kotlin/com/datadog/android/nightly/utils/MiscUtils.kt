@@ -10,23 +10,29 @@ import android.content.Context
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.log.Logs
+import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.nightly.BuildConfig
 import com.datadog.android.nightly.ENV_NAME
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.Rum
+import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.Trace
+import com.datadog.android.trace.TraceConfiguration
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
+import java.util.Random
 import java.util.concurrent.atomic.AtomicBoolean
 
 fun defaultTestAttributes(testMethodName: String) = mapOf(
@@ -37,23 +43,24 @@ inline fun executeInsideView(
     viewKey: String,
     viewName: String,
     testMethodName: String,
+    sdkCore: SdkCore,
     codeBlock: () -> Unit
 ) {
-    GlobalRum.get().startView(viewKey, viewName, attributes = defaultTestAttributes(testMethodName))
+    GlobalRumMonitor.get(sdkCore).startView(viewKey, viewName, attributes = defaultTestAttributes(testMethodName))
     codeBlock()
-    GlobalRum.get().stopView(viewKey)
+    GlobalRumMonitor.get(sdkCore).stopView(viewKey)
 }
 
-fun sendRandomActionOutcomeEvent(forge: Forge) {
+fun sendRandomActionOutcomeEvent(forge: Forge, sdkCore: SdkCore) {
     if (forge.aBool()) {
         val key = forge.anAlphabeticalString()
-        GlobalRum.get().startResource(
+        GlobalRumMonitor.get(sdkCore).startResource(
             key,
             forge.aResourceMethod(),
             key,
             forge.exhaustiveAttributes()
         )
-        GlobalRum.get().stopResource(
+        GlobalRumMonitor.get(sdkCore).stopResource(
             key,
             forge.anInt(min = 200, max = 500),
             forge.aLong(min = 1),
@@ -61,7 +68,7 @@ fun sendRandomActionOutcomeEvent(forge: Forge) {
             forge.exhaustiveAttributes()
         )
     } else {
-        GlobalRum.get().addError(
+        GlobalRumMonitor.get(sdkCore).addError(
             forge.anAlphabeticalString(),
             forge.aValueFrom(RumErrorSource::class.java),
             forge.aNullable { forge.aThrowable() },
@@ -71,16 +78,11 @@ fun sendRandomActionOutcomeEvent(forge: Forge) {
 }
 
 fun stopSdk() {
-    // Call Datadog.stop()
-    val instance = Datadog.javaClass.getDeclaredField("INSTANCE")
-    instance.isAccessible = true
-    val method = Datadog.javaClass.declaredMethods.first { it.name.contains("stop") }
-    method.isAccessible = true
-    method.invoke(instance.get(null))
+    Datadog.stopInstance()
 
     // Reset Global states
     GlobalTracer::class.java.setStaticValue("isRegistered", false)
-    val isRumRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
+    val isRumRegistered: AtomicBoolean = GlobalRumMonitor::class.java.getStaticValue("isRegistered")
     isRumRegistered.set(false)
 }
 
@@ -90,40 +92,66 @@ fun flushAndShutdownExecutors() {
 
 fun initializeSdk(
     targetContext: Context,
+    forgeSeed: Long,
     consent: TrackingConsent = TrackingConsent.GRANTED,
     config: Configuration = createDatadogDefaultConfiguration(),
-    tracerProvider: () -> Tracer = { createDefaultAndroidTracer() },
-    rumMonitorProvider: () -> RumMonitor = { createDefaultRumMonitor() }
-) {
-    Datadog.initialize(
+    logsConfigProvider: () -> LogsConfiguration? = { LogsConfiguration.Builder().build() },
+    tracesConfigProvider: () -> TraceConfiguration? = { TraceConfiguration.Builder().build() },
+    rumConfigProvider: (RumConfiguration.Builder) -> RumConfiguration? = {
+        it.build()
+    },
+    tracerProvider: (SdkCore) -> Tracer = { createDefaultAndroidTracer(it) }
+): SdkCore {
+    Datadog.setVerbosity(Log.VERBOSE)
+    val sdkCore = Datadog.initialize(
         targetContext,
-        createDatadogCredentials(),
         config,
         consent
     )
-    Datadog.setVerbosity(Log.VERBOSE)
-    GlobalTracer.registerIfAbsent(tracerProvider.invoke())
-    GlobalRum.registerIfAbsent(rumMonitorProvider.invoke())
+    checkNotNull(sdkCore)
+    mutableListOf(
+        rumConfigProvider(
+            RumConfiguration.Builder(BuildConfig.NIGHTLY_TESTS_RUM_APP_ID)
+                .setTelemetrySampleRate(100f)
+        ),
+        logsConfigProvider(),
+        tracesConfigProvider()
+    )
+        .filterNotNull()
+        .shuffled(Random(forgeSeed))
+        .forEach {
+            when (it) {
+                is RumConfiguration -> Rum.enable(it, sdkCore)
+                is LogsConfiguration -> Logs.enable(it, sdkCore)
+                is TraceConfiguration -> Trace.enable(it, sdkCore)
+                else -> throw IllegalArgumentException(
+                    "Unknown configuration of type ${it::class.qualifiedName}"
+                )
+            }
+        }
+    GlobalTracer.registerIfAbsent(tracerProvider.invoke(sdkCore))
+    return sdkCore
 }
 
 /**
  * Default builder for nightly runs with telemetry set to 100%.
  */
 fun defaultConfigurationBuilder(
-    logsEnabled: Boolean = true,
-    tracesEnabled: Boolean = true,
-    crashReportsEnabled: Boolean = true,
-    rumEnabled: Boolean = true
+    crashReportsEnabled: Boolean = true
 ): Configuration.Builder {
-    val configBuilder = Configuration.Builder(
-        logsEnabled,
-        tracesEnabled,
-        crashReportsEnabled,
-        rumEnabled
+    return Configuration.Builder(
+        clientToken = DEFAULT_CLIENT_TOKEN,
+        env = DEFAULT_ENV_NAME,
+        variant = DEFAULT_VARIANT_NAME
     )
-    return configBuilder
-        .sampleTelemetry(100f)
+        .setCrashReportsEnabled(crashReportsEnabled)
 }
+
+const val DEFAULT_CLIENT_TOKEN = BuildConfig.NIGHTLY_TESTS_TOKEN
+
+const val DEFAULT_ENV_NAME = ENV_NAME
+
+const val DEFAULT_VARIANT_NAME = ""
 
 fun cleanStorageFiles() {
     InstrumentationRegistry
@@ -132,23 +160,9 @@ fun cleanStorageFiles() {
         .cacheDir.deleteRecursively()
 }
 
-fun cleanGlobalAttributes() {
-    GlobalRum.removeAttribute(TEST_METHOD_NAME_KEY)
-}
-
-private fun createDatadogCredentials(): Credentials {
-    return Credentials(
-        clientToken = BuildConfig.NIGHTLY_TESTS_TOKEN,
-        envName = ENV_NAME,
-        variant = "",
-        rumApplicationId = BuildConfig.NIGHTLY_TESTS_RUM_APP_ID
-    )
-}
-
 private fun createDatadogDefaultConfiguration(): Configuration {
     return defaultConfigurationBuilder().build()
 }
 
-private fun createDefaultAndroidTracer(): Tracer = AndroidTracer.Builder().build()
-
-private fun createDefaultRumMonitor() = RumMonitor.Builder().build()
+private fun createDefaultAndroidTracer(sdkCore: SdkCore): Tracer =
+    AndroidTracer.Builder(sdkCore).build()

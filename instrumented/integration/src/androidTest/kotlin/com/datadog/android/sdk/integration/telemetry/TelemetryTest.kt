@@ -7,6 +7,7 @@
 package com.datadog.android.sdk.integration.telemetry
 
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.TelemetryTestRule
 import com.datadog.tools.unit.ConditionWatcher
@@ -39,7 +40,7 @@ internal open class TelemetryTest {
 
         ConditionWatcher {
             verifyContainsExpectedTelemetry(
-                handledRequests = mockServerRule.getRequests(),
+                handledRequests = mockServerRule.getRequests(RuntimeConfig.rumEndpointUrl),
                 expectedTelemetry
             )
             true

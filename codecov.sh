@@ -1315,7 +1315,7 @@ $PWD/coverage.xml"
                      -or -name 'luacov.report.out' \
                      -or -name 'naxsi.info' \
                      -or -name 'nosetests.xml' \
-                     -or -name 'report.xml' \
+                     -or -name 'report*.xml' \
                      $include_cov \) \
                     $exclude_cov \
                     -not -name '*.am' \

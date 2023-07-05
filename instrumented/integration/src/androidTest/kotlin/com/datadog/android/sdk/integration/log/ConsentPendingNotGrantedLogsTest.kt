@@ -11,8 +11,8 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
-import com.datadog.android.sdk.utils.isLogsUrl
 import com.datadog.tools.unit.ConditionWatcher
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -39,9 +39,7 @@ internal class ConsentPendingNotGrantedLogsTest : LogsTest() {
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
         ConditionWatcher {
-            val logsPayloads = mockServerRule
-                .getRequests()
-                .filter { it.url?.isLogsUrl() ?: false }
+            val logsPayloads = mockServerRule.getRequests(RuntimeConfig.logsEndpointUrl)
             assertThat(logsPayloads).isEmpty()
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)

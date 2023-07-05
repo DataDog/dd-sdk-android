@@ -6,6 +6,7 @@
 
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.configureFlavorForSampleApp
+import com.datadog.gradle.config.java17
 
 plugins {
     id("com.android.application")
@@ -18,13 +19,21 @@ android {
 
     defaultConfig {
         applicationId = "com.datadog.android.wear.sample"
-        minSdk = AndroidConfig.MIN_SDK_FOR_WEAR
+        minSdk = AndroidConfig.MIN_SDK
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
+
+        buildFeatures {
+            buildConfig = true
+        }
     }
 
     namespace = "com.datadog.android.wear.sample"
+
+    compileOptions {
+        java17()
+    }
 
     flavorDimensions += listOf("site")
     productFlavors {
@@ -55,7 +64,12 @@ android {
 
 dependencies {
 
-    implementation(project(":dd-sdk-android"))
+    implementation(project(":dd-sdk-android-core"))
+    implementation(project(":features:dd-sdk-android-ndk"))
+    implementation(project(":features:dd-sdk-android-trace"))
+    implementation(project(":features:dd-sdk-android-rum"))
+    implementation(project(":features:dd-sdk-android-logs"))
+    implementation(libs.timber)
     implementation("androidx.core:core-ktx:1.7.0")
     implementation("com.google.android.gms:play-services-wearable:17.1.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")

@@ -63,7 +63,7 @@ internal class RealmDataSource(val context: Context) : DataSource {
         }
     }
 
-    private val fetchLogsCallable = Callable<List<Log>> {
+    private val fetchLogsCallable = Callable {
         Realm.getDefaultInstance().useMonitored { realm ->
             val minTtlRequired =
                 System.currentTimeMillis() - LOGS_EXPIRING_TTL_IN_MS

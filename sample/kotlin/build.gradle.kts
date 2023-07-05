@@ -8,7 +8,7 @@ import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.configureFlavorForSampleApp
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.java11
+import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -39,11 +39,15 @@ android {
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
     defaultConfig {
-        minSdk = AndroidConfig.MIN_SDK_FOR_COMPOSE
+        minSdk = AndroidConfig.MIN_SDK
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
         multiDexEnabled = true
+
+        buildFeatures {
+            buildConfig = true
+        }
 
         vectorDrawables.useSupportLibrary = true
         externalNativeBuild {
@@ -54,6 +58,10 @@ android {
     }
 
     namespace = "com.datadog.android.sample"
+
+    compileOptions {
+        java17()
+    }
 
     buildFeatures {
         compose = true
@@ -90,11 +98,7 @@ android {
         java.srcDir("src/androidTest/kotlin")
     }
 
-    compileOptions {
-        java11()
-    }
-
-    packagingOptions {
+    packaging {
         resources {
             excludes += "META-INF/*"
         }
@@ -111,16 +115,21 @@ android {
 
 dependencies {
 
-    implementation(project(":dd-sdk-android"))
-    implementation(project(":dd-sdk-android-ktx"))
-    implementation(project(":dd-sdk-android-ndk"))
-    implementation(project(":dd-sdk-android-rx"))
-    implementation(project(":dd-sdk-android-timber"))
-    implementation(project(":dd-sdk-android-coil"))
-    implementation(project(":dd-sdk-android-glide"))
-    implementation(project(":dd-sdk-android-fresco"))
-    implementation(project(":dd-sdk-android-sqldelight"))
-    implementation(project(":dd-sdk-android-compose"))
+    implementation(project(":dd-sdk-android-core"))
+    implementation(project(":features:dd-sdk-android-ndk"))
+    implementation(project(":features:dd-sdk-android-trace"))
+    implementation(project(":features:dd-sdk-android-webview"))
+    implementation(project(":features:dd-sdk-android-session-replay"))
+    implementation(project(":features:dd-sdk-android-session-replay-material"))
+    implementation(project(":integrations:dd-sdk-android-ktx"))
+    implementation(project(":integrations:dd-sdk-android-rx"))
+    implementation(project(":integrations:dd-sdk-android-timber"))
+    implementation(project(":integrations:dd-sdk-android-coil"))
+    implementation(project(":integrations:dd-sdk-android-glide"))
+    implementation(project(":integrations:dd-sdk-android-fresco"))
+    implementation(project(":integrations:dd-sdk-android-sqldelight"))
+    implementation(project(":integrations:dd-sdk-android-compose"))
+    implementation(project(":integrations:dd-sdk-android-okhttp"))
 
     implementation(libs.kotlin)
 
@@ -180,8 +189,8 @@ dependencies {
 
 kotlinConfig(evaluateWarningsAsErrors = false)
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
+    compilerOptions {
+        freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
     }
 }
 junitConfig()

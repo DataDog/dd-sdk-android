@@ -10,18 +10,22 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
+import com.datadog.android.log.Logs
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
-import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.Trace
 import com.datadog.opentracing.DDSpan
 import fr.xgouchet.elmyr.Forge
 import io.opentracing.Scope
 import java.util.LinkedList
+import java.util.Random
 
 internal class ActivityLifecycleTrace : AppCompatActivity() {
 
-    private val forge = Forge()
+    private val forge by lazy { Forge().apply { seed = intent.getForgeSeed() } }
 
     lateinit var tracer: AndroidTracer
     private val sentSpans = LinkedList<DDSpan>()
@@ -31,17 +35,24 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
 
     // region Activity
 
+    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val credentials = RuntimeConfig.credentials()
         val config = RuntimeConfig.configBuilder().build()
         val trackingConsent = intent.getTrackingConsent()
 
-        Datadog.initialize(this, credentials, config, trackingConsent)
         Datadog.setVerbosity(Log.VERBOSE)
+        val sdkCore = Datadog.initialize(this, config, trackingConsent)
+        checkNotNull(sdkCore)
+        mutableListOf(
+            { Logs.enable(RuntimeConfig.logsConfigBuilder().build(), sdkCore) },
+            { Trace.enable(RuntimeConfig.tracesConfigBuilder().build(), sdkCore) }
+        )
+            .shuffled(Random(intent.getForgeSeed()))
+            .forEach { it() }
 
-        tracer = RuntimeConfig.tracer()
+        tracer = RuntimeConfig.tracer(sdkCore)
         setContentView(R.layout.main_activity_layout)
     }
 

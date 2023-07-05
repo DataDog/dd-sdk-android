@@ -1,0 +1,18 @@
+public class com/datadog/android/glide/DatadogGlideModule : com/bumptech/glide/module/AppGlideModule {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;F)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;FILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun applyOptions (Landroid/content/Context;Lcom/bumptech/glide/GlideBuilder;)V
+	public fun getClientBuilder ()Lokhttp3/OkHttpClient$Builder;
+	public fun registerComponents (Landroid/content/Context;Lcom/bumptech/glide/Glide;Lcom/bumptech/glide/Registry;)V
+}
+
+public final class com/datadog/android/glide/DatadogRUMUncaughtThrowableStrategy : com/bumptech/glide/load/engine/executor/GlideExecutor$UncaughtThrowableStrategy {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getName ()Ljava/lang/String;
+	public fun handle (Ljava/lang/Throwable;)V
+}
+

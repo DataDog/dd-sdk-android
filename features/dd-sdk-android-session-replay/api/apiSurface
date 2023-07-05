@@ -1,0 +1,354 @@
+interface com.datadog.android.sessionreplay.ExtensionSupport
+  fun getCustomViewMappers(): Map<SessionReplayPrivacy, Map<Class<*>, com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper<android.view.View, *>>>
+  fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector>
+object com.datadog.android.sessionreplay.SessionReplay
+  fun enable(SessionReplayConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
+data class com.datadog.android.sessionreplay.SessionReplayConfiguration
+  class Builder
+    constructor(Float)
+    fun addExtensionSupport(ExtensionSupport): Builder
+    fun useCustomEndpoint(String): Builder
+    fun setPrivacy(SessionReplayPrivacy): Builder
+    fun build(): SessionReplayConfiguration
+enum com.datadog.android.sessionreplay.SessionReplayPrivacy
+  - ALLOW
+  - MASK
+  - MASK_USER_INPUT
+data class com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
+  constructor(Long, Long, Long, Long)
+data class com.datadog.android.sessionreplay.internal.recorder.MappingContext
+  constructor(SystemInformation, Boolean = false)
+interface com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
+  fun isOptionSelector(android.view.ViewGroup): Boolean
+data class com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+  constructor(GlobalBounds, Int = Configuration.ORIENTATION_UNDEFINED, Float, String? = null)
+class com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
+interface com.datadog.android.sessionreplay.internal.recorder.base64.ImageCompression
+  fun getMimeType(): String?
+  fun compressBitmapToStream(android.graphics.Bitmap): java.io.ByteArrayOutputStream
+class com.datadog.android.sessionreplay.internal.recorder.base64.WebPImageCompression : ImageCompression
+  override fun getMimeType(): String?
+  override fun compressBitmapToStream(android.graphics.Bitmap): java.io.ByteArrayOutputStream
+  companion object 
+abstract class com.datadog.android.sessionreplay.internal.recorder.mapper.BaseWireframeMapper<T: android.view.View, S: com.datadog.android.sessionreplay.model.MobileSegment.Wireframe> : WireframeMapper<T, S>, com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
+  constructor(com.datadog.android.sessionreplay.utils.StringUtils = StringUtils, com.datadog.android.sessionreplay.utils.ViewUtils = ViewUtils, com.datadog.android.sessionreplay.internal.recorder.base64.ImageCompression = WebPImageCompression(), com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator = UniqueIdentifierGenerator, com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer = Base64Serializer.Builder().build())
+  protected fun resolveViewId(android.view.View): Long
+  protected fun colorAndAlphaAsStringHexa(Int, Int): String
+  protected fun resolveViewGlobalBounds(android.view.View, Float): com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
+  protected fun android.graphics.drawable.Drawable.resolveShapeStyleAndBorder(Float): Pair<com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle?, com.datadog.android.sessionreplay.model.MobileSegment.ShapeBorder?>?
+  protected fun resolveChildDrawableUniqueIdentifier(android.view.View): Long?
+  protected fun getWebPMimeType(): String?
+  protected fun handleBitmap(android.util.DisplayMetrics, android.graphics.drawable.Drawable, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ImageWireframe)
+  override fun startProcessingImage()
+  override fun finishProcessingImage()
+  companion object 
+class com.datadog.android.sessionreplay.internal.recorder.mapper.MaskInputTextViewMapper : TextViewMapper
+  constructor()
+class com.datadog.android.sessionreplay.internal.recorder.mapper.MaskTextViewMapper : TextViewMapper
+  constructor()
+open class com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper : BaseWireframeMapper<android.widget.TextView, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.TextWireframe>
+  constructor()
+  override fun map(android.widget.TextView, com.datadog.android.sessionreplay.internal.recorder.MappingContext): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.TextWireframe>
+interface com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper<T: android.view.View, S: com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
+  fun map(T, com.datadog.android.sessionreplay.internal.recorder.MappingContext): List<S>
+object com.datadog.android.sessionreplay.utils.StringUtils
+  fun formatColorAndAlphaAsHexa(Int, Int): String
+object com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+  fun resolveChildUniqueIdentifier(android.view.View, String): Long?
+object com.datadog.android.sessionreplay.utils.ViewUtils
+  fun resolveViewGlobalBounds(android.view.View, Float): com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
+data class com.datadog.android.sessionreplay.model.MobileSegment
+  constructor(Application, Session, View, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long? = null, kotlin.Boolean? = null, Source, kotlin.collections.List<MobileRecord>)
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): MobileSegment
+    fun fromJsonObject(com.google.gson.JsonObject): MobileSegment
+  data class Application
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
+      fun fromJsonObject(com.google.gson.JsonObject): Application
+  data class Session
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
+      fun fromJsonObject(com.google.gson.JsonObject): Session
+  data class View
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
+      fun fromJsonObject(com.google.gson.JsonObject): View
+  sealed class MobileRecord
+    abstract fun toJson(): com.google.gson.JsonElement
+    data class MobileFullSnapshotRecord : MobileRecord
+      constructor(kotlin.Long, Data)
+      val type: kotlin.Long
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): MobileFullSnapshotRecord
+        fun fromJsonObject(com.google.gson.JsonObject): MobileFullSnapshotRecord
+    data class MobileIncrementalSnapshotRecord : MobileRecord
+      constructor(kotlin.Long, MobileIncrementalData)
+      val type: kotlin.Long
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): MobileIncrementalSnapshotRecord
+        fun fromJsonObject(com.google.gson.JsonObject): MobileIncrementalSnapshotRecord
+    data class MetaRecord : MobileRecord
+      constructor(kotlin.Long, Data1)
+      val type: kotlin.Long
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): MetaRecord
+        fun fromJsonObject(com.google.gson.JsonObject): MetaRecord
+    data class FocusRecord : MobileRecord
+      constructor(kotlin.Long, Data2)
+      val type: kotlin.Long
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): FocusRecord
+        fun fromJsonObject(com.google.gson.JsonObject): FocusRecord
+    data class ViewEndRecord : MobileRecord
+      constructor(kotlin.Long)
+      val type: kotlin.Long
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): ViewEndRecord
+        fun fromJsonObject(com.google.gson.JsonObject): ViewEndRecord
+    data class VisualViewportRecord : MobileRecord
+      constructor(kotlin.Long, Data3)
+      val type: kotlin.Long
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): VisualViewportRecord
+        fun fromJsonObject(com.google.gson.JsonObject): VisualViewportRecord
+    companion object 
+      fun fromJson(kotlin.String): MobileRecord
+      fun fromJsonObject(com.google.gson.JsonObject): MobileRecord
+  data class Data
+    constructor(kotlin.collections.List<Wireframe>)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Data
+      fun fromJsonObject(com.google.gson.JsonObject): Data
+  sealed class MobileIncrementalData
+    abstract fun toJson(): com.google.gson.JsonElement
+    data class MobileMutationData : MobileIncrementalData
+      constructor(kotlin.collections.List<Add>? = null, kotlin.collections.List<Remove>? = null, kotlin.collections.List<WireframeUpdateMutation>? = null)
+      val source: kotlin.Long
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): MobileMutationData
+        fun fromJsonObject(com.google.gson.JsonObject): MobileMutationData
+    data class TouchData : MobileIncrementalData
+      constructor(kotlin.collections.List<Position>? = null)
+      val source: kotlin.Long
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): TouchData
+        fun fromJsonObject(com.google.gson.JsonObject): TouchData
+    data class ViewportResizeData : MobileIncrementalData
+      constructor(kotlin.Long, kotlin.Long)
+      val source: kotlin.Long
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): ViewportResizeData
+        fun fromJsonObject(com.google.gson.JsonObject): ViewportResizeData
+    data class PointerInteractionData : MobileIncrementalData
+      constructor(PointerEventType, PointerType, kotlin.Long, kotlin.Number, kotlin.Number)
+      val source: kotlin.Long
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): PointerInteractionData
+        fun fromJsonObject(com.google.gson.JsonObject): PointerInteractionData
+    companion object 
+      fun fromJson(kotlin.String): MobileIncrementalData
+      fun fromJsonObject(com.google.gson.JsonObject): MobileIncrementalData
+  data class Data1
+    constructor(kotlin.Long, kotlin.Long, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Data1
+      fun fromJsonObject(com.google.gson.JsonObject): Data1
+  data class Data2
+    constructor(kotlin.Boolean)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Data2
+      fun fromJsonObject(com.google.gson.JsonObject): Data2
+  data class Data3
+    constructor(kotlin.Number, kotlin.Number, kotlin.Number, kotlin.Number, kotlin.Number, kotlin.Number, kotlin.Number)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Data3
+      fun fromJsonObject(com.google.gson.JsonObject): Data3
+  sealed class Wireframe
+    abstract fun toJson(): com.google.gson.JsonElement
+    data class ShapeWireframe : Wireframe
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): ShapeWireframe
+        fun fromJsonObject(com.google.gson.JsonObject): ShapeWireframe
+    data class TextWireframe : Wireframe
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String, TextStyle, TextPosition? = null)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): TextWireframe
+        fun fromJsonObject(com.google.gson.JsonObject): TextWireframe
+    data class ImageWireframe : Wireframe
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): ImageWireframe
+        fun fromJsonObject(com.google.gson.JsonObject): ImageWireframe
+    data class PlaceholderWireframe : Wireframe
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, kotlin.String? = null)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): PlaceholderWireframe
+        fun fromJsonObject(com.google.gson.JsonObject): PlaceholderWireframe
+    companion object 
+      fun fromJson(kotlin.String): Wireframe
+      fun fromJsonObject(com.google.gson.JsonObject): Wireframe
+  data class Add
+    constructor(kotlin.Long? = null, Wireframe)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Add
+      fun fromJsonObject(com.google.gson.JsonObject): Add
+  data class Remove
+    constructor(kotlin.Long)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Remove
+      fun fromJsonObject(com.google.gson.JsonObject): Remove
+  sealed class WireframeUpdateMutation
+    abstract fun toJson(): com.google.gson.JsonElement
+    data class TextWireframeUpdate : WireframeUpdateMutation
+      constructor(kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String? = null, TextStyle? = null, TextPosition? = null)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): TextWireframeUpdate
+        fun fromJsonObject(com.google.gson.JsonObject): TextWireframeUpdate
+    data class ShapeWireframeUpdate : WireframeUpdateMutation
+      constructor(kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): ShapeWireframeUpdate
+        fun fromJsonObject(com.google.gson.JsonObject): ShapeWireframeUpdate
+    data class ImageWireframeUpdate : WireframeUpdateMutation
+      constructor(kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): ImageWireframeUpdate
+        fun fromJsonObject(com.google.gson.JsonObject): ImageWireframeUpdate
+    data class PlaceholderWireframeUpdate : WireframeUpdateMutation
+      constructor(kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, WireframeClip? = null, kotlin.String? = null)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): PlaceholderWireframeUpdate
+        fun fromJsonObject(com.google.gson.JsonObject): PlaceholderWireframeUpdate
+    companion object 
+      fun fromJson(kotlin.String): WireframeUpdateMutation
+      fun fromJsonObject(com.google.gson.JsonObject): WireframeUpdateMutation
+  data class Position
+    constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Position
+      fun fromJsonObject(com.google.gson.JsonObject): Position
+  data class WireframeClip
+    constructor(kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): WireframeClip
+      fun fromJsonObject(com.google.gson.JsonObject): WireframeClip
+  data class ShapeStyle
+    constructor(kotlin.String? = null, kotlin.Number? = null, kotlin.Number? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): ShapeStyle
+      fun fromJsonObject(com.google.gson.JsonObject): ShapeStyle
+  data class ShapeBorder
+    constructor(kotlin.String, kotlin.Long)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): ShapeBorder
+      fun fromJsonObject(com.google.gson.JsonObject): ShapeBorder
+  data class TextStyle
+    constructor(kotlin.String, kotlin.Long, kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): TextStyle
+      fun fromJsonObject(com.google.gson.JsonObject): TextStyle
+  data class TextPosition
+    constructor(Padding? = null, Alignment? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): TextPosition
+      fun fromJsonObject(com.google.gson.JsonObject): TextPosition
+  data class Padding
+    constructor(kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Padding
+      fun fromJsonObject(com.google.gson.JsonObject): Padding
+  data class Alignment
+    constructor(Horizontal? = null, Vertical? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Alignment
+      fun fromJsonObject(com.google.gson.JsonObject): Alignment
+  enum Source
+    constructor(kotlin.String)
+    - ANDROID
+    - IOS
+    - FLUTTER
+    - REACT_NATIVE
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Source
+  enum PointerEventType
+    constructor(kotlin.String)
+    - DOWN
+    - UP
+    - MOVE
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): PointerEventType
+  enum PointerType
+    constructor(kotlin.String)
+    - MOUSE
+    - TOUCH
+    - PEN
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): PointerType
+  enum Horizontal
+    constructor(kotlin.String)
+    - LEFT
+    - RIGHT
+    - CENTER
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Horizontal
+  enum Vertical
+    constructor(kotlin.String)
+    - TOP
+    - BOTTOM
+    - CENTER
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Vertical

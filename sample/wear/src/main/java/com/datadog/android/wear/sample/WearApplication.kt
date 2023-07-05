@@ -10,14 +10,19 @@ import android.app.Application
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.log.Logs
+import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.Rum
+import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
-import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.Trace
+import com.datadog.android.trace.TraceConfiguration
 import io.opentracing.util.GlobalTracer
+import timber.log.Timber
 
 /**
  * The main [Application] for the sample WearOs project.
@@ -29,66 +34,72 @@ class WearApplication : Application() {
         initializeDatadog()
     }
 
+    @Suppress("MagicNumber")
     private fun initializeDatadog() {
+        Datadog.setVerbosity(Log.VERBOSE)
         Datadog.initialize(
             this,
-            createDatadogCredentials(),
             createDatadogConfiguration(),
             TrackingConsent.GRANTED
         )
-        Datadog.setVerbosity(Log.VERBOSE)
-        Datadog.enableRumDebugging(true)
+
+        val rumConfig = RumConfiguration.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
+            .setTelemetrySampleRate(100f)
+            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+            .trackUserInteractions()
+            .trackLongTasks(250L)
+            .apply {
+                if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
+                    useCustomEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
+                }
+            }
+            .build()
+        Rum.enable(rumConfig)
+
+        val logsConfig = LogsConfiguration.Builder()
+            .apply {
+                if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
+                    useCustomEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
+                }
+            }
+            .build()
+        Logs.enable(logsConfig)
+
+        val tracesConfig = TraceConfiguration.Builder()
+            .apply {
+                if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
+                    useCustomEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
+                }
+            }
+            .build()
+        Trace.enable(tracesConfig)
+
         Datadog.setUserInfo(
-            "wear 42",
-            null,
-            null
+            UserInfo(
+                id = "wear 42",
+                name = null,
+                email = null
+            )
         )
 
         GlobalTracer.registerIfAbsent(
             AndroidTracer.Builder()
-                .setServiceName(BuildConfig.APPLICATION_ID)
+                .setService(BuildConfig.APPLICATION_ID)
                 .build()
         )
-        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
     }
 
-    private fun createDatadogCredentials(): Credentials {
-        return Credentials(
-            clientToken = BuildConfig.DD_CLIENT_TOKEN,
-            envName = BuildConfig.BUILD_TYPE,
-            variant = BuildConfig.FLAVOR,
-            rumApplicationId = BuildConfig.DD_RUM_APPLICATION_ID
-        )
-    }
-
-    @Suppress("MagicNumber")
     private fun createDatadogConfiguration(): Configuration {
         val configBuilder = Configuration.Builder(
-            logsEnabled = true,
-            tracesEnabled = true,
-            crashReportsEnabled = true,
-            rumEnabled = true
+            clientToken = BuildConfig.DD_CLIENT_TOKEN,
+            env = BuildConfig.BUILD_TYPE,
+            variant = BuildConfig.FLAVOR
         )
-            .sampleTelemetry(100f)
-            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-            .trackInteractions()
-            .trackLongTasks(250L)
 
         try {
             configBuilder.useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
         } catch (e: IllegalArgumentException) {
-            Log.e("WearApplication", "Error setting site to ${BuildConfig.DD_SITE_NAME}")
-        }
-
-        if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
-            configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
-            configBuilder.useCustomCrashReportsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
-        }
-        if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
-            configBuilder.useCustomTracesEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
-        }
-        if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
-            configBuilder.useCustomRumEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
+            Timber.e("Error setting site to ${BuildConfig.DD_SITE_NAME}")
         }
 
         return configBuilder.build()

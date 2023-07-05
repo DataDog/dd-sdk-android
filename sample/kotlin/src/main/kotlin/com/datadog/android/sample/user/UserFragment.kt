@@ -12,8 +12,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import androidx.fragment.app.Fragment
-import com.datadog.android.Datadog.addUserExtraInfo
-import com.datadog.android.Datadog.setUserInfo
+import com.datadog.android.Datadog
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.ktx.tracing.withinSpan
 import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.R
@@ -67,13 +67,9 @@ internal class UserFragment : Fragment(), View.OnClickListener {
             val age: Int = Integer.valueOf(userAgeField.text.toString())
             Preferences.defaultPreferences(requireContext())
                 .setUserCredentials(id, name, email, gender, age)
-            setUserInfo(
-                id,
-                name,
-                email
-            )
-            addUserExtraInfo(
-                mapOf(
+            Datadog.setUserInfo(UserInfo(id, name, email, emptyMap()))
+            Datadog.addUserProperties(
+                mapOf<String, Any>(
                     GENDER_KEY to gender,
                     AGE_KEY to age
                 )

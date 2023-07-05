@@ -11,33 +11,43 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
+import com.datadog.android.log.Logs
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
+import com.datadog.android.trace.Trace
 import fr.xgouchet.elmyr.Forge
+import java.util.Random
 
 internal class ActivityLifecycleLogs : AppCompatActivity() {
 
-    private val forge = Forge()
+    private val forge by lazy { Forge().apply { seed = intent.getForgeSeed() } }
 
-    private val randomAttributes = forge.aMap { anAlphabeticalString() to anHexadecimalString() }
+    private val randomAttributes by lazy { forge.aMap { anAlphabeticalString() to anHexadecimalString() } }
     private val sentMessages = mutableListOf<Pair<Int, String>>()
 
     lateinit var logger: Logger
 
     // region Activity
 
+    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val credentials = RuntimeConfig.credentials()
         val config = RuntimeConfig.configBuilder().build()
         val trackingConsent = intent.getTrackingConsent()
 
-        Datadog.initialize(this, credentials, config, trackingConsent)
         Datadog.setVerbosity(Log.VERBOSE)
+        val sdkCore = Datadog.initialize(this, config, trackingConsent)
+        checkNotNull(sdkCore)
+        val featureActivations = mutableListOf(
+            { Logs.enable(RuntimeConfig.logsConfigBuilder().build(), sdkCore) },
+            { Trace.enable(RuntimeConfig.tracesConfigBuilder().build(), sdkCore) }
+        )
+        featureActivations.shuffled(Random(intent.getForgeSeed())).forEach { it() }
 
-        logger = RuntimeConfig.logger()
+        logger = RuntimeConfig.logger(sdkCore)
         setContentView(R.layout.main_activity_layout)
 
         log(Log.INFO, "ActivityLifecycleLogs: onCreate ${System.nanoTime()}")

@@ -12,11 +12,11 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.Rum
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryException
@@ -31,26 +31,29 @@ import java.lang.RuntimeException
 
 internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_activity_layout) {
 
-    private val forge = Forge()
+    private val forge by lazy { Forge().apply { seed = intent.getForgeSeed() } }
 
+    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val credentials = RuntimeConfig.credentials()
-        // we will use a large long task threshold to make sure we will not have LongTask events
-        // noise in our integration tests.
         val config = RuntimeConfig.configBuilder()
-            .sampleTelemetry(HUNDRED_PERCENT)
-            .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
-            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
             .build()
 
         val trackingConsent = intent.getTrackingConsent()
 
-        Datadog.initialize(this, credentials, config, trackingConsent)
         Datadog.setVerbosity(Log.VERBOSE)
+        val sdkCore = Datadog.initialize(this, config, trackingConsent)
+        checkNotNull(sdkCore)
 
-        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+        // we will use a large long task threshold to make sure we will not have LongTask events
+        // noise in our integration tests.
+        val rumConfig = RuntimeConfig.rumConfigBuilder()
+            .setTelemetrySampleRate(HUNDRED_PERCENT)
+            .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
+            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+            .build()
+        Rum.enable(rumConfig, sdkCore)
     }
 
     override fun onPostResume() {
@@ -58,7 +61,7 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
         submitTelemetry(intent)
     }
 
-    @Suppress("ThrowingInternalException")
+    @Suppress("ThrowingInternalException", "CheckInternal")
     private fun submitTelemetry(intent: Intent) {
         val debugMessage = intent.getStringExtra(TELEMETRY_DEBUG_MESSAGE_KEY)
             ?: throw IllegalArgumentException("Telemetry debug message should be provided")
@@ -66,9 +69,10 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
         val errorMessage = intent.getStringExtra(TELEMETRY_ERROR_MESSAGE_KEY)
             ?: throw IllegalArgumentException("Telemetry error message should be provided")
 
-        Datadog._internal._telemetry.debug(debugMessage)
-        Datadog._internal._telemetry.error(errorMessage)
-        Datadog._internal._telemetry.error(errorMessage, forge.aThrowable())
+        val internalProxy = Datadog._internalProxy()
+        internalProxy._telemetry.debug(debugMessage)
+        internalProxy._telemetry.error(errorMessage)
+        internalProxy._telemetry.error(errorMessage, forge.aThrowable())
     }
 
     private fun Forge.aThrowable() = anElementFrom(anError(), anException())

@@ -15,6 +15,7 @@ import com.datadog.android.ktx.tracing.withinSpan
 import com.datadog.android.sample.R
 import java.io.BufferedReader
 
+@Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
 internal class AboutViewModel : ViewModel() {
 
     private var asyncAboutTask: AsyncTask<Unit, Unit, String>? = null
@@ -54,7 +55,7 @@ internal class AboutViewModel : ViewModel() {
                 val inputStream = context.getRawResAsRumResource(id)
 
                 inputStream.bufferedReader().use(BufferedReader::readText)
-            }.orEmpty()
+            }
         }
 
         override fun onPostExecute(result: String) {
@@ -75,7 +76,7 @@ internal class AboutViewModel : ViewModel() {
                 val inputStream = context.getAssetAsRumResource(fileName)
 
                 inputStream.bufferedReader().use(BufferedReader::readText)
-            }.orEmpty()
+            }
         }
 
         override fun onPostExecute(result: String) {

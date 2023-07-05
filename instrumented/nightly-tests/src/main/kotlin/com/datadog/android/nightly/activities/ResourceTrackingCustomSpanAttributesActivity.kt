@@ -6,9 +6,10 @@
 
 package com.datadog.android.nightly.activities
 
-import com.datadog.android.rum.RumInterceptor
-import com.datadog.android.tracing.TracedRequestListener
-import com.datadog.android.tracing.TracingInterceptor
+import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.okhttp.DatadogInterceptor
+import com.datadog.android.okhttp.trace.TracedRequestListener
+import com.datadog.android.okhttp.trace.TracingInterceptor
 import io.opentracing.Span
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -16,25 +17,29 @@ import okhttp3.Response
 
 internal class ResourceTrackingCustomSpanAttributesActivity : ResourceTrackingActivity() {
     override val okHttpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .addInterceptor(RumInterceptor(traceSamplingRate = HUNDRED_PERCENT))
-            .addNetworkInterceptor(
-                TracingInterceptor(
-                    listOf(HOST),
-                    tracedRequestListener = object : TracedRequestListener {
-                        override fun onRequestIntercepted(
-                            request: Request,
-                            span: Span,
-                            response: Response?,
-                            throwable: Throwable?
-                        ) {
-                            span.setOperationName(TEST_METHOD_NAME)
-                        }
-                    },
-                    traceSamplingRate = HUNDRED_PERCENT
-                )
+        val builder = OkHttpClient.Builder()
+        builder.addInterceptor(
+            DatadogInterceptor(
+                traceSampler = RateBasedSampler(HUNDRED_PERCENT)
             )
-            .build()
+        )
+        builder.addNetworkInterceptor(
+            TracingInterceptor(
+                tracedHosts = listOf(HOST),
+                tracedRequestListener = object : TracedRequestListener {
+                    override fun onRequestIntercepted(
+                        request: Request,
+                        span: Span,
+                        response: Response?,
+                        throwable: Throwable?
+                    ) {
+                        span.setOperationName(TEST_METHOD_NAME)
+                    }
+                },
+                traceSampler = RateBasedSampler(HUNDRED_PERCENT)
+            )
+        )
+        builder.build()
     }
 
     override val randomUrl: String = RANDOM_RESOURCE_WITH_CUSTOM_SPAN

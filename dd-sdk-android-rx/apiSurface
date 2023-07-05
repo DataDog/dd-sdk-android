@@ -1,8 +1,0 @@
-class com.datadog.android.rx.DatadogRumErrorConsumer : io.reactivex.rxjava3.functions.Consumer<Throwable>
-  override fun accept(Throwable)
-  companion object 
-fun <T: Any> sendErrorToDatadog(): io.reactivex.rxjava3.core.Observable<T>
-fun <T: Any> sendErrorToDatadog(): io.reactivex.rxjava3.core.Single<T>
-fun <T: Any> sendErrorToDatadog(): io.reactivex.rxjava3.core.Flowable<T>
-fun <T> sendErrorToDatadog(): io.reactivex.rxjava3.core.Maybe<T>
-fun sendErrorToDatadog(): io.reactivex.rxjava3.core.Completable

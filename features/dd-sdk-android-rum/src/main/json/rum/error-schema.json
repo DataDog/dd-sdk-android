@@ -1,0 +1,203 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "rum/error-schema.json",
+  "title": "RumErrorEvent",
+  "type": "object",
+  "description": "Schema of all properties of an Error event",
+  "allOf": [
+    {
+      "$ref": "_common-schema.json"
+    },
+    {
+      "$ref": "_action-child-schema.json"
+    },
+    {
+      "required": ["type", "error"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "RUM event type",
+          "const": "error",
+          "readOnly": true
+        },
+        "error": {
+          "type": "object",
+          "description": "Error properties",
+          "required": ["message", "source"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "UUID of the error",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+              "readOnly": true
+            },
+            "message": {
+              "type": "string",
+              "description": "Error message",
+              "readOnly": false
+            },
+            "source": {
+              "type": "string",
+              "description": "Source of the error",
+              "enum": ["network", "source", "console", "logger", "agent", "webview", "custom", "report"],
+              "readOnly": true
+            },
+            "stack": {
+              "type": "string",
+              "description": "Stacktrace of the error",
+              "readOnly": false
+            },
+            "causes": {
+              "type": "array",
+              "description": "Causes of the error",
+              "readOnly": false,
+              "items": {
+                "type": "object",
+                "description": "Properties for one of the error causes",
+                "required": ["message", "source"],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "description": "Error message",
+                    "readOnly": false
+                  },
+                  "type": {
+                    "type": "string",
+                    "description": "The type of the error",
+                    "readOnly": true
+                  },
+                  "stack": {
+                    "type": "string",
+                    "description": "Stacktrace of the error",
+                    "readOnly": false
+                  },
+                  "source": {
+                    "type": "string",
+                    "description": "Source of the error",
+                    "enum": ["network", "source", "console", "logger", "agent", "webview", "custom", "report"],
+                    "readOnly": true
+                  }
+                }
+              }
+            },
+            "is_crash": {
+              "type": "boolean",
+              "description": "Whether this error crashed the host application",
+              "readOnly": true
+            },
+            "fingerprint": {
+              "type": "string",
+              "description": "Fingerprint used for Error Tracking custom grouping",
+              "readOnly": false
+            },
+            "type": {
+              "type": "string",
+              "description": "The type of the error",
+              "readOnly": true
+            },
+            "handling": {
+              "type": "string",
+              "description": "Whether the error has been handled manually in the source code or not",
+              "enum": ["handled", "unhandled"],
+              "readOnly": true
+            },
+            "handling_stack": {
+              "type": "string",
+              "description": "Handling call stack",
+              "readOnly": true
+            },
+            "source_type": {
+              "type": "string",
+              "description": "Source type of the error (the language or platform impacting the error stacktrace format)",
+              "enum": ["android", "browser", "ios", "react-native", "flutter", "roku"],
+              "readOnly": true
+            },
+            "resource": {
+              "type": "object",
+              "description": "Resource properties of the error",
+              "required": ["method", "status_code", "url"],
+              "properties": {
+                "method": {
+                  "type": "string",
+                  "description": "HTTP method of the resource",
+                  "enum": ["POST", "GET", "HEAD", "PUT", "DELETE", "PATCH"],
+                  "readOnly": true
+                },
+                "status_code": {
+                  "type": "integer",
+                  "description": "HTTP Status code of the resource",
+                  "minimum": 0,
+                  "readOnly": true
+                },
+                "url": {
+                  "type": "string",
+                  "description": "URL of the resource",
+                  "readOnly": false
+                },
+                "provider": {
+                  "type": "object",
+                  "description": "The provider for this resource",
+                  "properties": {
+                    "domain": {
+                      "type": "string",
+                      "description": "The domain name of the provider",
+                      "readOnly": true
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "The user friendly name of the provider",
+                      "readOnly": true
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "The type of provider",
+                      "enum": [
+                        "ad",
+                        "advertising",
+                        "analytics",
+                        "cdn",
+                        "content",
+                        "customer-success",
+                        "first party",
+                        "hosting",
+                        "marketing",
+                        "other",
+                        "social",
+                        "tag-manager",
+                        "utility",
+                        "video"
+                      ],
+                      "readOnly": true
+                    }
+                  },
+                  "readOnly": true
+                }
+              },
+              "readOnly": true
+            }
+          },
+          "readOnly": true
+        },
+        "view": {
+          "type": "object",
+          "description": "View properties",
+          "required": [],
+          "properties": {
+            "in_foreground": {
+              "type": "boolean",
+              "description": "Is the error starting in the foreground (focus in browser)",
+              "readOnly": true
+            }
+          },
+          "readOnly": true
+        },
+        "feature_flags": {
+          "type": "object",
+          "description": "Feature flags properties",
+          "additionalProperties": true,
+          "readOnly": true
+        }
+      }
+    }
+  ]
+}

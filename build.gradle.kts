@@ -8,12 +8,12 @@ import com.android.build.gradle.LibraryExtension
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.nightlyTestsCoverageConfig
 import org.gradle.api.internal.file.UnionFileTree
+import org.gradle.api.internal.tasks.DefaultTaskDependencyFactory
 import java.util.Properties
 
 plugins {
     `maven-publish`
     id("io.github.gradle-nexus.publish-plugin")
-    id("org.jetbrains.kotlinx.kover")
 }
 
 version = AndroidConfig.VERSION.name
@@ -33,6 +33,7 @@ buildscript {
         classpath(libs.unmockGradlePlugin)
         classpath(libs.realmGradlePlugin)
         classpath(libs.sqlDelightGradlePlugin)
+        classpath(libs.binaryCompatibilityGradlePlugin)
     }
 }
 
@@ -45,7 +46,7 @@ allprojects {
 }
 
 nexusPublishing {
-    repositories {
+    this.repositories {
         sonatype {
             val sonatypeUsername = System.getenv("OSSRH_USERNAME")
             val sonatypePassword = System.getenv("OSSRH_PASSWORD")
@@ -71,59 +72,80 @@ tasks.register("checkAll") {
 
 tasks.register("assembleAll") {
     dependsOn(
-        ":dd-sdk-android:assemble",
-        ":dd-sdk-android-coil:assemble",
-        ":dd-sdk-android-compose:assemble",
-        ":dd-sdk-android-fresco:assemble",
-        ":dd-sdk-android-glide:assemble",
-        ":dd-sdk-android-ktx:assemble",
-        ":dd-sdk-android-ndk:assemble",
-        ":dd-sdk-android-rx:assemble",
-        ":dd-sdk-android-sqldelight:assemble",
-        ":dd-sdk-android-timber:assemble",
-        ":dd-sdk-android-tv:assemble",
-        ":library:dd-sdk-android-session-replay:assemble"
+        ":dd-sdk-android-core:assemble",
+        ":integrations:dd-sdk-android-coil:assemble",
+        ":integrations:dd-sdk-android-compose:assemble",
+        ":integrations:dd-sdk-android-fresco:assemble",
+        ":integrations:dd-sdk-android-glide:assemble",
+        ":integrations:dd-sdk-android-ktx:assemble",
+        ":integrations:dd-sdk-android-rx:assemble",
+        ":integrations:dd-sdk-android-sqldelight:assemble",
+        ":integrations:dd-sdk-android-timber:assemble",
+        ":integrations:dd-sdk-android-tv:assemble",
+        ":integrations:dd-sdk-android-okhttp:assemble",
+        ":features:dd-sdk-android-session-replay:assemble",
+        ":features:dd-sdk-android-session-replay-material:assemble",
+        ":features:dd-sdk-android-logs:assemble",
+        ":features:dd-sdk-android-ndk:assemble",
+        ":features:dd-sdk-android-trace:assemble",
+        ":features:dd-sdk-android-webview:assemble",
+        ":features:dd-sdk-android-rum:assemble"
     )
 }
 
 tasks.register("unitTestRelease") {
     dependsOn(
-        ":dd-sdk-android:testReleaseUnitTest",
-        ":dd-sdk-android-coil:testReleaseUnitTest",
-        ":dd-sdk-android-compose:testReleaseUnitTest",
-        ":dd-sdk-android-fresco:testReleaseUnitTest",
-        ":dd-sdk-android-glide:testReleaseUnitTest",
-        ":dd-sdk-android-ktx:testReleaseUnitTest",
-        ":dd-sdk-android-ndk:testReleaseUnitTest",
-        ":dd-sdk-android-rx:testReleaseUnitTest",
-        ":dd-sdk-android-sqldelight:testReleaseUnitTest",
-        ":dd-sdk-android-timber:testReleaseUnitTest",
-        ":dd-sdk-android-tv:testReleaseUnitTest",
-        ":library:dd-sdk-android-session-replay:testReleaseUnitTest"
+        ":dd-sdk-android-core:testReleaseUnitTest",
+        ":integrations:dd-sdk-android-coil:testReleaseUnitTest",
+        ":integrations:dd-sdk-android-compose:testReleaseUnitTest",
+        ":integrations:dd-sdk-android-fresco:testReleaseUnitTest",
+        ":integrations:dd-sdk-android-glide:testReleaseUnitTest",
+        ":integrations:dd-sdk-android-ktx:testReleaseUnitTest",
+        ":integrations:dd-sdk-android-rx:testReleaseUnitTest",
+        ":integrations:dd-sdk-android-sqldelight:testReleaseUnitTest",
+        ":integrations:dd-sdk-android-timber:testReleaseUnitTest",
+        ":integrations:dd-sdk-android-tv:testReleaseUnitTest",
+        ":integrations:dd-sdk-android-okhttp:testReleaseUnitTest",
+        ":features:dd-sdk-android-session-replay:testReleaseUnitTest",
+        ":features:dd-sdk-android-session-replay-material:testReleaseUnitTest",
+        ":features:dd-sdk-android-logs:testReleaseUnitTest",
+        ":features:dd-sdk-android-ndk:testReleaseUnitTest",
+        ":features:dd-sdk-android-trace:testReleaseUnitTest",
+        ":features:dd-sdk-android-webview:testReleaseUnitTest",
+        ":features:dd-sdk-android-rum:testReleaseUnitTest"
     )
 }
 
 tasks.register("unitTestDebug") {
     dependsOn(
-        ":dd-sdk-android:testDebugUnitTest",
-        ":dd-sdk-android-coil:testDebugUnitTest",
-        ":dd-sdk-android-compose:testDebugUnitTest",
-        ":dd-sdk-android-fresco:testDebugUnitTest",
-        ":dd-sdk-android-glide:testDebugUnitTest",
-        ":dd-sdk-android-ktx:testDebugUnitTest",
-        ":dd-sdk-android-ndk:testDebugUnitTest",
-        ":dd-sdk-android-rx:testDebugUnitTest",
-        ":dd-sdk-android-sqldelight:testDebugUnitTest",
-        ":dd-sdk-android-timber:testDebugUnitTest",
-        ":dd-sdk-android-tv:testDebugUnitTest",
-        ":library:dd-sdk-android-session-replay:testDebugUnitTest"
+        ":dd-sdk-android-core:testDebugUnitTest",
+        ":integrations:dd-sdk-android-coil:testDebugUnitTest",
+        ":integrations:dd-sdk-android-compose:testDebugUnitTest",
+        ":integrations:dd-sdk-android-fresco:testDebugUnitTest",
+        ":integrations:dd-sdk-android-glide:testDebugUnitTest",
+        ":integrations:dd-sdk-android-ktx:testDebugUnitTest",
+        ":integrations:dd-sdk-android-rx:testDebugUnitTest",
+        ":integrations:dd-sdk-android-sqldelight:testDebugUnitTest",
+        ":integrations:dd-sdk-android-timber:testDebugUnitTest",
+        ":integrations:dd-sdk-android-tv:testDebugUnitTest",
+        ":integrations:dd-sdk-android-okhttp:testDebugUnitTest",
+        ":features:dd-sdk-android-session-replay:testDebugUnitTest",
+        ":features:dd-sdk-android-session-replay-material:testDebugUnitTest",
+        ":features:dd-sdk-android-logs:testDebugUnitTest",
+        ":features:dd-sdk-android-ndk:testDebugUnitTest",
+        ":features:dd-sdk-android-trace:testDebugUnitTest",
+        ":features:dd-sdk-android-webview:testDebugUnitTest",
+        ":features:dd-sdk-android-rum:testDebugUnitTest"
     )
 }
 
 tasks.register("unitTestTools") {
     dependsOn(
         ":sample:kotlin:assembleUs1Release",
-        ":tools:unit:testJvmReleaseUnitTest"
+        ":tools:unit:testJvmReleaseUnitTest",
+        ":tools:detekt:test",
+        ":tools:lint:test",
+        ":tools:noopfactory:test"
     )
 }
 
@@ -137,52 +159,71 @@ tasks.register("unitTestAll") {
 
 tasks.register("lintCheckAll") {
     dependsOn(
-        ":dd-sdk-android:lintRelease",
-        ":dd-sdk-android-coil:lintRelease",
-        ":dd-sdk-android-compose:lintRelease",
-        ":dd-sdk-android-fresco:lintRelease",
-        ":dd-sdk-android-glide:lintRelease",
-        ":dd-sdk-android-ktx:lintRelease",
-        ":dd-sdk-android-ndk:lintRelease",
-        ":dd-sdk-android-rx:lintRelease",
-        ":dd-sdk-android-sqldelight:lintRelease",
-        ":dd-sdk-android-timber:lintRelease",
-        ":dd-sdk-android-tv:lintRelease",
-        ":library:dd-sdk-android-session-replay:lintRelease"
+        ":dd-sdk-android-core:lintRelease",
+        ":integrations:dd-sdk-android-coil:lintRelease",
+        ":integrations:dd-sdk-android-compose:lintRelease",
+        ":integrations:dd-sdk-android-fresco:lintRelease",
+        ":integrations:dd-sdk-android-glide:lintRelease",
+        ":integrations:dd-sdk-android-ktx:lintRelease",
+        ":integrations:dd-sdk-android-rx:lintRelease",
+        ":integrations:dd-sdk-android-sqldelight:lintRelease",
+        ":integrations:dd-sdk-android-timber:lintRelease",
+        ":integrations:dd-sdk-android-tv:lintRelease",
+        ":integrations:dd-sdk-android-okhttp:lintRelease",
+        ":features:dd-sdk-android-session-replay:lintRelease",
+        ":features:dd-sdk-android-session-replay-material:lintRelease",
+        ":features:dd-sdk-android-logs:lintRelease",
+        ":features:dd-sdk-android-ndk:lintRelease",
+        ":features:dd-sdk-android-trace:lintRelease",
+        ":features:dd-sdk-android-webview:lintRelease",
+        ":features:dd-sdk-android-rum:lintRelease",
+        ":tools:lint:lint"
     )
 }
 
 tasks.register("checkThirdPartyLicensesAll") {
     dependsOn(
-        ":dd-sdk-android:checkThirdPartyLicences",
-        ":dd-sdk-android-coil:checkThirdPartyLicences",
-        ":dd-sdk-android-compose:checkThirdPartyLicences",
-        ":dd-sdk-android-fresco:checkThirdPartyLicences",
-        ":dd-sdk-android-glide:checkThirdPartyLicences",
-        ":dd-sdk-android-ktx:checkThirdPartyLicences",
-        ":dd-sdk-android-ndk:checkThirdPartyLicences",
-        ":dd-sdk-android-rx:checkThirdPartyLicences",
-        ":dd-sdk-android-sqldelight:checkThirdPartyLicences",
-        ":dd-sdk-android-timber:checkThirdPartyLicences",
-        ":dd-sdk-android-tv:checkThirdPartyLicences",
-        ":library:dd-sdk-android-session-replay:checkThirdPartyLicences"
+        ":dd-sdk-android-core:checkThirdPartyLicences",
+        ":integrations:dd-sdk-android-coil:checkThirdPartyLicences",
+        ":integrations:dd-sdk-android-compose:checkThirdPartyLicences",
+        ":integrations:dd-sdk-android-fresco:checkThirdPartyLicences",
+        ":integrations:dd-sdk-android-glide:checkThirdPartyLicences",
+        ":integrations:dd-sdk-android-ktx:checkThirdPartyLicences",
+        ":integrations:dd-sdk-android-rx:checkThirdPartyLicences",
+        ":integrations:dd-sdk-android-sqldelight:checkThirdPartyLicences",
+        ":integrations:dd-sdk-android-timber:checkThirdPartyLicences",
+        ":integrations:dd-sdk-android-tv:checkThirdPartyLicences",
+        ":integrations:dd-sdk-android-okhttp:checkThirdPartyLicences",
+        ":features:dd-sdk-android-session-replay:checkThirdPartyLicences",
+        ":features:dd-sdk-android-session-replay-material:checkThirdPartyLicences",
+        ":features:dd-sdk-android-logs:checkThirdPartyLicences",
+        ":features:dd-sdk-android-ndk:checkThirdPartyLicences",
+        ":features:dd-sdk-android-trace:checkThirdPartyLicences",
+        ":features:dd-sdk-android-webview:checkThirdPartyLicences",
+        ":features:dd-sdk-android-rum:checkThirdPartyLicences"
     )
 }
 
 tasks.register("checkApiSurfaceChangesAll") {
     dependsOn(
-        ":dd-sdk-android:checkApiSurfaceChanges",
-        ":dd-sdk-android-coil:checkApiSurfaceChanges",
-        ":dd-sdk-android-compose:checkApiSurfaceChanges",
-        ":dd-sdk-android-fresco:checkApiSurfaceChanges",
-        ":dd-sdk-android-glide:checkApiSurfaceChanges",
-        ":dd-sdk-android-ktx:checkApiSurfaceChanges",
-        ":dd-sdk-android-ndk:checkApiSurfaceChanges",
-        ":dd-sdk-android-rx:checkApiSurfaceChanges",
-        ":dd-sdk-android-sqldelight:checkApiSurfaceChanges",
-        ":dd-sdk-android-timber:checkApiSurfaceChanges",
-        ":dd-sdk-android-tv:checkApiSurfaceChanges",
-        ":library:dd-sdk-android-session-replay:checkApiSurfaceChanges"
+        "dd-sdk-android-core:checkApiSurfaceChanges",
+        ":integrations:dd-sdk-android-coil:checkApiSurfaceChanges",
+        ":integrations:dd-sdk-android-compose:checkApiSurfaceChanges",
+        ":integrations:dd-sdk-android-fresco:checkApiSurfaceChanges",
+        ":integrations:dd-sdk-android-glide:checkApiSurfaceChanges",
+        ":integrations:dd-sdk-android-ktx:checkApiSurfaceChanges",
+        ":integrations:dd-sdk-android-rx:checkApiSurfaceChanges",
+        ":integrations:dd-sdk-android-sqldelight:checkApiSurfaceChanges",
+        ":integrations:dd-sdk-android-timber:checkApiSurfaceChanges",
+        ":integrations:dd-sdk-android-tv:checkApiSurfaceChanges",
+        ":integrations:dd-sdk-android-okhttp:checkApiSurfaceChanges",
+        ":features:dd-sdk-android-session-replay:checkApiSurfaceChanges",
+        ":features:dd-sdk-android-session-replay-material:checkApiSurfaceChanges",
+        ":features:dd-sdk-android-logs:checkApiSurfaceChanges",
+        ":features:dd-sdk-android-ndk:checkApiSurfaceChanges",
+        ":features:dd-sdk-android-trace:checkApiSurfaceChanges",
+        ":features:dd-sdk-android-webview:checkApiSurfaceChanges",
+        ":features:dd-sdk-android-rum:checkApiSurfaceChanges"
     )
 }
 
@@ -192,18 +233,24 @@ tasks.register("checkGeneratedFiles") {
 
 tasks.register("koverReportAll") {
     dependsOn(
-        ":dd-sdk-android:koverXmlReport",
-        ":dd-sdk-android-coil:koverXmlReport",
-        ":dd-sdk-android-compose:koverXmlReport",
-        ":dd-sdk-android-fresco:koverXmlReport",
-        ":dd-sdk-android-glide:koverXmlReport",
-        ":dd-sdk-android-ktx:koverXmlReport",
-        ":dd-sdk-android-ndk:koverXmlReport",
-        ":dd-sdk-android-rx:koverXmlReport",
-        ":dd-sdk-android-sqldelight:koverXmlReport",
-        ":dd-sdk-android-timber:koverXmlReport",
-        ":dd-sdk-android-tv:koverXmlReport",
-        ":library:dd-sdk-android-session-replay:koverXmlReport"
+        ":dd-sdk-android-core:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-coil:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-compose:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-fresco:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-glide:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-ktx:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-rx:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-sqldelight:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-timber:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-tv:koverXmlReportRelease",
+        ":integrations:dd-sdk-android-okhttp:koverXmlReportRelease",
+        ":features:dd-sdk-android-session-replay:koverXmlReportRelease",
+        ":features:dd-sdk-android-session-replay-material:koverXmlReportRelease",
+        ":features:dd-sdk-android-logs:koverXmlReportRelease",
+        ":features:dd-sdk-android-ndk:koverXmlReportRelease",
+        ":features:dd-sdk-android-trace:koverXmlReportRelease",
+        ":features:dd-sdk-android-webview:koverXmlReportRelease",
+        ":features:dd-sdk-android-rum:koverXmlReportRelease"
     )
 }
 
@@ -222,31 +269,16 @@ tasks.register("buildNightlyTestsArtifacts") {
 }
 
 tasks.register("buildNdkIntegrationTestsArtifacts") {
-    dependsOn(":dd-sdk-android-ndk:assembleDebugAndroidTest")
+    dependsOn(":features:dd-sdk-android-ndk:assembleDebugAndroidTest")
     // we need this artifact to trick Bitrise
     dependsOn(":instrumented:integration:assembleDebug")
 }
 
-nightlyTestsCoverageConfig(threshold = 0.87f)
-kover {
-    isDisabled = false
-    disabledProjects = setOf(
-        "instrumented",
-        "sample",
-        "tools",
-        "integration",
-        "nightly-tests",
-        "kotlin",
-        "detekt",
-        "javabackport",
-        "noopfactory",
-        "unit"
-    )
-    instrumentAndroidPackage = false
-}
+nightlyTestsCoverageConfig(threshold = 0.86f)
 
 tasks.register("printSdkDebugRuntimeClasspath") {
-    val fileTreeClassPathCollector = UnionFileTree()
+    val fileTreeClassPathCollector =
+        UnionFileTree(DefaultTaskDependencyFactory.withNoAssociatedProject())
     val nonFileTreeClassPathCollector = mutableListOf<FileCollection>()
 
     allprojects.minus(project).forEach { subproject ->

@@ -17,9 +17,13 @@ import com.datadog.android.nightly.services.NdkCrashService
 import com.datadog.android.nightly.services.NdkHandlerDisabledNdkCrashService
 import com.datadog.android.nightly.services.RumEnabledNdkCrashService
 import com.datadog.android.nightly.services.RumEncryptionEnabledNdkCrashService
+import com.datadog.android.nightly.utils.DEFAULT_CLIENT_TOKEN
+import com.datadog.android.nightly.utils.DEFAULT_ENV_NAME
+import com.datadog.android.nightly.utils.DEFAULT_VARIANT_NAME
 import com.datadog.android.nightly.utils.NeverUseThatEncryption
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.stopSdk
+import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,11 +35,15 @@ class NdkCrashHandlerE2ETests {
     // region Tests
 
     @get:Rule
+    val forgeRule = ForgeRule()
+
+    @get:Rule
     val nightlyTestRule = NightlyTestRule()
 
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#constructor(String)
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun build(): RumConfiguration
      */
     @Test
     fun ndk_crash_reports_rum_enabled() {
@@ -45,7 +53,10 @@ class NdkCrashHandlerE2ETests {
         // measure to prevent sending an event twice from 2 different process. For this reason
         // we are using a NoOpOkHttpUploader in case the process is not the app main process.
         val testMethodName = "ndk_crash_reports_rum_enabled"
-        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+        initializeSdk(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            forgeSeed = forgeRule.seed
+        )
         startService(
             testMethodName,
             RumEnabledNdkCrashService::class.java
@@ -54,21 +65,28 @@ class NdkCrashHandlerE2ETests {
         stopService(RumEnabledNdkCrashService::class.java)
         // we stop and initialize the SDK again to handle the preserved ndk crash
         stopSdk()
-        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+        initializeSdk(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            forgeSeed = forgeRule.seed
+        )
         waitForProcessToIdle()
     }
 
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setEncryption(Encryption): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#constructor(String)
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun build(): RumConfiguration
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setEncryption(com.datadog.android.security.Encryption): Builder
      * apiMethodSignature: com.datadog.android.security.Encryption#fun encrypt(ByteArray): ByteArray
      * apiMethodSignature: com.datadog.android.security.Encryption#fun decrypt(ByteArray): ByteArray
      */
     @Test
     fun ndk_crash_reports_rum_enabled_with_encryption() {
         val testMethodName = "ndk_crash_reports_rum_enabled_with_encryption"
-        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+        initializeSdk(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            forgeSeed = forgeRule.seed
+        )
         startService(
             testMethodName,
             RumEncryptionEnabledNdkCrashService::class.java
@@ -79,14 +97,15 @@ class NdkCrashHandlerE2ETests {
         stopSdk()
         initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
+            forgeSeed = forgeRule.seed,
             // need that to be able to read encrypted data written by NDK crash service
             config = Configuration
                 .Builder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    crashReportsEnabled = true,
-                    rumEnabled = true
+                    clientToken = DEFAULT_CLIENT_TOKEN,
+                    env = DEFAULT_ENV_NAME,
+                    variant = DEFAULT_VARIANT_NAME
                 )
+                .setCrashReportsEnabled(true)
                 .setEncryption(NeverUseThatEncryption())
                 .build()
         )
@@ -95,12 +114,14 @@ class NdkCrashHandlerE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
      */
     @Test
     fun ndk_crash_reports_feature_disabled() {
         val testMethodName = "ndk_crash_reports_feature_disabled"
-        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+        initializeSdk(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            forgeSeed = forgeRule.seed
+        )
         startService(
             testMethodName,
             NdkHandlerDisabledNdkCrashService::class.java
@@ -109,7 +130,10 @@ class NdkCrashHandlerE2ETests {
         stopService(NdkHandlerDisabledNdkCrashService::class.java)
         // we stop and initialize the SDK again to handle the preserved ndk crash
         stopSdk()
-        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+        initializeSdk(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            forgeSeed = forgeRule.seed
+        )
         waitForProcessToIdle()
     }
 

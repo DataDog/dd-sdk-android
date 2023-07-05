@@ -8,34 +8,28 @@ package com.datadog.android.nightly.services
 
 import android.app.Service
 import android.os.Bundle
-import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.api.SdkCore
 import com.datadog.android.nightly.BuildConfig
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.GlobalRumMonitor
 
 internal abstract class CrashService : Service() {
 
-    protected fun initRum(extras: Bundle?) {
-        GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+    protected fun initRum(sdkCore: SdkCore, extras: Bundle?) {
+        val rumMonitor = GlobalRumMonitor.get(sdkCore)
         extras?.let { bundle ->
             bundle.keySet().forEach {
                 // TODO RUMM-2717 Bundle#get is deprecated, but there is no replacement for it.
                 // Issue is opened in the Google Issue Tracker.
                 @Suppress("DEPRECATION")
-                GlobalRum.addAttribute(it, bundle[it])
+                rumMonitor.addAttribute(it, bundle[it])
             }
         }
-        GlobalRum.get().startView(this, this.javaClass.simpleName.toString())
+        rumMonitor.startView(this, this.javaClass.simpleName.toString())
         // this is a hack to write RUM view to the disk, so that file exists by the time NDK crashes
-        GlobalRum.get().addTiming("foo")
+        rumMonitor.addTiming("foo")
     }
 
-    protected fun getCredentials() = Credentials(
-        clientToken = BuildConfig.NIGHTLY_TESTS_TOKEN,
-        envName = "instrumentation",
-        variant = "",
-        rumApplicationId = BuildConfig.NIGHTLY_TESTS_RUM_APP_ID
-    )
+    protected val rumApplicationId = BuildConfig.NIGHTLY_TESTS_RUM_APP_ID
 
     companion object {
         const val CRASH_HANDLER_DISABLED_SCENARIO = "crash_handler_disabled_scenario"

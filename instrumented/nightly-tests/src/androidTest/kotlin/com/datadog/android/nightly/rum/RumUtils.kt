@@ -9,6 +9,7 @@ package com.datadog.android.nightly.rum
 import android.os.Handler
 import android.os.Looper
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.api.SdkCore
 import com.datadog.android.nightly.INITIALIZE_RUMMONITOR_TEST_METHOD_NAME
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
 import com.datadog.android.nightly.utils.aResourceKey
@@ -20,7 +21,7 @@ import com.datadog.android.nightly.utils.anErrorMessage
 import com.datadog.android.nightly.utils.defaultTestAttributes
 import com.datadog.android.nightly.utils.executeInsideView
 import com.datadog.android.nightly.utils.measure
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
@@ -34,29 +35,30 @@ fun measureRumMonitorInitialize(codeBlock: () -> RumMonitor): RumMonitor {
 
 fun sendRandomRumEvent(
     forge: Forge,
+    sdkCore: SdkCore,
     testMethodName: String,
     parentViewEventName: String = testMethodName
 ) {
     when (forge.anInt(min = 0, max = 4)) {
         0 -> {
             val aViewKey = forge.aViewKey()
-            GlobalRum.get().startView(
+            GlobalRumMonitor.get(sdkCore).startView(
                 aViewKey,
                 forge.aViewName(),
                 defaultTestAttributes(testMethodName)
             )
-            GlobalRum.get().stopView(aViewKey, defaultTestAttributes(testMethodName))
+            GlobalRumMonitor.get(sdkCore).stopView(aViewKey, defaultTestAttributes(testMethodName))
         }
         1 -> {
             val aResourceKey = forge.aResourceKey()
-            executeInsideView(forge.aViewKey(), forge.aViewName(), parentViewEventName) {
-                GlobalRum.get().startResource(
+            executeInsideView(forge.aViewKey(), forge.aViewName(), parentViewEventName, sdkCore) {
+                GlobalRumMonitor.get(sdkCore).startResource(
                     aResourceKey,
                     forge.aResourceMethod(),
                     aResourceKey,
                     defaultTestAttributes(testMethodName)
                 )
-                GlobalRum.get().stopResource(
+                GlobalRumMonitor.get(sdkCore).stopResource(
                     aResourceKey,
                     forge.anInt(min = 200, max = 500),
                     forge.aLong(min = 1),
@@ -66,8 +68,8 @@ fun sendRandomRumEvent(
             }
         }
         2 -> {
-            executeInsideView(forge.aViewKey(), forge.aViewName(), parentViewEventName) {
-                GlobalRum.get().addError(
+            executeInsideView(forge.aViewKey(), forge.aViewName(), parentViewEventName, sdkCore) {
+                GlobalRumMonitor.get(sdkCore).addError(
                     forge.anErrorMessage(),
                     forge.aValueFrom(RumErrorSource::class.java),
                     forge.aNullable { forge.aThrowable() },
@@ -76,8 +78,8 @@ fun sendRandomRumEvent(
             }
         }
         3 -> {
-            executeInsideView(forge.aViewKey(), forge.aViewName(), parentViewEventName) {
-                GlobalRum.get().addUserAction(
+            executeInsideView(forge.aViewKey(), forge.aViewName(), parentViewEventName, sdkCore) {
+                GlobalRumMonitor.get(sdkCore).addAction(
                     forge.aValueFrom(RumActionType::class.java),
                     forge.anActionName(),
                     defaultTestAttributes(testMethodName)
@@ -92,10 +94,11 @@ fun sendRandomRumEvent(
  */
 fun sendAllRumEvents(
     forge: Forge,
+    sdkCore: SdkCore,
     testMethodName: String
 ) {
     val aViewKey = forge.aViewKey()
-    GlobalRum.get().startView(
+    GlobalRumMonitor.get(sdkCore).startView(
         aViewKey,
         forge.aViewName(),
         defaultTestAttributes(testMethodName)
@@ -104,21 +107,21 @@ fun sendAllRumEvents(
     listOf(::sendResourceEvent, ::sendActionEvent, ::sendErrorEvent, ::sendLongTaskEvent)
         .shuffled()
         .forEach {
-            it.invoke(forge, testMethodName)
+            it.invoke(forge, sdkCore, testMethodName)
         }
 
-    GlobalRum.get().stopView(aViewKey, defaultTestAttributes(testMethodName))
+    GlobalRumMonitor.get(sdkCore).stopView(aViewKey, defaultTestAttributes(testMethodName))
 }
 
-private fun sendResourceEvent(forge: Forge, testMethodName: String) {
+private fun sendResourceEvent(forge: Forge, sdkCore: SdkCore, testMethodName: String) {
     val aResourceKey = forge.aResourceKey()
-    GlobalRum.get().startResource(
+    GlobalRumMonitor.get(sdkCore).startResource(
         aResourceKey,
         forge.aResourceMethod(),
         aResourceKey,
         defaultTestAttributes(testMethodName)
     )
-    GlobalRum.get().stopResource(
+    GlobalRumMonitor.get(sdkCore).stopResource(
         aResourceKey,
         forge.anInt(min = 200, max = 500),
         forge.aLong(min = 1),
@@ -127,8 +130,8 @@ private fun sendResourceEvent(forge: Forge, testMethodName: String) {
     )
 }
 
-private fun sendErrorEvent(forge: Forge, testMethodName: String) {
-    GlobalRum.get().addError(
+private fun sendErrorEvent(forge: Forge, sdkCore: SdkCore, testMethodName: String) {
+    GlobalRumMonitor.get(sdkCore).addError(
         forge.anErrorMessage(),
         forge.aValueFrom(RumErrorSource::class.java),
         forge.aNullable { forge.aThrowable() },
@@ -136,8 +139,8 @@ private fun sendErrorEvent(forge: Forge, testMethodName: String) {
     )
 }
 
-private fun sendActionEvent(forge: Forge, testMethodName: String) {
-    GlobalRum.get().addUserAction(
+private fun sendActionEvent(forge: Forge, sdkCore: SdkCore, testMethodName: String) {
+    GlobalRumMonitor.get(sdkCore).addAction(
         forge.aValueFrom(RumActionType::class.java),
         forge.anActionName(),
         defaultTestAttributes(testMethodName)
@@ -145,8 +148,8 @@ private fun sendActionEvent(forge: Forge, testMethodName: String) {
 }
 
 @Suppress("UNUSED_PARAMETER")
-private fun sendLongTaskEvent(forge: Forge, testMethodName: String) {
-    GlobalRum.addAttribute(TEST_METHOD_NAME_KEY, testMethodName)
+private fun sendLongTaskEvent(forge: Forge, sdkCore: SdkCore, testMethodName: String) {
+    GlobalRumMonitor.get(sdkCore).addAttribute(TEST_METHOD_NAME_KEY, testMethodName)
     Handler(Looper.getMainLooper()).post {
         Thread.sleep(100)
     }

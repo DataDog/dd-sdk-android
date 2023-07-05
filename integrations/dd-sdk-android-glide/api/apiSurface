@@ -1,0 +1,8 @@
+open class com.datadog.android.glide.DatadogGlideModule : com.bumptech.glide.module.AppGlideModule
+  constructor(String? = null, List<String> = emptyList(), Float = DEFAULT_SAMPLE_RATE)
+  override fun registerComponents(android.content.Context, com.bumptech.glide.Glide, com.bumptech.glide.Registry)
+  override fun applyOptions(android.content.Context, com.bumptech.glide.GlideBuilder)
+  open fun getClientBuilder(): okhttp3.OkHttpClient.Builder
+class com.datadog.android.glide.DatadogRUMUncaughtThrowableStrategy : com.bumptech.glide.load.engine.executor.GlideExecutor.UncaughtThrowableStrategy
+  constructor(String, String? = null)
+  override fun handle(Throwable?)

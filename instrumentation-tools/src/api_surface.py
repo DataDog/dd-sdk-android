@@ -11,7 +11,7 @@ EXTEND_SEPARATOR = ":"
 TESTABLE_API_REGEX = re.compile("^(\\s*)(?<!deprecated)(\\s*)(constructor|fun)(.+)")
 TYPE_REGEX = re.compile("(\\s*)(.*)(class|interface|enum|object)(\\s)(.*)$")
 DEFAULT_IGNORED_TYPE_ATTRS = ["companion", "data"]
-DEFAULT_IGNORED_TYPES = ["enum", "interface"]
+DEFAULT_IGNORED_TYPES = ["enum", "interface", "annotation"]
 INDENT_SIZE = 2
 
 """
@@ -87,5 +87,6 @@ class ApiSurface:
                 else:
                     if self.verbose:
                         print(f"Keeping {type_attributes} {type} {prefix}{API_SEPARATOR}{row.strip()}")
-                    to_return.add(prefix + API_SEPARATOR + row.strip())
+                    separator = API_SEPARATOR if prefix else ""
+                    to_return.add(prefix + separator + row.strip())
         return to_return

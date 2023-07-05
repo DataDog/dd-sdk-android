@@ -115,7 +115,7 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
                 // No Op
             }
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                Datadog.clearAllData()
+                Datadog.getInstance().clearAllData()
                 Toast.makeText(this, R.string.msg_all_data_cleared, Toast.LENGTH_SHORT).show()
             }
             .create()

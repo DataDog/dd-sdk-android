@@ -27,7 +27,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -37,6 +36,7 @@ import okhttp3.Response
 import java.util.Locale
 import java.util.Random
 
+@Suppress("DEPRECATION")
 internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
 
     private var asyncOperationTask: AsyncTask<Unit, Unit, Unit>? = null
@@ -148,13 +148,13 @@ internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewMod
         withContextTraced("coroutine flow collect", Dispatchers.Default) {
             try {
                 setTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
-                getFlow()
-                    .sendErrorToDatadog()
-                    .map {
-                        it.replaceFirstChar { c ->
-                            if (c.isLowerCase()) c.titlecase(Locale.US) else c.toString()
-                        }
+                val flow = getFlow()
+                flow.sendErrorToDatadog()
+                flow.map {
+                    it.replaceFirstChar { c ->
+                        if (c.isLowerCase()) c.titlecase(Locale.US) else c.toString()
                     }
+                }
                     .filter { it.length > 4 }
                     .collect {
                         if (Random().nextInt(5) == 0) {
@@ -215,7 +215,7 @@ internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewMod
             val request = builder.build()
             return try {
                 val response = okHttpClient.newCall(request).execute()
-                val body = response.body()
+                val body = response.body
                 if (body != null) {
                     val content: String = body.string()
                     // Necessary to consume the response
@@ -265,9 +265,10 @@ internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewMod
 
         var activeSpanInMainThread: Span? = null
 
+        @Suppress("CheckInternal")
         private val logger: Logger by lazy {
             Logger.Builder()
-                .setLoggerName("async_task")
+                .setName("async_task")
                 .setLogcatLogsEnabled(true)
                 .build()
                 .apply {
