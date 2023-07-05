@@ -24,17 +24,17 @@ data class FeatureStorageConfiguration(
 
         /**
          * Default storage configuration with the following parameters:
-         * * max item size = 4 MB,
-         * * max items per batch = 500,
-         * * max batch size = 512 KB,
-         * * old batch threshold = 18 hours.
+         * max item size = 512 KB,
+         * max items per batch = 500,
+         * max batch size = 4 MB,
+         * old batch threshold = 18 hours.
          */
         val DEFAULT: FeatureStorageConfiguration = FeatureStorageConfiguration(
-            // 4 MB
-            maxItemSize = 4L * 1024 * 1024,
-            maxItemsPerBatch = 500,
             // 512 KB
-            maxBatchSize = 512L * 1024,
+            maxItemSize = 512L * 1024,
+            maxItemsPerBatch = 500,
+            // 4 MB
+            maxBatchSize = 4L * 1024 * 1024,
             // 18 hours
             oldBatchThreshold = 18L * 60L * 60L * 1000L
         )
