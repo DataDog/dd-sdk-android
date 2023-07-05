@@ -44,7 +44,7 @@ internal class ComposedOptionSelectorDetectorTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        mockBundledDetectors = forge.aList {
+        mockBundledDetectors = forge.aList(size = forge.anInt(min = 1, max = 10)) {
             mock {
                 whenever(it.isOptionSelector(mockViewGroup))
                     .thenReturn(fakeBundledDetectorValue)
@@ -65,11 +65,24 @@ internal class ComposedOptionSelectorDetectorTest {
         mockBundledDetectors.forEach {
             whenever(it.isOptionSelector(mockViewGroup)).thenReturn(false)
         }
-        val fakeRandomIndex = forge.anInt(min = 0, max = mockBundledDetectors.size - 1)
+        val fakeRandomIndex = if (mockBundledDetectors.size > 1) {
+            forge.anInt(min = 0, max = mockBundledDetectors.size - 1)
+        } else {
+            0
+        }
         whenever(mockBundledDetectors[fakeRandomIndex].isOptionSelector(mockViewGroup))
             .thenReturn(true)
 
         // Then
         assertThat(testedComposedOptionSelectorDetector.isOptionSelector(mockViewGroup)).isTrue
+    }
+
+    @Test
+    fun `M return false W isOptionSelector { bundled detectors are empty }`() {
+        // Given
+        testedComposedOptionSelectorDetector = ComposedOptionSelectorDetector(emptyList())
+
+        // Then
+        assertThat(testedComposedOptionSelectorDetector.isOptionSelector(mockViewGroup)).isFalse
     }
 }

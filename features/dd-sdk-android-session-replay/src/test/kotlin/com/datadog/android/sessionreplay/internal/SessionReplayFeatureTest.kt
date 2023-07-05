@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay.internal
 import android.app.Application
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.sessionreplay.NoOpRecorder
 import com.datadog.android.sessionreplay.Recorder
@@ -584,10 +583,10 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `𝕄 provide default storage configuration 𝕎 storageConfiguration()`() {
+    fun `𝕄 provide custom storage configuration 𝕎 storageConfiguration()`() {
         // When+Then
         assertThat(testedFeature.storageConfiguration)
-            .isEqualTo(FeatureStorageConfiguration.DEFAULT)
+            .isEqualTo(SessionReplayFeature.STORAGE_CONFIGURATION)
     }
 
     companion object {
