@@ -37,12 +37,20 @@ internal class WebViewTrackingActivity : AppCompatActivity() {
     @Suppress("CheckInternal")
     private fun setupWebView(webView: WebView) {
         measure(TEST_METHOD_NAME) {
-            WebViewTracking.enable(webView, allowedHosts = listOf("datadoghq.dev"))
+            val isNoAllowedHosts = intent.extras
+                ?.getBoolean(NO_ALLOWED_HOSTS_KEY, false) ?: false
+            val allowedHosts = if (isNoAllowedHosts) {
+                emptyList()
+            } else {
+                listOf("datadoghq.dev")
+            }
+            WebViewTracking.enable(webView, allowedHosts)
         }
     }
 
     companion object {
         const val HEX_RADIX = 16
+        const val NO_ALLOWED_HOSTS_KEY = "no_allowed_hosts"
         internal const val TEST_METHOD_NAME = "web_view_tracking"
     }
 }

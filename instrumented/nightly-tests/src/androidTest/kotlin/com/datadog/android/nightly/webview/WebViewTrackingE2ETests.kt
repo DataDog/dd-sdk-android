@@ -6,6 +6,7 @@
 
 package com.datadog.android.nightly.webview
 
+import android.content.Intent
 import androidx.test.core.app.ActivityScenario.launch
 import androidx.test.espresso.web.model.Atoms.script
 import androidx.test.espresso.web.sugar.Web.onWebView
@@ -72,7 +73,12 @@ internal class WebViewTrackingE2ETests {
             crashReportsEnabled = true
         ).build()
         initSdk(config)
-        launch(WebViewTrackingActivity::class.java)
+        val intent = Intent(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            WebViewTrackingActivity::class.java
+        )
+        intent.putExtra(WebViewTrackingActivity.NO_ALLOWED_HOSTS_KEY, true)
+        launch<WebViewTrackingActivity>(intent)
 
         onWebView().withElement(findElement(Locator.ID, "make-fetch-request"))
             .perform(webClick())

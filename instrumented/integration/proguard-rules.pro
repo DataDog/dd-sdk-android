@@ -16,6 +16,11 @@
     private boolean isRegistered;
 }
 
+# Required because we need access to GlobalRumMonitor reset method to reset it through reflection
+-keepnames class com.datadog.android.rum.GlobalRumMonitor {
+    private void reset();
+}
+
 # Required because we need access to RumContext fields by reflection
 -keepnames class com.datadog.android.rum.internal.domain.RumContext {
     *;

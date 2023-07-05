@@ -27,13 +27,11 @@ import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.tools.unit.forge.aThrowable
-import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
 import java.util.Random
-import java.util.concurrent.atomic.AtomicBoolean
 
 fun defaultTestAttributes(testMethodName: String) = mapOf(
     TEST_METHOD_NAME_KEY to testMethodName
@@ -82,8 +80,10 @@ fun stopSdk() {
 
     // Reset Global states
     GlobalTracer::class.java.setStaticValue("isRegistered", false)
-    val isRumRegistered: AtomicBoolean = GlobalRumMonitor::class.java.getStaticValue("isRegistered")
-    isRumRegistered.set(false)
+    GlobalRumMonitor::class.java.getDeclaredMethod("reset").apply {
+        isAccessible = true
+        invoke(null)
+    }
 }
 
 fun flushAndShutdownExecutors() {
