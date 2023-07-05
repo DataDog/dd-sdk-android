@@ -11,6 +11,7 @@ import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
+import androidx.annotation.WorkerThread
 import com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
 import com.datadog.android.sessionreplay.internal.utils.Base64Utils
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
@@ -75,6 +76,7 @@ class Base64Serializer private constructor(
 
     // region private
 
+    @WorkerThread
     private fun serialiseBitmap(
         bitmap: Bitmap,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
@@ -84,6 +86,7 @@ class Base64Serializer private constructor(
         finalizeRecordedDataItem(base64String, imageWireframe, asyncImageProcessingCallback)
     }
 
+    @WorkerThread
     private fun convertBmpToBase64(bitmap: Bitmap): String {
         val byteArrayOutputStream = webPImageCompression.compressBitmapToStream(bitmap)
 
@@ -147,6 +150,9 @@ class Base64Serializer private constructor(
             private const val THREAD_POOL_MAX_KEEP_ALIVE_MS = 5000L
             private const val CORE_DEFAULT_POOL_SIZE = 1
             private const val MAX_THREAD_COUNT = 10
+
+            // all parameters are non-negative and queue is not null
+            @Suppress("UnsafeThirdPartyFunctionCall")
             private val THREADPOOL_EXECUTOR = ThreadPoolExecutor(
                 CORE_DEFAULT_POOL_SIZE,
                 MAX_THREAD_COUNT,

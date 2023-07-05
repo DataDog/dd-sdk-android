@@ -24,6 +24,8 @@ class WebPImageCompression internal constructor() : ImageCompression {
     override fun compressBitmapToStream(bitmap: Bitmap): ByteArrayOutputStream {
         val byteArrayOutputStream = ByteArrayOutputStream()
         val imageFormat = getImageCompressionFormat()
+        // stream is not null and image quality is between 0 and 100
+        @Suppress("UnsafeThirdPartyFunctionCall")
         bitmap.compress(imageFormat, IMAGE_QUALITY, byteArrayOutputStream)
         return byteArrayOutputStream
     }
