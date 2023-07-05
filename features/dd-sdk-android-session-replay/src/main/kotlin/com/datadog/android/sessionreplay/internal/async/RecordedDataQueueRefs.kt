@@ -29,6 +29,7 @@ internal data class RecordedDataQueueRefs(
 
     internal fun tryToConsumeItem() {
         mainThreadHandler.post {
+            @Suppress("ThreadSafety") // we are in the main thread context
             recordedDataQueueHandler.tryToConsumeItems()
         }
     }

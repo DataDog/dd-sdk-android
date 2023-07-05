@@ -13,6 +13,7 @@ import android.graphics.drawable.RippleDrawable
 import android.os.Build
 import android.util.DisplayMetrics
 import android.view.View
+import androidx.annotation.MainThread
 import com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
@@ -28,7 +29,7 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
     private val stringUtils: StringUtils = StringUtils,
     private val viewUtils: ViewUtils = ViewUtils,
     private val webPImageCompression: ImageCompression = WebPImageCompression(),
-    private val uniqueIdentiferGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
+    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
     // TODO: REPLAY-1856 find a way to remove base64 dependency from the constructor
     private val base64Serializer: Base64Serializer = Base64Serializer.Builder().build()
 ) : WireframeMapper<T, S>, AsyncImageProcessingCallback {
@@ -89,7 +90,7 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
      * Resolve a unique identifier for a view.
      */
     protected fun resolveChildDrawableUniqueIdentifier(view: View): Long? =
-        uniqueIdentiferGenerator.resolveChildUniqueIdentifier(view, DRAWABLE_CHILD_NAME)
+        uniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, DRAWABLE_CHILD_NAME)
 
     /**
      * Resolve a mimetype from an extension.
@@ -100,16 +101,16 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
     /**
      * Resolve drawable and update image wireframe.
      */
+    @MainThread
     protected fun handleBitmap(
         displayMetrics: DisplayMetrics,
         drawable: Drawable,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe
-    ) =
-        base64Serializer.handleBitmap(
-            displayMetrics,
-            drawable,
-            imageWireframe
-        )
+    ) = base64Serializer.handleBitmap(
+        displayMetrics,
+        drawable,
+        imageWireframe
+    )
 
     internal fun registerAsyncImageProcessingCallback(
         asyncImageProcessingCallback: AsyncImageProcessingCallback

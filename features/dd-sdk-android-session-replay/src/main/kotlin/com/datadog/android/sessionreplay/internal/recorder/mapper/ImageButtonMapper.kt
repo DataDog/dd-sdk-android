@@ -17,13 +17,12 @@ import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 internal class ImageButtonMapper(
     webPImageCompression: ImageCompression = WebPImageCompression(),
     base64Serializer: Base64Serializer = Base64Serializer.Builder().build(),
-    uniqueIdentiferGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator
-) :
-    BaseWireframeMapper<ImageButton, MobileSegment.Wireframe.ImageWireframe>(
-        webPImageCompression = webPImageCompression,
-        base64Serializer = base64Serializer,
-        uniqueIdentiferGenerator = uniqueIdentiferGenerator
-    ) {
+    uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator
+) : BaseWireframeMapper<ImageButton, MobileSegment.Wireframe.ImageWireframe>(
+    webPImageCompression = webPImageCompression,
+    base64Serializer = base64Serializer,
+    uniqueIdentifierGenerator = uniqueIdentifierGenerator
+) {
     override fun map(
         view: ImageButton,
         mappingContext: MappingContext
@@ -55,6 +54,7 @@ internal class ImageButtonMapper(
             isEmpty = true
         )
 
+        @Suppress("ThreadSafety") // TODO REPLAY-1861 caller thread of .map is unknown?
         handleBitmap(
             displayMetrics = displayMetrics,
             drawable = drawable,

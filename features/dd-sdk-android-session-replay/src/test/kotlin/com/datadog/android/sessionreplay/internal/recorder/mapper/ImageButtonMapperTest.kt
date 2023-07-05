@@ -106,7 +106,7 @@ internal class ImageButtonMapperTest {
         testedMapper = ImageButtonMapper(
             webPImageCompression = mockWebPImageCompression,
             base64Serializer = mockBase64Serializer,
-            uniqueIdentiferGenerator = mockUniqueIdentifierGenerator
+            uniqueIdentifierGenerator = mockUniqueIdentifierGenerator
         )
     }
 
