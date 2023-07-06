@@ -41,3 +41,5 @@
 -dontwarn java.lang.StackWalker
 -dontwarn org.apiguardian.api.API$Status
 -dontwarn org.apiguardian.api.API
+-dontwarn kotlinx.coroutines.BuildersKt
+-dontwarn kotlinx.coroutines.CoroutineScope

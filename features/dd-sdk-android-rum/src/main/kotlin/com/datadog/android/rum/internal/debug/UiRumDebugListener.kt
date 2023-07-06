@@ -20,10 +20,6 @@ import android.widget.TextView
 import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
 import androidx.annotation.UiThread
-import androidx.core.graphics.blue
-import androidx.core.graphics.green
-import androidx.core.graphics.red
-import androidx.core.view.setPadding
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -165,13 +161,14 @@ internal class UiRumDebugListener(
             setBackgroundColor(
                 Color.argb(
                     alpha,
-                    ACTIVE_COLOR.red,
-                    ACTIVE_COLOR.green,
-                    ACTIVE_COLOR.blue
+                    Color.red(ACTIVE_COLOR),
+                    Color.green(ACTIVE_COLOR),
+                    Color.blue(ACTIVE_COLOR)
                 )
             )
             setTextColor(Color.WHITE)
-            setPadding(dpToPx(2f, context))
+            val paddingPx = dpToPx(2f, context)
+            setPadding(paddingPx, paddingPx, paddingPx, paddingPx)
             text = viewName
         }
     }

@@ -117,7 +117,7 @@ androidXAnnotation = { module = "androidx.annotation:annotation", version.ref = 
 androidXAppCompat = { module = "androidx.appcompat:appcompat", version.ref = "androidXAppCompat" }
 androidXCore = { module = "androidx.core:core", version.ref = "androidXCore" }
 androidXNavigationFragment = { module = "androidx.navigation:navigation-fragment", version.ref = "androidXNavigation" }
-androidXNavigationRuntimeKtx = { module = "androidx.navigation:navigation-runtime-ktx", version.ref = "androidXNavigation" }
+androidXNavigationRuntime = { module = "androidx.navigation:navigation-runtime", version.ref = "androidXNavigation" }
 androidXRecyclerView = { module = "androidx.recyclerview:recyclerview", version.ref = "androidXRecyclerView" }
 androidXWorkManager = { module = "androidx.work:work-runtime", version.ref = "androidXWorkManager" }
 androidXConstraintLayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidXConstraintLayout" }
@@ -238,7 +238,7 @@ testTools = [
 
 androidXNavigation = [
     "androidXNavigationFragment",
-    "androidXNavigationRuntimeKtx"
+    "androidXNavigationRuntime"
 ]
 
 androidXSupportBase = [
