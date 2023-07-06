@@ -12,7 +12,6 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.CheckedTextView
 import android.widget.EditText
-import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.NumberPicker
 import android.widget.RadioButton
@@ -25,7 +24,6 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckedTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.EditTextViewMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.ImageButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskCheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskCheckedTextViewMapper
@@ -79,7 +77,6 @@ enum class SessionReplayPrivacy {
     internal fun mappers(): List<MapperTypeWrapper> {
         val viewWireframeMapper = ViewWireframeMapper()
         val unsupportedViewMapper = UnsupportedViewMapper()
-        val imageButtonMapper = ImageButtonMapper()
         val imageMapper: ViewScreenshotWireframeMapper
         val textMapper: TextViewMapper
         val buttonMapper: ButtonMapper
@@ -134,7 +131,6 @@ enum class SessionReplayPrivacy {
             MapperTypeWrapper(CheckBox::class.java, checkBoxMapper.toGenericMapper()),
             MapperTypeWrapper(CheckedTextView::class.java, checkedTextViewMapper.toGenericMapper()),
             MapperTypeWrapper(Button::class.java, buttonMapper.toGenericMapper()),
-            MapperTypeWrapper(ImageButton::class.java, imageButtonMapper.toGenericMapper()),
             MapperTypeWrapper(EditText::class.java, editTextViewMapper.toGenericMapper()),
             MapperTypeWrapper(TextView::class.java, textMapper.toGenericMapper()),
             MapperTypeWrapper(ImageView::class.java, imageMapper.toGenericMapper()),
