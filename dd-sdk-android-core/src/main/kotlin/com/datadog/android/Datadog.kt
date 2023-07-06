@@ -18,6 +18,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.HashGenerator
 import com.datadog.android.core.internal.SdkCoreRegistry
 import com.datadog.android.core.internal.Sha256HashGenerator
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.privacy.TrackingConsent
@@ -134,12 +135,24 @@ object Datadog {
             val sdkInstanceName = instanceName ?: SdkCoreRegistry.DEFAULT_INSTANCE_NAME
             val sdkInstance = registry.getInstance(sdkInstanceName)
             if (sdkInstance == null) {
+                @Suppress("ThrowingExceptionsWithoutMessageOrCause")
+                val stackCapture = Throwable().fillInStackTrace()
                 unboundInternalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    { MESSAGE_SDK_NOT_INITIALIZED.format(Locale.US, sdkInstanceName) }
+                    {
+                        MESSAGE_SDK_NOT_INITIALIZED.format(
+                            Locale.US,
+                            sdkInstanceName,
+                            stackCapture
+                                .loggableStackTrace()
+                                .lines()
+                                .drop(1)
+                                .joinToString(separator = "\n")
+                        )
+                    }
                 )
-                NoOpInternalSdkCore()
+                NoOpInternalSdkCore
             } else {
                 sdkInstance
             }
@@ -318,7 +331,8 @@ object Datadog {
 
     internal const val MESSAGE_SDK_NOT_INITIALIZED = "SDK instance with name %s is not found," +
         " returning no-op implementation. Please make sure to call" +
-        " Datadog.initialize([instanceName]) before getting the instance."
+        " Datadog.initialize([instanceName]) before getting the instance." +
+        " SDK instance was requested from:\n%s"
 
     internal const val CANNOT_CREATE_SDK_INSTANCE_ID_ERROR =
         "Cannot create SDK instance ID, stopping SDK initialization."

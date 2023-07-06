@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit
 /**
  * A no-op implementation of [SdkCore].
  */
-internal class NoOpInternalSdkCore : InternalSdkCore {
+internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override val name: String = "no-op"
 

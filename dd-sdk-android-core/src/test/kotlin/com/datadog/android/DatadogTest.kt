@@ -18,6 +18,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.HashGenerator
 import com.datadog.android.core.internal.SdkCoreRegistry
 import com.datadog.android.core.internal.Sha256HashGenerator
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
@@ -47,7 +48,10 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -392,14 +396,36 @@ internal class DatadogTest {
         Datadog.getInstance(fakeInstanceName)
 
         // Then
-        logger.mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            Datadog.MESSAGE_SDK_NOT_INITIALIZED.format(
-                Locale.US,
-                fakeInstanceName ?: SdkCoreRegistry.DEFAULT_INSTANCE_NAME
+        val currentMethodName = Thread.currentThread().stackTrace[1].methodName
+        val expectedStacktrace = Throwable().fillInStackTrace()
+            .loggableStackTrace()
+            .lines()
+            .drop(1)
+            .filter { !it.contains(currentMethodName) }
+            .joinToString(separator = "\n")
+        argumentCaptor<() -> String> {
+            verify(logger.mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                isNull(),
+                eq(false)
             )
-        )
+            val actualMessage = firstValue()
+            val filteredActualMessage = actualMessage
+                .lines()
+                // need to filter out, because we cannot reproduce exactly the same stacktrace
+                .filter { !it.contains(currentMethodName) && !it.contains("getInstance") }
+                .joinToString(separator = "\n")
+            assertThat(filteredActualMessage)
+                .isEqualTo(
+                    Datadog.MESSAGE_SDK_NOT_INITIALIZED.format(
+                        Locale.US,
+                        fakeInstanceName ?: SdkCoreRegistry.DEFAULT_INSTANCE_NAME,
+                        expectedStacktrace
+                    )
+                )
+        }
     }
 
     @Test
