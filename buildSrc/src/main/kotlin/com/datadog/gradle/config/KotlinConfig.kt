@@ -21,8 +21,8 @@ fun Project.kotlinConfig(
         compilerOptions {
             jvmTarget.set(jvmBytecodeTarget)
             allWarningsAsErrors.set(evaluateWarningsAsErrors)
-            apiVersion.set(KotlinVersion.KOTLIN_1_6)
-            languageVersion.set(KotlinVersion.KOTLIN_1_6)
+            apiVersion.set(KotlinVersion.KOTLIN_1_7)
+            languageVersion.set(KotlinVersion.KOTLIN_1_7)
         }
     }
 
