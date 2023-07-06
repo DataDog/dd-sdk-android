@@ -36,7 +36,9 @@ class ApiSurfacePlugin : Plugin<Project> {
         target.taskConfig<KotlinCompile> {
             // Java API generation task does a clean-up of all files in the output
             // folder, so let it run first
-            finalizedBy(TASK_GEN_JAVA_API_SURFACE)
+            if (target.plugins.hasPlugin(GEN_JAVA_API_LAYOUT_PLUGIN)) {
+                finalizedBy(TASK_GEN_JAVA_API_SURFACE)
+            }
             finalizedBy(TASK_GEN_KOTLIN_API_SURFACE)
         }
     }
@@ -46,5 +48,6 @@ class ApiSurfacePlugin : Plugin<Project> {
         const val TASK_GEN_JAVA_API_SURFACE = "apiDump"
         const val TASK_CHECK_API_SURFACE = "checkApiSurfaceChanges"
         const val FILE_NAME = "apiSurface"
+        const val GEN_JAVA_API_LAYOUT_PLUGIN = "binary-compatibility-validator"
     }
 }
