@@ -8,6 +8,7 @@ package com.datadog.android.nightly.rum
 
 import android.app.Activity
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavDestination
 import androidx.test.core.app.ActivityScenario.launch
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -64,6 +65,7 @@ internal class RumViewTrackingE2ETests {
             )
         }
         launch(ViewTrackingActivity::class.java)
+            .moveToState(Lifecycle.State.DESTROYED)
     }
 
     /**
@@ -99,6 +101,7 @@ internal class RumViewTrackingE2ETests {
             )
         }
         launch(ViewTrackingActivity::class.java)
+            .moveToState(Lifecycle.State.DESTROYED)
     }
 
     /**
@@ -134,6 +137,7 @@ internal class RumViewTrackingE2ETests {
             )
         }
         launch(ViewTrackingActivity::class.java)
+            .moveToState(Lifecycle.State.DESTROYED)
     }
 
     /**
@@ -157,6 +161,7 @@ internal class RumViewTrackingE2ETests {
             )
         }
         launch(ViewTrackingFragmentActivity::class.java)
+            .moveToState(Lifecycle.State.DESTROYED)
     }
 
     /**
@@ -193,6 +198,7 @@ internal class RumViewTrackingE2ETests {
             )
         }
         launch(ViewTrackingFragmentActivity::class.java)
+            .moveToState(Lifecycle.State.DESTROYED)
     }
 
     /**
@@ -229,6 +235,7 @@ internal class RumViewTrackingE2ETests {
             )
         }
         launch(ViewTrackingFragmentActivity::class.java)
+            .moveToState(Lifecycle.State.DESTROYED)
     }
 
     /**
@@ -257,6 +264,7 @@ internal class RumViewTrackingE2ETests {
             )
         }
         launch(ViewTrackingNavigationActivity::class.java)
+            .moveToState(Lifecycle.State.DESTROYED)
     }
 
     /**
@@ -293,6 +301,7 @@ internal class RumViewTrackingE2ETests {
             )
         }
         launch(ViewTrackingNavigationActivity::class.java)
+            .moveToState(Lifecycle.State.DESTROYED)
     }
 
     /**
@@ -329,6 +338,7 @@ internal class RumViewTrackingE2ETests {
             )
         }
         launch(ViewTrackingNavigationActivity::class.java)
+            .moveToState(Lifecycle.State.DESTROYED)
     }
 
     /**
@@ -352,6 +362,7 @@ internal class RumViewTrackingE2ETests {
             )
         }
         launch(ViewTrackingMixedNoFragmentActivity::class.java)
+            .moveToState(Lifecycle.State.DESTROYED)
     }
 
     /**
@@ -375,5 +386,6 @@ internal class RumViewTrackingE2ETests {
             )
         }
         launch(ViewTrackingMixedFragmentActivity::class.java)
+            .moveToState(Lifecycle.State.DESTROYED)
     }
 }
