@@ -98,26 +98,37 @@ if [[ $ANALYSIS == 1 ]]; then
   echo "---- KtLint"
   ktlint -F "**/*.kt" "**/*.kts" '!**/build/generated/**' '!**/build/kspCaches/**'
 
-  echo "---- Detekt common"
-  detekt --config /Volumes/Dev/ci/dd-source/domains/mobile/config/android/gitlab/detekt/detekt-common.yml
+  echo "---- Detekt"
+  if [ -z $DD_SOURCE ]; then
+    echo "Can't run shared Detekt, missing dd_source repository path."
+    echo "Please set the path to your local dd_source repository in the DD_SOURCE environment variable."
+    echo "E.g.: "
+    echo "$ export DD_SOURCE=/Volumes/Dev/ci/dd-source"
+    exit 1
+  else
+    echo "Using Detekt rules from $DD_SOURCE folder"
+  fi
 
-  echo "---- Detekt public API"
-  detekt --config /Volumes/Dev/ci/dd-source/domains/mobile/config/android/gitlab/detekt/detekt-public-api.yml
+  echo "------ Detekt common rules"
+  detekt --config "$DD_SOURCE/domains/mobile/config/android/gitlab/detekt/detekt-common.yml"
+
+  echo "------ Detekt public API rules"
+  detekt --config "$DD_SOURCE/domains/mobile/config/android/gitlab/detekt/detekt-public-api.yml"
 
 
   if [[ $COMPILE == 1 ]]; then
     # Assemble is required to get generated classes type resolution
-    echo "---- Assemble Library"
+    echo "------ Assemble Library"
     ./gradlew assembleAll
 
-    echo "---- Detekt Custom Rules"
+    echo "------ Detekt custom rules"
     ./gradlew :tools:detekt:jar
     ./gradlew printSdkDebugRuntimeClasspath
     classpath=$(cat sdk_classpath)
     detekt --config detekt_custom.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
     # TODO RUMM-3263 Switch to Java 17 bytecode
   else
-    echo "---- Detekt Custom Rules ignored, run again with --analysis --compile"
+    echo "------ Detekt Custom Rules ignored, run again with --analysis --compile"
   fi
 
   echo "---- AndroidLint"
