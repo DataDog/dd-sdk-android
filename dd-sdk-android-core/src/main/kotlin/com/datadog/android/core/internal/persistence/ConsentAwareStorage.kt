@@ -30,7 +30,7 @@ internal class ConsentAwareStorage(
     private val batchMetadataReaderWriter: FileReaderWriter,
     private val fileMover: FileMover,
     private val internalLogger: InternalLogger,
-    private val filePersistenceConfig: FilePersistenceConfig
+    internal val filePersistenceConfig: FilePersistenceConfig
 ) : Storage {
 
     /**

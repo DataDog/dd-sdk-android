@@ -15,6 +15,8 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.core.configuration.BatchSize
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.sessionreplay.NoOpRecorder
@@ -222,7 +224,9 @@ internal class SessionReplayFeature constructor(
         internal val STORAGE_CONFIGURATION: FeatureStorageConfiguration =
             FeatureStorageConfiguration.DEFAULT.copy(
                 maxItemSize = 10 * 1024 * 1024,
-                maxBatchSize = 10 * 1024 * 1024
+                maxBatchSize = 10 * 1024 * 1024,
+                uploadFrequency = UploadFrequency.FREQUENT,
+                batchSize = BatchSize.SMALL
             )
 
         internal const val REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE = "Session Replay could not " +
