@@ -38,7 +38,7 @@ abstract class com.datadog.android.sessionreplay.internal.recorder.mapper.BaseWi
   protected fun android.graphics.drawable.Drawable.resolveShapeStyleAndBorder(Float): Pair<com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle?, com.datadog.android.sessionreplay.model.MobileSegment.ShapeBorder?>?
   protected fun resolveChildDrawableUniqueIdentifier(android.view.View): Long?
   protected fun getWebPMimeType(): String?
-  protected fun handleBitmap(android.util.DisplayMetrics, android.graphics.drawable.Drawable, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ImageWireframe)
+  protected fun handleBitmap(android.content.Context, android.util.DisplayMetrics, android.graphics.drawable.Drawable, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ImageWireframe)
   override fun startProcessingImage()
   override fun finishProcessingImage()
   companion object 

@@ -577,6 +577,7 @@ datadog:
       - "java.lang.Object.constructor()"
       - "java.lang.Runtime.availableProcessors()"
       - "java.lang.Runtime.getRuntime()"
+      - "java.lang.Runtime.maxMemory()"
       - "java.lang.System.currentTimeMillis()"
       - "java.lang.System.getProperty(kotlin.String)"
       - "java.lang.System.identityHashCode(kotlin.Any)"

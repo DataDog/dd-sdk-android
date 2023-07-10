@@ -6,8 +6,10 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.content.Context
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.Drawable.ConstantState
 import android.util.DisplayMetrics
 import android.widget.ImageButton
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -80,6 +82,12 @@ internal class ImageButtonMapperTest {
     @Mock
     lateinit var mockBackground: Drawable
 
+    @Mock
+    lateinit var mockConstantState: ConstantState
+
+    @Mock
+    lateinit var mockContext: Context
+
     private val fakeId = Forge().aLong()
 
     private val fakeMimeType = Forge().aString()
@@ -89,6 +97,8 @@ internal class ImageButtonMapperTest {
         whenever(mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(any(), any()))
             .thenReturn(fakeId)
 
+        whenever(mockConstantState.newDrawable(any())).thenReturn(mockDrawable)
+        whenever(mockDrawable.constantState).thenReturn(mockConstantState)
         whenever(mockImageButton.drawable).thenReturn(mockDrawable)
 
         whenever(mockWebPImageCompression.getMimeType()).thenReturn(fakeMimeType)
@@ -100,6 +110,9 @@ internal class ImageButtonMapperTest {
         whenever(mockImageButton.resources).thenReturn(mockResources)
 
         whenever(mockImageButton.background).thenReturn(mockBackground)
+
+        whenever(mockContext.applicationContext).thenReturn(mockContext)
+        whenever(mockImageButton.context).thenReturn(mockContext)
 
         whenever(mockViewUtils.resolveViewGlobalBounds(any(), any())).thenReturn(mockGlobalBounds)
 

@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.content.Context
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.InsetDrawable
@@ -103,10 +104,12 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
      */
     @MainThread
     protected fun handleBitmap(
+        applicationContext: Context,
         displayMetrics: DisplayMetrics,
         drawable: Drawable,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe
     ) = base64Serializer.handleBitmap(
+        applicationContext,
         displayMetrics,
         drawable,
         imageWireframe
