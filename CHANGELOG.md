@@ -1,3 +1,7 @@
+# 1.19.3 / 2023-07-11
+
+* [IMPROVEMENT] RUM: Introduce known file cache and cleanup throttling in `BatchFileOrchestrator` in order to reduce the number of syscalls. See [#1506](https://github.com/DataDog/dd-sdk-android/pull/1506)
+
 # 1.19.2 / 2023-06-05
 
 * [REVERT] RUM: Force new session at SDK initialization. See [#1399](https://github.com/DataDog/dd-sdk-android/pull/1399)
