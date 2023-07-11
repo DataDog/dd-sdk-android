@@ -7,6 +7,8 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.core.configuration.BatchSize
+import com.datadog.android.core.configuration.UploadFrequency
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
@@ -17,7 +19,9 @@ internal class FeatureStorageConfigurationForgeryFactory :
             maxBatchSize = forge.aPositiveLong(),
             maxItemsPerBatch = forge.aBigInt(),
             maxItemSize = forge.aPositiveLong(),
-            oldBatchThreshold = forge.aPositiveLong()
+            oldBatchThreshold = forge.aPositiveLong(),
+            uploadFrequency = forge.aNullable { forge.aValueFrom(UploadFrequency::class.java) },
+            batchSize = forge.aNullable { forge.aValueFrom(BatchSize::class.java) }
         )
     }
 }
