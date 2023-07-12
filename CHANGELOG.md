@@ -1,3 +1,15 @@
+# 2.0.0-beta1 / 2023-07-07
+
+This is the first release of SDK v2. It contains breaking changes related to the SDK setup and APIs. See the [migration guide](https://github.com/DataDog/dd-sdk-android/blob/026fc30f5c28226b244a0f6884841cbcac9c864b/MIGRATION.MD) for details.
+
+Functional changes in comparison with `1.19.2`:
+
+* [IMPROVEMENT] Introduce known file cache and cleanup throttling in `BatchFileOrchestrator` in order to reduce the number of syscalls. See [#1506](https://github.com/DataDog/dd-sdk-android/pull/1506)
+* [IMPROVEMENT] Logs: Alter public API of `Logger` to receive `Any` data type. See [#1324](https://github.com/DataDog/dd-sdk-android/pull/1324)
+* [IMPROVEMENT] RUM: Use `JankStats` for FPS measuring. See [#1405](https://github.com/DataDog/dd-sdk-android/pull/1405)
+* [IMPROVEMENT] RUM: Fix `JankStats` usage. See [#1512](https://github.com/DataDog/dd-sdk-android/pull/1512)
+* [BUGFIX] RUM: Keep old `viewId`s for view scope. See [#1448](https://github.com/DataDog/dd-sdk-android/pull/1448)
+
 # 1.19.2 / 2023-06-05
 
 * [REVERT] RUM: Force new session at SDK initialization. See [#1399](https://github.com/DataDog/dd-sdk-android/pull/1399)
