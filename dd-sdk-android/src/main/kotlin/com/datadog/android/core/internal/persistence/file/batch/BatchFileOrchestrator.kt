@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
+import androidx.collection.LruCache
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.canWriteSafe
@@ -22,6 +23,8 @@ import java.io.FileFilter
 import java.util.Locale
 import kotlin.math.roundToLong
 
+// TODO RUMM-3373 Improve this class: need to make it thread-safe and optimize work with file
+//  system in order to reduce the number of syscalls (which are expensive) for files already seen
 internal class BatchFileOrchestrator(
     private val rootDir: File,
     private val config: FilePersistenceConfig,
@@ -39,6 +42,10 @@ internal class BatchFileOrchestrator(
     private var previousFile: File? = null
     private var previousFileItemCount: Int = 0
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // argument is not negative
+    private val knownBatchFiles = LruCache<File, Unit>(KNOWN_FILES_MAX_CACHE_SIZE)
+    private var lastCleanupTimestamp: Long = 0L
+
     // region FileOrchestrator
 
     @WorkerThread
@@ -47,8 +54,11 @@ internal class BatchFileOrchestrator(
             return null
         }
 
-        deleteObsoleteFiles()
-        freeSpaceIfNeeded()
+        if (canDoCleanup()) {
+            deleteObsoleteFiles()
+            freeSpaceIfNeeded()
+            lastCleanupTimestamp = System.currentTimeMillis()
+        }
 
         return if (!forceNewFile) {
             getReusableWritableFile() ?: createNewFile()
@@ -64,6 +74,7 @@ internal class BatchFileOrchestrator(
         }
 
         deleteObsoleteFiles()
+        lastCleanupTimestamp = System.currentTimeMillis()
 
         val files = listSortedBatchFiles()
 
@@ -183,6 +194,8 @@ internal class BatchFileOrchestrator(
         val newFile = File(rootDir, newFileName)
         previousFile = newFile
         previousFileItemCount = 1
+        @Suppress("UnsafeThirdPartyFunctionCall") // value is not null
+        knownBatchFiles.put(newFile, Unit)
         return newFile
     }
 
@@ -228,6 +241,8 @@ internal class BatchFileOrchestrator(
             .filter { (it.name.toLongOrNull() ?: 0) < threshold }
             .forEach {
                 it.deleteSafe()
+                @Suppress("UnsafeThirdPartyFunctionCall") // value is not null
+                knownBatchFiles.remove(it)
                 if (it.metadata.existsSafe()) {
                     it.metadata.deleteSafe()
                 }
@@ -261,6 +276,8 @@ internal class BatchFileOrchestrator(
         if (!file.existsSafe()) return 0
 
         val size = file.lengthSafe()
+        @Suppress("UnsafeThirdPartyFunctionCall") // value is not null
+        knownBatchFiles.remove(file)
         return if (file.deleteSafe()) {
             size
         } else {
@@ -275,15 +292,33 @@ internal class BatchFileOrchestrator(
     private val File.metadata: File
         get() = File("${this.path}_metadata")
 
+    private fun canDoCleanup(): Boolean {
+        return System.currentTimeMillis() - lastCleanupTimestamp > config.cleanupFrequencyThreshold
+    }
+
     // endregion
 
     // region FileFilter
 
-    internal class BatchFileFilter : FileFilter {
+    internal inner class BatchFileFilter : FileFilter {
+        @Suppress("ReturnCount")
         override fun accept(file: File?): Boolean {
-            return file != null &&
-                file.isFileSafe() &&
+            if (file == null) return false
+
+            @Suppress("UnsafeThirdPartyFunctionCall") // value is not null
+            if (knownBatchFiles.get(file) != null) {
+                return true
+            }
+
+            return if (file.isFileSafe() &&
                 file.name.matches(batchFileNameRegex)
+            ) {
+                @Suppress("UnsafeThirdPartyFunctionCall") // both values are not null
+                knownBatchFiles.put(file, Unit)
+                true
+            } else {
+                false
+            }
         }
     }
 
@@ -293,6 +328,10 @@ internal class BatchFileOrchestrator(
 
         const val DECREASE_PERCENT = 0.95
         const val INCREASE_PERCENT = 1.05
+
+        // File class contains only few simple fields, so retained size usually is way below even 1Kb.
+        // Holding 400 items at max will be below 400 Kb of retained size.
+        private const val KNOWN_FILES_MAX_CACHE_SIZE = 400
 
         private val batchFileNameRegex = Regex("\\d+")
         internal const val ERROR_ROOT_NOT_WRITABLE = "The provided root dir is not writable: %s"
