@@ -76,8 +76,8 @@ android {
 
 dependencies {
     api(project(":dd-sdk-android-core"))
-    api(project(":integrations:dd-sdk-android-okhttp"))
     api(project(":features:dd-sdk-android-rum"))
+    implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(libs.kotlin)
     implementation(libs.okHttp)
     implementation(libs.bundles.glide)
