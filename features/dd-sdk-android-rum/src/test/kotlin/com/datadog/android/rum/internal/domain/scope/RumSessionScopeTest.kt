@@ -858,6 +858,7 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
+        initializeTestedScope(backgroundTrackingEnabled = false)
         val fakeNonInteractionEvent1 = forge.anyRumEvent(
             excluding = listOf(
                 RumRawEvent.StartView::class.java,
