@@ -180,12 +180,24 @@ class NavigationViewTrackingStrategy(
     @Suppress("SwallowedException")
     private fun Activity.findNavControllerOrNull(@IdRes viewId: Int): NavController? {
         return try {
-            Navigation.findNavController(this, viewId)
+            val navController = if (this is FragmentActivity) {
+                findNavControllerFromNavHostFragmentOrNull(viewId)
+            } else {
+                null
+            }
+            navController ?: Navigation.findNavController(this, viewId)
         } catch (e: IllegalArgumentException) {
             null
         } catch (e: IllegalStateException) {
             null
         }
+    }
+
+    private fun FragmentActivity.findNavControllerFromNavHostFragmentOrNull(
+        @IdRes viewId: Int
+    ): NavController? {
+        val navHostFragment = supportFragmentManager.findFragmentById(viewId) as? NavHostFragment
+        return navHostFragment?.navController
     }
 
     // endregion
