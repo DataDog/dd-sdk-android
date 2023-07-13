@@ -820,15 +820,14 @@ internal class RumSessionScopeTest {
     // region Session Replay Event Bus
 
     @Test
-    fun `𝕄 notify Session Replay feature 𝕎 session is updated {tracked, timed out}`(
+    fun `𝕄 notify Session Replay feature 𝕎 new interaction event received`(
         forge: Forge
     ) {
         // Given
-        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
-
-        // When
-        Thread.sleep(TEST_MAX_DURATION_MS)
-        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val fakeInteractionEvent1 = forge.interactiveRumRawEvent()
+        val fakeInteractionEvent2 = forge.interactiveRumRawEvent()
+        testedScope.handleEvent(fakeInteractionEvent1, mockWriter)
+        testedScope.handleEvent(fakeInteractionEvent2, mockWriter)
 
         // Then
         val argumentCaptor = argumentCaptor<Any>()
@@ -838,14 +837,97 @@ internal class RumSessionScopeTest {
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
+                    testedScope.getRumContext().sessionId
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
+                    testedScope.getRumContext().sessionId
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 notify Session Replay feature 𝕎 new non-interaction event received`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeNonInteractionEvent1 = forge.anyRumEvent(
+            excluding = listOf(
+                RumRawEvent.StartView::class.java,
+                RumRawEvent.StartAction::class.java
+            )
+        )
+        val fakeNonInteractionEvent2 = forge.anyRumEvent(
+            excluding = listOf(
+                RumRawEvent.StartView::class.java,
+                RumRawEvent.StartAction::class.java
+            )
+        )
+        testedScope.handleEvent(fakeNonInteractionEvent1, mockWriter)
+        testedScope.handleEvent(fakeNonInteractionEvent2, mockWriter)
+
+        // Then
+        val argumentCaptor = argumentCaptor<Any>()
+        verify(mockSessionReplayFeatureScope, times(2))
+            .sendEvent(argumentCaptor.capture())
+        assertThat(argumentCaptor.firstValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
+                    testedScope.getRumContext().sessionId
+            )
+        )
+        assertThat(argumentCaptor.secondValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
+                    testedScope.getRumContext().sessionId
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 notify Session Replay feature 𝕎 session is updated {tracked, timed out}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val firstSessionId = testedScope.getRumContext().sessionId
+
+        // When
+        Thread.sleep(TEST_MAX_DURATION_MS)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val secondSessionId = testedScope.getRumContext().sessionId
+
+        // Then
+        val argumentCaptor = argumentCaptor<Any>()
+        verify(mockSessionReplayFeatureScope, times(2))
+            .sendEvent(argumentCaptor.capture())
+        assertThat(argumentCaptor.firstValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId
+            )
+        )
+        assertThat(argumentCaptor.secondValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId
             )
         )
     }
@@ -856,10 +938,12 @@ internal class RumSessionScopeTest {
     ) {
         // Given
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val firstSessionId = testedScope.getRumContext().sessionId
 
         // When
         Thread.sleep(TEST_INACTIVITY_MS)
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val secondSessionId = testedScope.getRumContext().sessionId
 
         // Then
         val argumentCaptor = argumentCaptor<Any>()
@@ -869,14 +953,18 @@ internal class RumSessionScopeTest {
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
+                    firstSessionId
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
+                    secondSessionId
             )
         )
     }
@@ -887,27 +975,42 @@ internal class RumSessionScopeTest {
     ) {
         // Given
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val firstSessionId = testedScope.getRumContext().sessionId
 
         // When
         testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val secondSessionId = testedScope.getRumContext().sessionId
 
         // Then
         val argumentCaptor = argumentCaptor<Any>()
-        verify(mockSessionReplayFeatureScope, times(2))
+        verify(mockSessionReplayFeatureScope, times(3))
             .sendEvent(argumentCaptor.capture())
         assertThat(argumentCaptor.firstValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
+                    firstSessionId
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
+                    secondSessionId
+            )
+        )
+        assertThat(argumentCaptor.thirdValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
+                    secondSessionId
             )
         )
     }
@@ -919,10 +1022,12 @@ internal class RumSessionScopeTest {
         // Given
         initializeTestedScope(0f)
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val firstSessionId = testedScope.getRumContext().sessionId
 
         // When
         Thread.sleep(TEST_MAX_DURATION_MS)
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val secondSessionId = testedScope.getRumContext().sessionId
 
         // Then
         val argumentCaptor = argumentCaptor<Any>()
@@ -932,14 +1037,17 @@ internal class RumSessionScopeTest {
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId
+
             )
         )
     }
@@ -951,10 +1059,12 @@ internal class RumSessionScopeTest {
         // Given
         initializeTestedScope(0f)
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val firstSessionId = testedScope.getRumContext().sessionId
 
         // When
         Thread.sleep(TEST_INACTIVITY_MS)
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val secondSessionId = testedScope.getRumContext().sessionId
 
         // Then
         val argumentCaptor = argumentCaptor<Any>()
@@ -964,14 +1074,16 @@ internal class RumSessionScopeTest {
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId
             )
         )
     }
@@ -983,27 +1095,39 @@ internal class RumSessionScopeTest {
         // Given
         initializeTestedScope(0f)
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val firstSessionId = testedScope.getRumContext().sessionId
 
         // When
         testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val secondSessionId = testedScope.getRumContext().sessionId
 
         // Then
         val argumentCaptor = argumentCaptor<Any>()
-        verify(mockSessionReplayFeatureScope, times(2))
+        verify(mockSessionReplayFeatureScope, times(3))
             .sendEvent(argumentCaptor.capture())
         assertThat(argumentCaptor.firstValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId
+            )
+        )
+        assertThat(argumentCaptor.thirdValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId
             )
         )
     }
