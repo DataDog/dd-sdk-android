@@ -8,7 +8,6 @@ package com.datadog.android.sessionreplay.internal.domain
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.RequestFactory
-import com.datadog.android.rum.RumAttributes
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
@@ -178,14 +177,14 @@ internal class SessionReplayRequestFactoryTest {
 
     private fun expectedUrl(endpointUrl: String): String {
         val queryTags = mutableListOf(
-            "${RumAttributes.SERVICE_NAME}:${fakeDatadogContext.service}",
-            "${RumAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}",
-            "${RumAttributes.SDK_VERSION}:${fakeDatadogContext.sdkVersion}",
-            "${RumAttributes.ENV}:${fakeDatadogContext.env}"
+            "${SessionReplayRequestFactory.SERVICE_NAME}:${fakeDatadogContext.service}",
+            "${SessionReplayRequestFactory.APPLICATION_VERSION}:${fakeDatadogContext.version}",
+            "${SessionReplayRequestFactory.SDK_VERSION}:${fakeDatadogContext.sdkVersion}",
+            "${SessionReplayRequestFactory.ENV}:${fakeDatadogContext.env}"
         )
 
         if (fakeDatadogContext.variant.isNotEmpty()) {
-            queryTags.add("${RumAttributes.VARIANT}:${fakeDatadogContext.variant}")
+            queryTags.add("${SessionReplayRequestFactory.VARIANT}:${fakeDatadogContext.variant}")
         }
 
         return "$endpointUrl/api/v2/replay?${RequestFactory.QUERY_PARAM_SOURCE}=" +
