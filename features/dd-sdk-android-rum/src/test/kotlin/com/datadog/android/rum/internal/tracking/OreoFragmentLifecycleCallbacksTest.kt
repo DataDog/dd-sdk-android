@@ -76,9 +76,6 @@ internal class OreoFragmentLifecycleCallbacksTest {
     lateinit var mockGesturesTracker: GesturesTracker
 
     @Mock
-    lateinit var mockViewLoadingTimer: ViewLoadingTimer
-
-    @Mock
     lateinit var mockRumMonitor: RumMonitor
 
     @Mock
@@ -109,149 +106,12 @@ internal class OreoFragmentLifecycleCallbacksTest {
         testedLifecycleCallbacks = OreoFragmentLifecycleCallbacks(
             { fakeAttributes },
             mockPredicate,
-            viewLoadingTimer = mockViewLoadingTimer,
             rumMonitor = mockRumMonitor,
             advancedRumMonitor = mockAdvancedRumMonitor,
             buildSdkVersionProvider = mockBuildSdkVersionProvider,
             rumFeature = mockRumFeature
         )
     }
-
-    // region Track View Loading Time
-
-    @Test
-    fun `𝕄 notify viewLoadingTimer 𝕎 onFragmentAttached()`() {
-        // Given
-        whenever(mockPredicate.accept(mockFragment)) doReturn true
-
-        // When
-        testedLifecycleCallbacks.onFragmentAttached(
-            mockFragmentManager,
-            mockFragment,
-            mockActivity
-        )
-
-        // Then
-        verify(mockViewLoadingTimer).onCreated(mockFragment)
-    }
-
-    @Test
-    fun `𝕄 notify viewLoadingTimer 𝕎 onFragmentStarted()`() {
-        // Given
-        whenever(mockPredicate.accept(mockFragment)) doReturn true
-
-        // When
-        testedLifecycleCallbacks.onFragmentStarted(mockFragmentManager, mockFragment)
-
-        // Then
-        verify(mockViewLoadingTimer).onStartLoading(mockFragment)
-    }
-
-    @Test
-    fun `𝕄 notify viewLoadingTimer 𝕎 onFragmentResumed()`() {
-        // Given
-        whenever(mockPredicate.accept(mockFragment)) doReturn true
-
-        // When
-        testedLifecycleCallbacks.onFragmentResumed(mockFragmentManager, mockFragment)
-
-        // Then
-        verify(mockViewLoadingTimer).onFinishedLoading(mockFragment)
-    }
-
-    @Test
-    fun `𝕄 notify viewLoadingTimer 𝕎 onActivityPaused()`() {
-        // Given
-        whenever(mockPredicate.accept(mockFragment)) doReturn true
-
-        // When
-        testedLifecycleCallbacks.onFragmentPaused(mockFragmentManager, mockFragment)
-
-        // Then
-        verify(mockViewLoadingTimer).onPaused(mockFragment)
-    }
-
-    @Test
-    fun `𝕄 notify viewLoadingTimer 𝕎 onActivityDestroyed()`() {
-        // Given
-        whenever(mockPredicate.accept(mockFragment)) doReturn true
-
-        // When
-        testedLifecycleCallbacks.onFragmentDestroyed(mockFragmentManager, mockFragment)
-
-        // Then
-        verify(mockViewLoadingTimer).onDestroyed(mockFragment)
-    }
-
-    // endregion
-
-    // region Track View Loading Time (not tracked)
-
-    @Test
-    fun `𝕄 notify viewLoadingTimer 𝕎 onFragmentAttached() {fragment not tracked}`() {
-        // Given
-        whenever(mockPredicate.accept(mockFragment)) doReturn false
-
-        // When
-        testedLifecycleCallbacks.onFragmentAttached(
-            mockFragmentManager,
-            mockFragment,
-            mockActivity
-        )
-
-        // Then
-        verifyNoInteractions(mockViewLoadingTimer)
-    }
-
-    @Test
-    fun `𝕄 notify viewLoadingTimer 𝕎 onFragmentStarted() {fragment not tracked}`() {
-        // Given
-        whenever(mockPredicate.accept(mockFragment)) doReturn false
-
-        // When
-        testedLifecycleCallbacks.onFragmentStarted(mockFragmentManager, mockFragment)
-
-        // Then
-        verifyNoInteractions(mockViewLoadingTimer)
-    }
-
-    @Test
-    fun `𝕄 notify viewLoadingTimer 𝕎 onFragmentResumed() {fragment not tracked}`() {
-        // Given
-        whenever(mockPredicate.accept(mockFragment)) doReturn false
-
-        // When
-        testedLifecycleCallbacks.onFragmentResumed(mockFragmentManager, mockFragment)
-
-        // Then
-        verifyNoInteractions(mockViewLoadingTimer)
-    }
-
-    @Test
-    fun `𝕄 notify viewLoadingTimer 𝕎 onActivityPaused() {fragment not tracked}`() {
-        // Given
-        whenever(mockPredicate.accept(mockFragment)) doReturn false
-
-        // When
-        testedLifecycleCallbacks.onFragmentPaused(mockFragmentManager, mockFragment)
-
-        // Then
-        verifyNoInteractions(mockViewLoadingTimer)
-    }
-
-    @Test
-    fun `𝕄 notify viewLoadingTimer 𝕎 onActivityDestroyed() {fragment not tracked}`() {
-        // Given
-        whenever(mockPredicate.accept(mockFragment)) doReturn false
-
-        // When
-        testedLifecycleCallbacks.onFragmentDestroyed(mockFragmentManager, mockFragment)
-
-        // Then
-        verifyNoInteractions(mockViewLoadingTimer)
-    }
-
-    // endregion
 
     // region Track RUM View
 
@@ -310,59 +170,38 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 start RUM View and update loading time 𝕎 onFragmentResumed() { first display }`(
-        @LongForgery(1L) loadingTime: Long
+    fun `𝕄 start RUM View 𝕎 onFragmentResumed() { first display }`(
     ) {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn true
-        whenever(mockViewLoadingTimer.getLoadingTime(mockFragment)) doReturn loadingTime
-        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockFragment)) doReturn true
 
         // When
         testedLifecycleCallbacks.onFragmentResumed(mockFragmentManager, mockFragment)
 
         // Then
-        inOrder(mockRumMonitor, mockAdvancedRumMonitor, mockViewLoadingTimer) {
-            verify(mockViewLoadingTimer).onFinishedLoading(mockFragment)
-            verify(mockRumMonitor).startView(
-                mockFragment,
-                mockFragment.resolveViewUrl(),
-                fakeAttributes
-            )
-            verify(mockAdvancedRumMonitor).updateViewLoadingTime(
-                mockFragment,
-                loadingTime,
-                ViewEvent.LoadingType.FRAGMENT_DISPLAY
-            )
-        }
+        verify(mockRumMonitor).startView(
+            mockFragment,
+            mockFragment.resolveViewUrl(),
+            fakeAttributes
+        )
     }
 
     @Test
-    fun `𝕄 start RUM View and update loading time 𝕎 onFragmentResumed() { redisplay }`(
-        @LongForgery(1L) loadingTime: Long
+    fun `𝕄 start RUM View 𝕎 onFragmentResumed() { redisplay }`(
     ) {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn true
-        whenever(mockViewLoadingTimer.getLoadingTime(mockFragment)) doReturn loadingTime
-        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockFragment)) doReturn false
 
         // When
         testedLifecycleCallbacks.onFragmentResumed(mockFragmentManager, mockFragment)
 
         // Then
-        inOrder(mockRumMonitor, mockAdvancedRumMonitor, mockViewLoadingTimer) {
-            verify(mockViewLoadingTimer).onFinishedLoading(mockFragment)
-            verify(mockRumMonitor).startView(
-                mockFragment,
-                mockFragment.resolveViewUrl(),
-                fakeAttributes
-            )
-            verify(mockAdvancedRumMonitor).updateViewLoadingTime(
-                mockFragment,
-                loadingTime,
-                ViewEvent.LoadingType.FRAGMENT_REDISPLAY
-            )
-        }
+        verify(mockRumMonitor).startView(
+            mockFragment,
+            mockFragment.resolveViewUrl(),
+            fakeAttributes
+        )
+
     }
 
     @Test
@@ -390,11 +229,11 @@ internal class OreoFragmentLifecycleCallbacksTest {
         testedLifecycleCallbacks.onFragmentResumed(mockFragmentManager, mockFragment)
 
         // Then
-        verifyNoInteractions(mockRumMonitor, mockViewLoadingTimer)
+        verifyNoInteractions(mockRumMonitor)
     }
 
     @Test
-    fun `𝕄 start RUM View and update loadingTime 𝕎 onFragmentResumed() {activity not tracked}`() {
+    fun `𝕄 start RUM View 𝕎 onFragmentResumed() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn false
 
@@ -402,7 +241,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
         testedLifecycleCallbacks.onFragmentResumed(mockFragmentManager, mockFragment)
 
         // Then
-        verifyNoInteractions(mockRumMonitor, mockViewLoadingTimer)
+        verifyNoInteractions(mockRumMonitor)
     }
 
     @Test
@@ -414,7 +253,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
         testedLifecycleCallbacks.onFragmentPaused(mockFragmentManager, mockFragment)
 
         // Then
-        verifyNoInteractions(mockRumMonitor, mockViewLoadingTimer)
+        verifyNoInteractions(mockRumMonitor)
     }
 
     // endregion
@@ -452,7 +291,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
         testedLifecycleCallbacks.onFragmentPaused(mock(), mockFragment)
         testedLifecycleCallbacks.onFragmentDestroyed(mock(), mockFragment)
 
-        verifyNoInteractions(mockGesturesTracker, mockRumMonitor, mockViewLoadingTimer)
+        verifyNoInteractions(mockGesturesTracker, mockRumMonitor)
     }
 
     @Test

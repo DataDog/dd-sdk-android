@@ -216,7 +216,7 @@ class NavigationViewTrackingStrategy(
         argumentsProvider,
         componentPredicate,
         rumMonitor = NoOpRumMonitor(),
-        advancedRumMonitor = AdvancedMonitorDecorator(advancedRumMonitor),
+        advancedRumMonitor = advancedRumMonitor,
         rumFeature = rumFeature
     ) {
         override fun resolveKey(fragment: Fragment): Any {
@@ -225,19 +225,6 @@ class NavigationViewTrackingStrategy(
 
         companion object {
             val NO_DESTINATION_FOUND = Any()
-        }
-    }
-
-    internal class AdvancedMonitorDecorator(private val advancedRumMonitor: AdvancedRumMonitor) :
-        AdvancedRumMonitor by advancedRumMonitor {
-        override fun updateViewLoadingTime(
-            key: Any,
-            loadingTimeInNs: Long,
-            type: ViewEvent.LoadingType
-        ) {
-            if (key != NavControllerFragmentLifecycleCallbacks.NO_DESTINATION_FOUND) {
-                advancedRumMonitor.updateViewLoadingTime(key, loadingTimeInNs, type)
-            }
         }
     }
 }

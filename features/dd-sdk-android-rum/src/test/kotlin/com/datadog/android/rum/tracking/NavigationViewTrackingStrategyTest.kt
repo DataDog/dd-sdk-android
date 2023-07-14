@@ -26,7 +26,6 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
@@ -89,9 +88,6 @@ internal class NavigationViewTrackingStrategyTest {
     lateinit var mockFragmentManager: FragmentManager
 
     lateinit var mockNavDestination: NavDestination
-
-    @Mock
-    lateinit var mockViewLoadingTimer: ViewLoadingTimer
 
     @Mock
     lateinit var mockFragment: Fragment
@@ -448,45 +444,10 @@ internal class NavigationViewTrackingStrategyTest {
     // FragmentLifecycleCallbacks
 
     @Test
-    fun `will update Rum event time when fragment resumed with the resolved key`(forge: Forge) {
-        // Given
-        whenever(mockNavController.currentDestination).thenReturn(mockNavDestination)
-        val expectedLoadingTime = forge.aLong()
-        val firsTimeLoading = forge.aBool()
-        val expectedLoadingType =
-            if (firsTimeLoading) {
-                ViewEvent.LoadingType.FRAGMENT_DISPLAY
-            } else {
-                ViewEvent.LoadingType.FRAGMENT_REDISPLAY
-            }
-        whenever(mockViewLoadingTimer.getLoadingTime(mockNavDestination))
-            .thenReturn(expectedLoadingTime)
-        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockNavDestination))
-            .thenReturn(firsTimeLoading)
-        val callback = setupFragmentCallbacks()
-
-        // When
-        callback.onFragmentResumed(mock(), mockFragment)
-
-        // Then
-        verify(rumMonitor.mockInstance as? AdvancedRumMonitor)?.updateViewLoadingTime(
-            mockNavDestination,
-            expectedLoadingTime,
-            expectedLoadingType
-        )
-    }
-
-    @Test
-    fun `will do nothing when fragment resumed is NavHostFragment`(forge: Forge) {
+    fun `will do nothing when fragment resumed is NavHostFragment`() {
         // Given
         val navHostFragment: NavHostFragment = mock()
         whenever(mockNavController.currentDestination).thenReturn(mockNavDestination)
-        val expectedLoadingTime = forge.aLong()
-        val firsTimeLoading = forge.aBool()
-        whenever(mockViewLoadingTimer.getLoadingTime(mockNavDestination))
-            .thenReturn(expectedLoadingTime)
-        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockNavDestination))
-            .thenReturn(firsTimeLoading)
         val callback = setupFragmentCallbacks()
 
         // When
@@ -497,15 +458,9 @@ internal class NavigationViewTrackingStrategyTest {
     }
 
     @Test
-    fun `will do nothing when there is no currentDestination`(forge: Forge) {
+    fun `will do nothing when there is no currentDestination`() {
         // Given
         whenever(mockNavController.currentDestination).thenReturn(null)
-        val expectedLoadingTime = forge.aLong()
-        val firsTimeLoading = forge.aBool()
-        whenever(mockViewLoadingTimer.getLoadingTime(mockNavDestination))
-            .thenReturn(expectedLoadingTime)
-        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockNavDestination))
-            .thenReturn(firsTimeLoading)
         val callback = setupFragmentCallbacks()
 
         // When
@@ -525,7 +480,6 @@ internal class NavigationViewTrackingStrategyTest {
         // Then
         return argumentCaptor<NavLifecycleCallbacks> {
             verify(mockFragmentManager).registerFragmentLifecycleCallbacks(capture(), eq(true))
-            firstValue.viewLoadingTimer = mockViewLoadingTimer
         }.firstValue
     }
 

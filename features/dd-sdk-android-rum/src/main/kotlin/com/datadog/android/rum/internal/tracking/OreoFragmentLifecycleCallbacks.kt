@@ -28,7 +28,6 @@ import com.datadog.android.rum.utils.runIfValid
 internal class OreoFragmentLifecycleCallbacks(
     private val argumentsProvider: (Fragment) -> Map<String, Any?>,
     private val componentPredicate: ComponentPredicate<Fragment>,
-    private val viewLoadingTimer: ViewLoadingTimer = ViewLoadingTimer(),
     private val rumFeature: RumFeature,
     private val rumMonitor: RumMonitor,
     private val advancedRumMonitor: AdvancedRumMonitor,
@@ -79,39 +78,14 @@ internal class OreoFragmentLifecycleCallbacks(
         }
     }
 
-    override fun onFragmentAttached(fm: FragmentManager?, f: Fragment, context: Context?) {
-        super.onFragmentAttached(fm, f, context)
-        if (isNotAViewFragment(f)) return
-        componentPredicate.runIfValid(f, internalLogger) {
-            viewLoadingTimer.onCreated(it)
-        }
-    }
-
-    override fun onFragmentStarted(fm: FragmentManager?, f: Fragment) {
-        super.onFragmentStarted(fm, f)
-        if (isNotAViewFragment(f)) return
-        componentPredicate.runIfValid(f, internalLogger) {
-            viewLoadingTimer.onStartLoading(it)
-        }
-    }
-
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
         if (isNotAViewFragment(f)) return
 
         componentPredicate.runIfValid(f, internalLogger) {
             val viewName = componentPredicate.resolveViewName(f)
-            viewLoadingTimer.onFinishedLoading(f)
             @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
             rumMonitor.startView(it, viewName, argumentsProvider(it))
-            val loadingTime = viewLoadingTimer.getLoadingTime(it)
-            if (loadingTime != null) {
-                advancedRumMonitor.updateViewLoadingTime(
-                    it,
-                    loadingTime,
-                    resolveLoadingType(viewLoadingTimer.isFirstTimeLoading(it))
-                )
-            }
         }
     }
 
@@ -121,16 +95,6 @@ internal class OreoFragmentLifecycleCallbacks(
 
         componentPredicate.runIfValid(f, internalLogger) {
             rumMonitor.stopView(it)
-            viewLoadingTimer.onPaused(it)
-        }
-    }
-
-    override fun onFragmentDestroyed(fm: FragmentManager?, f: Fragment) {
-        super.onFragmentDestroyed(fm, f)
-        if (isNotAViewFragment(f)) return
-
-        componentPredicate.runIfValid(f, internalLogger) {
-            viewLoadingTimer.onDestroyed(it)
         }
     }
 

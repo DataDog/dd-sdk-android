@@ -94,8 +94,6 @@ internal open class RumViewScope(
     internal var pendingFrozenFrameCount: Long = 0
 
     private var version: Long = 1
-    private var loadingTime: Long? = null
-    private var loadingType: ViewEvent.LoadingType? = null
     internal val customTimings: MutableMap<String, Long> = mutableMapOf()
     internal val featureFlags: MutableMap<String, Any?> = mutableMapOf()
 
@@ -172,7 +170,6 @@ internal open class RumViewScope(
             is RumRawEvent.AddFeatureFlagEvaluation -> onAddFeatureFlagEvaluation(event, writer)
 
             is RumRawEvent.ApplicationStarted -> onApplicationStarted(event, writer)
-            is RumRawEvent.UpdateViewLoadingTime -> onUpdateViewLoadingTime(event, writer)
             is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, writer)
             is RumRawEvent.KeepAlive -> onKeepAlive(event, writer)
 
@@ -659,8 +656,6 @@ internal open class RumViewScope(
 
         // make a local copy, so that closure captures the state as of now
         val eventVersion = version
-        val eventLoadingTime = loadingTime
-        val eventLoadingType = loadingType
 
         val eventActionCount = actionCount
         val eventErrorCount = errorCount
@@ -708,8 +703,6 @@ internal open class RumViewScope(
                         id = currentViewId,
                         name = rumContext.viewName,
                         url = rumContext.viewUrl.orEmpty(),
-                        loadingTime = eventLoadingTime,
-                        loadingType = eventLoadingType,
                         timeSpent = updatedDurationNs,
                         action = ViewEvent.Action(eventActionCount),
                         resource = ViewEvent.Resource(eventResourceCount),
@@ -819,20 +812,6 @@ internal open class RumViewScope(
     ): MutableMap<String, Any?> {
         return attributes.toMutableMap()
             .apply { putAll(GlobalRumMonitor.get(sdkCore).getAttributes()) }
-    }
-
-    @WorkerThread
-    private fun onUpdateViewLoadingTime(
-        event: RumRawEvent.UpdateViewLoadingTime,
-        writer: DataWriter<Any>
-    ) {
-        val startedKey = keyRef.get()
-        if (event.key != startedKey) {
-            return
-        }
-        loadingTime = event.loadingTime
-        loadingType = event.loadingType
-        sendViewUpdate(event, writer)
     }
 
     @Suppress("LongMethod")

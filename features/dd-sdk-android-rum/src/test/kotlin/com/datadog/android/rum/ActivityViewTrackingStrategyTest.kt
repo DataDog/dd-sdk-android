@@ -9,7 +9,6 @@ package com.datadog.android.rum
 import android.app.Activity
 import android.os.Bundle
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ComponentPredicate
@@ -47,16 +46,12 @@ internal class ActivityViewTrackingStrategyTest :
     ActivityLifecycleTrackingStrategyTest<ActivityViewTrackingStrategy>() {
 
     @Mock
-    lateinit var mockViewLoadingTimer: ViewLoadingTimer
-
-    @Mock
     lateinit var mockPredicate: ComponentPredicate<Activity>
 
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
         testedStrategy = ActivityViewTrackingStrategy(true, mockPredicate)
-        testedStrategy.viewLoadingTimer = mockViewLoadingTimer
     }
 
     override fun createInstance(forge: Forge): ActivityViewTrackingStrategy {
@@ -95,170 +90,6 @@ internal class ActivityViewTrackingStrategyTest :
             )
         )
     }
-
-    // region Track View Loading Time
-
-    @Test
-    fun `𝕄 notify viewLoadingTimer 𝕎 onActivityCreated()`() {
-        // Given
-        whenever(mockPredicate.accept(mockActivity)) doReturn true
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
-
-        // When
-        testedStrategy.onActivityCreated(mockActivity, null)
-
-        // Then
-        verify(mockViewLoadingTimer).onCreated(mockActivity)
-    }
-
-    @Test
-    fun `𝕄 notify viewLoadingTimer 𝕎 onActivityStarted()`() {
-        // Given
-        whenever(mockPredicate.accept(mockActivity)) doReturn true
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
-
-        // When
-        testedStrategy.onActivityStarted(mockActivity)
-
-        // Then
-        verify(mockViewLoadingTimer).onStartLoading(mockActivity)
-    }
-
-    @Test
-    fun `𝕄 notify viewLoadingTimer 𝕎 onActivityResumed()`() {
-        // Given
-        whenever(mockPredicate.accept(mockActivity)) doReturn true
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
-
-        // When
-        testedStrategy.onActivityResumed(mockActivity)
-
-        // Then
-        verify(mockViewLoadingTimer).onFinishedLoading(mockActivity)
-    }
-
-    @Test
-    fun `𝕄 notify viewLoadingTimer 𝕎 onActivityPostResumed()`() {
-        // Given
-        whenever(mockPredicate.accept(mockActivity)) doReturn true
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
-
-        // When
-        testedStrategy.onActivityPostResumed(mockActivity)
-
-        // Then
-        verify(mockViewLoadingTimer).onFinishedLoading(mockActivity)
-    }
-
-    @Test
-    fun `𝕄 notify viewLoadingTimer 𝕎 onActivityPaused()`() {
-        // Given
-        whenever(mockPredicate.accept(mockActivity)) doReturn true
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
-
-        // When
-        testedStrategy.onActivityPaused(mockActivity)
-
-        // Then
-        verify(mockViewLoadingTimer).onPaused(mockActivity)
-    }
-
-    @Test
-    fun `𝕄 notify viewLoadingTimer 𝕎 onActivityDestroyed()`() {
-        // Given
-        whenever(mockPredicate.accept(mockActivity)) doReturn true
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
-
-        // When
-        testedStrategy.onActivityDestroyed(mockActivity)
-
-        // Then
-        verify(mockViewLoadingTimer).onDestroyed(mockActivity)
-    }
-
-    // endregion
-
-    // region Track View Loading Time (not tracked)
-
-    @Test
-    fun `𝕄 do nothing 𝕎 onActivityCreated() {activity not tracked}`() {
-        // Given
-        whenever(mockPredicate.accept(mockActivity)) doReturn false
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
-
-        // When
-        testedStrategy.onActivityCreated(mockActivity, null)
-
-        // Then
-        verifyNoInteractions(mockViewLoadingTimer)
-    }
-
-    @Test
-    fun `𝕄 do nothing 𝕎 onActivityStarted() {activity not tracked}`() {
-        // Given
-        whenever(mockPredicate.accept(mockActivity)) doReturn false
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
-
-        // When
-        testedStrategy.onActivityStarted(mockActivity)
-
-        // Then
-        verifyNoInteractions(mockViewLoadingTimer)
-    }
-
-    @Test
-    fun `𝕄 do nothing 𝕎 onActivityResumed() {activity not tracked}`() {
-        // Given
-        whenever(mockPredicate.accept(mockActivity)) doReturn false
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
-
-        // When
-        testedStrategy.onActivityResumed(mockActivity)
-
-        // Then
-        verifyNoInteractions(mockViewLoadingTimer)
-    }
-
-    @Test
-    fun `𝕄 do nothing 𝕎 onActivityPostResumed() {activity not tracked}`() {
-        // Given
-        whenever(mockPredicate.accept(mockActivity)) doReturn false
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
-
-        // When
-        testedStrategy.onActivityPostResumed(mockActivity)
-
-        // Then
-        verifyNoInteractions(mockViewLoadingTimer)
-    }
-
-    @Test
-    fun `𝕄 do nothing 𝕎 onActivityPaused() {activity not tracked}`() {
-        // Given
-        whenever(mockPredicate.accept(mockActivity)) doReturn false
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
-
-        // When
-        testedStrategy.onActivityPaused(mockActivity)
-
-        // Then
-        verifyNoInteractions(mockViewLoadingTimer)
-    }
-
-    @Test
-    fun `𝕄 do nothing 𝕎 onActivityDestroyed() {activity not tracked}`() {
-        // Given
-        whenever(mockPredicate.accept(mockActivity)) doReturn false
-        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
-
-        // When
-        testedStrategy.onActivityDestroyed(mockActivity)
-
-        // Then
-        verifyNoInteractions(mockViewLoadingTimer)
-    }
-
-    // endregion
 
     // region Track RUM View
 
@@ -385,55 +216,33 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 stop RUM View and update loading time 𝕎 onActivityPaused() { first display }`(
-        @LongForgery(1L) loadingTime: Long
+    fun `𝕄 stop RUM View 𝕎 onActivityPaused() { first display }`(
     ) {
         // Given
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
-        whenever(mockViewLoadingTimer.getLoadingTime(mockActivity)) doReturn loadingTime
-        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockActivity)) doReturn true
         testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityPaused(mockActivity)
 
         // Then
-        inOrder(rumMonitor.mockInstance, mockViewLoadingTimer) {
-            verify(rumMonitor.mockInstance as AdvancedRumMonitor).updateViewLoadingTime(
-                mockActivity,
-                loadingTime,
-                ViewEvent.LoadingType.ACTIVITY_DISPLAY
-            )
-            verify(rumMonitor.mockInstance).stopView(mockActivity, emptyMap())
-            verify(mockViewLoadingTimer).onPaused(mockActivity)
-        }
+        verify(rumMonitor.mockInstance).stopView(mockActivity, emptyMap())
     }
 
     @Test
-    fun `𝕄 stop RUM View and update loading time 𝕎 onActivityPaused() { redisplay }`(
-        @LongForgery(1L) loadingTime: Long
+    fun `𝕄 stop RUM View 𝕎 onActivityPaused() { redisplay }`(
     ) {
         // Given
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
-        whenever(mockViewLoadingTimer.getLoadingTime(mockActivity)) doReturn loadingTime
-        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockActivity)) doReturn false
         testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
         testedStrategy.onActivityPaused(mockActivity)
 
         // Then
-        inOrder(rumMonitor.mockInstance, mockViewLoadingTimer) {
-            verify(rumMonitor.mockInstance as AdvancedRumMonitor).updateViewLoadingTime(
-                mockActivity,
-                loadingTime,
-                ViewEvent.LoadingType.ACTIVITY_REDISPLAY
-            )
-            verify(rumMonitor.mockInstance).stopView(mockActivity, emptyMap())
-            verify(mockViewLoadingTimer).onPaused(mockActivity)
-        }
+        verify(rumMonitor.mockInstance).stopView(mockActivity, emptyMap())
     }
 
     // endregion
@@ -454,7 +263,7 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 update RUM View loading time 𝕎 onActivityPaused() {activity not tracked}`() {
+    fun `𝕄 update RUM View 𝕎 onActivityPaused() {activity not tracked}`() {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn false
         testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
@@ -463,7 +272,7 @@ internal class ActivityViewTrackingStrategyTest :
         testedStrategy.onActivityPaused(mockActivity)
 
         // Then
-        verifyNoInteractions(rumMonitor.mockInstance, mockViewLoadingTimer)
+        verifyNoInteractions(rumMonitor.mockInstance)
     }
     // endregion
 

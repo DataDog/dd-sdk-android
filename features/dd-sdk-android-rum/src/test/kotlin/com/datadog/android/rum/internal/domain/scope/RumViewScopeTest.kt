@@ -5787,168 +5787,6 @@ internal class RumViewScopeTest {
 
     // region Loading Time
 
-    @ParameterizedTest
-    @EnumSource(ViewEvent.LoadingType::class)
-    fun `𝕄 send event 𝕎 handleEvent(UpdateViewLoadingTime) on active view`(
-        loadingType: ViewEvent.LoadingType,
-        forge: Forge
-    ) {
-        // Given
-        val loadingTime = forge.aLong(min = 1)
-
-        // When
-        val result = testedScope.handleEvent(
-            RumRawEvent.UpdateViewLoadingTime(fakeKey, loadingTime, loadingType),
-            mockWriter
-        )
-
-        // Then
-        argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertThat(lastValue)
-                .apply {
-                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
-                    hasUrl(fakeUrl)
-                    hasDurationGreaterThan(1)
-                    hasLoadingTime(loadingTime)
-                    hasLoadingType(loadingType)
-                    hasVersion(2)
-                    hasErrorCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasFrustrationCount(0)
-                    hasLongTaskCount(0)
-                    hasFrozenFrameCount(0)
-                    hasCpuMetric(null)
-                    hasMemoryMetric(null, null)
-                    hasRefreshRateMetric(null, null)
-                    isActive(true)
-                    isSlowRendered(false)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasViewId(testedScope.viewId)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasLiteSessionPlan()
-                    hasReplay(fakeHasReplay)
-                    hasReplayStats(fakeReplayStats)
-                    containsExactlyContextAttributes(fakeAttributes)
-                    hasSource(fakeSourceViewEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                    hasSessionActive(fakeParentContext.isSessionActive)
-                }
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isSameAs(testedScope)
-    }
-
-    @ParameterizedTest
-    @EnumSource(ViewEvent.LoadingType::class)
-    fun `𝕄 send event 𝕎 handleEvent(UpdateViewLoadingTime) on stopped view`(
-        loadingType: ViewEvent.LoadingType,
-        forge: Forge
-    ) {
-        // Given
-        testedScope.stopped = true
-        val loadingTime = forge.aLong(min = 1)
-
-        // When
-        val result = testedScope.handleEvent(
-            RumRawEvent.UpdateViewLoadingTime(fakeKey, loadingTime, loadingType),
-            mockWriter
-        )
-
-        // Then
-        argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertThat(lastValue)
-                .apply {
-                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
-                    hasUrl(fakeUrl)
-                    hasDurationGreaterThan(1)
-                    hasLoadingTime(loadingTime)
-                    hasLoadingType(loadingType)
-                    hasVersion(2)
-                    hasErrorCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasFrustrationCount(0)
-                    hasLongTaskCount(0)
-                    hasFrozenFrameCount(0)
-                    hasCpuMetric(null)
-                    hasMemoryMetric(null, null)
-                    hasRefreshRateMetric(null, null)
-                    isActive(false)
-                    isSlowRendered(false)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasViewId(testedScope.viewId)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasLiteSessionPlan()
-                    hasReplay(fakeHasReplay)
-                    hasReplayStats(fakeReplayStats)
-                    containsExactlyContextAttributes(fakeAttributes)
-                    hasSource(fakeSourceViewEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                    hasSessionActive(fakeParentContext.isSessionActive)
-                }
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNull()
-    }
-
-    @ParameterizedTest
-    @EnumSource(ViewEvent.LoadingType::class)
-    fun `𝕄 do nothing 𝕎 handleEvent(UpdateViewLoadingTime) with different key`(
-        loadingType: ViewEvent.LoadingType,
-        forge: Forge
-    ) {
-        // Given
-        val differentKey = fakeKey + "different".toByteArray()
-        val loadingTime = forge.aLong(min = 1)
-
-        // When
-        val result = testedScope.handleEvent(
-            RumRawEvent.UpdateViewLoadingTime(differentKey, loadingTime, loadingType),
-            mockWriter
-        )
-
-        // Then
-        verifyNoInteractions(mockWriter)
-        assertThat(result).isSameAs(testedScope)
-    }
-
     @Test
     fun `𝕄 send event with custom timing 𝕎 handleEvent(AddCustomTiming) on active view`(
         forge: Forge
@@ -6598,11 +6436,6 @@ internal class RumViewScopeTest {
             RumRawEvent.LongTaskDropped(forge.anAlphabeticalString()),
             RumRawEvent.ErrorDropped(forge.anAlphabeticalString()),
             RumRawEvent.ActionDropped(forge.anAlphabeticalString()),
-            RumRawEvent.UpdateViewLoadingTime(
-                forge.anAlphabeticalString(),
-                forge.aLong(),
-                forge.aValueFrom(ViewEvent.LoadingType::class.java)
-            ),
             RumRawEvent.AddCustomTiming(forge.anAlphabeticalString()),
             RumRawEvent.KeepAlive()
         )
@@ -7242,15 +7075,6 @@ internal class RumViewScopeTest {
                     RumRawEvent.AddCustomTiming(
                         fakeName,
                         eventTime = eventTime
-                    ),
-                    fakeKey
-                ),
-                RumRawEventData(
-                    RumRawEvent.UpdateViewLoadingTime(
-                        fakeKey,
-                        forge.aLong(),
-                        forge.aValueFrom(ViewEvent.LoadingType::class.java),
-                        eventTime
                     ),
                     fakeKey
                 ),

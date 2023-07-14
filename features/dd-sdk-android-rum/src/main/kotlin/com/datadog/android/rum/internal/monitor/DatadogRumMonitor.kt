@@ -346,16 +346,6 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun updateViewLoadingTime(
-        key: Any,
-        loadingTimeInNs: Long,
-        type: ViewEvent.LoadingType
-    ) {
-        handleEvent(
-            RumRawEvent.UpdateViewLoadingTime(key, loadingTimeInNs, type)
-        )
-    }
-
     override fun addTiming(name: String) {
         handleEvent(
             RumRawEvent.AddCustomTiming(name)

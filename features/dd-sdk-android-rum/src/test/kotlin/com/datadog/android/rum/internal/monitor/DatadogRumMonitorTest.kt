@@ -574,30 +574,6 @@ internal class DatadogRumMonitorTest {
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
-    @ParameterizedTest
-    @EnumSource(ViewEvent.LoadingType::class)
-    fun `M delegate event to rootScope W updateViewLoadingTime()`(
-        loadingType: ViewEvent.LoadingType,
-        forge: Forge
-    ) {
-        val key = forge.anAsciiString()
-        val loadingTime = forge.aLong(min = 1)
-
-        testedMonitor.updateViewLoadingTime(key, loadingTime, loadingType)
-        Thread.sleep(PROCESSING_DELAY)
-
-        argumentCaptor<RumRawEvent> {
-            verify(mockScope).handleEvent(capture(), same(mockWriter))
-
-            val event = firstValue
-            check(event is RumRawEvent.UpdateViewLoadingTime)
-            assertThat(event.key).isEqualTo(key)
-            assertThat(event.loadingTime).isEqualTo(loadingTime)
-            assertThat(event.loadingType).isEqualTo(loadingType)
-        }
-        verifyNoMoreInteractions(mockScope, mockWriter)
-    }
-
     @Test
     fun `M delegate event to rootScope W resetSession()`() {
         testedMonitor.resetSession()

@@ -25,8 +25,6 @@ internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
 
     fun sendWebViewEvent()
 
-    fun updateViewLoadingTime(key: Any, loadingTimeInNs: Long, type: ViewEvent.LoadingType)
-
     fun addLongTask(durationNs: Long, target: String)
 
     fun addCrash(

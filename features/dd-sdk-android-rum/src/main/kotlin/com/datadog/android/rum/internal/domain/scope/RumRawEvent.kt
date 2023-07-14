@@ -110,13 +110,6 @@ internal sealed class RumRawEvent {
         val sourceType: RumErrorSourceType = RumErrorSourceType.ANDROID
     ) : RumRawEvent()
 
-    internal data class UpdateViewLoadingTime(
-        val key: Any,
-        val loadingTime: Long,
-        val loadingType: ViewEvent.LoadingType,
-        override val eventTime: Time = Time()
-    ) : RumRawEvent()
-
     internal data class ResourceSent(
         val viewId: String,
         override val eventTime: Time = Time()
