@@ -55,7 +55,7 @@ class Base64Serializer private constructor(
             return
         }
 
-        val bitmap = drawableUtils.createBitmapFromDrawable(drawable, displayMetrics)
+        val bitmap = drawableUtils.createBitmapOfApproxSizeFromDrawable(drawable, displayMetrics)
 
         if (bitmap == null) {
             asyncImageProcessingCallback?.finishProcessingImage()
@@ -73,10 +73,6 @@ class Base64Serializer private constructor(
     ) {
         this.asyncImageProcessingCallback = asyncImageProcessingCallback
     }
-
-    @VisibleForTesting
-    internal fun isOverSizeLimit(bitmapSize: Int): Boolean =
-        bitmapSize > BITMAP_SIZE_LIMIT_BYTES
 
     // endregion
 
@@ -120,25 +116,22 @@ class Base64Serializer private constructor(
 
     @WorkerThread
     private fun convertBmpToBase64(drawable: Drawable, bitmap: Bitmap): String {
+        val base64Result: String
+
         val byteArrayOutputStream = webPImageCompression.compressBitmapToStream(bitmap)
 
-        if (isOverSizeLimit(byteArrayOutputStream.size())) {
-            return ""
-        }
-
-        val base64String: String
         try {
-            base64String = base64Utils.serializeToBase64String(byteArrayOutputStream)
+            base64Result = base64Utils.serializeToBase64String(byteArrayOutputStream)
 
-            if (base64String.isNotEmpty()) {
+            if (base64Result.isNotEmpty()) {
                 // if we got a base64 string then cache it
-                base64LruCache.put(drawable, base64String)
+                base64LruCache.put(drawable, base64Result)
             }
         } finally {
             bitmap.recycle()
         }
 
-        return base64String
+        return base64Result
     }
 
     private fun finalizeRecordedDataItem(
@@ -208,9 +201,6 @@ class Base64Serializer private constructor(
     // endregion
 
     internal companion object {
-        @VisibleForTesting
-        internal const val BITMAP_SIZE_LIMIT_BYTES = 15000 // 15 kbs
-
         internal const val DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS =
             "Cache instance does not implement ComponentCallbacks2"
 
