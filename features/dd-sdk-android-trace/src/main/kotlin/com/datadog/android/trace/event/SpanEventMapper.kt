@@ -20,7 +20,8 @@ interface SpanEventMapper : EventMapper<SpanEvent> {
      * attributes inside any event [SpanEvent] before it gets serialised.
      *
      * @param event the event to be serialised
-     * @return the modified event [SpanEvent]
+     * @return the modified event [SpanEvent]. If the object returned has a different reference
+     * than the object which was passed to the function, it will be dropped and will not be serialised.
      *
      */
     override fun map(event: SpanEvent): SpanEvent

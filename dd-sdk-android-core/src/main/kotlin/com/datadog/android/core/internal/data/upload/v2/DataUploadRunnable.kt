@@ -33,7 +33,7 @@ internal class DataUploadRunnable(
     private val contextProvider: ContextProvider,
     private val networkInfoProvider: NetworkInfoProvider,
     private val systemInfoProvider: SystemInfoProvider,
-    uploadFrequency: UploadFrequency,
+    internal val uploadFrequency: UploadFrequency,
     private val batchUploadWaitTimeoutMs: Long = CoreFeature.NETWORK_TIMEOUT_MS,
     private val internalLogger: InternalLogger
 ) : UploadRunnable {

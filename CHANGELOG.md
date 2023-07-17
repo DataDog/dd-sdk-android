@@ -1,6 +1,24 @@
+# 2.0.0-beta2 / 2023-07-17
+
+This is a beta release of SDK v2. Compared to SDK v1 it contains breaking changes related to the SDK setup and APIs. See the [migration guide](https://github.com/DataDog/dd-sdk-android/blob/8d1f9abb101039abcd44ffed2823655c33e5129f/MIGRATION.MD) for details.
+
+Changes in comparison with `2.0.0-beta1`:
+
+* [IMPROVEMENT] Global: Provide the `uploadFrequency` per feature. See [#1533](https://github.com/DataDog/dd-sdk-android/pull/1533)
+* [IMPROVEMENT] RUM: Update documentation of `ViewEventMapper`. See [#1537](https://github.com/DataDog/dd-sdk-android/pull/1537)
+* [IMPROVEMENT] RUM: Support `navHost` hosted by `FragmentContainerView` for `NavigationViewTrackingStrategy`. See [#1538](https://github.com/DataDog/dd-sdk-android/pull/1538)
+* [IMPROVEMENT] Session Replay: Always listen and react to RUM session state. See [#1539](https://github.com/DataDog/dd-sdk-android/pull/1539)
+* [IMPROVEMENT] Session Replay: Remove explicit dependency on RUM module from Session Replay. See [#1541](https://github.com/DataDog/dd-sdk-android/pull/1541)
+* [IMPROVEMENT] Update Compose Navigation version to 2.6.0. See [#1542](https://github.com/DataDog/dd-sdk-android/pull/1542)
+* [IMPROVEMENT] Don't reexport `OkHttp` from `Glide`. See [#1543](https://github.com/DataDog/dd-sdk-android/pull/1543)
+
+# 1.19.3 / 2023-07-11
+
+* [IMPROVEMENT] RUM: Introduce known file cache and cleanup throttling in `BatchFileOrchestrator` in order to reduce the number of syscalls. See [#1506](https://github.com/DataDog/dd-sdk-android/pull/1506)
+
 # 2.0.0-beta1 / 2023-07-07
 
-This is the first release of SDK v2. It contains breaking changes related to the SDK setup and APIs. See the [migration guide](https://github.com/DataDog/dd-sdk-android/blob/d6877966391bfe979eda18a5c7cb0bb04ef52659/MIGRATION.MD) for details.
+This is the first release of SDK v2. It contains breaking changes related to the SDK setup and APIs. See the [migration guide](https://github.com/DataDog/dd-sdk-android/blob/026fc30f5c28226b244a0f6884841cbcac9c864b/MIGRATION.MD) for details.
 
 Functional changes in comparison with `1.19.2`:
 

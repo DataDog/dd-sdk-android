@@ -80,6 +80,9 @@ internal class NavigationViewTrackingStrategyTest {
     lateinit var mockNavView: View
 
     @Mock
+    lateinit var mockNavHostFragment: NavHostFragment
+
+    @Mock
     lateinit var mockNavController: NavController
 
     @Mock
@@ -99,7 +102,7 @@ internal class NavigationViewTrackingStrategyTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
-    lateinit var mockNavigationKey: NavigationViewTrackingStrategy.NavigationKey
+    private lateinit var mockNavigationKey: NavigationViewTrackingStrategy.NavigationKey
 
     @IntForgery
     var fakeNavViewId: Int = 0
@@ -110,8 +113,15 @@ internal class NavigationViewTrackingStrategyTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockActivity.supportFragmentManager).thenReturn(mockFragmentManager)
-        doReturn(mockNavView).whenever(mockActivity).findViewById<View>(fakeNavViewId)
-        whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn mockNavController
+        if (forge.aBool()) {
+            // nav host in FragmentContainerView case
+            whenever(mockFragmentManager.findFragmentById(fakeNavViewId)) doReturn mockNavHostFragment
+            whenever(mockNavHostFragment.navController) doReturn mockNavController
+        } else {
+            // nav host in fragment case
+            doReturn(mockNavView).whenever(mockActivity).findViewById<View>(fakeNavViewId)
+            whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn mockNavController
+        }
         mockNavDestination = mockNavDestination(forge, fakeDestinationName)
 
         val mockRumFeatureScope = mock<FeatureScope>()
@@ -177,13 +187,30 @@ internal class NavigationViewTrackingStrategyTest {
     }
 
     @Test
-    fun `registers navigation listener when nav controller added after activity started`() {
+    fun `registers navigation listener when nav controller added after activity started {nav + fragment}`() {
+        whenever(mockFragmentManager.findFragmentById(fakeNavViewId)) doReturn null
+
+        whenever(mockActivity.findViewById<View>(fakeNavViewId)) doReturn mockNavView
         whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn null
         testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
         testedStrategy.onActivityStarted(mockActivity)
         verifyNoInteractions(mockNavController)
 
         whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn mockNavController
+        testedStrategy.startTracking()
+        verify(mockNavController).addOnDestinationChangedListener(testedStrategy)
+    }
+
+    @Test
+    fun `registers navigation listener when nav controller added after activity started{nav + container view}`() {
+        whenever(mockFragmentManager.findFragmentById(fakeNavViewId)) doReturn null
+        whenever(mockActivity.findViewById<View>(fakeNavViewId)) doReturn null
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
+        testedStrategy.onActivityStarted(mockActivity)
+        verifyNoInteractions(mockNavController)
+
+        whenever(mockFragmentManager.findFragmentById(fakeNavViewId)) doReturn mockNavHostFragment
+        whenever(mockNavHostFragment.navController) doReturn mockNavController
         testedStrategy.startTracking()
         verify(mockNavController).addOnDestinationChangedListener(testedStrategy)
     }
@@ -258,6 +285,7 @@ internal class NavigationViewTrackingStrategyTest {
 
     @Test
     fun `does nothing onActivityStarted when no NavController present`() {
+        whenever(mockFragmentManager.findFragmentById(fakeNavViewId)) doReturn null
         whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn null
 
         testedStrategy.onActivityStarted(mockActivity)
@@ -267,6 +295,7 @@ internal class NavigationViewTrackingStrategyTest {
 
     @Test
     fun `does nothing onActivityStopped when no NavController present`() {
+        whenever(mockFragmentManager.findFragmentById(fakeNavViewId)) doReturn null
         whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn null
 
         testedStrategy.onActivityStopped(mockActivity)
@@ -276,6 +305,7 @@ internal class NavigationViewTrackingStrategyTest {
 
     @Test
     fun `does nothing onActivityPaused when no NavController present`() {
+        whenever(mockFragmentManager.findFragmentById(fakeNavViewId)) doReturn null
         whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn null
         testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
@@ -505,14 +535,14 @@ internal class NavigationViewTrackingStrategyTest {
     ): NavDestination {
         return forge.anElementFrom(
             mock<FragmentNavigator.Destination>().apply {
-                whenever(getClassName()) doReturn name
+                whenever(className) doReturn name
             },
             mock<DialogFragmentNavigator.Destination>().apply {
-                whenever(getClassName()) doReturn name
+                whenever(className) doReturn name
             },
             mock<ActivityNavigator.Destination>().apply {
                 val componentName = ComponentName("", name)
-                whenever(getComponent()) doReturn componentName
+                whenever(component) doReturn componentName
             }
         )
     }

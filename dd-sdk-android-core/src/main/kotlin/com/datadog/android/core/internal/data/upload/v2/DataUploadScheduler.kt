@@ -28,7 +28,7 @@ internal class DataUploadScheduler(
     private val internalLogger: InternalLogger
 ) : UploadScheduler {
 
-    private val runnable = DataUploadRunnable(
+    internal val runnable = DataUploadRunnable(
         scheduledThreadPoolExecutor,
         storage,
         dataUploader,
