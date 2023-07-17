@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
@@ -66,7 +67,7 @@ internal class SdkFeature(
         wrappedFeature.onInitialize(context)
 
         if (wrappedFeature is StorageBackedFeature) {
-            setupUploader(wrappedFeature.requestFactory)
+            setupUploader(wrappedFeature.requestFactory, wrappedFeature.storageConfiguration)
         }
 
         if (wrappedFeature is TrackingConsentProviderCallback) {
@@ -142,7 +143,25 @@ internal class SdkFeature(
 
     // region Internal
 
-    private fun setupUploader(requestFactory: RequestFactory) {
+    private fun resolveBatchingDelay(
+        coreFeature: CoreFeature,
+        featureStorageConfiguration: FeatureStorageConfiguration
+    ): Long {
+        return featureStorageConfiguration.batchSize?.windowDurationMs
+            ?: coreFeature.batchSize.windowDurationMs
+    }
+
+    private fun resolveUploadFrequency(
+        coreFeature: CoreFeature,
+        featureStorageConfiguration: FeatureStorageConfiguration
+    ): UploadFrequency {
+        return featureStorageConfiguration.uploadFrequency ?: coreFeature.uploadFrequency
+    }
+
+    private fun setupUploader(
+        requestFactory: RequestFactory,
+        storageConfiguration: FeatureStorageConfiguration
+    ) {
         uploadScheduler = if (coreFeature.isMainProcess) {
             uploader = createUploader(requestFactory)
             DataUploadScheduler(
@@ -151,7 +170,7 @@ internal class SdkFeature(
                 coreFeature.contextProvider,
                 coreFeature.networkInfoProvider,
                 coreFeature.systemInfoProvider,
-                coreFeature.uploadFrequency,
+                resolveUploadFrequency(coreFeature, storageConfiguration),
                 coreFeature.uploadExecutorService,
                 internalLogger
             )
@@ -194,7 +213,11 @@ internal class SdkFeature(
                 maxBatchSize = storageConfiguration.maxBatchSize,
                 maxItemSize = storageConfiguration.maxItemSize,
                 maxItemsPerBatch = storageConfiguration.maxItemsPerBatch,
-                oldFileThreshold = storageConfiguration.oldBatchThreshold
+                oldFileThreshold = storageConfiguration.oldBatchThreshold,
+                recentDelayMs = resolveBatchingDelay(
+                    coreFeature,
+                    storageConfiguration
+                )
             )
         )
     }

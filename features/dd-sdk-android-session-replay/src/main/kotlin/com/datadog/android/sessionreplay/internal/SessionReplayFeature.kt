@@ -15,6 +15,8 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.core.configuration.BatchSize
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.sessionreplay.NoOpRecorder
@@ -29,6 +31,7 @@ import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWri
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Session Replay feature class, which needs to be registered with Datadog SDK instance.
@@ -40,6 +43,8 @@ internal class SessionReplayFeature constructor(
     private val rateBasedSampler: Sampler,
     private val sessionReplayRecorderProvider: (RecordWriter, Application) -> Recorder
 ) : StorageBackedFeature, FeatureEventReceiver {
+
+    private val currentRumSessionId = AtomicReference<String>()
 
     internal constructor(
         sdkCore: FeatureSdkCore,
@@ -153,13 +158,19 @@ internal class SessionReplayFeature constructor(
 
     private fun checkStatusAndApplySample(sessionMetadata: Map<*, *>) {
         val keepSession = sessionMetadata[RUM_KEEP_SESSION_BUS_MESSAGE_KEY] as? Boolean
+        val sessionId = sessionMetadata[RUM_SESSION_ID_BUS_MESSAGE_KEY] as? String
 
-        if (keepSession == null) {
+        if (keepSession == null || sessionId == null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { EVENT_MISSING_MANDATORY_FIELDS }
             )
+            return
+        }
+
+        if (currentRumSessionId.get() == sessionId) {
+            // we already handled this session
             return
         }
 
@@ -173,6 +184,8 @@ internal class SessionReplayFeature constructor(
             )
             stopRecording()
         }
+
+        currentRumSessionId.set(sessionId)
     }
 
     /**
@@ -222,7 +235,9 @@ internal class SessionReplayFeature constructor(
         internal val STORAGE_CONFIGURATION: FeatureStorageConfiguration =
             FeatureStorageConfiguration.DEFAULT.copy(
                 maxItemSize = 10 * 1024 * 1024,
-                maxBatchSize = 10 * 1024 * 1024
+                maxBatchSize = 10 * 1024 * 1024,
+                uploadFrequency = UploadFrequency.FREQUENT,
+                batchSize = BatchSize.SMALL
             )
 
         internal const val REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE = "Session Replay could not " +
@@ -242,5 +257,6 @@ internal class SessionReplayFeature constructor(
         const val SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY = "type"
         const val RUM_SESSION_RENEWED_BUS_MESSAGE = "rum_session_renewed"
         const val RUM_KEEP_SESSION_BUS_MESSAGE_KEY = "keepSession"
+        const val RUM_SESSION_ID_BUS_MESSAGE_KEY = "sessionId"
     }
 }

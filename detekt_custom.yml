@@ -85,7 +85,6 @@ datadog:
     treatUnknownConstructorAsThrowing: true
     knownThrowingCalls:
       # region Android
-      - "android.app.Activity.findNavController(kotlin.Int):java.lang.IllegalStateException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, android.content.pm.PackageManager.PackageInfoFlags):android.content.pm.PackageManager.NameNotFoundException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, kotlin.Int):android.content.pm.PackageManager.NameNotFoundException"
       - "android.content.res.Resources.getResourceEntryName(kotlin.Int):android.content.res.Resources.NotFoundException"
@@ -105,7 +104,6 @@ datadog:
       - "android.view.View.getLocationInWindow(kotlin.IntArray):java.lang.IllegalArgumentException"
       - "android.widget.FrameLayout.addView(android.view.View, android.view.ViewGroup.LayoutParams):java.lang.IllegalArgumentException"
       - "android.widget.LinearLayout.addView(android.view.View):java.lang.IllegalArgumentException"
-      - "androidx.work.WorkManager.enqueueUniqueWork(kotlin.String, androidx.work.ExistingWorkPolicy, androidx.work.OneTimeWorkRequest):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "android.content.res.Resources.getResourceName(kotlin.Int):android.content.res.Resources.NotFoundException"
       - "android.content.res.Resources.openRawResource(kotlin.Int):android.content.res.Resources.NotFoundException"
       - "androidx.collection.LruCache.constructor(kotlin.Int):java.lang.IllegalArgumentException"
@@ -113,6 +111,8 @@ datadog:
       - "androidx.collection.LruCache.put(java.io.File, kotlin.Unit):java.lang.NullPointerException"
       - "androidx.collection.LruCache.remove(java.io.File):java.lang.NullPointerException"
       - "androidx.metrics.performance.JankStats.createAndTrack(android.view.Window, androidx.metrics.performance.JankStats.OnFrameListener):java.lang.IllegalStateException"
+      - "androidx.navigation.Navigation.findNavController(android.app.Activity, kotlin.Int):java.lang.IllegalStateException"
+      - "androidx.work.WorkManager.enqueueUniqueWork(kotlin.String, androidx.work.ExistingWorkPolicy, androidx.work.OneTimeWorkRequest):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       # endregion
       # region Java File
       - "java.io.ByteArrayOutputStream.write(kotlin.ByteArray, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
@@ -365,11 +365,15 @@ datadog:
       - "android.widget.TextView.constructor(android.content.Context)"
       - "android.widget.TextView.setBackgroundColor(kotlin.Int)"
       - "android.widget.TextView.setPadding(kotlin.Int)"
+      - "android.widget.TextView.setPadding(kotlin.Int, kotlin.Int, kotlin.Int, kotlin.Int)"
       - "android.widget.TextView.setTextColor(kotlin.Int)"
       # endregion
       # region Android Graphics
       - "android.graphics.Bitmap.recycle()"
       - "android.graphics.Color.argb(kotlin.Int, kotlin.Int, kotlin.Int, kotlin.Int)"
+      - "android.graphics.Color.blue(kotlin.Int)"
+      - "android.graphics.Color.green(kotlin.Int)"
+      - "android.graphics.Color.red(kotlin.Int)"
       - "android.graphics.Color.rgb(kotlin.Int, kotlin.Int, kotlin.Int)"
       - "android.graphics.drawable.Drawable.draw(android.graphics.Canvas)"
       - "android.graphics.drawable.Drawable.getDrawable(kotlin.Int)"
@@ -391,6 +395,7 @@ datadog:
       - "androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentPaused(androidx.fragment.app.FragmentManager, androidx.fragment.app.Fragment)"
       - "androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentResumed(androidx.fragment.app.FragmentManager, androidx.fragment.app.Fragment)"
       - "androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentStarted(androidx.fragment.app.FragmentManager, androidx.fragment.app.Fragment)"
+      - "androidx.fragment.app.FragmentManager.findFragmentById(kotlin.Int)"
       - "androidx.fragment.app.FragmentManager.registerFragmentLifecycleCallbacks(androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks, kotlin.Boolean)"
       - "androidx.fragment.app.FragmentManager.unregisterFragmentLifecycleCallbacks(androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks)"
       - "androidx.lifecycle.Lifecycle.addObserver(androidx.lifecycle.LifecycleObserver)"

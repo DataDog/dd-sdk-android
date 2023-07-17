@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay.internal.domain
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestFactory
-import com.datadog.android.rum.RumAttributes
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import okhttp3.RequestBody
@@ -45,14 +44,13 @@ internal class SessionReplayRequestFactory(
 
     private fun tags(datadogContext: DatadogContext): String {
         val elements = mutableListOf(
-            "${RumAttributes.SERVICE_NAME}:${datadogContext.service}",
-            "${RumAttributes.APPLICATION_VERSION}:" +
-                datadogContext.version,
-            "${RumAttributes.SDK_VERSION}:${datadogContext.sdkVersion}",
-            "${RumAttributes.ENV}:${datadogContext.env}"
+            "$SERVICE_NAME:${datadogContext.service}",
+            "$APPLICATION_VERSION:${datadogContext.version}",
+            "$SDK_VERSION:${datadogContext.sdkVersion}",
+            "$ENV:${datadogContext.env}"
         )
         if (datadogContext.variant.isNotEmpty()) {
-            elements.add("${RumAttributes.VARIANT}:${datadogContext.variant}")
+            elements.add("$VARIANT:${datadogContext.variant}")
         }
         return elements.joinToString(",")
     }
@@ -115,5 +113,10 @@ internal class SessionReplayRequestFactory(
 
     companion object {
         private const val UPLOAD_URL = "%s/api/v2/%s"
+        internal const val APPLICATION_VERSION = "version"
+        internal const val ENV = "env"
+        internal const val SERVICE_NAME = "service"
+        internal const val VARIANT = "variant"
+        internal const val SDK_VERSION = "sdk_version"
     }
 }

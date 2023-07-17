@@ -158,6 +158,8 @@ internal class RumSessionScope(
         } else if (isTimedOut) {
             renewSession(nanoTime)
         }
+
+        updateSessionStateForSessionReplay(sessionState, sessionId)
     }
 
     private fun renewSession(nanoTime: Long) {
@@ -165,14 +167,16 @@ internal class RumSessionScope(
         sessionState = if (keepSession) State.TRACKED else State.NOT_TRACKED
         sessionId = UUID.randomUUID().toString()
         sessionStartNs.set(nanoTime)
-        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
-            it.putAll(getRumContext().toMap())
-        }
         sessionListener?.onSessionStarted(sessionId, !keepSession)
+    }
+
+    private fun updateSessionStateForSessionReplay(state: State, sessionId: String) {
+        val keepSession = (state == State.TRACKED)
         sdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)?.sendEvent(
             mapOf(
                 SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RUM_KEEP_SESSION_BUS_MESSAGE_KEY to keepSession
+                RUM_KEEP_SESSION_BUS_MESSAGE_KEY to keepSession,
+                RUM_SESSION_ID_BUS_MESSAGE_KEY to sessionId
             )
         )
     }
@@ -184,6 +188,7 @@ internal class RumSessionScope(
         internal const val SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY = "type"
         internal const val RUM_SESSION_RENEWED_BUS_MESSAGE = "rum_session_renewed"
         internal const val RUM_KEEP_SESSION_BUS_MESSAGE_KEY = "keepSession"
+        internal const val RUM_SESSION_ID_BUS_MESSAGE_KEY = "sessionId"
         internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
         internal val DEFAULT_SESSION_MAX_DURATION_NS = TimeUnit.HOURS.toNanos(4)
     }
