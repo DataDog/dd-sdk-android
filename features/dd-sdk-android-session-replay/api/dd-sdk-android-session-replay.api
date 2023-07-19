@@ -88,7 +88,7 @@ public final class com/datadog/android/sessionreplay/internal/recorder/SystemInf
 }
 
 public final class com/datadog/android/sessionreplay/internal/recorder/base64/Base64Serializer {
-	public synthetic fun <init> (Ljava/util/concurrent/ExecutorService;Lcom/datadog/android/sessionreplay/internal/utils/DrawableUtils;Lcom/datadog/android/sessionreplay/internal/utils/Base64Utils;Lcom/datadog/android/sessionreplay/internal/recorder/base64/ImageCompression;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/util/concurrent/ExecutorService;Lcom/datadog/android/sessionreplay/internal/utils/DrawableUtils;Lcom/datadog/android/sessionreplay/internal/utils/Base64Utils;Lcom/datadog/android/sessionreplay/internal/recorder/base64/ImageCompression;Lcom/datadog/android/sessionreplay/internal/recorder/base64/Cache;Lcom/datadog/android/api/InternalLogger;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
 public abstract interface class com/datadog/android/sessionreplay/internal/recorder/base64/ImageCompression {
@@ -113,7 +113,7 @@ public abstract class com/datadog/android/sessionreplay/internal/recorder/mapper
 	protected final fun colorAndAlphaAsStringHexa (II)Ljava/lang/String;
 	public fun finishProcessingImage ()V
 	protected final fun getWebPMimeType ()Ljava/lang/String;
-	protected final fun handleBitmap (Landroid/util/DisplayMetrics;Landroid/graphics/drawable/Drawable;Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe;)V
+	protected final fun handleBitmap (Landroid/content/Context;Landroid/util/DisplayMetrics;Landroid/graphics/drawable/Drawable;Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe;)V
 	protected final fun resolveChildDrawableUniqueIdentifier (Landroid/view/View;)Ljava/lang/Long;
 	protected final fun resolveShapeStyleAndBorder (Landroid/graphics/drawable/Drawable;F)Lkotlin/Pair;
 	protected final fun resolveViewGlobalBounds (Landroid/view/View;F)Lcom/datadog/android/sessionreplay/internal/recorder/GlobalBounds;

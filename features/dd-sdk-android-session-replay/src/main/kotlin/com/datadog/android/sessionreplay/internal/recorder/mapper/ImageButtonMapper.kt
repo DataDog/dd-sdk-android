@@ -27,7 +27,8 @@ internal class ImageButtonMapper(
         view: ImageButton,
         mappingContext: MappingContext
     ): List<MobileSegment.Wireframe.ImageWireframe> {
-        val drawable = view.drawable
+        val resources = view.resources
+        val drawable = view.drawable?.constantState?.newDrawable(resources)
         val id = resolveChildDrawableUniqueIdentifier(view)
 
         if (drawable == null || id == null) return emptyList()
@@ -40,6 +41,7 @@ internal class ImageButtonMapper(
 
         val mimeType = getWebPMimeType()
         val displayMetrics = view.resources.displayMetrics
+        val applicationContext = view.context.applicationContext
 
         val imageWireframe = MobileSegment.Wireframe.ImageWireframe(
             id = id,
@@ -56,6 +58,7 @@ internal class ImageButtonMapper(
 
         @Suppress("ThreadSafety") // TODO REPLAY-1861 caller thread of .map is unknown?
         handleBitmap(
+            applicationContext = applicationContext,
             displayMetrics = displayMetrics,
             drawable = drawable,
             imageWireframe = imageWireframe

@@ -6,12 +6,15 @@
 
 package com.datadog.android.sessionreplay.internal.async
 
+import android.graphics.drawable.Drawable
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.base64.Base64LRUCache
+import com.datadog.android.sessionreplay.internal.recorder.base64.Cache
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.lang.ClassCastException
@@ -34,15 +37,18 @@ internal class RecordedDataQueueHandler {
     private var processor: RecordedDataProcessor
     private var rumContextDataHandler: RumContextDataHandler
     private var timeProvider: TimeProvider
+    private var cache: Cache<Drawable, String>
 
     internal constructor(
         processor: RecordedDataProcessor,
         rumContextDataHandler: RumContextDataHandler,
-        timeProvider: TimeProvider
+        timeProvider: TimeProvider,
+        cache: Cache<Drawable, String> = Base64LRUCache
     ) : this(
         processor = processor,
         rumContextDataHandler = rumContextDataHandler,
         timeProvider = timeProvider,
+        cache = cache,
 
         /**
          * TODO: RUMM-0000 consider change to LoggingThreadPoolExecutor once V2 is merged.
@@ -64,12 +70,14 @@ internal class RecordedDataQueueHandler {
         processor: RecordedDataProcessor,
         rumContextDataHandler: RumContextDataHandler,
         timeProvider: TimeProvider,
-        executorService: ExecutorService
+        executorService: ExecutorService,
+        cache: Cache<Drawable, String>
     ) {
         this.processor = processor
         this.rumContextDataHandler = rumContextDataHandler
         this.executorService = executorService
         this.timeProvider = timeProvider
+        this.cache = cache
     }
 
     // region internal
@@ -98,6 +106,11 @@ internal class RecordedDataQueueHandler {
     ): SnapshotRecordedDataQueueItem? {
         val rumContextData = rumContextDataHandler.createRumContextData()
             ?: return null
+
+        // if the view changed then clear the drawable cache
+        if (rumContextData.prevRumContext != rumContextData.newRumContext) {
+            cache.clear()
+        }
 
         val item = SnapshotRecordedDataQueueItem(
             rumContextData = rumContextData,
