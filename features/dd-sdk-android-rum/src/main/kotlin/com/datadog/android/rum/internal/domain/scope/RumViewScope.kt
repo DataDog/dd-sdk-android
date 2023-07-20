@@ -93,7 +93,7 @@ internal open class RumViewScope(
     internal var pendingLongTaskCount: Long = 0
     internal var pendingFrozenFrameCount: Long = 0
 
-    private var version: Long = 1
+    internal var version: Long = 1
     internal val customTimings: MutableMap<String, Long> = mutableMapOf()
     internal val featureFlags: MutableMap<String, Any?> = mutableMapOf()
 
