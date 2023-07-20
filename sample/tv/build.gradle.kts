@@ -5,12 +5,12 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.configureFlavorForSampleApp
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
+import com.datadog.gradle.config.sampleAppConfig
 import com.datadog.gradle.config.taskConfig
 
 plugins {
@@ -36,6 +36,18 @@ android {
         multiDexEnabled = true
 
         vectorDrawables.useSupportLibrary = true
+
+        val config = sampleAppConfig(project.rootDir, "tv")
+        buildConfigField(
+            "String",
+            "DD_RUM_APPLICATION_ID",
+            "\"${config.rumApplicationId}\""
+        )
+        buildConfigField(
+            "String",
+            "DD_CLIENT_TOKEN",
+            "\"${config.token}\""
+        )
     }
 
     compileOptions {
@@ -76,7 +88,6 @@ android {
 repositories {
     maven { setUrl("https://jitpack.io") }
 }
-
 
 dependencies {
 
