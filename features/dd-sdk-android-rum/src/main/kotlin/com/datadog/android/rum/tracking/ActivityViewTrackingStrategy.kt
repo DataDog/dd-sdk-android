@@ -7,12 +7,9 @@
 package com.datadog.android.rum.tracking
 
 import android.app.Activity
-import android.os.Bundle
 import androidx.annotation.MainThread
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
 
@@ -85,7 +82,6 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
     private fun getRumMonitor(): RumMonitor? {
         return withSdkCore { GlobalRumMonitor.get(it) }
     }
-
 
     // endregion
 }

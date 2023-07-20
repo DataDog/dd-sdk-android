@@ -21,11 +21,9 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewUrl
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -37,7 +35,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -170,8 +167,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 start RUM View 𝕎 onFragmentResumed() { first display }`(
-    ) {
+    fun `𝕄 start RUM View 𝕎 onFragmentResumed() { first display }`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn true
 
@@ -187,8 +183,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 start RUM View 𝕎 onFragmentResumed() { redisplay }`(
-    ) {
+    fun `𝕄 start RUM View 𝕎 onFragmentResumed() { redisplay }`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn true
 
@@ -201,7 +196,6 @@ internal class OreoFragmentLifecycleCallbacksTest {
             mockFragment.resolveViewUrl(),
             fakeAttributes
         )
-
     }
 
     @Test

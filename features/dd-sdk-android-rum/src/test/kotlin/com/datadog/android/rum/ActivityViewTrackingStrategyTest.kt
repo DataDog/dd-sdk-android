@@ -8,15 +8,12 @@ package com.datadog.android.rum
 
 import android.app.Activity
 import android.os.Bundle
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.tracking.StubComponentPredicate
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
-import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -30,7 +27,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -216,8 +212,7 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 stop RUM View 𝕎 onActivityPaused() { first display }`(
-    ) {
+    fun `𝕄 stop RUM View 𝕎 onActivityPaused() { first display }`() {
         // Given
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
@@ -231,8 +226,7 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 stop RUM View 𝕎 onActivityPaused() { redisplay }`(
-    ) {
+    fun `𝕄 stop RUM View 𝕎 onActivityPaused() { redisplay }`() {
         // Given
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
