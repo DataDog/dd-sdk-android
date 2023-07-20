@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.domain
 
+import android.util.Log
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestFactory
@@ -15,12 +16,17 @@ import okhttp3.RequestBody
 import okio.Buffer
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.TimeUnit
+import kotlin.math.max
 
 internal class SessionReplayRequestFactory(
     internal val customEndpointUrl: String?,
     private val batchToSegmentsMapper: BatchesToSegmentsMapper = BatchesToSegmentsMapper(),
     private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory()
 ) : RequestFactory {
+
+    private var startSession:Long = System.nanoTime()
+    private var currentBytesSent: Long = 0L
 
     override fun create(
         context: DatadogContext,
@@ -91,6 +97,14 @@ internal class SessionReplayRequestFactory(
         val description = "Session Replay Segment Upload Request"
         val headers = resolveHeaders(context, requestId)
         val requestUrl = buildUrl(context)
+        currentBytesSent += bodyAsByteArray.size
+        val secondsSpent = secondsSpent()
+        val kbSent = currentBytesSent / 1024f
+        val kbPerSecond = kbSent / secondsSpent
+        val message = String.format("Current kbytes sent: %.2f kb/s", kbPerSecond)
+        Log.v(
+            "SessionReplayRequest",
+            message)
         return Request(
             requestId,
             description,
@@ -107,6 +121,10 @@ internal class SessionReplayRequestFactory(
         body.writeTo(buffer)
         @Suppress("UnsafeThirdPartyFunctionCall")
         return buffer.readByteArray()
+    }
+
+    private fun secondsSpent():Long{
+        return max(1, TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startSession))
     }
 
     // endregion

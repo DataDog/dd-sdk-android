@@ -111,6 +111,11 @@ android {
         }
     }
     ndkVersion = Dependencies.Versions.Ndk
+    buildTypes {
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
 }
 
 dependencies {

@@ -17,7 +17,7 @@ object AndroidConfig {
     const val MIN_SDK = 21
     const val BUILD_TOOLS_VERSION = "33.0.2"
 
-    val VERSION = Version(2, 0, 0, Version.Type.Snapshot)
+    val VERSION = Version(2, 0, 1, Version.Type.BenchmarkSnapshot)
 }
 
 // TODO RUMM-3263 Switch to Java 17 bytecode

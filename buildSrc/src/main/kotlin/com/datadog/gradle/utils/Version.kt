@@ -42,6 +42,9 @@ data class Version(
         object Snapshot : Type() {
             override val suffix: String = "-SNAPSHOT"
         }
+        object BenchmarkSnapshot : Type() {
+            override val suffix: String = "-benchmark-SNAPSHOT"
+        }
     }
 
     // endregion

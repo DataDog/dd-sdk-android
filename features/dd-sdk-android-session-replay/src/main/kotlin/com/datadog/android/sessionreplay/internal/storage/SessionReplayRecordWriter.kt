@@ -6,23 +6,34 @@
 
 package com.datadog.android.sessionreplay.internal.storage
 
+import android.util.Log
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.internal.RecordCallback
 import com.datadog.android.sessionreplay.internal.RecordWriter
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
+import java.util.concurrent.TimeUnit
+import kotlin.math.max
 
 internal class SessionReplayRecordWriter(
     private val sdkCore: FeatureSdkCore,
     private val recordCallback: RecordCallback
 ) : RecordWriter {
     private var lastRumContextId: String = ""
+    private var bytesSent: Long = 0L
+    private var startSession:Long = System.nanoTime()
+
     override fun write(record: EnrichedRecord) {
         val forceNewBatch = resolveForceNewBatch(record)
         sdkCore.getFeature(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME)
             ?.withWriteContext(forceNewBatch) { _, eventBatchWriter ->
                 val serializedRecord = record.toJson().toByteArray(Charsets.UTF_8)
                 synchronized(this) {
+                    val exceededSessionTimeInSeconds = secondsSpent()
+                    bytesSent+=serializedRecord.size
+                    val kiloBytes = bytesSent/1024
+                    val kbPerSecond = kiloBytes/exceededSessionTimeInSeconds
+                    Log.v("SessionReplayWriter", "bytesWrote: $kbPerSecond kb/s")
                     @Suppress("ThreadSafety") // called from the worker thread
                     if (eventBatchWriter.write(serializedRecord, null)) {
                         updateViewSent(record)
@@ -31,6 +42,9 @@ internal class SessionReplayRecordWriter(
             }
     }
 
+    private fun secondsSpent():Long{
+       return max(1,TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startSession))
+    }
     private fun updateViewSent(record: EnrichedRecord) {
         /**
          * We have to see whether it's ok that this method is being called from the background.

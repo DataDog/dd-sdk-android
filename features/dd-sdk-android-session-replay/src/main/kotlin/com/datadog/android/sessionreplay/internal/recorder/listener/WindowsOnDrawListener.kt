@@ -7,6 +7,8 @@
 package com.datadog.android.sessionreplay.internal.recorder.listener
 
 import android.content.Context
+import android.os.Debug
+import android.util.Log
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.annotation.MainThread
@@ -15,7 +17,11 @@ import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
+import java.io.File
 import java.lang.ref.WeakReference
+import java.util.Calendar
+import java.util.GregorianCalendar
+import java.util.concurrent.TimeUnit
 
 internal class WindowsOnDrawListener(
     private val appContext: Context,
@@ -30,13 +36,52 @@ internal class WindowsOnDrawListener(
 
     internal val weakReferencedDecorViews: List<WeakReference<View>>
 
+
+
     init {
         weakReferencedDecorViews = zOrderedDecorViews.map { WeakReference(it) }
+        if(takeSnapshotTraceFile==null){
+           takeSnapshotTraceFile = File(appContext.externalCacheDir,
+                    GregorianCalendar.getInstance().time.toString() + ".txt")
+
+        }
     }
 
     @MainThread
     override fun onDraw() {
-        debouncer.debounce(resolveTakeSnapshotRunnable())
+        debouncer.debounce{
+            val start = System.nanoTime()
+            resolveTakeSnapshotRunnable().run()
+            val end = System.nanoTime()
+            val duration = end - start
+            val mean = (previousMean * previousCount + duration) / (previousCount + 1)
+            previousMean = mean
+            previousCount++
+            sortedCounts.add(duration)
+            sortedCounts.sort()
+            val p95 = sortedCounts[(sortedCounts.size * 0.95).toInt()]
+//                Log.v("SnapshotProducer",
+//                        "duration: ${TimeUnit.NANOSECONDS.toMillis(duration)}, mean: " +
+//                        "${TimeUnit.NANOSECONDS.toMillis(mean)}")
+//                Log.v("SnapshotProducer", "p95: ${TimeUnit.NANOSECONDS.toMillis(p95)}")
+            Thread{
+                takeSnapshotTraceFile?.let { file ->
+                    if (!file.exists()) {
+                        file.createNewFile()
+                    }
+                    file.appendText(duration.toString() + "\n")
+                }
+                Log.v("SnapshotProducer",
+                        "duration: ${TimeUnit.NANOSECONDS.toMillis(duration)}, mean: " +
+                                "${TimeUnit.NANOSECONDS.toMillis(mean.toLong())}")
+                Log.v("SnapshotProducer", "p95: ${TimeUnit.NANOSECONDS.toMillis(p95)}")
+
+            }.apply {
+                start()
+                join()
+            }
+//
+        }
     }
 
     @MainThread
@@ -44,7 +89,6 @@ internal class WindowsOnDrawListener(
         if (weakReferencedDecorViews.isEmpty()) {
             return@Runnable
         }
-
         // is is very important to have the windows sorted by their z-order
         val systemInformation = miscUtils.resolveSystemInformation(appContext)
         val item = recordedDataQueueHandler.addSnapshotItem(systemInformation)
@@ -55,7 +99,10 @@ internal class WindowsOnDrawListener(
         val nodes = weakReferencedDecorViews
             .mapNotNull { it.get() }
             .mapNotNull {
-                snapshotProducer.produce(it, systemInformation, recordedDataQueueRefs)
+//                Debug.startMethodTracing(start.toString())
+                val node = snapshotProducer.produce(it, systemInformation, recordedDataQueueRefs)
+                  Debug.stopMethodTracing()
+                node
             }
 
         if (nodes.isNotEmpty()) {
@@ -64,5 +111,13 @@ internal class WindowsOnDrawListener(
                 recordedDataQueueHandler.tryToConsumeItems()
             }
         }
+    }
+
+    companion object {
+        private var previousMean:Double = 0.0
+        private var previousCount:Double = 0.0
+        private var sortedCounts= mutableListOf<Long>()
+
+        var takeSnapshotTraceFile:File? = null
     }
 }
