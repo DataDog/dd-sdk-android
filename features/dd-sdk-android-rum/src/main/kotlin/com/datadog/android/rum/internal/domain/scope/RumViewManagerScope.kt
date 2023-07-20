@@ -57,7 +57,7 @@ internal class RumViewManagerScope(
         delegateToChildren(event, writer)
 
         if (event is RumRawEvent.StartView && !stopped) {
-            startForegroundView(event)
+            startForegroundView(event, writer)
         } else if (event is RumRawEvent.StopSession) {
             stopped = true
         } else if (childrenScopes.count { it.isActive() } == 0) {
@@ -148,7 +148,7 @@ internal class RumViewManagerScope(
     }
 
     @WorkerThread
-    private fun startForegroundView(event: RumRawEvent.StartView) {
+    private fun startForegroundView(event: RumRawEvent.StartView, writer: DataWriter<Any>) {
         val viewScope = RumViewScope.fromEvent(
             this,
             sdkCore,
@@ -162,6 +162,7 @@ internal class RumViewManagerScope(
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
+        viewScope.handleEvent(RumRawEvent.KeepAlive(), writer)
         viewChangedListener?.onViewChanged(
             RumViewInfo(
                 keyRef = WeakReference(event.key),
