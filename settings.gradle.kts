@@ -28,6 +28,7 @@ include(":features:dd-sdk-android-session-replay")
 include(":features:dd-sdk-android-session-replay-material")
 
 include(":sample:kotlin")
+include(":sample:tv")
 include(":sample:wear")
 
 include(":tools:detekt")
