@@ -104,7 +104,6 @@ internal class OreoFragmentLifecycleCallbacksTest {
             { fakeAttributes },
             mockPredicate,
             rumMonitor = mockRumMonitor,
-            advancedRumMonitor = mockAdvancedRumMonitor,
             buildSdkVersionProvider = mockBuildSdkVersionProvider,
             rumFeature = mockRumFeature
         )

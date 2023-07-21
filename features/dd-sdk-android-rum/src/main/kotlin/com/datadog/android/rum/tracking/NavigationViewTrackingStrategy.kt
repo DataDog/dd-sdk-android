@@ -20,8 +20,6 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
@@ -129,7 +127,6 @@ class NavigationViewTrackingStrategy(
             val rumFeature = sdkCore
                 .getFeature(Feature.RUM_FEATURE_NAME)
                 ?.unwrap<RumFeature>()
-            val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor
             val fragmentActivity = activity as? FragmentActivity
             val navController = activity.findNavControllerOrNull(navigationViewId)
             if (fragmentActivity != null && navController != null && rumFeature != null) {
@@ -137,8 +134,7 @@ class NavigationViewTrackingStrategy(
                     navController,
                     argumentsProvider = { emptyMap() },
                     componentPredicate = predicate,
-                    rumFeature = rumFeature,
-                    advancedRumMonitor = rumMonitor ?: NoOpAdvancedRumMonitor()
+                    rumFeature = rumFeature
                 )
                 navControllerFragmentCallbacks.register(
                     startedActivity as FragmentActivity,
@@ -209,13 +205,11 @@ class NavigationViewTrackingStrategy(
         private val navController: NavController,
         argumentsProvider: (Fragment) -> Map<String, Any?>,
         componentPredicate: ComponentPredicate<Fragment>,
-        rumFeature: RumFeature,
-        advancedRumMonitor: AdvancedRumMonitor
+        rumFeature: RumFeature
     ) : AndroidXFragmentLifecycleCallbacks(
         argumentsProvider,
         componentPredicate,
         rumMonitor = NoOpRumMonitor(),
-        advancedRumMonitor = advancedRumMonitor,
         rumFeature = rumFeature
     ) {
         override fun resolveKey(fragment: Fragment): Any {

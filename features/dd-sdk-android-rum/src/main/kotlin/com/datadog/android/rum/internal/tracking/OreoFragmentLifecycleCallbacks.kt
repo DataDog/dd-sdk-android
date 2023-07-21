@@ -16,8 +16,6 @@ import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
@@ -29,7 +27,6 @@ internal class OreoFragmentLifecycleCallbacks(
     private val componentPredicate: ComponentPredicate<Fragment>,
     private val rumFeature: RumFeature,
     private val rumMonitor: RumMonitor,
-    private val advancedRumMonitor: AdvancedRumMonitor,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
 ) : FragmentLifecycleCallbacks<Activity>, FragmentManager.FragmentLifecycleCallbacks() {
 
@@ -100,14 +97,6 @@ internal class OreoFragmentLifecycleCallbacks(
     // endregion
 
     // region Internal
-
-    private fun resolveLoadingType(firstTimeLoading: Boolean): ViewEvent.LoadingType {
-        return if (firstTimeLoading) {
-            ViewEvent.LoadingType.FRAGMENT_DISPLAY
-        } else {
-            ViewEvent.LoadingType.FRAGMENT_REDISPLAY
-        }
-    }
 
     private fun isNotAViewFragment(fragment: Fragment): Boolean {
         return fragment::class.java.name == REPORT_FRAGMENT_NAME

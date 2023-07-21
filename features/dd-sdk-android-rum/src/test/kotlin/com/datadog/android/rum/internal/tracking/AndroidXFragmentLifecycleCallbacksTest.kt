@@ -97,7 +97,6 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
             { fakeAttributes },
             mockPredicate,
             rumMonitor = mockRumMonitor,
-            advancedRumMonitor = mockAdvancedRumMonitor,
             rumFeature = mockRumFeature
         )
     }
