@@ -15,8 +15,8 @@ import org.schabi.newpipe.extractor.downloader.Response
 import org.schabi.newpipe.extractor.exceptions.ReCaptchaException
 import org.schabi.newpipe.extractor.downloader.Request as PipeRequest
 
-class OkHttpDownloader(
-    val okHttpClient: OkHttpClient
+internal class OkHttpDownloader(
+    private val okHttpClient: OkHttpClient
 ) : Downloader() {
 
     override fun execute(request: PipeRequest): Response {
@@ -35,11 +35,6 @@ class OkHttpDownloader(
             .url(url)
             .addHeader("User-Agent", USER_AGENT)
 
-//        val cookies: String = getCookies(url)
-//        if (!cookies.isEmpty()) {
-//            requestBuilder.addHeader("Cookie", cookies)
-//        }
-
         headers.forEach { (name, valueList) ->
             if (valueList.size > 1) {
                 requestBuilder.removeHeader(name)
@@ -53,7 +48,7 @@ class OkHttpDownloader(
 
         val response = okHttpClient.newCall(requestBuilder.build()).execute()
 
-        if (response.code == 429) {
+        if (response.code == TOO_MANY_REQUESTS) {
             response.close()
             throw ReCaptchaException("reCaptcha Challenge requested", url)
         }
@@ -77,5 +72,6 @@ class OkHttpDownloader(
 
     companion object {
         const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0"
+        private const val TOO_MANY_REQUESTS = 429
     }
 }

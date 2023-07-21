@@ -29,6 +29,9 @@ import okhttp3.OkHttpClient
 import org.schabi.newpipe.extractor.NewPipe
 import timber.log.Timber
 
+/**
+ * The main [Application] for the sample TV project.
+ */
 class TvSampleApplication : Application() {
 
     override fun onCreate() {
@@ -60,9 +63,8 @@ class TvSampleApplication : Application() {
             .useViewTrackingStrategy(
                 ActivityViewTrackingStrategy(true)
             )
-            .setTelemetrySampleRate(100f)
+            .setTelemetrySampleRate(FULL_SAMPLING_RATE)
             .trackUserInteractions()
-            .trackLongTasks(250L)
             .build()
     }
 
@@ -88,10 +90,20 @@ class TvSampleApplication : Application() {
 
     private fun initializeNewPipe() {
         val okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(DatadogInterceptor(traceSampler = RateBasedSampler(100f)))
-            .addNetworkInterceptor(TracingInterceptor(traceSampler = RateBasedSampler(100f)))
+            .addInterceptor(DatadogInterceptor(traceSampler = RateBasedSampler(FULL_SAMPLING_RATE)))
+            .addNetworkInterceptor(
+                TracingInterceptor(
+                    traceSampler = RateBasedSampler(
+                        FULL_SAMPLING_RATE
+                    )
+                )
+            )
             .eventListenerFactory(DatadogEventListener.Factory())
             .build()
         NewPipe.init(OkHttpDownloader(okHttpClient))
+    }
+
+    companion object {
+        private const val FULL_SAMPLING_RATE = 100f
     }
 }

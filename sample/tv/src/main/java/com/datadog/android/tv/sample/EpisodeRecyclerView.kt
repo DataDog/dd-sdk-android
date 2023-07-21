@@ -14,7 +14,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.datadog.android.tv.sample.model.Episode
 
-class EpisodeRecyclerView private constructor() {
+internal class EpisodeRecyclerView private constructor() {
 
     class Adapter(
         val onEpisodeSelected: (Episode?, Int) -> Unit

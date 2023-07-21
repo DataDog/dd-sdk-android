@@ -9,16 +9,24 @@ package com.datadog.android.tv.sample
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.RumErrorSource
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import org.schabi.newpipe.extractor.services.youtube.YoutubeService
+import org.schabi.newpipe.extractor.stream.StreamExtractor
 import timber.log.Timber
 
+/**
+ * An activity playing a video stream from a Youtube URL.
+ *
+ * This activity looks for the URL in the `Intent`'s `data` property.
+ */
 class PlayerActivity : AppCompatActivity() {
 
-    lateinit var videoPlayerView: StyledPlayerView
-    lateinit var videoPlayer: ExoPlayer
+    private lateinit var videoPlayerView: StyledPlayerView
+    private lateinit var videoPlayer: ExoPlayer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,30 +41,45 @@ class PlayerActivity : AppCompatActivity() {
         val intentUri = intent.data?.toString()
         Toast.makeText(this, "Playing $intentUri", Toast.LENGTH_SHORT).show()
 
+        if (intentUri == null) {
+            finish()
+            return
+        }
+
         videoPlayerView.player = videoPlayer
 
         Thread {
-            try {
-                val streamingService = YoutubeService(1)
-                val extractor = streamingService.getStreamExtractor(intentUri)
-                Timber.i("Fetching stream for $intentUri")
-                extractor.fetchPage()
-
-                val videoStreams = extractor.videoStreams
-                Timber.i("Fetched ${videoStreams.size} video streams")
-                videoStreams.forEach {
-                    Timber.i("VS: ${it.getUrl()}")
-                }
-                val mediaItem = MediaItem.fromUri(videoStreams.first().getUrl())
-                runOnUiThread {
-                    videoPlayer.setMediaItem(mediaItem)
-                    videoPlayer.playWhenReady = true
-                    videoPlayer.prepare()
-                }
-            } catch (t: Throwable) {
-                Timber.e(t)
-            }
+            loadAndPlayVideo(intentUri)
         }.start()
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun loadAndPlayVideo(intentUri: String) {
+        try {
+            val extractor = extractStreamingInformation(intentUri)
+            val videoStreams = extractor.videoStreams
+            val mediaItem = MediaItem.fromUri(videoStreams.first().getUrl())
+            runOnUiThread {
+                videoPlayer.setMediaItem(mediaItem)
+                videoPlayer.playWhenReady = true
+                videoPlayer.prepare()
+            }
+        } catch (t: Throwable) {
+            GlobalRumMonitor.get().addError(
+                "Unable to stream video",
+                RumErrorSource.SOURCE,
+                t,
+                emptyMap()
+            )
+        }
+    }
+
+    private fun extractStreamingInformation(intentUri: String?): StreamExtractor {
+        val streamingService = YoutubeService(1)
+        val extractor = streamingService.getStreamExtractor(intentUri)
+        Timber.i("Fetching stream for $intentUri")
+        extractor.fetchPage()
+        return extractor
     }
 
     override fun onPause() {

@@ -21,17 +21,20 @@ import com.datadog.android.tv.sample.model.Episode
 import com.datadog.android.tv.sample.model.EpisodeList
 import com.google.gson.Gson
 
+/**
+ * Main activity when launching the app, shows the list of available episodes.
+ */
 class HomeActivity : AppCompatActivity() {
 
-    val adapter = EpisodeRecyclerView.Adapter { episode, view ->
+    private val adapter = EpisodeRecyclerView.Adapter { episode, view ->
         onEpisodeSelected(episode)
     }
 
-    lateinit var episodesRecyclerView: RecyclerView
-    lateinit var episodeTitle: TextView
-    lateinit var episodeDescription: TextView
-    lateinit var episodeSpeakers: TextView
-    lateinit var playView: View
+    private lateinit var episodesRecyclerView: RecyclerView
+    private lateinit var episodeTitle: TextView
+    private lateinit var episodeDescription: TextView
+    private lateinit var episodeSpeakers: TextView
+    private lateinit var playView: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,8 +48,6 @@ class HomeActivity : AppCompatActivity() {
 
         episodesRecyclerView.layoutManager = LinearLayoutManager(this)
         episodesRecyclerView.adapter = adapter
-
-        Datadog._internalProxy()._telemetry.debug("Hello world")
     }
 
     override fun onResume() {

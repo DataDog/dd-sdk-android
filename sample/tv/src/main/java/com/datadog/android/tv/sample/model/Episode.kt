@@ -8,7 +8,7 @@ package com.datadog.android.tv.sample.model
 
 import com.google.gson.annotations.SerializedName
 
-data class Episode(
+internal data class Episode(
     @SerializedName("title") val title: String,
     @SerializedName("speakers") val speakers: List<String>,
     @SerializedName("description") val description: List<String>,
