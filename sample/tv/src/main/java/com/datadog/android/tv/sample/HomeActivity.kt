@@ -15,7 +15,6 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.datadog.android.Datadog
 import com.datadog.android.ktx.rum.asRumResource
 import com.datadog.android.tv.sample.model.Episode
 import com.datadog.android.tv.sample.model.EpisodeList
