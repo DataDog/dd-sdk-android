@@ -14,6 +14,7 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.R
+import com.datadog.android.sdk.rules.KioskTrackingActivityTestRule
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
 import com.datadog.tools.unit.ConditionWatcher
 import org.junit.Rule
@@ -27,7 +28,7 @@ internal class KioskTrackingTest :
         RumMockServerActivityTestRule<KioskSplashPlaygroundActivity>>() {
 
     @get:Rule
-    val mockServerRule = RumMockServerActivityTestRule(
+    val mockServerRule = KioskTrackingActivityTestRule(
         KioskSplashPlaygroundActivity::class.java,
         keepRequests = true,
         trackingConsent = TrackingConsent.GRANTED
@@ -82,7 +83,13 @@ internal class KioskTrackingTest :
         expectedEvents.add(
             ExpectedViewEvent(
                 firstViewUrl,
-                docVersion = 2,
+                docVersion = 2
+            )
+        )
+        expectedEvents.add(
+            ExpectedViewEvent(
+                firstViewUrl,
+                docVersion = 3,
                 viewArguments = mapOf(),
                 sessionIsActive = false
             )
@@ -126,6 +133,14 @@ internal class KioskTrackingTest :
             ExpectedViewEvent(
                 firstViewUrl,
                 docVersion = 2,
+                viewArguments = mapOf()
+            )
+        )
+
+        expectedEvents.add(
+            ExpectedViewEvent(
+                firstViewUrl,
+                docVersion = 3,
                 viewArguments = mapOf(),
                 sessionIsActive = false
             )

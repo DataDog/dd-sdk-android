@@ -36,7 +36,6 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.vitals.VitalMonitor
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.telemetry.internal.TelemetryType
@@ -343,16 +342,6 @@ internal class DatadogRumMonitor(
     override fun addCrash(message: String, source: RumErrorSource, throwable: Throwable) {
         handleEvent(
             RumRawEvent.AddError(message, source, throwable, null, true, emptyMap())
-        )
-    }
-
-    override fun updateViewLoadingTime(
-        key: Any,
-        loadingTimeInNs: Long,
-        type: ViewEvent.LoadingType
-    ) {
-        handleEvent(
-            RumRawEvent.UpdateViewLoadingTime(key, loadingTimeInNs, type)
         )
     }
 

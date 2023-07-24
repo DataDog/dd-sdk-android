@@ -193,12 +193,8 @@ abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrateg
   protected fun <T> withSdkCore((com.datadog.android.api.feature.FeatureSdkCore) -> T): T?
 class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
   constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
-  override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
-  override fun onActivityStarted(android.app.Activity)
   override fun onActivityResumed(android.app.Activity)
-  override fun onActivityPostResumed(android.app.Activity)
   override fun onActivityPaused(android.app.Activity)
-  override fun onActivityDestroyed(android.app.Activity)
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
 interface com.datadog.android.rum.tracking.ComponentPredicate<T>

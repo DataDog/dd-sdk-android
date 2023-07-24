@@ -14,8 +14,6 @@ import androidx.fragment.app.FragmentActivity
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks
 import com.datadog.android.rum.internal.tracking.FragmentLifecycleCallbacks
 import com.datadog.android.rum.internal.tracking.NoOpFragmentLifecycleCallbacks
@@ -58,8 +56,6 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
                     },
                     componentPredicate = supportFragmentComponentPredicate,
                     rumMonitor = rumMonitor,
-                    advancedRumMonitor = rumMonitor as? AdvancedRumMonitor
-                        ?: NoOpAdvancedRumMonitor(),
                     rumFeature = rumFeature
                 )
             } else {
@@ -82,8 +78,6 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
                     },
                     componentPredicate = defaultFragmentComponentPredicate,
                     rumMonitor = rumMonitor,
-                    advancedRumMonitor = rumMonitor as? AdvancedRumMonitor
-                        ?: NoOpAdvancedRumMonitor(),
                     rumFeature = rumFeature
                 )
             } else {

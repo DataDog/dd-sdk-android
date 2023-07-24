@@ -34,7 +34,6 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.vitals.VitalMonitor
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
@@ -60,8 +59,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -570,30 +567,6 @@ internal class DatadogRumMonitorTest {
             assertThat(event.isFatal).isTrue
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.attributes).isEmpty()
-        }
-        verifyNoMoreInteractions(mockScope, mockWriter)
-    }
-
-    @ParameterizedTest
-    @EnumSource(ViewEvent.LoadingType::class)
-    fun `M delegate event to rootScope W updateViewLoadingTime()`(
-        loadingType: ViewEvent.LoadingType,
-        forge: Forge
-    ) {
-        val key = forge.anAsciiString()
-        val loadingTime = forge.aLong(min = 1)
-
-        testedMonitor.updateViewLoadingTime(key, loadingTime, loadingType)
-        Thread.sleep(PROCESSING_DELAY)
-
-        argumentCaptor<RumRawEvent> {
-            verify(mockScope).handleEvent(capture(), same(mockWriter))
-
-            val event = firstValue
-            check(event is RumRawEvent.UpdateViewLoadingTime)
-            assertThat(event.key).isEqualTo(key)
-            assertThat(event.loadingTime).isEqualTo(loadingTime)
-            assertThat(event.loadingType).isEqualTo(loadingType)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }

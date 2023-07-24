@@ -13,7 +13,6 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.android.telemetry.internal.TelemetryType
 
@@ -108,13 +107,6 @@ internal sealed class RumRawEvent {
         override val eventTime: Time = Time(),
         val type: String? = null,
         val sourceType: RumErrorSourceType = RumErrorSourceType.ANDROID
-    ) : RumRawEvent()
-
-    internal data class UpdateViewLoadingTime(
-        val key: Any,
-        val loadingTime: Long,
-        val loadingType: ViewEvent.LoadingType,
-        override val eventTime: Time = Time()
     ) : RumRawEvent()
 
     internal data class ResourceSent(
