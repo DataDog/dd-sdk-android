@@ -18,6 +18,7 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -142,7 +143,40 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 foNothing 𝕎 onActivityStopped() {}`() {
+    fun `𝕄 remove window 𝕎 onActivityDestroyed() { no more activities for window }`() {
+        // Given
+
+        // When
+        testedJankListener.onActivityStarted(mockActivity)
+        testedJankListener.onActivityStopped(mockActivity)
+        testedJankListener.onActivityDestroyed(mockActivity)
+
+        // Then
+        assertThat(testedJankListener.activeActivities).isEmpty()
+        assertThat(testedJankListener.activeWindowsListener).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 not remove window 𝕎 onActivityDestroyed() { there are activities for window }`() {
+        // Given
+        val anotherActivity = mock<Activity>().apply {
+            whenever(window) doReturn mockWindow
+            whenever(display) doReturn mockDisplay
+        }
+
+        // When
+        testedJankListener.onActivityStarted(mockActivity)
+        testedJankListener.onActivityStopped(mockActivity)
+        testedJankListener.onActivityStarted(anotherActivity)
+        testedJankListener.onActivityDestroyed(mockActivity)
+
+        // Then
+        assertThat(testedJankListener.activeActivities).isNotEmpty
+        assertThat(testedJankListener.activeWindowsListener).isNotEmpty
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 onActivityStopped() {}`() {
         // Given
 
         // When

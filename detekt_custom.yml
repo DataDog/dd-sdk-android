@@ -750,6 +750,7 @@ datadog:
       - "kotlin.collections.MutableList.forEachIndexed(kotlin.Function2)"
       - "kotlin.collections.MutableList.isEmpty()"
       - "kotlin.collections.MutableList.isNotEmpty()"
+      - "kotlin.collections.MutableList.isNullOrEmpty()"
       - "kotlin.collections.MutableList.iterator()"
       - "kotlin.collections.MutableList.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
       - "kotlin.collections.MutableList.remove(java.io.File)"

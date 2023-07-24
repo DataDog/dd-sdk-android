@@ -27,8 +27,8 @@ internal class JankStatsActivityLifecycleListener(
     private val jankStatsProvider: JankStatsProvider = JankStatsProvider.DEFAULT
 ) : ActivityLifecycleCallbacks, JankStats.OnFrameListener {
 
-    private val activeWindowsListener = WeakHashMap<Window, JankStats>()
-    private val activeActivities = WeakHashMap<Window, MutableList<WeakReference<Activity>>>()
+    internal val activeWindowsListener = WeakHashMap<Window, JankStats>()
+    internal val activeActivities = WeakHashMap<Window, MutableList<WeakReference<Activity>>>()
 
     // region ActivityLifecycleCallbacks
     @MainThread
@@ -106,6 +106,10 @@ internal class JankStatsActivityLifecycleListener(
 
     @MainThread
     override fun onActivityDestroyed(activity: Activity) {
+        if (activeActivities[activity.window].isNullOrEmpty()) {
+            activeWindowsListener.remove(activity.window)
+            activeActivities.remove(activity.window)
+        }
     }
 
     // endregion
