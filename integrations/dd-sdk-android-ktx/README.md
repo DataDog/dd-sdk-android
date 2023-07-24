@@ -5,39 +5,9 @@
 To include the Datadog extensions for Kotlin in your project, simply add the
 following to your application's `build.gradle` file.
 
-```
+```groovy
 dependencies {
-    implementation "com.datadoghq:dd-sdk-android:<latest-version>"
     implementation "com.datadoghq:dd-sdk-android-ktx:<latest-version>"
-}
-```
-
-### Initial Setup
-
-Before you can use the SDK, you need to setup the library with your application
-context, your Client token and your Application ID. 
-To generate a Client token and an Application ID please check **UX Monitoring > RUM Applications > New Application**
-in the Datadog dashboard.
-
-```kotlin
-class SampleApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
-
-        val configuration = Configuration.Builder(
-            rumEnabled = true,
-            ...
-        )
-                        .trackInteractions()
-                        .useViewTrackingStrategy(strategy)
-                        ...
-                        .build()
-          val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
-          Datadog.initialize(this, credentials, configuration, trackingConsent)
-
-          val monitor = RumMonitor.Builder().build()
-          GlobalRum.registerIfAbsent(monitor)
-   }
 }
 ```
 
@@ -62,7 +32,7 @@ You can mark a span as having an error using one of the following `error()` meth
     try {
         // …
     } catch (e: IOException) {
-        span.error(e)
+        span.setError(e)
     }
     span.finish()
 ```
@@ -70,9 +40,23 @@ You can mark a span as having an error using one of the following `error()` meth
 ```kotlin
     val span = tracer.buildSpan("<SPAN_NAME>").start()
     if (invalidState) {
-        span.error("Something unexpected happened")
+        span.setError("Something unexpected happened")
     }
     span.finish()
+```
+
+#### `Closeable` extension methods:
+
+```kotlin
+
+// Executes the given [block] function on the [Closeable] instance, intercepts any Exception and sends it in 
+// a RUM error event closing the [Closeable] instance afterwards.
+
+val closeable: Closeable = ...
+closeable.useMonitored { 
+    // Your code here
+}
+
 ```
 
 #### OkHttp Request extension method
@@ -90,7 +74,7 @@ If you are using the `DatadogInterceptor` to trace your OkHttp requests, you can
 If you're using coroutines, you can trace the coroutine blocks using one of the following method. They behave like the usual coroutine methods, and simply require a span operation name.
 
 ```kotlin
-    fun doSomething(){
+    fun doSomething() {
         GlobalScope.launchTraced("<SPAN_NAME>", Dispatchers.IO) {
             // …
         }
@@ -113,7 +97,6 @@ If you're using coroutines, you can trace the coroutine blocks using one of the 
     }
 ```
 
-
 #### Reporting Coroutine Flow errors
 
 If you're using Kotlin Coroutine Flow, you can propagate Flow errors to your RUM dashboard using the `sendErrorToDatadog()` method.
@@ -133,7 +116,7 @@ If you're using Kotlin Coroutine Flow, you can propagate Flow errors to your RUM
 If you are using SQLiteDatabase to persist data locally, you can trace the database transaction using the following method:
 
 ```kotlin
-   sqliteDatabase.transactionTraced("<SPAN_NAME>",isExclusive){ database ->
+   sqliteDatabase.transactionTraced("<SPAN_NAME>",isExclusive) { database ->
         // Your queries here
         database.insert("<TABLE_NAME>", null, contentValues)
 

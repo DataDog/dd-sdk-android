@@ -5,43 +5,17 @@
 To include the Datadog integration for [RxJava][1] in your project, simply add the
 following to your application's `build.gradle` file.
 
-```
+```groovy
 dependencies {
-    implementation "com.datadoghq:dd-sdk-android:<latest-version>"
+    implementation "com.datadoghq:dd-sdk-android-rum:<latest-version>"
     implementation "com.datadoghq:dd-sdk-android-rx:<latest-version>"
 }
 ```
 
 ### Initial Setup
 
-Before you can use the SDK, you need to setup the library with your application
-context, your Client token and your Application ID. 
-To generate a Client token and an Application ID please check **UX Monitoring > RUM Applications > New Application**
-in the Datadog dashboard.
-
-```kotlin
-class SampleApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
-
-        val configuration = Configuration.Builder(
-            rumEnabled = true,
-            ...
-        )
-                        .trackInteractions()
-                        .useViewTrackingStrategy(strategy)
-                        ...
-                        .build()
-          val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
-          Datadog.initialize(this, credentials, configuration, trackingConsent)
-
-          val monitor = RumMonitor.Builder().build()
-          GlobalRum.registerIfAbsent(monitor)
-   }
-}
-```
-
-Following RxJava's [Generated API documentation][2], you just have to apply the `doOnError` operator on your `Observable`,
+1. Setup RUM monitoring, see the dedicated [Datadog Android RUM Collection documentation][2] to learn how.
+2. Following RxJava's [Generated API documentation][3], you just have to apply the `doOnError` operator on your `Observable`,
 `Flowable`, `Single`, `Maybe` or `Completable` and pass an instance of `DatadogErrorConsumer`.
 
 Doing so will automatically intercept any Exception thrown in the upper stream by creating RUM Error events.
@@ -58,7 +32,7 @@ Java:
 
 Kotlin: 
 
-```java
+```kotlin
     Observable.create<T>{...}
     .publishErrorsToRum()
     ...
@@ -75,4 +49,5 @@ would like to change. For more information, read the
 [Apache License, v2.0](../../LICENSE)
 
 [1]: https://github.com/ReactiveX/RxJava
-[2]: https://github.com/ReactiveX/RxJava/wiki
+[2]: https://docs.datadoghq.com/real_user_monitoring/android/?tab=kotlin
+[3]: https://github.com/ReactiveX/RxJava/wiki
