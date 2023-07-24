@@ -6,14 +6,15 @@
 
 package com.datadog.android.sessionreplay.internal.utils
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
-import com.datadog.android.sessionreplay.internal.utils.DrawableUtils.Companion.MAX_BITMAP_SIZE_IN_BYTES
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -26,6 +27,8 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -43,7 +46,13 @@ internal class DrawableUtilsTest {
     private lateinit var mockDisplayMetrics: DisplayMetrics
 
     @Mock
+    private lateinit var mockBitmapPool: BitmapPool
+
+    @Mock
     private lateinit var mockDrawable: Drawable
+
+    @Mock
+    private lateinit var mockApplicationContext: Context
 
     @Mock
     private lateinit var mockBitmapWrapper: BitmapWrapper
@@ -52,21 +61,27 @@ internal class DrawableUtilsTest {
     private lateinit var mockCanvasWrapper: CanvasWrapper
 
     @Mock
+    private lateinit var mockCanvas: Canvas
+
+    @Mock
     private lateinit var mockBitmap: Bitmap
 
     @Mock
-    private lateinit var mockCanvas: Canvas
+    private lateinit var mockConfig: Bitmap.Config
 
     @BeforeEach
     fun setup() {
         whenever(mockBitmapWrapper.createBitmap(any(), any(), any(), any()))
             .thenReturn(mockBitmap)
-        whenever(mockBitmap.byteCount).thenReturn(MAX_BITMAP_SIZE_IN_BYTES + 1)
         whenever(mockCanvasWrapper.createCanvas(mockBitmap))
             .thenReturn(mockCanvas)
+        whenever(mockBitmap.config).thenReturn(mockConfig)
+        whenever(mockBitmapPool.getBitmapByProperties(any(), any(), any())).thenReturn(null)
+
         testedDrawableUtils = DrawableUtils(
             bitmapWrapper = mockBitmapWrapper,
-            canvasWrapper = mockCanvasWrapper
+            canvasWrapper = mockCanvasWrapper,
+            bitmapPool = mockBitmapPool
         )
     }
 
@@ -85,9 +100,11 @@ internal class DrawableUtilsTest {
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            mockApplicationContext,
             mockDrawable,
             mockDisplayMetrics,
-            requestedSize
+            requestedSize,
+            mockConfig
         )
 
         // Then
@@ -114,8 +131,11 @@ internal class DrawableUtilsTest {
         val displayMetricsCaptor = argumentCaptor<DisplayMetrics>()
 
         // When
-        testedDrawableUtils
-            .createBitmapOfApproxSizeFromDrawable(mockDrawable, mockDisplayMetrics)
+        testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            mockApplicationContext,
+            mockDrawable,
+            mockDisplayMetrics
+        )
 
         // Then
         verify(mockBitmapWrapper).createBitmap(
@@ -140,7 +160,12 @@ internal class DrawableUtilsTest {
         val displayMetricsCaptor = argumentCaptor<DisplayMetrics>()
 
         // When
-        val result = testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(mockDrawable, mockDisplayMetrics)
+        val result = testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            mockApplicationContext,
+            mockDrawable,
+            mockDisplayMetrics,
+            config = mockConfig
+        )
 
         // Then
         verify(mockBitmapWrapper).createBitmap(
@@ -169,7 +194,12 @@ internal class DrawableUtilsTest {
             .thenReturn(null)
 
         // When
-        val result = testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(mockDrawable, mockDisplayMetrics)
+        val result = testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            mockApplicationContext,
+            mockDrawable,
+            mockDisplayMetrics,
+            config = mockConfig
+        )
 
         // Then
         assertThat(result).isNull()
@@ -185,11 +215,55 @@ internal class DrawableUtilsTest {
             .thenReturn(null)
 
         // When
-        val result = testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(mockDrawable, mockDisplayMetrics)
+        val result = testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            mockApplicationContext,
+            mockDrawable,
+            mockDisplayMetrics,
+            config = mockConfig
+        )
 
         // Then
         assertThat(result).isNull()
     }
 
     // endregion
+
+    fun `M use bitmap from pool W createBitmapFromDrawable() { exists in pool }`() {
+        // Given
+        val mockBitmapFromPool: Bitmap = mock()
+        whenever(mockDrawable.intrinsicHeight).thenReturn(200)
+        whenever(mockDrawable.intrinsicWidth).thenReturn(200)
+        whenever(mockBitmapPool.getBitmapByProperties(any(), any(), any()))
+            .thenReturn(mockBitmapFromPool)
+
+        // When
+        val actualBitmap = testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            mockApplicationContext,
+            mockDrawable,
+            mockDisplayMetrics,
+            config = mockConfig
+        )
+
+        // Then
+        assertThat(actualBitmap).isEqualTo(mockBitmapFromPool)
+    }
+
+    @Test
+    fun `M register BitmapPool for callbacks only once W createBitmapOfApproxSizeFromDrawable()`() {
+        // Given
+        DrawableUtils.isBitmapPoolRegisteredForCallbacks = false
+
+        // When
+        repeat(5) {
+            testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+                mockApplicationContext,
+                mockDrawable,
+                mockDisplayMetrics,
+                config = mockConfig
+            )
+        }
+
+        // Then
+        verify(mockApplicationContext, times(1)).registerComponentCallbacks(any())
+    }
 }

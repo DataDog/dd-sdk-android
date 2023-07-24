@@ -7,8 +7,15 @@
 package com.datadog.android.sessionreplay.internal.recorder.base64
 
 internal interface Cache<K : Any, V : Any> {
-    fun put(element: K, value: V)
-    fun get(element: K): V?
+
+    fun put(value: V) {}
+    fun put(element: K, value: V) {}
+    fun get(element: K): V? = null
     fun size(): Int
     fun clear()
+
+    companion object {
+        internal const val DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS =
+            "Cache instance does not implement ComponentCallbacks2"
+    }
 }

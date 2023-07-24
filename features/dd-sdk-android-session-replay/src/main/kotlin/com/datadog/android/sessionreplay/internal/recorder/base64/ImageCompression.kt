@@ -22,5 +22,5 @@ interface ImageCompression {
     /**
      * Compress the bitmap to a [ByteArrayOutputStream].
      */
-    fun compressBitmapToStream(bitmap: Bitmap): ByteArrayOutputStream
+    fun compressBitmap(bitmap: Bitmap): ByteArray
 }
