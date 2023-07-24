@@ -17,7 +17,7 @@ internal class BitmapWrapper {
         bitmapHeight: Int,
         config: Config
     ): Bitmap? {
-        @Suppress("SwallowedException", "TooGenericExceptionCaught")
+        @Suppress("SwallowedException")
         return try {
             Bitmap.createBitmap(displayMetrics, bitmapWidth, bitmapHeight, config)
         } catch (e: IllegalArgumentException) {

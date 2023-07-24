@@ -210,6 +210,29 @@
 
             </LinearLayout>
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                >
+
+                <ImageButton
+                    android:id="@+id/imageButtonWithShapeOval"
+                    android:layout_width="160dp"
+                    android:layout_height="160dp"
+                    android:src="@drawable/ic_dd_shape_oval"
+                    />
+
+                <ImageButton
+                    android:id="@+id/imageButtonWithShapeRect"
+                    android:layout_width="160dp"
+                    android:layout_height="160dp"
+                    android:src="@drawable/ic_dd_shape_rect"
+                    />
+
+            </LinearLayout>
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

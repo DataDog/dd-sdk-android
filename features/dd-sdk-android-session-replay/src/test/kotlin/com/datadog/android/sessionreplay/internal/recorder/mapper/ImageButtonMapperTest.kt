@@ -33,6 +33,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -101,6 +103,9 @@ internal class ImageButtonMapperTest {
         whenever(mockDrawable.constantState).thenReturn(mockConstantState)
         whenever(mockImageButton.drawable).thenReturn(mockDrawable)
 
+        whenever(mockDrawable.intrinsicWidth).thenReturn(forge.aPositiveInt())
+        whenever(mockDrawable.intrinsicHeight).thenReturn(forge.aPositiveInt())
+
         whenever(mockWebPImageCompression.getMimeType()).thenReturn(fakeMimeType)
 
         whenever(mockSystemInformation.screenDensity).thenReturn(forge.aFloat())
@@ -130,10 +135,10 @@ internal class ImageButtonMapperTest {
             .thenReturn(null)
 
         // When
-        val result = testedMapper.map(mockImageButton, mockMappingContext)
+        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
 
         // Then
-        assertThat(result).isEmpty()
+        assertThat(wireframes).isEmpty()
     }
 
     @Test
@@ -142,10 +147,48 @@ internal class ImageButtonMapperTest {
         whenever(mockImageButton.drawable).thenReturn(null)
 
         // When
-        val result = testedMapper.map(mockImageButton, mockMappingContext)
+        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
 
         // Then
-        assertThat(result).isEmpty()
+        assertThat(wireframes).isEmpty()
+    }
+
+    @Test
+    fun `M return emptylist W map() { drawable has no intrinsicWidth }`() {
+        // Given
+        whenever(mockDrawable.intrinsicWidth).thenReturn(-1)
+
+        // When
+        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
+
+        // Then
+        assertThat(wireframes).isEmpty()
+    }
+
+    @Test
+    fun `M return emptylist W map() { drawable has no intrinsicHeight }`() {
+        // Given
+        whenever(mockDrawable.intrinsicHeight).thenReturn(-1)
+
+        // When
+        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
+
+        // Then
+        assertThat(wireframes).isEmpty()
+    }
+
+    @Test
+    fun `M set null shapestyle and border W map() { view without background }`() {
+        // Given
+        whenever(mockImageButton.background).thenReturn(null)
+
+        // When
+        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
+        val actualWireframe = wireframes[0] as? MobileSegment.Wireframe.ShapeWireframe
+
+        // Then
+        assertThat(actualWireframe?.shapeStyle).isNull()
+        assertThat(actualWireframe?.border).isNull()
     }
 
     @Test
@@ -165,10 +208,22 @@ internal class ImageButtonMapperTest {
         )
 
         // When
-        val result = testedMapper.map(mockImageButton, mockMappingContext)
+        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
+        val actualWireframe = wireframes[0]
 
         // Then
-        val wireframe = result[0]
-        assertThat(wireframe).isEqualTo(expectedWireframe)
+        assertThat(actualWireframe).isEqualTo(expectedWireframe)
+        verify(mockBase64Serializer, times(1))
+            .handleBitmap(any(), any(), any(), any())
+    }
+
+    @Test
+    fun `M call handleBitmap W map()`() {
+        // When
+        testedMapper.map(mockImageButton, mockMappingContext)
+
+        // Then
+        verify(mockBase64Serializer, times(1))
+            .handleBitmap(any(), any(), any(), any())
     }
 }

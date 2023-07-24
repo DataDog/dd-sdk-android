@@ -727,6 +727,7 @@ datadog:
       - "kotlin.collections.MutableList.add(com.datadog.android.plugin.DatadogPlugin)"
       - "kotlin.collections.MutableList.add(com.datadog.android.sessionreplay.internal.processor.MutationResolver.Entry)"
       - "kotlin.collections.MutableList.add(com.datadog.android.sessionreplay.model.MobileSegment.Add)"
+      - "kotlin.collections.MutableList.add(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe)"
       - "kotlin.collections.MutableList.add(com.datadog.android.sessionreplay.model.MobileSegment.WireframeUpdateMutation)"
       - "kotlin.collections.MutableList.add(com.datadog.android.rum.internal.domain.scope.RumScope)"
       - "kotlin.collections.MutableList.add(com.datadog.android.rum.model.ActionEvent.Type)"
@@ -838,6 +839,7 @@ datadog:
       - "kotlin.Float.toFloat()"
       - "kotlin.Int.inv()"
       - "kotlin.Int.toChar()"
+      - "kotlin.Int.toDouble()"
       - "kotlin.Int.toFloat()"
       - "kotlin.Int.toLong()"
       - "kotlin.Int.and(kotlin.Int)"
@@ -857,6 +859,7 @@ datadog:
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext, com.google.gson.JsonArray)"
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.model.MobileSegment, com.google.gson.JsonObject)"
       - "kotlin.Pair.constructor(com.google.gson.JsonObject, kotlin.Long)"
+      - "kotlin.Pair.constructor(kotlin.Int, kotlin.Int)"
       - "kotlin.Triple.constructor(kotlin.String, kotlin.String, kotlin.String)"
       - "kotlin.Triple.constructor(kotlin.Nothing?, kotlin.Nothing?, kotlin.Nothing?)"
       # endregion
