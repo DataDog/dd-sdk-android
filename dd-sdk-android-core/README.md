@@ -1,6 +1,6 @@
 # Datadog SDK for Android - core library
 
-## Getting Started
+## Getting started
 
 To include the Datadog SDK for Android in your project, simply add any product you want to use to your application's `build.gradle` file.
 
@@ -34,7 +34,7 @@ class SampleApplication : Application() {
 }
 ```
 
-### Using a Secondary Instance of the SDK
+### Using a secondary instance of the SDK
 
 It is possible to initialize multiple instances of the SDK by associating them with a name. Many methods of the SDK can optionally take an SDK instance as an argument. If not provided, the call is associated with the default (nameless) SDK instance.
 
@@ -54,7 +54,7 @@ You can retrieve the named SDK instance by calling `Datadog.getInstance(<name>)`
 
 See the dedicated [Datadog Android RUM Collection documentation][1] to learn how to send RUM data from your Android or Android TV application to Datadog.
 
-## Setting up Datadog Logs SDK
+## Setting up the Datadog Logs SDK
 
 See the dedicated [Datadog Android Log Collection documentation][2] to learn how to forward logs from your Android or Android TV application to Datadog.
 

@@ -38,15 +38,15 @@ If you use Jetpack Compose in your application, take a look at Datadog's [dedica
 
 ### SQLDelight
 
-If you use SQLDelight in your application, take a look at Datadog's [dedicated library](integrations/dd-sdk-android-sqldelight/README.md).
+If you use SQLDelight in your application, see Datadog's [dedicated library](integrations/dd-sdk-android-sqldelight/README.md).
 
 ### RxJava
 
-If you use RxJava in your application, take a look at Datadog's [dedicated library](integrations/dd-sdk-android-rx/README.md).
+If you use RxJava in your application, see Datadog's [dedicated library](integrations/dd-sdk-android-rx/README.md).
 
 ### Picasso
 
-If you use Picasso, let it use your `OkHttpClient` instrumented with Datadog SDK, and you can get RUM and APM information about network requests made by Picasso.
+If you use Picasso, use it with the `OkHttpClient` that's been instrumented with the Datadog SDK for RUM and APM information about network requests made by Picasso.
 
 ```kotlin
         val picasso = Picasso.Builder(context)
@@ -58,7 +58,7 @@ If you use Picasso, let it use your `OkHttpClient` instrumented with Datadog SDK
 
 ### Retrofit
 
-If you use Retrofit, let it use your `OkHttpClient` instrumented with Datadog SDK, and you can get RUM and APM information about network requests made with Retrofit.
+If you use Retrofit, use it with the `OkHttpClient` that's been instrumented with the Datadog SDK for RUM and APM information about network requests made with Retrofit.
 
 ```kotlin
         val retrofitClient = Retrofit.Builder()
@@ -69,7 +69,7 @@ If you use Retrofit, let it use your `OkHttpClient` instrumented with Datadog SD
 
 ### Apollo (GraphQL)
 
-If you use Apollo, let it use your `OkHttpClient` instrumented with Datadog SDK, and you can get RUM and APM information about all the queries performed through the Apollo client.
+If you use Apollo, use it with the `OkHttpClient` that's been instrumented with the Datadog SDK for RUM and APM information about all the queries performed through Apollo client.
 
 ```kotlin
         val apolloClient =  ApolloClient.builder()
