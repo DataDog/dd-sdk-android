@@ -1,3 +1,8 @@
+public final class com/datadog/android/rum/CloseableExtKt {
+	public static final fun useMonitored (Ljava/io/Closeable;Lcom/datadog/android/api/SdkCore;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun useMonitored$default (Ljava/io/Closeable;Lcom/datadog/android/api/SdkCore;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
 public final class com/datadog/android/rum/DdRumContentProvider : android/content/ContentProvider {
 	public fun <init> ()V
 	public fun delete (Landroid/net/Uri;Ljava/lang/String;[Ljava/lang/String;)I
@@ -4179,6 +4184,18 @@ public final class com/datadog/android/rum/model/ViewEvent$Viewport {
 public final class com/datadog/android/rum/model/ViewEvent$Viewport$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Viewport;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent$Viewport;
+}
+
+public final class com/datadog/android/rum/resource/ContextExtKt {
+	public static final fun getAssetAsRumResource (Landroid/content/Context;Ljava/lang/String;ILcom/datadog/android/api/SdkCore;)Ljava/io/InputStream;
+	public static synthetic fun getAssetAsRumResource$default (Landroid/content/Context;Ljava/lang/String;ILcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Ljava/io/InputStream;
+	public static final fun getRawResAsRumResource (Landroid/content/Context;ILcom/datadog/android/api/SdkCore;)Ljava/io/InputStream;
+	public static synthetic fun getRawResAsRumResource$default (Landroid/content/Context;ILcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Ljava/io/InputStream;
+}
+
+public final class com/datadog/android/rum/resource/InputStreamExtKt {
+	public static final fun asRumResource (Ljava/io/InputStream;Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)Ljava/io/InputStream;
+	public static synthetic fun asRumResource$default (Ljava/io/InputStream;Ljava/lang/String;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Ljava/io/InputStream;
 }
 
 public final class com/datadog/android/rum/resource/RumResourceInputStream : java/io/InputStream {

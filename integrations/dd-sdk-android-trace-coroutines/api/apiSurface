@@ -1,0 +1,6 @@
+fun kotlinx.coroutines.CoroutineScope.launchTraced(String, kotlin.coroutines.CoroutineContext = EmptyCoroutineContext, kotlinx.coroutines.CoroutineStart = CoroutineStart.DEFAULT, CoroutineScopeSpan.() -> Unit): kotlinx.coroutines.Job
+fun <T> runBlockingTraced(String, kotlin.coroutines.CoroutineContext = EmptyCoroutineContext, kotlinx.coroutines.CoroutineScope.() -> T): T
+fun <T: Any?> kotlinx.coroutines.CoroutineScope.asyncTraced(String, kotlin.coroutines.CoroutineContext = EmptyCoroutineContext, kotlinx.coroutines.CoroutineStart = CoroutineStart.DEFAULT, CoroutineScopeSpan.() -> T): kotlinx.coroutines.Deferred<T>
+fun <T: Any?> kotlinx.coroutines.Deferred<T>.awaitTraced(String): T
+fun <T: Any?> withContextTraced(String, kotlin.coroutines.CoroutineContext, CoroutineScopeSpan.() -> T): T
+interface com.datadog.android.trace.coroutines.CoroutineScopeSpan : kotlinx.coroutines.CoroutineScope, io.opentracing.Span

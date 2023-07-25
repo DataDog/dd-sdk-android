@@ -22,19 +22,19 @@ If your existing codebase is using Timber, you can forward all those logs to  Da
 
 ### Coil
 
-If you use Coil to load images in your application, take a look at Datadog's [dedicated library](integrations/dd-sdk-android-coil/README.md).
+If you use Coil to load images in your application, see Datadog's [dedicated library](integrations/dd-sdk-android-coil/README.md).
 
 ### Fresco
 
-If you use Fresco to load images in your application, take a look at Datadog's [dedicated library](integrations/dd-sdk-android-fresco/README.md).
+If you use Fresco to load images in your application, see Datadog's [dedicated library](integrations/dd-sdk-android-fresco/README.md).
 
 ### Glide
 
-If you use Glide to load images in your application, take a look at Datadog's [dedicated library](integrations/dd-sdk-android-glide/README.md).
+If you use Glide to load images in your application, see Datadog's [dedicated library](integrations/dd-sdk-android-glide/README.md).
 
 ### Jetpack Compose
 
-If you use Jetpack Compose in your application, take a look at Datadog's [dedicated library](integrations/dd-sdk-android-compose/README.md).
+If you use Jetpack Compose in your application, see Datadog's [dedicated library](integrations/dd-sdk-android-compose/README.md).
 
 ### SQLDelight
 
@@ -77,6 +77,10 @@ If you use Apollo, use it with the `OkHttpClient` that's been instrumented with 
                  .serverUrl(<APOLLO_SERVER_URL>)
                  .build()
 ```
+
+### Kotlin Coroutines
+
+If you use Kotlin Coroutines, see Datadog's [dedicated library with extensions for RUM](integrations/dd-sdk-android-rum-coroutines/README.md) and with [extensions for Trace](integrations/dd-sdk-android-trace-coroutines/README.md)
 
 ## Looking up your logs
 
