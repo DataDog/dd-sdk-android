@@ -3,7 +3,7 @@
 ## Getting started
 
 To include the Datadog Trace extensions for Kotlin Coroutines in your project, simply add the
-following to your application's `build.gradle` file.
+following to your application's `build.gradle` file:
 
 ```groovy
 dependencies {
