@@ -217,6 +217,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.type).isEqualTo(RumViewScope.RumViewType.FOREGROUND)
                 assertThat(it.attributes).containsAllEntriesOf(fakeEvent.attributes)
                 assertThat(it.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
+                assertThat(it.version).isEqualTo(2)
             }
         assertThat(testedScope.applicationDisplayed).isTrue()
     }
@@ -243,6 +244,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.type).isEqualTo(RumViewScope.RumViewType.FOREGROUND)
                 assertThat(it.attributes).containsAllEntriesOf(fakeEvent.attributes)
                 assertThat(it.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
+                assertThat(it.version).isEqualTo(2)
             }
         assertThat(testedScope.applicationDisplayed).isTrue()
     }

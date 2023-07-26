@@ -13,7 +13,6 @@ You also need to set the `android.useAndroidX` and `android.enableJetifier` prop
 
 ### Duplicate class com.google.common.util.concurrent.ListenableFuture
 
-
 > Duplicate class com.google.common.util.concurrent.ListenableFuture found in modules jetified-guava-jdk5-17.0.jar (com.google.guava:guava-jdk5:17.0) and jetified-listenablefuture-1.0.jar (com.google.guava:listenablefuture:1.0)
 
 This issue can occur if your dependencies rely on different Guava artifacts as the Datadog SDK for Android. The SDK uses AndroidX's WorkManager, which depends on a specific Guava dependency.
@@ -23,6 +22,25 @@ Solve this issue by excluding the conflicting module from your dependency:
 ```
 implementation ("com.datadoghq:dd-sdk-android:1.3.0") {
     exclude group: 'com.google.guava', module: 'listenablefuture'
+}
+```
+
+### Duplicate class kotlin.collections.jdk8.CollectionsJDK8Kt found
+
+> Duplicate class kotlin.collections.jdk8.CollectionsJDK8Kt found in modules kotlin-stdlib-1.8.10 (org.jetbrains.kotlin:kotlin-stdlib:1.8.10) and kotlin-stdlib-jdk8-1.7.20 (org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.7.20)
+
+You need to add the following rules to your buildscript (more details [here](https://stackoverflow.com/a/75298544)):
+
+```kotlin
+dependencies {
+    constraints {
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.10") {
+            because("kotlin-stdlib-jdk7 is now a part of kotlin-stdlib")
+        }
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.10") {
+            because("kotlin-stdlib-jdk8 is now a part of kotlin-stdlib")
+        }
+    }
 }
 ```
 
@@ -74,12 +92,12 @@ If you think the SDK does not behave as it should, make sure you set the library
 
 ### Logs/Traces are not appearing in your dashboard.
 
-Make sure that you initialized the SDK using a valid [Client Token](https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens).
+Make sure that you initialized the SDK using a valid [Client Token](https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens) and you are targeting the correct Datadog site.
 Otherwise, if the library's logs are enabled, you should see the following message in the Logcat :
 
-> Unable to send batch because your token is invalid. Make sure that the provided token still exists.
+> "$batchInfo failed because your token is invalid; the batch was dropped. Make sure that the provided token still exists and you're targeting the relevant Datadog site."
 
-### RUM FragmentViewTrackingStrategy is not working correctly with the ViewPager
+### RUM `FragmentViewTrackingStrategy` is not working correctly with the `ViewPager`
 
 If you have a `FragmentViewPager` somewhere in your activities this can produce wrong View events if you are using the RUM `FragmentViewTrackingStrategy`.
 The reason for this is the way the `FragmentPagerAdapter` used to work by resuming **current** and **next** fragment to be able to resolve the
@@ -88,3 +106,7 @@ makes sure you switch to the new way of instantiating your `FragmentPagerAdapter
 ```kotlin
   FragmentPagerAdapter(fragmentManager, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT)
 ```
+
+### RUM view debugging
+
+You can use `RumMonitor#debug` property, which once enable will show you the overlay in the application with the actual RUM view name.

@@ -44,6 +44,10 @@ public class com/datadog/android/okhttp/DatadogInterceptor : com/datadog/android
 	protected fun onRequestIntercepted (Lcom/datadog/android/api/feature/FeatureSdkCore;Lokhttp3/Request;Lio/opentracing/Span;Lokhttp3/Response;Ljava/lang/Throwable;)V
 }
 
+public final class com/datadog/android/okhttp/trace/OkHttpRequestExtKt {
+	public static final fun parentSpan (Lokhttp3/Request$Builder;Lio/opentracing/Span;)Lokhttp3/Request$Builder;
+}
+
 public abstract interface class com/datadog/android/okhttp/trace/TracedRequestListener {
 	public abstract fun onRequestIntercepted (Lokhttp3/Request;Lio/opentracing/Span;Lokhttp3/Response;Ljava/lang/Throwable;)V
 }

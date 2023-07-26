@@ -9,10 +9,10 @@ package com.datadog.android.sample.about
 import android.content.Context
 import android.os.AsyncTask
 import androidx.lifecycle.ViewModel
-import com.datadog.android.ktx.rum.getAssetAsRumResource
-import com.datadog.android.ktx.rum.getRawResAsRumResource
-import com.datadog.android.ktx.tracing.withinSpan
+import com.datadog.android.rum.resource.getAssetAsRumResource
+import com.datadog.android.rum.resource.getRawResAsRumResource
 import com.datadog.android.sample.R
+import com.datadog.android.trace.withinSpan
 import java.io.BufferedReader
 
 @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
