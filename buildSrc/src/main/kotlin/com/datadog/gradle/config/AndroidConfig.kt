@@ -18,7 +18,7 @@ object AndroidConfig {
     const val MIN_SDK_FOR_WEAR = 23
     const val BUILD_TOOLS_VERSION = "33.0.2"
 
-    val VERSION = Version(2, 0, 0, Version.Type.Beta(2))
+    val VERSION = Version(2, 0, 0, Version.Type.Beta(3))
 }
 
 // TODO RUMM-3263 Switch to Java 17 bytecode
