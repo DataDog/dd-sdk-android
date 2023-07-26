@@ -12,8 +12,8 @@ import android.content.UriMatcher
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
-import com.datadog.android.ktx.sqlite.transactionTraced
 import com.datadog.android.sample.data.db.DatadogDbContract
+import com.datadog.android.trace.sqlite.transactionTraced
 
 internal class DatadogContentProvider : ContentProvider() {
 
