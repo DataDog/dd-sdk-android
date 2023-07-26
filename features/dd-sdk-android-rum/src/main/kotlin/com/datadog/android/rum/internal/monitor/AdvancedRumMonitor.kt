@@ -10,7 +10,6 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.internal.debug.RumDebugListener
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.internal.TelemetryCoreConfiguration
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -24,8 +23,6 @@ internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
     fun resetSession()
 
     fun sendWebViewEvent()
-
-    fun updateViewLoadingTime(key: Any, loadingTimeInNs: Long, type: ViewEvent.LoadingType)
 
     fun addLongTask(durationNs: Long, target: String)
 

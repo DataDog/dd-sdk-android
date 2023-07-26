@@ -55,7 +55,7 @@ internal class DataOkHttpUploader(
         } catch (e: Throwable) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                InternalLogger.Target.USER,
                 { "Unable to execute the request; we will retry later." },
                 e
             )

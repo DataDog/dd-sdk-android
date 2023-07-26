@@ -19,7 +19,7 @@ android {
 
     defaultConfig {
         applicationId = "com.datadog.android.wear.sample"
-        minSdk = AndroidConfig.MIN_SDK
+        minSdk = AndroidConfig.MIN_SDK_FOR_WEAR
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
@@ -63,8 +63,6 @@ android {
 }
 
 dependencies {
-
-    implementation(project(":dd-sdk-android-core"))
     implementation(project(":features:dd-sdk-android-ndk"))
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-rum"))

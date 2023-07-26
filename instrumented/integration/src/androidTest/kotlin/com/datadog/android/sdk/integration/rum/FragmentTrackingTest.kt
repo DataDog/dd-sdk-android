@@ -59,15 +59,7 @@ internal abstract class FragmentTrackingTest :
             ExpectedViewEvent(
                 fragmentAViewUrl,
                 3,
-                currentFragmentExtras(activity),
-                extraViewAttributes = mapOf(
-                    "loading_type" to "fragment_display"
-                ),
-                extraViewAttributesWithPredicate = mapOf(
-                    "loading_time" to { time ->
-                        time.asLong >= 0
-                    }
-                )
+                currentFragmentExtras(activity)
             )
         )
 
@@ -82,15 +74,7 @@ internal abstract class FragmentTrackingTest :
             ExpectedViewEvent(
                 fragmentBViewUrl,
                 2,
-                currentFragmentExtras(activity),
-                extraViewAttributes = mapOf(
-                    "loading_type" to "fragment_display"
-                ),
-                extraViewAttributesWithPredicate = mapOf(
-                    "loading_time" to { time ->
-                        time.asLong >= 0
-                    }
-                )
+                currentFragmentExtras(activity)
             )
         )
         // view stopped
@@ -98,15 +82,7 @@ internal abstract class FragmentTrackingTest :
             ExpectedViewEvent(
                 fragmentBViewUrl,
                 3,
-                currentFragmentExtras(activity),
-                extraViewAttributes = mapOf(
-                    "loading_type" to "fragment_display"
-                ),
-                extraViewAttributesWithPredicate = mapOf(
-                    "loading_time" to { time ->
-                        time.asLong >= 0
-                    }
-                )
+                currentFragmentExtras(activity)
             )
         )
 
@@ -120,15 +96,7 @@ internal abstract class FragmentTrackingTest :
             ExpectedViewEvent(
                 fragmentAViewUrl,
                 2,
-                currentFragmentExtras(activity),
-                extraViewAttributes = mapOf(
-                    "loading_type" to "fragment_redisplay"
-                ),
-                extraViewAttributesWithPredicate = mapOf(
-                    "loading_time" to { time ->
-                        time.asLong >= 0
-                    }
-                )
+                currentFragmentExtras(activity)
             )
         )
 
@@ -137,15 +105,7 @@ internal abstract class FragmentTrackingTest :
             ExpectedViewEvent(
                 fragmentAViewUrl,
                 3,
-                currentFragmentExtras(activity),
-                extraViewAttributes = mapOf(
-                    "loading_type" to "fragment_redisplay"
-                ),
-                extraViewAttributesWithPredicate = mapOf(
-                    "loading_time" to { time ->
-                        time.asLong >= 0
-                    }
-                )
+                currentFragmentExtras(activity)
             )
         )
 
