@@ -26,6 +26,13 @@ public final class com/datadog/android/trace/AndroidTracer$Companion {
 	public final fun logThrowable (Lio/opentracing/Span;Ljava/lang/Throwable;)V
 }
 
+public final class com/datadog/android/trace/SpanExtKt {
+	public static final fun setError (Lio/opentracing/Span;Ljava/lang/String;)V
+	public static final fun setError (Lio/opentracing/Span;Ljava/lang/Throwable;)V
+	public static final fun withinSpan (Ljava/lang/String;Lio/opentracing/Span;ZLkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun withinSpan$default (Ljava/lang/String;Lio/opentracing/Span;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
 public final class com/datadog/android/trace/Trace {
 	public static final field INSTANCE Lcom/datadog/android/trace/Trace;
 	public static final fun enable (Lcom/datadog/android/trace/TraceConfiguration;)V
@@ -300,6 +307,11 @@ public final class com/datadog/android/trace/model/SpanEvent$Usr {
 public final class com/datadog/android/trace/model/SpanEvent$Usr$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/trace/model/SpanEvent$Usr;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/trace/model/SpanEvent$Usr;
+}
+
+public final class com/datadog/android/trace/sqlite/SqliteDatabaseExtKt {
+	public static final fun transactionTraced (Landroid/database/sqlite/SQLiteDatabase;Ljava/lang/String;ZLkotlin/jvm/functions/Function2;)Ljava/lang/Object;
+	public static synthetic fun transactionTraced$default (Landroid/database/sqlite/SQLiteDatabase;Ljava/lang/String;ZLkotlin/jvm/functions/Function2;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class com/datadog/exec/CommonTaskExecutor : java/util/concurrent/AbstractExecutorService {
