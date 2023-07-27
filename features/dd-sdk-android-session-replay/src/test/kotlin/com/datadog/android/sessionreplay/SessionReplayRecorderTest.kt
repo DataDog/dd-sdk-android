@@ -131,8 +131,7 @@ internal class SessionReplayRecorderTest {
         // Then
         verify(mockWindowCallbackInterceptor).intercept(fakeActiveWindows, appContext.mockInstance)
         verify(mockViewOnDrawInterceptor).intercept(
-            fakeActiveWindowsDecorViews,
-            appContext.mockInstance
+            fakeActiveWindowsDecorViews
         )
     }
 
@@ -161,7 +160,7 @@ internal class SessionReplayRecorderTest {
 
         // Then
         verify(mockWindowCallbackInterceptor).intercept(fakeAddedWindows, appContext.mockInstance)
-        verify(mockViewOnDrawInterceptor).intercept(fakeNewDecorViews, appContext.mockInstance)
+        verify(mockViewOnDrawInterceptor).intercept(fakeNewDecorViews)
     }
 
     @Test
@@ -182,7 +181,7 @@ internal class SessionReplayRecorderTest {
         verify(mockWindowCallbackInterceptor, never())
             .intercept(fakeAddedWindows, appContext.mockInstance)
         verify(mockViewOnDrawInterceptor, never())
-            .intercept(fakeNewDecorViews, appContext.mockInstance)
+            .intercept(fakeNewDecorViews)
     }
 
     @Test
@@ -203,7 +202,7 @@ internal class SessionReplayRecorderTest {
         verify(mockWindowCallbackInterceptor, never())
             .intercept(fakeAddedWindows, appContext.mockInstance)
         verify(mockViewOnDrawInterceptor, never())
-            .intercept(fakeNewDecorViews, appContext.mockInstance)
+            .intercept(fakeNewDecorViews)
     }
 
     @Test
@@ -221,7 +220,7 @@ internal class SessionReplayRecorderTest {
 
         // Then
         verify(mockWindowCallbackInterceptor).stopIntercepting(fakeAddedWindows)
-        verify(mockViewOnDrawInterceptor).intercept(fakeNewDecorViews, appContext.mockInstance)
+        verify(mockViewOnDrawInterceptor).intercept(fakeNewDecorViews)
     }
 
     @Test
@@ -241,7 +240,7 @@ internal class SessionReplayRecorderTest {
         // Then
         verify(mockWindowCallbackInterceptor, never()).stopIntercepting(fakeAddedWindows)
         verify(mockViewOnDrawInterceptor, never())
-            .intercept(fakeNewDecorViews, appContext.mockInstance)
+            .intercept(fakeNewDecorViews)
     }
 
     @Test
@@ -259,7 +258,7 @@ internal class SessionReplayRecorderTest {
         // Then
         verify(mockWindowCallbackInterceptor, never()).stopIntercepting(fakeAddedWindows)
         verify(mockViewOnDrawInterceptor, never())
-            .intercept(fakeNewDecorViews, appContext.mockInstance)
+            .intercept(fakeNewDecorViews)
     }
 
     companion object {

@@ -386,7 +386,7 @@ internal class RecorderWindowCallbackTest {
         // Then
         inOrder(mockViewOnDrawInterceptor) {
             verify(mockViewOnDrawInterceptor).stopIntercepting()
-            verify(mockViewOnDrawInterceptor).intercept(fakeDecorViews, mockContext)
+            verify(mockViewOnDrawInterceptor).intercept(fakeDecorViews)
         }
     }
 
