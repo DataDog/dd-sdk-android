@@ -6,9 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
-import android.app.Activity
-import android.content.res.Resources
-import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewTreeObserver
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -25,7 +22,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
@@ -51,11 +47,8 @@ internal class ViewOnDrawInterceptorTest {
 
     lateinit var fakeDecorViews: List<View>
 
-    lateinit var mockActivity: Activity
-
     @BeforeEach
     fun `set up`(forge: Forge) {
-        mockActivity = forge.aMockedActivity()
         fakeDecorViews = forge.aMockedDecorViewsList()
         testedInterceptor = ViewOnDrawInterceptor(
             mockRecordedDataQueueHandler,
@@ -66,7 +59,7 @@ internal class ViewOnDrawInterceptorTest {
     @Test
     fun `M register the OnDrawListener W intercept()`() {
         // When
-        testedInterceptor.intercept(fakeDecorViews, mockActivity)
+        testedInterceptor.intercept(fakeDecorViews)
 
         // Then
         val captor = argumentCaptor<ViewTreeObserver.OnDrawListener>()
@@ -83,10 +76,10 @@ internal class ViewOnDrawInterceptorTest {
         testedInterceptor = ViewOnDrawInterceptor(
             mockRecordedDataQueueHandler,
             mockSnapshotProducer
-        ) { _, _ -> mockOnDrawListener }
+        ) { _ -> mockOnDrawListener }
 
         // When
-        testedInterceptor.intercept(fakeDecorViews, mockActivity)
+        testedInterceptor.intercept(fakeDecorViews)
 
         // Then
         fakeDecorViews.forEach {
@@ -98,7 +91,7 @@ internal class ViewOnDrawInterceptorTest {
     @Test
     fun `M register one single listener instance W intercept()`() {
         // When
-        testedInterceptor.intercept(fakeDecorViews, mockActivity)
+        testedInterceptor.intercept(fakeDecorViews)
 
         // Then
         val captor = argumentCaptor<ViewTreeObserver.OnDrawListener>()
@@ -115,7 +108,7 @@ internal class ViewOnDrawInterceptorTest {
     @Test
     fun `M unregister and clean the listeners W stopIntercepting(decorViews)`() {
         // Given
-        testedInterceptor.intercept(fakeDecorViews, mockActivity)
+        testedInterceptor.intercept(fakeDecorViews)
 
         // When
         testedInterceptor.stopIntercepting(fakeDecorViews)
@@ -132,7 +125,7 @@ internal class ViewOnDrawInterceptorTest {
     @Test
     fun `M unregister and clean the listeners W stopIntercepting()`() {
         // Given
-        testedInterceptor.intercept(fakeDecorViews, mockActivity)
+        testedInterceptor.intercept(fakeDecorViews)
 
         // When
         testedInterceptor.stopIntercepting()
@@ -149,10 +142,10 @@ internal class ViewOnDrawInterceptorTest {
     @Test
     fun `M unregister first and clean the listeners W intercepting()`() {
         // Given
-        testedInterceptor.intercept(fakeDecorViews, mockActivity)
+        testedInterceptor.intercept(fakeDecorViews)
 
         // When
-        testedInterceptor.intercept(fakeDecorViews, mockActivity)
+        testedInterceptor.intercept(fakeDecorViews)
 
         // Then
         fakeDecorViews.forEach {
@@ -165,38 +158,7 @@ internal class ViewOnDrawInterceptorTest {
         }
     }
 
-    @Test
-    fun `M register listener startRecording() { more activities }`(forge: Forge) {
-        // Given
-        val fakeDecorsActivitiesPairs = forge.aList {
-            aMockedDecorViewsList() to aMockedActivity()
-        }
-
-        // When
-        fakeDecorsActivitiesPairs.forEach {
-            testedInterceptor.intercept(it.first, it.second)
-        }
-
-        // Then
-        fakeDecorsActivitiesPairs.map { it.first }.flatten().forEach {
-            it.viewTreeObserver.inOrder {
-                verify().addOnDrawListener(any())
-            }
-        }
-    }
-
     // region Internal
-
-    private fun Forge.aMockedActivity(): Activity {
-        val mockActivity: Activity = mock()
-        val fakeDensity = aPositiveFloat()
-        val displayMetrics = DisplayMetrics().apply { density = fakeDensity }
-        val mockResources: Resources = mock {
-            whenever(it.displayMetrics).thenReturn(displayMetrics)
-        }
-        whenever(mockActivity.resources).thenReturn(mockResources)
-        return mockActivity
-    }
 
     private fun Forge.aMockedDecorViewsList(): List<View> {
         return aList {

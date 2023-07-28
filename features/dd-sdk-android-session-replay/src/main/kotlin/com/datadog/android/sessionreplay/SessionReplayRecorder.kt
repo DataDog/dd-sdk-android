@@ -147,7 +147,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             val windows = sessionReplayLifecycleCallback.getCurrentWindows()
             val decorViews = windowInspector.getGlobalWindowViews()
             windowCallbackInterceptor.intercept(windows, appContext)
-            viewOnDrawInterceptor.intercept(decorViews, appContext)
+            viewOnDrawInterceptor.intercept(decorViews)
         }
     }
 
@@ -165,7 +165,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         if (shouldRecord) {
             val decorViews = windowInspector.getGlobalWindowViews()
             windowCallbackInterceptor.intercept(windows, appContext)
-            viewOnDrawInterceptor.intercept(decorViews, appContext)
+            viewOnDrawInterceptor.intercept(decorViews)
         }
     }
 
@@ -174,7 +174,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         if (shouldRecord) {
             val decorViews = windowInspector.getGlobalWindowViews()
             windowCallbackInterceptor.stopIntercepting(windows)
-            viewOnDrawInterceptor.intercept(decorViews, appContext)
+            viewOnDrawInterceptor.intercept(decorViews)
         }
     }
 }

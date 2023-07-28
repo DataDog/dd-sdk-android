@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("TooGenericExceptionCaught")
 internal class RecorderWindowCallback(
-    private val appContext: Context,
+    appContext: Context,
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     internal val wrappedCallback: Window.Callback,
     private val timeProvider: TimeProvider,
@@ -146,7 +146,7 @@ internal class RecorderWindowCallback(
             // a new window was added or removed so we stop recording the previous root views
             // and we start recording the new ones.
             viewOnDrawInterceptor.stopIntercepting()
-            viewOnDrawInterceptor.intercept(rootViews, appContext)
+            viewOnDrawInterceptor.intercept(rootViews)
         }
     }
 
