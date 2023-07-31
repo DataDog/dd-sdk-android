@@ -9,6 +9,7 @@ package com.datadog.tools.unit.extensions
 import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
 import org.junit.jupiter.api.extension.AfterEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
+import org.mockito.internal.util.MockUtil
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import java.util.LinkedList
@@ -78,7 +79,7 @@ class ProhibitLeavingStaticMocksExtension : AfterEachCallback {
             for (fieldInstanceSpec in watchFields) {
                 val value = fieldInstanceSpec.fieldValue ?: continue
 
-                if (value::class.jvmName.contains("\$MockitoMock\$")) {
+                if (MockUtil.isMock(value)) {
                     reportViolation(
                         fieldInstanceSpec.fieldDescriptor,
                         fieldInstanceSpec.hostClass,

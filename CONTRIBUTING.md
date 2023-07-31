@@ -11,20 +11,35 @@ To setup your environment, make sure you installed [Android Studio](https://deve
 
 **Note**: you can also compile and develop using only the Android SDK and your IDE of choice, e.g.: IntelliJ Idea, Vim, etc.
 
+In addition, to be able to run the static analysis tools locally, you should run the `local-ci.sh` script locally as follow.
+
+```shell
+./local_ci.sh --setup
+```
+
 ### Modules
 
 This project hosts the following modules:
 
-  - `dd-sdk-android`: the main library implementing all Datadog features (Logs, Traces, RUM, Crash reports);
-  - `dd-sdk-android-ktx`: a set of Kotlin extensions to make the `dd-sdk-android` library more Kotlin friendly;
-  - `dd-sdk-android-ndk`: a Plugin to allow tracking NDK information;
-  - `dd-sdk-android-glide`: a lightweight library providing a bridge integration between `dd-sdk-android` and [Glide](https://bumptech.github.io/glide/);
-  - `dd-sdk-android-timber`: a lightweight library providing a bridge integration between `dd-sdk-android` and [Timber](https://github.com/JakeWharton/timber);
+  - `dd-sdk-android-core`: the main library implementing the core functionality of SDK (storage and upload of data, core APIs);
+  - `features/***`: a set of libraries implementing Datadog products: Logs, RUM, Traces, etc.
+  - `integrations/dd-sdk-android-coil`: a lightweight library providing a bridge integration between Datadog SDK and [Coil](https://coil-kt.github.io/coil/);
+  - `integrations/dd-sdk-android-compose`: a lightweight library providing a bridge integration between Datadog SDK and [Jetpack Compose](https://developer.android.com/jetpack/compose);
+  - `integrations/dd-sdk-android-fresco`: a lightweight library providing a bridge integration between Datadog SDK and [Fresco](https://frescolib.org/);
+  - `integrations/dd-sdk-android-okhttp`: a lightweight library providing an instrumentation for [OkHttp](https://square.github.io/okhttp/);
+  - `integrations/dd-sdk-android-rx`: a lightweight library providing a bridge integration between Datadog SDK and [RxJava](https://github.com/ReactiveX/RxJava);
+  - `integrations/dd-sdk-android-sqldelight`: a lightweight library providing a bridge integration between Datadog SDK and [SQLDelight](https://cashapp.github.io/sqldelight/);
+  - `integrations/dd-sdk-android-tv`: a lightweight library providing extensions for [Android TV](https://www.android.com/tv/)
+  - `integrations/dd-sdk-android-ktx`: a set of Kotlin extensions to make the Datadog SDK more Kotlin friendly;
+  - `integrations/dd-sdk-android-glide`: a lightweight library providing a bridge integration between Datadog SDK and [Glide](https://bumptech.github.io/glide/);
+  - `integrations/dd-sdk-android-timber`: a lightweight library providing a bridge integration between Datadog SDK and [Timber](https://github.com/JakeWharton/timber);
   - `instrumented/integration`: a test module with integration tests using Espresso;
+  - `instrumented/nightly-tests`: a test module with E2E tests using Espresso;
   - `tools/detekt`: a few custom [Detekt](https://github.com/arturbosch/detekt) static analysis rules;
+  - `tools/lint`: a custom [Lint](https://developer.android.com/studio/write/lint) static analysis rule;
   - `tools/noopfactory`: an annotation processor generating no-op implementation of interfaces;
   - `tools/unit`: a utility library with code to help writing unit tests;
-  - `sample/***`: a few sample application showcasing how to use the library features in production code;
+  - `sample/***`: a few sample applications showcasing how to use the library features in production code;
 
 ### Building the SDK
 
@@ -36,31 +51,20 @@ You can build the SDK using the following Gradle command:
 
 ### Running the tests
 
-The whole project is covered by a set of static analysis tools, linters and tests, each triggered by a custom global Gradle task, as follows:
+The whole project is covered by a set of static analysis tools, linters and tests. To mimic the steps taken by our CI, you can run the `local_ci.sh` script:
 
 ```shell script
-# launches the debug and release unit tests for all modules 
-./gradlew unitTestAll
+# cleans the repo
+./local_ci.sh --clean
 
-# launches the instrumented tests for all modules
-./gradlew instrumentTestAll
+# runs the static analysis
+./local_ci.sh --analysis
 
-# launches the detekt static analysis for all modules
-# the detekt client needs to be installed on your machine as stated in the official documentation
-# https://detekt.dev/docs/gettingstarted/cli
-# the configuration files are stored in Datadog's dd-source repository
-detekt --config {dd-source}/domains/mobile/config/android/gitlab/detekt/detekt-common.yml
-detekt --config {dd-source}/domains/mobile/config/android/gitlab/detekt/detekt-public-api.yml
+# compiles all the different library modules and tools
+./local_ci.sh --compile
 
-# launches the ktlint check and formatter for all Kotlin files 
-# the ktlint client needs to be installed on your machine 
-ktlint -F "**/*.kt" "**/*.kts" '!**/build/generated/**' '!**/build/kspCaches/**'
-
-# launches the Android linter for all modules
-./gradlew lintCheckAll
-
-# launches all the tests described above
-./gradlew checkAll
+# Runs the unit tests
+./local_ci.sh --test
 ```
 
 ## Submitting Issues
@@ -111,7 +115,7 @@ the bug are best.
 ## Have a patch?
 
 We welcome code contributions to the library, which you can 
-[submit as a pull request](https://github.com/DataDog/dd-sdk-android/pull/new/master).
+[submit as a pull request](https://github.com/DataDog/dd-sdk-android/pull/new/develop).
 Before you submit a PR, make sure that you first create an Issue to explain the
 bug or the feature your patch covers, and make sure another Issue or PR doesn't
 already exist.
@@ -121,10 +125,8 @@ To create a pull request:
 1. **Fork the repository** from https://github.com/DataDog/dd-sdk-android ;
 2. **Make any changes** for your patch;
 3. **Write tests** that demonstrate how the feature works or how the bug is fixed;
-4. **Update any documentation** such as `docs/GettingStarted.md`, especially for
-    new features;
-5. **Submit the pull request** from your fork back to this 
-    [repository](https://github.com/DataDog/dd-sdk-android) .
+4. **Update any documentation**, especially for new features. It can be found either in the `docs` folder of this repository, or in [documentation repository](https://github.com/DataDog/documentation);
+5. **Submit the pull request** from your fork back to this [repository](https://github.com/DataDog/dd-sdk-android).
 
 
 The pull request will be run through our CI pipeline, and a project member will
@@ -148,7 +150,7 @@ any change you introduce are still compatible with Java. If you want to add
 Kotlin specific features (DSL, lambdas, …), make sure there is a way to get the
 same feature from a Java source code.
 
-### Code qualituy
+### Code quality
 
 Our code uses [Detekt](https://detekt.dev/) static analysis with a shared configuration, slightly
 stricter than the default one. A Detekt check is ran on every on every PR to ensure that all new code
@@ -196,7 +198,7 @@ class Foo : Observable(), Runnable {
 ```
 
 There is also a command that you can use to automatically format the code following the
-required styling rules (require ktlint installed on your machine):
+required styling rules (require `ktlint` installed on your machine):
 
 ```console
 ktlint -F "**/*.kt" "**/*.kts" '!**/build/generated/**' '!**/build/kspCaches/**'
@@ -304,7 +306,7 @@ output is measured by 2 Datadog Monitors (one for performance and one for functi
     
     4. `additionalInfo` is some context to distinguish multiple test on the same method (could be related to the argument, the context, a state)
     
-- We need to add an identifier in the method documentation following the method signature in the [apiSurface](dd-sdk-android/apiSurface). 
+- We need to add an identifier in the method documentation following the method signature in the [apiSurface](dd-sdk-android-core/api/apiSurface). 
   This will be used by our test coverage tool.
   
 
@@ -314,9 +316,9 @@ We have created a Live Template that you can add in your development environment
  * apiMethodSignature: THE API METHOD SIGNATURE HERE
  */
 @org.junit.Test
-fun $EXP$(){
+fun $EXP$() {
     val testMethodName = "$EXP$"
-    measure(testMethodName){
+    measure(testMethodName) {
         // API call here
     }
 }

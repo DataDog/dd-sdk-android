@@ -12,11 +12,11 @@ import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.nightly.R
 import com.datadog.android.nightly.utils.measure
-import com.datadog.android.webview.DatadogEventBridge
+import com.datadog.android.webview.WebViewTracking
 import java.util.UUID
 import kotlin.random.Random
 
-internal open class WebViewTrackingActivity : AppCompatActivity() {
+internal class WebViewTrackingActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.webview_tracking_activity)
@@ -34,15 +34,23 @@ internal open class WebViewTrackingActivity : AppCompatActivity() {
         )
     }
 
-    open fun setupWebView(webView: WebView) {
-        val datadogEventBridge = DatadogEventBridge()
+    @Suppress("CheckInternal")
+    private fun setupWebView(webView: WebView) {
         measure(TEST_METHOD_NAME) {
-            webView.addJavascriptInterface(datadogEventBridge, "DatadogEventBridge")
+            val isNoAllowedHosts = intent.extras
+                ?.getBoolean(NO_ALLOWED_HOSTS_KEY, false) ?: false
+            val allowedHosts = if (isNoAllowedHosts) {
+                emptyList()
+            } else {
+                listOf("datadoghq.dev")
+            }
+            WebViewTracking.enable(webView, allowedHosts)
         }
     }
 
     companion object {
         const val HEX_RADIX = 16
+        const val NO_ALLOWED_HOSTS_KEY = "no_allowed_hosts"
         internal const val TEST_METHOD_NAME = "web_view_tracking"
     }
 }

@@ -13,14 +13,16 @@ import androidx.test.core.app.ActivityScenario.launch
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.api.SdkCore
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.event.EventMapper
-import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
 import com.datadog.android.nightly.activities.ViewTrackingActivity
 import com.datadog.android.nightly.rules.NightlyTestRule
+import com.datadog.android.nightly.utils.DEFAULT_CLIENT_TOKEN
+import com.datadog.android.nightly.utils.DEFAULT_ENV_NAME
+import com.datadog.android.nightly.utils.DEFAULT_VARIANT_NAME
 import com.datadog.android.nightly.utils.TestEncryption
 import com.datadog.android.nightly.utils.aResourceKey
 import com.datadog.android.nightly.utils.aResourceMethod
@@ -36,10 +38,12 @@ import com.datadog.android.nightly.utils.invokeMethod
 import com.datadog.android.nightly.utils.measureSdkInitialize
 import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.configuration.VitalsUpdateFrequency
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -66,19 +70,20 @@ class RumConfigE2ETests {
     // region Enable/Disable Feature
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
      */
     @Test
     fun rum_config_rum_feature_enabled() {
         val testMethodName = "rum_config_rum_feature_enabled"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder().build()
             )
         }
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
     }
 
     /**
@@ -87,36 +92,39 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_custom_batch_size() {
         val testMethodName = "rum_config_custom_batch_size"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
                 defaultConfigurationBuilder()
-                    .setBatchSize(forge.aValueFrom(BatchSize::class.java)).build()
+                    .setBatchSize(forge.aValueFrom(BatchSize::class.java))
+                    .build()
             )
         }
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
      */
     @Test
     fun rum_config_rum_feature_disabled() {
         val testMethodName = "rum_config_rum_feature_disabled"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = false,
+                rumConfigProvider = {
+                    null
+                },
+                config = defaultConfigurationBuilder(
                     crashReportsEnabled = true
                 ).build()
             )
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendRandomRumEvent(forge, sdkCore, testMethodName)
     }
 
     // endregion
@@ -124,75 +132,77 @@ class RumConfigE2ETests {
     // region ViewEventMapper
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setRumViewEventMapper(com.datadog.android.event.ViewEventMapper): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setViewEventMapper(com.datadog.android.rum.event.ViewEventMapper): Builder
      */
     @Test
     fun rum_config_set_rum_view_event_mapper() {
         val testMethodName = "rum_config_set_rum_view_event_mapper"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
-                    crashReportsEnabled = true
-                ).setRumViewEventMapper(
-                    eventMapper = object : ViewEventMapper {
-                        override fun map(event: ViewEvent): ViewEvent {
-                            event.view.name =
-                                forge.aStringMatching("$MAPPED_NAME_PREFIX[a-zA-z]{3,10}")
-                            return event
+                rumConfigProvider = {
+                    it.setViewEventMapper(
+                        eventMapper = object : ViewEventMapper {
+                            override fun map(event: ViewEvent): ViewEvent {
+                                event.view.name =
+                                    forge.aStringMatching("$MAPPED_NAME_PREFIX[a-zA-z]{3,10}")
+                                return event
+                            }
                         }
-                    }
+                    ).build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
                 ).build()
             )
         }
 
         val key = forge.aViewKey()
         val name = forge.aViewName()
-        GlobalRum.get().startView(
+        GlobalRumMonitor.get(sdkCore).startView(
             key,
             name,
             defaultTestAttributes(testMethodName)
         )
-        GlobalRum.get().stopView(key, defaultTestAttributes(testMethodName))
+        GlobalRumMonitor.get(sdkCore).stopView(key, defaultTestAttributes(testMethodName))
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setRumViewEventMapper(com.datadog.android.event.ViewEventMapper): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setViewEventMapper(com.datadog.android.rum.event.ViewEventMapper): Builder
      */
     @Test
     fun rum_config_set_rum_view_event_mapper_map_to_copy() {
         val testMethodName = "rum_config_set_rum_view_event_mapper_map_to_copy"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
-                    crashReportsEnabled = true
-                ).setRumViewEventMapper(
-                    eventMapper = object : ViewEventMapper {
-                        override fun map(event: ViewEvent): ViewEvent {
-                            return event.copy()
+                rumConfigProvider = {
+                    it.setViewEventMapper(
+                        eventMapper = object : ViewEventMapper {
+                            override fun map(event: ViewEvent): ViewEvent {
+                                return event.copy()
+                            }
                         }
-                    }
+                    ).build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
                 ).build()
             )
         }
 
         val key = forge.aViewKey()
         val name = forge.aViewName()
-        GlobalRum.get().startView(
+        GlobalRumMonitor.get(sdkCore).startView(
             key,
             name,
             defaultTestAttributes(testMethodName)
         )
-        GlobalRum.get().stopView(key, defaultTestAttributes(testMethodName))
+        GlobalRumMonitor.get(sdkCore).stopView(key, defaultTestAttributes(testMethodName))
     }
 
     // endregion
@@ -200,88 +210,91 @@ class RumConfigE2ETests {
     // region ResourceEventMapper
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_resource_event_mapper_map_to_null() {
         val testMethodName = "rum_config_set_rum_resource_event_mapper_map_to_null"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
-                    crashReportsEnabled = true
-                ).setRumResourceEventMapper(
-                    eventMapper = object : EventMapper<ResourceEvent> {
-                        override fun map(event: ResourceEvent): ResourceEvent? {
-                            return null
+                rumConfigProvider = {
+                    it.setResourceEventMapper(
+                        eventMapper = object : EventMapper<ResourceEvent> {
+                            override fun map(event: ResourceEvent): ResourceEvent? {
+                                return null
+                            }
                         }
-                    }
+                    ).build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
                 ).build()
             )
         }
 
-        sendRandomResource(testMethodName)
+        sendRandomResource(sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_resource_event_mapper_map_to_copy() {
         val testMethodName = "rum_config_set_rum_resource_event_mapper_map_to_copy"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
-                    crashReportsEnabled = true
-                ).setRumResourceEventMapper(
-                    eventMapper = object : EventMapper<ResourceEvent> {
-                        override fun map(event: ResourceEvent): ResourceEvent {
-                            return event.copy()
+                rumConfigProvider = {
+                    it.setResourceEventMapper(
+                        eventMapper = object : EventMapper<ResourceEvent> {
+                            override fun map(event: ResourceEvent): ResourceEvent {
+                                return event.copy()
+                            }
                         }
-                    }
+                    ).build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
                 ).build()
             )
         }
 
-        sendRandomResource(testMethodName)
+        sendRandomResource(sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_resource_event_mapper() {
         val testMethodName = "rum_config_set_rum_resource_event_mapper"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
-                    crashReportsEnabled = true
-                ).setRumResourceEventMapper(
-                    eventMapper = object : EventMapper<ResourceEvent> {
-                        override fun map(event: ResourceEvent): ResourceEvent {
-                            event.resource.url = forge.aResourceKey(MAPPED_URL_PREFIX)
-                            return event
+                rumConfigProvider = {
+                    it.setResourceEventMapper(
+                        eventMapper = object : EventMapper<ResourceEvent> {
+                            override fun map(event: ResourceEvent): ResourceEvent {
+                                event.resource.url = forge.aResourceKey(MAPPED_URL_PREFIX)
+                                return event
+                            }
                         }
-                    }
+                    ).build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
                 ).build()
             )
         }
 
-        sendRandomResource(testMethodName)
+        sendRandomResource(sdkCore, testMethodName)
     }
 
     // endregion
@@ -289,88 +302,91 @@ class RumConfigE2ETests {
     // region ActionEventMapper
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_action_event_mapper_map_to_null() {
         val testMethodName = "rum_config_set_rum_action_event_mapper_map_to_null"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
-                    crashReportsEnabled = true
-                ).setRumActionEventMapper(
-                    eventMapper = object : EventMapper<ActionEvent> {
-                        override fun map(event: ActionEvent): ActionEvent? {
-                            return null
+                rumConfigProvider = {
+                    it.setActionEventMapper(
+                        eventMapper = object : EventMapper<ActionEvent> {
+                            override fun map(event: ActionEvent): ActionEvent? {
+                                return null
+                            }
                         }
-                    }
+                    ).build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
                 ).build()
             )
         }
 
-        sendRandomActionEvent(testMethodName)
+        sendRandomActionEvent(sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_action_event_mapper_map_to_copy() {
         val testMethodName = "rum_config_set_rum_action_event_mapper_map_to_copy"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
-                    crashReportsEnabled = true
-                ).setRumActionEventMapper(
-                    eventMapper = object : EventMapper<ActionEvent> {
-                        override fun map(event: ActionEvent): ActionEvent {
-                            return event.copy()
+                rumConfigProvider = {
+                    it.setActionEventMapper(
+                        eventMapper = object : EventMapper<ActionEvent> {
+                            override fun map(event: ActionEvent): ActionEvent {
+                                return event.copy()
+                            }
                         }
-                    }
+                    ).build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
                 ).build()
             )
         }
 
-        sendRandomActionEvent(testMethodName)
+        sendRandomActionEvent(sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_action_event_mapper() {
         val testMethodName = "rum_config_set_rum_action_event_mapper"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
-                    crashReportsEnabled = true
-                ).setRumActionEventMapper(
-                    eventMapper = object : EventMapper<ActionEvent> {
-                        override fun map(event: ActionEvent): ActionEvent {
-                            event.view.url = forge.aViewKey(prefix = MAPPED_URL_PREFIX)
-                            return event
+                rumConfigProvider = {
+                    it.setActionEventMapper(
+                        eventMapper = object : EventMapper<ActionEvent> {
+                            override fun map(event: ActionEvent): ActionEvent {
+                                event.view.url = forge.aViewKey(prefix = MAPPED_URL_PREFIX)
+                                return event
+                            }
                         }
-                    }
+                    ).build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
                 ).build()
             )
         }
 
-        sendRandomActionEvent(testMethodName)
+        sendRandomActionEvent(sdkCore, testMethodName)
     }
 
     // endregion
@@ -378,88 +394,91 @@ class RumConfigE2ETests {
     // region ErrorEventMapper
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_error_event_mapper_map_to_null() {
         val testMethodName = "rum_config_set_rum_error_event_mapper_map_to_null"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
-                    crashReportsEnabled = true
-                ).setRumErrorEventMapper(
-                    eventMapper = object : EventMapper<ErrorEvent> {
-                        override fun map(event: ErrorEvent): ErrorEvent? {
-                            return null
+                rumConfigProvider = {
+                    it.setErrorEventMapper(
+                        eventMapper = object : EventMapper<ErrorEvent> {
+                            override fun map(event: ErrorEvent): ErrorEvent? {
+                                return null
+                            }
                         }
-                    }
+                    ).build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
                 ).build()
             )
         }
 
-        sendRandomErrorEvent(testMethodName)
+        sendRandomErrorEvent(sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_error_event_mapper_map_to_copy() {
         val testMethodName = "rum_config_set_rum_error_event_mapper_map_to_copy"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
-                    crashReportsEnabled = true
-                ).setRumErrorEventMapper(
-                    eventMapper = object : EventMapper<ErrorEvent> {
-                        override fun map(event: ErrorEvent): ErrorEvent {
-                            return event.copy()
+                rumConfigProvider = {
+                    it.setErrorEventMapper(
+                        eventMapper = object : EventMapper<ErrorEvent> {
+                            override fun map(event: ErrorEvent): ErrorEvent {
+                                return event.copy()
+                            }
                         }
-                    }
+                    ).build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
                 ).build()
             )
         }
 
-        sendRandomErrorEvent(testMethodName)
+        sendRandomErrorEvent(sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_error_event_mapper() {
         val testMethodName = "rum_config_set_rum_error_event_mapper"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
-                    crashReportsEnabled = true
-                ).setRumErrorEventMapper(
-                    eventMapper = object : EventMapper<ErrorEvent> {
-                        override fun map(event: ErrorEvent): ErrorEvent {
-                            event.view.url = forge.aViewKey(prefix = MAPPED_URL_PREFIX)
-                            return event
+                rumConfigProvider = {
+                    it.setErrorEventMapper(
+                        eventMapper = object : EventMapper<ErrorEvent> {
+                            override fun map(event: ErrorEvent): ErrorEvent {
+                                event.view.url = forge.aViewKey(prefix = MAPPED_URL_PREFIX)
+                                return event
+                            }
                         }
-                    }
+                    ).build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
                 ).build()
             )
         }
 
-        sendRandomErrorEvent(testMethodName)
+        sendRandomErrorEvent(sdkCore, testMethodName)
     }
 
     // endregion
@@ -467,103 +486,94 @@ class RumConfigE2ETests {
     // region LongTaskEventMapper
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setRumLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_longtask_event_mapper_map_to_null() {
         val testMethodName = "rum_config_set_rum_longtask_event_mapper_map_to_null"
-        measureSdkInitialize {
-            val builder = defaultConfigurationBuilder(
-                logsEnabled = true,
-                tracesEnabled = true,
-                rumEnabled = true,
-                crashReportsEnabled = true
-            )
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                builder
-                    .setRumLongTaskEventMapper(
+                rumConfigProvider = {
+                    it.setLongTaskEventMapper(
                         eventMapper = object : EventMapper<LongTaskEvent> {
                             override fun map(event: LongTaskEvent): LongTaskEvent? {
                                 return null
                             }
                         }
-                    )
-                    .trackLongTasks()
-                    .build()
+                    ).trackLongTasks().build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
+                ).build()
             )
         }
 
-        sendRandomLongTaskEvent(testMethodName)
+        sendRandomLongTaskEvent(sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setRumLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_longtask_event_mapper_map_to_copy() {
         val testMethodName = "rum_config_set_rum_longtask_event_mapper_map_to_copy"
-        measureSdkInitialize {
-            val builder = defaultConfigurationBuilder(
-                logsEnabled = true,
-                tracesEnabled = true,
-                rumEnabled = true,
-                crashReportsEnabled = true
-            )
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                builder
-                    .setRumLongTaskEventMapper(
+                rumConfigProvider = {
+                    it.setLongTaskEventMapper(
                         eventMapper = object : EventMapper<LongTaskEvent> {
                             override fun map(event: LongTaskEvent): LongTaskEvent {
                                 return event.copy()
                             }
                         }
-                    )
-                    .trackLongTasks()
-                    .build()
+                    ).trackLongTasks().build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
+                ).build()
             )
         }
 
-        sendRandomLongTaskEvent(testMethodName)
+        sendRandomLongTaskEvent(sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setRumLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
      */
     @Test
     fun rum_config_set_rum_longtask_event_mapper() {
         val testMethodName = "rum_config_set_rum_longtask_event_mapper"
-        measureSdkInitialize {
-            val builder = defaultConfigurationBuilder(
-                logsEnabled = true,
-                tracesEnabled = true,
-                rumEnabled = true,
-                crashReportsEnabled = true
-            )
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                builder
-                    .setRumLongTaskEventMapper(
+                rumConfigProvider = {
+                    it.setLongTaskEventMapper(
                         eventMapper = object : EventMapper<LongTaskEvent> {
                             override fun map(event: LongTaskEvent): LongTaskEvent {
                                 event.view.url = forge.aViewKey(prefix = MAPPED_URL_PREFIX)
                                 return event
                             }
                         }
-                    )
-                    .trackLongTasks()
-                    .build()
+                    ).trackLongTasks().build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
+                ).build()
             )
         }
 
-        sendRandomLongTaskEvent(testMethodName)
+        sendRandomLongTaskEvent(sdkCore, testMethodName)
     }
 
     // endregion
@@ -571,108 +581,108 @@ class RumConfigE2ETests {
     // region Session Sample
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun sampleRumSessions(Float): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setSessionSampleRate(Float): Builder
      */
     @Test
     fun rum_config_sample_rum_sessions_all_in() {
         val testMethodName = "rum_config_sample_rum_sessions_all_in"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
+                rumConfigProvider = {
+                    it.setSessionSampleRate(100f).build()
+                },
+                config = defaultConfigurationBuilder(
                     crashReportsEnabled = true
-                ).sampleRumSessions(100f).build()
+                ).build()
             )
         }
 
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun sampleRumSessions(Float): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setSessionSampleRate(Float): Builder
      */
     @Test
     fun rum_config_sample_rum_sessions_all_out() {
         val testMethodName = "rum_config_sample_rum_sessions_all_out"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
+                rumConfigProvider = {
+                    it.setSessionSampleRate(0f).build()
+                },
+                config = defaultConfigurationBuilder(
                     crashReportsEnabled = true
-                ).sampleRumSessions(0f).build()
+                ).build()
             )
         }
 
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun sampleRumSessions(Float): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setSessionSampleRate(Float): Builder
      */
     @Test
     fun rum_config_sample_rum_sessions_75_percent_in() {
         val testMethodName = "rum_config_sample_rum_sessions_75_percent_in"
         val eventsNumber = 100
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
+                rumConfigProvider = {
+                    it.setSessionSampleRate(75f).build()
+                },
+                config = defaultConfigurationBuilder(
                     crashReportsEnabled = true
-                ).sampleRumSessions(75f).build()
+                ).build()
             )
         }
 
         repeat(eventsNumber) {
             // we do not want to add the test method name in the parent View name as
             // this will add extra events to the monitor query value
-            sendRandomRumEvent(forge, testMethodName, parentViewEventName = "")
+            sendRandomRumEvent(forge, sdkCore, testMethodName, parentViewEventName = "")
             // expire the session here
-            GlobalRum.get().invokeMethod("resetSession")
+            GlobalRumMonitor.get(sdkCore).invokeMethod("resetSession")
             InstrumentationRegistry.getInstrumentation().waitForIdleSync()
         }
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setEncryption(Encryption): Builder
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setEncryption(com.datadog.android.security.Encryption): Builder
      * apiMethodSignature: com.datadog.android.security.Encryption#fun encrypt(ByteArray): ByteArray
      * apiMethodSignature: com.datadog.android.security.Encryption#fun decrypt(ByteArray): ByteArray
      */
     @Test
     fun rum_config_set_security_config_with_encryption() {
         val testMethodName = "rum_config_set_security_config_with_encryption"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 TrackingConsent.GRANTED,
-                Configuration
-                    .Builder(
-                        logsEnabled = true,
-                        tracesEnabled = true,
-                        rumEnabled = true,
-                        crashReportsEnabled = true
-                    )
-                    .setEncryption(TestEncryption())
-                    .build()
+                Configuration.Builder(
+                    clientToken = DEFAULT_CLIENT_TOKEN,
+                    env = DEFAULT_ENV_NAME,
+                    variant = DEFAULT_VARIANT_NAME
+                ).setEncryption(TestEncryption()).build()
 
             )
         }
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setVitalsUpdateFrequency(VitalsUpdateFrequency): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
      */
     @Test
     fun rum_config_set_vitals_update_frequency_never() {
@@ -693,20 +703,20 @@ class RumConfigE2ETests {
         // Choreographer Callback will not be registered
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             measureSdkInitialize {
-                val config = Configuration
-                    .Builder(
-                        logsEnabled = true,
-                        tracesEnabled = true,
-                        rumEnabled = true,
-                        crashReportsEnabled = true
-                    )
-                    .useViewTrackingStrategy(strategy)
-                    .setVitalsUpdateFrequency(VitalsUpdateFrequency.NEVER)
-                    .build()
+                val config = Configuration.Builder(
+                    clientToken = DEFAULT_CLIENT_TOKEN,
+                    env = DEFAULT_ENV_NAME,
+                    variant = DEFAULT_VARIANT_NAME
+                ).build()
                 initializeSdk(
                     InstrumentationRegistry.getInstrumentation().targetContext,
-                    TrackingConsent.GRANTED,
-                    config
+                    forgeSeed = forge.seed,
+                    rumConfigProvider = {
+                        it.useViewTrackingStrategy(strategy)
+                            .setVitalsUpdateFrequency(VitalsUpdateFrequency.NEVER).build()
+                    },
+                    consent = TrackingConsent.GRANTED,
+                    config = config
                 )
             }
         }
@@ -721,7 +731,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setVitalsUpdateFrequency(VitalsUpdateFrequency): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
      */
     @Test
     fun rum_config_set_vitals_update_frequency() {
@@ -746,20 +756,20 @@ class RumConfigE2ETests {
         // Choreographer Callback will not be registered
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             measureSdkInitialize {
-                val config = Configuration
-                    .Builder(
-                        logsEnabled = true,
-                        tracesEnabled = true,
-                        rumEnabled = true,
-                        crashReportsEnabled = true
-                    )
-                    .useViewTrackingStrategy(strategy)
-                    .setVitalsUpdateFrequency(fakeFrequency)
-                    .build()
+                val config = Configuration.Builder(
+                    clientToken = DEFAULT_CLIENT_TOKEN,
+                    env = DEFAULT_ENV_NAME,
+                    variant = DEFAULT_VARIANT_NAME
+                ).build()
                 initializeSdk(
                     InstrumentationRegistry.getInstrumentation().targetContext,
-                    TrackingConsent.GRANTED,
-                    config
+                    forgeSeed = forge.seed,
+                    rumConfigProvider = {
+                        it.useViewTrackingStrategy(strategy).setVitalsUpdateFrequency(fakeFrequency)
+                            .build()
+                    },
+                    consent = TrackingConsent.GRANTED,
+                    config = config
                 )
             }
         }
@@ -777,16 +787,16 @@ class RumConfigE2ETests {
 
     // region Internal
 
-    private fun sendRandomResource(testMethodName: String) {
-        executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName) {
+    private fun sendRandomResource(sdkCore: SdkCore, testMethodName: String) {
+        executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName, sdkCore) {
             val resourceKey = forge.aResourceKey()
-            GlobalRum.get().startResource(
+            GlobalRumMonitor.get(sdkCore).startResource(
                 resourceKey,
                 forge.aResourceMethod(),
                 resourceKey,
                 defaultTestAttributes(testMethodName)
             )
-            GlobalRum.get().stopResource(
+            GlobalRumMonitor.get(sdkCore).stopResource(
                 resourceKey,
                 forge.anInt(min = 200, max = 500),
                 forge.aLong(min = 1),
@@ -796,21 +806,21 @@ class RumConfigE2ETests {
         }
     }
 
-    private fun sendRandomActionEvent(testMethodName: String) {
-        executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName) {
-            GlobalRum.get().addUserAction(
+    private fun sendRandomActionEvent(sdkCore: SdkCore, testMethodName: String) {
+        executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName, sdkCore) {
+            GlobalRumMonitor.get(sdkCore).addAction(
                 forge.aValueFrom(RumActionType::class.java),
                 forge.anActionName(),
                 defaultTestAttributes(testMethodName)
             )
-            sendRandomActionOutcomeEvent(forge)
+            sendRandomActionOutcomeEvent(forge, sdkCore)
             Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
         }
     }
 
-    private fun sendRandomErrorEvent(testMethodName: String) {
-        executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName) {
-            GlobalRum.get().addError(
+    private fun sendRandomErrorEvent(sdkCore: SdkCore, testMethodName: String) {
+        executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName, sdkCore) {
+            GlobalRumMonitor.get(sdkCore).addError(
                 forge.anErrorMessage(),
                 forge.aValueFrom(RumErrorSource::class.java),
                 forge.aNullable { forge.aThrowable() },
@@ -819,9 +829,9 @@ class RumConfigE2ETests {
         }
     }
 
-    private fun sendRandomLongTaskEvent(testMethodName: String) {
-        executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName) {
-            GlobalRum.addAttribute(TEST_METHOD_NAME_KEY, testMethodName)
+    private fun sendRandomLongTaskEvent(sdkCore: SdkCore, testMethodName: String) {
+        executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName, sdkCore) {
+            GlobalRumMonitor.get(sdkCore).addAttribute(TEST_METHOD_NAME_KEY, testMethodName)
             Handler(Looper.getMainLooper()).post {
                 Thread.sleep(100)
             }

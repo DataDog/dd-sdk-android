@@ -6,7 +6,7 @@ import sys
 from argparse import ArgumentParser, Namespace, ArgumentTypeError
 from src.feature import Feature
 from src.api_surface import ApiSurface
-from src.constants import API_SURFACE_PATH
+from src.constants import API_SURFACE_PATHS
 from src.constants import NIGHTLY_TESTS_DIRECTORY_PATH
 from src.constants import NIGHTLY_TESTS_PACKAGE
 from src.constants import IGNORED_TYPES
@@ -30,7 +30,7 @@ def parse_arguments(args: list) -> Namespace:
                         default=NIGHTLY_TESTS_DIRECTORY_PATH,
                         help="The path to the nightly tests directory.")
     parser.add_argument("-as", "--api-surface-paths",
-                        default=[API_SURFACE_PATH],
+                        default=API_SURFACE_PATHS,
                         nargs="+",
                         help="The path to the api surface file.")
     parser.add_argument("-t", "--test-coverage-threshold-to-assert",
@@ -72,7 +72,8 @@ def fetch_already_covered_apis(tests_directory_path: str) -> set:
         Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/rum'),
         Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/trace'),
         Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/webview'),
-        Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/main')
+        Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/main'),
+        Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/crash'),
     ]
     for feature in features:
         covered_apis.update(feature.fetch_test_cases())

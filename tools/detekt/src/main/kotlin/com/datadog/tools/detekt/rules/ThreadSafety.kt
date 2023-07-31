@@ -110,7 +110,12 @@ class ThreadSafety : Rule() {
             val type = it.type
             when (type) {
                 is SimpleType -> {
-                    val typeName = type.fqNameOrNull()?.shortName()?.asString()
+                    val typeName = try {
+                        type.fqNameOrNull()?.shortName()?.asString()
+                    } catch (e: IllegalStateException) {
+                        System.err.println(e.message)
+                        null
+                    }
                     if (typeName == null) {
                         println("\nUNABLE to get annotation name for $it")
                     }

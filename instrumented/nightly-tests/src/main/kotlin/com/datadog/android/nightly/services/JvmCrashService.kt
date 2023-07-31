@@ -12,12 +12,20 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.log.Logs
+import com.datadog.android.log.LogsConfiguration
+import com.datadog.android.nightly.BuildConfig
 import com.datadog.android.nightly.activities.CRASH_DELAY_MS
 import com.datadog.android.nightly.activities.HUNDRED_PERCENT
 import com.datadog.android.nightly.exceptions.RumDisabledException
 import com.datadog.android.nightly.exceptions.RumEnabledException
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.rum.Rum
+import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.trace.Trace
+import com.datadog.android.trace.TraceConfiguration
 
 internal open class JvmCrashService : CrashService() {
 
@@ -30,8 +38,8 @@ internal open class JvmCrashService : CrashService() {
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         when (intent.action) {
             CRASH_HANDLER_DISABLED_SCENARIO -> {
-                startSdk(crashReportsEnabled = false)
-                initRum(intent.extras)
+                val sdkCore = startSdk(crashReportsEnabled = false)
+                initRum(sdkCore, intent.extras)
                 scheduleJvmCrash(RumEnabledException())
             }
             RUM_DISABLED_SCENARIO -> {
@@ -39,8 +47,8 @@ internal open class JvmCrashService : CrashService() {
                 scheduleJvmCrash(RumDisabledException())
             }
             else -> {
-                startSdk()
-                initRum(intent.extras)
+                val sdkCore = startSdk()
+                initRum(sdkCore, intent.extras)
                 scheduleJvmCrash(RumEnabledException())
             }
         }
@@ -57,23 +65,33 @@ internal open class JvmCrashService : CrashService() {
         Handler(Looper.getMainLooper()).postDelayed({ throw exception }, CRASH_DELAY_MS)
     }
 
+    @Suppress("CheckInternal")
     private fun startSdk(
         crashReportsEnabled: Boolean = true,
         rumEnabled: Boolean = true
-    ) {
-        Datadog.setVerbosity(Log.VERBOSE)
+    ): SdkCore {
         val configBuilder = Configuration.Builder(
-            logsEnabled = true,
-            tracesEnabled = true,
-            crashReportsEnabled = crashReportsEnabled,
-            rumEnabled = rumEnabled
-        ).sampleTelemetry(HUNDRED_PERCENT)
-        Datadog.initialize(
+            clientToken = BuildConfig.NIGHTLY_TESTS_TOKEN,
+            env = "instrumentation",
+            variant = ""
+        )
+            .setCrashReportsEnabled(crashReportsEnabled)
+        Datadog.setVerbosity(Log.VERBOSE)
+        val sdkCore = Datadog.initialize(
             this,
-            getCredentials(),
             configBuilder.build(),
             TrackingConsent.GRANTED
         )
+        checkNotNull(sdkCore)
+        if (rumEnabled) {
+            val rumConfig = RumConfiguration.Builder(rumApplicationId)
+                .setTelemetrySampleRate(HUNDRED_PERCENT)
+                .build()
+            Rum.enable(rumConfig, sdkCore)
+        }
+        Logs.enable(LogsConfiguration.Builder().build(), sdkCore)
+        Trace.enable(TraceConfiguration.Builder().build(), sdkCore)
+        return sdkCore
     }
 
     // endregion

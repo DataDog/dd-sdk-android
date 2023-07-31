@@ -1,0 +1,7 @@
+public final class com/datadog/android/timber/DatadogTree : timber/log/Timber$Tree {
+	public fun <init> (I)V
+	public fun <init> (ILcom/datadog/android/api/SdkCore;)V
+	public synthetic fun <init> (ILcom/datadog/android/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/log/Logger;)V
+}
+

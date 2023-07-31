@@ -13,7 +13,7 @@ import org.mockito.Mockito.mock
  * An implementation of a [TestConfiguration] that will generate and provide a mock of class [T].
  */
 open class MockTestConfiguration<T : Any>(
-    private val klass: Class<T>
+    private val klass: Class<out T>
 ) : TestConfiguration {
 
     /**

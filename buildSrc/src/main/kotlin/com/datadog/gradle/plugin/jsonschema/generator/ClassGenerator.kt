@@ -13,11 +13,11 @@ import com.datadog.gradle.plugin.jsonschema.TypeProperty
 import com.datadog.gradle.plugin.jsonschema.variableName
 import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.ARRAY
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.MUTABLE_MAP
-import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
@@ -269,8 +269,9 @@ class ClassGenerator(
         when (additionalProperties) {
             is TypeDefinition.Primitive -> addStatement("json.addProperty(k, v)")
             is TypeDefinition.Class -> addStatement(
-                "json.add(k, v.%M())",
-                MemberName(Identifier.PACKAGE_UTILS, Identifier.FUN_TO_JSON_ELT)
+                "json.add(k, %T.%L(v))",
+                ClassName(Identifier.PACKAGE_UTILS, Identifier.OBJECT_JSON_SERIALIZER),
+                Identifier.FUN_TO_JSON_ELT
             )
             is TypeDefinition.Enum -> addStatement("json.add(k, v.%L()) }", Identifier.FUN_TO_JSON)
             is TypeDefinition.Null -> addStatement("json.add(k, null) }")

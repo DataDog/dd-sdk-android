@@ -26,6 +26,7 @@ import,androidx.lifecycle,Apache-2.0,Copyright 2018 The Android Open Source Proj
 import,androidx.loader,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.localbroadcastmanager,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.media,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.metrics,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.multidex,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.navigation,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.print,Apache-2.0,Copyright 2018 The Android Open Source Project
@@ -63,8 +64,8 @@ import,org.jetbrains,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin 
 import,org.jetbrains.kotlin,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 import,org.jetbrains.kotlinx,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 import,org.reactivestreams,"CC0",Copyright 2014 Reactive Streams
-import(test),androidx.concurrent,Apache-2.0,__
-import(test),androidx.dynamicanimation,Apache-2.0,__
+import(test),androidx.concurrent,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.dynamicanimation,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.exifinterface,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.test,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.test.espresso,Apache-2.0,Copyright 2018 The Android Open Source Project
@@ -73,6 +74,7 @@ import(test),androidx.test.services,Apache-2.0,Copyright 2018 The Android Open S
 import(test),androidx.tracing,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.viewpager2,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.autofill,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.emoji2,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.exifinterface,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.profileinstaller,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.test,Apache-2.0,Copyright 2018 The Android Open Source Project
@@ -81,12 +83,12 @@ import(test),androidx.test.ext,Apache-2.0,Copyright 2018 The Android Open Source
 import(test),androidx.test.services,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.tracing,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.viewpager2,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.window,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),com.android.support,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),com.facebook.soloader,Apache-2.0,"Copyright (c) Facebook, Inc. and its affiliates"
 import(test),com.github.xgouchet.Elmyr,MIT,Copyright 2017-2019 Xavier F. Gouchet
 import(test),com.google.android.apps.common.testing.accessibility.framework,Apache-2.0,Copyright 2018 The Android Open Source Project
-import(test),com.google.code.findbugs,Apache-2.0,__
-import(test),com.nhaarman.mockitokotlin2,MIT,"Copyright (c) 2018 Niek Haarman, Copyright (c) 2007 Mockito contributors"
+import(test),com.google.code.findbugs,Apache-2.0,"Copyright (C) 2006, University of Maryland"
 import(test),com.parse.bolts,"BSD License","Copyright (c) Facebook, Inc. and its affiliates."
 import(test),greatest,ICT,"Copyright (c) 2011-2018 Scott Vokes <vokes.s@gmail.com>"
 import(test),javax.inject,Apache-2.0,Copyright (C) 2009 The JSR-330 Expert Group
@@ -96,7 +98,7 @@ import(test),net.sf.kxml,MIT,"Copyright (c) 2002,2003, Stefan Haustein, Oberhaus
 import(test),net.wuerl.kotlin,Apache-2.0,Copyright 2016 Andreas Würl
 import(test),org.apiguardian,Apache-2.0,Copyright 2002-2017 the original author or authors
 import(test),org.assertj,Apache-2.0,Copyright 2012-2019 the original author or authors
-import(test),org.ccil.cowan.tagsoup,Apache-2.0,__
+import(test),org.ccil.cowan.tagsoup,Apache-2.0,Copyright 2002-2008 by John Cowan
 import(test),org.hamcrest,BSD-3-Clause,Copyright (c) 2000-2015 www.hamcrest.org
 import(test),org.jacoco,EPL-2.0,"Copyright (c) 2009, 2019 Mountainminds GmbH & Co. KG and Contributors"
 import(test),org.junit,EPL-2.0,Copyright 2015-2019 the original author or authors
@@ -104,6 +106,7 @@ import(test),org.junit.jupiter,EPL-2.0,Copyright 2015-2019 the original author o
 import(test),org.junit.platform,EPL-2.0,Copyright 2015-2019 the original author or authors
 import(test),org.junit.vintage,EPL-2.0,Copyright 2015-2019 the original author or authors
 import(test),org.mockito,MIT,Copyright (c) 2007 Mockito contributors
+import(test),org.mockito.kotlin,MIT,"Copyright (c) 2016 Niek Haarman, Copyright (c) 2007 Mockito contributors"
 import(test),org.objenesis,Apache-2.0,"Copyright (c) 2003-2013, Objenesis Team and all contributors"
 import(test),org.opentest4j,Apache-2.0,Copyright 2015-2018 the original author or authors
 import(test),org.robolectric,Apache-2.0,Copyright 2015-2018 the original author or authors

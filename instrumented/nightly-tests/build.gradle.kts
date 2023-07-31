@@ -1,7 +1,7 @@
 import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.kotlinConfig
-import org.gradle.api.JavaVersion
 
 plugins {
     id("com.android.application")
@@ -26,6 +26,10 @@ android {
         vectorDrawables.useSupportLibrary = true
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildFeatures {
+            buildConfig = true
+        }
 
         buildConfigField(
             "String",
@@ -54,11 +58,10 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        java17()
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += "META-INF/*"
         }
@@ -71,6 +74,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            testProguardFile("test-proguard-rules.pro")
         }
         getByName("debug") {
             isMinifyEnabled = true
@@ -78,6 +82,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            testProguardFile("test-proguard-rules.pro")
         }
     }
 
@@ -97,8 +102,12 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":dd-sdk-android"))
-    implementation(project(":dd-sdk-android-ndk"))
+    implementation(project(":features:dd-sdk-android-ndk"))
+    implementation(project(":features:dd-sdk-android-logs"))
+    implementation(project(":features:dd-sdk-android-trace"))
+    implementation(project(":features:dd-sdk-android-webview"))
+    implementation(project(":features:dd-sdk-android-rum"))
+    implementation(project(":integrations:dd-sdk-android-okhttp"))
 
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.gson)
@@ -112,10 +121,12 @@ dependencies {
     implementation(libs.bundles.ktor)
 
     androidTestImplementation(project(":tools:unit")) {
-        // We need to exclude this otherwise R8 will fail while trying to desugar a function
-        // available only for API 26 and above
-        exclude(group = "org.junit.jupiter")
-        exclude(group = "org.mockito")
+        attributes {
+            attribute(
+                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
+                objects.named("art")
+            )
+        }
     }
     androidTestImplementation(libs.bundles.integrationTests)
 }

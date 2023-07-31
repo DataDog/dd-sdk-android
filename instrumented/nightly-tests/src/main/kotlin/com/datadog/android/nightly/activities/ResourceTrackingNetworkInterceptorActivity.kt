@@ -6,29 +6,27 @@
 
 package com.datadog.android.nightly.activities
 
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.nightly.server.LocalServer
-import com.datadog.android.rum.RumInterceptor
-import com.datadog.android.tracing.TracingInterceptor
+import com.datadog.android.okhttp.DatadogInterceptor
+import com.datadog.android.okhttp.trace.TracingInterceptor
 import okhttp3.OkHttpClient
 
 internal class ResourceTrackingNetworkInterceptorActivity : ResourceTrackingActivity() {
 
     private val localServer: LocalServer by lazy { LocalServer() }
 
-    override val okHttpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .addInterceptor(RumInterceptor(traceSamplingRate = HUNDRED_PERCENT))
-            .addNetworkInterceptor(
-                TracingInterceptor(
-                    listOf(
-                        HOST,
-                        LocalServer.HOST
-                    ),
-                    traceSamplingRate = HUNDRED_PERCENT
-                )
+    override val okHttpClient: OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(
+            DatadogInterceptor(traceSampler = RateBasedSampler(HUNDRED_PERCENT))
+        )
+        .addNetworkInterceptor(
+            TracingInterceptor(
+                tracedHosts = listOf(HOST, LocalServer.HOST),
+                traceSampler = RateBasedSampler(HUNDRED_PERCENT)
             )
-            .build()
-    }
+        )
+        .build()
 
     override val randomUrl: String by lazy {
         localServer.getUrl()

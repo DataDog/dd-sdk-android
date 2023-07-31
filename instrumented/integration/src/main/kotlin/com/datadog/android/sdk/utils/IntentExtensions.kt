@@ -21,3 +21,13 @@ internal fun Intent.getTrackingConsent(): TrackingConsent {
         else -> TrackingConsent.NOT_GRANTED
     }
 }
+
+internal const val FORGE_SEED_KEY = "forge_seed"
+
+@Suppress("CheckInternal")
+internal fun Intent.getForgeSeed(): Long {
+    check(hasExtra(FORGE_SEED_KEY)) {
+        "$FORGE_SEED_KEY value should be provided."
+    }
+    return getLongExtra(FORGE_SEED_KEY, -1)
+}

@@ -32,7 +32,7 @@ This SDK lives in our customer’s applications, and is run on end users devices
 ## Compatibility
 
 - Support old versions of the OS’s
-    - Android: KitKat (5 years old)
+    - Android: Lollipop (released in 2014)
 - Support all main languages; especially the behavior should be the same for any language, but can be enhanced for modern languages.
     - Android: Java/Kotlin
 - Support vanilla flavors of the OS first, and add possible extensions for derived flavors of the OSs (Watch, TV, …)

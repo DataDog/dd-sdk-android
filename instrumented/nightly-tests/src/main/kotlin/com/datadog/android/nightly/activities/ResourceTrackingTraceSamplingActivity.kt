@@ -8,9 +8,10 @@ package com.datadog.android.nightly.activities
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.nightly.R
 import com.datadog.android.nightly.server.LocalServer
-import com.datadog.android.rum.RumInterceptor
+import com.datadog.android.okhttp.DatadogInterceptor
 import fr.xgouchet.elmyr.Forge
 import io.ktor.http.HttpStatusCode
 import io.ktor.response.respond
@@ -29,17 +30,15 @@ internal class ResourceTrackingTraceSamplingActivity : AppCompatActivity() {
 
     private val forge = Forge()
 
-    private val okHttpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .addInterceptor(
-                RumInterceptor(
-                    listOf(LocalServer.HOST),
-                    // 75% of the RUM resources sent should have traces included
-                    traceSamplingRate = 75f
-                )
+    private val okHttpClient: OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(
+            DatadogInterceptor(
+                firstPartyHosts = listOf(LocalServer.HOST),
+                // 75% of the RUM resources sent should have traces included
+                traceSampler = @Suppress("MagicNumber") RateBasedSampler(75f)
             )
-            .build()
-    }
+        )
+        .build()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

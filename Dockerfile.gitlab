@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN ln -sf /usr/share/zoneinfo/Etc/UTC /etc/localtime
 
 RUN apt-get update \
-    && apt-get -y install openjdk-11-jdk \
+    && apt-get -y install openjdk-17-jdk \
     && rm -rf /var/lib/apt/lists/*
 
 RUN set -x \
@@ -24,9 +24,9 @@ RUN set -x \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/*
 
-ENV GRADLE_VERSION 7.6
+ENV GRADLE_VERSION 8.1.1
 ENV ANDROID_COMPILE_SDK 33
-ENV ANDROID_BUILD_TOOLS 33.0.0
+ENV ANDROID_BUILD_TOOLS 33.0.2
 ENV ANDROID_SDK_TOOLS 8512546
 ENV NDK_VERSION 25.1.8937393
 ENV CMAKE_VERSION 3.22.1

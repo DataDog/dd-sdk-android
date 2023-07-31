@@ -63,10 +63,12 @@ internal fun SimpleView(
         modifier = Modifier.fillMaxSize()
     ) {
         Text("View $viewId")
+        val onClick = trackClick(
+            targetName = "Open View",
+            onClick = { onNavigate.invoke() }
+        )
         Button(
-            onClick = trackClick(targetName = "Open View", onClick = {
-                onNavigate.invoke()
-            }),
+            onClick = onClick,
             modifier = Modifier
                 .padding(top = 32.dp)
         ) {

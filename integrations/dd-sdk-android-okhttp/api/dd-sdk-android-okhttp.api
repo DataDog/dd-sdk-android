@@ -1,0 +1,74 @@
+public final class com/datadog/android/okhttp/DatadogEventListener : okhttp3/EventListener {
+	public fun callEnd (Lokhttp3/Call;)V
+	public fun callFailed (Lokhttp3/Call;Ljava/io/IOException;)V
+	public fun callStart (Lokhttp3/Call;)V
+	public fun connectEnd (Lokhttp3/Call;Ljava/net/InetSocketAddress;Ljava/net/Proxy;Lokhttp3/Protocol;)V
+	public fun connectStart (Lokhttp3/Call;Ljava/net/InetSocketAddress;Ljava/net/Proxy;)V
+	public fun dnsEnd (Lokhttp3/Call;Ljava/lang/String;Ljava/util/List;)V
+	public fun dnsStart (Lokhttp3/Call;Ljava/lang/String;)V
+	public fun responseBodyEnd (Lokhttp3/Call;J)V
+	public fun responseBodyStart (Lokhttp3/Call;)V
+	public fun responseHeadersEnd (Lokhttp3/Call;Lokhttp3/Response;)V
+	public fun responseHeadersStart (Lokhttp3/Call;)V
+	public fun secureConnectEnd (Lokhttp3/Call;Lokhttp3/Handshake;)V
+	public fun secureConnectStart (Lokhttp3/Call;)V
+}
+
+public final class com/datadog/android/okhttp/DatadogEventListener$Factory : okhttp3/EventListener$Factory {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun create (Lokhttp3/Call;)Lokhttp3/EventListener;
+}
+
+public class com/datadog/android/okhttp/DatadogInterceptor : com/datadog/android/okhttp/trace/TracingInterceptor {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/okhttp/trace/TracedRequestListener;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;Lcom/datadog/android/core/sampling/Sampler;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;Lcom/datadog/android/core/sampling/Sampler;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Lcom/datadog/android/okhttp/trace/TracedRequestListener;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;Lcom/datadog/android/core/sampling/Sampler;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;Lcom/datadog/android/core/sampling/Sampler;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Lcom/datadog/android/okhttp/trace/TracedRequestListener;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;Lcom/datadog/android/core/sampling/Sampler;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Map;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;Lcom/datadog/android/core/sampling/Sampler;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/util/List;)V
+	public fun <init> (Ljava/util/Map;)V
+	public fun intercept (Lokhttp3/Interceptor$Chain;)Lokhttp3/Response;
+	protected fun onRequestIntercepted (Lcom/datadog/android/api/feature/FeatureSdkCore;Lokhttp3/Request;Lio/opentracing/Span;Lokhttp3/Response;Ljava/lang/Throwable;)V
+}
+
+public final class com/datadog/android/okhttp/trace/OkHttpRequestExtKt {
+	public static final fun parentSpan (Lokhttp3/Request$Builder;Lio/opentracing/Span;)Lokhttp3/Request$Builder;
+}
+
+public abstract interface class com/datadog/android/okhttp/trace/TracedRequestListener {
+	public abstract fun onRequestIntercepted (Lokhttp3/Request;Lio/opentracing/Span;Lokhttp3/Response;Ljava/lang/Throwable;)V
+}
+
+public class com/datadog/android/okhttp/trace/TracingInterceptor : okhttp3/Interceptor {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/okhttp/trace/TracedRequestListener;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/core/sampling/Sampler;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/core/sampling/Sampler;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Lcom/datadog/android/okhttp/trace/TracedRequestListener;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/core/sampling/Sampler;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/core/sampling/Sampler;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Lcom/datadog/android/okhttp/trace/TracedRequestListener;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/core/sampling/Sampler;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Map;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/core/sampling/Sampler;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/util/List;)V
+	public fun <init> (Ljava/util/Map;)V
+	public fun intercept (Lokhttp3/Interceptor$Chain;)Lokhttp3/Response;
+	protected fun onRequestIntercepted (Lcom/datadog/android/api/feature/FeatureSdkCore;Lokhttp3/Request;Lio/opentracing/Span;Lokhttp3/Response;Ljava/lang/Throwable;)V
+}
+
