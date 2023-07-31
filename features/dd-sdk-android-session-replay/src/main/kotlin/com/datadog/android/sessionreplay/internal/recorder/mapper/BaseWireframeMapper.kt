@@ -28,12 +28,29 @@ import com.datadog.android.sessionreplay.utils.ViewUtils
 @Suppress("UndocumentedPublicClass")
 abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
     private val stringUtils: StringUtils = StringUtils,
-    private val viewUtils: ViewUtils = ViewUtils,
-    private val webPImageCompression: ImageCompression = WebPImageCompression(),
-    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    // TODO: REPLAY-1856 find a way to remove base64 dependency from the constructor
-    private val base64Serializer: Base64Serializer = Base64Serializer.Builder().build()
+    private val viewUtils: ViewUtils = ViewUtils
 ) : WireframeMapper<T, S>, AsyncImageProcessingCallback {
+    private var base64Serializer: Base64Serializer? = null
+    private var webPImageCompression: ImageCompression = WebPImageCompression()
+    private var uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator
+
+    internal constructor(
+        base64Serializer: Base64Serializer? = null,
+        webPImageCompression: ImageCompression? = null,
+        uniqueIdentifierGenerator: UniqueIdentifierGenerator? = null
+    ) : this() {
+        base64Serializer?.let {
+            this.base64Serializer = it
+        }
+
+        webPImageCompression?.let {
+            this.webPImageCompression = it
+        }
+
+        uniqueIdentifierGenerator?.let {
+            this.uniqueIdentifierGenerator = it
+        }
+    }
 
     /**
      * Resolves the [View] unique id to be used in the mapped [MobileSegment.Wireframe].
@@ -108,7 +125,7 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
         displayMetrics: DisplayMetrics,
         drawable: Drawable,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe
-    ) = base64Serializer.handleBitmap(
+    ) = base64Serializer?.handleBitmap(
         applicationContext,
         displayMetrics,
         drawable,
@@ -118,7 +135,7 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
     internal fun registerAsyncImageProcessingCallback(
         asyncImageProcessingCallback: AsyncImageProcessingCallback
     ) {
-        base64Serializer.registerAsyncLoadingCallback(asyncImageProcessingCallback)
+        base64Serializer?.registerAsyncLoadingCallback(asyncImageProcessingCallback)
     }
 
     override fun startProcessingImage() {}

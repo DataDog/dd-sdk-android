@@ -339,6 +339,8 @@ datadog:
       - "android.view.Window.Callback.onMenuItemSelected(kotlin.Int, android.view.MenuItem)"
       - "android.view.View.getChildAt(kotlin.Int)"
       - "android.view.View.hashCode()"
+      - "androidx.collection.LruCache.size()"
+      - "androidx.collection.LruCache.maxSize()"
       # endregion
       # region Android Webview APIs
       - "android.webkit.ConsoleMessage.MessageLevel.toLogLevel()"

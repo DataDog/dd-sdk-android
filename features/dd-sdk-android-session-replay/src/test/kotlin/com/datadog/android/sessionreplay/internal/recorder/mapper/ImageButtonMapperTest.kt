@@ -46,7 +46,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class ImageButtonMapperTest {
 
-    lateinit var testedMapper: ImageButtonMapper
+    private lateinit var testedMapper: ImageButtonMapper
 
     @Mock
     lateinit var mockImageButton: ImageButton

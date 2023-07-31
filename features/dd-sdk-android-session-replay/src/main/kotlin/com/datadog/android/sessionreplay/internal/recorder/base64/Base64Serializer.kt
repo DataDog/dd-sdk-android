@@ -32,8 +32,8 @@ class Base64Serializer private constructor(
     private val drawableUtils: DrawableUtils,
     private val base64Utils: Base64Utils,
     private val webPImageCompression: ImageCompression,
-    private val base64LruCache: Cache<Drawable, String>,
-    private val bitmapPool: Cache<String, Bitmap>,
+    private val base64LRUCache: Cache<Drawable, String>?,
+    private val bitmapPool: BitmapPool?,
     private val logger: InternalLogger
 ) {
     private var asyncImageProcessingCallback: AsyncImageProcessingCallback? = null
@@ -51,7 +51,7 @@ class Base64Serializer private constructor(
 
         asyncImageProcessingCallback?.startProcessingImage()
 
-        val cachedBase64 = base64LruCache.get(drawable)
+        val cachedBase64 = base64LRUCache?.get(drawable)
         if (cachedBase64 != null) {
             finalizeRecordedDataItem(cachedBase64, imageWireframe, asyncImageProcessingCallback)
             return
@@ -106,8 +106,8 @@ class Base64Serializer private constructor(
     private fun registerCacheForCallbacks(applicationContext: Context) {
         if (isCacheRegisteredForCallbacks) return
 
-        if (base64LruCache is ComponentCallbacks2) {
-            applicationContext.registerComponentCallbacks(base64LruCache)
+        if (base64LRUCache is ComponentCallbacks2) {
+            applicationContext.registerComponentCallbacks(base64LRUCache)
             isCacheRegisteredForCallbacks = true
         } else {
             // Temporarily use UNBOUND logger
@@ -130,10 +130,10 @@ class Base64Serializer private constructor(
 
         if (base64Result.isNotEmpty()) {
             // if we got a base64 string then cache it
-            base64LruCache.put(drawable, base64Result)
+            base64LRUCache?.put(drawable, base64Result)
         }
 
-        bitmapPool.put(bitmap)
+        bitmapPool?.put(bitmap)
 
         return base64Result
     }
@@ -166,25 +166,26 @@ class Base64Serializer private constructor(
     // endregion
 
     // region builder
-    internal class Builder {
-        internal fun build(
-            threadPoolExecutor: ExecutorService = THREADPOOL_EXECUTOR,
-            drawableUtils: DrawableUtils = DrawableUtils(),
-            base64Utils: Base64Utils = Base64Utils(),
-            webPImageCompression: ImageCompression = WebPImageCompression(),
-            base64LruCache: Cache<Drawable, String> = Base64LRUCache,
-            bitmapPool: Cache<String, Bitmap> = BitmapPool,
-            // Temporarily use UNBOUND until we handle the loggers
-            logger: InternalLogger = InternalLogger.UNBOUND
-        ) =
+    internal class Builder(
+        // Temporarily use UNBOUND until we handle the loggers
+        private var logger: InternalLogger = InternalLogger.UNBOUND,
+        private var threadPoolExecutor: ExecutorService = THREADPOOL_EXECUTOR,
+        private var bitmapPool: BitmapPool? = null,
+        private var base64LRUCache: Cache<Drawable, String>? = null,
+        private var drawableUtils: DrawableUtils = DrawableUtils(bitmapPool = bitmapPool),
+        private var base64Utils: Base64Utils = Base64Utils(),
+        private var webPImageCompression: ImageCompression = WebPImageCompression()
+    ) {
+
+        internal fun build() =
             Base64Serializer(
+                logger = logger,
                 threadPoolExecutor = threadPoolExecutor,
+                bitmapPool = bitmapPool,
+                base64LRUCache = base64LRUCache,
                 drawableUtils = drawableUtils,
                 base64Utils = base64Utils,
-                webPImageCompression = webPImageCompression,
-                base64LruCache = base64LruCache,
-                bitmapPool = bitmapPool,
-                logger = logger
+                webPImageCompression = webPImageCompression
             )
 
         private companion object {
@@ -192,8 +193,7 @@ class Base64Serializer private constructor(
             private const val CORE_DEFAULT_POOL_SIZE = 1
             private const val MAX_THREAD_COUNT = 10
 
-            // all parameters are non-negative and queue is not null
-            @Suppress("UnsafeThirdPartyFunctionCall")
+            @Suppress("UnsafeThirdPartyFunctionCall") // all parameters are non-negative and queue is not null
             private val THREADPOOL_EXECUTOR = ThreadPoolExecutor(
                 CORE_DEFAULT_POOL_SIZE,
                 MAX_THREAD_COUNT,

@@ -7,9 +7,11 @@
 package com.datadog.android.sessionreplay.internal.utils
 
 import android.content.ComponentCallbacks2
-import android.util.LruCache
+import androidx.collection.LruCache
 
-internal class CacheUtils<K : Any, V : Any> {
+internal class CacheUtils<K : Any, V : Any>(
+    private val invocationUtils: InvocationUtils = InvocationUtils()
+) {
     internal fun handleTrimMemory(level: Int, cache: LruCache<K, V>) {
         @Suppress("MagicNumber")
         val onLowMemorySizeBytes = cache.maxSize() / 2 // 50%
@@ -19,34 +21,55 @@ internal class CacheUtils<K : Any, V : Any> {
 
         when (level) {
             ComponentCallbacks2.TRIM_MEMORY_BACKGROUND -> {
-                cache.evictAll()
+                evictAll(cache)
             }
 
             ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> {
-                cache.evictAll()
+                evictAll(cache)
             }
 
             ComponentCallbacks2.TRIM_MEMORY_MODERATE -> {
-                cache.trimToSize(onModerateMemorySizeBytes)
+                trimToSize(cache, onModerateMemorySizeBytes)
             }
 
             ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> {
-                cache.evictAll()
+                evictAll(cache)
             }
 
             ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW -> {
-                cache.trimToSize(onLowMemorySizeBytes)
+                trimToSize(cache, onLowMemorySizeBytes)
             }
 
             ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE -> {
-                cache.trimToSize(onModerateMemorySizeBytes)
+                trimToSize(cache, onModerateMemorySizeBytes)
             }
 
             ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> {}
 
             else -> {
-                cache.evictAll()
+                evictAll(cache)
             }
         }
+    }
+
+    private fun evictAll(cache: LruCache<K, V>) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
+        invocationUtils.safeCallWithErrorLogging(
+            call = { cache.evictAll() },
+            failureMessage = FAILURE_MSG_EVICT_CACHE_CONTENTS
+        )
+    }
+
+    private fun trimToSize(cache: LruCache<K, V>, targetSize: Int) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
+        invocationUtils.safeCallWithErrorLogging(
+            call = { cache.trimToSize(targetSize) },
+            failureMessage = FAILURE_MSG_TRIM_CACHE
+        )
+    }
+
+    private companion object {
+        private const val FAILURE_MSG_EVICT_CACHE_CONTENTS = "Failed to evict cache entries"
+        private const val FAILURE_MSG_TRIM_CACHE = "Failed to trim cache to size"
     }
 }

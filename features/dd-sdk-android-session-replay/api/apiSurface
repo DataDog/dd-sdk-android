@@ -31,7 +31,7 @@ class com.datadog.android.sessionreplay.internal.recorder.base64.WebPImageCompre
   override fun compressBitmap(android.graphics.Bitmap): ByteArray
   companion object 
 abstract class com.datadog.android.sessionreplay.internal.recorder.mapper.BaseWireframeMapper<T: android.view.View, S: com.datadog.android.sessionreplay.model.MobileSegment.Wireframe> : WireframeMapper<T, S>, com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
-  constructor(com.datadog.android.sessionreplay.utils.StringUtils = StringUtils, com.datadog.android.sessionreplay.utils.ViewUtils = ViewUtils, com.datadog.android.sessionreplay.internal.recorder.base64.ImageCompression = WebPImageCompression(), com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator = UniqueIdentifierGenerator, com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer = Base64Serializer.Builder().build())
+  constructor(com.datadog.android.sessionreplay.utils.StringUtils = StringUtils, com.datadog.android.sessionreplay.utils.ViewUtils = ViewUtils)
   protected fun resolveViewId(android.view.View): Long
   protected fun colorAndAlphaAsStringHexa(Int, Int): String
   protected fun resolveViewGlobalBounds(android.view.View, Float): com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
