@@ -18,11 +18,18 @@ internal class SnapshotProducer(
         ComposedOptionSelectorDetector(listOf(DefaultOptionSelectorDetector()))
 ) {
 
+    private var lastSnapshotViewsCount:Long = 0
+
+    internal fun getLastSnapshotViewsCount(): Long {
+        return lastSnapshotViewsCount
+    }
+
     fun produce(
         rootView: View,
         systemInformation: SystemInformation,
         recordedDataQueueRefs: RecordedDataQueueRefs
     ): Node? {
+        lastSnapshotViewsCount = 0
         return convertViewToNode(
             rootView,
             MappingContext(systemInformation),
@@ -38,6 +45,7 @@ internal class SnapshotProducer(
         parents: LinkedList<MobileSegment.Wireframe>,
         recordedDataQueueRefs: RecordedDataQueueRefs
     ): Node? {
+        lastSnapshotViewsCount++
         val traversedTreeView = treeViewTraversal.traverse(view, mappingContext, recordedDataQueueRefs)
         val nextTraversalStrategy = traversedTreeView.nextActionStrategy
         val resolvedWireframes = traversedTreeView.mappedWireframes

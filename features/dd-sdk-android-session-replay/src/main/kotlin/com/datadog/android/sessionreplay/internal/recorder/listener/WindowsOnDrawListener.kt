@@ -8,6 +8,8 @@ package com.datadog.android.sessionreplay.internal.recorder.listener
 
 import android.content.Context
 import android.os.Debug
+import android.os.Handler
+import android.os.HandlerThread
 import android.util.Log
 import android.view.View
 import android.view.ViewTreeObserver
@@ -15,6 +17,7 @@ import androidx.annotation.MainThread
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
+import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import java.io.File
@@ -24,24 +27,26 @@ import java.util.GregorianCalendar
 import java.util.concurrent.TimeUnit
 
 internal class WindowsOnDrawListener(
-    private val appContext: Context,
-    zOrderedDecorViews: List<View>,
-    private val recordedDataQueueHandler: RecordedDataQueueHandler,
-    private val snapshotProducer: SnapshotProducer,
-    private val debouncer: Debouncer = Debouncer(),
-    private val miscUtils: MiscUtils = MiscUtils,
-    private val recordedDataQueueRefs: RecordedDataQueueRefs =
-        RecordedDataQueueRefs(recordedDataQueueHandler)
+        private val appContext: Context,
+        zOrderedDecorViews: List<View>,
+        private val recordedDataQueueHandler: RecordedDataQueueHandler,
+        private val snapshotProducer: SnapshotProducer,
+        private val debouncer: Debouncer = Debouncer(),
+        private val miscUtils: MiscUtils = MiscUtils,
+        private val recordedDataQueueRefs: RecordedDataQueueRefs =
+                RecordedDataQueueRefs(recordedDataQueueHandler)
 ) : ViewTreeObserver.OnDrawListener {
 
     internal val weakReferencedDecorViews: List<WeakReference<View>>
-
-
+    private val  handlerThread = HandlerThread("SnapshotProducer")
+    private val handler:Handler
 
     init {
         weakReferencedDecorViews = zOrderedDecorViews.map { WeakReference(it) }
-        if(takeSnapshotTraceFile==null){
-           takeSnapshotTraceFile = File(appContext.externalCacheDir,
+        handlerThread.start()
+        handler = Handler(handlerThread.looper)
+        if (takeSnapshotTraceFile == null) {
+            takeSnapshotTraceFile = File(appContext.externalCacheDir,
                     GregorianCalendar.getInstance().time.toString() + ".txt")
 
         }
@@ -49,38 +54,39 @@ internal class WindowsOnDrawListener(
 
     @MainThread
     override fun onDraw() {
-        debouncer.debounce{
+        debouncer.debounce {
             val start = System.nanoTime()
             resolveTakeSnapshotRunnable().run()
             val end = System.nanoTime()
-            val duration = end - start
-            val mean = (previousMean * previousCount + duration) / (previousCount + 1)
-            previousMean = mean
-            previousCount++
-            sortedCounts.add(duration)
-            sortedCounts.sort()
-            val p95 = sortedCounts[(sortedCounts.size * 0.95).toInt()]
-//                Log.v("SnapshotProducer",
-//                        "duration: ${TimeUnit.NANOSECONDS.toMillis(duration)}, mean: " +
-//                        "${TimeUnit.NANOSECONDS.toMillis(mean)}")
-//                Log.v("SnapshotProducer", "p95: ${TimeUnit.NANOSECONDS.toMillis(p95)}")
-            Thread{
+            lastSnapshotViewCount = snapshotProducer.getLastSnapshotViewsCount()
+            // execute on handler thread to avoid blocking the main thread
+
+            handler.post{
+                val duration = end - start
+                val mean = (previousMean * previousCount + duration) / (previousCount + 1)
+                previousMean = mean
+                previousCount++
+                sortedCounts.add(duration)
+                sortedCounts.sort()
+                val snapshotViewCountsMean =
+                        (previousSnapshotCountMean * snapshotCount + lastSnapshotViewCount ) / (snapshotCount + 1)
+                previousSnapshotCountMean = snapshotViewCountsMean
+                snapshotCount++
+                val p95 = sortedCounts[(sortedCounts.size * 0.95).toInt()]
+
                 takeSnapshotTraceFile?.let { file ->
                     if (!file.exists()) {
                         file.createNewFile()
                     }
-                    file.appendText(duration.toString() + "\n")
+                    file.appendText(duration.toString() + "  " + lastSnapshotViewCount + "   " + TimeUnit.NANOSECONDS.toMillis(start) + "\n")
                 }
+                val durationToMillis = TimeUnit.NANOSECONDS.toMillis(duration)
                 Log.v("SnapshotProducer",
-                        "duration: ${TimeUnit.NANOSECONDS.toMillis(duration)}, mean: " +
+                        "duration: $durationToMillis, mean: " +
                                 "${TimeUnit.NANOSECONDS.toMillis(mean.toLong())}")
-                Log.v("SnapshotProducer", "p95: ${TimeUnit.NANOSECONDS.toMillis(p95)}")
-
-            }.apply {
-                start()
-                join()
+                Log.v("SnapshotProducer", "duration p95: ${TimeUnit.NANOSECONDS.toMillis(p95)}")
+                Log.v("SnapshotProducer", "views per snapshot mean: $snapshotViewCountsMean")
             }
-//
         }
     }
 
@@ -92,18 +98,18 @@ internal class WindowsOnDrawListener(
         // is is very important to have the windows sorted by their z-order
         val systemInformation = miscUtils.resolveSystemInformation(appContext)
         val item = recordedDataQueueHandler.addSnapshotItem(systemInformation)
-            ?: return@Runnable
+                ?: return@Runnable
 
         recordedDataQueueRefs.recordedDataQueueItem = item
 
         val nodes = weakReferencedDecorViews
-            .mapNotNull { it.get() }
-            .mapNotNull {
+                .mapNotNull { it.get() }
+                .mapNotNull {
 //                Debug.startMethodTracing(start.toString())
-                val node = snapshotProducer.produce(it, systemInformation, recordedDataQueueRefs)
-                  Debug.stopMethodTracing()
-                node
-            }
+                    val node = snapshotProducer.produce(it, systemInformation, recordedDataQueueRefs)
+//                  Debug.stopMethodTracing()
+                    node
+                }
 
         if (nodes.isNotEmpty()) {
             item.nodes = nodes
@@ -114,10 +120,18 @@ internal class WindowsOnDrawListener(
     }
 
     companion object {
-        private var previousMean:Double = 0.0
-        private var previousCount:Double = 0.0
-        private var sortedCounts= mutableListOf<Long>()
+        @Volatile
+        private var previousMean: Double = 0.0
+        @Volatile
+        private var previousCount: Double = 0.0
+        private var sortedCounts = mutableListOf<Long>()
+        @Volatile
+        private var snapshotCount: Long = 0
+        @Volatile
+        private var lastSnapshotViewCount: Long = 0
+        @Volatile
+        private var previousSnapshotCountMean: Long = 0
 
-        var takeSnapshotTraceFile:File? = null
+        var takeSnapshotTraceFile: File? = null
     }
 }
