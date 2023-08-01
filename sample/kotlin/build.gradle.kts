@@ -55,6 +55,8 @@ android {
                 cppFlags.add("-std=c++14")
             }
         }
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     namespace = "com.datadog.android.sample"
@@ -183,6 +185,11 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation(libs.okHttp)
     implementation(libs.gson)
+
+    // Espresso
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test:runner:1.5.2")
 
     // Misc
     implementation(libs.timber)
