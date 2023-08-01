@@ -113,6 +113,31 @@ android {
         }
     }
     ndkVersion = Dependencies.Versions.Ndk
+
+    task("runOptimization") {
+        description="run parameter optimization test"
+        val uploadFrequency = properties["uploadFrequency"]
+        val batchSize = properties["batchSize"]
+        val itemsPerBatch = properties["itemsPerBatch"]
+        val maxItemSize = properties["maxItemSize"]
+
+        project.android.defaultConfig.testInstrumentationRunner = "com.datadog.android.sample.BasicTest"
+
+        doLast {
+            exec {
+                commandLine = listOf(
+                    "adb", "shell", "am", "instrument", "-w", "-r",
+                    "-e", "debug", "false",
+                    "-e", "class", "com.datadog.android.sample.BasicTest",
+                    "-e", "uploadFrequency", uploadFrequency,
+                    "-e", "batchSize", batchSize,
+                    "-e", "itemsPerBatch", itemsPerBatch,
+                    "-e", "maxItemSize", maxItemSize,
+                    "com.datadog.android.sample.test/androidx.test.runner.AndroidJUnitRunner"
+                ).joinTo(StringBuilder(), " ").toString().split(" ")
+            }
+        }
+    }
 }
 
 dependencies {
