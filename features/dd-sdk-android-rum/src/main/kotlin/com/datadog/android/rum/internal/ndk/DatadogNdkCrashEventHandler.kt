@@ -46,6 +46,8 @@ internal class DatadogNdkCrashEventHandler(
             rumEventDeserializer.deserialize(it) as? ViewEvent
         }
 
+        val sampleRate = lastViewEvent?.dd?.configuration?.sessionSampleRate?.toFloat() ?: 0f
+
         if (timestamp == null || signalName == null || stacktrace == null ||
             errorLogMessage == null || lastViewEvent == null
         ) {
@@ -65,7 +67,8 @@ internal class DatadogNdkCrashEventHandler(
                 timestamp,
                 stacktrace,
                 signalName,
-                lastViewEvent
+                lastViewEvent,
+                sampleRate
             )
             @Suppress("ThreadSafety") // called in a worker thread context
             rumWriter.write(eventBatchWriter, toSendErrorEvent)
@@ -85,7 +88,8 @@ internal class DatadogNdkCrashEventHandler(
         timestamp: Long,
         stacktrace: String,
         signalName: String,
-        viewEvent: ViewEvent
+        viewEvent: ViewEvent,
+        sampleRate: Float
     ): ErrorEvent {
         val connectivity = viewEvent.connectivity?.let {
             val connectivityStatus =
@@ -147,7 +151,10 @@ internal class DatadogNdkCrashEventHandler(
                 brand = deviceInfo.deviceBrand,
                 architecture = deviceInfo.architecture
             ),
-            dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)),
+            dd = ErrorEvent.Dd(
+                session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1),
+                configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
+            ),
             context = ErrorEvent.Context(additionalProperties = additionalProperties),
             error = ErrorEvent.Error(
                 message = errorLogMessage,

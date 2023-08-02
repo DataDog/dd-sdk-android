@@ -54,7 +54,8 @@ internal open class RumViewScope(
     private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate(),
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
     internal val type: RumViewType = RumViewType.FOREGROUND,
-    private val trackFrustrations: Boolean
+    private val trackFrustrations: Boolean,
+    internal val sampleRate: Float
 ) : RumScope {
 
     internal val url = key.resolveViewUrl().replace('.', '/')
@@ -295,7 +296,8 @@ internal open class RumViewScope(
                     event,
                     serverTimeOffsetInMs,
                     featuresContextResolver,
-                    trackFrustrations
+                    trackFrustrations,
+                    sampleRate
                 )
                 pendingActionCount++
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
@@ -317,7 +319,8 @@ internal open class RumViewScope(
                 event,
                 serverTimeOffsetInMs,
                 featuresContextResolver,
-                trackFrustrations
+                trackFrustrations,
+                sampleRate
             )
         )
         pendingActionCount++
@@ -340,7 +343,8 @@ internal open class RumViewScope(
             updatedEvent,
             firstPartyHostHeaderTypeResolver,
             serverTimeOffsetInMs,
-            featuresContextResolver
+            featuresContextResolver,
+            sampleRate
         )
         pendingResourceCount++
     }
@@ -430,7 +434,8 @@ internal open class RumViewScope(
                     ),
                     context = ErrorEvent.Context(additionalProperties = updatedAttributes),
                     dd = ErrorEvent.Dd(
-                        session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)
+                        session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1),
+                        configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
                     ),
                     service = datadogContext.service,
                     version = datadogContext.version
@@ -765,7 +770,8 @@ internal open class RumViewScope(
                     dd = ViewEvent.Dd(
                         documentVersion = eventVersion,
                         session = ViewEvent.DdSession(plan = ViewEvent.Plan.PLAN_1),
-                        replayStats = replayStats
+                        replayStats = replayStats,
+                        configuration = ViewEvent.Configuration(sessionSampleRate = sampleRate)
                     ),
                     connectivity = datadogContext.networkInfo.toViewConnectivity(),
                     service = datadogContext.service,
@@ -880,7 +886,10 @@ internal open class RumViewScope(
                     context = ActionEvent.Context(
                         additionalProperties = globalAttributes
                     ),
-                    dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1)),
+                    dd = ActionEvent.Dd(
+                        session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1),
+                        configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
+                    ),
                     connectivity = datadogContext.networkInfo.toActionConnectivity(),
                     service = datadogContext.service,
                     version = datadogContext.version
@@ -958,7 +967,8 @@ internal open class RumViewScope(
                     ),
                     context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
                     dd = LongTaskEvent.Dd(
-                        session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1)
+                        session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1),
+                        configuration = LongTaskEvent.Configuration(sessionSampleRate = sampleRate)
                     ),
                     service = datadogContext.service,
                     version = datadogContext.version
@@ -1040,7 +1050,8 @@ internal open class RumViewScope(
             cpuVitalMonitor: VitalMonitor,
             memoryVitalMonitor: VitalMonitor,
             frameRateVitalMonitor: VitalMonitor,
-            trackFrustrations: Boolean
+            trackFrustrations: Boolean,
+            sampleRate: Float
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
@@ -1054,7 +1065,8 @@ internal open class RumViewScope(
                 cpuVitalMonitor,
                 memoryVitalMonitor,
                 frameRateVitalMonitor,
-                trackFrustrations = trackFrustrations
+                trackFrustrations = trackFrustrations,
+                sampleRate = sampleRate
             )
         }
 

@@ -64,7 +64,8 @@ internal class RumSessionScope(
         memoryVitalMonitor,
         frameRateVitalMonitor,
         appStartTimeProvider,
-        applicationDisplayed
+        applicationDisplayed,
+        sampleRate
     )
 
     init {

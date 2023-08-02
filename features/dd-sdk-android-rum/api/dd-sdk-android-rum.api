@@ -535,6 +535,29 @@ public final class com/datadog/android/rum/model/ActionEvent$Companion {
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ActionEvent;
 }
 
+public final class com/datadog/android/rum/model/ActionEvent$Configuration {
+	public static final field Companion Lcom/datadog/android/rum/model/ActionEvent$Configuration$Companion;
+	public fun <init> (Ljava/lang/Number;Ljava/lang/Number;)V
+	public synthetic fun <init> (Ljava/lang/Number;Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Number;
+	public final fun component2 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/Number;Ljava/lang/Number;)Lcom/datadog/android/rum/model/ActionEvent$Configuration;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ActionEvent$Configuration;Ljava/lang/Number;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ActionEvent$Configuration;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$Configuration;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ActionEvent$Configuration;
+	public final fun getSessionReplaySampleRate ()Ljava/lang/Number;
+	public final fun getSessionSampleRate ()Ljava/lang/Number;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/model/ActionEvent$Configuration$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$Configuration;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ActionEvent$Configuration;
+}
+
 public final class com/datadog/android/rum/model/ActionEvent$Connectivity {
 	public static final field Companion Lcom/datadog/android/rum/model/ActionEvent$Connectivity$Companion;
 	public fun <init> (Lcom/datadog/android/rum/model/ActionEvent$Status;Ljava/util/List;Lcom/datadog/android/rum/model/ActionEvent$Cellular;)V
@@ -605,18 +628,20 @@ public final class com/datadog/android/rum/model/ActionEvent$Crash$Companion {
 public final class com/datadog/android/rum/model/ActionEvent$Dd {
 	public static final field Companion Lcom/datadog/android/rum/model/ActionEvent$Dd$Companion;
 	public fun <init> ()V
-	public fun <init> (Lcom/datadog/android/rum/model/ActionEvent$DdSession;Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$DdAction;)V
-	public synthetic fun <init> (Lcom/datadog/android/rum/model/ActionEvent$DdSession;Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$DdAction;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/rum/model/ActionEvent$DdSession;Lcom/datadog/android/rum/model/ActionEvent$Configuration;Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$DdAction;)V
+	public synthetic fun <init> (Lcom/datadog/android/rum/model/ActionEvent$DdSession;Lcom/datadog/android/rum/model/ActionEvent$Configuration;Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$DdAction;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/rum/model/ActionEvent$DdSession;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lcom/datadog/android/rum/model/ActionEvent$DdAction;
-	public final fun copy (Lcom/datadog/android/rum/model/ActionEvent$DdSession;Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$DdAction;)Lcom/datadog/android/rum/model/ActionEvent$Dd;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ActionEvent$Dd;Lcom/datadog/android/rum/model/ActionEvent$DdSession;Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$DdAction;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ActionEvent$Dd;
+	public final fun component2 ()Lcom/datadog/android/rum/model/ActionEvent$Configuration;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Lcom/datadog/android/rum/model/ActionEvent$DdAction;
+	public final fun copy (Lcom/datadog/android/rum/model/ActionEvent$DdSession;Lcom/datadog/android/rum/model/ActionEvent$Configuration;Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$DdAction;)Lcom/datadog/android/rum/model/ActionEvent$Dd;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ActionEvent$Dd;Lcom/datadog/android/rum/model/ActionEvent$DdSession;Lcom/datadog/android/rum/model/ActionEvent$Configuration;Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$DdAction;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ActionEvent$Dd;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$Dd;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ActionEvent$Dd;
 	public final fun getAction ()Lcom/datadog/android/rum/model/ActionEvent$DdAction;
 	public final fun getBrowserSdkVersion ()Ljava/lang/String;
+	public final fun getConfiguration ()Lcom/datadog/android/rum/model/ActionEvent$Configuration;
 	public final fun getFormatVersion ()J
 	public final fun getSession ()Lcom/datadog/android/rum/model/ActionEvent$DdSession;
 	public fun hashCode ()I
@@ -854,15 +879,18 @@ public final class com/datadog/android/rum/model/ActionEvent$LongTask$Companion 
 
 public final class com/datadog/android/rum/model/ActionEvent$Os {
 	public static final field Companion Lcom/datadog/android/rum/model/ActionEvent$Os$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$Os;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ActionEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ActionEvent$Os;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$Os;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ActionEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ActionEvent$Os;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$Os;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ActionEvent$Os;
+	public final fun getBuild ()Ljava/lang/String;
 	public final fun getName ()Ljava/lang/String;
 	public final fun getVersion ()Ljava/lang/String;
 	public final fun getVersionMajor ()Ljava/lang/String;
@@ -1260,6 +1288,29 @@ public final class com/datadog/android/rum/model/ErrorEvent$Companion {
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ErrorEvent;
 }
 
+public final class com/datadog/android/rum/model/ErrorEvent$Configuration {
+	public static final field Companion Lcom/datadog/android/rum/model/ErrorEvent$Configuration$Companion;
+	public fun <init> (Ljava/lang/Number;Ljava/lang/Number;)V
+	public synthetic fun <init> (Ljava/lang/Number;Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Number;
+	public final fun component2 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/Number;Ljava/lang/Number;)Lcom/datadog/android/rum/model/ErrorEvent$Configuration;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ErrorEvent$Configuration;Ljava/lang/Number;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ErrorEvent$Configuration;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Configuration;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ErrorEvent$Configuration;
+	public final fun getSessionReplaySampleRate ()Ljava/lang/Number;
+	public final fun getSessionSampleRate ()Ljava/lang/Number;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/model/ErrorEvent$Configuration$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Configuration;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ErrorEvent$Configuration;
+}
+
 public final class com/datadog/android/rum/model/ErrorEvent$Connectivity {
 	public static final field Companion Lcom/datadog/android/rum/model/ErrorEvent$Connectivity$Companion;
 	public fun <init> (Lcom/datadog/android/rum/model/ErrorEvent$Status;Ljava/util/List;Lcom/datadog/android/rum/model/ErrorEvent$Cellular;)V
@@ -1310,16 +1361,18 @@ public final class com/datadog/android/rum/model/ErrorEvent$Context$Companion {
 public final class com/datadog/android/rum/model/ErrorEvent$Dd {
 	public static final field Companion Lcom/datadog/android/rum/model/ErrorEvent$Dd$Companion;
 	public fun <init> ()V
-	public fun <init> (Lcom/datadog/android/rum/model/ErrorEvent$DdSession;Ljava/lang/String;)V
-	public synthetic fun <init> (Lcom/datadog/android/rum/model/ErrorEvent$DdSession;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/rum/model/ErrorEvent$DdSession;Lcom/datadog/android/rum/model/ErrorEvent$Configuration;Ljava/lang/String;)V
+	public synthetic fun <init> (Lcom/datadog/android/rum/model/ErrorEvent$DdSession;Lcom/datadog/android/rum/model/ErrorEvent$Configuration;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/rum/model/ErrorEvent$DdSession;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Lcom/datadog/android/rum/model/ErrorEvent$DdSession;Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Dd;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ErrorEvent$Dd;Lcom/datadog/android/rum/model/ErrorEvent$DdSession;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ErrorEvent$Dd;
+	public final fun component2 ()Lcom/datadog/android/rum/model/ErrorEvent$Configuration;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Lcom/datadog/android/rum/model/ErrorEvent$DdSession;Lcom/datadog/android/rum/model/ErrorEvent$Configuration;Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Dd;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ErrorEvent$Dd;Lcom/datadog/android/rum/model/ErrorEvent$DdSession;Lcom/datadog/android/rum/model/ErrorEvent$Configuration;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ErrorEvent$Dd;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Dd;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ErrorEvent$Dd;
 	public final fun getBrowserSdkVersion ()Ljava/lang/String;
+	public final fun getConfiguration ()Lcom/datadog/android/rum/model/ErrorEvent$Configuration;
 	public final fun getFormatVersion ()J
 	public final fun getSession ()Lcom/datadog/android/rum/model/ErrorEvent$DdSession;
 	public fun hashCode ()I
@@ -1604,15 +1657,18 @@ public final class com/datadog/android/rum/model/ErrorEvent$Method$Companion {
 
 public final class com/datadog/android/rum/model/ErrorEvent$Os {
 	public static final field Companion Lcom/datadog/android/rum/model/ErrorEvent$Os$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Os;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ErrorEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ErrorEvent$Os;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Os;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ErrorEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ErrorEvent$Os;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Os;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ErrorEvent$Os;
+	public final fun getBuild ()Ljava/lang/String;
 	public final fun getName ()Ljava/lang/String;
 	public final fun getVersion ()Ljava/lang/String;
 	public final fun getVersionMajor ()Ljava/lang/String;
@@ -2000,6 +2056,29 @@ public final class com/datadog/android/rum/model/LongTaskEvent$Companion {
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/LongTaskEvent;
 }
 
+public final class com/datadog/android/rum/model/LongTaskEvent$Configuration {
+	public static final field Companion Lcom/datadog/android/rum/model/LongTaskEvent$Configuration$Companion;
+	public fun <init> (Ljava/lang/Number;Ljava/lang/Number;)V
+	public synthetic fun <init> (Ljava/lang/Number;Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Number;
+	public final fun component2 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/Number;Ljava/lang/Number;)Lcom/datadog/android/rum/model/LongTaskEvent$Configuration;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/LongTaskEvent$Configuration;Ljava/lang/Number;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/rum/model/LongTaskEvent$Configuration;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$Configuration;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/LongTaskEvent$Configuration;
+	public final fun getSessionReplaySampleRate ()Ljava/lang/Number;
+	public final fun getSessionSampleRate ()Ljava/lang/Number;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/model/LongTaskEvent$Configuration$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$Configuration;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/LongTaskEvent$Configuration;
+}
+
 public final class com/datadog/android/rum/model/LongTaskEvent$Connectivity {
 	public static final field Companion Lcom/datadog/android/rum/model/LongTaskEvent$Connectivity$Companion;
 	public fun <init> (Lcom/datadog/android/rum/model/LongTaskEvent$Status;Ljava/util/List;Lcom/datadog/android/rum/model/LongTaskEvent$Cellular;)V
@@ -2050,17 +2129,19 @@ public final class com/datadog/android/rum/model/LongTaskEvent$Context$Companion
 public final class com/datadog/android/rum/model/LongTaskEvent$Dd {
 	public static final field Companion Lcom/datadog/android/rum/model/LongTaskEvent$Dd$Companion;
 	public fun <init> ()V
-	public fun <init> (Lcom/datadog/android/rum/model/LongTaskEvent$DdSession;Ljava/lang/String;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Lcom/datadog/android/rum/model/LongTaskEvent$DdSession;Ljava/lang/String;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/rum/model/LongTaskEvent$DdSession;Lcom/datadog/android/rum/model/LongTaskEvent$Configuration;Ljava/lang/String;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Lcom/datadog/android/rum/model/LongTaskEvent$DdSession;Lcom/datadog/android/rum/model/LongTaskEvent$Configuration;Ljava/lang/String;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/rum/model/LongTaskEvent$DdSession;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun copy (Lcom/datadog/android/rum/model/LongTaskEvent$DdSession;Ljava/lang/String;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/LongTaskEvent$Dd;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/LongTaskEvent$Dd;Lcom/datadog/android/rum/model/LongTaskEvent$DdSession;Ljava/lang/String;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/LongTaskEvent$Dd;
+	public final fun component2 ()Lcom/datadog/android/rum/model/LongTaskEvent$Configuration;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/Boolean;
+	public final fun copy (Lcom/datadog/android/rum/model/LongTaskEvent$DdSession;Lcom/datadog/android/rum/model/LongTaskEvent$Configuration;Ljava/lang/String;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/LongTaskEvent$Dd;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/LongTaskEvent$Dd;Lcom/datadog/android/rum/model/LongTaskEvent$DdSession;Lcom/datadog/android/rum/model/LongTaskEvent$Configuration;Ljava/lang/String;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/LongTaskEvent$Dd;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$Dd;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/LongTaskEvent$Dd;
 	public final fun getBrowserSdkVersion ()Ljava/lang/String;
+	public final fun getConfiguration ()Lcom/datadog/android/rum/model/LongTaskEvent$Configuration;
 	public final fun getDiscarded ()Ljava/lang/Boolean;
 	public final fun getFormatVersion ()J
 	public final fun getSession ()Lcom/datadog/android/rum/model/LongTaskEvent$DdSession;
@@ -2254,15 +2335,18 @@ public final class com/datadog/android/rum/model/LongTaskEvent$LongTaskEventSess
 
 public final class com/datadog/android/rum/model/LongTaskEvent$Os {
 	public static final field Companion Lcom/datadog/android/rum/model/LongTaskEvent$Os$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$Os;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/LongTaskEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/rum/model/LongTaskEvent$Os;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$Os;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/LongTaskEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/rum/model/LongTaskEvent$Os;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$Os;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/LongTaskEvent$Os;
+	public final fun getBuild ()Ljava/lang/String;
 	public final fun getName ()Ljava/lang/String;
 	public final fun getVersion ()Ljava/lang/String;
 	public final fun getVersionMajor ()Ljava/lang/String;
@@ -2568,6 +2652,29 @@ public final class com/datadog/android/rum/model/ResourceEvent$Companion {
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ResourceEvent;
 }
 
+public final class com/datadog/android/rum/model/ResourceEvent$Configuration {
+	public static final field Companion Lcom/datadog/android/rum/model/ResourceEvent$Configuration$Companion;
+	public fun <init> (Ljava/lang/Number;Ljava/lang/Number;)V
+	public synthetic fun <init> (Ljava/lang/Number;Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Number;
+	public final fun component2 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/Number;Ljava/lang/Number;)Lcom/datadog/android/rum/model/ResourceEvent$Configuration;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ResourceEvent$Configuration;Ljava/lang/Number;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ResourceEvent$Configuration;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$Configuration;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ResourceEvent$Configuration;
+	public final fun getSessionReplaySampleRate ()Ljava/lang/Number;
+	public final fun getSessionSampleRate ()Ljava/lang/Number;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/model/ResourceEvent$Configuration$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$Configuration;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ResourceEvent$Configuration;
+}
+
 public final class com/datadog/android/rum/model/ResourceEvent$Connect {
 	public static final field Companion Lcom/datadog/android/rum/model/ResourceEvent$Connect$Companion;
 	public fun <init> (JJ)V
@@ -2640,20 +2747,22 @@ public final class com/datadog/android/rum/model/ResourceEvent$Context$Companion
 public final class com/datadog/android/rum/model/ResourceEvent$Dd {
 	public static final field Companion Lcom/datadog/android/rum/model/ResourceEvent$Dd$Companion;
 	public fun <init> ()V
-	public fun <init> (Lcom/datadog/android/rum/model/ResourceEvent$DdSession;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Lcom/datadog/android/rum/model/ResourceEvent$DdSession;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/rum/model/ResourceEvent$DdSession;Lcom/datadog/android/rum/model/ResourceEvent$Configuration;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Lcom/datadog/android/rum/model/ResourceEvent$DdSession;Lcom/datadog/android/rum/model/ResourceEvent$Configuration;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/rum/model/ResourceEvent$DdSession;
-	public final fun component2 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/datadog/android/rum/model/ResourceEvent$Configuration;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/Number;
-	public final fun component6 ()Ljava/lang/Boolean;
-	public final fun copy (Lcom/datadog/android/rum/model/ResourceEvent$DdSession;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/ResourceEvent$Dd;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ResourceEvent$Dd;Lcom/datadog/android/rum/model/ResourceEvent$DdSession;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ResourceEvent$Dd;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/Number;
+	public final fun component7 ()Ljava/lang/Boolean;
+	public final fun copy (Lcom/datadog/android/rum/model/ResourceEvent$DdSession;Lcom/datadog/android/rum/model/ResourceEvent$Configuration;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/ResourceEvent$Dd;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ResourceEvent$Dd;Lcom/datadog/android/rum/model/ResourceEvent$DdSession;Lcom/datadog/android/rum/model/ResourceEvent$Configuration;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ResourceEvent$Dd;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$Dd;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ResourceEvent$Dd;
 	public final fun getBrowserSdkVersion ()Ljava/lang/String;
+	public final fun getConfiguration ()Lcom/datadog/android/rum/model/ResourceEvent$Configuration;
 	public final fun getDiscarded ()Ljava/lang/Boolean;
 	public final fun getFormatVersion ()J
 	public final fun getRulePsr ()Ljava/lang/Number;
@@ -2869,15 +2978,18 @@ public final class com/datadog/android/rum/model/ResourceEvent$Method$Companion 
 
 public final class com/datadog/android/rum/model/ResourceEvent$Os {
 	public static final field Companion Lcom/datadog/android/rum/model/ResourceEvent$Os$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$Os;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ResourceEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ResourceEvent$Os;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$Os;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ResourceEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ResourceEvent$Os;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$Os;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ResourceEvent$Os;
+	public final fun getBuild ()Ljava/lang/String;
 	public final fun getName ()Ljava/lang/String;
 	public final fun getVersion ()Ljava/lang/String;
 	public final fun getVersionMajor ()Ljava/lang/String;
@@ -3279,8 +3391,8 @@ public final class com/datadog/android/rum/model/RumPerfMetric$Companion {
 
 public final class com/datadog/android/rum/model/ViewEvent {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$Companion;
-	public fun <init> (JLcom/datadog/android/rum/model/ViewEvent$Application;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;Lcom/datadog/android/rum/model/ViewEvent$Source;Lcom/datadog/android/rum/model/ViewEvent$View;Lcom/datadog/android/rum/model/ViewEvent$Usr;Lcom/datadog/android/rum/model/ViewEvent$Connectivity;Lcom/datadog/android/rum/model/ViewEvent$Display;Lcom/datadog/android/rum/model/ViewEvent$Synthetics;Lcom/datadog/android/rum/model/ViewEvent$CiTest;Lcom/datadog/android/rum/model/ViewEvent$Os;Lcom/datadog/android/rum/model/ViewEvent$Device;Lcom/datadog/android/rum/model/ViewEvent$Dd;Lcom/datadog/android/rum/model/ViewEvent$Context;Lcom/datadog/android/rum/model/ViewEvent$Context;)V
-	public synthetic fun <init> (JLcom/datadog/android/rum/model/ViewEvent$Application;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;Lcom/datadog/android/rum/model/ViewEvent$Source;Lcom/datadog/android/rum/model/ViewEvent$View;Lcom/datadog/android/rum/model/ViewEvent$Usr;Lcom/datadog/android/rum/model/ViewEvent$Connectivity;Lcom/datadog/android/rum/model/ViewEvent$Display;Lcom/datadog/android/rum/model/ViewEvent$Synthetics;Lcom/datadog/android/rum/model/ViewEvent$CiTest;Lcom/datadog/android/rum/model/ViewEvent$Os;Lcom/datadog/android/rum/model/ViewEvent$Device;Lcom/datadog/android/rum/model/ViewEvent$Dd;Lcom/datadog/android/rum/model/ViewEvent$Context;Lcom/datadog/android/rum/model/ViewEvent$Context;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (JLcom/datadog/android/rum/model/ViewEvent$Application;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;Lcom/datadog/android/rum/model/ViewEvent$Source;Lcom/datadog/android/rum/model/ViewEvent$View;Lcom/datadog/android/rum/model/ViewEvent$Usr;Lcom/datadog/android/rum/model/ViewEvent$Connectivity;Lcom/datadog/android/rum/model/ViewEvent$Display;Lcom/datadog/android/rum/model/ViewEvent$Synthetics;Lcom/datadog/android/rum/model/ViewEvent$CiTest;Lcom/datadog/android/rum/model/ViewEvent$Os;Lcom/datadog/android/rum/model/ViewEvent$Device;Lcom/datadog/android/rum/model/ViewEvent$Dd;Lcom/datadog/android/rum/model/ViewEvent$Context;Lcom/datadog/android/rum/model/ViewEvent$Context;Lcom/datadog/android/rum/model/ViewEvent$Privacy;)V
+	public synthetic fun <init> (JLcom/datadog/android/rum/model/ViewEvent$Application;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;Lcom/datadog/android/rum/model/ViewEvent$Source;Lcom/datadog/android/rum/model/ViewEvent$View;Lcom/datadog/android/rum/model/ViewEvent$Usr;Lcom/datadog/android/rum/model/ViewEvent$Connectivity;Lcom/datadog/android/rum/model/ViewEvent$Display;Lcom/datadog/android/rum/model/ViewEvent$Synthetics;Lcom/datadog/android/rum/model/ViewEvent$CiTest;Lcom/datadog/android/rum/model/ViewEvent$Os;Lcom/datadog/android/rum/model/ViewEvent$Device;Lcom/datadog/android/rum/model/ViewEvent$Dd;Lcom/datadog/android/rum/model/ViewEvent$Context;Lcom/datadog/android/rum/model/ViewEvent$Context;Lcom/datadog/android/rum/model/ViewEvent$Privacy;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()J
 	public final fun component10 ()Lcom/datadog/android/rum/model/ViewEvent$Display;
 	public final fun component11 ()Lcom/datadog/android/rum/model/ViewEvent$Synthetics;
@@ -3290,6 +3402,7 @@ public final class com/datadog/android/rum/model/ViewEvent {
 	public final fun component15 ()Lcom/datadog/android/rum/model/ViewEvent$Dd;
 	public final fun component16 ()Lcom/datadog/android/rum/model/ViewEvent$Context;
 	public final fun component17 ()Lcom/datadog/android/rum/model/ViewEvent$Context;
+	public final fun component18 ()Lcom/datadog/android/rum/model/ViewEvent$Privacy;
 	public final fun component2 ()Lcom/datadog/android/rum/model/ViewEvent$Application;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
@@ -3298,8 +3411,8 @@ public final class com/datadog/android/rum/model/ViewEvent {
 	public final fun component7 ()Lcom/datadog/android/rum/model/ViewEvent$View;
 	public final fun component8 ()Lcom/datadog/android/rum/model/ViewEvent$Usr;
 	public final fun component9 ()Lcom/datadog/android/rum/model/ViewEvent$Connectivity;
-	public final fun copy (JLcom/datadog/android/rum/model/ViewEvent$Application;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;Lcom/datadog/android/rum/model/ViewEvent$Source;Lcom/datadog/android/rum/model/ViewEvent$View;Lcom/datadog/android/rum/model/ViewEvent$Usr;Lcom/datadog/android/rum/model/ViewEvent$Connectivity;Lcom/datadog/android/rum/model/ViewEvent$Display;Lcom/datadog/android/rum/model/ViewEvent$Synthetics;Lcom/datadog/android/rum/model/ViewEvent$CiTest;Lcom/datadog/android/rum/model/ViewEvent$Os;Lcom/datadog/android/rum/model/ViewEvent$Device;Lcom/datadog/android/rum/model/ViewEvent$Dd;Lcom/datadog/android/rum/model/ViewEvent$Context;Lcom/datadog/android/rum/model/ViewEvent$Context;)Lcom/datadog/android/rum/model/ViewEvent;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent;JLcom/datadog/android/rum/model/ViewEvent$Application;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;Lcom/datadog/android/rum/model/ViewEvent$Source;Lcom/datadog/android/rum/model/ViewEvent$View;Lcom/datadog/android/rum/model/ViewEvent$Usr;Lcom/datadog/android/rum/model/ViewEvent$Connectivity;Lcom/datadog/android/rum/model/ViewEvent$Display;Lcom/datadog/android/rum/model/ViewEvent$Synthetics;Lcom/datadog/android/rum/model/ViewEvent$CiTest;Lcom/datadog/android/rum/model/ViewEvent$Os;Lcom/datadog/android/rum/model/ViewEvent$Device;Lcom/datadog/android/rum/model/ViewEvent$Dd;Lcom/datadog/android/rum/model/ViewEvent$Context;Lcom/datadog/android/rum/model/ViewEvent$Context;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent;
+	public final fun copy (JLcom/datadog/android/rum/model/ViewEvent$Application;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;Lcom/datadog/android/rum/model/ViewEvent$Source;Lcom/datadog/android/rum/model/ViewEvent$View;Lcom/datadog/android/rum/model/ViewEvent$Usr;Lcom/datadog/android/rum/model/ViewEvent$Connectivity;Lcom/datadog/android/rum/model/ViewEvent$Display;Lcom/datadog/android/rum/model/ViewEvent$Synthetics;Lcom/datadog/android/rum/model/ViewEvent$CiTest;Lcom/datadog/android/rum/model/ViewEvent$Os;Lcom/datadog/android/rum/model/ViewEvent$Device;Lcom/datadog/android/rum/model/ViewEvent$Dd;Lcom/datadog/android/rum/model/ViewEvent$Context;Lcom/datadog/android/rum/model/ViewEvent$Context;Lcom/datadog/android/rum/model/ViewEvent$Privacy;)Lcom/datadog/android/rum/model/ViewEvent;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent;JLcom/datadog/android/rum/model/ViewEvent$Application;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;Lcom/datadog/android/rum/model/ViewEvent$Source;Lcom/datadog/android/rum/model/ViewEvent$View;Lcom/datadog/android/rum/model/ViewEvent$Usr;Lcom/datadog/android/rum/model/ViewEvent$Connectivity;Lcom/datadog/android/rum/model/ViewEvent$Display;Lcom/datadog/android/rum/model/ViewEvent$Synthetics;Lcom/datadog/android/rum/model/ViewEvent$CiTest;Lcom/datadog/android/rum/model/ViewEvent$Os;Lcom/datadog/android/rum/model/ViewEvent$Device;Lcom/datadog/android/rum/model/ViewEvent$Dd;Lcom/datadog/android/rum/model/ViewEvent$Context;Lcom/datadog/android/rum/model/ViewEvent$Context;Lcom/datadog/android/rum/model/ViewEvent$Privacy;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent;
@@ -3313,6 +3426,7 @@ public final class com/datadog/android/rum/model/ViewEvent {
 	public final fun getDisplay ()Lcom/datadog/android/rum/model/ViewEvent$Display;
 	public final fun getFeatureFlags ()Lcom/datadog/android/rum/model/ViewEvent$Context;
 	public final fun getOs ()Lcom/datadog/android/rum/model/ViewEvent$Os;
+	public final fun getPrivacy ()Lcom/datadog/android/rum/model/ViewEvent$Privacy;
 	public final fun getService ()Ljava/lang/String;
 	public final fun getSession ()Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;
 	public final fun getSource ()Lcom/datadog/android/rum/model/ViewEvent$Source;
@@ -3415,6 +3529,29 @@ public final class com/datadog/android/rum/model/ViewEvent$Companion {
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent;
 }
 
+public final class com/datadog/android/rum/model/ViewEvent$Configuration {
+	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$Configuration$Companion;
+	public fun <init> (Ljava/lang/Number;Ljava/lang/Number;)V
+	public synthetic fun <init> (Ljava/lang/Number;Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Number;
+	public final fun component2 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/Number;Ljava/lang/Number;)Lcom/datadog/android/rum/model/ViewEvent$Configuration;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$Configuration;Ljava/lang/Number;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$Configuration;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Configuration;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent$Configuration;
+	public final fun getSessionReplaySampleRate ()Ljava/lang/Number;
+	public final fun getSessionSampleRate ()Ljava/lang/Number;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/model/ViewEvent$Configuration$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Configuration;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent$Configuration;
+}
+
 public final class com/datadog/android/rum/model/ViewEvent$Connectivity {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$Connectivity$Companion;
 	public fun <init> (Lcom/datadog/android/rum/model/ViewEvent$Status;Ljava/util/List;Lcom/datadog/android/rum/model/ViewEvent$Cellular;)V
@@ -3506,19 +3643,21 @@ public final class com/datadog/android/rum/model/ViewEvent$CustomTimings$Compani
 
 public final class com/datadog/android/rum/model/ViewEvent$Dd {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$Dd$Companion;
-	public fun <init> (Lcom/datadog/android/rum/model/ViewEvent$DdSession;Ljava/lang/String;JLjava/util/List;Lcom/datadog/android/rum/model/ViewEvent$ReplayStats;)V
-	public synthetic fun <init> (Lcom/datadog/android/rum/model/ViewEvent$DdSession;Ljava/lang/String;JLjava/util/List;Lcom/datadog/android/rum/model/ViewEvent$ReplayStats;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/rum/model/ViewEvent$DdSession;Lcom/datadog/android/rum/model/ViewEvent$Configuration;Ljava/lang/String;JLjava/util/List;Lcom/datadog/android/rum/model/ViewEvent$ReplayStats;)V
+	public synthetic fun <init> (Lcom/datadog/android/rum/model/ViewEvent$DdSession;Lcom/datadog/android/rum/model/ViewEvent$Configuration;Ljava/lang/String;JLjava/util/List;Lcom/datadog/android/rum/model/ViewEvent$ReplayStats;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/rum/model/ViewEvent$DdSession;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()J
-	public final fun component4 ()Ljava/util/List;
-	public final fun component5 ()Lcom/datadog/android/rum/model/ViewEvent$ReplayStats;
-	public final fun copy (Lcom/datadog/android/rum/model/ViewEvent$DdSession;Ljava/lang/String;JLjava/util/List;Lcom/datadog/android/rum/model/ViewEvent$ReplayStats;)Lcom/datadog/android/rum/model/ViewEvent$Dd;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$Dd;Lcom/datadog/android/rum/model/ViewEvent$DdSession;Ljava/lang/String;JLjava/util/List;Lcom/datadog/android/rum/model/ViewEvent$ReplayStats;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$Dd;
+	public final fun component2 ()Lcom/datadog/android/rum/model/ViewEvent$Configuration;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()J
+	public final fun component5 ()Ljava/util/List;
+	public final fun component6 ()Lcom/datadog/android/rum/model/ViewEvent$ReplayStats;
+	public final fun copy (Lcom/datadog/android/rum/model/ViewEvent$DdSession;Lcom/datadog/android/rum/model/ViewEvent$Configuration;Ljava/lang/String;JLjava/util/List;Lcom/datadog/android/rum/model/ViewEvent$ReplayStats;)Lcom/datadog/android/rum/model/ViewEvent$Dd;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$Dd;Lcom/datadog/android/rum/model/ViewEvent$DdSession;Lcom/datadog/android/rum/model/ViewEvent$Configuration;Ljava/lang/String;JLjava/util/List;Lcom/datadog/android/rum/model/ViewEvent$ReplayStats;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$Dd;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Dd;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent$Dd;
 	public final fun getBrowserSdkVersion ()Ljava/lang/String;
+	public final fun getConfiguration ()Lcom/datadog/android/rum/model/ViewEvent$Configuration;
 	public final fun getDocumentVersion ()J
 	public final fun getFormatVersion ()J
 	public final fun getPageStates ()Ljava/util/List;
@@ -3607,14 +3746,16 @@ public final class com/datadog/android/rum/model/ViewEvent$DeviceType$Companion 
 public final class com/datadog/android/rum/model/ViewEvent$Display {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$Display$Companion;
 	public fun <init> ()V
-	public fun <init> (Lcom/datadog/android/rum/model/ViewEvent$Viewport;)V
-	public synthetic fun <init> (Lcom/datadog/android/rum/model/ViewEvent$Viewport;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/rum/model/ViewEvent$Viewport;Lcom/datadog/android/rum/model/ViewEvent$Scroll;)V
+	public synthetic fun <init> (Lcom/datadog/android/rum/model/ViewEvent$Viewport;Lcom/datadog/android/rum/model/ViewEvent$Scroll;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/rum/model/ViewEvent$Viewport;
-	public final fun copy (Lcom/datadog/android/rum/model/ViewEvent$Viewport;)Lcom/datadog/android/rum/model/ViewEvent$Display;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$Display;Lcom/datadog/android/rum/model/ViewEvent$Viewport;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$Display;
+	public final fun component2 ()Lcom/datadog/android/rum/model/ViewEvent$Scroll;
+	public final fun copy (Lcom/datadog/android/rum/model/ViewEvent$Viewport;Lcom/datadog/android/rum/model/ViewEvent$Scroll;)Lcom/datadog/android/rum/model/ViewEvent$Display;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$Display;Lcom/datadog/android/rum/model/ViewEvent$Viewport;Lcom/datadog/android/rum/model/ViewEvent$Scroll;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$Display;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Display;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent$Display;
+	public final fun getScroll ()Lcom/datadog/android/rum/model/ViewEvent$Scroll;
 	public final fun getViewport ()Lcom/datadog/android/rum/model/ViewEvent$Viewport;
 	public fun hashCode ()I
 	public final fun toJson ()Lcom/google/gson/JsonElement;
@@ -3798,15 +3939,18 @@ public final class com/datadog/android/rum/model/ViewEvent$LongTask$Companion {
 
 public final class com/datadog/android/rum/model/ViewEvent$Os {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$Os$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Os;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$Os;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Os;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$Os;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Os;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent$Os;
+	public final fun getBuild ()Ljava/lang/String;
 	public final fun getName ()Ljava/lang/String;
 	public final fun getVersion ()Ljava/lang/String;
 	public final fun getVersionMajor ()Ljava/lang/String;
@@ -3856,6 +4000,41 @@ public final class com/datadog/android/rum/model/ViewEvent$Plan$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Plan;
 }
 
+public final class com/datadog/android/rum/model/ViewEvent$Privacy {
+	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$Privacy$Companion;
+	public fun <init> (Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;)V
+	public final fun component1 ()Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;
+	public final fun copy (Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;)Lcom/datadog/android/rum/model/ViewEvent$Privacy;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$Privacy;Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$Privacy;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Privacy;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent$Privacy;
+	public final fun getReplayLevel ()Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/model/ViewEvent$Privacy$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Privacy;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent$Privacy;
+}
+
+public final class com/datadog/android/rum/model/ViewEvent$ReplayLevel : java/lang/Enum {
+	public static final field ALLOW Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;
+	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel$Companion;
+	public static final field MASK Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;
+	public static final field MASK_USER_INPUT Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;
+	public static fun values ()[Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;
+}
+
+public final class com/datadog/android/rum/model/ViewEvent$ReplayLevel$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;
+}
+
 public final class com/datadog/android/rum/model/ViewEvent$ReplayStats {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$ReplayStats$Companion;
 	public fun <init> ()V
@@ -3900,6 +4079,32 @@ public final class com/datadog/android/rum/model/ViewEvent$Resource {
 public final class com/datadog/android/rum/model/ViewEvent$Resource$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Resource;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent$Resource;
+}
+
+public final class com/datadog/android/rum/model/ViewEvent$Scroll {
+	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$Scroll$Companion;
+	public fun <init> (Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;)V
+	public final fun component1 ()Ljava/lang/Number;
+	public final fun component2 ()Ljava/lang/Number;
+	public final fun component3 ()Ljava/lang/Number;
+	public final fun component4 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;)Lcom/datadog/android/rum/model/ViewEvent$Scroll;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$Scroll;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$Scroll;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Scroll;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent$Scroll;
+	public final fun getMaxDepth ()Ljava/lang/Number;
+	public final fun getMaxDepthScrollHeight ()Ljava/lang/Number;
+	public final fun getMaxDepthScrollTop ()Ljava/lang/Number;
+	public final fun getMaxDepthTime ()Ljava/lang/Number;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/model/ViewEvent$Scroll$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Scroll;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent$Scroll;
 }
 
 public final class com/datadog/android/rum/model/ViewEvent$Source : java/lang/Enum {
@@ -4024,47 +4229,48 @@ public final class com/datadog/android/rum/model/ViewEvent$Usr$Companion {
 
 public final class com/datadog/android/rum/model/ViewEvent$View {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$View$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewEvent$LoadingType;JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Number;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewEvent$CustomTimings;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/datadog/android/rum/model/ViewEvent$Action;Lcom/datadog/android/rum/model/ViewEvent$Error;Lcom/datadog/android/rum/model/ViewEvent$Crash;Lcom/datadog/android/rum/model/ViewEvent$LongTask;Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;Lcom/datadog/android/rum/model/ViewEvent$Resource;Lcom/datadog/android/rum/model/ViewEvent$Frustration;Ljava/util/List;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewEvent$LoadingType;JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Number;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewEvent$CustomTimings;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/datadog/android/rum/model/ViewEvent$Action;Lcom/datadog/android/rum/model/ViewEvent$Error;Lcom/datadog/android/rum/model/ViewEvent$Crash;Lcom/datadog/android/rum/model/ViewEvent$LongTask;Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;Lcom/datadog/android/rum/model/ViewEvent$Resource;Lcom/datadog/android/rum/model/ViewEvent$Frustration;Ljava/util/List;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewEvent$LoadingType;JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Number;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewEvent$CustomTimings;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/datadog/android/rum/model/ViewEvent$Action;Lcom/datadog/android/rum/model/ViewEvent$Error;Lcom/datadog/android/rum/model/ViewEvent$Crash;Lcom/datadog/android/rum/model/ViewEvent$LongTask;Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;Lcom/datadog/android/rum/model/ViewEvent$Resource;Lcom/datadog/android/rum/model/ViewEvent$Frustration;Ljava/util/List;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewEvent$LoadingType;JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Number;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewEvent$CustomTimings;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/datadog/android/rum/model/ViewEvent$Action;Lcom/datadog/android/rum/model/ViewEvent$Error;Lcom/datadog/android/rum/model/ViewEvent$Crash;Lcom/datadog/android/rum/model/ViewEvent$LongTask;Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;Lcom/datadog/android/rum/model/ViewEvent$Resource;Lcom/datadog/android/rum/model/ViewEvent$Frustration;Ljava/util/List;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component10 ()Ljava/lang/Long;
 	public final fun component11 ()Ljava/lang/Long;
-	public final fun component12 ()Ljava/lang/Number;
-	public final fun component13 ()Ljava/lang/Long;
+	public final fun component12 ()Ljava/lang/Long;
+	public final fun component13 ()Ljava/lang/Number;
 	public final fun component14 ()Ljava/lang/Long;
 	public final fun component15 ()Ljava/lang/Long;
 	public final fun component16 ()Ljava/lang/Long;
 	public final fun component17 ()Ljava/lang/Long;
-	public final fun component18 ()Lcom/datadog/android/rum/model/ViewEvent$CustomTimings;
-	public final fun component19 ()Ljava/lang/Boolean;
+	public final fun component18 ()Ljava/lang/Long;
+	public final fun component19 ()Lcom/datadog/android/rum/model/ViewEvent$CustomTimings;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component20 ()Ljava/lang/Boolean;
-	public final fun component21 ()Lcom/datadog/android/rum/model/ViewEvent$Action;
-	public final fun component22 ()Lcom/datadog/android/rum/model/ViewEvent$Error;
-	public final fun component23 ()Lcom/datadog/android/rum/model/ViewEvent$Crash;
-	public final fun component24 ()Lcom/datadog/android/rum/model/ViewEvent$LongTask;
-	public final fun component25 ()Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;
-	public final fun component26 ()Lcom/datadog/android/rum/model/ViewEvent$Resource;
-	public final fun component27 ()Lcom/datadog/android/rum/model/ViewEvent$Frustration;
-	public final fun component28 ()Ljava/util/List;
-	public final fun component29 ()Ljava/lang/Number;
+	public final fun component21 ()Ljava/lang/Boolean;
+	public final fun component22 ()Lcom/datadog/android/rum/model/ViewEvent$Action;
+	public final fun component23 ()Lcom/datadog/android/rum/model/ViewEvent$Error;
+	public final fun component24 ()Lcom/datadog/android/rum/model/ViewEvent$Crash;
+	public final fun component25 ()Lcom/datadog/android/rum/model/ViewEvent$LongTask;
+	public final fun component26 ()Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;
+	public final fun component27 ()Lcom/datadog/android/rum/model/ViewEvent$Resource;
+	public final fun component28 ()Lcom/datadog/android/rum/model/ViewEvent$Frustration;
+	public final fun component29 ()Ljava/util/List;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component30 ()Ljava/lang/Number;
 	public final fun component31 ()Ljava/lang/Number;
 	public final fun component32 ()Ljava/lang/Number;
 	public final fun component33 ()Ljava/lang/Number;
 	public final fun component34 ()Ljava/lang/Number;
-	public final fun component35 ()Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;
+	public final fun component35 ()Ljava/lang/Number;
 	public final fun component36 ()Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;
 	public final fun component37 ()Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;
+	public final fun component38 ()Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;
 	public final fun component4 ()Ljava/lang/String;
 	public final fun component5 ()Ljava/lang/Long;
 	public final fun component6 ()Lcom/datadog/android/rum/model/ViewEvent$LoadingType;
 	public final fun component7 ()J
 	public final fun component8 ()Ljava/lang/Long;
 	public final fun component9 ()Ljava/lang/Long;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewEvent$LoadingType;JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Number;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewEvent$CustomTimings;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/datadog/android/rum/model/ViewEvent$Action;Lcom/datadog/android/rum/model/ViewEvent$Error;Lcom/datadog/android/rum/model/ViewEvent$Crash;Lcom/datadog/android/rum/model/ViewEvent$LongTask;Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;Lcom/datadog/android/rum/model/ViewEvent$Resource;Lcom/datadog/android/rum/model/ViewEvent$Frustration;Ljava/util/List;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;)Lcom/datadog/android/rum/model/ViewEvent$View;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$View;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewEvent$LoadingType;JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Number;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewEvent$CustomTimings;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/datadog/android/rum/model/ViewEvent$Action;Lcom/datadog/android/rum/model/ViewEvent$Error;Lcom/datadog/android/rum/model/ViewEvent$Crash;Lcom/datadog/android/rum/model/ViewEvent$LongTask;Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;Lcom/datadog/android/rum/model/ViewEvent$Resource;Lcom/datadog/android/rum/model/ViewEvent$Frustration;Ljava/util/List;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;IILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$View;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewEvent$LoadingType;JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Number;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewEvent$CustomTimings;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/datadog/android/rum/model/ViewEvent$Action;Lcom/datadog/android/rum/model/ViewEvent$Error;Lcom/datadog/android/rum/model/ViewEvent$Crash;Lcom/datadog/android/rum/model/ViewEvent$LongTask;Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;Lcom/datadog/android/rum/model/ViewEvent$Resource;Lcom/datadog/android/rum/model/ViewEvent$Frustration;Ljava/util/List;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;)Lcom/datadog/android/rum/model/ViewEvent$View;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$View;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewEvent$LoadingType;JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Number;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewEvent$CustomTimings;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/datadog/android/rum/model/ViewEvent$Action;Lcom/datadog/android/rum/model/ViewEvent$Error;Lcom/datadog/android/rum/model/ViewEvent$Crash;Lcom/datadog/android/rum/model/ViewEvent$LongTask;Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;Lcom/datadog/android/rum/model/ViewEvent$Resource;Lcom/datadog/android/rum/model/ViewEvent$Frustration;Ljava/util/List;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;IILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$View;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$View;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent$View;
@@ -4088,6 +4294,7 @@ public final class com/datadog/android/rum/model/ViewEvent$View {
 	public final fun getFrustration ()Lcom/datadog/android/rum/model/ViewEvent$Frustration;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getInForegroundPeriods ()Ljava/util/List;
+	public final fun getInteractionToNextPaint ()Ljava/lang/Long;
 	public final fun getJsRefreshRate ()Lcom/datadog/android/rum/model/ViewEvent$FlutterBuildTime;
 	public final fun getLargestContentfulPaint ()Ljava/lang/Long;
 	public final fun getLoadEvent ()Ljava/lang/Long;

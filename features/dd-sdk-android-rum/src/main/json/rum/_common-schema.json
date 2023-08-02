@@ -233,6 +233,11 @@
           "description": "Full operating system version, e.g. 8.1.1",
           "readOnly": true
         },
+        "build": {
+          "type": "string",
+          "description": "Operating system build number, e.g. 15D21",
+          "readOnly": true
+        },
         "version_major": {
           "type": "string",
           "description": "Major operating system version, e.g. 8",
@@ -292,6 +297,28 @@
               "type": "number",
               "description": "Session plan: 1 is the plan without replay, 2 is the plan with replay (deprecated)",
               "enum": [1, 2]
+            }
+          }
+        },
+        "configuration": {
+          "type": "object",
+          "description": "Subset of the SDK configuration options in use during its execution",
+          "readOnly": true,
+          "required": ["session_sample_rate"],
+          "properties": {
+            "session_sample_rate": {
+              "type": "number",
+              "description": "The percentage of sessions tracked",
+              "minimum": 0,
+              "maximum": 100,
+              "readOnly": true
+            },
+            "session_replay_sample_rate": {
+              "type": "number",
+              "description": "The percentage of sessions with RUM & Session Replay pricing tracked",
+              "minimum": 0,
+              "maximum": 100,
+              "readOnly": true
             }
           }
         },

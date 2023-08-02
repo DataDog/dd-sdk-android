@@ -143,7 +143,7 @@ internal class RumSessionScopeTest {
     // region childScope
 
     @Test
-    fun `𝕄 have a ViewManager child scope 𝕎 init()`() {
+    fun `𝕄 have a ViewManager child scope 𝕎 init() { with same sample rate }`() {
         // Given
         initializeTestedScope(fakeSampleRate, false)
 
@@ -152,6 +152,7 @@ internal class RumSessionScopeTest {
 
         // Then
         assertThat(childScope).isInstanceOf(RumViewManagerScope::class.java)
+        assertThat((childScope as? RumViewManagerScope)?.sampleRate).isCloseTo(fakeSampleRate, offset(0.001f))
     }
 
     @Test
