@@ -568,6 +568,16 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
+    fun hasSampleRate(sampleRate: Float?): ResourceEventAssert {
+        assertThat(actual.dd.configuration?.sessionSampleRate ?: 0)
+            .overridingErrorMessage(
+                "Expected RUM event to have sample rate: $sampleRate" +
+                    " but instead was: ${actual.dd.configuration?.sessionSampleRate}"
+            )
+            .isEqualTo(sampleRate)
+        return this
+    }
+
     companion object {
 
         internal const val TIMESTAMP_THRESHOLD_MS = 50L

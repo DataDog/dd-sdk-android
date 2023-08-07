@@ -33,6 +33,7 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -110,8 +111,12 @@ internal class RumViewManagerScopeTest {
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
+    private var fakeSampleRate: Float = 0.0f
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        fakeSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
+
         whenever(mockSdkCore.time) doReturn fakeTime
 
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
@@ -131,7 +136,8 @@ internal class RumViewManagerScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockAppStartTimeProvider,
-            applicationDisplayed = false
+            applicationDisplayed = false,
+            sampleRate = fakeSampleRate
         )
     }
 
@@ -220,6 +226,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.version).isEqualTo(2)
             }
         assertThat(testedScope.applicationDisplayed).isTrue()
+        assertThat(testedScope.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
     }
 
     @Test
@@ -247,6 +254,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.version).isEqualTo(2)
             }
         assertThat(testedScope.applicationDisplayed).isTrue()
+        assertThat(testedScope.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
     }
 
     @Test
@@ -303,6 +311,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+                assertThat(it.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
             }
     }
 
@@ -333,6 +342,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.type).isEqualTo(RumViewScope.RumViewType.BACKGROUND)
+                assertThat(it.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
             }
     }
 
@@ -373,6 +383,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.type).isEqualTo(RumViewScope.RumViewType.BACKGROUND)
+                assertThat(it.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
             }
     }
 
@@ -426,7 +437,8 @@ internal class RumViewManagerScopeTest {
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            applicationDisplayed = false
+            applicationDisplayed = false,
+            sampleRate = fakeSampleRate
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -454,7 +466,8 @@ internal class RumViewManagerScopeTest {
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
             appStartTimeProvider = mockAppStartTimeProvider,
-            applicationDisplayed = false
+            applicationDisplayed = false,
+            sampleRate = fakeSampleRate
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -485,7 +498,8 @@ internal class RumViewManagerScopeTest {
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
             appStartTimeProvider = mockAppStartTimeProvider,
-            applicationDisplayed = false
+            applicationDisplayed = false,
+            sampleRate = fakeSampleRate
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -566,7 +580,8 @@ internal class RumViewManagerScopeTest {
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            applicationDisplayed = false
+            applicationDisplayed = false,
+            sampleRate = fakeSampleRate
         )
         testedScope.applicationDisplayed = false
         // Start view still creates a child scope
@@ -595,7 +610,8 @@ internal class RumViewManagerScopeTest {
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
             appStartTimeProvider = mockAppStartTimeProvider,
-            applicationDisplayed = false
+            applicationDisplayed = false,
+            sampleRate = fakeSampleRate
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true

@@ -34,7 +34,8 @@ internal class RumViewManagerScope(
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
     private val appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider(),
-    internal var applicationDisplayed: Boolean
+    internal var applicationDisplayed: Boolean,
+    internal val sampleRate: Float
 ) : RumScope {
 
     internal val childrenScopes = mutableListOf<RumScope>()
@@ -158,7 +159,8 @@ internal class RumViewManagerScope(
             cpuVitalMonitor,
             memoryVitalMonitor,
             frameRateVitalMonitor,
-            trackFrustrations
+            trackFrustrations,
+            sampleRate
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
@@ -215,7 +217,8 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             type = RumViewScope.RumViewType.BACKGROUND,
-            trackFrustrations = trackFrustrations
+            trackFrustrations = trackFrustrations,
+            sampleRate = sampleRate
         )
     }
 
@@ -233,7 +236,8 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             type = RumViewScope.RumViewType.APPLICATION_LAUNCH,
-            trackFrustrations = trackFrustrations
+            trackFrustrations = trackFrustrations,
+            sampleRate = sampleRate
         )
     }
 
