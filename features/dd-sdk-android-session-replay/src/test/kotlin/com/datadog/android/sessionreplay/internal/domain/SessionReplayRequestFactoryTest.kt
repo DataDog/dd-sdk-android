@@ -176,20 +176,7 @@ internal class SessionReplayRequestFactoryTest {
     // region Internal
 
     private fun expectedUrl(endpointUrl: String): String {
-        val queryTags = mutableListOf(
-            "${SessionReplayRequestFactory.SERVICE_NAME}:${fakeDatadogContext.service}",
-            "${SessionReplayRequestFactory.APPLICATION_VERSION}:${fakeDatadogContext.version}",
-            "${SessionReplayRequestFactory.SDK_VERSION}:${fakeDatadogContext.sdkVersion}",
-            "${SessionReplayRequestFactory.ENV}:${fakeDatadogContext.env}"
-        )
-
-        if (fakeDatadogContext.variant.isNotEmpty()) {
-            queryTags.add("${SessionReplayRequestFactory.VARIANT}:${fakeDatadogContext.variant}")
-        }
-
-        return "$endpointUrl/api/v2/replay?${RequestFactory.QUERY_PARAM_SOURCE}=" +
-            "${fakeDatadogContext.source}&${RequestFactory.QUERY_PARAM_TAGS}=" +
-            queryTags.joinToString(",")
+        return "$endpointUrl/api/v2/replay"
     }
 
     private fun RequestBody.toByteArray(): ByteArray {
