@@ -16,6 +16,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
+import com.datadog.android.sessionreplay.internal.recorder.base64.Cache.Companion.DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS
 import com.datadog.android.sessionreplay.internal.utils.Base64Utils
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -32,6 +33,7 @@ class Base64Serializer private constructor(
     private val base64Utils: Base64Utils,
     private val webPImageCompression: ImageCompression,
     private val base64LruCache: Cache<Drawable, String>,
+    private val bitmapPool: Cache<String, Bitmap>,
     private val logger: InternalLogger
 ) {
     private var asyncImageProcessingCallback: AsyncImageProcessingCallback? = null
@@ -55,7 +57,11 @@ class Base64Serializer private constructor(
             return
         }
 
-        val bitmap = drawableUtils.createBitmapOfApproxSizeFromDrawable(drawable, displayMetrics)
+        val bitmap = drawableUtils.createBitmapOfApproxSizeFromDrawable(
+            applicationContext,
+            drawable,
+            displayMetrics
+        )
 
         if (bitmap == null) {
             asyncImageProcessingCallback?.finishProcessingImage()
@@ -118,18 +124,16 @@ class Base64Serializer private constructor(
     private fun convertBmpToBase64(drawable: Drawable, bitmap: Bitmap): String {
         val base64Result: String
 
-        val byteArrayOutputStream = webPImageCompression.compressBitmapToStream(bitmap)
+        val byteArray = webPImageCompression.compressBitmap(bitmap)
 
-        try {
-            base64Result = base64Utils.serializeToBase64String(byteArrayOutputStream)
+        base64Result = base64Utils.serializeToBase64String(byteArray)
 
-            if (base64Result.isNotEmpty()) {
-                // if we got a base64 string then cache it
-                base64LruCache.put(drawable, base64Result)
-            }
-        } finally {
-            bitmap.recycle()
+        if (base64Result.isNotEmpty()) {
+            // if we got a base64 string then cache it
+            base64LruCache.put(drawable, base64Result)
         }
+
+        bitmapPool.put(bitmap)
 
         return base64Result
     }
@@ -169,6 +173,7 @@ class Base64Serializer private constructor(
             base64Utils: Base64Utils = Base64Utils(),
             webPImageCompression: ImageCompression = WebPImageCompression(),
             base64LruCache: Cache<Drawable, String> = Base64LRUCache,
+            bitmapPool: Cache<String, Bitmap> = BitmapPool,
             // Temporarily use UNBOUND until we handle the loggers
             logger: InternalLogger = InternalLogger.UNBOUND
         ) =
@@ -178,6 +183,7 @@ class Base64Serializer private constructor(
                 base64Utils = base64Utils,
                 webPImageCompression = webPImageCompression,
                 base64LruCache = base64LruCache,
+                bitmapPool = bitmapPool,
                 logger = logger
             )
 
@@ -201,11 +207,9 @@ class Base64Serializer private constructor(
     // endregion
 
     internal companion object {
-        internal const val DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS =
-            "Cache instance does not implement ComponentCallbacks2"
-
         // The cache is a singleton, so we want to share this flag among
         // all instances so that it's registered only once
-        private var isCacheRegisteredForCallbacks: Boolean = false
+        @VisibleForTesting
+        internal var isCacheRegisteredForCallbacks: Boolean = false
     }
 }

@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.async
 
-import android.graphics.drawable.Drawable
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler.Companion.MAX_DELAY_MS
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
@@ -14,7 +13,6 @@ import com.datadog.android.sessionreplay.internal.processor.RumContextData
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
-import com.datadog.android.sessionreplay.internal.recorder.base64.Cache
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
@@ -53,7 +51,7 @@ import java.util.concurrent.TimeUnit
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class RecordedDataQueueHandlerTest {
-    lateinit var testedHandler: RecordedDataQueueHandler
+    private lateinit var testedHandler: RecordedDataQueueHandler
 
     @Mock
     lateinit var mockProcessor: RecordedDataProcessor
@@ -61,16 +59,13 @@ internal class RecordedDataQueueHandlerTest {
     @Mock
     lateinit var mockRumContextDataHandler: RumContextDataHandler
 
-    lateinit var mockExecutorService: ExecutorService
+    private lateinit var mockExecutorService: ExecutorService
 
     @Mock
     lateinit var mockSystemInformation: SystemInformation
 
     @Mock
     lateinit var mockTimeProvider: SessionReplayTimeProvider
-
-    @Mock
-    lateinit var mockBase64LruCache: Cache<Drawable, String>
 
     @Forgery
     lateinit var fakeRumContextData: RumContextData
@@ -111,7 +106,6 @@ internal class RecordedDataQueueHandlerTest {
             processor = mockProcessor,
             rumContextDataHandler = mockRumContextDataHandler,
             timeProvider = mockTimeProvider,
-            cache = mockBase64LruCache,
             executorService = mockExecutorService
         )
     }
@@ -240,7 +234,7 @@ internal class RecordedDataQueueHandlerTest {
         mockExecutorService.awaitTermination(1, TimeUnit.SECONDS)
 
         // Then
-        assertThat(testedHandler.recordedDataQueue.isEmpty()).isTrue()
+        assertThat(testedHandler.recordedDataQueue.isEmpty()).isTrue
         verifyNoMoreInteractions(mockProcessor)
     }
 
@@ -446,46 +440,6 @@ internal class RecordedDataQueueHandlerTest {
 
         assertThat(testedHandler.recordedDataQueue.size).isEqualTo(2)
     }
-
-    // region addSnapshotItem
-
-    @Test
-    fun `M clear cache W addSnapshotItem() { changed view }`() {
-        // Given
-        val rumContextData = RumContextData(
-            timestamp = System.currentTimeMillis(),
-            newRumContext = fakeRumContextData.newRumContext,
-            prevRumContext = fakeRumContextData.prevRumContext
-        )
-
-        whenever(mockRumContextDataHandler.createRumContextData()).thenReturn(rumContextData)
-
-        // When
-        testedHandler.addSnapshotItem(mockSystemInformation)
-
-        // Then
-        verify(mockBase64LruCache).clear()
-    }
-
-    @Test
-    fun `M not clear cache W addSnapshotItem() { same view }`() {
-        // Given
-        val rumContextData = RumContextData(
-            timestamp = System.currentTimeMillis(),
-            newRumContext = fakeRumContextData.newRumContext,
-            prevRumContext = fakeRumContextData.newRumContext
-        )
-
-        whenever(mockRumContextDataHandler.createRumContextData()).thenReturn(rumContextData)
-
-        // When
-        testedHandler.addSnapshotItem(mockSystemInformation)
-
-        // Then
-        verifyNoMoreInteractions(mockBase64LruCache)
-    }
-
-    // endregion
 
     private fun createFakeSnapshotItemWithDelayMs(delay: Int): SnapshotRecordedDataQueueItem {
         val newRumContext = RumContextData(

@@ -88,17 +88,17 @@ public final class com/datadog/android/sessionreplay/internal/recorder/SystemInf
 }
 
 public final class com/datadog/android/sessionreplay/internal/recorder/base64/Base64Serializer {
-	public synthetic fun <init> (Ljava/util/concurrent/ExecutorService;Lcom/datadog/android/sessionreplay/internal/utils/DrawableUtils;Lcom/datadog/android/sessionreplay/internal/utils/Base64Utils;Lcom/datadog/android/sessionreplay/internal/recorder/base64/ImageCompression;Lcom/datadog/android/sessionreplay/internal/recorder/base64/Cache;Lcom/datadog/android/api/InternalLogger;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/util/concurrent/ExecutorService;Lcom/datadog/android/sessionreplay/internal/utils/DrawableUtils;Lcom/datadog/android/sessionreplay/internal/utils/Base64Utils;Lcom/datadog/android/sessionreplay/internal/recorder/base64/ImageCompression;Lcom/datadog/android/sessionreplay/internal/recorder/base64/Cache;Lcom/datadog/android/sessionreplay/internal/recorder/base64/Cache;Lcom/datadog/android/api/InternalLogger;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
 public abstract interface class com/datadog/android/sessionreplay/internal/recorder/base64/ImageCompression {
-	public abstract fun compressBitmapToStream (Landroid/graphics/Bitmap;)Ljava/io/ByteArrayOutputStream;
+	public abstract fun compressBitmap (Landroid/graphics/Bitmap;)[B
 	public abstract fun getMimeType ()Ljava/lang/String;
 }
 
 public final class com/datadog/android/sessionreplay/internal/recorder/base64/WebPImageCompression : com/datadog/android/sessionreplay/internal/recorder/base64/ImageCompression {
 	public static final field Companion Lcom/datadog/android/sessionreplay/internal/recorder/base64/WebPImageCompression$Companion;
-	public fun compressBitmapToStream (Landroid/graphics/Bitmap;)Ljava/io/ByteArrayOutputStream;
+	public fun compressBitmap (Landroid/graphics/Bitmap;)[B
 	public fun getMimeType ()Ljava/lang/String;
 }
 

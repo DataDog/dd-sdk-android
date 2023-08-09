@@ -25,10 +25,10 @@ data class com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 class com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
 interface com.datadog.android.sessionreplay.internal.recorder.base64.ImageCompression
   fun getMimeType(): String?
-  fun compressBitmapToStream(android.graphics.Bitmap): java.io.ByteArrayOutputStream
+  fun compressBitmap(android.graphics.Bitmap): ByteArray
 class com.datadog.android.sessionreplay.internal.recorder.base64.WebPImageCompression : ImageCompression
   override fun getMimeType(): String?
-  override fun compressBitmapToStream(android.graphics.Bitmap): java.io.ByteArrayOutputStream
+  override fun compressBitmap(android.graphics.Bitmap): ByteArray
   companion object 
 abstract class com.datadog.android.sessionreplay.internal.recorder.mapper.BaseWireframeMapper<T: android.view.View, S: com.datadog.android.sessionreplay.model.MobileSegment.Wireframe> : WireframeMapper<T, S>, com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
   constructor(com.datadog.android.sessionreplay.utils.StringUtils = StringUtils, com.datadog.android.sessionreplay.utils.ViewUtils = ViewUtils, com.datadog.android.sessionreplay.internal.recorder.base64.ImageCompression = WebPImageCompression(), com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator = UniqueIdentifierGenerator, com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer = Base64Serializer.Builder().build())

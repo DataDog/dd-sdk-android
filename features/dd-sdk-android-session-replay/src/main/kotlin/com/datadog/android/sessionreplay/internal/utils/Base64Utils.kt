@@ -9,12 +9,11 @@ package com.datadog.android.sessionreplay.internal.utils
 import android.util.Base64
 import androidx.annotation.WorkerThread
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.Base64Wrapper
-import java.io.ByteArrayOutputStream
 
 internal class Base64Utils(
     private val base64Wrapper: Base64Wrapper = Base64Wrapper()
 ) {
     @WorkerThread
-    internal fun serializeToBase64String(byteArrayOutputStream: ByteArrayOutputStream): String =
-        base64Wrapper.encodeToString(byteArrayOutputStream.toByteArray(), Base64.DEFAULT)
+    internal fun serializeToBase64String(byteArray: ByteArray): String =
+        base64Wrapper.encodeToString(byteArray, Base64.DEFAULT)
 }

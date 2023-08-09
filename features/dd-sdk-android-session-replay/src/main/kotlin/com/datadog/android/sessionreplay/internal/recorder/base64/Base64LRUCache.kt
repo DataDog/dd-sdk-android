@@ -14,14 +14,11 @@ import android.graphics.drawable.DrawableContainer
 import android.graphics.drawable.LayerDrawable
 import android.util.LruCache
 import androidx.annotation.VisibleForTesting
+import com.datadog.android.sessionreplay.internal.utils.CacheUtils
 
 internal object Base64LRUCache : Cache<Drawable, String>, ComponentCallbacks2 {
     @Suppress("MagicNumber")
-    val MAX_CACHE_MEMORY_SIZE_BYTES = 4 * 1024 * 1024 // 4MB
-    @Suppress("MagicNumber")
-    private val ON_LOW_MEMORY_SIZE_BYTES = MAX_CACHE_MEMORY_SIZE_BYTES / 2 // 50% size
-    @Suppress("MagicNumber")
-    private val ON_MODERATE_MEMORY_SIZE_BYTES = (MAX_CACHE_MEMORY_SIZE_BYTES / 4) * 3 // 75% size
+    private val MAX_CACHE_MEMORY_SIZE_BYTES = 4 * 1024 * 1024 // 4MB
 
     private var cache: LruCache<String, ByteArray> = object :
         LruCache<String, ByteArray>(MAX_CACHE_MEMORY_SIZE_BYTES) {
@@ -31,39 +28,8 @@ internal object Base64LRUCache : Cache<Drawable, String>, ComponentCallbacks2 {
     }
 
     override fun onTrimMemory(level: Int) {
-        when (level) {
-            ComponentCallbacks2.TRIM_MEMORY_BACKGROUND -> {
-                cache.evictAll()
-            }
-
-            ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> {
-                cache.evictAll()
-            }
-
-            ComponentCallbacks2.TRIM_MEMORY_MODERATE -> {
-                cache.trimToSize(ON_MODERATE_MEMORY_SIZE_BYTES)
-            }
-
-            ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> {
-                cache.evictAll()
-            }
-
-            ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW -> {
-                cache.trimToSize(ON_LOW_MEMORY_SIZE_BYTES)
-            }
-
-            ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE -> {
-                cache.trimToSize(ON_MODERATE_MEMORY_SIZE_BYTES)
-            }
-
-            ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> {
-                cache.evictAll()
-            }
-
-            else -> {
-                cache.evictAll()
-            }
-        }
+        val cacheUtils = CacheUtils<String, ByteArray>()
+        cacheUtils.handleTrimMemory(level, cache)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {}

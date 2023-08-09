@@ -7,17 +7,24 @@
 
 package com.datadog.android.sessionreplay.internal.utils
 
+import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Bitmap.Config
+import android.graphics.Color
+import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
 import androidx.annotation.MainThread
+import androidx.annotation.VisibleForTesting
+import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
 import kotlin.math.sqrt
 
 internal class DrawableUtils(
     private val bitmapWrapper: BitmapWrapper = BitmapWrapper(),
-    private val canvasWrapper: CanvasWrapper = CanvasWrapper()
+    private val canvasWrapper: CanvasWrapper = CanvasWrapper(),
+    private val bitmapPool: BitmapPool = BitmapPool
 ) {
     /**
      * This method attempts to create a bitmap from a drawable, such that the bitmap file size will
@@ -27,21 +34,23 @@ internal class DrawableUtils(
     @MainThread
     @Suppress("ReturnCount")
     internal fun createBitmapOfApproxSizeFromDrawable(
+        applicationContext: Context,
         drawable: Drawable,
         displayMetrics: DisplayMetrics,
-        requestedSizeInBytes: Int = MAX_BITMAP_SIZE_IN_BYTES
+        requestedSizeInBytes: Int = MAX_BITMAP_SIZE_IN_BYTES,
+        config: Config = Config.ARGB_8888
     ): Bitmap? {
+        registerBitmapPoolForCallbacks(applicationContext)
+
         val (width, height) = getScaledWidthAndHeight(drawable, requestedSizeInBytes)
 
-        val bitmap = bitmapWrapper.createBitmap(
-            displayMetrics,
-            width,
-            height,
-            Bitmap.Config.ARGB_8888
-        )
-            ?: return null
-
+        val bitmap = getBitmapBySize(displayMetrics, width, height, config) ?: return null
         val canvas = canvasWrapper.createCanvas(bitmap) ?: return null
+
+        // erase the canvas
+        // needed because overdrawing an already used bitmap causes unusual visual artifacts
+        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY)
+
         drawable.setBounds(0, 0, canvas.width, canvas.height)
         drawable.draw(canvas)
         return bitmap
@@ -72,8 +81,31 @@ internal class DrawableUtils(
         return Pair(width, height)
     }
 
+    @Suppress("ReturnCount")
+    private fun getBitmapBySize(
+        displayMetrics: DisplayMetrics,
+        width: Int,
+        height: Int,
+        config: Config
+    ): Bitmap? =
+        bitmapPool.getBitmapByProperties(width, height, config)
+            ?: bitmapWrapper.createBitmap(displayMetrics, width, height, config)
+
+    @MainThread
+    private fun registerBitmapPoolForCallbacks(applicationContext: Context) {
+        if (isBitmapPoolRegisteredForCallbacks) return
+
+        applicationContext.registerComponentCallbacks(bitmapPool)
+        isBitmapPoolRegisteredForCallbacks = true
+    }
+
     internal companion object {
-        internal const val MAX_BITMAP_SIZE_IN_BYTES = 10240 // 10kb
+        private const val MAX_BITMAP_SIZE_IN_BYTES = 10240 // 10kb
         private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
+
+        // The cache is a singleton, so we want to share this flag among
+        // all instances so that it's registered only once
+        @VisibleForTesting
+        internal var isBitmapPoolRegisteredForCallbacks: Boolean = false
     }
 }
