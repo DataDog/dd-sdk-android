@@ -18,7 +18,7 @@ import java.util.UUID
 
 internal class SessionReplayRequestFactory(
     internal val customEndpointUrl: String?,
-    private val batchToSegmentsMapper: BatchesToSegmentsMapper = BatchesToSegmentsMapper(),
+    private val batchToSegmentsMapper: BatchesToSegmentsMapper,
     private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory()
 ) : RequestFactory {
 

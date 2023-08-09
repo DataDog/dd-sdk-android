@@ -261,6 +261,9 @@ datadog:
       # region Kronos
       - "com.lyft.kronos.KronosClock.syncInBackground():java.lang.IllegalStateException"
       # endregion
+      #region Java util
+      - "java.util.Queue.offer(com.datadog.android.sessionreplay.internal.async.RecordedDataQueueItem):java.lang.IllegalArgumentException,java.lang.ClassCastException,java.lang.NullPointerException"
+      #endregion
     knownSafeCalls:
       # region Android APIs
       - "android.app.Activity.findNavControllerOrNull()"
@@ -513,6 +516,9 @@ datadog:
       - "java.util.concurrent.ExecutorService.shutdownNow()"
       - "java.util.concurrent.Executors.newSingleThreadExecutor()"
       - "java.util.concurrent.LinkedBlockingDeque.constructor()"
+      - "java.util.Queue.isEmpty()"
+      - "java.util.Queue.isNotEmpty()"
+      - "java.util.Queue.poll()"
       - "java.util.concurrent.ScheduledExecutorService.shutdownNow()"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.remove(java.lang.Runnable)"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.shutdown()"
