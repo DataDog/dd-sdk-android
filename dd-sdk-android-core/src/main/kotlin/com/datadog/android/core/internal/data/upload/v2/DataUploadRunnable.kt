@@ -10,7 +10,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
-import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.core.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.UploadRunnable
@@ -33,14 +33,14 @@ internal class DataUploadRunnable(
     private val contextProvider: ContextProvider,
     private val networkInfoProvider: NetworkInfoProvider,
     private val systemInfoProvider: SystemInfoProvider,
-    internal val uploadFrequency: UploadFrequency,
+    uploadConfiguration: DataUploadConfiguration,
     private val batchUploadWaitTimeoutMs: Long = CoreFeature.NETWORK_TIMEOUT_MS,
     private val internalLogger: InternalLogger
 ) : UploadRunnable {
 
-    internal var currentDelayIntervalMs = DEFAULT_DELAY_FACTOR * uploadFrequency.baseStepMs
-    internal var minDelayMs = MIN_DELAY_FACTOR * uploadFrequency.baseStepMs
-    internal var maxDelayMs = MAX_DELAY_FACTOR * uploadFrequency.baseStepMs
+    internal var currentDelayIntervalMs = uploadConfiguration.defaultDelayMs
+    internal val minDelayMs = uploadConfiguration.minDelayMs
+    internal val maxDelayMs = uploadConfiguration.maxDelayMs
 
     //  region Runnable
 
@@ -148,11 +148,6 @@ internal class DataUploadRunnable(
 
     companion object {
         internal const val LOW_BATTERY_THRESHOLD = 10
-
-        internal const val MIN_DELAY_FACTOR = 1
-        internal const val DEFAULT_DELAY_FACTOR = 5
-        internal const val MAX_DELAY_FACTOR = 10
-
         const val DECREASE_PERCENT = 0.90
         const val INCREASE_PERCENT = 1.10
     }

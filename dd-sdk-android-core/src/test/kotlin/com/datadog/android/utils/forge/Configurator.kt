@@ -43,6 +43,7 @@ internal class Configurator :
         forge.addFactory(ProcessInfoForgeryFactory())
         forge.addFactory(DeviceInfoForgeryFactory())
         forge.addFactory(DatadogContextForgeryFactory())
+        forge.addFactory(DataUploadConfigurationForgeryFactory())
 
         forge.useJvmFactories()
     }

@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.core.configuration.DataUploadConfiguration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
@@ -47,7 +48,6 @@ internal class SdkFeature(
 
     internal val initialized = AtomicBoolean(false)
     internal val eventReceiver = AtomicReference<FeatureEventReceiver>(null)
-
     internal var storage: Storage = NoOpStorage()
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var uploadScheduler: UploadScheduler = NoOpUploadScheduler()
@@ -60,6 +60,9 @@ internal class SdkFeature(
             return
         }
 
+        val uploadFrequency = resolveUploadFrequency()
+        val uploadConfiguration = DataUploadConfiguration(uploadFrequency)
+
         if (wrappedFeature is StorageBackedFeature) {
             storage = createStorage(wrappedFeature.name, wrappedFeature.storageConfiguration)
         }
@@ -67,7 +70,7 @@ internal class SdkFeature(
         wrappedFeature.onInitialize(context)
 
         if (wrappedFeature is StorageBackedFeature) {
-            setupUploader(wrappedFeature.requestFactory, wrappedFeature.storageConfiguration)
+            setupUploader(wrappedFeature.requestFactory, uploadConfiguration)
         }
 
         if (wrappedFeature is TrackingConsentProviderCallback) {
@@ -151,16 +154,17 @@ internal class SdkFeature(
             ?: coreFeature.batchSize.windowDurationMs
     }
 
-    private fun resolveUploadFrequency(
-        coreFeature: CoreFeature,
-        featureStorageConfiguration: FeatureStorageConfiguration
-    ): UploadFrequency {
-        return featureStorageConfiguration.uploadFrequency ?: coreFeature.uploadFrequency
+    private fun resolveUploadFrequency(): UploadFrequency {
+        return if (wrappedFeature is StorageBackedFeature) {
+            wrappedFeature.storageConfiguration.uploadFrequency ?: coreFeature.uploadFrequency
+        } else {
+            coreFeature.uploadFrequency
+        }
     }
 
     private fun setupUploader(
         requestFactory: RequestFactory,
-        storageConfiguration: FeatureStorageConfiguration
+        uploadConfiguration: DataUploadConfiguration
     ) {
         uploadScheduler = if (coreFeature.isMainProcess) {
             uploader = createUploader(requestFactory)
@@ -170,7 +174,7 @@ internal class SdkFeature(
                 coreFeature.contextProvider,
                 coreFeature.networkInfoProvider,
                 coreFeature.systemInfoProvider,
-                resolveUploadFrequency(coreFeature, storageConfiguration),
+                uploadConfiguration,
                 coreFeature.uploadExecutorService,
                 internalLogger
             )

@@ -9,7 +9,7 @@ package com.datadog.android.core.internal.data.upload.v2
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
-import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.core.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.data.upload.UploadStatus
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -87,7 +87,7 @@ internal class DataUploadRunnableTest {
     lateinit var fakeContext: DatadogContext
 
     @Forgery
-    lateinit var fakeUploadFrequency: UploadFrequency
+    lateinit var fakeDataUploadConfiguration: DataUploadConfiguration
 
     private lateinit var testedRunnable: DataUploadRunnable
 
@@ -118,7 +118,7 @@ internal class DataUploadRunnableTest {
             mockContextProvider,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            fakeUploadFrequency,
+            fakeDataUploadConfiguration,
             TEST_BATCH_UPLOAD_WAIT_TIMEOUT_MS,
             mockInternalLogger
         )
