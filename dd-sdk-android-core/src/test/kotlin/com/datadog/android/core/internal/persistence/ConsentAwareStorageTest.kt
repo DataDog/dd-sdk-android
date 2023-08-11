@@ -275,13 +275,12 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-            any(),
-            isA<RejectedExecutionException>(),
-            eq(false),
-            eq(null)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            "Unable to schedule Data write task on the executor",
+            RejectedExecutionException::class.java,
+            false
         )
     }
 
