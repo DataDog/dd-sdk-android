@@ -97,7 +97,8 @@ internal class LogEventMapperWrapperTest {
                 eq(InternalLogger.Target.USER),
                 capture(),
                 isNull(),
-                eq(false)
+                eq(false),
+                eq(null)
             )
             assertThat(firstValue()).isEqualTo(
                 LogEventMapperWrapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(
@@ -136,7 +137,8 @@ internal class LogEventMapperWrapperTest {
                 eq(InternalLogger.Target.USER),
                 capture(),
                 isNull(),
-                eq(false)
+                eq(false),
+                eq(null)
             )
             assertThat(firstValue()).isEqualTo(
                 LogEventMapperWrapper.EVENT_NULL_WARNING_MESSAGE.format(

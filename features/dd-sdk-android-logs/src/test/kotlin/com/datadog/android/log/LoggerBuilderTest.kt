@@ -100,7 +100,8 @@ internal class LoggerBuilderTest {
                 eq(InternalLogger.Target.USER),
                 capture(),
                 isNull(),
-                eq(false)
+                eq(false),
+                eq(null)
             )
             assertThat(firstValue()).isEqualTo(Logger.SDK_NOT_INITIALIZED_WARNING_MESSAGE)
         }

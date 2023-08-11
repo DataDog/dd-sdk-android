@@ -280,7 +280,8 @@ internal class ConsentAwareStorageTest {
             eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
             any(),
             isA<RejectedExecutionException>(),
-            eq(false)
+            eq(false),
+            eq(null)
         )
     }
 

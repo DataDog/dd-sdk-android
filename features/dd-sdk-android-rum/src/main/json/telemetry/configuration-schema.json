@@ -63,7 +63,7 @@
                 },
                 "session_replay_sample_rate": {
                   "type": "integer",
-                  "description": "The percentage of sessions with Browser RUM & Session Replay pricing tracked",
+                  "description": "The percentage of sessions with RUM & Session Replay pricing tracked",
                   "minimum": 0,
                   "maximum": 100,
                   "readOnly": false
@@ -75,7 +75,7 @@
                 },
                 "use_proxy": {
                   "type": "boolean",
-                  "description": "Whether a proxy configured is used",
+                  "description": "Whether a proxy is used",
                   "readOnly": false
                 },
                 "use_before_send": {
@@ -108,6 +108,14 @@
                   "type": "boolean",
                   "description": "Whether a secure session cookie is used"
                 },
+                "allow_fallback_to_local_storage": {
+                  "type": "boolean",
+                  "description": "Whether it is allowed to use LocalStorage when cookies are not available"
+                },
+                "allow_untrusted_events": {
+                  "type": "boolean",
+                  "description": "Whether untrusted events are allowed"
+                },
                 "action_name_attribute": {
                   "type": "string",
                   "description": "Attribute to be used to name actions"
@@ -136,6 +144,10 @@
                 "use_excluded_activity_urls": {
                   "type": "boolean",
                   "description": "Whether the request origins list to ignore when computing the page activity is used"
+                },
+                "use_worker_url": {
+                  "type": "boolean",
+                  "description": "Whether the Worker is loaded from an external URL"
                 },
                 "track_frustrations": {
                   "type": "boolean",

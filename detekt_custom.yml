@@ -710,6 +710,7 @@ datadog:
       - "kotlin.collections.Map.get(kotlin.String)"
       - "kotlin.collections.Map.isEmpty()"
       - "kotlin.collections.Map.isNotEmpty()"
+      - "kotlin.collections.Map.isNullOrEmpty()"
       - "kotlin.collections.Map.map(kotlin.Function1)"
       - "kotlin.collections.Map.mapKeys(kotlin.Function1)"
       - "kotlin.collections.Map.mapNotNull(kotlin.Function1)"

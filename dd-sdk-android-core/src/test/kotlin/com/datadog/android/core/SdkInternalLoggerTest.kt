@@ -283,6 +283,72 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
+    fun `𝕄 send telemetry log 𝕎 log { TELEMETRY target, additional properties + info or debug }`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeAdditionalProperties = forge.aMap {
+            forge.anAlphabeticalString() to forge.aNullable { anAlphabeticalString() }
+        }
+        val mockLambda: () -> String = mock()
+        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val fakeLevel = forge.anElementFrom(InternalLogger.Level.INFO, InternalLogger.Level.DEBUG)
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+
+        // When
+        testedInternalLogger.log(
+            fakeLevel,
+            InternalLogger.Target.TELEMETRY,
+            mockLambda,
+            null,
+            additionalProperties = fakeAdditionalProperties
+        )
+
+        // Then
+        verify(mockRumFeatureScope)
+            .sendEvent(
+                mapOf(
+                    "type" to "telemetry_debug",
+                    "message" to fakeMessage,
+                    "additionalProperties" to fakeAdditionalProperties
+                )
+            )
+    }
+
+    @Test
+    fun `𝕄 send telemetry log 𝕎 log { TELEMETRY target, additional prop empty + info or debug }`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        val mockLambda: () -> String = mock()
+        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val fakeLevel = forge.anElementFrom(InternalLogger.Level.INFO, InternalLogger.Level.DEBUG)
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+
+        // When
+        testedInternalLogger.log(
+            fakeLevel,
+            InternalLogger.Target.TELEMETRY,
+            mockLambda,
+            null,
+            additionalProperties = emptyMap()
+        )
+
+        // Then
+        verify(mockRumFeatureScope)
+            .sendEvent(
+                mapOf(
+                    "type" to "telemetry_debug",
+                    "message" to fakeMessage
+                )
+            )
+    }
+
+    @Test
     fun `𝕄 send telemetry log 𝕎 log { TELEMETRY target, no throwable + warn or error }`(
         @StringForgery fakeMessage: String,
         forge: Forge
