@@ -66,13 +66,15 @@ interface InternalLogger {
      * @param throwable an optional throwable error
      * @param onlyOnce whether only one instance of the message should be sent per lifetime of the
      * logger (default is `false`)
+     * @param additionalProperties additional properties to add to the log
      */
     fun log(
         level: Level,
         target: Target,
         messageBuilder: () -> String,
         throwable: Throwable? = null,
-        onlyOnce: Boolean = false
+        onlyOnce: Boolean = false,
+        additionalProperties: Map<String, Any?>? = null
     )
 
     /**
@@ -83,13 +85,15 @@ interface InternalLogger {
      * @param throwable an optional throwable error
      * @param onlyOnce whether only one instance of the message should be sent per lifetime of the
      * logger (default is `false`, onlyOnce applies to each target independently)
+     * @param additionalProperties additional properties to add to the log
      */
     fun log(
         level: Level,
         targets: List<Target>,
         messageBuilder: () -> String,
         throwable: Throwable? = null,
-        onlyOnce: Boolean = false
+        onlyOnce: Boolean = false,
+        additionalProperties: Map<String, Any?>? = null
     )
 
     companion object {

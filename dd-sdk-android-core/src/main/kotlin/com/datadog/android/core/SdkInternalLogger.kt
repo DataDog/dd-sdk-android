@@ -53,7 +53,8 @@ internal class SdkInternalLogger(
         target: InternalLogger.Target,
         messageBuilder: () -> String,
         throwable: Throwable?,
-        onlyOnce: Boolean
+        onlyOnce: Boolean,
+        additionalProperties: Map<String, Any?>?
     ) {
         when (target) {
             InternalLogger.Target.USER -> logToUser(level, messageBuilder, throwable, onlyOnce)
@@ -68,7 +69,8 @@ internal class SdkInternalLogger(
                 level,
                 messageBuilder,
                 throwable,
-                onlyOnce
+                onlyOnce,
+                additionalProperties
             )
         }
     }
@@ -78,10 +80,11 @@ internal class SdkInternalLogger(
         targets: List<InternalLogger.Target>,
         messageBuilder: () -> String,
         throwable: Throwable?,
-        onlyOnce: Boolean
+        onlyOnce: Boolean,
+        additionalProperties: Map<String, Any?>?
     ) {
         targets.forEach {
-            log(level, it, messageBuilder, throwable)
+            log(level, it, messageBuilder, throwable, onlyOnce, additionalProperties)
         }
     }
 
@@ -148,7 +151,8 @@ internal class SdkInternalLogger(
         level: InternalLogger.Level,
         messageBuilder: () -> String,
         error: Throwable?,
-        onlyOnce: Boolean
+        onlyOnce: Boolean,
+        additionalProperties: Map<String, Any?>?
     ) {
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
         val message = messageBuilder()
@@ -166,14 +170,20 @@ internal class SdkInternalLogger(
             error != null
         ) {
             mapOf(
-                "type" to "telemetry_error",
-                "message" to message,
-                "throwable" to error
+                TYPE_KEY to "telemetry_error",
+                MESSAGE_KEY to message,
+                THROWABLE_KEY to error
+            )
+        } else if (!additionalProperties.isNullOrEmpty()) {
+            mapOf(
+                TYPE_KEY to "telemetry_debug",
+                MESSAGE_KEY to message,
+                ADDITIONAL_PROPERTIES_KEY to additionalProperties
             )
         } else {
             mapOf(
-                "type" to "telemetry_debug",
-                "message" to message
+                TYPE_KEY to "telemetry_debug",
+                MESSAGE_KEY to message
             )
         }
         rumFeature.sendEvent(telemetryEvent)
@@ -201,6 +211,10 @@ internal class SdkInternalLogger(
     companion object {
         internal const val SDK_LOG_TAG = "DD_LOG"
         internal const val DEV_LOG_TAG = "Datadog"
+        private const val MESSAGE_KEY = "message"
+        private const val TYPE_KEY = "type"
+        private const val THROWABLE_KEY = "throwable"
+        private const val ADDITIONAL_PROPERTIES_KEY = "additionalProperties"
     }
 
     // endregion

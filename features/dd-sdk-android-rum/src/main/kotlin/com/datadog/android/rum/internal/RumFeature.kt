@@ -470,7 +470,6 @@ internal class RumFeature constructor(
         val throwable = telemetryEvent[EVENT_THROWABLE_PROPERTY] as? Throwable
         val stack = telemetryEvent[EVENT_STACKTRACE_PROPERTY] as? String
         val kind = telemetryEvent["kind"] as? String
-
         if (throwable != null) {
             telemetry.error(message, throwable)
         } else {
@@ -480,6 +479,9 @@ internal class RumFeature constructor(
 
     private fun logTelemetryDebug(telemetryEvent: Map<*, *>) {
         val message = telemetryEvent[EVENT_MESSAGE_PROPERTY] as? String
+
+        @Suppress("UNCHECKED_CAST")
+        val additionalProperties = telemetryEvent[EVENT_ADDITIONAL_PROPERTIES] as? Map<String, Any?>
         if (message == null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -488,7 +490,7 @@ internal class RumFeature constructor(
             )
             return
         }
-        telemetry.debug(message)
+        telemetry.debug(message, additionalProperties)
     }
 
     private fun logTelemetryConfiguration(event: Map<*, *>) {
@@ -561,6 +563,7 @@ internal class RumFeature constructor(
         internal val startupTimeNs: Long = System.nanoTime()
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"
+        internal const val EVENT_ADDITIONAL_PROPERTIES = "additionalProperties"
         internal const val EVENT_THROWABLE_PROPERTY = "throwable"
         internal const val EVENT_ATTRIBUTES_PROPERTY = "attributes"
         internal const val EVENT_STACKTRACE_PROPERTY = "stacktrace"

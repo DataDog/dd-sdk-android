@@ -393,36 +393,81 @@ internal class DatadogRumMonitor(
         debugListener = listener
     }
 
-    override fun sendDebugTelemetryEvent(message: String) {
-        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.DEBUG, message, null, null, null))
+    override fun sendDebugTelemetryEvent(
+        message: String,
+        additionalProperties: Map<String, Any?>?
+    ) {
+        handleEvent(
+            RumRawEvent.SendTelemetry(
+                type = TelemetryType.DEBUG,
+                message = message,
+                stack = null,
+                kind = null,
+                coreConfiguration = null,
+                additionalProperties = additionalProperties
+            )
+        )
     }
 
-    override fun sendErrorTelemetryEvent(message: String, throwable: Throwable?) {
+    override fun sendErrorTelemetryEvent(
+        message: String,
+        throwable: Throwable?
+    ) {
         val stack: String? = throwable?.loggableStackTrace()
         val kind: String? = throwable?.javaClass?.canonicalName ?: throwable?.javaClass?.simpleName
-        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind, null))
+        handleEvent(
+            RumRawEvent.SendTelemetry(
+                type = TelemetryType.ERROR,
+                message = message,
+                stack = stack,
+                kind = kind,
+                coreConfiguration = null,
+                additionalProperties = null
+            )
+        )
     }
 
-    override fun sendErrorTelemetryEvent(message: String, stack: String?, kind: String?) {
-        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind, null))
+    override fun sendErrorTelemetryEvent(
+        message: String,
+        stack: String?,
+        kind: String?
+    ) {
+        handleEvent(
+            RumRawEvent.SendTelemetry(
+                type = TelemetryType.ERROR,
+                message = message,
+                stack = stack,
+                kind = kind,
+                coreConfiguration = null,
+                additionalProperties = null
+            )
+        )
     }
 
     @Suppress("FunctionMaxLength")
     override fun sendConfigurationTelemetryEvent(coreConfiguration: TelemetryCoreConfiguration) {
         handleEvent(
             RumRawEvent.SendTelemetry(
-                TelemetryType.CONFIGURATION,
-                "",
-                null,
-                null,
-                coreConfiguration
+                type = TelemetryType.CONFIGURATION,
+                message = "",
+                stack = null,
+                kind = null,
+                coreConfiguration = coreConfiguration,
+                additionalProperties = null
             )
         )
     }
 
     override fun notifyInterceptorInstantiated() {
         handleEvent(
-            RumRawEvent.SendTelemetry(TelemetryType.INTERCEPTOR_SETUP, "", null, null, null)
+            RumRawEvent.SendTelemetry(
+                TelemetryType.INTERCEPTOR_SETUP,
+                message = "",
+                stack = null,
+                kind = null,
+                coreConfiguration = null,
+                additionalProperties = null
+            )
         )
     }
 

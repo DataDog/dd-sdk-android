@@ -18,18 +18,25 @@ internal class Telemetry(
         get() {
             return GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: NoOpAdvancedRumMonitor()
         }
-    fun error(message: String, throwable: Throwable? = null) {
+    fun error(
+        message: String,
+        throwable: Throwable? = null
+    ) {
         (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)
             ?.sendErrorTelemetryEvent(message, throwable)
     }
 
-    fun error(message: String, stack: String?, kind: String?) {
+    fun error(
+        message: String,
+        stack: String? = null,
+        kind: String? = null
+    ) {
         (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)
             ?.sendErrorTelemetryEvent(message, stack, kind)
     }
 
-    fun debug(message: String) {
+    fun debug(message: String, additionalProperties: Map<String, Any?>? = null) {
         (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)
-            ?.sendDebugTelemetryEvent(message)
+            ?.sendDebugTelemetryEvent(message, additionalProperties)
     }
 }

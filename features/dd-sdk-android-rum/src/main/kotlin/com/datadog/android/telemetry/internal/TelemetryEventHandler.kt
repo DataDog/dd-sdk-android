@@ -51,7 +51,12 @@ internal class TelemetryEventHandler(
                 val timestamp = event.eventTime.timestamp + datadogContext.time.serverTimeOffsetMs
                 val telemetryEvent: Any? = when (event.type) {
                     TelemetryType.DEBUG -> {
-                        createDebugEvent(datadogContext, timestamp, event.message)
+                        createDebugEvent(
+                            datadogContext,
+                            timestamp,
+                            event.message,
+                            event.additionalProperties
+                        )
                     }
                     TelemetryType.ERROR -> {
                         createErrorEvent(
@@ -132,10 +137,11 @@ internal class TelemetryEventHandler(
     private fun createDebugEvent(
         datadogContext: DatadogContext,
         timestamp: Long,
-        message: String
+        message: String,
+        additionalProperties: Map<String, Any?>?
     ): TelemetryDebugEvent {
         val rumContext = datadogContext.rumContext()
-
+        val resolvedAdditionalProperties = additionalProperties?.toMutableMap() ?: mutableMapOf()
         return TelemetryDebugEvent(
             dd = TelemetryDebugEvent.Dd(),
             date = timestamp,
@@ -150,7 +156,8 @@ internal class TelemetryEventHandler(
             view = rumContext.viewId?.let { TelemetryDebugEvent.View(it) },
             action = rumContext.actionId?.let { TelemetryDebugEvent.Action(it) },
             telemetry = TelemetryDebugEvent.Telemetry(
-                message = message
+                message = message,
+                additionalProperties = resolvedAdditionalProperties
             )
         )
     }
@@ -164,7 +171,6 @@ internal class TelemetryEventHandler(
         kind: String?
     ): TelemetryErrorEvent {
         val rumContext = datadogContext.rumContext()
-
         return TelemetryErrorEvent(
             dd = TelemetryErrorEvent.Dd(),
             date = timestamp,

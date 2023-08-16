@@ -1379,10 +1379,14 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M handle debug telemetry event W sendDebugTelemetryEvent()`(
-        @StringForgery message: String
+        @StringForgery message: String,
+        forge: Forge
     ) {
+        // Given
+        val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
+
         // When
-        testedMonitor.sendDebugTelemetryEvent(message)
+        testedMonitor.sendDebugTelemetryEvent(message, fakeAdditionalProperties)
 
         // Then
         argumentCaptor<RumRawEvent.SendTelemetry> {
@@ -1395,6 +1399,7 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.stack).isNull()
             assertThat(lastValue.kind).isNull()
             assertThat(lastValue.coreConfiguration).isNull()
+            assertThat(lastValue.additionalProperties).isEqualTo(fakeAdditionalProperties)
         }
     }
 

@@ -31,6 +31,7 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.tools.unit.forge.aThrowable
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -390,7 +391,14 @@ internal class TelemetryEventHandlerTest {
         // When
         if (trackNetworkRequests) {
             testedTelemetryHandler.handleEvent(
-                RumRawEvent.SendTelemetry(TelemetryType.INTERCEPTOR_SETUP, "", null, null, null),
+                RumRawEvent.SendTelemetry(
+                    TelemetryType.INTERCEPTOR_SETUP,
+                    "",
+                    null,
+                    null,
+                    coreConfiguration = null,
+                    additionalProperties = null
+                ),
                 mockWriter
             )
         }
@@ -700,6 +708,7 @@ internal class TelemetryEventHandlerTest {
             .hasSessionId(rumContext.sessionId)
             .hasViewId(rumContext.viewId)
             .hasActionId(rumContext.actionId)
+            .hasAdditionalProperties(rawEvent.additionalProperties ?: emptyMap())
     }
 
     private fun assertErrorEventMatchesRawEvent(
@@ -755,7 +764,8 @@ internal class TelemetryEventHandlerTest {
             aString(),
             null,
             null,
-            null
+            coreConfiguration = null,
+            additionalProperties = aNullable { exhaustiveAttributes() }
         )
     }
 
@@ -766,7 +776,8 @@ internal class TelemetryEventHandlerTest {
             aString(),
             throwable?.loggableStackTrace(),
             throwable?.javaClass?.canonicalName,
-            null
+            coreConfiguration = null,
+            additionalProperties = null
         )
     }
 
@@ -778,7 +789,8 @@ internal class TelemetryEventHandlerTest {
             "",
             null,
             null,
-            configuration ?: getForgery()
+            coreConfiguration = (configuration ?: getForgery()),
+            additionalProperties = null
         )
     }
 

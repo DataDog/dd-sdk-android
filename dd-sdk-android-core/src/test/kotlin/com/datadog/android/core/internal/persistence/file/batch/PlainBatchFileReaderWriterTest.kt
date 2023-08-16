@@ -189,7 +189,8 @@ internal class PlainBatchFileReaderWriterTest {
                 eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
                 capture(),
                 any(),
-                eq(false)
+                eq(false),
+                eq(null)
             )
             assertThat(firstValue())
                 .isEqualTo(PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path))
@@ -221,7 +222,8 @@ internal class PlainBatchFileReaderWriterTest {
                 eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
                 capture(),
                 any(),
-                eq(false)
+                eq(false),
+                eq(null)
             )
             assertThat(firstValue())
                 .isEqualTo(PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path))
@@ -253,7 +255,8 @@ internal class PlainBatchFileReaderWriterTest {
                 eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
                 capture(),
                 any(),
-                eq(false)
+                eq(false),
+                eq(null)
             )
             assertThat(firstValue())
                 .isEqualTo(PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path))
@@ -279,7 +282,8 @@ internal class PlainBatchFileReaderWriterTest {
                 eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
                 capture(),
                 any(),
-                eq(false)
+                eq(false),
+                eq(null)
             )
             assertThat(firstValue())
                 .isEqualTo(PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path))
@@ -384,7 +388,8 @@ internal class PlainBatchFileReaderWriterTest {
                 eq(InternalLogger.Target.MAINTAINER),
                 capture(),
                 any(),
-                eq(false)
+                eq(false),
+                eq(null)
             )
             assertThat(firstValue())
                 .isEqualTo(PlainBatchFileReaderWriter.ERROR_FAILED_META_PARSE)

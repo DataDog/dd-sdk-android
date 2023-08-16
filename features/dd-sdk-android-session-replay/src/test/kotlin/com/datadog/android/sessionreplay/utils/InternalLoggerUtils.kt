@@ -22,7 +22,8 @@ fun InternalLogger.verifyLog(
     message: String,
     throwable: Throwable? = null,
     onlyOnce: Boolean = false,
-    mode: VerificationMode = times(1)
+    mode: VerificationMode = times(1),
+    additionalProperties: Map<String, Any?>? = null
 ) {
     argumentCaptor<() -> String> {
         verify(this@verifyLog, mode).log(
@@ -30,7 +31,8 @@ fun InternalLogger.verifyLog(
             eq(target),
             capture(),
             same(throwable),
-            eq(onlyOnce)
+            eq(onlyOnce),
+            eq(additionalProperties)
         )
         allValues.forEach {
             assertThat(it()).isEqualTo(message)
@@ -44,7 +46,8 @@ fun <T : Throwable> InternalLogger.verifyLog(
     message: String,
     throwableClass: Class<T>,
     onlyOnce: Boolean = false,
-    mode: VerificationMode = times(1)
+    mode: VerificationMode = times(1),
+    additionalProperties: Map<String, Any?>? = null
 ) {
     argumentCaptor<() -> String> {
         verify(this@verifyLog, mode).log(
@@ -52,7 +55,8 @@ fun <T : Throwable> InternalLogger.verifyLog(
             eq(target),
             capture(),
             isA(throwableClass),
-            eq(onlyOnce)
+            eq(onlyOnce),
+            eq(additionalProperties)
         )
         allValues.forEach {
             assertThat(it()).isEqualTo(message)
@@ -66,7 +70,8 @@ fun InternalLogger.verifyLog(
     message: String?,
     throwable: Throwable? = null,
     onlyOnce: Boolean = false,
-    mode: VerificationMode = times(1)
+    mode: VerificationMode = times(1),
+    additionalProperties: Map<String, Any?>? = null
 ) {
     argumentCaptor<() -> String> {
         verify(this@verifyLog, mode).log(
@@ -74,7 +79,8 @@ fun InternalLogger.verifyLog(
             eq(targets),
             capture(),
             same(throwable),
-            eq(onlyOnce)
+            eq(onlyOnce),
+            eq(additionalProperties)
         )
         assertThat(firstValue()).isEqualTo(message)
     }
@@ -86,7 +92,8 @@ fun <T : Throwable> InternalLogger.verifyLog(
     message: String?,
     throwableClass: Class<T>,
     onlyOnce: Boolean = false,
-    mode: VerificationMode = times(1)
+    mode: VerificationMode = times(1),
+    additionalProperties: Map<String, Any?>? = null
 ) {
     argumentCaptor<() -> String> {
         verify(this@verifyLog, mode).log(
@@ -94,7 +101,8 @@ fun <T : Throwable> InternalLogger.verifyLog(
             eq(targets),
             capture(),
             isA(throwableClass),
-            eq(onlyOnce)
+            eq(onlyOnce),
+            eq(additionalProperties)
         )
         assertThat(firstValue()).isEqualTo(message)
     }
