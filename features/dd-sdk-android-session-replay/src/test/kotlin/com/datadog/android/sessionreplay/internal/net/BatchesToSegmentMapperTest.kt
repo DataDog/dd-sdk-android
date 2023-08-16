@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.net
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
@@ -20,8 +21,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -32,11 +38,14 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class BatchesToSegmentMapperTest {
 
-    lateinit var testedMapper: BatchesToSegmentsMapper
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    private lateinit var testedMapper: BatchesToSegmentsMapper
 
     @BeforeEach
     fun `set up`() {
-        testedMapper = BatchesToSegmentsMapper()
+        testedMapper = BatchesToSegmentsMapper(mockInternalLogger)
     }
 
     @Test
@@ -288,6 +297,18 @@ internal class BatchesToSegmentMapperTest {
             .map { it.toString().toByteArray() }
         // When
         assertThat(testedMapper.map(fakeBatchData)).isNull()
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger, times(fakeBatchData.size)).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.TELEMETRY),
+                capture(),
+                eq(null),
+                eq(true)
+            )
+            assertThat(firstValue.invoke()).isEqualTo(
+                BatchesToSegmentsMapper.ILLEGAL_STATE_ENRICHED_RECORD_ERROR_MESSAGE
+            )
+        }
     }
 
     @Test
@@ -365,6 +386,18 @@ internal class BatchesToSegmentMapperTest {
 
         // When
         assertThat(testedMapper.map(fakeBatchData)).isNull()
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger, times(fakeBatchData.size)).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.TELEMETRY),
+                capture(),
+                eq(null),
+                eq(true)
+            )
+            assertThat(firstValue.invoke()).isEqualTo(
+                BatchesToSegmentsMapper.ILLEGAL_STATE_ENRICHED_RECORD_ERROR_MESSAGE
+            )
+        }
     }
 
     @Test
@@ -442,6 +475,18 @@ internal class BatchesToSegmentMapperTest {
 
         // When
         assertThat(testedMapper.map(fakeBatchData)).isNull()
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger, times(fakeBatchData.size)).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.TELEMETRY),
+                capture(),
+                eq(null),
+                eq(true)
+            )
+            assertThat(firstValue.invoke()).isEqualTo(
+                BatchesToSegmentsMapper.ILLEGAL_STATE_ENRICHED_RECORD_ERROR_MESSAGE
+            )
+        }
     }
 
     @Test

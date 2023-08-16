@@ -12,6 +12,7 @@ import android.util.DisplayMetrics
 import android.view.MotionEvent
 import android.view.View
 import android.view.Window
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
@@ -21,7 +22,6 @@ import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileIncrementalData
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord
-import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -38,7 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -56,7 +56,7 @@ import java.util.concurrent.TimeUnit
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class RecorderWindowCallbackTest {
 
-    lateinit var testedWindowCallback: RecorderWindowCallback
+    private lateinit var testedWindowCallback: RecorderWindowCallback
 
     @Mock
     lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
@@ -78,6 +78,9 @@ internal class RecorderWindowCallbackTest {
 
     @Forgery
     lateinit var fakeTouchEventRecordedDataQueueItem: TouchEventRecordedDataQueueItem
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @LongForgery(min = 0)
     var fakeTimestamp: Long = 0L
@@ -108,6 +111,7 @@ internal class RecorderWindowCallbackTest {
             mockWrappedCallback,
             mockTimeProvider,
             mockViewOnDrawInterceptor,
+            mockInternalLogger,
             copyEvent = { it },
             mockEventUtils,
             TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS,
@@ -149,30 +153,47 @@ internal class RecorderWindowCallbackTest {
     }
 
     @Test
-    fun `M do nothing W onTouchEvent { event is null }`() {
+    fun `M log the exception W wrappedCallback throws`(@Forgery fakeException: Exception) {
         // Given
         val mockEvent: MotionEvent = mock()
+        whenever(mockWrappedCallback.dispatchTouchEvent(mockEvent)).thenThrow(fakeException)
 
         // When
         testedWindowCallback.dispatchTouchEvent(mockEvent)
 
         // Then
-        assertThat(testedWindowCallback.pointerInteractions).isEmpty()
+        verify(mockWrappedCallback).dispatchTouchEvent(mockEvent)
+        argumentCaptor<() -> String>() {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(fakeException),
+                eq(false)
+            )
+            assertThat(firstValue.invoke())
+                .isEqualTo(RecorderWindowCallback.FAIL_TO_PROCESS_MOTION_EVENT_ERROR_MESSAGE)
+        }
     }
 
     @Test
-    fun `M consume the event if wrappedCallback throws W onTouchEvent`(forge: Forge) {
-        // Given
-        val mockEvent: MotionEvent = mock()
-        val fakeThrowable = forge.aThrowable()
-        doThrow(fakeThrowable).whenever(mockWrappedCallback).dispatchTouchEvent(mockEvent)
-
+    fun `M do nothing W onTouchEvent { event is null }`() {
         // When
-        val eventConsumed = testedWindowCallback.dispatchTouchEvent(mockEvent)
+        testedWindowCallback.dispatchTouchEvent(null)
 
         // Then
-        verify(mockWrappedCallback).dispatchTouchEvent(mockEvent)
-        assertThat(eventConsumed).isEqualTo(true)
+        assertThat(testedWindowCallback.pointerInteractions).isEmpty()
+        argumentCaptor<() -> String>() {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(null),
+                eq(false)
+            )
+            assertThat(firstValue.invoke())
+                .isEqualTo(RecorderWindowCallback.MOTION_EVENT_WAS_NULL_ERROR_MESSAGE)
+        }
     }
 
     @Test
@@ -378,7 +399,8 @@ internal class RecorderWindowCallbackTest {
     fun `M intercept the onDraw for the new decorViews W window focus changed`(forge: Forge) {
         // Given
         val fakeDecorViews: List<View> = forge.aList { mock() }
-        whenever(mockWindowInspector.getGlobalWindowViews()).thenReturn(fakeDecorViews)
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(fakeDecorViews)
 
         // When
         testedWindowCallback.onWindowFocusChanged(forge.aBool())
@@ -393,7 +415,8 @@ internal class RecorderWindowCallbackTest {
     @Test
     fun `M do nothing W window focus changed {decorViews could not be fetched}`(forge: Forge) {
         // Given
-        whenever(mockWindowInspector.getGlobalWindowViews()).thenReturn(emptyList())
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(emptyList())
 
         // When
         testedWindowCallback.onWindowFocusChanged(forge.aBool())

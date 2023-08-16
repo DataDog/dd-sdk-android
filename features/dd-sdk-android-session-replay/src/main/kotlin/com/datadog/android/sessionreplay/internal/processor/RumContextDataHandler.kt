@@ -7,13 +7,16 @@
 package com.datadog.android.sessionreplay.internal.processor
 
 import androidx.annotation.MainThread
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
+import java.util.Locale
 
 internal class RumContextDataHandler(
     private val rumContextProvider: RumContextProvider,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val internalLogger: InternalLogger
 ) {
     private var prevRumContext = SessionReplayRumContext()
 
@@ -26,7 +29,16 @@ internal class RumContextDataHandler(
         val newRumContext = rumContextProvider.getRumContext()
 
         if (newRumContext.isNotValid()) {
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                {
+                    INVALID_RUM_CONTEXT_ERROR_MESSAGE_FORMAT.format(
+                        Locale.ENGLISH,
+                        newRumContext.toString()
+                    )
+                }
+            )
             return null
         }
 
@@ -35,5 +47,10 @@ internal class RumContextDataHandler(
         prevRumContext = newRumContext
 
         return rumContextData
+    }
+
+    companion object {
+        const val INVALID_RUM_CONTEXT_ERROR_MESSAGE_FORMAT = "SR RumContextDataHandler: Invalid RUM " +
+            "context: [%s] when trying to bundle the RumContextData"
     }
 }
