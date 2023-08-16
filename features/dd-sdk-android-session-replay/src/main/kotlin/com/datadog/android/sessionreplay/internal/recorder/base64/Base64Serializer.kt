@@ -9,8 +9,10 @@ package com.datadog.android.sessionreplay.internal.recorder.base64
 import android.content.ComponentCallbacks2
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
+import android.widget.ImageView
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
@@ -18,6 +20,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
 import com.datadog.android.sessionreplay.internal.recorder.base64.Cache.Companion.DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS
 import com.datadog.android.sessionreplay.internal.utils.Base64Utils
+import com.datadog.android.sessionreplay.internal.utils.DrawableDimensions
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.concurrent.ExecutorService
@@ -27,7 +30,7 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 @Suppress("UndocumentedPublicClass")
-class Base64Serializer private constructor(
+internal class Base64Serializer private constructor(
     private val threadPoolExecutor: ExecutorService,
     private val drawableUtils: DrawableUtils,
     private val base64Utils: Base64Utils,
@@ -37,6 +40,8 @@ class Base64Serializer private constructor(
     private val logger: InternalLogger
 ) {
     private var asyncImageProcessingCallback: AsyncImageProcessingCallback? = null
+    private var isCacheRegisteredForCallbacks: Boolean = false
+    private var isBitmapPoolRegisteredForCallbacks: Boolean = false
 
     // region internal
 
@@ -48,20 +53,32 @@ class Base64Serializer private constructor(
         imageWireframe: MobileSegment.Wireframe.ImageWireframe
     ) {
         registerCacheForCallbacks(applicationContext)
+        registerBitmapPoolForCallbacks(applicationContext)
 
         asyncImageProcessingCallback?.startProcessingImage()
 
+        var shouldCacheBitmap = false
         val cachedBase64 = base64LRUCache?.get(drawable)
         if (cachedBase64 != null) {
             finalizeRecordedDataItem(cachedBase64, imageWireframe, asyncImageProcessingCallback)
             return
         }
 
-        val bitmap = drawableUtils.createBitmapOfApproxSizeFromDrawable(
-            applicationContext,
-            drawable,
-            displayMetrics
-        )
+        val bitmap = if (
+            drawable is BitmapDrawable &&
+            drawable.bitmap != null &&
+            !drawable.bitmap.isRecycled
+        ) {
+            drawable.bitmap
+        } else {
+            drawableUtils.createBitmapOfApproxSizeFromDrawable(
+                drawable,
+                displayMetrics
+            )?.let {
+                shouldCacheBitmap = true
+                it
+            }
+        }
 
         if (bitmap == null) {
             asyncImageProcessingCallback?.finishProcessingImage()
@@ -70,7 +87,7 @@ class Base64Serializer private constructor(
 
         Runnable {
             @Suppress("ThreadSafety") // this runs inside an executor
-            serialiseBitmap(drawable, bitmap, imageWireframe, asyncImageProcessingCallback)
+            serialiseBitmap(drawable, bitmap, shouldCacheBitmap, imageWireframe, asyncImageProcessingCallback)
         }.let { executeRunnable(it) }
     }
 
@@ -79,6 +96,12 @@ class Base64Serializer private constructor(
     ) {
         this.asyncImageProcessingCallback = asyncImageProcessingCallback
     }
+
+    internal fun getDrawableScaledDimensions(
+        view: ImageView,
+        drawable: Drawable,
+        density: Float
+    ): DrawableDimensions = drawableUtils.getDrawableScaledDimensions(view, drawable, density)
 
     // endregion
 
@@ -95,10 +118,11 @@ class Base64Serializer private constructor(
     private fun serialiseBitmap(
         drawable: Drawable,
         bitmap: Bitmap,
+        shouldCacheBitmap: Boolean,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
         asyncImageProcessingCallback: AsyncImageProcessingCallback?
     ) {
-        val base64String = convertBmpToBase64(drawable, bitmap)
+        val base64String = convertBmpToBase64(drawable, bitmap, shouldCacheBitmap)
         finalizeRecordedDataItem(base64String, imageWireframe, asyncImageProcessingCallback)
     }
 
@@ -120,8 +144,16 @@ class Base64Serializer private constructor(
         }
     }
 
+    @MainThread
+    private fun registerBitmapPoolForCallbacks(applicationContext: Context) {
+        if (isBitmapPoolRegisteredForCallbacks) return
+
+        applicationContext.registerComponentCallbacks(bitmapPool)
+        isBitmapPoolRegisteredForCallbacks = true
+    }
+
     @WorkerThread
-    private fun convertBmpToBase64(drawable: Drawable, bitmap: Bitmap): String {
+    private fun convertBmpToBase64(drawable: Drawable, bitmap: Bitmap, shouldCacheBitmap: Boolean): String {
         val base64Result: String
 
         val byteArray = webPImageCompression.compressBitmap(bitmap)
@@ -133,7 +165,9 @@ class Base64Serializer private constructor(
             base64LRUCache?.put(drawable, base64Result)
         }
 
-        bitmapPool?.put(bitmap)
+        if (shouldCacheBitmap) {
+            bitmapPool?.put(bitmap)
+        }
 
         return base64Result
     }
@@ -205,11 +239,4 @@ class Base64Serializer private constructor(
     }
 
     // endregion
-
-    internal companion object {
-        // The cache is a singleton, so we want to share this flag among
-        // all instances so that it's registered only once
-        @VisibleForTesting
-        internal var isCacheRegisteredForCallbacks: Boolean = false
-    }
 }

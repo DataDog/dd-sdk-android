@@ -12,7 +12,7 @@ import java.io.ByteArrayOutputStream
 /**
  * Interface for handling image compression formats.
  */
-interface ImageCompression {
+internal interface ImageCompression {
 
     /**
      * Get the mimetype for the image format.

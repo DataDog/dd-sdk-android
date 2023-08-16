@@ -23,6 +23,7 @@ import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64LRUCache
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
 import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
+import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.BasePickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
@@ -47,6 +48,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.UnsupportedVie
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewScreenshotWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 
 /**
@@ -81,10 +83,16 @@ enum class SessionReplayPrivacy {
     @Suppress("LongMethod")
     internal fun mappers(): List<MapperTypeWrapper> {
         val base64Serializer = buildBase64Serializer()
+        val imageWireframeHelper = ImageWireframeHelper(base64Serializer = base64Serializer)
+        val uniqueIdentifierGenerator = UniqueIdentifierGenerator
 
         val viewWireframeMapper = ViewWireframeMapper()
         val unsupportedViewMapper = UnsupportedViewMapper()
-        val imageButtonMapper = ImageButtonMapper(base64Serializer = base64Serializer)
+        val imageButtonMapper = ImageButtonMapper(
+            base64Serializer = base64Serializer,
+            imageWireframeHelper = imageWireframeHelper,
+            uniqueIdentifierGenerator = uniqueIdentifierGenerator
+        )
         val imageMapper: ViewScreenshotWireframeMapper
         val textMapper: TextViewMapper
         val buttonMapper: ButtonMapper

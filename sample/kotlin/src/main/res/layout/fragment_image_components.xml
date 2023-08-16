@@ -185,14 +185,32 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="160dp"
+                android:layout_height="80dp"
                 android:orientation="horizontal"
                 android:gravity="center"
                 >
 
-                <androidx.appcompat.widget.AppCompatImageButton
+                <ImageButton
                     android:id="@+id/imageButtonBundled"
-                    android:layout_width="160dp"
+                    android:layout_width="80dp"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_dd_icon_rgb"
+                    android:contentDescription="@string/title_imagebuttons"
+                    />
+
+                <ImageButton
+                    android:id="@+id/imageButtonBundledStatelist"
+                    android:layout_width="80dp"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_dd_statelist"
+                    android:contentDescription="@string/title_imagebuttons"
+                    />
+
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/appCompatImageButtonBundled"
+                    android:layout_width="80dp"
                     android:layout_height="match_parent"
                     android:scaleType="centerCrop"
                     android:src="@drawable/ic_dd_icon_rgb"
@@ -200,11 +218,38 @@
                     />
 
                 <androidx.appcompat.widget.AppCompatImageButton
-                    android:id="@+id/imageButtonBundledStatelist"
-                    android:layout_width="160dp"
+                    android:id="@+id/appCompatImageButtonBundledStatelist"
+                    android:layout_width="80dp"
                     android:layout_height="match_parent"
                     android:scaleType="centerCrop"
                     android:src="@drawable/ic_dd_statelist"
+                    android:contentDescription="@string/title_imagebuttons"
+                    />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:orientation="horizontal"
+                android:gravity="center"
+                >
+
+                <ImageButton
+                    android:id="@+id/imageButtonRemote"
+                    android:layout_width="80dp"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_dd_icon_rgb"
+                    android:contentDescription="@string/title_imagebuttons"
+                    />
+
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/appCompatImageButtonRemote"
+                    android:layout_width="80dp"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_dd_icon_rgb"
                     android:contentDescription="@string/title_imagebuttons"
                     />
 
@@ -219,16 +264,38 @@
 
                 <ImageButton
                     android:id="@+id/imageButtonWithShapeOval"
-                    android:layout_width="160dp"
-                    android:layout_height="160dp"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
                     android:src="@drawable/ic_dd_shape_oval"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="@string/title_imagebuttons"
                     />
 
                 <ImageButton
                     android:id="@+id/imageButtonWithShapeRect"
-                    android:layout_width="160dp"
-                    android:layout_height="160dp"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
                     android:src="@drawable/ic_dd_shape_rect"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="@string/title_imagebuttons"
+                    />
+
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/appCompatImageButtonWithShapeOval"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:src="@drawable/ic_dd_shape_oval"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="@string/title_imagebuttons"
+                    />
+
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/appCompatImageButtonWithShapeRect"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:src="@drawable/ic_dd_shape_rect"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="@string/title_imagebuttons"
                     />
 
             </LinearLayout>

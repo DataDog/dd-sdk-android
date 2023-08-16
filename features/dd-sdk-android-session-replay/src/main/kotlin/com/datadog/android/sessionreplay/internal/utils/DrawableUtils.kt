@@ -7,16 +7,17 @@
 
 package com.datadog.android.sessionreplay.internal.utils
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
+import android.widget.ImageView
+import android.widget.ImageView.ScaleType
 import androidx.annotation.MainThread
-import androidx.annotation.VisibleForTesting
 import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
+import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
 import kotlin.math.sqrt
@@ -34,14 +35,11 @@ internal class DrawableUtils(
     @MainThread
     @Suppress("ReturnCount")
     internal fun createBitmapOfApproxSizeFromDrawable(
-        applicationContext: Context,
         drawable: Drawable,
         displayMetrics: DisplayMetrics,
         requestedSizeInBytes: Int = MAX_BITMAP_SIZE_IN_BYTES,
         config: Config = Config.ARGB_8888
     ): Bitmap? {
-        registerBitmapPoolForCallbacks(applicationContext)
-
         val (width, height) = getScaledWidthAndHeight(drawable, requestedSizeInBytes)
 
         val bitmap = getBitmapBySize(displayMetrics, width, height, config) ?: return null
@@ -54,6 +52,53 @@ internal class DrawableUtils(
         drawable.setBounds(0, 0, canvas.width, canvas.height)
         drawable.draw(canvas)
         return bitmap
+    }
+
+    internal fun getDrawableScaledDimensions(
+        view: ImageView,
+        drawable: Drawable,
+        density: Float
+    ): DrawableDimensions {
+        val viewWidth = view.width.densityNormalized(density).toLong()
+        val viewHeight = view.height.densityNormalized(density).toLong()
+        val drawableWidth = drawable.intrinsicWidth.densityNormalized(density).toLong()
+        val drawableHeight = drawable.intrinsicHeight.densityNormalized(density).toLong()
+
+        val scaleType = view.scaleType ?: return DrawableDimensions(
+            width = drawableWidth,
+            height = drawableHeight
+        )
+
+        val scaledDrawableWidth: Long
+        val scaledDrawableHeight: Long
+
+        when (scaleType) {
+            ScaleType.FIT_START,
+            ScaleType.FIT_END,
+            ScaleType.FIT_CENTER,
+            ScaleType.CENTER_INSIDE,
+            ScaleType.CENTER,
+            ScaleType.MATRIX -> {
+                // TODO: REPLAY-1974 Implement remaining scaletype methods
+                scaledDrawableWidth = drawableWidth
+                scaledDrawableHeight = drawableHeight
+            }
+            ScaleType.FIT_XY -> {
+                scaledDrawableWidth = viewWidth
+                scaledDrawableHeight = viewHeight
+            }
+            ScaleType.CENTER_CROP -> {
+                if (drawableWidth * viewHeight > viewWidth * drawableHeight) {
+                    scaledDrawableWidth = viewWidth
+                    scaledDrawableHeight = (viewWidth * drawableHeight) / drawableWidth
+                } else {
+                    scaledDrawableHeight = viewHeight
+                    scaledDrawableWidth = (viewHeight * drawableWidth) / drawableHeight
+                }
+            }
+        }
+
+        return DrawableDimensions(scaledDrawableWidth, scaledDrawableHeight)
     }
 
     private fun getScaledWidthAndHeight(
@@ -91,21 +136,8 @@ internal class DrawableUtils(
         bitmapPool?.getBitmapByProperties(width, height, config)
             ?: bitmapWrapper.createBitmap(displayMetrics, width, height, config)
 
-    @MainThread
-    private fun registerBitmapPoolForCallbacks(applicationContext: Context) {
-        if (isBitmapPoolRegisteredForCallbacks) return
-
-        applicationContext.registerComponentCallbacks(bitmapPool)
-        isBitmapPoolRegisteredForCallbacks = true
-    }
-
     internal companion object {
         private const val MAX_BITMAP_SIZE_IN_BYTES = 10240 // 10kb
         private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
-
-        // The cache is a singleton, so we want to share this flag among
-        // all instances so that it's registered only once
-        @VisibleForTesting
-        internal var isBitmapPoolRegisteredForCallbacks: Boolean = false
     }
 }

@@ -359,6 +359,7 @@ datadog:
       - "android.webkit.WebViewClient.onReceivedSslError(android.webkit.WebView, android.webkit.SslErrorHandler, android.net.http.SslError)"
       # endregion
       # region Android View APIs
+      - "android.widget.ImageView.getScaleType()"
       - "android.widget.FrameLayout.LayoutParams.constructor(kotlin.Int, kotlin.Int)"
       - "android.widget.FrameLayout.removeView(android.view.View)"
       - "android.widget.LinearLayout.constructor(android.content.Context)"
@@ -862,6 +863,7 @@ datadog:
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.model.MobileSegment, com.google.gson.JsonObject)"
       - "kotlin.Pair.constructor(com.google.gson.JsonObject, kotlin.Long)"
       - "kotlin.Pair.constructor(kotlin.Int, kotlin.Int)"
+      - "kotlin.Pair.constructor(kotlin.Long, kotlin.Long)"
       - "kotlin.Triple.constructor(kotlin.String, kotlin.String, kotlin.String)"
       - "kotlin.Triple.constructor(kotlin.Nothing?, kotlin.Nothing?, kotlin.Nothing?)"
       # endregion
