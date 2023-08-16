@@ -4485,7 +4485,7 @@ public final class com/datadog/android/rum/tracking/ActivityViewTrackingStrategy
 	public synthetic fun <init> (ZLcom/datadog/android/rum/tracking/ComponentPredicate;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
-	public fun onActivityPaused (Landroid/app/Activity;)V
+	public fun onActivityPostStopped (Landroid/app/Activity;)V
 	public fun onActivityResumed (Landroid/app/Activity;)V
 }
 

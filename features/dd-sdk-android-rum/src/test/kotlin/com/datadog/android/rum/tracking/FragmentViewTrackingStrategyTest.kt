@@ -163,7 +163,8 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
 
         // When
         argumentCaptor.firstValue.onFragmentResumed(mockAndroidxFragmentManager, mockFragment)
-        argumentCaptor.firstValue.onFragmentPaused(mockAndroidxFragmentManager, mockFragment)
+        argumentCaptor.firstValue.onFragmentStopped(mockAndroidxFragmentManager, mockFragment)
+        Thread.sleep(250)
 
         // Then
         inOrder(rumMonitor.mockInstance) {
@@ -212,7 +213,8 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
 
         // When
         argumentCaptor.firstValue.onFragmentResumed(mockAndroidxFragmentManager, mockFragment)
-        argumentCaptor.firstValue.onFragmentPaused(mockAndroidxFragmentManager, mockFragment)
+        argumentCaptor.firstValue.onFragmentStopped(mockAndroidxFragmentManager, mockFragment)
+        Thread.sleep(250)
 
         // Then
         verifyNoInteractions(rumMonitor.mockInstance)
@@ -242,7 +244,8 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
 
         // When
         argumentCaptor.firstValue.onFragmentResumed(mockAndroidxFragmentManager, mockFragment)
-        argumentCaptor.firstValue.onFragmentPaused(mockAndroidxFragmentManager, mockFragment)
+        argumentCaptor.firstValue.onFragmentStopped(mockAndroidxFragmentManager, mockFragment)
+        Thread.sleep(250)
 
         // Then
         inOrder(rumMonitor.mockInstance) {
@@ -357,7 +360,8 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
 
         // When
         argumentCaptor.firstValue.onFragmentResumed(mockDefaultFragmentManager, mockFragment)
-        argumentCaptor.firstValue.onFragmentPaused(mockDefaultFragmentManager, mockFragment)
+        argumentCaptor.firstValue.onFragmentStopped(mockDefaultFragmentManager, mockFragment)
+        Thread.sleep(250)
 
         // Then
         inOrder(rumMonitor.mockInstance) {
@@ -408,7 +412,8 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
 
         // When
         argumentCaptor.firstValue.onFragmentResumed(mockDefaultFragmentManager, mockFragment)
-        argumentCaptor.firstValue.onFragmentPaused(mockDefaultFragmentManager, mockFragment)
+        argumentCaptor.firstValue.onFragmentStopped(mockDefaultFragmentManager, mockFragment)
+        Thread.sleep(250)
 
         // Then
         verifyNoInteractions(rumMonitor.mockInstance)
@@ -440,7 +445,8 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
 
         // When
         argumentCaptor.firstValue.onFragmentResumed(mockDefaultFragmentManager, mockFragment)
-        argumentCaptor.firstValue.onFragmentPaused(mockDefaultFragmentManager, mockFragment)
+        argumentCaptor.firstValue.onFragmentStopped(mockDefaultFragmentManager, mockFragment)
+        Thread.sleep(250)
 
         // Then
         inOrder(rumMonitor.mockInstance) {

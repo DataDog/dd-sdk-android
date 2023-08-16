@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.tracking
 
 import android.os.Bundle
+import androidx.annotation.MainThread
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -14,11 +15,15 @@ import androidx.fragment.app.FragmentManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
+import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 internal open class AndroidXFragmentLifecycleCallbacks(
     internal val argumentsProvider: (Fragment) -> Map<String, Any?>,
@@ -28,6 +33,9 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 ) : FragmentLifecycleCallbacks<FragmentActivity>, FragmentManager.FragmentLifecycleCallbacks() {
 
     protected lateinit var sdkCore: FeatureSdkCore
+    private val executor: ScheduledExecutorService by lazy {
+        LoggingScheduledThreadPoolExecutor(1, internalLogger)
+    }
 
     private val internalLogger: InternalLogger
         get() = if (this::sdkCore.isInitialized) {
@@ -51,6 +59,7 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 
     // TODO: RUMM-0000 Update Androidx packages and handle deprecated APIs
     @Suppress("DEPRECATION")
+    @MainThread
     override fun onFragmentActivityCreated(
         fm: FragmentManager,
         f: Fragment,
@@ -67,6 +76,7 @@ internal open class AndroidXFragmentLifecycleCallbacks(
         }
     }
 
+    @MainThread
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
         componentPredicate.runIfValid(f, internalLogger) {
@@ -77,11 +87,19 @@ internal open class AndroidXFragmentLifecycleCallbacks(
         }
     }
 
-    override fun onFragmentPaused(fm: FragmentManager, f: Fragment) {
-        super.onFragmentPaused(fm, f)
-        componentPredicate.runIfValid(f, internalLogger) {
-            val key = resolveKey(it)
-            rumMonitor.stopView(key)
+    @MainThread
+    override fun onFragmentStopped(fm: FragmentManager, f: Fragment) {
+        super.onFragmentStopped(fm, f)
+        executor.scheduleSafe(
+            "Delayed view stop",
+            STOP_VIEW_DELAY_MS,
+            TimeUnit.MILLISECONDS,
+            sdkCore.internalLogger
+        ) {
+            componentPredicate.runIfValid(f, internalLogger) {
+                val key = resolveKey(it)
+                rumMonitor.stopView(key)
+            }
         }
     }
 
@@ -94,4 +112,8 @@ internal open class AndroidXFragmentLifecycleCallbacks(
     }
 
     // endregion
+
+    companion object {
+        private const val STOP_VIEW_DELAY_MS = 150L
+    }
 }

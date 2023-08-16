@@ -24,8 +24,6 @@ import java.lang.ref.WeakReference
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-
-
 internal class RumViewManagerScope(
     private val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,

@@ -14,11 +14,15 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
+import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
+import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 @Suppress("DEPRECATION")
 @RequiresApi(Build.VERSION_CODES.O)
@@ -31,6 +35,9 @@ internal class OreoFragmentLifecycleCallbacks(
 ) : FragmentLifecycleCallbacks<Activity>, FragmentManager.FragmentLifecycleCallbacks() {
 
     private lateinit var sdkCore: FeatureSdkCore
+    private val executor: ScheduledExecutorService by lazy {
+        LoggingScheduledThreadPoolExecutor(1, internalLogger)
+    }
 
     private val internalLogger: InternalLogger
         get() = if (this::sdkCore.isInitialized) {
@@ -85,12 +92,18 @@ internal class OreoFragmentLifecycleCallbacks(
         }
     }
 
-    override fun onFragmentPaused(fm: FragmentManager, f: Fragment) {
-        super.onFragmentPaused(fm, f)
+    override fun onFragmentStopped(fm: FragmentManager, f: Fragment) {
+        super.onFragmentStopped(fm, f)
         if (isNotAViewFragment(f)) return
-
-        componentPredicate.runIfValid(f, internalLogger) {
-            rumMonitor.stopView(it)
+        executor.scheduleSafe(
+            "Delayed view stop",
+            STOP_VIEW_DELAY_MS,
+            TimeUnit.MILLISECONDS,
+            sdkCore.internalLogger
+        ) {
+            componentPredicate.runIfValid(f, internalLogger) {
+                rumMonitor.stopView(it)
+            }
         }
     }
 
@@ -104,6 +117,7 @@ internal class OreoFragmentLifecycleCallbacks(
 
     private companion object {
         private const val REPORT_FRAGMENT_NAME = "androidx.lifecycle.ReportFragment"
+        private const val STOP_VIEW_DELAY_MS = 150L
     }
 
     // endregion

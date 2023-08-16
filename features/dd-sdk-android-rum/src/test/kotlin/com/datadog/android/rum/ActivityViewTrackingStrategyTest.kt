@@ -27,6 +27,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -212,7 +213,7 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 stop RUM View 𝕎 onActivityPaused() { first display }`() {
+    fun `𝕄 not stop RUM View 𝕎 onActivityPaused() { first display }`() {
         // Given
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
@@ -220,20 +221,52 @@ internal class ActivityViewTrackingStrategyTest :
 
         // When
         testedStrategy.onActivityPaused(mockActivity)
+        Thread.sleep(250)
+
+        // Then
+        verify(rumMonitor.mockInstance, never()).stopView(mockActivity, emptyMap())
+    }
+
+    @Test
+    fun `𝕄 not stop RUM View 𝕎 onActivityPaused() { redisplay }`() {
+        // Given
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
+        whenever(mockPredicate.accept(mockActivity)) doReturn true
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
+
+        // When
+        testedStrategy.onActivityPaused(mockActivity)
+        Thread.sleep(250)
+
+        // Then
+        verify(rumMonitor.mockInstance, never()).stopView(mockActivity, emptyMap())
+    }
+
+    @Test
+    fun `𝕄 stop RUM View 𝕎 onActivityPostStopped() { first display }`() {
+        // Given
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
+        whenever(mockPredicate.accept(mockActivity)) doReturn true
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
+
+        // When
+        testedStrategy.onActivityPostStopped(mockActivity)
+        Thread.sleep(250)
 
         // Then
         verify(rumMonitor.mockInstance).stopView(mockActivity, emptyMap())
     }
 
     @Test
-    fun `𝕄 stop RUM View 𝕎 onActivityPaused() { redisplay }`() {
+    fun `𝕄 stop RUM View 𝕎 onActivityPostStopped() { redisplay }`() {
         // Given
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
         testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
-        testedStrategy.onActivityPaused(mockActivity)
+        testedStrategy.onActivityPostStopped(mockActivity)
+        Thread.sleep(250)
 
         // Then
         verify(rumMonitor.mockInstance).stopView(mockActivity, emptyMap())
