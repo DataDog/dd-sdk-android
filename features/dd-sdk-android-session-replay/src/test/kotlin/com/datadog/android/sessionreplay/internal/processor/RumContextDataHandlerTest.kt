@@ -11,6 +11,7 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -23,9 +24,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
@@ -100,16 +98,11 @@ internal class RumContextDataHandlerTest {
 
         // Then
         assertThat(rumContextData).isNull()
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.MAINTAINER),
-                capture(),
-                eq(null),
-                eq(false)
-            )
-            assertThat(firstValue.invoke()).isEqualTo(expectedLogMessage)
-        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            expectedLogMessage
+        )
     }
 
     @Test
@@ -132,15 +125,10 @@ internal class RumContextDataHandlerTest {
 
         // Then
         assertThat(rumContextData?.prevRumContext).isEqualTo(fakeRumContext)
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.MAINTAINER),
-                capture(),
-                eq(null),
-                eq(false)
-            )
-            assertThat(firstValue.invoke()).isEqualTo(expectedLogMessage)
-        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            expectedLogMessage
+        )
     }
 }

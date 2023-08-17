@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.gson
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.utils.verifyLog
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
@@ -22,10 +23,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.argThat
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -57,16 +54,11 @@ internal class GsonExtTest {
 
         // Then
         assertThat(fakeJsonArray.safeGetAsJsonObject(mockInternalLogger)).isNull()
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.TELEMETRY),
-                capture(),
-                eq(null),
-                eq(false)
-            )
-            assertThat(firstValue.invoke()).isEqualTo(expectedLogMessage)
-        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            expectedLogMessage
+        )
     }
 
     @Test
@@ -81,16 +73,11 @@ internal class GsonExtTest {
 
         // Then
         assertThat(fakeJsonPrimitive.safeGetAsJsonObject(mockInternalLogger)).isNull()
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.TELEMETRY),
-                capture(),
-                eq(null),
-                eq(false)
-            )
-            assertThat(firstValue.invoke()).isEqualTo(expectedLogMessage)
-        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            expectedLogMessage
+        )
     }
 
     // endregion
@@ -112,16 +99,11 @@ internal class GsonExtTest {
             JSON_ARRAY_TYPE
         )
         assertThat(fakeJsonPrimitive.safeGetAsJsonArray(mockInternalLogger)).isNull()
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.TELEMETRY),
-                capture(),
-                eq(null),
-                eq(false)
-            )
-            assertThat(firstValue.invoke()).isEqualTo(expectedLogMessage)
-        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            expectedLogMessage
+        )
     }
 
     // endregion
@@ -149,18 +131,12 @@ internal class GsonExtTest {
 
         // Then
         assertThat(fakeNonLongJsonPrimitive.safeGetAsLong(mockInternalLogger)).isNull()
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.TELEMETRY),
-                capture(),
-                argThat {
-                    this::class.java == NumberFormatException::class.java
-                },
-                eq(false)
-            )
-            assertThat(firstValue.invoke()).isEqualTo(expectedLogMessage)
-        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            expectedLogMessage,
+            NumberFormatException::class.java
+        )
     }
 
     // endregion

@@ -16,6 +16,7 @@ import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -34,7 +35,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
@@ -145,19 +145,12 @@ internal class RecordedDataQueueHandlerTest {
         testedHandler.tryToConsumeItems()
 
         // Then
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.MAINTAINER),
-                capture(),
-                eq(fakeThrowable),
-                eq(false)
-            )
-            assertThat(firstValue.invoke())
-                .isEqualTo(
-                    RecordedDataQueueHandler.FAILED_TO_CONSUME_RECORDS_QUEUE_ERROR_MESSAGE
-                )
-        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            RecordedDataQueueHandler.FAILED_TO_CONSUME_RECORDS_QUEUE_ERROR_MESSAGE,
+            fakeThrowable
+        )
     }
 
     @ParameterizedTest
@@ -187,19 +180,12 @@ internal class RecordedDataQueueHandlerTest {
         testedHandler.addSnapshotItem(mockSystemInformation)
 
         // Then
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.MAINTAINER),
-                capture(),
-                eq(fakeThrowable),
-                eq(false)
-            )
-            assertThat(firstValue.invoke())
-                .isEqualTo(
-                    RecordedDataQueueHandler.FAILED_TO_ADD_RECORDS_TO_QUEUE_ERROR_MESSAGE
-                )
-        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            RecordedDataQueueHandler.FAILED_TO_ADD_RECORDS_TO_QUEUE_ERROR_MESSAGE,
+            fakeThrowable
+        )
     }
 
     @Test
