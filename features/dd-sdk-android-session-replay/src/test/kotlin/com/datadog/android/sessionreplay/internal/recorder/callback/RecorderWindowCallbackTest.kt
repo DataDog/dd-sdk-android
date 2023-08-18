@@ -22,6 +22,7 @@ import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileIncrementalData
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -38,7 +39,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -163,17 +163,12 @@ internal class RecorderWindowCallbackTest {
 
         // Then
         verify(mockWrappedCallback).dispatchTouchEvent(mockEvent)
-        argumentCaptor<() -> String>() {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                eq(fakeException),
-                eq(false)
-            )
-            assertThat(firstValue.invoke())
-                .isEqualTo(RecorderWindowCallback.FAIL_TO_PROCESS_MOTION_EVENT_ERROR_MESSAGE)
-        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            RecorderWindowCallback.FAIL_TO_PROCESS_MOTION_EVENT_ERROR_MESSAGE,
+            fakeException
+        )
     }
 
     @Test
@@ -183,17 +178,11 @@ internal class RecorderWindowCallbackTest {
 
         // Then
         assertThat(testedWindowCallback.pointerInteractions).isEmpty()
-        argumentCaptor<() -> String>() {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                eq(null),
-                eq(false)
-            )
-            assertThat(firstValue.invoke())
-                .isEqualTo(RecorderWindowCallback.MOTION_EVENT_WAS_NULL_ERROR_MESSAGE)
-        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            RecorderWindowCallback.MOTION_EVENT_WAS_NULL_ERROR_MESSAGE
+        )
     }
 
     @Test

@@ -588,7 +588,8 @@ internal class MutationResolverTest {
                 eq(InternalLogger.Target.MAINTAINER),
                 capture(),
                 eq(null),
-                eq(false)
+                eq(false),
+                eq(null)
             )
         }
         mutationTestData.prevSnapshot.forEachIndexed { index, wireframe ->
