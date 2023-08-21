@@ -6,8 +6,8 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.core.configuration.DataUploadConfiguration
 import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 

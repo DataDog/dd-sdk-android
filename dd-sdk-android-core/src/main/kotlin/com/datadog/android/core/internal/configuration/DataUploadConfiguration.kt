@@ -4,7 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.configuration
+package com.datadog.android.core.internal.configuration
+
+import com.datadog.android.core.configuration.UploadFrequency
 
 internal data class DataUploadConfiguration(internal val frequency: UploadFrequency) {
     internal val minDelayMs = MIN_DELAY_FACTOR * frequency.baseStepMs

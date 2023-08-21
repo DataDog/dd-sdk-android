@@ -45,6 +45,26 @@ internal class Configurator :
         forge.addFactory(DatadogContextForgeryFactory())
         forge.addFactory(DataUploadConfigurationForgeryFactory())
 
+        // UploadStatus
+        forge.addFactory(HttpRedirectStatusForgeryFactory())
+        forge.addFactory(HttpClientRateLimitingStatusForgeryFactory())
+        forge.addFactory(HttpClientErrorForgeryFactory())
+        forge.addFactory(HttpServerErrorForgeryFactory())
+        forge.addFactory(InvalidTokenErrorStatusForgeryFactory())
+        forge.addFactory(NetworkErrorStatusForgeryFactory())
+        forge.addFactory(RequestCreationErrorStatusForgeryFactory())
+        forge.addFactory(SuccessStatusForgeryFactory())
+        forge.addFactory(UnknownErrorStatusForgeryFactory())
+        forge.addFactory(UnknownStatusForgeryFactory())
+
+        // RemovalReason
+        forge.addFactory(RemovalReasonFlushedForgeryFactory())
+        forge.addFactory(RemovalReasonPurgedForgeryFactory())
+        forge.addFactory(RemovalReasonInvalidForgeryFactory())
+        forge.addFactory(RemovalReasonObsoleteForgeryFactory())
+        forge.addFactory(RemovalReasonIntakeCodeForgeryFactory())
+        forge.addFactory(RemovalReasonForgeryFactory())
+
         forge.useJvmFactories()
     }
 }

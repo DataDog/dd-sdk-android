@@ -16,8 +16,8 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.configuration.BatchSize
-import com.datadog.android.core.configuration.DataUploadConfiguration
 import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler

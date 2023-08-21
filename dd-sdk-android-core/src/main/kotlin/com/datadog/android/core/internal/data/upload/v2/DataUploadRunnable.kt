@@ -10,10 +10,12 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
-import com.datadog.android.core.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.UploadRunnable
+import com.datadog.android.core.internal.data.upload.UploadStatus
+import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.persistence.Storage
@@ -114,8 +116,12 @@ internal class DataUploadRunnable(
         batchMeta: ByteArray?
     ) {
         val status = dataUploader.upload(context, batch, batchMeta)
-
-        storage.confirmBatchRead(batchId) {
+        val removalReason = if (status is UploadStatus.RequestCreationError) {
+            RemovalReason.Invalid
+        } else {
+            RemovalReason.IntakeCode(status.code)
+        }
+        storage.confirmBatchRead(batchId, removalReason) {
             if (status.shouldRetry) {
                 it.markAsRead(false)
                 increaseInterval()

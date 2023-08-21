@@ -9,10 +9,8 @@ package com.datadog.android.core.internal.data.upload.v2
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.internal.data.upload.UploadStatus
 
-internal interface DataUploader {
-    fun upload(
-        context: DatadogContext,
-        batch: List<ByteArray>,
-        batchMeta: ByteArray?
-    ): UploadStatus
+internal class NoOpDataUploader : DataUploader {
+    override fun upload(context: DatadogContext, batch: List<ByteArray>, batchMeta: ByteArray?): UploadStatus {
+        return UploadStatus.UnknownStatus
+    }
 }

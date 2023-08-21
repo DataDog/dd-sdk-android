@@ -6,7 +6,8 @@
 
 package com.datadog.android.core.internal.data.upload
 
-internal interface DataUploader {
-
-    fun upload(data: ByteArray): UploadStatus
+internal interface NoOpDataUploader : DataUploader {
+    override fun upload(data: ByteArray): UploadStatus {
+        return UploadStatus.UnknownStatus
+    }
 }

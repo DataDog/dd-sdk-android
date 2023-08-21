@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.data.upload.v2
 
-import com.datadog.android.core.configuration.DataUploadConfiguration
+import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
