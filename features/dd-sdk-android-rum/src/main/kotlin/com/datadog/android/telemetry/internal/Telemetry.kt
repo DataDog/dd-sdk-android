@@ -39,4 +39,8 @@ internal class Telemetry(
         (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)
             ?.sendDebugTelemetryEvent(message, additionalProperties)
     }
+    fun metric(message: String, additionalProperties: Map<String, Any?>? = null) {
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)
+            ?.sendMetricEvent(message, additionalProperties)
+    }
 }

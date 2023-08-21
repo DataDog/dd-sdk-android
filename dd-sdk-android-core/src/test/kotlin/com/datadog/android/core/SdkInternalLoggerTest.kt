@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.forge.aThrowable
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -23,6 +24,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -442,6 +444,53 @@ internal class SdkInternalLoggerTest {
                     "message" to fakeMessage
                 )
             )
+    }
+
+    @Test
+    fun `𝕄 send metric 𝕎 metric()`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        val fakeAdditionalProperties = forge.exhaustiveAttributes()
+        val mockLambda: () -> String = mock()
+        whenever(mockLambda.invoke()) doReturn fakeMessage
+        // When
+        testedInternalLogger.logMetric(
+            mockLambda,
+            fakeAdditionalProperties
+        )
+
+        // Then
+        verify(mockRumFeatureScope)
+            .sendEvent(
+                mapOf(
+                    "type" to "mobile_metric",
+                    "message" to fakeMessage,
+                    "additionalProperties" to fakeAdditionalProperties
+                )
+            )
+    }
+
+    @Test
+    fun `𝕄 do nothing metric 𝕎 metric { rum feature not initialized }`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
+        val fakeAdditionalProperties = forge.exhaustiveAttributes()
+        val mockLambda: () -> String = mock()
+        whenever(mockLambda.invoke()) doReturn fakeMessage
+        // When
+        assertDoesNotThrow {
+            testedInternalLogger.logMetric(
+                mockLambda,
+                fakeAdditionalProperties
+            )
+        }
     }
 
     private fun InternalLogger.Level.toLogLevel(): Int {

@@ -74,6 +74,21 @@ internal class TelemetryTest {
             .sendDebugTelemetryEvent(message, fakeAdditionalProperties)
     }
 
+    @Test
+    fun `𝕄 report metric event 𝕎 metric()`(
+        @StringForgery message: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
+        // When
+        testedTelemetry.metric(message, fakeAdditionalProperties)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .sendMetricEvent(message, fakeAdditionalProperties)
+    }
+
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
 

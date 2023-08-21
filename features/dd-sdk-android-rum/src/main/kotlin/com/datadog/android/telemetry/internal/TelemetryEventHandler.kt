@@ -113,7 +113,7 @@ internal class TelemetryEventHandler(
 
         val eventIdentity = event.identity
 
-        if (seenInCurrentSession.contains(eventIdentity)) {
+        if (!event.isMetric && seenInCurrentSession.contains(eventIdentity)) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.MAINTAINER,

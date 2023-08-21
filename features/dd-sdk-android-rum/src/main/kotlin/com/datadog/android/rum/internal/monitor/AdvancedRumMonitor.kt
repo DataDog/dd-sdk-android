@@ -54,6 +54,11 @@ internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
         kind: String?
     )
 
+    fun sendMetricEvent(
+        message: String,
+        additionalProperties: Map<String, Any?>?
+    )
+
     @Suppress("FunctionMaxLength")
     fun sendConfigurationTelemetryEvent(coreConfiguration: TelemetryCoreConfiguration)
 

@@ -1125,6 +1125,69 @@ internal class RumFeatureTest {
     }
 
     @Test
+    fun `𝕄 handle metric event 𝕎 onReceive()`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeAdditionalProperties = forge.exhaustiveAttributes()
+        testedFeature.onInitialize(appContext.mockInstance)
+        val event = mapOf(
+            "type" to RumFeature.MOBILE_METRIC_MESSAGE_TYPE,
+            "message" to fakeMessage,
+            "additionalProperties" to fakeAdditionalProperties
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(mockRumMonitor).sendMetricEvent(fakeMessage, fakeAdditionalProperties)
+        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `𝕄 handle metric event 𝕎 onReceive(){no additionalProperties}`(
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val event = mapOf(
+            "type" to RumFeature.MOBILE_METRIC_MESSAGE_TYPE,
+            "message" to fakeMessage
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(mockRumMonitor).sendMetricEvent(fakeMessage, null)
+        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `𝕄 handle metric event 𝕎 onReceive(){no message}`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val event = mapOf(
+            "type" to RumFeature.MOBILE_METRIC_MESSAGE_TYPE
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
+        )
+        verifyNoInteractions(mockRumMonitor)
+    }
+
+    @Test
     fun `𝕄 log warning 𝕎 onReceive() { telemetry error + message is missing }`() {
         // Given
         val event = mapOf(

@@ -1399,6 +1399,7 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.stack).isNull()
             assertThat(lastValue.kind).isNull()
             assertThat(lastValue.coreConfiguration).isNull()
+            assertThat(lastValue.isMetric).isFalse
             assertThat(lastValue.additionalProperties).isEqualTo(fakeAdditionalProperties)
         }
     }
@@ -1422,6 +1423,7 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.type).isEqualTo(TelemetryType.ERROR)
             assertThat(lastValue.stack).isEqualTo(stackTrace)
             assertThat(lastValue.kind).isEqualTo(kind)
+            assertThat(lastValue.isMetric).isFalse
             assertThat(lastValue.coreConfiguration).isNull()
         }
     }
@@ -1445,6 +1447,7 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.type).isEqualTo(TelemetryType.ERROR)
             assertThat(lastValue.stack).isEqualTo(throwable?.loggableStackTrace())
             assertThat(lastValue.kind).isEqualTo(throwable?.javaClass?.canonicalName)
+            assertThat(lastValue.isMetric).isFalse
             assertThat(lastValue.coreConfiguration).isNull()
         }
     }
@@ -1466,7 +1469,57 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.type).isEqualTo(TelemetryType.CONFIGURATION)
             assertThat(lastValue.stack).isNull()
             assertThat(lastValue.kind).isNull()
+            assertThat(lastValue.isMetric).isFalse
             assertThat(lastValue.coreConfiguration).isSameAs(fakeConfiguration)
+        }
+    }
+
+    @Test
+    fun `M handle metric event W sendMetricEvent()`(
+        @StringForgery message: String,
+        forge: Forge
+    ) {
+        // When
+        val fakeAdditionalProperties = forge.exhaustiveAttributes()
+        testedMonitor.sendMetricEvent(message, fakeAdditionalProperties)
+
+        // Then
+        argumentCaptor<RumRawEvent.SendTelemetry> {
+            verify(mockTelemetryEventHandler).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            assertThat(lastValue.message).isEqualTo(message)
+            assertThat(lastValue.type).isEqualTo(TelemetryType.DEBUG)
+            assertThat(lastValue.stack).isNull()
+            assertThat(lastValue.kind).isNull()
+            assertThat(lastValue.coreConfiguration).isNull()
+            assertThat(lastValue.isMetric).isTrue
+            assertThat(lastValue.additionalProperties)
+                .containsExactlyInAnyOrderEntriesOf(fakeAdditionalProperties)
+        }
+    }
+
+    @Test
+    fun `M handle metric event W sendMetricEvent(){additionalProperties is null}`(
+        @StringForgery message: String
+    ) {
+        // When
+        testedMonitor.sendMetricEvent(message, null)
+
+        // Then
+        argumentCaptor<RumRawEvent.SendTelemetry> {
+            verify(mockTelemetryEventHandler).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            assertThat(lastValue.message).isEqualTo(message)
+            assertThat(lastValue.type).isEqualTo(TelemetryType.DEBUG)
+            assertThat(lastValue.stack).isNull()
+            assertThat(lastValue.kind).isNull()
+            assertThat(lastValue.coreConfiguration).isNull()
+            assertThat(lastValue.isMetric).isTrue
+            assertThat(lastValue.additionalProperties).isNull()
         }
     }
 
@@ -1485,6 +1538,7 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.type).isEqualTo(TelemetryType.INTERCEPTOR_SETUP)
             assertThat(lastValue.stack).isNull()
             assertThat(lastValue.kind).isNull()
+            assertThat(lastValue.isMetric).isFalse
             assertThat(lastValue.coreConfiguration).isNull()
         }
     }
