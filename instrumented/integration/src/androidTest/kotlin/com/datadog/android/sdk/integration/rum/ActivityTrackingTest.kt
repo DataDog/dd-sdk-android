@@ -108,7 +108,7 @@ internal abstract class ActivityTrackingTest :
 
         // activity on pause
         instrumentation.runOnMainSync {
-            instrumentation.callActivityOnPause(activity)
+            instrumentation.callActivityOnStop(activity)
         }
 
         return expectedEvents

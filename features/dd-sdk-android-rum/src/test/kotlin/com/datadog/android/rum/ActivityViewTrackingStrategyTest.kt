@@ -243,14 +243,14 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 stop RUM View 𝕎 onActivityPostStopped() { first display }`() {
+    fun `𝕄 stop RUM View 𝕎 onActivityStopped() { first display }`() {
         // Given
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
         testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
-        testedStrategy.onActivityPostStopped(mockActivity)
+        testedStrategy.onActivityStopped(mockActivity)
         Thread.sleep(250)
 
         // Then
@@ -258,14 +258,14 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 stop RUM View 𝕎 onActivityPostStopped() { redisplay }`() {
+    fun `𝕄 stop RUM View 𝕎 onActivityStopped() { redisplay }`() {
         // Given
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
         testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
-        testedStrategy.onActivityPostStopped(mockActivity)
+        testedStrategy.onActivityStopped(mockActivity)
         Thread.sleep(250)
 
         // Then

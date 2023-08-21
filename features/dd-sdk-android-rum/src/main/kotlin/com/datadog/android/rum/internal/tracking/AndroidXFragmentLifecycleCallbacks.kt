@@ -114,6 +114,6 @@ internal open class AndroidXFragmentLifecycleCallbacks(
     // endregion
 
     companion object {
-        private const val STOP_VIEW_DELAY_MS = 150L
+        private const val STOP_VIEW_DELAY_MS = 200L
     }
 }

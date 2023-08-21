@@ -54,8 +54,8 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
     }
 
     @MainThread
-    override fun onActivityPostStopped(activity: Activity) {
-        super.onActivityPostStopped(activity)
+    override fun onActivityStopped(activity: Activity) {
+        super.onActivityStopped(activity)
         executor.scheduleSafe(
             "Delayed view stop",
             STOP_VIEW_DELAY_MS,
@@ -101,6 +101,6 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
     // endregion
 
     internal companion object {
-        private const val STOP_VIEW_DELAY_MS = 150L
+        private const val STOP_VIEW_DELAY_MS = 200L
     }
 }

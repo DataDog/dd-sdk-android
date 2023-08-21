@@ -117,7 +117,7 @@ internal class OreoFragmentLifecycleCallbacks(
 
     private companion object {
         private const val REPORT_FRAGMENT_NAME = "androidx.lifecycle.ReportFragment"
-        private const val STOP_VIEW_DELAY_MS = 150L
+        private const val STOP_VIEW_DELAY_MS = 200L
     }
 
     // endregion
