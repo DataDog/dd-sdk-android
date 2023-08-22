@@ -6,20 +6,27 @@
 
 package com.datadog.android.sdk.integration.security
 
+import android.util.Log
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.log.Logger
+import com.datadog.android.log.Logs
+import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.security.Encryption
-import com.datadog.android.tracing.AndroidTracer
-import com.datadog.tools.unit.getStaticValue
+import com.datadog.android.sessionreplay.SessionReplay
+import com.datadog.android.sessionreplay.SessionReplayConfiguration
+import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.Trace
+import com.datadog.android.trace.TraceConfiguration
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import io.opentracing.Tracer
@@ -30,7 +37,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import java.io.File
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.Random
 import kotlin.experimental.inv
 
 @MediumTest
@@ -50,22 +57,37 @@ internal class EncryptionTest {
         val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
 
         val configuration = createSdkConfiguration()
-        val credentials = createCredentials()
 
-        Datadog.initialize(targetContext, credentials, configuration, TrackingConsent.PENDING)
+        Datadog.setVerbosity(Log.VERBOSE)
+        val sdkCore =
+            Datadog.initialize(targetContext, configuration, TrackingConsent.PENDING)
+        checkNotNull(sdkCore)
+        val featureActivations = mutableListOf(
+            {
+                val rumConfig =
+                    RumConfiguration.Builder(applicationId = forge.anAlphaNumericalString()).build()
+                Rum.enable(rumConfig, sdkCore)
+            },
+            { Logs.enable(LogsConfiguration.Builder().build(), sdkCore) },
+            { Trace.enable(TraceConfiguration.Builder().build(), sdkCore) },
+            {
+                val sessionReplayConfiguration = SessionReplayConfiguration
+                    .Builder(100f)
+                    .build()
+                SessionReplay.enable(sessionReplayConfiguration, sdkCore)
+            }
+        )
+        featureActivations.shuffled(Random(forge.seed)).forEach { it() }
 
-        val rumMonitor = RumMonitor.Builder().build()
-        GlobalRum.registerIfAbsent(rumMonitor)
-
-        val tracer = AndroidTracer.Builder().setBundleWithRumEnabled(true).build()
+        val tracer = AndroidTracer.Builder(sdkCore).setBundleWithRumEnabled(true).build()
         GlobalTracer.registerIfAbsent(tracer)
 
-        val logger = Logger.Builder()
+        val logger = Logger.Builder(sdkCore)
             .setBundleWithRumEnabled(true)
             .setBundleWithTraceEnabled(true)
             .build()
 
-        sendEventsForAllFeatures(rumMonitor, logger, tracer)
+        sendEventsForAllFeatures(GlobalRumMonitor.get(sdkCore), logger, tracer)
 
         flushAndShutdownExecutors()
         stopSdk()
@@ -99,7 +121,7 @@ internal class EncryptionTest {
 
             assertThat(files)
                 .overridingErrorMessage("Expecting ${directory.path} to contain files")
-                .isNotEmpty()
+                .isNotEmpty
 
             files.forEach { file ->
                 val content = file.readText()
@@ -116,15 +138,6 @@ internal class EncryptionTest {
 
     // region private
 
-    private fun createCredentials(): Credentials {
-        return Credentials(
-            clientToken = forge.anAlphaNumericalString(),
-            envName = forge.anAlphaNumericalString(),
-            variant = Credentials.NO_VARIANT,
-            rumApplicationId = forge.anAlphaNumericalString()
-        )
-    }
-
     private fun createSdkConfiguration(): Configuration {
         val encryption = object : Encryption {
             override fun encrypt(data: ByteArray): ByteArray {
@@ -138,10 +151,8 @@ internal class EncryptionTest {
 
         return Configuration
             .Builder(
-                logsEnabled = true,
-                tracesEnabled = true,
-                crashReportsEnabled = true,
-                rumEnabled = true
+                clientToken = forge.anAlphaNumericalString(),
+                env = forge.anAlphaNumericalString()
             )
             .setEncryption(encryption)
             .build()
@@ -163,7 +174,7 @@ internal class EncryptionTest {
             "https://${forge.anAlphaNumericalString()}.com"
         )
 
-        rumMonitor.addUserAction(
+        rumMonitor.addAction(
             RumActionType.CUSTOM,
             "rumAction-${forge.aString()}",
             emptyMap()
@@ -191,22 +202,24 @@ internal class EncryptionTest {
     }
 
     private fun stopSdk() {
-        invokeDatadogMethod("stop")
+        Datadog.stopInstance()
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        val isRumRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
-        isRumRegistered.set(false)
+        GlobalRumMonitor::class.java.getDeclaredMethod("reset").apply {
+            isAccessible = true
+            invoke(null)
+        }
     }
 
     private fun flushAndShutdownExecutors() {
         invokeDatadogMethod("flushAndShutdownExecutors")
     }
 
-    private fun invokeDatadogMethod(method: String) {
+    private fun invokeDatadogMethod(method: String, vararg arguments: Any?) {
         val instance = Datadog.javaClass.getDeclaredField("INSTANCE")
         instance.isAccessible = true
         val callMethod = Datadog.javaClass.declaredMethods.first { it.name.startsWith(method) }
         callMethod.isAccessible = true
-        callMethod.invoke(instance.get(null))
+        callMethod.invoke(instance.get(null), *arguments)
     }
 
     // endregion

@@ -21,6 +21,7 @@ import com.datadog.android.nightly.utils.defaultConfigurationBuilder
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measureSdkInitialize
 import com.datadog.android.rum.tracking.InteractionPredicate
+import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,23 +33,25 @@ internal class RumUserInteractionTrackingE2ETests {
     @get:Rule
     val nightlyTestRule = NightlyTestRule()
 
+    @get:Rule
+    val forge = ForgeRule()
+
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun trackUserInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
      */
     @Test
     fun rum_user_interaction_tracking_strategy() {
         measureSdkInitialize {
-            val config = defaultConfigurationBuilder(
-                logsEnabled = true,
-                tracesEnabled = true,
-                crashReportsEnabled = true,
-                rumEnabled = true
-            )
-                .trackInteractions()
-                .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = config
+                forgeSeed = forge.seed,
+                rumConfigProvider = {
+                    it.trackUserInteractions().build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
+                )
+                    .build()
             )
         }
         launch(UserInteractionTrackingActivity::class.java)
@@ -56,28 +59,27 @@ internal class RumUserInteractionTrackingE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun trackUserInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
      */
     @Test
     fun rum_user_interaction_tracking_strategy_custom_target_name() {
         measureSdkInitialize {
-            val config = defaultConfigurationBuilder(
-                logsEnabled = true,
-                tracesEnabled = true,
-                crashReportsEnabled = true,
-                rumEnabled = true
-            )
-                .trackInteractions(
-                    interactionPredicate = object : InteractionPredicate {
-                        override fun getTargetName(target: Any): String {
-                            return "UserInteractionTrackingCustomTargetName"
-                        }
-                    }
-                )
-                .build()
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = config
+                forgeSeed = forge.seed,
+                rumConfigProvider = {
+                    it.trackUserInteractions(
+                        interactionPredicate = object : InteractionPredicate {
+                            override fun getTargetName(target: Any): String {
+                                return "UserInteractionTrackingCustomTargetName"
+                            }
+                        }
+                    )
+                        .build()
+                },
+                config = defaultConfigurationBuilder(
+                    crashReportsEnabled = true
+                ).build()
             )
         }
         launch(UserInteractionCustomTargetActivity::class.java)

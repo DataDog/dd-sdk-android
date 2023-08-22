@@ -12,13 +12,20 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.ndk.NdkCrashReportsPlugin
+import com.datadog.android.log.Logs
+import com.datadog.android.log.LogsConfiguration
+import com.datadog.android.ndk.NdkCrashReports
+import com.datadog.android.nightly.BuildConfig
 import com.datadog.android.nightly.activities.CRASH_DELAY_MS
 import com.datadog.android.nightly.activities.HUNDRED_PERCENT
 import com.datadog.android.nightly.utils.NeverUseThatEncryption
-import com.datadog.android.plugin.Feature
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.rum.Rum
+import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.trace.Trace
+import com.datadog.android.trace.TraceConfiguration
 
 internal open class NdkCrashService : CrashService() {
 
@@ -31,8 +38,8 @@ internal open class NdkCrashService : CrashService() {
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         when (intent.action) {
             CRASH_HANDLER_DISABLED_SCENARIO -> {
-                startSdk(ndkCrashReportsEnabled = false)
-                initRum(intent.extras)
+                val sdkCore = startSdk(ndkCrashReportsEnabled = false)
+                initRum(sdkCore, intent.extras)
                 scheduleNdkCrash()
             }
             RUM_DISABLED_SCENARIO -> {
@@ -41,13 +48,13 @@ internal open class NdkCrashService : CrashService() {
                 // in the monitors
             }
             ENCRYPTION_ENABLED_SCENARIO -> {
-                startSdk(encryptionEnabled = true)
-                initRum(intent.extras)
+                val sdkCore = startSdk(encryptionEnabled = true)
+                initRum(sdkCore, intent.extras)
                 scheduleNdkCrash()
             }
             else -> {
-                startSdk()
-                initRum(intent.extras)
+                val sdkCore = startSdk()
+                initRum(sdkCore, intent.extras)
                 scheduleNdkCrash()
             }
         }
@@ -63,31 +70,40 @@ internal open class NdkCrashService : CrashService() {
         Handler(Looper.getMainLooper()).postDelayed({ simulateNdkCrash() }, CRASH_DELAY_MS)
     }
 
+    @Suppress("CheckInternal")
     private fun startSdk(
         ndkCrashReportsEnabled: Boolean = true,
         encryptionEnabled: Boolean = false,
         rumEnabled: Boolean = true
-    ) {
-        Datadog.setVerbosity(Log.VERBOSE)
+    ): SdkCore {
         val configBuilder = Configuration.Builder(
-            logsEnabled = true,
-            tracesEnabled = true,
-            crashReportsEnabled = true,
-            rumEnabled = rumEnabled
-        ).sampleTelemetry(HUNDRED_PERCENT)
-        if (ndkCrashReportsEnabled) {
-            @Suppress("DEPRECATION")
-            configBuilder.addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
-        }
+            clientToken = BuildConfig.NIGHTLY_TESTS_TOKEN,
+            env = "instrumentation",
+            variant = ""
+        )
+            .setCrashReportsEnabled(true)
         if (encryptionEnabled) {
             configBuilder.setEncryption(NeverUseThatEncryption())
         }
-        Datadog.initialize(
+        Datadog.setVerbosity(Log.VERBOSE)
+        val sdkCore = Datadog.initialize(
             this,
-            getCredentials(),
             configBuilder.build(),
             TrackingConsent.GRANTED
         )
+        checkNotNull(sdkCore)
+        if (rumEnabled) {
+            val rumConfig = RumConfiguration.Builder(rumApplicationId)
+                .setTelemetrySampleRate(HUNDRED_PERCENT)
+                .build()
+            Rum.enable(rumConfig, sdkCore)
+        }
+        Logs.enable(LogsConfiguration.Builder().build(), sdkCore)
+        Trace.enable(TraceConfiguration.Builder().build(), sdkCore)
+        if (ndkCrashReportsEnabled) {
+            NdkCrashReports.enable(sdkCore)
+        }
+        return sdkCore
     }
 
     // endregion

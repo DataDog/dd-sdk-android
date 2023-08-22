@@ -9,7 +9,6 @@ package com.datadog.android.nightly.rum
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.Datadog
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measureSdkInitialize
@@ -31,155 +30,164 @@ class GdprRumE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
      */
     @Test
     fun rum_config_consent_pending() {
         val testMethodName = "rum_config_consent_pending"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.PENDING
             )
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendRandomRumEvent(forge, sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
      */
     @Test
     fun rum_config_consent_granted() {
         val testMethodName = "rum_config_consent_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.GRANTED
             )
         }
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
      */
     @Test
     fun rum_config_consent_not_granted() {
         val testMethodName = "rum_config_consent_not_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.NOT_GRANTED
             )
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendRandomRumEvent(forge, sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun rum_config_consent_pending_to_granted() {
         val testMethodName = "rum_config_consent_pending_to_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.PENDING
             )
         }
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.GRANTED)
+            sdkCore.setTrackingConsent(TrackingConsent.GRANTED)
         }
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun rum_config_consent_pending_to_not_granted() {
         val testMethodName = "rum_config_consent_pending_to_not_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.PENDING
             )
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendRandomRumEvent(forge, sdkCore, testMethodName)
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.NOT_GRANTED)
+            sdkCore.setTrackingConsent(TrackingConsent.NOT_GRANTED)
         }
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun rum_config_consent_granted_to_not_granted() {
         val testMethodName = "rum_config_consent_granted_to_not_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.GRANTED
             )
         }
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.NOT_GRANTED)
+            sdkCore.setTrackingConsent(TrackingConsent.NOT_GRANTED)
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendRandomRumEvent(forge, sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun rum_config_consent_granted_to_pending() {
         val testMethodName = "rum_config_consent_granted_to_pending"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.GRANTED
             )
         }
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.PENDING)
+            sdkCore.setTrackingConsent(TrackingConsent.PENDING)
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendRandomRumEvent(forge, sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun rum_config_consent_not_granted_to_granted() {
         val testMethodName = "rum_config_consent_not_granted_to_granted"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.NOT_GRANTED
             )
         }
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.GRANTED)
+            sdkCore.setTrackingConsent(TrackingConsent.GRANTED)
         }
-        sendAllRumEvents(forge, testMethodName)
+        sendAllRumEvents(forge, sdkCore, testMethodName)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
      */
     @Test
     fun rum_config_consent_not_granted_to_pending() {
         val testMethodName = "rum_config_consent_not_granted_to_pending"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 consent = TrackingConsent.NOT_GRANTED
             )
         }
         measureSetTrackingConsent {
-            Datadog.setTrackingConsent(TrackingConsent.PENDING)
+            sdkCore.setTrackingConsent(TrackingConsent.PENDING)
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendRandomRumEvent(forge, sdkCore, testMethodName)
     }
 }

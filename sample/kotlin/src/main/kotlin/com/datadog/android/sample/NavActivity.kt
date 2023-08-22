@@ -41,8 +41,6 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
         setContentView(R.layout.activity_nav)
         rootView = findViewById(R.id.frame_container)
         appInfoView = findViewById(R.id.app_info)
-
-        navController = findNavController(R.id.nav_host_fragment)
     }
 
     override fun onStart() {
@@ -58,6 +56,8 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
     override fun onResume() {
         super.onResume()
         Timber.d("onResume")
+
+        navController = findNavController(R.id.nav_host_fragment)
 
         val tracking = Preferences.defaultPreferences(this).getTrackingConsent()
         updateTrackingConsentLabel(tracking)
@@ -115,7 +115,7 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
                 // No Op
             }
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                Datadog.clearAllData()
+                Datadog.getInstance().clearAllData()
                 Toast.makeText(this, R.string.msg_all_data_cleared, Toast.LENGTH_SHORT).show()
             }
             .create()

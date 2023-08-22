@@ -12,20 +12,24 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.nightly.SPECIAL_STRING_TAG_NAME
 import com.datadog.android.nightly.rules.NightlyTestRule
+import com.datadog.android.nightly.utils.DEFAULT_CLIENT_TOKEN
+import com.datadog.android.nightly.utils.DEFAULT_ENV_NAME
+import com.datadog.android.nightly.utils.DEFAULT_VARIANT_NAME
 import com.datadog.android.nightly.utils.TestEncryption
 import com.datadog.android.nightly.utils.defaultConfigurationBuilder
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measure
 import com.datadog.android.nightly.utils.measureSdkInitialize
 import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
-import com.datadog.android.tracing.AndroidTracer
-import com.datadog.android.tracing.TracingHeaderType
-import com.datadog.android.tracing.model.SpanEvent
+import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.TraceConfiguration
+import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.trace.event.SpanEventMapper
+import com.datadog.android.trace.model.SpanEvent
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import io.opentracing.util.GlobalTracer
 import org.junit.Rule
@@ -43,8 +47,7 @@ class SpanConfigE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
      */
     @Test
     fun trace_config_feature_enabled() {
@@ -52,22 +55,17 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 config = defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
                     crashReportsEnabled = true
                 ).build()
             )
         }
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setBatchSize(BatchSize): Builder
      */
     @Test
@@ -76,23 +74,17 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 config = defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
                     crashReportsEnabled = true
                 ).setBatchSize(forge.aValueFrom(BatchSize::class.java)).build()
             )
         }
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
      */
     @Test
     fun trace_config_feature_disabled() {
@@ -100,23 +92,19 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 config = defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = false,
-                    rumEnabled = true,
                     crashReportsEnabled = true
-                ).build()
+                ).build(),
+                tracesConfigProvider = { null }
             )
         }
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setSpanEventMapper(com.datadog.android.event.SpanEventMapper): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
+     * apiMethodSignature: com.datadog.android.trace.TraceConfiguration$Builder#fun setEventMapper(com.datadog.android.trace.event.SpanEventMapper): Builder
      */
     @Test
     fun trace_config_set_span_event_mapper() {
@@ -125,13 +113,12 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
                 config = defaultConfigurationBuilder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
                     crashReportsEnabled = true
-                ).setSpanEventMapper(
-                    object : SpanEventMapper {
+                ).build(),
+                tracesConfigProvider = {
+                    TraceConfiguration.Builder().setEventMapper(object : SpanEventMapper {
                         override fun map(event: SpanEvent): SpanEvent {
                             if (event.resource == fakeResourceName) {
                                 event.name = testMethodName
@@ -139,82 +126,79 @@ class SpanConfigE2ETests {
                             }
                             return event
                         }
-                    }
-                ).build()
+                    }).build()
+                }
             )
         }
-        GlobalTracer.get()
-            .buildSpan(fakeResourceName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(fakeResourceName).start().finish()
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setBundleWithRumEnabled(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun setBundleWithRumEnabled(Boolean): Builder
      */
     @Test
     fun trace_config_set_bundle_with_rum_enabled() {
         // this one will have application_id, session_id, view_id, action_id tags
         val testMethodName = "trace_config_set_bundle_with_rum_enabled"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                tracerProvider = { AndroidTracer.Builder().setBundleWithRumEnabled(true).build() }
+                forgeSeed = forge.seed,
+                tracerProvider = { sdkCore ->
+                    AndroidTracer.Builder(sdkCore).setBundleWithRumEnabled(true).build()
+                }
             )
         }
         val viewKey = "some-view-key"
         val viewName = "some-view-name"
         val actionName = "some-action-name"
-        val rumMonitor = GlobalRum.get()
+        val rumMonitor = GlobalRumMonitor.get(sdkCore)
         rumMonitor.startView(viewKey, viewName)
-        rumMonitor.startUserAction(RumActionType.TAP, actionName, emptyMap())
-        sendRandomActionOutcomeEvent(forge)
+        rumMonitor.startAction(RumActionType.TAP, actionName, emptyMap())
+        sendRandomActionOutcomeEvent(forge, sdkCore)
 
         // we need to wait a bit until RUM Context is updated
         Thread.sleep(2000)
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
 
-        rumMonitor.stopUserAction(RumActionType.TAP, actionName)
+        rumMonitor.stopAction(RumActionType.TAP, actionName)
         rumMonitor.stopView(viewKey)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setBundleWithRumEnabled(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun setBundleWithRumEnabled(Boolean): Builder
      */
     @Test
     fun trace_config_set_bundle_with_rum_disabled() {
         // this one won't have application_id, session_id, view_id or action_id tags
         val testMethodName = "trace_config_set_bundle_with_rum_disabled"
-        measureSdkInitialize {
+        val sdkCore = measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                tracerProvider = { AndroidTracer.Builder().setBundleWithRumEnabled(false).build() }
+                forgeSeed = forge.seed,
+                tracerProvider = { sdkCore ->
+                    AndroidTracer.Builder(sdkCore).setBundleWithRumEnabled(false).build()
+                }
             )
         }
 
         val viewKey = "some-view-key"
         val viewName = "some-view-name"
-        val rumMonitor = GlobalRum.get()
+        val rumMonitor = GlobalRumMonitor.get(sdkCore)
         rumMonitor.startView(viewKey, viewName)
 
         // we need to wait a bit until RUM Context is updated
         Thread.sleep(2000)
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
 
         rumMonitor.stopView(viewKey)
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setPartialFlushThreshold(Int): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun setPartialFlushThreshold(Int): Builder
      */
     @Test
     fun trace_config_flush_threshold_not_reached() {
@@ -223,8 +207,11 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                tracerProvider = {
-                    AndroidTracer.Builder().setPartialFlushThreshold(partialFlushThreshold).build()
+                forgeSeed = forge.seed,
+                tracerProvider = { sdkCore ->
+                    AndroidTracer.Builder(sdkCore)
+                        .setPartialFlushThreshold(partialFlushThreshold)
+                        .build()
                 }
             )
         }
@@ -240,8 +227,8 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setPartialFlushThreshold(Int): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun setPartialFlushThreshold(Int): Builder
      */
     @Test
     fun trace_config_flush_threshold_reached() {
@@ -250,8 +237,11 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                tracerProvider = {
-                    AndroidTracer.Builder().setPartialFlushThreshold(partialFlushThreshold).build()
+                forgeSeed = forge.seed,
+                tracerProvider = { sdkCore ->
+                    AndroidTracer.Builder(sdkCore)
+                        .setPartialFlushThreshold(partialFlushThreshold)
+                        .build()
                 }
             )
         }
@@ -267,8 +257,8 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun addGlobalTag(String, String): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun addTag(String, String): Builder
      */
     @Test
     fun trace_config_add_global_tag() {
@@ -276,25 +266,21 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                tracerProvider = {
-                    AndroidTracer.Builder()
-                        .addGlobalTag(
-                            SPECIAL_STRING_TAG_NAME,
-                            "str${forge.anAlphaNumericalString()}"
-                        )
-                        .build()
+                forgeSeed = forge.seed,
+                tracerProvider = { sdkCore ->
+                    AndroidTracer.Builder(sdkCore).addTag(
+                        SPECIAL_STRING_TAG_NAME,
+                        "str${forge.anAlphaNumericalString()}"
+                    ).build()
                 }
             )
         }
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setServiceName(String): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun setService(String): Builder
      */
     @Test
     fun trace_config_set_service_name() {
@@ -302,22 +288,18 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                tracerProvider = {
-                    AndroidTracer.Builder()
-                        .setServiceName("service-$testMethodName")
-                        .build()
+                forgeSeed = forge.seed,
+                tracerProvider = { sdkCore ->
+                    AndroidTracer.Builder(sdkCore).setService("service-$testMethodName").build()
                 }
             )
         }
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setTracingHeaderTypes(Set<TracingHeaderType>): Builder
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#fun setTracingHeaderTypes(Set<TracingHeaderType>): Builder
      */
     @Test
     fun trace_config_set_tracing_header_type() {
@@ -325,28 +307,29 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                tracerProvider = {
-                    AndroidTracer.Builder()
-                        .setTracingHeaderTypes(setOf(TracingHeaderType.TRACECONTEXT))
-                        .build()
+                forgeSeed = forge.seed,
+                tracerProvider = { sdkCore ->
+                    AndroidTracer.Builder(sdkCore)
+                        .setTracingHeaderTypes(setOf(TracingHeaderType.TRACECONTEXT)).build()
                 }
             )
         }
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#constructor()
-     * apiMethodSignature: com.datadog.android.Datadog#fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.trace.AndroidTracer$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
+     * apiMethodSignature: com.datadog.android.Datadog#fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
+     * apiMethodSignature: com.datadog.android.Datadog#fun getInstance(String? = null): com.datadog.android.api.SdkCore
      */
     @Test
     fun trace_config_set_user_info() {
         val testMethodName = "trace_config_set_user_info"
         measureSdkInitialize {
-            initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+            initializeSdk(
+                InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed
+            )
         }
 
         val userId = "some-id-${forge.anAlphaNumericalString()}"
@@ -359,20 +342,17 @@ class SpanConfigE2ETests {
 
         measure(testMethodName) {
             Datadog.setUserInfo(
-                id = userId,
-                name = userName,
-                email = userEmail,
-                extraInfo = userExtraInfo
+                userId,
+                userName,
+                userEmail,
+                userExtraInfo
             )
         }
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setEncryption(Encryption): Builder
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setEncryption(com.datadog.android.security.Encryption): Builder
      * apiMethodSignature: com.datadog.android.security.Encryption#fun encrypt(ByteArray): ByteArray
      * apiMethodSignature: com.datadog.android.security.Encryption#fun decrypt(ByteArray): ByteArray
      */
@@ -382,20 +362,14 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = Configuration
-                    .Builder(
-                        logsEnabled = true,
-                        tracesEnabled = true,
-                        rumEnabled = true,
-                        crashReportsEnabled = true
-                    )
-                    .setEncryption(TestEncryption())
-                    .build()
+                forgeSeed = forge.seed,
+                config = Configuration.Builder(
+                    clientToken = DEFAULT_CLIENT_TOKEN,
+                    env = DEFAULT_ENV_NAME,
+                    variant = DEFAULT_VARIANT_NAME
+                ).setEncryption(TestEncryption()).build()
             )
         }
-        GlobalTracer.get()
-            .buildSpan(testMethodName)
-            .start()
-            .finish()
+        GlobalTracer.get().buildSpan(testMethodName).start().finish()
     }
 }

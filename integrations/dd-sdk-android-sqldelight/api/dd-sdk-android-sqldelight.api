@@ -1,0 +1,20 @@
+public final class com/datadog/android/sqldelight/DatadogSqliteCallback : com/squareup/sqldelight/android/AndroidSqliteDriver$Callback {
+	public fun <init> (Lcom/squareup/sqldelight/db/SqlDriver$Schema;)V
+	public fun <init> (Lcom/squareup/sqldelight/db/SqlDriver$Schema;Lcom/datadog/android/api/SdkCore;)V
+	public synthetic fun <init> (Lcom/squareup/sqldelight/db/SqlDriver$Schema;Lcom/datadog/android/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun onCorruption (Landroidx/sqlite/db/SupportSQLiteDatabase;)V
+}
+
+public final class com/datadog/android/sqldelight/SqlDelightExtKt {
+	public static final fun transactionTraced (Lcom/squareup/sqldelight/Transacter;Ljava/lang/String;ZLkotlin/jvm/functions/Function1;)V
+	public static synthetic fun transactionTraced$default (Lcom/squareup/sqldelight/Transacter;Ljava/lang/String;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public static final fun transactionTracedWithResult (Lcom/squareup/sqldelight/Transacter;Ljava/lang/String;ZLkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun transactionTracedWithResult$default (Lcom/squareup/sqldelight/Transacter;Ljava/lang/String;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public abstract interface class com/datadog/android/sqldelight/TransactionWithSpanAndWithReturn : com/squareup/sqldelight/TransactionWithReturn, io/opentracing/Span {
+}
+
+public abstract interface class com/datadog/android/sqldelight/TransactionWithSpanAndWithoutReturn : com/squareup/sqldelight/TransactionWithoutReturn, io/opentracing/Span {
+}
+

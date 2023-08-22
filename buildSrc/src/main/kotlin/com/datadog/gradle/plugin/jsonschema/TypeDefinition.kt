@@ -207,16 +207,16 @@ sealed class TypeDefinition {
 
         internal fun enumConstantName(constantName: String?): String {
             return if (constantName == null) {
-                "${name.toUpperCase(Locale.US)}_NULL"
+                "${name.uppercase(Locale.US)}_NULL"
             } else if (type == JsonType.NUMBER) {
-                "${name.toUpperCase(Locale.US)}_${constantName.sanitizedName()}"
+                "${name.uppercase(Locale.US)}_${constantName.sanitizedName()}"
             } else {
                 constantName.sanitizedName()
             }
         }
 
         private fun String.sanitizedName(): String {
-            return toUpperCase(Locale.US).replace(Regex("[^A-Z0-9]+"), "_")
+            return uppercase(Locale.US).replace(Regex("[^A-Z0-9]+"), "_")
         }
     }
 

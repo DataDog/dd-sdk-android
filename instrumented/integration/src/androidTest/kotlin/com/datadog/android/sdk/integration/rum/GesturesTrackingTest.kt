@@ -73,14 +73,17 @@ internal abstract class GesturesTrackingTest :
         activity: GesturesTrackingPlaygroundActivity
     ): List<ExpectedEvent> {
         return listOf(
+            ExpectedApplicationStartActionEvent(),
+            ExpectedApplicationLaunchViewEvent(docVersion = 2),
+            ExpectedApplicationLaunchViewEvent(docVersion = 3),
+            ExpectedViewEvent(
+                viewUrl,
+                2
+            ),
             ExpectedGestureEvent(
                 Gesture.TAP,
                 activity.button.targetName(),
                 "button"
-            ),
-            ExpectedViewEvent(
-                viewUrl,
-                2
             ),
             ExpectedGestureEvent(
                 Gesture.TAP,

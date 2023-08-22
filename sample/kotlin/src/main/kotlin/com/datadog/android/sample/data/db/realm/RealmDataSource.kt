@@ -7,7 +7,7 @@
 package com.datadog.android.sample.data.db.realm
 
 import android.content.Context
-import com.datadog.android.ktx.rum.useMonitored
+import com.datadog.android.rum.useMonitored
 import com.datadog.android.sample.data.db.DataSource
 import com.datadog.android.sample.data.db.DatadogDbContract
 import com.datadog.android.sample.data.model.Log
@@ -63,7 +63,7 @@ internal class RealmDataSource(val context: Context) : DataSource {
         }
     }
 
-    private val fetchLogsCallable = Callable<List<Log>> {
+    private val fetchLogsCallable = Callable {
         Realm.getDefaultInstance().useMonitored { realm ->
             val minTtlRequired =
                 System.currentTimeMillis() - LOGS_EXPIRING_TTL_IN_MS

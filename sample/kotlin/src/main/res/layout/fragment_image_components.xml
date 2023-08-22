@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_margin="20dp"
+    >
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scrollbars="none"
+        >
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:text="@string/title_textviews"
+                />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:orientation="horizontal"
+                android:weightSum="5"
+                >
+
+                <TextView
+                    android:id="@+id/textViewSystem"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="@string/category_system"
+                    app:drawableStartCompat="@android:drawable/ic_dialog_alert"
+                    android:layout_marginEnd="8dp"
+                    />
+
+                <TextView
+                    android:id="@+id/textViewBundled"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="@string/category_bundled"
+                    app:drawableTopCompat="@drawable/ic_dd_icon_rgb"
+                    android:layout_marginEnd="8dp"
+                    />
+
+                <TextView
+                    android:id="@+id/textViewNinepatch"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="@string/category_ninepatch"
+                    app:drawableEndCompat="@drawable/ic_webview_black_24dp"
+                    android:layout_marginEnd="8dp"
+                    />
+
+                <TextView
+                    android:id="@+id/textViewRemote"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="@string/category_remote"
+                    android:layout_marginEnd="8dp"
+                    />
+
+                <TextView
+                    android:id="@+id/textView5"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="@string/category_multiple"
+                    app:drawableStartCompat="@drawable/ic_info_black_24"
+                    app:drawableTopCompat="@drawable/ic_info_black_24"
+                    app:drawableBottomCompat="@drawable/ic_info_black_24"
+                    app:drawableEndCompat="@drawable/ic_info_black_24" />
+
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:text="@string/title_buttons"
+                />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:orientation="horizontal"
+                android:weightSum="5"
+                >
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/buttonSystem"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="@string/category_system"
+                    android:drawableStart="@android:drawable/ic_dialog_alert"
+                    style="?android:attr/buttonBarButtonStyle"
+                    android:layout_marginEnd="8dp"
+                    />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/buttonBundled"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:text="@string/category_bundled"
+                    android:gravity="center"
+                    android:drawableTop="@drawable/ic_dd_icon_rgb"
+                    style="?android:attr/buttonBarButtonStyle"
+                    android:layout_marginEnd="8dp"
+                    />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/buttonNinepatch"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:text="@string/category_ninepatch"
+                    android:gravity="center"
+                    android:drawableEnd="@drawable/ic_info_black_24"
+                    style="?android:attr/buttonBarButtonStyle"
+                    android:layout_marginEnd="8dp"
+                    />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/buttonRemote"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:text="@string/category_remote"
+                    android:gravity="center"
+                    android:drawableBottom="@drawable/ic_info_black_24"
+                    style="?android:attr/buttonBarButtonStyle"
+                    android:layout_marginEnd="8dp"
+                    />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/button5"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:text="@string/category_multiple"
+                    android:gravity="center"
+                    android:drawableStart="@drawable/ic_info_black_24"
+                    android:drawableTop="@drawable/ic_info_black_24"
+                    android:drawableEnd="@drawable/ic_info_black_24"
+                    android:drawableBottom="@drawable/ic_info_black_24"
+                    style="?android:attr/buttonBarButtonStyle" />
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:text="@string/title_imagebuttons"
+                />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:orientation="horizontal"
+                android:gravity="center"
+                >
+
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/imageButtonBundled"
+                    android:layout_width="160dp"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_dd_icon_rgb"
+                    android:contentDescription="@string/title_imagebuttons"
+                    />
+
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/imageButtonBundledStatelist"
+                    android:layout_width="160dp"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_dd_statelist"
+                    android:contentDescription="@string/title_imagebuttons"
+                    />
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:text="@string/title_imageviews"
+                />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:orientation="horizontal"
+                android:weightSum="2"
+                >
+
+                <ImageView
+                    android:id="@+id/imageView_remote"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:scaleType="fitCenter"
+                    android:contentDescription="@null"
+                    android:layout_marginEnd="8dp"
+                    />
+
+                <ImageView
+                    android:id="@+id/imageView_bundled"
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:layout_weight="1"
+                    android:src="@drawable/ic_dd_icon_rgb"
+                    android:contentDescription="@null"
+                    />
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:text="@string/title_views"
+                />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="2"
+                >
+
+                <View
+                    android:id="@+id/viewRemote"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    />
+
+                <View
+                    android:id="@+id/viewBundled"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:background="@drawable/ic_dd_icon_rgb"
+                    android:layout_weight="1"
+                    />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

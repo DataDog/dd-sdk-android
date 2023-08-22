@@ -1,0 +1,2 @@
+object com.datadog.android.ndk.NdkCrashReports
+  fun enable(com.datadog.android.api.SdkCore = Datadog.getInstance())

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            xmlns:tools="http://schemas.android.com/tools"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:context=".NavActivity">
+
+    <androidx.constraintlayout.widget.ConstraintLayout android:layout_width="match_parent"
+                                                       android:layout_height="wrap_content"
+                                                       android:padding="10dp">
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/navigation_text_view_components"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/text_view_components"
+            android:drawableStart="@drawable/baseline_text_fields_24"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/navigation_picker_components"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/picker_components"
+            android:drawableStart="@drawable/baseline_edit_calendar_24"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/navigation_text_view_components"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/navigation_radio_and_checkbox_components"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/radio_and_check_box_components"
+            android:drawableStart="@drawable/baseline_radio_button_checked_24"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/navigation_picker_components"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/navigation_dropdowns_and_switchers_components"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/dropdowns_and_switchers_components"
+            android:drawableStart="@drawable/baseline_arrow_drop_down_24"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/navigation_radio_and_checkbox_components"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/navigation_sliders_and_steppers_components"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/sliders_and_steppers_components"
+            android:drawableStart="@drawable/baseline_reorder_24"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/navigation_dropdowns_and_switchers_components"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/navigation_different_fonts"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/different_fonts"
+            android:drawableStart="@drawable/baseline_font_download_24"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/navigation_sliders_and_steppers_components"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/navigation_password_edit_text_components"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/password_input_components"
+            android:drawableStart="@drawable/baseline_password_24"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/navigation_different_fonts"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/navigation_unsupported_views"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/title_unsupported_views"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/navigation_password_edit_text_components"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/navigation_image_components"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/title_image_components"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/navigation_unsupported_views"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

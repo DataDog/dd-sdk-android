@@ -1,0 +1,3 @@
+class com.datadog.android.coil.DatadogCoilRequestListener : coil.request.ImageRequest.Listener
+  constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
+  override fun onError(coil.request.ImageRequest, Throwable)

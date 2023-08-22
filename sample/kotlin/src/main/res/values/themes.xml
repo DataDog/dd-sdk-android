@@ -7,7 +7,7 @@
 
 <resources>
 
-    <style name="Sample.Theme" parent="Theme.AppCompat.Light.DarkActionBar">
+    <style name="Sample.Theme" parent="Theme.MaterialComponents.Light.DarkActionBar">
         <item name="android:windowBackground">@color/white</item>
 
         <item name="colorPrimary">@color/datadog_violet</item>
@@ -16,7 +16,7 @@
 
 
 
-    <style name="Sample.Theme.Custom" parent="Theme.AppCompat.Light.DarkActionBar">
+    <style name="Sample.Theme.Custom" parent="Theme.MaterialComponents.Light.DarkActionBar">
         <item name="android:windowBackground">@color/white</item>
 
         <item name="colorPrimary">@color/datadog_violet</item>
