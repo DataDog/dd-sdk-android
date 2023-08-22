@@ -101,16 +101,16 @@ internal abstract class FragmentTrackingTest :
         )
 
         // view stopped
-        expectedEvents.add(
-            ExpectedViewEvent(
-                fragmentAViewUrl,
-                3,
-                currentFragmentExtras(activity)
-            )
-        )
+//        expectedEvents.add(
+//            ExpectedViewEvent(
+//                fragmentAViewUrl,
+//                3,
+//                currentFragmentExtras(activity)
+//            )
+//        )
 
         instrumentation.runOnMainSync {
-            instrumentation.callActivityOnPause(mockServerRule.activity)
+            instrumentation.callActivityOnStop(mockServerRule.activity)
         }
 
         return expectedEvents

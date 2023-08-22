@@ -21,6 +21,7 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import java.lang.ref.WeakReference
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 internal class RumViewManagerScope(
@@ -40,6 +41,7 @@ internal class RumViewManagerScope(
 
     internal val childrenScopes = mutableListOf<RumScope>()
     internal var stopped = false
+    private var lastStoppedViewTime: Time? = null
 
     // region RumScope
 
@@ -59,6 +61,15 @@ internal class RumViewManagerScope(
 
         if (event is RumRawEvent.StartView && !stopped) {
             startForegroundView(event, writer)
+            lastStoppedViewTime?.let {
+                val gap = event.eventTime.nanoTime - it.nanoTime
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    listOf(InternalLogger.Target.TELEMETRY, InternalLogger.Target.MAINTAINER),
+                    { MESSAGE_GAP_BETWEEN_VIEWS.format(Locale.US, gap) }
+                )
+            }
+            lastStoppedViewTime = null
         } else if (event is RumRawEvent.StopSession) {
             stopped = true
         } else if (childrenScopes.count { it.isActive() } == 0) {
@@ -121,7 +132,13 @@ internal class RumViewManagerScope(
         val iterator = childrenScopes.iterator()
         @Suppress("UnsafeThirdPartyFunctionCall") // next/remove can't fail: we checked hasNext
         while (iterator.hasNext()) {
-            val result = iterator.next().handleEvent(event, writer)
+            val childScope = iterator.next()
+            if (event is RumRawEvent.StopView) {
+                if (childScope.isActive() && (childScope as? RumViewScope)?.keyRef?.get() == event.key) {
+                    lastStoppedViewTime = event.eventTime
+                }
+            }
+            val result = childScope.handleEvent(event, writer)
             if (result == null) {
                 iterator.remove()
             }
@@ -194,6 +211,7 @@ internal class RumViewManagerScope(
             val viewScope = createBackgroundViewScope(event)
             viewScope.handleEvent(event, writer)
             childrenScopes.add(viewScope)
+            lastStoppedViewTime = null
         } else if (!isSilentOrphanEvent) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -272,6 +290,7 @@ internal class RumViewManagerScope(
         internal const val RUM_APP_LAUNCH_VIEW_URL = "com/datadog/application-launch/view"
         internal const val RUM_APP_LAUNCH_VIEW_NAME = "ApplicationLaunch"
 
+        private const val MESSAGE_GAP_BETWEEN_VIEWS = "Gap between views was %d nanoseconds"
         internal const val MESSAGE_MISSING_VIEW =
             "A RUM event was detected, but no view is active. " +
                 "To track views automatically, try calling the " +

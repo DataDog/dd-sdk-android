@@ -13,6 +13,7 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
@@ -33,6 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -78,6 +80,9 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     lateinit var mockSdkCore: FeatureSdkCore
 
     @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
     lateinit var mockAdvancedRumMonitor: AdvancedRumMonitor
 
     @Mock
@@ -87,6 +92,8 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+
         val mockRumFeature = mock<RumFeature>()
         whenever(mockRumFeature.actionTrackingStrategy) doReturn mockUserActionTrackingStrategy
         whenever(mockUserActionTrackingStrategy.getGesturesTracker()) doReturn mockGesturesTracker
@@ -190,12 +197,27 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 stop RUM View 𝕎 onActivityPaused()`() {
+    fun `𝕄 not stop RUM View 𝕎 onFragmentPaused()`() {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn true
 
         // When
         testedLifecycleCallbacks.onFragmentPaused(mockFragmentManager, mockFragment)
+        Thread.sleep(250)
+
+        // Then
+        verify(mockRumMonitor, never()).stopView(mockFragment, emptyMap())
+    }
+
+    @Test
+    fun `𝕄 stop RUM View 𝕎 onFragmentStopped()`() {
+        // Given
+        testedLifecycleCallbacks.register(mockFragmentActivity, mockSdkCore)
+        whenever(mockPredicate.accept(mockFragment)) doReturn true
+
+        // When
+        testedLifecycleCallbacks.onFragmentStopped(mockFragmentManager, mockFragment)
+        Thread.sleep(250)
 
         // Then
         verify(mockRumMonitor).stopView(mockFragment, emptyMap())

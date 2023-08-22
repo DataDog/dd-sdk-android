@@ -50,6 +50,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -283,6 +284,53 @@ internal class RumViewManagerScopeTest {
             .isInstanceOfSatisfying(RumViewScope::class.java) {
                 assertThat(it.featureFlags).isEmpty()
             }
+    }
+
+    @Test
+    fun `𝕄 send gap message 𝕎 handleEvent(StopView) + handleEvent(StartView)`(
+        forge: Forge
+    ) {
+        // Given
+        val firstViewEvent = forge.startViewEvent()
+        testedScope.applicationDisplayed = true
+        testedScope.handleEvent(firstViewEvent, mockWriter)
+        val stopFirstViewEvent = RumRawEvent.StopView(firstViewEvent.key, emptyMap())
+        testedScope.handleEvent(stopFirstViewEvent, mockWriter)
+
+        // When
+        Thread.sleep(15)
+        val secondViewEvent = forge.startViewEvent()
+        testedScope.handleEvent(secondViewEvent, mockWriter)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            listOf(InternalLogger.Target.TELEMETRY, InternalLogger.Target.MAINTAINER),
+            { it.matches(Regex("Gap between views was \\d+ nanoseconds")) }
+        )
+    }
+
+    @Test
+    fun `𝕄 not send gap message 𝕎 handleEvent(StartView) + handleEvent(StartView)`(
+        forge: Forge
+    ) {
+        // Given
+        val firstViewEvent = forge.startViewEvent()
+        testedScope.applicationDisplayed = true
+        testedScope.handleEvent(firstViewEvent, mockWriter)
+
+        // When
+        Thread.sleep(15)
+        val secondViewEvent = forge.startViewEvent()
+        testedScope.handleEvent(secondViewEvent, mockWriter)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            listOf(InternalLogger.Target.TELEMETRY, InternalLogger.Target.MAINTAINER),
+            { it.matches(Regex("Gap between views was \\d+ nanoseconds")) },
+            mode = never()
+        )
     }
 
     // endregion
