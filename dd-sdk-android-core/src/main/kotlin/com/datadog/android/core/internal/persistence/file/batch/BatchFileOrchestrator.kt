@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.persistence.file.batch
 import androidx.annotation.WorkerThread
 import androidx.collection.LruCache
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.metrics.BatchClosedMetadata
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
@@ -46,7 +47,8 @@ internal class BatchFileOrchestrator(
 
     // keep track of how many items were written in the last known file
     private var previousFile: File? = null
-    private var previousFileItemCount: Int = 0
+    private var previousFileItemCount: Long = 0
+    private var lastFileAccessTimestamp: Long = 0L
 
     @Suppress("UnsafeThirdPartyFunctionCall") // argument is not negative
     private val knownBatchFiles = LruCache<File, Unit>(KNOWN_FILES_MAX_CACHE_SIZE)
@@ -69,7 +71,7 @@ internal class BatchFileOrchestrator(
         return if (!forceNewFile) {
             getReusableWritableFile() ?: createNewFile()
         } else {
-            createNewFile()
+            createNewFile(true)
         }
     }
 
@@ -195,11 +197,23 @@ internal class BatchFileOrchestrator(
         }
     }
 
-    private fun createNewFile(): File {
+    private fun createNewFile(wasForced: Boolean = false): File {
         val newFileName = System.currentTimeMillis().toString()
         val newFile = File(rootDir, newFileName)
+        val closedFile = previousFile
+        if (closedFile != null) {
+            metricsDispatcher.sendBatchClosedMetric(
+                closedFile,
+                BatchClosedMetadata(
+                    lastTimeWasUsedInMs = lastFileAccessTimestamp,
+                    eventsCount = previousFileItemCount,
+                    forcedNew = wasForced
+                )
+            )
+        }
         previousFile = newFile
         previousFileItemCount = 1
+        lastFileAccessTimestamp = System.currentTimeMillis()
         @Suppress("UnsafeThirdPartyFunctionCall") // value is not null
         knownBatchFiles.put(newFile, Unit)
         return newFile
@@ -227,6 +241,7 @@ internal class BatchFileOrchestrator(
 
         return if (isRecentEnough && hasRoomForMore && hasSlotForMore) {
             previousFileItemCount = lastKnownFileItemCount + 1
+            lastFileAccessTimestamp = System.currentTimeMillis()
             lastFile
         } else {
             null

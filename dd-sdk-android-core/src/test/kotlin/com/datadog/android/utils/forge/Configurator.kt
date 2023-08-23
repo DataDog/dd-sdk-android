@@ -65,6 +65,8 @@ internal class Configurator :
         forge.addFactory(RemovalReasonIntakeCodeForgeryFactory())
         forge.addFactory(RemovalReasonForgeryFactory())
 
+        forge.addFactory(BatchClosedMetadataForgeryFactory())
+
         forge.useJvmFactories()
     }
 }
