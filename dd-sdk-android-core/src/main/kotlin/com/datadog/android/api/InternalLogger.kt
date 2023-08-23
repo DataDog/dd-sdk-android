@@ -96,6 +96,15 @@ interface InternalLogger {
         additionalProperties: Map<String, Any?>? = null
     )
 
+    /**
+     * Logs a specific metric from the internal implementation. The metric values will be sent
+     * as key-value pairs in the additionalProperties and as part of the
+     * [com.datadog.android.telemetry.model.TelemetryDebugEvent.Telemetry] event.
+     * @param messageBuilder the lambda building the metric message
+     * @param additionalProperties additional properties to add to the metric
+     */
+    fun logMetric(messageBuilder: () -> String, additionalProperties: Map<String, Any?>)
+
     companion object {
 
         /**

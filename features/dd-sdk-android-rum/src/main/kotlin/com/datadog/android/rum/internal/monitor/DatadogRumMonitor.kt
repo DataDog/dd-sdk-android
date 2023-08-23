@@ -409,6 +409,20 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun sendMetricEvent(message: String, additionalProperties: Map<String, Any?>?) {
+        handleEvent(
+            RumRawEvent.SendTelemetry(
+                type = TelemetryType.DEBUG,
+                message = message,
+                stack = null,
+                kind = null,
+                coreConfiguration = null,
+                additionalProperties = additionalProperties,
+                isMetric = true
+            )
+        )
+    }
+
     override fun sendErrorTelemetryEvent(
         message: String,
         throwable: Throwable?

@@ -88,6 +88,18 @@ internal class SdkInternalLogger(
         }
     }
 
+    override fun logMetric(messageBuilder: () -> String, additionalProperties: Map<String, Any?>) {
+        val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
+        val message = messageBuilder()
+        val telemetryEvent =
+            mapOf(
+                TYPE_KEY to "mobile_metric",
+                MESSAGE_KEY to message,
+                ADDITIONAL_PROPERTIES_KEY to additionalProperties
+            )
+        rumFeature.sendEvent(telemetryEvent)
+    }
+
     // endregion
 
     // region Internal
