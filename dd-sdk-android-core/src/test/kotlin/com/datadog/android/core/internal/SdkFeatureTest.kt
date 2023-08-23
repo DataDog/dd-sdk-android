@@ -17,6 +17,7 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
@@ -130,6 +131,9 @@ internal class SdkFeatureTest {
 
     @Test
     fun `𝕄 initialize uploader 𝕎 initialize()`() {
+        // Given
+        val expectedUploadConfiguration = DataUploadConfiguration(fakeCoreUploadFrequency)
+
         // When
         testedFeature.initialize(appContext.mockInstance)
 
@@ -137,7 +141,10 @@ internal class SdkFeatureTest {
         assertThat(testedFeature.uploadScheduler)
             .isInstanceOf(DataUploadScheduler::class.java)
         val dataUploadRunnable = (testedFeature.uploadScheduler as DataUploadScheduler).runnable
-        assertThat(dataUploadRunnable.uploadFrequency).isEqualTo(fakeCoreUploadFrequency)
+        assertThat(dataUploadRunnable.minDelayMs).isEqualTo(expectedUploadConfiguration.minDelayMs)
+        assertThat(dataUploadRunnable.maxDelayMs).isEqualTo(expectedUploadConfiguration.maxDelayMs)
+        assertThat(dataUploadRunnable.currentDelayIntervalMs)
+            .isEqualTo(expectedUploadConfiguration.defaultDelayMs)
         argumentCaptor<Runnable> {
             verify(coreFeature.mockUploadExecutor).schedule(
                 any(),
@@ -145,7 +152,6 @@ internal class SdkFeatureTest {
                 eq(TimeUnit.MILLISECONDS)
             )
         }
-
         assertThat(testedFeature.uploader).isInstanceOf(DataOkHttpUploader::class.java)
     }
 
@@ -153,6 +159,7 @@ internal class SdkFeatureTest {
     fun `𝕄 use the storage frequency if set 𝕎 initialize()`(forge: Forge) {
         // Given
         val fakeUploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
+        val expectedUploadConfiguration = DataUploadConfiguration(fakeUploadFrequency)
         val fakeStorageConfig = mockWrappedFeature.storageConfiguration
             .copy(uploadFrequency = fakeUploadFrequency)
         whenever(mockWrappedFeature.storageConfiguration)
@@ -165,7 +172,10 @@ internal class SdkFeatureTest {
         assertThat(testedFeature.uploadScheduler)
             .isInstanceOf(DataUploadScheduler::class.java)
         val dataUploadRunnable = (testedFeature.uploadScheduler as DataUploadScheduler).runnable
-        assertThat(dataUploadRunnable.uploadFrequency).isEqualTo(fakeUploadFrequency)
+        assertThat(dataUploadRunnable.minDelayMs).isEqualTo(expectedUploadConfiguration.minDelayMs)
+        assertThat(dataUploadRunnable.maxDelayMs).isEqualTo(expectedUploadConfiguration.maxDelayMs)
+        assertThat(dataUploadRunnable.currentDelayIntervalMs)
+            .isEqualTo(expectedUploadConfiguration.defaultDelayMs)
     }
 
     @Test

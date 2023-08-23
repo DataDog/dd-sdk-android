@@ -7,6 +7,8 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.metrics.MetricsDispatcher
+import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.utils.forge.Configurator
@@ -29,9 +31,13 @@ import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
@@ -60,6 +66,9 @@ internal class BatchFileOrchestratorTest {
 
     lateinit var fakeRootDir: File
 
+    @Mock
+    lateinit var mockMetricsDispatcher: MetricsDispatcher
+
     @BeforeEach
     fun `set up`() {
         fakeRootDir = File(tempDir, fakeRootDirName)
@@ -67,7 +76,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             fakeRootDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
     }
 
@@ -85,7 +95,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             notADir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -111,7 +122,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             corruptedDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -138,7 +150,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             restrictedDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -200,6 +213,11 @@ internal class BatchFileOrchestratorTest {
         assertThat(oldFile).doesNotExist()
         assertThat(oldFileMeta).doesNotExist()
         assertThat(youngFile).exists()
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(oldFile),
+            argThat { this is RemovalReason.Obsolete }
+        )
+        verifyNoMoreInteractions(mockMetricsDispatcher)
     }
 
     @ParameterizedTest
@@ -240,6 +258,11 @@ internal class BatchFileOrchestratorTest {
         assertThat(oldFileMeta).doesNotExist()
         assertThat(youngFile).exists()
         assertThat(evenOlderFile).exists()
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(oldFile),
+            argThat { this is RemovalReason.Obsolete }
+        )
+        verifyNoMoreInteractions(mockMetricsDispatcher)
     }
 
     @ParameterizedTest
@@ -275,6 +298,15 @@ internal class BatchFileOrchestratorTest {
         assertThat(oldFile).doesNotExist()
         assertThat(oldFileMeta).doesNotExist()
         assertThat(evenOlderFile).doesNotExist()
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(evenOlderFile),
+            argThat { this is RemovalReason.Obsolete }
+        )
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(oldFile),
+            argThat { this is RemovalReason.Obsolete }
+        )
+        verifyNoMoreInteractions(mockMetricsDispatcher)
     }
 
     @ParameterizedTest
@@ -555,7 +587,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             notADir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -580,7 +613,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             corruptedDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -606,7 +640,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             restrictedDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -732,7 +767,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             notADir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -757,7 +793,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             corruptedDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -783,7 +820,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             restrictedDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -921,7 +959,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             notADir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -946,7 +985,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             corruptedDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -972,7 +1012,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             restrictedDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When

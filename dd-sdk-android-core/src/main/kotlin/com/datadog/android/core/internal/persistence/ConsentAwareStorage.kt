@@ -10,6 +10,8 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.core.internal.metrics.MetricsDispatcher
+import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -30,7 +32,8 @@ internal class ConsentAwareStorage(
     private val batchMetadataReaderWriter: FileReaderWriter,
     private val fileMover: FileMover,
     private val internalLogger: InternalLogger,
-    internal val filePersistenceConfig: FilePersistenceConfig
+    internal val filePersistenceConfig: FilePersistenceConfig,
+    private val metricsDispatcher: MetricsDispatcher
 ) : Storage {
 
     /**
@@ -117,7 +120,11 @@ internal class ConsentAwareStorage(
 
     /** @inheritdoc */
     @WorkerThread
-    override fun confirmBatchRead(batchId: BatchId, callback: (BatchConfirmation) -> Unit) {
+    override fun confirmBatchRead(
+        batchId: BatchId,
+        removalReason: RemovalReason,
+        callback: (BatchConfirmation) -> Unit
+    ) {
         val batch = synchronized(lockedBatches) {
             lockedBatches.firstOrNull { batchId.matchesFile(it.file) }
         } ?: return
@@ -125,7 +132,7 @@ internal class ConsentAwareStorage(
             @WorkerThread
             override fun markAsRead(deleteBatch: Boolean) {
                 if (deleteBatch) {
-                    deleteBatch(batch)
+                    deleteBatch(batch, removalReason)
                 }
                 synchronized(lockedBatches) {
                     lockedBatches.remove(batch)
@@ -140,7 +147,7 @@ internal class ConsentAwareStorage(
     override fun dropAll() {
         synchronized(lockedBatches) {
             lockedBatches.forEach {
-                deleteBatch(it)
+                deleteBatch(it, RemovalReason.Flushed)
                 lockedBatches.remove(it)
             }
         }
@@ -148,28 +155,30 @@ internal class ConsentAwareStorage(
         arrayOf(pendingOrchestrator, grantedOrchestrator).forEach { orchestrator ->
             orchestrator.getAllFiles().forEach {
                 val metaFile = orchestrator.getMetadataFile(it)
-                deleteBatch(it, metaFile)
+                deleteBatch(it, metaFile, RemovalReason.Flushed)
             }
         }
     }
 
     @WorkerThread
-    private fun deleteBatch(batch: Batch) {
-        deleteBatch(batch.file, batch.metaFile)
+    private fun deleteBatch(batch: Batch, reason: RemovalReason) {
+        deleteBatch(batch.file, batch.metaFile, reason)
     }
 
     @WorkerThread
-    private fun deleteBatch(batchFile: File, metaFile: File?) {
-        deleteBatchFile(batchFile)
+    private fun deleteBatch(batchFile: File, metaFile: File?, reason: RemovalReason) {
+        deleteBatchFile(batchFile, reason)
         if (metaFile?.existsSafe(internalLogger) == true) {
             deleteBatchMetadataFile(metaFile)
         }
     }
 
     @WorkerThread
-    private fun deleteBatchFile(batchFile: File) {
+    private fun deleteBatchFile(batchFile: File, reason: RemovalReason) {
         val result = fileMover.delete(batchFile)
-        if (!result) {
+        if (result) {
+            metricsDispatcher.sendBatchDeletedMetric(batchFile, reason)
+        } else {
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,

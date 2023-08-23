@@ -9,6 +9,8 @@ package com.datadog.android.core.internal.persistence
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.core.internal.metrics.MetricsDispatcher
+import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -34,6 +36,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -88,6 +91,9 @@ internal class ConsentAwareStorageTest {
     @Mock
     lateinit var mockFilePersistenceConfig: FilePersistenceConfig
 
+    @Mock
+    lateinit var mockMetricsDispatcher: MetricsDispatcher
+
     @BeforeEach
     fun `set up`() {
         testedStorage = ConsentAwareStorage(
@@ -99,7 +105,8 @@ internal class ConsentAwareStorageTest {
             mockMetaReaderWriter,
             mockFileMover,
             mockInternalLogger,
-            mockFilePersistenceConfig
+            mockFilePersistenceConfig,
+            mockMetricsDispatcher
         )
     }
 
@@ -265,7 +272,8 @@ internal class ConsentAwareStorageTest {
             mockMetaReaderWriter,
             mockFileMover,
             mockInternalLogger,
-            mockFilePersistenceConfig
+            mockFilePersistenceConfig,
+            mockMetricsDispatcher
         )
 
         // When
@@ -300,7 +308,8 @@ internal class ConsentAwareStorageTest {
             mockMetaReaderWriter,
             mockFileMover,
             mockInternalLogger,
-            mockFilePersistenceConfig
+            mockFilePersistenceConfig,
+            mockMetricsDispatcher
         )
         var accumulator: Byte = 0
         val event = forge.aString().toByteArray()
@@ -480,6 +489,7 @@ internal class ConsentAwareStorageTest {
     @Test
     fun `𝕄 delete batch files 𝕎 readNextBatch()+confirmBatchRead() {delete=true}`(
         @Forgery file: File,
+        @Forgery reason: RemovalReason,
         @StringForgery fakeMetaFilePath: String
     ) {
         // Given
@@ -491,7 +501,8 @@ internal class ConsentAwareStorageTest {
             mockMetaReaderWriter,
             mockFileMover,
             mockInternalLogger,
-            mockFilePersistenceConfig
+            mockFilePersistenceConfig,
+            mockMetricsDispatcher
         )
 
         whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
@@ -507,17 +518,19 @@ internal class ConsentAwareStorageTest {
         testedStorage.readNextBatch { id, _ ->
             batchId = id
         }
-        testedStorage.confirmBatchRead(batchId!!) { confirm ->
+        testedStorage.confirmBatchRead(batchId!!, reason) { confirm ->
             confirm.markAsRead(true)
         }
 
         // Then
         verify(mockFileMover).delete(file)
         verify(mockFileMover).delete(mockMetaFile)
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(eq(file), eq(reason))
     }
 
     @Test
     fun `𝕄 read batch twice if released 𝕎 readNextBatch()+confirmBatchRead() {delete=false}`(
+        @Forgery reason: RemovalReason,
         @Forgery file: File
     ) {
         // Given
@@ -536,7 +549,7 @@ internal class ConsentAwareStorageTest {
         testedStorage.readNextBatch { _, _ ->
             fail { "Callback should not have been called here" }
         }
-        testedStorage.confirmBatchRead(batchId1!!) { confirm ->
+        testedStorage.confirmBatchRead(batchId1!!, reason) { confirm ->
             confirm.markAsRead(false)
         }
         testedStorage.readNextBatch { id, _ ->
@@ -552,6 +565,7 @@ internal class ConsentAwareStorageTest {
     @Test
     fun `𝕄 keep batch file locked 𝕎 readNextBatch()+confirmBatchRead() {delete=true, != batchId}`(
         @Forgery file: File,
+        @Forgery reason: RemovalReason,
         @Forgery anotherFile: File
     ) {
         // Given
@@ -564,7 +578,7 @@ internal class ConsentAwareStorageTest {
         testedStorage.readNextBatch { _, _ ->
             // no-op
         }
-        testedStorage.confirmBatchRead(BatchId.fromFile(anotherFile)) { confirm ->
+        testedStorage.confirmBatchRead(BatchId.fromFile(anotherFile), reason) { confirm ->
             confirm.markAsRead(true)
         }
         testedStorage.readNextBatch { _, _ ->
@@ -574,10 +588,12 @@ internal class ConsentAwareStorageTest {
         // Then
         verify(mockFileMover, never()).delete(file)
         verify(mockFileMover, never()).delete(mockMetaFile)
+        verifyNoInteractions(mockMetricsDispatcher)
     }
 
     @Test
     fun `𝕄 warn 𝕎 readNextBatch() + confirmBatchRead() {delete batch fails}`(
+        @Forgery reason: RemovalReason,
         @Forgery file: File
     ) {
         // Given
@@ -589,7 +605,7 @@ internal class ConsentAwareStorageTest {
         testedStorage.readNextBatch { id, _ ->
             batchId = id
         }
-        testedStorage.confirmBatchRead(batchId!!) { confirm ->
+        testedStorage.confirmBatchRead(batchId!!, reason) { confirm ->
             confirm.markAsRead(true)
         }
 
@@ -601,10 +617,12 @@ internal class ConsentAwareStorageTest {
             ConsentAwareStorage.WARNING_DELETE_FAILED.format(Locale.US, file.path)
         )
         verifyNoMoreInteractions(mockInternalLogger)
+        verifyNoInteractions(mockMetricsDispatcher)
     }
 
     @Test
     fun `𝕄 warn 𝕎 readNextBatch() + confirmBatchRead() {delete batch meta fails}`(
+        @Forgery reason: RemovalReason,
         @Forgery file: File,
         @StringForgery fakeMetaFilePath: String
     ) {
@@ -622,7 +640,7 @@ internal class ConsentAwareStorageTest {
         testedStorage.readNextBatch { id, _ ->
             batchId = id
         }
-        testedStorage.confirmBatchRead(batchId!!) { confirm ->
+        testedStorage.confirmBatchRead(batchId!!, reason) { confirm ->
             confirm.markAsRead(true)
         }
 
@@ -634,6 +652,7 @@ internal class ConsentAwareStorageTest {
             ConsentAwareStorage.WARNING_DELETE_FAILED.format(Locale.US, mockMetaFile.path)
         )
         verifyNoMoreInteractions(mockInternalLogger)
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(eq(file), eq(reason))
     }
 
     // endregion
@@ -656,7 +675,8 @@ internal class ConsentAwareStorageTest {
             mockMetaReaderWriter,
             mockFileMover,
             mockInternalLogger,
-            mockFilePersistenceConfig
+            mockFilePersistenceConfig,
+            mockMetricsDispatcher
         )
 
         whenever(mockGrantedOrchestrator.getAllFiles()) doReturn listOf(grantedFile)
@@ -682,6 +702,18 @@ internal class ConsentAwareStorageTest {
         verify(mockFileMover).delete(mockGrantedMetaFile)
         verify(mockFileMover).delete(pendingFile)
         verify(mockFileMover).delete(mockPendingMetaFile)
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(grantedFile),
+            argThat {
+                this is RemovalReason.Flushed
+            }
+        )
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(pendingFile),
+            argThat {
+                this is RemovalReason.Flushed
+            }
+        )
     }
 
     @Test
@@ -698,7 +730,8 @@ internal class ConsentAwareStorageTest {
             mockMetaReaderWriter,
             mockFileMover,
             mockInternalLogger,
-            mockFilePersistenceConfig
+            mockFilePersistenceConfig,
+            mockMetricsDispatcher
         )
 
         whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
@@ -719,6 +752,12 @@ internal class ConsentAwareStorageTest {
         // Then
         verify(mockFileMover).delete(file)
         verify(mockFileMover).delete(mockMetaFile)
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(file),
+            argThat {
+                this is RemovalReason.Flushed
+            }
+        )
     }
 
     // endregion
