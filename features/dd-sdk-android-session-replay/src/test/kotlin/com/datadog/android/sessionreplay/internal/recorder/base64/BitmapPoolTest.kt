@@ -7,9 +7,11 @@
 package com.datadog.android.sessionreplay.internal.recorder.base64
 
 import android.graphics.Bitmap
-import android.util.LruCache
+import android.os.Build
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool.MAX_CACHE_MEMORY_SIZE_BYTES
+import com.datadog.android.sessionreplay.internal.utils.CacheUtils
+import com.datadog.tools.unit.annotations.TestTargetApi
+import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -19,9 +21,14 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
+import org.mockito.Spy
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
@@ -29,7 +36,8 @@ import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -39,27 +47,34 @@ internal class BitmapPoolTest {
     @Mock
     lateinit var mockConfig: Bitmap.Config
 
-    private val testedCache = BitmapPool
+    @Mock
+    lateinit var mockCacheUtils: CacheUtils<String, Bitmap>
 
+    @Spy
+    lateinit var spyBitmapPoolHelper: BitmapPoolHelper
+
+    private lateinit var testedCache: BitmapPool
     private var width: Int = 0
     private var height: Int = 0
     private lateinit var fakeKey: String
 
-    private lateinit var internalCache: LruCache<String, Bitmap>
-
     @BeforeEach
     fun setup(forge: Forge) {
-        internalCache = LruCache(MAX_CACHE_MEMORY_SIZE_BYTES)
-        testedCache.setBackingCache(internalCache)
-
         width = forge.anInt(1, 200)
         height = forge.anInt(1, 200)
         fakeKey = "$width-$height-$mockConfig"
 
         mockBitmap = createMockBitmap(forge)
 
-        testedCache.setUsedBitmaps(HashSet())
-        testedCache.setBitmapsBySize(HashMap())
+        doAnswer {
+            @Suppress("UNCHECKED_CAST")
+            (it.arguments[0] as () -> Any).invoke()
+        }.`when`(spyBitmapPoolHelper).safeCall<Any>(any())
+
+        testedCache = BitmapPool(
+            bitmapPoolHelper = spyBitmapPoolHelper,
+            cacheUtils = mockCacheUtils
+        )
     }
 
     @Test
@@ -108,10 +123,6 @@ internal class BitmapPoolTest {
         // Given
         testedCache.put(mockBitmap)
 
-        val bitmapsBySize = HashMap<String, HashSet<Bitmap>>()
-        bitmapsBySize[fakeKey] = hashSetOf(mockBitmap)
-        testedCache.setBitmapsBySize(bitmapsBySize)
-
         val secondBitmap = createMockBitmap(forge)
         testedCache.put(secondBitmap)
 
@@ -132,25 +143,30 @@ internal class BitmapPoolTest {
     @Test
     fun `M mark bitmap as free W put() { if bitmap already in the pool }`() {
         // Given
-        val usedCache = hashSetOf(mockBitmap)
-        testedCache.setUsedBitmaps(usedCache)
-
-        val bitmapsBySize = HashMap<String, HashSet<Bitmap>>()
-        bitmapsBySize[fakeKey] = hashSetOf(mockBitmap)
-        testedCache.setBitmapsBySize(bitmapsBySize)
+        testedCache.put(mockBitmap)
+        testedCache.getBitmapByProperties(mockBitmap.width, mockBitmap.height, mockBitmap.config)
 
         // When
         testedCache.put(mockBitmap)
 
         // Then
-        assertThat(usedCache).isEmpty()
+        val actualBitmap = testedCache.getBitmapByProperties(mockBitmap.width, mockBitmap.height, mockBitmap.config)
+        assertThat(actualBitmap).isEqualTo(mockBitmap)
     }
 
     @Test
     fun `M add to pool W put() { and bitmap not in pool }`() {
-        // Given
-        testedCache.setUsedBitmaps(HashSet())
+        // When
+        testedCache.put(mockBitmap)
+        val actual = testedCache.getBitmapByProperties(width, height, mockConfig)
 
+        // Then
+        assertThat(actual).isEqualTo(mockBitmap)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.N)
+    fun `M add to pool W put() { and bitmap not in pool, api N }`() {
         // When
         testedCache.put(mockBitmap)
         val actual = testedCache.getBitmapByProperties(width, height, mockConfig)
@@ -168,7 +184,7 @@ internal class BitmapPoolTest {
         testedCache.put(mockBitmap)
 
         // Then
-        assertThat(internalCache.size()).isEqualTo(0)
+        assertThat(testedCache.usedBitmaps.size).isEqualTo(0)
     }
 
     @Test
@@ -180,7 +196,7 @@ internal class BitmapPoolTest {
         testedCache.put(mockBitmap)
 
         // Then
-        assertThat(internalCache.size()).isEqualTo(0)
+        assertThat(testedCache.usedBitmaps.size).isEqualTo(0)
     }
 
     // endregion
@@ -223,14 +239,15 @@ internal class BitmapPoolTest {
 
         // Then
         countDownLatch.await(5, TimeUnit.SECONDS)
-        assertThat(internalCache.size()).isEqualTo(1)
-        assertThat(internalCache.snapshot().values).contains(mockBitmap)
+        assertThat(testedCache.bitmapsBySize.size).isEqualTo(1)
     }
 
     @Test
     fun `M insert multiple bitmaps W put() { multiple threads }`(forge: Forge) {
         // Given
         val countDownLatch = CountDownLatch(3)
+        val bitmapPoolHelper = BitmapPoolHelper()
+        val key = bitmapPoolHelper.generateKey(mockBitmap)
 
         // When
         repeat(3) {
@@ -242,7 +259,103 @@ internal class BitmapPoolTest {
 
         // Then
         countDownLatch.await(5, TimeUnit.SECONDS)
-        assertThat(internalCache.size()).isEqualTo(3)
+        assertThat(testedCache.bitmapsBySize.get(key)?.size).isEqualTo(3)
+    }
+
+    @Test
+    fun `M return total size of the stored bitmaps W size()`(forge: Forge) {
+        // Given
+        testedCache.put(mockBitmap)
+
+        val secondBitmap = createMockBitmap(forge)
+        testedCache.put(secondBitmap)
+
+        val expectedSize = mockBitmap.allocationByteCount + secondBitmap.allocationByteCount
+
+        // When
+        val actualSize = testedCache.size()
+
+        // Then
+        assertThat(actualSize).isEqualTo(expectedSize)
+    }
+
+    @Test
+    fun `M call recycle on bitmaps W clear()`() {
+        // Given
+        var called = false
+        whenever(mockBitmap.recycle()).then {
+            called = true
+            true
+        }
+        testedCache.put(mockBitmap)
+
+        // When
+        testedCache.clear()
+
+        // Then
+        assertThat(called).isTrue()
+    }
+
+    @Test
+    fun `M remove bitmap from pool W clear()`() {
+        // Given
+        testedCache.put(mockBitmap)
+
+        // When
+        testedCache.clear()
+
+        // Then
+        assertThat(testedCache.size()).isEqualTo(0)
+    }
+
+    @Test
+    fun `M remove bitmap from usedBitmaps W clear()`() {
+        // Given
+        testedCache.put(mockBitmap)
+        testedCache.get(fakeKey)
+        assertThat(testedCache.usedBitmaps.size).isEqualTo(1)
+
+        // When
+        testedCache.clear()
+
+        // Then
+        assertThat(testedCache.usedBitmaps.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `M remove bitmap from bitmapsBySize W clear()`() {
+        // Given
+        testedCache.put(mockBitmap)
+        assertThat(testedCache.bitmapsBySize[fakeKey]?.size).isEqualTo(1)
+
+        // When
+        testedCache.clear()
+
+        // Then
+        assertThat(testedCache.bitmapsBySize[fakeKey]?.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `M clear all items W onLowMemory()`() {
+        // Given
+        testedCache.put(mockBitmap)
+
+        // When
+        testedCache.onLowMemory()
+
+        // Then
+        assertThat(testedCache.size()).isEqualTo(0)
+    }
+
+    @Test
+    fun `M call cacheUtils with correct level W onTrimMemory()`() {
+        // When
+        testedCache.onTrimMemory(0)
+
+        // Then
+        val captor = argumentCaptor<Int>()
+        verify(mockCacheUtils).handleTrimMemory(captor.capture(), any())
+        assertThat(captor.firstValue).isEqualTo(0)
     }
 
     // endregion

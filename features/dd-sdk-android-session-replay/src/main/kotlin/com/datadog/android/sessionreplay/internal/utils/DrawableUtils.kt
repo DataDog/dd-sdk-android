@@ -24,7 +24,7 @@ import kotlin.math.sqrt
 internal class DrawableUtils(
     private val bitmapWrapper: BitmapWrapper = BitmapWrapper(),
     private val canvasWrapper: CanvasWrapper = CanvasWrapper(),
-    private val bitmapPool: BitmapPool = BitmapPool
+    private val bitmapPool: BitmapPool? = null
 ) {
     /**
      * This method attempts to create a bitmap from a drawable, such that the bitmap file size will
@@ -88,7 +88,7 @@ internal class DrawableUtils(
         height: Int,
         config: Config
     ): Bitmap? =
-        bitmapPool.getBitmapByProperties(width, height, config)
+        bitmapPool?.getBitmapByProperties(width, height, config)
             ?: bitmapWrapper.createBitmap(displayMetrics, width, height, config)
 
     @MainThread

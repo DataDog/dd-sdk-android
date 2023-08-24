@@ -27,7 +27,6 @@ plugins {
     id("com.github.ben-manes.versions")
 
     // Tests
-    id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
 
     // Internal Generation
@@ -111,10 +110,6 @@ dependencies {
 
 apply(from = "clone_session_replay_schema.gradle.kts")
 apply(from = "generate_session_replay_models.gradle.kts")
-
-unMock {
-    keep("android.util.LruCache")
-}
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 junitConfig()

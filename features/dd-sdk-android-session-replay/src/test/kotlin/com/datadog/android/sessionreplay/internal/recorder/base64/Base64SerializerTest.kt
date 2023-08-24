@@ -11,6 +11,7 @@ import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.StateListDrawable
 import android.util.DisplayMetrics
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
 import com.datadog.android.sessionreplay.internal.utils.Base64Utils
@@ -58,6 +59,9 @@ internal class Base64SerializerTest {
     lateinit var mockBase64Utils: Base64Utils
 
     @Mock
+    lateinit var mockLogger: InternalLogger
+
+    @Mock
     lateinit var mockApplicationContext: Context
 
     @Mock
@@ -71,7 +75,7 @@ internal class Base64SerializerTest {
     lateinit var mockExecutorService: ExecutorService
 
     @Mock
-    lateinit var mockBase64LruCache: Base64LRUCache
+    lateinit var mockBase64LRUCache: Base64LRUCache
 
     @Mock
     lateinit var mockDisplayMetrics: DisplayMetrics
@@ -193,7 +197,7 @@ internal class Base64SerializerTest {
     fun `M get base64 from cache W handleBitmap() { cache hit }`(forge: Forge) {
         // Given
         val fakeBase64String = forge.anAsciiString()
-        whenever(mockBase64LruCache.get(mockDrawable)).thenReturn(fakeBase64String)
+        whenever(mockBase64LRUCache.get(mockDrawable)).thenReturn(fakeBase64String)
 
         whenever(
             mockDrawableUtils.createBitmapOfApproxSizeFromDrawable(
@@ -244,13 +248,13 @@ internal class Base64SerializerTest {
         }
 
         // Then
-        verify(mockApplicationContext, times(1)).registerComponentCallbacks(mockBase64LruCache)
+        verify(mockApplicationContext, times(1)).registerComponentCallbacks(mockBase64LRUCache)
     }
 
     @Test
     fun `M calculate base64 W handleBitmap() { cache miss }`() {
         // Given
-        whenever(mockBase64LruCache.get(mockDrawable)).thenReturn(null)
+        whenever(mockBase64LRUCache.get(mockDrawable)).thenReturn(null)
 
         // When
         testedBase64Serializer.handleBitmap(
@@ -293,7 +297,7 @@ internal class Base64SerializerTest {
         )
 
         // Then
-        verify(mockBase64LruCache, times(1)).put(mockStateListDrawable, fakeBase64String)
+        verify(mockBase64LRUCache, times(1)).put(mockStateListDrawable, fakeBase64String)
     }
 
     @Test
@@ -310,15 +314,19 @@ internal class Base64SerializerTest {
         )
 
         // Then
-        verify(mockBase64LruCache, times(0)).put(any(), any())
+        verify(mockBase64LRUCache, times(0)).put(any(), any())
     }
 
-    private fun createBase64Serializer() = Base64Serializer.Builder().build(
-        threadPoolExecutor = mockExecutorService,
-        drawableUtils = mockDrawableUtils,
-        base64Utils = mockBase64Utils,
-        webPImageCompression = mockWebPImageCompression,
-        base64LruCache = mockBase64LruCache,
-        bitmapPool = mockBitmapPool
-    )
+    private fun createBase64Serializer(): Base64Serializer {
+        val builder = Base64Serializer.Builder(
+            logger = mockLogger,
+            threadPoolExecutor = mockExecutorService,
+            bitmapPool = mockBitmapPool,
+            base64LRUCache = mockBase64LRUCache,
+            drawableUtils = mockDrawableUtils,
+            base64Utils = mockBase64Utils,
+            webPImageCompression = mockWebPImageCompression
+        )
+        return builder.build()
+    }
 }

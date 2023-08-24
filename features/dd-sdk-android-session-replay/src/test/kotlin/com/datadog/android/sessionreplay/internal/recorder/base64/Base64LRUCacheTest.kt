@@ -10,8 +10,9 @@ import android.graphics.drawable.AnimationDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.StateListDrawable
-import android.util.LruCache
+import androidx.collection.LruCache
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.recorder.base64.Base64LRUCache.Companion.MAX_CACHE_MEMORY_SIZE_BYTES
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -25,9 +26,7 @@ import org.mockito.Mock
 import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -38,10 +37,9 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class Base64LRUCacheTest {
-    private val testedCache = Base64LRUCache
+    private lateinit var testedCache: Base64LRUCache
 
-    @Mock
-    lateinit var mockLruCache: LruCache<String, ByteArray>
+    private lateinit var internalCache: LruCache<String, ByteArray>
 
     @Mock
     lateinit var mockDrawable: Drawable
@@ -53,7 +51,10 @@ internal class Base64LRUCacheTest {
 
     @BeforeEach
     fun setup() {
-        testedCache.setBackingCache(mockLruCache)
+        internalCache = LruCache<String, ByteArray>(MAX_CACHE_MEMORY_SIZE_BYTES)
+        testedCache = Base64LRUCache(
+            cache = internalCache
+        )
     }
 
     @Test
@@ -68,53 +69,15 @@ internal class Base64LRUCacheTest {
     @Test
     fun `M return item W get() { item in cache }`(forge: Forge) {
         // Given
-        val drawableID = System.identityHashCode(mockDrawable).toString()
         val fakeBase64String = forge.aString()
-        val fakeValue = forge.anAsciiString().toByteArray()
 
-        whenever(mockLruCache.get(drawableID)).thenReturn(fakeValue)
         testedCache.put(mockDrawable, fakeBase64String)
 
         // When
         val cacheItem = testedCache.get(mockDrawable)
 
         // Then
-        verify(mockLruCache).get(drawableID)
-        assertThat(cacheItem).isEqualTo(String(fakeValue))
-    }
-
-    @Test
-    fun `M call LruCache put W put()`() {
-        // Given
-        val key = System.identityHashCode(mockDrawable).toString()
-
-        // When
-        testedCache.put(mockDrawable, fakeBase64)
-
-        // Then
-        verify(mockLruCache).put(key, fakeBase64.toByteArray())
-    }
-
-    @Test
-    fun `M return LruCache size W size()`() {
-        // Given
-        whenever(mockLruCache.size()).thenReturn(3)
-
-        // When
-        val size = testedCache.size()
-
-        // Then
-        verify(mockLruCache).size()
-        assertThat(size).isEqualTo(3)
-    }
-
-    @Test
-    fun `M clear LRUCache W clear()`() {
-        // When
-        testedCache.clear()
-
-        // Then
-        verify(mockLruCache).evictAll()
+        assertThat(cacheItem).isEqualTo(fakeBase64String)
     }
 
     @Test
@@ -126,8 +89,8 @@ internal class Base64LRUCacheTest {
         testedCache.put(mockAnimationDrawable, fakeBase64)
 
         // Then
-        verify(mockLruCache).put(argumentCaptor.capture(), any())
-        assertThat(argumentCaptor.firstValue).doesNotContain("-")
+        val key = testedCache.generateKey(mockAnimationDrawable)
+        assertThat(key).doesNotContain("-")
     }
 
     @Test
@@ -142,8 +105,8 @@ internal class Base64LRUCacheTest {
         testedCache.put(mockStatelistDrawable, fakeBase64)
 
         // Then
-        verify(mockLruCache).put(argumentCaptor.capture(), any())
-        assertThat(argumentCaptor.firstValue).startsWith(expectedPrefix)
+        val key = testedCache.generateKey(mockStatelistDrawable)
+        assertThat(key).startsWith(expectedPrefix)
     }
 
     @Test
@@ -157,14 +120,13 @@ internal class Base64LRUCacheTest {
         whenever(mockRippleDrawable.getDrawable(1)).thenReturn(mockFgLayer)
 
         val fakeBase64 = forge.aString()
-        val captor = argumentCaptor<String>()
 
         // When
         testedCache.put(mockRippleDrawable, fakeBase64)
 
         // Then
-        verify(mockLruCache).put(captor.capture(), any())
-        assertThat(captor.firstValue).contains(System.identityHashCode(mockBgLayer).toString())
+        val key = testedCache.generateKey(mockRippleDrawable)
+        assertThat(key).contains(System.identityHashCode(mockBgLayer).toString())
     }
 
     @Test
@@ -176,13 +138,12 @@ internal class Base64LRUCacheTest {
         whenever(mockRippleDrawable.getDrawable(0)).thenReturn(mockBgLayer)
 
         val fakeBase64 = forge.aString()
-        val captor = argumentCaptor<String>()
 
         // When
         testedCache.put(mockRippleDrawable, fakeBase64)
 
         // Then
-        verify(mockLruCache).put(captor.capture(), any())
-        assertThat(captor.firstValue).isEqualTo(System.identityHashCode(mockRippleDrawable).toString())
+        val key = testedCache.generateKey(mockRippleDrawable)
+        assertThat(key).isEqualTo(System.identityHashCode(mockRippleDrawable).toString())
     }
 }

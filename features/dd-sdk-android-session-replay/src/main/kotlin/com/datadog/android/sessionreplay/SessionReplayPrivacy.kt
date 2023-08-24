@@ -20,6 +20,9 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toolbar
 import androidx.appcompat.widget.SwitchCompat
+import com.datadog.android.sessionreplay.internal.recorder.base64.Base64LRUCache
+import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
+import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
 import com.datadog.android.sessionreplay.internal.recorder.mapper.BasePickerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
@@ -77,9 +80,11 @@ enum class SessionReplayPrivacy {
 
     @Suppress("LongMethod")
     internal fun mappers(): List<MapperTypeWrapper> {
+        val base64Serializer = buildBase64Serializer()
+
         val viewWireframeMapper = ViewWireframeMapper()
         val unsupportedViewMapper = UnsupportedViewMapper()
-        val imageButtonMapper = ImageButtonMapper()
+        val imageButtonMapper = ImageButtonMapper(base64Serializer = base64Serializer)
         val imageMapper: ViewScreenshotWireframeMapper
         val textMapper: TextViewMapper
         val buttonMapper: ButtonMapper
@@ -159,6 +164,17 @@ enum class SessionReplayPrivacy {
             )
         }
         return mappersList
+    }
+
+    private fun buildBase64Serializer(): Base64Serializer {
+        val bitmapPool = BitmapPool()
+        val base64LRUCache = Base64LRUCache()
+
+        val builder = Base64Serializer.Builder(
+            bitmapPool = bitmapPool,
+            base64LRUCache = base64LRUCache
+        )
+        return builder.build()
     }
 
     private fun getMaskSeekBarMapper(): MaskSeekBarWireframeMapper? {

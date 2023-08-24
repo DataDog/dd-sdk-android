@@ -11,7 +11,8 @@ import com.datadog.android.api.InternalLogger
 internal class InvocationUtils {
     @Suppress("SwallowedException", "TooGenericExceptionCaught")
     inline fun<R> safeCallWithErrorLogging(
-        logger: InternalLogger,
+        // Temporarily use UNBOUND until we handle the loggers
+        logger: InternalLogger = InternalLogger.UNBOUND,
         call: () -> R,
         failureMessage: String,
         level: InternalLogger.Level = InternalLogger.Level.WARN,
@@ -24,7 +25,8 @@ internal class InvocationUtils {
             logger.log(
                 level,
                 target,
-                { failureMessage }
+                { failureMessage },
+                e
             )
         }
 

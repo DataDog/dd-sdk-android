@@ -12,59 +12,74 @@ import android.graphics.drawable.AnimationDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.DrawableContainer
 import android.graphics.drawable.LayerDrawable
-import android.util.LruCache
 import androidx.annotation.VisibleForTesting
+import androidx.collection.LruCache
 import com.datadog.android.sessionreplay.internal.utils.CacheUtils
+import com.datadog.android.sessionreplay.internal.utils.InvocationUtils
 
-internal object Base64LRUCache : Cache<Drawable, String>, ComponentCallbacks2 {
-    @Suppress("MagicNumber")
-    private val MAX_CACHE_MEMORY_SIZE_BYTES = 4 * 1024 * 1024 // 4MB
-
-    private var cache: LruCache<String, ByteArray> = object :
-        LruCache<String, ByteArray>(MAX_CACHE_MEMORY_SIZE_BYTES) {
-        override fun sizeOf(key: String?, value: ByteArray): Int {
-            return value.size
+internal class Base64LRUCache(
+    private val cacheUtils: CacheUtils<String, ByteArray> = CacheUtils(),
+    private val invocationUtils: InvocationUtils = InvocationUtils(),
+    private var cache: LruCache<String, ByteArray> =
+        object :
+            LruCache<String, ByteArray>(MAX_CACHE_MEMORY_SIZE_BYTES) {
+            override fun sizeOf(key: String, value: ByteArray): Int {
+                return value.size
+            }
         }
-    }
+) : Cache<Drawable, String>, ComponentCallbacks2 {
 
     override fun onTrimMemory(level: Int) {
-        val cacheUtils = CacheUtils<String, ByteArray>()
         cacheUtils.handleTrimMemory(level, cache)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {}
 
     override fun onLowMemory() {
-        cache.evictAll()
-    }
-
-    @VisibleForTesting
-    internal fun setBackingCache(cache: LruCache<String, ByteArray>) {
-        this.cache = cache
+        @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
+        invocationUtils.safeCallWithErrorLogging(
+            call = { cache.evictAll() },
+            failureMessage = FAILURE_MSG_EVICT_CACHE_CONTENTS
+        )
     }
 
     @Synchronized
     override fun put(element: Drawable, value: String) {
         val key = generateKey(element)
         val byteArray = value.toByteArray(Charsets.UTF_8)
-        cache.put(key, byteArray)
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
+        invocationUtils.safeCallWithErrorLogging(
+            call = { cache.put(key, byteArray) },
+            failureMessage = FAILURE_MSG_PUT_CACHE
+        )
     }
 
     @Synchronized
     override fun get(element: Drawable): String? =
-        cache.get(generateKey(element))?.let {
-            String(it)
-        }
+        @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
+        invocationUtils.safeCallWithErrorLogging(
+            call = {
+                cache.get(generateKey(element))?.let {
+                    String(it)
+                }
+            },
+            failureMessage = FAILURE_MSG_GET_CACHE
+        )
 
-    @Synchronized
     override fun size(): Int = cache.size()
 
     @Synchronized
     override fun clear() {
-        cache.evictAll()
+        @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
+        invocationUtils.safeCallWithErrorLogging(
+            call = { cache.evictAll() },
+            failureMessage = FAILURE_MSG_EVICT_CACHE_CONTENTS
+        )
     }
 
-    private fun generateKey(drawable: Drawable): String =
+    @VisibleForTesting
+    internal fun generateKey(drawable: Drawable): String =
         generatePrefix(drawable) + System.identityHashCode(drawable)
 
     private fun generatePrefix(drawable: Drawable): String {
@@ -96,5 +111,14 @@ internal object Base64LRUCache : Cache<Drawable, String>, ComponentCallbacks2 {
         } else {
             ""
         }
+    }
+
+    internal companion object {
+        @Suppress("MagicNumber")
+        internal val MAX_CACHE_MEMORY_SIZE_BYTES = 4 * 1024 * 1024 // 4MB
+
+        private const val FAILURE_MSG_EVICT_CACHE_CONTENTS = "Failed to evict cache entries"
+        private const val FAILURE_MSG_PUT_CACHE = "Failed to put item in cache"
+        private const val FAILURE_MSG_GET_CACHE = "Failed to get item from cache"
     }
 }
