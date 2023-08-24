@@ -114,6 +114,7 @@ android {
 }
 
 dependencies {
+    // Datadog Libraries
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-trace"))
@@ -131,6 +132,9 @@ dependencies {
     implementation(project(":integrations:dd-sdk-android-sqldelight"))
     implementation(project(":integrations:dd-sdk-android-compose"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
+
+    // Sample Vendor Library
+    implementation(project(":sample:vendor-lib"))
 
     implementation(libs.kotlin)
 
@@ -155,9 +159,6 @@ dependencies {
     implementation("io.opentracing.contrib:opentracing-rxjava-3:0.1.4") {
         exclude(group = "io.opentracing")
     }
-
-    // Ktor (local web server)
-    implementation(libs.bundles.ktor)
 
     // Image Loading Library
     implementation(libs.coil)

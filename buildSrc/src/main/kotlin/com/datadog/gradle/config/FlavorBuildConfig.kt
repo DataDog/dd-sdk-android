@@ -11,7 +11,7 @@ import com.google.gson.Gson
 import java.io.File
 import java.util.Locale
 
-private fun sampleAppConfig(filePath: String): SampleAppConfig {
+fun sampleAppConfig(filePath: String): SampleAppConfig {
     val file = File(filePath)
     if (!file.exists()) {
         return SampleAppConfig()
