@@ -6,12 +6,8 @@
 
 package com.datadog.android.core.internal.metrics
 
-import com.datadog.tools.annotation.NoOpImplementation
-import java.io.File
-
-@NoOpImplementation
-internal interface MetricsDispatcher {
-    fun sendBatchDeletedMetric(batchFile: File, removalReason: RemovalReason)
-
-    fun sendBatchClosedMetric(batchFile: File, batchMetadata: BatchClosedMetadata)
-}
+internal data class BatchClosedMetadata(
+    internal val lastTimeWasUsedInMs: Long,
+    internal val forcedNew: Boolean,
+    internal val eventsCount: Long
+)
