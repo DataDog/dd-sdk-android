@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.metrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
+import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.time.TimeProvider
@@ -16,6 +17,7 @@ import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import java.io.File
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal class BatchMetricsDispatcher(
     featureName: String,
@@ -24,10 +26,13 @@ internal class BatchMetricsDispatcher(
     private val internalLogger: InternalLogger,
     private val dateTimeProvider: TimeProvider,
     private val sampler: Sampler = RateBasedSampler(METRICS_DISPATCHER_DEFAULT_SAMPLING_RATE)
-) :
-    MetricsDispatcher {
+
+) : MetricsDispatcher, ProcessLifecycleMonitor.Callback {
 
     private val trackName: String? = resolveTrackName(featureName)
+    private val isInBackground = AtomicBoolean(false)
+
+    // region MetricsDispatcher
 
     override fun sendBatchDeletedMetric(batchFile: File, removalReason: RemovalReason) {
         if (!removalReason.includeInMetrics() || trackName == null || !sampler.sample()) {
@@ -53,6 +58,29 @@ internal class BatchMetricsDispatcher(
         }
     }
 
+    // endregion
+
+    // region ProcessLifecycleMonitor.Callback
+    override fun onStarted() {
+        // NO - OP
+    }
+
+    override fun onResumed() {
+        isInBackground.set(false)
+    }
+
+    override fun onStopped() {
+        // NO - OP
+    }
+
+    override fun onPaused() {
+        isInBackground.set(true)
+    }
+
+    // endregion
+
+    // region Internal
+
     private fun resolveBatchDeletedMetricAttributes(
         file: File,
         deletionReason: RemovalReason
@@ -72,8 +100,7 @@ internal class BatchMetricsDispatcher(
             UPLOADER_WINDOW_KEY to filePersistenceConfig.recentDelayMs,
 
             BATCH_REMOVAL_KEY to deletionReason.toString(),
-            // TODO: RUMM-952 add inBackground flag value
-            IN_BACKGROUND_KEY to false
+            IN_BACKGROUND_KEY to isInBackground.get()
         )
     }
 
@@ -119,6 +146,8 @@ internal class BatchMetricsDispatcher(
             else -> null
         }
     }
+
+    // endregion
 
     companion object {
 

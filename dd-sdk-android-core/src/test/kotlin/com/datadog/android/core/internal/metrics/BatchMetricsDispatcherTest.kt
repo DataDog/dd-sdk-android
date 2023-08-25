@@ -128,6 +128,83 @@ internal class BatchMetricsDispatcherTest {
     }
 
     @Test
+    fun `M send metric W sendBatchDeletedMetric { app in background }`(forge: Forge) {
+        // Given
+        val fakeReason = forge.forgeIncludeInMetricReason()
+        val fakeFile: File = forge.forgeValidFile()
+        val expectedAdditionalProperties = mapOf(
+            BatchMetricsDispatcher.TYPE_KEY to
+                BatchMetricsDispatcher.BATCH_DELETED_TYPE_VALUE,
+            BatchMetricsDispatcher.TRACK_KEY to
+                trackNameResolver(fakeFeatureName),
+            BatchMetricsDispatcher.BATCH_AGE_KEY to
+                (currentTimeInMillis - fakeFile.name.toLong()),
+            BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
+                fakeFilePersistenceConfig.recentDelayMs,
+            BatchMetricsDispatcher.UPLOADER_DELAY_KEY to mapOf(
+                BatchMetricsDispatcher.UPLOADER_DELAY_MIN_KEY to
+                    fakeUploadConfiguration.minDelayMs,
+                BatchMetricsDispatcher.UPLOADER_DELAY_MAX_KEY to
+                    fakeUploadConfiguration.maxDelayMs
+            ),
+            BatchMetricsDispatcher.BATCH_REMOVAL_KEY to fakeReason.toString(),
+            BatchMetricsDispatcher.IN_BACKGROUND_KEY to true
+        )
+        testedBatchMetricsDispatcher.onPaused()
+
+        // When
+        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
+
+        // Then
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockInternalLogger).logMetric(
+                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
+                capture()
+            )
+            assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
+        }
+    }
+
+    @Test
+    fun `M send metric W sendBatchDeletedMetric { app back in foreground }`(forge: Forge) {
+        // Given
+        testedBatchMetricsDispatcher.onPaused()
+        val fakeReason = forge.forgeIncludeInMetricReason()
+        val fakeFile: File = forge.forgeValidFile()
+        val expectedAdditionalProperties = mapOf(
+            BatchMetricsDispatcher.TYPE_KEY to
+                BatchMetricsDispatcher.BATCH_DELETED_TYPE_VALUE,
+            BatchMetricsDispatcher.TRACK_KEY to
+                trackNameResolver(fakeFeatureName),
+            BatchMetricsDispatcher.BATCH_AGE_KEY to
+                (currentTimeInMillis - fakeFile.name.toLong()),
+            BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
+                fakeFilePersistenceConfig.recentDelayMs,
+            BatchMetricsDispatcher.UPLOADER_DELAY_KEY to mapOf(
+                BatchMetricsDispatcher.UPLOADER_DELAY_MIN_KEY to
+                    fakeUploadConfiguration.minDelayMs,
+                BatchMetricsDispatcher.UPLOADER_DELAY_MAX_KEY to
+                    fakeUploadConfiguration.maxDelayMs
+            ),
+            BatchMetricsDispatcher.BATCH_REMOVAL_KEY to fakeReason.toString(),
+            BatchMetricsDispatcher.IN_BACKGROUND_KEY to false
+        )
+
+        // When
+        testedBatchMetricsDispatcher.onResumed()
+        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
+
+        // Then
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockInternalLogger).logMetric(
+                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
+                capture()
+            )
+            assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
+        }
+    }
+
+    @Test
     fun `M do nothing W sendBatchDeletedMetric { file name is broken }`(forge: Forge) {
         // Given
         val fakeReason = forge.forgeIncludeInMetricReason()
@@ -243,11 +320,11 @@ internal class BatchMetricsDispatcherTest {
     @Test
     fun `M send metric W sendBatchClosedMetric{ file is broken }`(
         @Forgery fakeMetadata: BatchClosedMetadata,
-        @Forgery fakeThrowable: Throwable
+        @Forgery fakeException: Exception
     ) {
         // Given
         val fakeFile: File = mock {
-            whenever(it.length()).thenThrow(fakeThrowable)
+            whenever(it.length()).thenThrow(fakeException)
         }
         val expectedAdditionalProperties = mapOf(
             BatchMetricsDispatcher.TYPE_KEY to
