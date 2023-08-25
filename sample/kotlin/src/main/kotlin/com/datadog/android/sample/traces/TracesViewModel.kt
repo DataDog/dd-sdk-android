@@ -13,13 +13,13 @@ import com.datadog.android.log.Logger
 import com.datadog.android.rum.coroutines.sendErrorToDatadog
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.data.Result
-import com.datadog.android.sample.server.LocalServer
 import com.datadog.android.trace.coroutines.CoroutineScopeSpan
 import com.datadog.android.trace.coroutines.asyncTraced
 import com.datadog.android.trace.coroutines.awaitTraced
 import com.datadog.android.trace.coroutines.launchTraced
 import com.datadog.android.trace.coroutines.withContextTraced
 import com.datadog.android.trace.withinSpan
+import com.datadog.android.vendor.sample.LocalServer
 import io.opentracing.Span
 import io.opentracing.log.Fields
 import io.opentracing.util.GlobalTracer
@@ -37,11 +37,13 @@ import java.util.Locale
 import java.util.Random
 
 @Suppress("DEPRECATION")
-internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
+internal class TracesViewModel(
+    private val okHttpClient: OkHttpClient,
+    private val localServer: LocalServer
+) : ViewModel() {
 
     private var asyncOperationTask: AsyncTask<Unit, Unit, Unit>? = null
     private var networkRequestTask: AsyncTask<Unit, Unit, Result>? = null
-    private var localServer: LocalServer = LocalServer()
 
     private val scope = MainScope()
 
@@ -243,6 +245,7 @@ internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewMod
                 is Result.Success<*> -> {
                     onResponse(result.data as Response)
                 }
+
                 is Result.Failure -> {
                     if (result.throwable != null) {
                         onException(result.throwable)
