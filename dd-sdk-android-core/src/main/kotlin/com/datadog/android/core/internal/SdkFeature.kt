@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal
 
+import android.app.Application
 import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
@@ -25,6 +26,7 @@ import com.datadog.android.core.internal.data.upload.v2.DataFlusher
 import com.datadog.android.core.internal.data.upload.v2.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.v2.DataUploader
 import com.datadog.android.core.internal.data.upload.v2.NoOpDataUploader
+import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.NoOpMetricsDispatcher
@@ -56,7 +58,8 @@ internal class SdkFeature(
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var uploadScheduler: UploadScheduler = NoOpUploadScheduler()
     internal var fileOrchestrator: FileOrchestrator = NoOpFileOrchestrator()
-    private var metricsDispatcher: MetricsDispatcher = NoOpMetricsDispatcher()
+    internal var metricsDispatcher: MetricsDispatcher = NoOpMetricsDispatcher()
+    internal var processLifecycleMonitor: ProcessLifecycleMonitor? = null
 
     // region SdkFeature
 
@@ -69,7 +72,6 @@ internal class SdkFeature(
         if (wrappedFeature is StorageBackedFeature) {
             val uploadFrequency = resolveUploadFrequency()
             dataUploadConfiguration = DataUploadConfiguration(uploadFrequency)
-
             val storageConfiguration = wrappedFeature.storageConfiguration
             val recentDelayMs = resolveBatchingDelay(coreFeature, storageConfiguration)
             val filePersistenceConfig = coreFeature.buildFilePersistenceConfig().copy(
@@ -79,13 +81,7 @@ internal class SdkFeature(
                 oldFileThreshold = storageConfiguration.oldBatchThreshold,
                 recentDelayMs = recentDelayMs
             )
-            metricsDispatcher = BatchMetricsDispatcher(
-                wrappedFeature.name,
-                dataUploadConfiguration,
-                filePersistenceConfig,
-                internalLogger,
-                coreFeature.timeProvider
-            )
+            setupMetricsDispatcher(dataUploadConfiguration, filePersistenceConfig, context)
 
             storage = createStorage(wrappedFeature.name, filePersistenceConfig)
         }
@@ -124,7 +120,10 @@ internal class SdkFeature(
             storage = NoOpStorage()
             uploader = NoOpDataUploader()
             fileOrchestrator = NoOpFileOrchestrator()
-
+            metricsDispatcher = NoOpMetricsDispatcher()
+            (coreFeature.contextRef.get() as? Application)
+                ?.unregisterActivityLifecycleCallbacks(processLifecycleMonitor)
+            processLifecycleMonitor = null
             initialized.set(false)
         }
     }
@@ -168,6 +167,27 @@ internal class SdkFeature(
     // endregion
 
     // region Internal
+
+    private fun setupMetricsDispatcher(
+        dataUploadConfiguration: DataUploadConfiguration,
+        filePersistenceConfig: FilePersistenceConfig,
+        context: Context
+    ) {
+        metricsDispatcher = BatchMetricsDispatcher(
+            wrappedFeature.name,
+            dataUploadConfiguration,
+            filePersistenceConfig,
+            internalLogger,
+            coreFeature.timeProvider
+        ).apply {
+            if (context is Application) {
+                processLifecycleMonitor = ProcessLifecycleMonitor(this)
+                context.registerActivityLifecycleCallbacks(
+                    processLifecycleMonitor
+                )
+            }
+        }
+    }
 
     private fun resolveBatchingDelay(
         coreFeature: CoreFeature,
