@@ -116,6 +116,14 @@ internal fun Forge.addLongTaskEvent(): RumRawEvent.AddLongTask {
     )
 }
 
+internal fun Forge.applicationStartedEvent(): RumRawEvent.ApplicationStarted {
+    val time = Time()
+    return RumRawEvent.ApplicationStarted(
+        eventTime = time,
+        applicationStartupNanos = aLong(min = 0L, max = time.nanoTime)
+    )
+}
+
 internal fun Forge.validBackgroundEvent(): RumRawEvent {
     return this.anElementFrom(
         listOf(
