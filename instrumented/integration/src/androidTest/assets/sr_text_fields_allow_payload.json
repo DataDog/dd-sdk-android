@@ -1,0 +1,539 @@
+[{
+  "type": 4,
+  "data": {
+    "width": 411,
+    "height": 914
+  }
+}, {
+  "type": 6,
+  "data": {
+    "has_focus": true
+  }
+}, {
+  "type": 11,
+  "data": {
+    "source": 4,
+    "width": 411,
+    "height": 914
+  }
+}, {
+  "type": 10,
+  "data": {
+    "wireframes": [{
+      "shapeStyle": {
+        "backgroundColor": "#303030ff",
+        "opacity": 1.0
+      },
+      "type": "shape"
+    }, {
+      "type": "text",
+      "text": "Default Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 14,
+        "color": "#a538afff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "top"
+        }
+      }
+    }, {
+      "type": "text",
+      "text": "Material Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 14,
+        "color": "#cc0000ff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "top"
+        }
+      }
+    }, {
+      "type": "text",
+      "text": "App Compat Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 14,
+        "color": "#ffbb33ff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "top"
+        }
+      }
+    }, {
+      "type": "text",
+      "text": "Edit Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 17,
+        "color": "#a538afff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 9,
+          "bottom": 11,
+          "left": 3,
+          "right": 3
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "center"
+        }
+      }
+    }, {
+      "shapeStyle": {
+        "backgroundColor": "#a538afff",
+        "opacity": 1.0
+      },
+      "type": "shape"
+    }, {
+      "type": "text",
+      "text": "Default Auto Complete Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 17,
+        "color": "#ffbb33ff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 9,
+          "bottom": 11,
+          "left": 3,
+          "right": 3
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "center"
+        }
+      }
+    }, {
+      "shapeStyle": {
+        "backgroundColor": "#ffbb33ff",
+        "opacity": 1.0
+      },
+      "type": "shape"
+    }, {
+      "type": "text",
+      "text": "App Compat Edit Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 17,
+        "color": "#ffbb33ff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 9,
+          "bottom": 11,
+          "left": 3,
+          "right": 3
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "center"
+        }
+      }
+    }, {
+      "shapeStyle": {
+        "backgroundColor": "#ffbb33ff",
+        "opacity": 1.0
+      },
+      "type": "shape"
+    }, {
+      "type": "text",
+      "text": "App Compat Auto Complete Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 17,
+        "color": "#a538afff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 9,
+          "bottom": 11,
+          "left": 3,
+          "right": 3
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "center"
+        }
+      }
+    }, {
+      "shapeStyle": {
+        "backgroundColor": "#a538afff",
+        "opacity": 1.0
+      },
+      "type": "shape"
+    }, {
+      "type": "text",
+      "text": "Material Auto Complete Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 17,
+        "color": "#a538afff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 9,
+          "bottom": 11,
+          "left": 3,
+          "right": 3
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "center"
+        }
+      }
+    }, {
+      "shapeStyle": {
+        "backgroundColor": "#a538afff",
+        "opacity": 1.0
+      },
+      "type": "shape"
+    }, {
+      "type": "text",
+      "text": "Checked Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 14,
+        "color": "#ffffffff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 0,
+          "bottom": 12,
+          "left": 0,
+          "right": 32
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "center"
+        }
+      }
+    }, {
+      "border": {
+        "color": "#ffffffff",
+        "width": 1
+      },
+      "type": "shape"
+    }, {
+      "type": "text",
+      "text": "App Compat Checked Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 14,
+        "color": "#ffffffff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 0,
+          "bottom": 12,
+          "left": 0,
+          "right": 32
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "center"
+        }
+      }
+    }, {
+      "shapeStyle": {
+        "backgroundColor": "#ffffffff",
+        "opacity": 1.0
+      },
+      "border": {
+        "color": "#ffffffff",
+        "width": 1
+      },
+      "type": "shape"
+    }, {
+      "type": "placeholder",
+      "label": "Toolbar"
+    }]
+  }
+}, {
+  "type": 10,
+  "data": {
+    "wireframes": [{
+      "shapeStyle": {
+        "backgroundColor": "#303030ff",
+        "opacity": 1.0
+      },
+      "type": "shape"
+    }, {
+      "type": "text",
+      "text": "Default Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 14,
+        "color": "#a538afff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "top"
+        }
+      }
+    }, {
+      "type": "text",
+      "text": "Material Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 14,
+        "color": "#cc0000ff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "top"
+        }
+      }
+    }, {
+      "type": "text",
+      "text": "App Compat Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 14,
+        "color": "#ffbb33ff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "top"
+        }
+      }
+    }, {
+      "type": "text",
+      "text": "Edit Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 17,
+        "color": "#a538afff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 9,
+          "bottom": 11,
+          "left": 3,
+          "right": 3
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "center"
+        }
+      }
+    }, {
+      "shapeStyle": {
+        "backgroundColor": "#a538afff",
+        "opacity": 1.0
+      },
+      "type": "shape"
+    }, {
+      "type": "text",
+      "text": "Default Auto Complete Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 17,
+        "color": "#ffbb33ff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 9,
+          "bottom": 11,
+          "left": 3,
+          "right": 3
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "center"
+        }
+      }
+    }, {
+      "shapeStyle": {
+        "backgroundColor": "#ffbb33ff",
+        "opacity": 1.0
+      },
+      "type": "shape"
+    }, {
+      "type": "text",
+      "text": "App Compat Edit Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 17,
+        "color": "#ffbb33ff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 9,
+          "bottom": 11,
+          "left": 3,
+          "right": 3
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "center"
+        }
+      }
+    }, {
+      "shapeStyle": {
+        "backgroundColor": "#ffbb33ff",
+        "opacity": 1.0
+      },
+      "type": "shape"
+    }, {
+      "type": "text",
+      "text": "App Compat Auto Complete Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 17,
+        "color": "#a538afff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 9,
+          "bottom": 11,
+          "left": 3,
+          "right": 3
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "center"
+        }
+      }
+    }, {
+      "shapeStyle": {
+        "backgroundColor": "#a538afff",
+        "opacity": 1.0
+      },
+      "type": "shape"
+    }, {
+      "type": "text",
+      "text": "Material Auto Complete Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 17,
+        "color": "#a538afff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 9,
+          "bottom": 11,
+          "left": 3,
+          "right": 3
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "center"
+        }
+      }
+    }, {
+      "shapeStyle": {
+        "backgroundColor": "#a538afff",
+        "opacity": 1.0
+      },
+      "type": "shape"
+    }, {
+      "type": "text",
+      "text": "Checked Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 14,
+        "color": "#ffffffff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 0,
+          "bottom": 12,
+          "left": 0,
+          "right": 32
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "center"
+        }
+      }
+    }, {
+      "border": {
+        "color": "#ffffffff",
+        "width": 1
+      },
+      "type": "shape"
+    }, {
+      "type": "text",
+      "text": "App Compat Checked Text View",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 14,
+        "color": "#ffffffff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 0,
+          "bottom": 12,
+          "left": 0,
+          "right": 32
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "center"
+        }
+      }
+    }, {
+      "shapeStyle": {
+        "backgroundColor": "#ffffffff",
+        "opacity": 1.0
+      },
+      "border": {
+        "color": "#ffffffff",
+        "width": 1
+      },
+      "type": "shape"
+    }, {
+      "type": "placeholder",
+      "label": "Toolbar"
+    }]
+  }
+}]

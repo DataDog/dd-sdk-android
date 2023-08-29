@@ -25,11 +25,12 @@ import java.util.zip.Inflater
 
 internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> {
 
-    protected abstract fun runInstrumentationScenario(mockServerRule: T): ExpectedSrData
+    protected abstract fun runInstrumentationScenario(mockServerRule: T)
 
     protected fun verifyExpectedSrData(
         handledRequests: List<HandledRequest>,
-        expectedPayloadFileName: String
+        expectedPayloadFileName: String,
+        matchingStrategy: MatchingStrategy = MatchingStrategy.EXACT
     ) {
         val records = handledRequests
             .mapNotNull { it.extractSrSegmentAsJson()?.asJsonObject }
@@ -38,7 +39,7 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
         val expectedPayload = resolveTestExpectedPayload(expectedPayloadFileName)
             .asJsonArray
             .map { it.sanitizedForAssertion() }
-        assertThat(records)
+        val assertion = assertThat(records)
             .usingRecursiveFieldByFieldElementComparator(
                 RecursiveComparisonConfiguration
                     .builder()
@@ -47,7 +48,10 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
                         JsonPrimitive::class.java
                     ).build()
             )
-            .containsExactlyInAnyOrderElementsOf(expectedPayload)
+        when (matchingStrategy) {
+            MatchingStrategy.EXACT -> assertion.containsExactlyElementsOf(expectedPayload)
+            MatchingStrategy.CONTAINS -> assertion.containsAll(expectedPayload)
+        }
     }
 
     private fun resolveTestExpectedPayload(fileName: String): JsonElement {
@@ -162,5 +166,10 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
             Regex("content-disposition: form-data; name=\"segment\"; filename=\"(.+)\"")
         private val CONTENT_LENGTH_REGEX =
             Regex("content-length: (\\d+)")
+    }
+
+    enum class MatchingStrategy {
+        EXACT,
+        CONTAINS
     }
 }
