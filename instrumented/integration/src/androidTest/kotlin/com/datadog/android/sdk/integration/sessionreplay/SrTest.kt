@@ -25,20 +25,21 @@ import java.util.zip.Inflater
 
 internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> {
 
-    protected abstract fun runInstrumentationScenario(mockServerRule: T): ExpectedSrData
+    protected abstract fun runInstrumentationScenario(mockServerRule: T)
 
     protected fun verifyExpectedSrData(
         handledRequests: List<HandledRequest>,
-        expectedPayloadFileName: String
+        expectedPayloadFileName: String,
+        matchingStrategy: MatchingStrategy = MatchingStrategy.EXACT
     ) {
         val records = handledRequests
             .mapNotNull { it.extractSrSegmentAsJson()?.asJsonObject }
             .flatMap { it.getAsJsonArray("records") }
-            .map { it.sanitizedForAssertion() }
+            .map { it.dropInconsistentProperties() }
         val expectedPayload = resolveTestExpectedPayload(expectedPayloadFileName)
             .asJsonArray
-            .map { it.sanitizedForAssertion() }
-        assertThat(records)
+            .map { it.dropInconsistentProperties() }
+        val assertion = assertThat(records)
             .usingRecursiveFieldByFieldElementComparator(
                 RecursiveComparisonConfiguration
                     .builder()
@@ -47,7 +48,10 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
                         JsonPrimitive::class.java
                     ).build()
             )
-            .containsExactlyInAnyOrderElementsOf(expectedPayload)
+        when (matchingStrategy) {
+            MatchingStrategy.EXACT -> assertion.containsExactlyElementsOf(expectedPayload)
+            MatchingStrategy.CONTAINS -> assertion.containsAll(expectedPayload)
+        }
     }
 
     private fun resolveTestExpectedPayload(fileName: String): JsonElement {
@@ -136,24 +140,34 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
             (o1.asNumber is LazilyParsedNumber || o2.asNumber is LazilyParsedNumber)
     }
 
-    private fun JsonElement.sanitizedForAssertion(): JsonObject {
-        // We need to remove all the not deterministic fields from the payload as they will alter
+    private fun JsonElement.dropInconsistentProperties(): JsonObject {
+        // We need to remove all the inconsistent properties from the payload as they will alter
         // the tests. The timestamps and ids are auto - generated and we could not predict them.
-        // For the wireframes dimensions and positions we need to remove them because the tests
-        // will be executed in CI on different device models and we cannot predict the exact values.
-        // We will need to have an additional task at the end where we will try to solve this by
-        // maybe providing specific payloads to assess based on the device model.
+        // For the wireframes x,y and positions we need to remove them because the tests
+        // will be executed in Bitrise and currently Bitrise does not own a specific model for the
+        // API 33. They only have a standard emulator for this API with the required screen size and
+        // X,Y positions are different from the ones we have in our local emulator.
         return this.asJsonObject.apply {
             remove("timestamp")
-            get("data")?.asJsonObject?.get("wireframes")?.asJsonArray?.forEach { dataElement ->
-                val asJsonObject = dataElement.asJsonObject
-                asJsonObject.remove("id")
-                asJsonObject.remove("x")
-                asJsonObject.remove("y")
-                asJsonObject.remove("width")
-                asJsonObject.remove("height")
+            get("data")?.asJsonObject?.let {
+                it.get("wireframes")?.asJsonArray?.forEach { dataElement ->
+                    val asJsonObject = dataElement.asJsonObject
+                    asJsonObject.remove("id")
+                    asJsonObject.remove("x")
+                    asJsonObject.remove("y")
+                }
             }
         }
+    }
+
+    /**
+     * The matching strategy to use when comparing the expected payload with the actual one.
+     * @see EXACT will compare the payloads exactly as they are.
+     * @see CONTAINS will check if the actual payload contains all the expected elements.
+     */
+    enum class MatchingStrategy {
+        EXACT,
+        CONTAINS
     }
 
     companion object {

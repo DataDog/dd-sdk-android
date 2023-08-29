@@ -6,16 +6,12 @@
 
 package com.datadog.android.sdk.integration.sessionreplay
 
-import android.app.Activity
-import android.graphics.Point
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
-import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getSessionReplayPrivacy
@@ -38,8 +34,6 @@ internal abstract class BaseSessionReplayActivity : AppCompatActivity() {
         val sdkCore = Datadog.initialize(this, config, trackingConsent)
         checkNotNull(sdkCore)
         val featureActivations = mutableListOf(
-            // we will use a large long task threshold to make sure we will not have LongTask events
-            // noise in our integration tests.
             {
                 val rumConfig = RuntimeConfig.rumConfigBuilder()
                     .trackUserInteractions()
@@ -65,26 +59,4 @@ internal abstract class BaseSessionReplayActivity : AppCompatActivity() {
         RuntimeConfig.sessionReplayConfigBuilder(sampleRate)
             .setPrivacy(privacy)
             .build()
-
-    @Suppress("DEPRECATION")
-    open fun resolveScreenDimensions(activity: Activity): Pair<Long, Long> {
-        val displayMetrics = activity.resources.displayMetrics
-        val screenDensity = displayMetrics.density
-        val screenHeight: Long
-        val screenWidth: Long
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val currentWindowMetrics = windowManager.currentWindowMetrics
-            val screenBounds = currentWindowMetrics.bounds
-            screenHeight = (screenBounds.bottom - screenBounds.top).toLong()
-                .densityNormalized(screenDensity)
-            screenWidth = (screenBounds.right - screenBounds.left).toLong()
-                .densityNormalized(screenDensity)
-        } else {
-            val size = Point()
-            windowManager.defaultDisplay.getSize(size)
-            screenHeight = size.y.toLong().densityNormalized(screenDensity)
-            screenWidth = size.x.toLong().densityNormalized(screenDensity)
-        }
-        return screenWidth to screenHeight
-    }
 }
