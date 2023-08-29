@@ -8,11 +8,18 @@ package com.datadog.android.sdk.utils
 
 import android.content.Intent
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 
 internal const val TRACKING_CONSENT_KEY = "tracking_consent"
+internal const val SR_PRIVACY_LEVEL = "sr_privacy_level"
+internal const val SR_SAMPLE_RATE = "sr_sample_rate"
 internal const val PENDING = 1
 internal const val GRANTED = 2
 internal const val NOT_GRANTED = 3
+internal const val ALLOW = 1
+internal const val MASK_USER_INPUT = 2
+internal const val MASK = 3
+private const val SAMPLE_IN_ALL_SESSIONS = 100f
 
 internal fun Intent.getTrackingConsent(): TrackingConsent {
     return when (getIntExtra(TRACKING_CONSENT_KEY, PENDING)) {
@@ -20,6 +27,19 @@ internal fun Intent.getTrackingConsent(): TrackingConsent {
         GRANTED -> TrackingConsent.GRANTED
         else -> TrackingConsent.NOT_GRANTED
     }
+}
+
+internal fun Intent.getSessionReplayPrivacy(): SessionReplayPrivacy {
+    return when (getIntExtra(SR_PRIVACY_LEVEL, ALLOW)) {
+        ALLOW -> SessionReplayPrivacy.ALLOW
+        MASK_USER_INPUT -> SessionReplayPrivacy.MASK_USER_INPUT
+        MASK -> SessionReplayPrivacy.MASK
+        else -> SessionReplayPrivacy.ALLOW
+    }
+}
+
+internal fun Intent.getSrSampleRate(): Float {
+    return getFloatExtra(SR_SAMPLE_RATE, SAMPLE_IN_ALL_SESSIONS)
 }
 
 internal const val FORGE_SEED_KEY = "forge_seed"
