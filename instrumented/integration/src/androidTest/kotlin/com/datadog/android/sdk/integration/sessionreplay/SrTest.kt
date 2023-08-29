@@ -7,9 +7,11 @@
 package com.datadog.android.sdk.integration.sessionreplay
 
 import android.app.Activity
+import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import com.google.gson.internal.LazilyParsedNumber
@@ -27,35 +29,32 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
 
     protected fun verifyExpectedSrData(
         handledRequests: List<HandledRequest>,
-        expectedSrData: ExpectedSrData
+        expectedPayloadFileName: String
     ) {
         val records = handledRequests
-            .mapNotNull {
-                it.extractSrSegmentAsJson()?.asJsonObject
-            }
+            .mapNotNull { it.extractSrSegmentAsJson()?.asJsonObject }
             .flatMap { it.getAsJsonArray("records") }
-            .map {
-                val asJsonObject = it.asJsonObject
-                // we need to remove the timestamp property as `withIgnoringFields` does
-                // not work for json objects
-                asJsonObject.remove("timestamp")
-                asJsonObject
-            }
-        assertThat(records).usingRecursiveFieldByFieldElementComparator(
-            RecursiveComparisonConfiguration
-                .builder()
-                .withComparatorForType(
-                    jsonPrimitivesComparator,
-                    JsonPrimitive::class.java
-                ).build()
-        )
-            .containsAll(
-                expectedSrData.records.map {
-                    val asJsonObject = it.asJsonObject
-                    asJsonObject.remove("timestamp")
-                    asJsonObject
-                }
+            .map { it.sanitizedForAssertion() }
+        val expectedPayload = resolveTestExpectedPayload(expectedPayloadFileName)
+            .asJsonArray
+            .map { it.sanitizedForAssertion() }
+        assertThat(records)
+            .usingRecursiveFieldByFieldElementComparator(
+                RecursiveComparisonConfiguration
+                    .builder()
+                    .withComparatorForType(
+                        jsonPrimitivesComparator,
+                        JsonPrimitive::class.java
+                    ).build()
             )
+            .containsExactlyInAnyOrderElementsOf(expectedPayload)
+    }
+
+    private fun resolveTestExpectedPayload(fileName: String): JsonElement {
+        return InstrumentationRegistry
+            .getInstrumentation().context.assets.open(fileName).use {
+                JsonParser.parseString(it.readBytes().toString(Charsets.UTF_8))
+            }
     }
 
     private fun HandledRequest.extractSrSegmentAsJson(): JsonElement? {
@@ -71,7 +70,6 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
     @Suppress("NestedBlockDepth")
     private fun resolveSrSegmentBodyFromRequest(buffer: Buffer): ByteArray {
         // Example of a multipart form segment body:
-
         // Content-Disposition: form-data; name="segment"; filename="db081a08-96ab-4931-a98e-b2dd2d9c1b34"
         // Content-Type: application/octet-stream
         // Content-Length: 1060
@@ -136,6 +134,26 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
         return (o1.isNumber && o2.isNumber) &&
             (o1.asNumber is Float || o2.asNumber is Float) &&
             (o1.asNumber is LazilyParsedNumber || o2.asNumber is LazilyParsedNumber)
+    }
+
+    private fun JsonElement.sanitizedForAssertion(): JsonObject {
+        // We need to remove all the not deterministic fields from the payload as they will alter
+        // the tests. The timestamps and ids are auto - generated and we could not predict them.
+        // For the wireframes dimensions and positions we need to remove them because the tests
+        // will be executed in CI on different device models and we cannot predict the exact values.
+        // We will need to have an additional task at the end where we will try to solve this by
+        // maybe providing specific payloads to assess based on the device model.
+        return this.asJsonObject.apply {
+            remove("timestamp")
+            get("data")?.asJsonObject?.get("wireframes")?.asJsonArray?.forEach { dataElement ->
+                val asJsonObject = dataElement.asJsonObject
+                asJsonObject.remove("id")
+                asJsonObject.remove("x")
+                asJsonObject.remove("y")
+                asJsonObject.remove("width")
+                asJsonObject.remove("height")
+            }
+        }
     }
 
     companion object {
