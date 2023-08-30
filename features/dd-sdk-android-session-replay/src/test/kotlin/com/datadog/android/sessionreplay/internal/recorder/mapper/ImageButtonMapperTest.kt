@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.content.Context
 import android.content.res.Resources
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.Drawable.ConstantState
 import android.util.DisplayMetrics
@@ -18,10 +19,13 @@ import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
 import com.datadog.android.sessionreplay.internal.recorder.base64.ImageCompression
+import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
+import com.datadog.android.sessionreplay.internal.utils.DrawableDimensions
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -33,6 +37,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -50,6 +56,9 @@ internal class ImageButtonMapperTest {
 
     @Mock
     lateinit var mockImageButton: ImageButton
+
+    @Mock
+    lateinit var mockImageWireframeHelper: ImageWireframeHelper
 
     @Mock
     lateinit var mockMappingContext: MappingContext
@@ -94,14 +103,19 @@ internal class ImageButtonMapperTest {
 
     private val fakeMimeType = Forge().aString()
 
+    lateinit var expectedWireframe: MobileSegment.Wireframe.ImageWireframe
+
     @BeforeEach
     fun setup(forge: Forge) {
+        whenever(mockImageButton.background).thenReturn(null)
+
         whenever(mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(any(), any()))
             .thenReturn(fakeId)
 
         whenever(mockConstantState.newDrawable(any())).thenReturn(mockDrawable)
         whenever(mockDrawable.constantState).thenReturn(mockConstantState)
         whenever(mockImageButton.drawable).thenReturn(mockDrawable)
+        whenever(mockImageButton.drawable.current).thenReturn(mockDrawable)
 
         whenever(mockDrawable.intrinsicWidth).thenReturn(forge.aPositiveInt())
         whenever(mockDrawable.intrinsicHeight).thenReturn(forge.aPositiveInt())
@@ -114,92 +128,18 @@ internal class ImageButtonMapperTest {
         whenever(mockResources.displayMetrics).thenReturn(mockDisplayMetrics)
         whenever(mockImageButton.resources).thenReturn(mockResources)
 
-        whenever(mockImageButton.background).thenReturn(mockBackground)
-
         whenever(mockContext.applicationContext).thenReturn(mockContext)
         whenever(mockImageButton.context).thenReturn(mockContext)
+        whenever(mockBackground.current).thenReturn(mockBackground)
 
         whenever(mockViewUtils.resolveViewGlobalBounds(any(), any())).thenReturn(mockGlobalBounds)
 
-        testedMapper = ImageButtonMapper(
-            webPImageCompression = mockWebPImageCompression,
-            base64Serializer = mockBase64Serializer,
-            uniqueIdentifierGenerator = mockUniqueIdentifierGenerator
-        )
-    }
-
-    @Test
-    fun `M return emptylist W map() { and could not get view id }`() {
-        // Given
-        whenever(mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(any(), any()))
-            .thenReturn(null)
-
-        // When
-        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
-
-        // Then
-        assertThat(wireframes).isEmpty()
-    }
-
-    @Test
-    fun `M return emptylist W map() { and could not get drawable }`() {
-        // Given
-        whenever(mockImageButton.drawable).thenReturn(null)
-
-        // When
-        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
-
-        // Then
-        assertThat(wireframes).isEmpty()
-    }
-
-    @Test
-    fun `M return emptylist W map() { drawable has no intrinsicWidth }`() {
-        // Given
-        whenever(mockDrawable.intrinsicWidth).thenReturn(-1)
-
-        // When
-        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
-
-        // Then
-        assertThat(wireframes).isEmpty()
-    }
-
-    @Test
-    fun `M return emptylist W map() { drawable has no intrinsicHeight }`() {
-        // Given
-        whenever(mockDrawable.intrinsicHeight).thenReturn(-1)
-
-        // When
-        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
-
-        // Then
-        assertThat(wireframes).isEmpty()
-    }
-
-    @Test
-    fun `M set null shapestyle and border W map() { view without background }`() {
-        // Given
-        whenever(mockImageButton.background).thenReturn(null)
-
-        // When
-        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
-        val actualWireframe = wireframes[0] as? MobileSegment.Wireframe.ShapeWireframe
-
-        // Then
-        assertThat(actualWireframe?.shapeStyle).isNull()
-        assertThat(actualWireframe?.border).isNull()
-    }
-
-    @Test
-    fun `M return expected wireframe W map()`() {
-        // Given
-        val expectedWireframe = MobileSegment.Wireframe.ImageWireframe(
+        expectedWireframe = MobileSegment.Wireframe.ImageWireframe(
             id = fakeId,
-            width = mockGlobalBounds.width,
-            height = mockGlobalBounds.height,
             x = mockGlobalBounds.x,
             y = mockGlobalBounds.y,
+            width = mockImageButton.width.toLong(),
+            height = mockImageButton.height.toLong(),
             shapeStyle = null,
             border = null,
             base64 = "",
@@ -207,23 +147,241 @@ internal class ImageButtonMapperTest {
             isEmpty = true
         )
 
-        // When
-        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
-        val actualWireframe = wireframes[0]
+        whenever(mockBase64Serializer.getDrawableScaledDimensions(any(), any(), any()))
+            .thenReturn(DrawableDimensions(0, 0))
 
-        // Then
-        assertThat(actualWireframe).isEqualTo(expectedWireframe)
-        verify(mockBase64Serializer, times(1))
-            .handleBitmap(any(), any(), any(), any())
+        testedMapper = ImageButtonMapper(
+            base64Serializer = mockBase64Serializer,
+            imageWireframeHelper = mockImageWireframeHelper,
+            uniqueIdentifierGenerator = mockUniqueIdentifierGenerator
+        )
     }
 
     @Test
-    fun `M call handleBitmap W map()`() {
+    fun `M return foreground wireframe W map() { no background }`() {
+        // Given
+        whenever(mockImageButton.background).thenReturn(null)
+
+        whenever(
+            mockImageWireframeHelper.createImageWireframe(
+                mockImageButton,
+                0,
+                mockGlobalBounds.x,
+                mockGlobalBounds.y,
+                mockImageButton.width.toLong(),
+                mockImageButton.height.toLong(),
+                mockDrawable.constantState?.newDrawable(mockResources),
+                null,
+                null
+            )
+        ).thenReturn(expectedWireframe)
+
+        // When
+        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
+
+        // Then
+        assertThat(wireframes.size).isEqualTo(1)
+        assertThat(wireframes[0]).isEqualTo(expectedWireframe)
+    }
+
+    @Test
+    fun `M resolve background images W map() { with background }`(
+        @LongForgery id: Long
+    ) {
+        // Given
+        val expectedBackgroundWireframe = MobileSegment.Wireframe.ImageWireframe(
+            id = id,
+            x = mockGlobalBounds.x,
+            y = mockGlobalBounds.y,
+            width = mockImageButton.width.toLong(),
+            height = mockImageButton.height.toLong(),
+            shapeStyle = null,
+            border = null,
+            base64 = "",
+            mimeType = fakeMimeType,
+            isEmpty = true
+        )
+
+        whenever(mockImageButton.background).thenReturn(mockBackground)
+        mockCreateImageWireframe(
+            expectedBackgroundWireframe,
+            expectedWireframe
+        )
+
+        // When
+        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
+
+        // Then
+        assertThat(wireframes.size).isEqualTo(2)
+        assertThat(wireframes[0]).isEqualTo(expectedBackgroundWireframe)
+        assertThat(wireframes[1]).isEqualTo(expectedWireframe)
+    }
+
+    @Test
+    fun `M set index to 1 W map() { has background wireframe }`(
+        @LongForgery id: Long
+    ) {
+        // Given
+        val expectedBackgroundWireframe = MobileSegment.Wireframe.ImageWireframe(
+            id = id,
+            x = mockGlobalBounds.x,
+            y = mockGlobalBounds.y,
+            width = mockImageButton.width.toLong(),
+            height = mockImageButton.height.toLong(),
+            shapeStyle = null,
+            border = null,
+            base64 = "",
+            mimeType = fakeMimeType,
+            isEmpty = true
+        )
+        whenever(mockImageButton.background).thenReturn(mockBackground)
+
+        mockCreateImageWireframe(
+            expectedBackgroundWireframe,
+            expectedWireframe
+        )
+
         // When
         testedMapper.map(mockImageButton, mockMappingContext)
 
         // Then
-        verify(mockBase64Serializer, times(1))
-            .handleBitmap(any(), any(), any(), any())
+        val captor = argumentCaptor<Int>()
+        verify(mockImageWireframeHelper, times(2)).createImageWireframe(
+            any(),
+            captor.capture(),
+            any(),
+            any(),
+            any(),
+            any(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull()
+        )
+        val allValues = captor.allValues
+        assertThat(allValues[0]).isEqualTo(0)
+        assertThat(allValues[1]).isEqualTo(1)
+    }
+
+    @Test
+    fun `M set index to 0 W map() { no background wireframe }`() {
+        // Given
+        whenever(mockImageButton.background).thenReturn(mockBackground)
+
+        mockCreateImageWireframe(
+            null,
+            expectedWireframe
+        )
+
+        // When
+        testedMapper.map(mockImageButton, mockMappingContext)
+
+        // Then
+        val captor = argumentCaptor<Int>()
+        verify(mockImageWireframeHelper, times(2)).createImageWireframe(
+            any(),
+            captor.capture(),
+            any(),
+            any(),
+            any(),
+            any(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull()
+        )
+        val allValues = captor.allValues
+        assertThat(allValues[0]).isEqualTo(0)
+        assertThat(allValues[1]).isEqualTo(0)
+    }
+
+    @Test
+    fun `M return background of type ImageWireframe W map() { no shapestyle or border }`(
+        @LongForgery id: Long
+    ) {
+        // Given
+        whenever(mockImageButton.background).thenReturn(mockBackground)
+
+        val expectedBackgroundWireframe = MobileSegment.Wireframe.ImageWireframe(
+            id = id,
+            x = mockGlobalBounds.x,
+            y = mockGlobalBounds.y,
+            width = mockImageButton.width.toLong(),
+            height = mockImageButton.height.toLong(),
+            shapeStyle = null,
+            border = null,
+            base64 = "",
+            mimeType = fakeMimeType,
+            isEmpty = true
+        )
+
+        mockCreateImageWireframe(
+            expectedBackgroundWireframe,
+            expectedWireframe
+        )
+
+        // When
+        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
+
+        // Then
+        assertThat(wireframes[0]::class.java).isEqualTo(MobileSegment.Wireframe.ImageWireframe::class.java)
+    }
+
+    @Test
+    fun `M return background of type ShapeWireframe W map() { has shapestyle or border }`(
+        @Mock mockColorDrawable: ColorDrawable
+    ) {
+        // Given
+        whenever(mockImageButton.background).thenReturn(mockColorDrawable)
+
+        // When
+        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
+
+        // Then
+        assertThat(wireframes[0]::class.java).isEqualTo(MobileSegment.Wireframe.ShapeWireframe::class.java)
+    }
+
+    @Test
+    fun `M return no background W map() { cant resolve id for shapeDrawable }`(
+        @Mock mockColorDrawable: ColorDrawable
+    ) {
+        // Given
+        whenever(mockImageButton.background).thenReturn(mockColorDrawable)
+
+        whenever(mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(any(), any()))
+            .thenReturn(null)
+
+        mockCreateImageWireframe(
+            expectedWireframe,
+            null
+        )
+
+        // When
+        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
+
+        // Then
+        assertThat(wireframes.size).isEqualTo(1)
+    }
+
+    private fun mockCreateImageWireframe(
+        expectedFirstWireframe: MobileSegment.Wireframe.ImageWireframe?,
+        expectedSecondWireframe: MobileSegment.Wireframe.ImageWireframe?
+    ) {
+        whenever(
+            mockImageWireframeHelper.createImageWireframe(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull()
+            )
+        )
+            .thenReturn(expectedFirstWireframe)
+            .thenReturn(expectedSecondWireframe)
     }
 }

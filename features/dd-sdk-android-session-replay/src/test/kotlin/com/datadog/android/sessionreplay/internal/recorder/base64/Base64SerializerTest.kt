@@ -8,9 +8,12 @@ package com.datadog.android.sessionreplay.internal.recorder.base64
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.StateListDrawable
 import android.util.DisplayMetrics
+import android.widget.ImageView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
@@ -18,6 +21,7 @@ import com.datadog.android.sessionreplay.internal.utils.Base64Utils
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -81,6 +85,9 @@ internal class Base64SerializerTest {
     lateinit var mockDisplayMetrics: DisplayMetrics
 
     @Mock
+    lateinit var mockImageView: ImageView
+
+    @Mock
     lateinit var mockDrawable: Drawable
 
     @Mock
@@ -91,6 +98,9 @@ internal class Base64SerializerTest {
 
     @Mock
     lateinit var mockBitmapPool: BitmapPool
+
+    @FloatForgery(min = 0f, max = 1f)
+    var mockDensity: Float = 0f
 
     @Forgery
     lateinit var fakeImageWireframe: MobileSegment.Wireframe.ImageWireframe
@@ -109,7 +119,6 @@ internal class Base64SerializerTest {
 
         whenever(
             mockDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-                applicationContext = any(),
                 drawable = any(),
                 displayMetrics = any(),
                 requestedSizeInBytes = anyOrNull(),
@@ -146,7 +155,6 @@ internal class Base64SerializerTest {
         // Given
         whenever(
             mockDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-                applicationContext = any(),
                 drawable = any(),
                 displayMetrics = any(),
                 requestedSizeInBytes = anyOrNull(),
@@ -171,7 +179,6 @@ internal class Base64SerializerTest {
         // Given
         whenever(
             mockDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-                applicationContext = any(),
                 drawable = any(),
                 displayMetrics = any(),
                 requestedSizeInBytes = anyOrNull(),
@@ -201,7 +208,6 @@ internal class Base64SerializerTest {
 
         whenever(
             mockDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-                applicationContext = any(),
                 drawable = any(),
                 displayMetrics = any(),
                 requestedSizeInBytes = anyOrNull(),
@@ -225,20 +231,9 @@ internal class Base64SerializerTest {
     }
 
     @Test
-    fun `M register cache only once for callbacks W handleBitmap() { multiple calls and instances }`() {
-        // Given
-        Base64Serializer.isCacheRegisteredForCallbacks = false
-        val secondInstance = createBase64Serializer()
-
+    fun `M register cache only once for callbacks W handleBitmap() { multiple calls }`() {
         // When
         repeat(5) {
-            secondInstance.handleBitmap(
-                applicationContext = mockApplicationContext,
-                displayMetrics = mockDisplayMetrics,
-                drawable = mockDrawable,
-                imageWireframe = fakeImageWireframe
-            )
-
             testedBase64Serializer.handleBitmap(
                 applicationContext = mockApplicationContext,
                 displayMetrics = mockDisplayMetrics,
@@ -249,6 +244,22 @@ internal class Base64SerializerTest {
 
         // Then
         verify(mockApplicationContext, times(1)).registerComponentCallbacks(mockBase64LRUCache)
+    }
+
+    @Test
+    fun `M register BitmapPool only once for callbacks W handleBitmap() { multiple calls }`() {
+        // When
+        repeat(5) {
+            testedBase64Serializer.handleBitmap(
+                applicationContext = mockApplicationContext,
+                displayMetrics = mockDisplayMetrics,
+                drawable = mockDrawable,
+                imageWireframe = fakeImageWireframe
+            )
+        }
+
+        // Then
+        verify(mockApplicationContext, times(1)).registerComponentCallbacks(mockBitmapPool)
     }
 
     @Test
@@ -266,7 +277,6 @@ internal class Base64SerializerTest {
 
         // Then
         verify(mockDrawableUtils).createBitmapOfApproxSizeFromDrawable(
-            applicationContext = any(),
             drawable = any(),
             displayMetrics = any(),
             requestedSizeInBytes = anyOrNull(),
@@ -315,6 +325,143 @@ internal class Base64SerializerTest {
 
         // Then
         verify(mockBase64LRUCache, times(0)).put(any(), any())
+    }
+
+    @Test
+    fun `M not use bitmap from bitmapDrawable W handleBitmap() { no bitmap }`() {
+        // Given
+        val mockBitmapDrawable = mock<BitmapDrawable>()
+
+        // When
+        testedBase64Serializer.handleBitmap(
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockBitmapDrawable,
+            imageWireframe = fakeImageWireframe
+        )
+
+        // Then
+        verify(mockDrawableUtils, times(1)).createBitmapOfApproxSizeFromDrawable(
+            drawable = any(),
+            displayMetrics = any(),
+            requestedSizeInBytes = anyOrNull(),
+            config = anyOrNull()
+        )
+    }
+
+    @Test
+    fun `M not use bitmap from bitmapDrawable W handleBitmap() { bitmap was recycled }`() {
+        // Given
+        val mockBitmapDrawable = mock<BitmapDrawable>()
+        whenever(mockBitmap.isRecycled).thenReturn(true)
+        whenever(mockBitmapDrawable.bitmap).thenReturn(mockBitmap)
+
+        // When
+        testedBase64Serializer.handleBitmap(
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockBitmapDrawable,
+            imageWireframe = fakeImageWireframe
+        )
+
+        // Then
+        verify(mockDrawableUtils, times(1)).createBitmapOfApproxSizeFromDrawable(
+            drawable = any(),
+            displayMetrics = any(),
+            requestedSizeInBytes = anyOrNull(),
+            config = anyOrNull()
+        )
+    }
+
+    @Test
+    fun `M use bitmap from bitmapDrawable W handleBitmap() { has bitmap }`() {
+        // Given
+        val mockBitmapDrawable = mock<BitmapDrawable>()
+        whenever(mockBitmap.isRecycled).thenReturn(false)
+        whenever(mockBitmapDrawable.bitmap).thenReturn(mockBitmap)
+
+        // When
+        testedBase64Serializer.handleBitmap(
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockBitmapDrawable,
+            imageWireframe = fakeImageWireframe
+        )
+
+        // Then
+        verifyNoInteractions(mockDrawableUtils)
+    }
+
+    @Test
+    fun `M not cache image when caching false W handleBitmap() { from BitmapDrawable with bitmap }`() {
+        // Given
+        val mockBitmapDrawable = mock<BitmapDrawable>()
+        whenever(mockBitmap.isRecycled).thenReturn(false)
+        whenever(mockBitmapDrawable.bitmap).thenReturn(mockBitmap)
+
+        // When
+        testedBase64Serializer.handleBitmap(
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockBitmapDrawable,
+            imageWireframe = fakeImageWireframe
+        )
+
+        // Then
+        verify(mockBitmapPool, times(0)).put(any())
+    }
+
+    @Test
+    fun `M cache bitmap W handleBitmap() { from BitmapDrawable with null bitmap }`() {
+        // Given
+        val mockBitmapDrawable = mock<BitmapDrawable>()
+        whenever(mockBitmap.isRecycled).thenReturn(false)
+        whenever(mockBitmapDrawable.bitmap).thenReturn(null)
+
+        // When
+        testedBase64Serializer.handleBitmap(
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockBitmapDrawable,
+            imageWireframe = fakeImageWireframe
+        )
+
+        // Then
+        verify(mockBitmapPool, times(1)).put(any())
+    }
+
+    @Test
+    fun `M cache bitmap W handleBitmap() { not a BitmapDrawable }`() {
+        // Given
+        val mockBitmapDrawable = mock<LayerDrawable>()
+
+        // When
+        testedBase64Serializer.handleBitmap(
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockBitmapDrawable,
+            imageWireframe = fakeImageWireframe
+        )
+
+        // Then
+        verify(mockBitmapPool, times(1)).put(any())
+    }
+
+    @Test
+    fun `M call drawableUtils W getDrawableScaledDimensions()`() {
+        // When
+        testedBase64Serializer.getDrawableScaledDimensions(
+            view = mockImageView,
+            drawable = mockDrawable,
+            density = mockDensity
+        )
+
+        // Then
+        verify(mockDrawableUtils).getDrawableScaledDimensions(
+            view = mockImageView,
+            drawable = mockDrawable,
+            density = mockDensity
+        )
     }
 
     private fun createBase64Serializer(): Base64Serializer {

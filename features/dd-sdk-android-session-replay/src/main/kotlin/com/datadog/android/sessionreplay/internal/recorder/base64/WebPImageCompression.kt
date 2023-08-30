@@ -15,7 +15,7 @@ import java.io.ByteArrayOutputStream
 /**
  * Handle webp image compression.
  */
-class WebPImageCompression internal constructor() : ImageCompression {
+internal class WebPImageCompression : ImageCompression {
 
     override fun getMimeType(): String? =
         MimeTypeMap.getSingleton().getMimeTypeFromExtension(WEBP_EXTENSION)
