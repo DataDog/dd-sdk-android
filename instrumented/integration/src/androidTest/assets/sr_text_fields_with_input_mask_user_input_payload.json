@@ -20,12 +20,20 @@
   "type": 10,
   "data": {
     "wireframes": [{
+      "x": 0,
+      "y": 0,
+      "width": 411,
+      "height": 914,
       "shapeStyle": {
         "backgroundColor": "#303030ff",
         "opacity": 1.0
       },
       "type": "shape"
     }, {
+      "x": 8,
+      "y": 112,
+      "width": 395,
+      "height": 19,
       "type": "text",
       "text": "Default Text View",
       "textStyle": {
@@ -46,6 +54,10 @@
         }
       }
     }, {
+      "x": 8,
+      "y": 140,
+      "width": 395,
+      "height": 19,
       "type": "text",
       "text": "Material Text View",
       "textStyle": {
@@ -66,6 +78,10 @@
         }
       }
     }, {
+      "x": 8,
+      "y": 167,
+      "width": 395,
+      "height": 19,
       "type": "text",
       "text": "App Compat Text View",
       "textStyle": {
@@ -86,6 +102,10 @@
         }
       }
     }, {
+      "x": 8,
+      "y": 195,
+      "width": 395,
+      "height": 44,
       "type": "text",
       "text": "***",
       "textStyle": {
@@ -106,12 +126,20 @@
         }
       }
     }, {
+      "x": 8,
+      "y": 238,
+      "width": 395,
+      "height": 1,
       "shapeStyle": {
         "backgroundColor": "#a538afff",
         "opacity": 1.0
       },
       "type": "shape"
     }, {
+      "x": 8,
+      "y": 248,
+      "width": 395,
+      "height": 44,
       "type": "text",
       "text": "***",
       "textStyle": {
@@ -132,12 +160,20 @@
         }
       }
     }, {
+      "x": 8,
+      "y": 291,
+      "width": 395,
+      "height": 1,
       "shapeStyle": {
         "backgroundColor": "#ffbb33ff",
         "opacity": 1.0
       },
       "type": "shape"
     }, {
+      "x": 8,
+      "y": 300,
+      "width": 395,
+      "height": 44,
       "type": "text",
       "text": "***",
       "textStyle": {
@@ -158,12 +194,20 @@
         }
       }
     }, {
+      "x": 8,
+      "y": 343,
+      "width": 395,
+      "height": 1,
       "shapeStyle": {
         "backgroundColor": "#ffbb33ff",
         "opacity": 1.0
       },
       "type": "shape"
     }, {
+      "x": 8,
+      "y": 353,
+      "width": 395,
+      "height": 44,
       "type": "text",
       "text": "***",
       "textStyle": {
@@ -184,12 +228,20 @@
         }
       }
     }, {
+      "x": 8,
+      "y": 396,
+      "width": 395,
+      "height": 1,
       "shapeStyle": {
         "backgroundColor": "#a538afff",
         "opacity": 1.0
       },
       "type": "shape"
     }, {
+      "x": 8,
+      "y": 406,
+      "width": 395,
+      "height": 44,
       "type": "text",
       "text": "***",
       "textStyle": {
@@ -210,12 +262,20 @@
         }
       }
     }, {
+      "x": 8,
+      "y": 449,
+      "width": 395,
+      "height": 1,
       "shapeStyle": {
         "backgroundColor": "#a538afff",
         "opacity": 1.0
       },
       "type": "shape"
     }, {
+      "x": 8,
+      "y": 459,
+      "width": 395,
+      "height": 32,
       "type": "text",
       "text": "Checked Text View",
       "textStyle": {
@@ -236,12 +296,20 @@
         }
       }
     }, {
+      "x": 371,
+      "y": 459,
+      "width": 19,
+      "height": 19,
       "border": {
         "color": "#ffffffff",
         "width": 1
       },
       "type": "shape"
     }, {
+      "x": 8,
+      "y": 499,
+      "width": 395,
+      "height": 32,
       "type": "text",
       "text": "App Compat Checked Text View",
       "textStyle": {
@@ -262,268 +330,20 @@
         }
       }
     }, {
+      "x": 371,
+      "y": 499,
+      "width": 19,
+      "height": 19,
       "border": {
         "color": "#ffffffff",
         "width": 1
       },
       "type": "shape"
     }, {
-      "type": "placeholder",
-      "label": "Toolbar"
-    }]
-  }
-}, {
-  "type": 10,
-  "data": {
-    "wireframes": [{
-      "shapeStyle": {
-        "backgroundColor": "#303030ff",
-        "opacity": 1.0
-      },
-      "type": "shape"
-    }, {
-      "type": "text",
-      "text": "Default Text View",
-      "textStyle": {
-        "family": "roboto, sans-serif",
-        "size": 14,
-        "color": "#a538afff"
-      },
-      "textPosition": {
-        "padding": {
-          "top": 0,
-          "bottom": 0,
-          "left": 0,
-          "right": 0
-        },
-        "alignment": {
-          "horizontal": "left",
-          "vertical": "top"
-        }
-      }
-    }, {
-      "type": "text",
-      "text": "Material Text View",
-      "textStyle": {
-        "family": "roboto, sans-serif",
-        "size": 14,
-        "color": "#cc0000ff"
-      },
-      "textPosition": {
-        "padding": {
-          "top": 0,
-          "bottom": 0,
-          "left": 0,
-          "right": 0
-        },
-        "alignment": {
-          "horizontal": "left",
-          "vertical": "top"
-        }
-      }
-    }, {
-      "type": "text",
-      "text": "App Compat Text View",
-      "textStyle": {
-        "family": "roboto, sans-serif",
-        "size": 14,
-        "color": "#ffbb33ff"
-      },
-      "textPosition": {
-        "padding": {
-          "top": 0,
-          "bottom": 0,
-          "left": 0,
-          "right": 0
-        },
-        "alignment": {
-          "horizontal": "left",
-          "vertical": "top"
-        }
-      }
-    }, {
-      "type": "text",
-      "text": "***",
-      "textStyle": {
-        "family": "roboto, sans-serif",
-        "size": 17,
-        "color": "#ffffffff"
-      },
-      "textPosition": {
-        "padding": {
-          "top": 9,
-          "bottom": 11,
-          "left": 3,
-          "right": 3
-        },
-        "alignment": {
-          "horizontal": "left",
-          "vertical": "center"
-        }
-      }
-    }, {
-      "shapeStyle": {
-        "backgroundColor": "#a538afff",
-        "opacity": 1.0
-      },
-      "type": "shape"
-    }, {
-      "type": "text",
-      "text": "***",
-      "textStyle": {
-        "family": "roboto, sans-serif",
-        "size": 17,
-        "color": "#ffffffff"
-      },
-      "textPosition": {
-        "padding": {
-          "top": 9,
-          "bottom": 11,
-          "left": 3,
-          "right": 3
-        },
-        "alignment": {
-          "horizontal": "left",
-          "vertical": "center"
-        }
-      }
-    }, {
-      "shapeStyle": {
-        "backgroundColor": "#ffbb33ff",
-        "opacity": 1.0
-      },
-      "type": "shape"
-    }, {
-      "type": "text",
-      "text": "***",
-      "textStyle": {
-        "family": "roboto, sans-serif",
-        "size": 17,
-        "color": "#ffffffff"
-      },
-      "textPosition": {
-        "padding": {
-          "top": 9,
-          "bottom": 11,
-          "left": 3,
-          "right": 3
-        },
-        "alignment": {
-          "horizontal": "left",
-          "vertical": "center"
-        }
-      }
-    }, {
-      "shapeStyle": {
-        "backgroundColor": "#ffbb33ff",
-        "opacity": 1.0
-      },
-      "type": "shape"
-    }, {
-      "type": "text",
-      "text": "***",
-      "textStyle": {
-        "family": "roboto, sans-serif",
-        "size": 17,
-        "color": "#ffffffff"
-      },
-      "textPosition": {
-        "padding": {
-          "top": 9,
-          "bottom": 11,
-          "left": 3,
-          "right": 3
-        },
-        "alignment": {
-          "horizontal": "left",
-          "vertical": "center"
-        }
-      }
-    }, {
-      "shapeStyle": {
-        "backgroundColor": "#a538afff",
-        "opacity": 1.0
-      },
-      "type": "shape"
-    }, {
-      "type": "text",
-      "text": "***",
-      "textStyle": {
-        "family": "roboto, sans-serif",
-        "size": 17,
-        "color": "#ffffffff"
-      },
-      "textPosition": {
-        "padding": {
-          "top": 9,
-          "bottom": 11,
-          "left": 3,
-          "right": 3
-        },
-        "alignment": {
-          "horizontal": "left",
-          "vertical": "center"
-        }
-      }
-    }, {
-      "shapeStyle": {
-        "backgroundColor": "#a538afff",
-        "opacity": 1.0
-      },
-      "type": "shape"
-    }, {
-      "type": "text",
-      "text": "Checked Text View",
-      "textStyle": {
-        "family": "roboto, sans-serif",
-        "size": 14,
-        "color": "#ffffffff"
-      },
-      "textPosition": {
-        "padding": {
-          "top": 0,
-          "bottom": 12,
-          "left": 0,
-          "right": 32
-        },
-        "alignment": {
-          "horizontal": "left",
-          "vertical": "center"
-        }
-      }
-    }, {
-      "border": {
-        "color": "#ffffffff",
-        "width": 1
-      },
-      "type": "shape"
-    }, {
-      "type": "text",
-      "text": "App Compat Checked Text View",
-      "textStyle": {
-        "family": "roboto, sans-serif",
-        "size": 14,
-        "color": "#ffffffff"
-      },
-      "textPosition": {
-        "padding": {
-          "top": 0,
-          "bottom": 12,
-          "left": 0,
-          "right": 32
-        },
-        "alignment": {
-          "horizontal": "left",
-          "vertical": "center"
-        }
-      }
-    }, {
-      "border": {
-        "color": "#ffffffff",
-        "width": 1
-      },
-      "type": "shape"
-    }, {
+      "x": 0,
+      "y": 48,
+      "width": 411,
+      "height": 56,
       "type": "placeholder",
       "label": "Toolbar"
     }]

@@ -35,10 +35,19 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
         val records = handledRequests
             .mapNotNull { it.extractSrSegmentAsJson()?.asJsonObject }
             .flatMap { it.getAsJsonArray("records") }
-            .map { it.sanitizedForAssertion() }
+            .map { it.removeNoiseFromDeviceType() }
         val expectedPayload = resolveTestExpectedPayload(expectedPayloadFileName)
             .asJsonArray
-            .map { it.sanitizedForAssertion() }
+            .map { it.removeNoiseFromDeviceType() }
+
+//        val previewFileName = "preview_" + expectedPayloadFileName
+//        val file = File(
+//            InstrumentationRegistry.getInstrumentation()
+//                .targetContext.applicationContext.externalCacheDir,
+//            previewFileName
+//        )
+//        file.createNewFile()
+//        file.outputStream().write(records.take(6).toString().toByteArray())
         val assertion = assertThat(records)
             .usingRecursiveFieldByFieldElementComparator(
                 RecursiveComparisonConfiguration
@@ -140,7 +149,7 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
             (o1.asNumber is LazilyParsedNumber || o2.asNumber is LazilyParsedNumber)
     }
 
-    private fun JsonElement.sanitizedForAssertion(): JsonObject {
+    private fun JsonElement.removeNoiseFromDeviceType(): JsonObject {
         // We need to remove all the not deterministic fields from the payload as they will alter
         // the tests. The timestamps and ids are auto - generated and we could not predict them.
         // For the wireframes dimensions and positions we need to remove them because the tests
@@ -149,27 +158,40 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
         // maybe providing specific payloads to assess based on the device model.
         return this.asJsonObject.apply {
             remove("timestamp")
-            get("data")?.asJsonObject?.get("wireframes")?.asJsonArray?.forEach { dataElement ->
-                val asJsonObject = dataElement.asJsonObject
-                asJsonObject.remove("id")
-                asJsonObject.remove("x")
-                asJsonObject.remove("y")
-                asJsonObject.remove("width")
-                asJsonObject.remove("height")
+            get("data")?.asJsonObject?.let {
+//                it.remove("width")
+//                it.remove("height")
+                it.get("wireframes")?.asJsonArray?.forEach { dataElement ->
+                    val asJsonObject = dataElement.asJsonObject
+                    asJsonObject.remove("id")
+//                    asJsonObject.remove("x")
+//                    asJsonObject.remove("y")
+//                    asJsonObject.remove("width")
+//                    asJsonObject.remove("height")
+//                    asJsonObject.get("textStyle")?.asJsonObject?.remove("size")
+//                    asJsonObject.get("textPosition")
+//                            ?.asJsonObject
+//                            ?.get("padding")?.asJsonObject?.let { padding ->
+//                                padding.remove("top")
+//                                padding.remove("bottom")
+//                                padding.remove("left")
+//                                padding.remove("right")
+//                    }
+                }
             }
         }
-    }
-
-    companion object {
-        internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
-        private val SEGMENT_FORM_DATA_REGEX =
-            Regex("content-disposition: form-data; name=\"segment\"; filename=\"(.+)\"")
-        private val CONTENT_LENGTH_REGEX =
-            Regex("content-length: (\\d+)")
     }
 
     enum class MatchingStrategy {
         EXACT,
         CONTAINS
+    }
+
+    companion object {
+        internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(40)
+        private val SEGMENT_FORM_DATA_REGEX =
+            Regex("content-disposition: form-data; name=\"segment\"; filename=\"(.+)\"")
+        private val CONTENT_LENGTH_REGEX =
+            Regex("content-length: (\\d+)")
     }
 }

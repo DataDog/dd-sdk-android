@@ -45,7 +45,6 @@ internal class SrTextFieldsMaskTest : SrSnapshotTest<SessionReplayTextFieldsActi
     }
 
     companion object {
-        // we made sure the payload will contain at least 2 full - snapshot records
         const val EXPECTED_PAYLOAD_FILE_NAME = "sr_text_fields_mask_payload.json"
     }
 }
