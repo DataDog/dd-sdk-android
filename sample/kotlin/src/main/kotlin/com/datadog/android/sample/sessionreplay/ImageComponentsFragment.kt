@@ -94,7 +94,7 @@ internal class ImageComponentsFragment : Fragment() {
             buttonRemote,
             object : ImageLoadedCallback {
                 override fun onImageLoaded(resource: Drawable) {
-                    buttonRemote.setCompoundDrawablesWithIntrinsicBounds(resource, null, null, null)
+                    buttonRemote.setCompoundDrawablesWithIntrinsicBounds(null, null, null, resource)
                 }
             }
         )
@@ -106,7 +106,7 @@ internal class ImageComponentsFragment : Fragment() {
             textViewRemote,
             object : ImageLoadedCallback {
                 override fun onImageLoaded(resource: Drawable) {
-                    textViewRemote.setCompoundDrawablesWithIntrinsicBounds(resource, null, null, null)
+                    textViewRemote.setCompoundDrawablesWithIntrinsicBounds(null, null, null, resource)
                 }
             }
         )

@@ -47,7 +47,7 @@ internal class ImageButtonMapper(
         @Suppress("ThreadSafety") // TODO REPLAY-1861 caller thread of .map is unknown?
         imageWireframeHelper.createImageWireframe(
             view = view,
-            index = wireframes.size,
+            currentWireframeIndex = wireframes.size,
             x = centerX,
             y = centerY,
             width = scaledDrawableWidth,

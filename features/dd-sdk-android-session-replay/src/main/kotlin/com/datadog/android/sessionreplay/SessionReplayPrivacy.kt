@@ -106,7 +106,11 @@ enum class SessionReplayPrivacy {
         when (this) {
             ALLOW -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
-                textMapper = TextViewMapper()
+                textMapper = TextViewMapper(
+                    base64Serializer = base64Serializer,
+                    imageWireframeHelper = imageWireframeHelper,
+                    uniqueIdentifierGenerator = uniqueIdentifierGenerator
+                )
                 buttonMapper = ButtonMapper(textMapper)
                 editTextViewMapper = EditTextViewMapper(textMapper)
                 checkedTextViewMapper = CheckedTextViewMapper(textMapper)
@@ -118,7 +122,11 @@ enum class SessionReplayPrivacy {
             }
             MASK -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
-                textMapper = MaskTextViewMapper()
+                textMapper = MaskTextViewMapper(
+                    base64Serializer = base64Serializer,
+                    imageWireframeHelper = imageWireframeHelper,
+                    uniqueIdentifierGenerator = uniqueIdentifierGenerator
+                )
                 buttonMapper = ButtonMapper(textMapper)
                 editTextViewMapper = EditTextViewMapper(textMapper)
                 checkedTextViewMapper = MaskCheckedTextViewMapper(textMapper)
@@ -130,7 +138,11 @@ enum class SessionReplayPrivacy {
             }
             MASK_USER_INPUT -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
-                textMapper = MaskInputTextViewMapper()
+                textMapper = MaskInputTextViewMapper(
+                    base64Serializer = base64Serializer,
+                    imageWireframeHelper = imageWireframeHelper,
+                    uniqueIdentifierGenerator = uniqueIdentifierGenerator
+                )
                 buttonMapper = ButtonMapper(textMapper)
                 editTextViewMapper = EditTextViewMapper(textMapper)
                 checkedTextViewMapper = MaskCheckedTextViewMapper(textMapper)

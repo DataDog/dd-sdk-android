@@ -36,9 +36,9 @@ class com.datadog.android.sessionreplay.internal.recorder.mapper.MaskInputTextVi
   constructor()
 class com.datadog.android.sessionreplay.internal.recorder.mapper.MaskTextViewMapper : TextViewMapper
   constructor()
-open class com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper : BaseWireframeMapper<android.widget.TextView, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.TextWireframe>
+open class com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper : BaseWireframeMapper<android.widget.TextView, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
   constructor()
-  override fun map(android.widget.TextView, com.datadog.android.sessionreplay.internal.recorder.MappingContext): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.TextWireframe>
+  override fun map(android.widget.TextView, com.datadog.android.sessionreplay.internal.recorder.MappingContext): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
 interface com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper<T: android.view.View, S: com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
   fun map(T, com.datadog.android.sessionreplay.internal.recorder.MappingContext): List<S>
 object com.datadog.android.sessionreplay.utils.StringUtils
