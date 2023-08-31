@@ -72,7 +72,7 @@ pr="$VCS_PULL_REQUEST"
 slug="$VCS_SLUG"
 tag="$VCS_TAG"
 build_url="$CI_BUILD_URL"
-build="$CI_BUILD_ID"
+build="$CI_JOB_ID"
 job="$CI_JOB_ID"
 
 beta_xcode_partials=""
