@@ -34,7 +34,8 @@ internal class RumActionScope(
     inactivityThresholdMs: Long = ACTION_INACTIVITY_MS,
     maxDurationMs: Long = ACTION_MAX_DURATION_MS,
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
-    private val trackFrustrations: Boolean
+    private val trackFrustrations: Boolean,
+    internal val sampleRate: Float
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -271,7 +272,8 @@ internal class RumActionScope(
                     ),
                     context = ActionEvent.Context(additionalProperties = attributes),
                     dd = ActionEvent.Dd(
-                        session = ActionEvent.DdSession(plan = ActionEvent.Plan.PLAN_1)
+                        session = ActionEvent.DdSession(plan = ActionEvent.Plan.PLAN_1),
+                        configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
                     ),
                     connectivity = networkInfo.toActionConnectivity(),
                     service = datadogContext.service,
@@ -298,7 +300,8 @@ internal class RumActionScope(
             event: RumRawEvent.StartAction,
             timestampOffset: Long,
             featuresContextResolver: FeaturesContextResolver,
-            trackFrustrations: Boolean
+            trackFrustrations: Boolean,
+            sampleRate: Float
         ): RumScope {
             return RumActionScope(
                 parentScope,
@@ -310,7 +313,8 @@ internal class RumActionScope(
                 event.attributes,
                 timestampOffset,
                 featuresContextResolver = featuresContextResolver,
-                trackFrustrations = trackFrustrations
+                trackFrustrations = trackFrustrations,
+                sampleRate = sampleRate
             )
         }
     }

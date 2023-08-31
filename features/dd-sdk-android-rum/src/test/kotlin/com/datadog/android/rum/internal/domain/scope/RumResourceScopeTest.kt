@@ -44,6 +44,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okhttp3.internal.format
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -116,6 +117,7 @@ internal class RumResourceScopeTest {
     lateinit var fakeNetworkInfoAtScopeStart: NetworkInfo
 
     var fakeServerOffset: Long = 0L
+    var fakeSampleRate: Float = 0.0f
 
     private lateinit var fakeEventTime: Time
     var fakeSourceResourceEvent: ResourceEvent.Source? = null
@@ -164,6 +166,7 @@ internal class RumResourceScopeTest {
         fakeKey = forge.anAsciiString()
         fakeMethod = forge.anElementFrom("PUT", "POST", "GET", "DELETE")
         mockEvent = mockEvent()
+        fakeSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 
         whenever(rumMonitor.mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
@@ -191,7 +194,8 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockResolver,
-            mockFeaturesContextResolver
+            mockFeaturesContextResolver,
+            fakeSampleRate
         )
     }
 
@@ -277,6 +281,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -344,6 +349,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -370,7 +376,8 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockResolver,
-            mockFeaturesContextResolver
+            mockFeaturesContextResolver,
+            fakeSampleRate
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -424,6 +431,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -496,6 +504,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -563,6 +572,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -621,6 +631,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -670,6 +681,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -743,7 +755,8 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockResolver,
-            mockFeaturesContextResolver
+            mockFeaturesContextResolver,
+            fakeSampleRate
         )
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
 
@@ -792,6 +805,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -860,6 +874,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -929,6 +944,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -999,6 +1015,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1069,6 +1086,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1139,6 +1157,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1165,7 +1184,8 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockResolver,
-            mockFeaturesContextResolver
+            mockFeaturesContextResolver,
+            fakeSampleRate
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -1224,6 +1244,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1251,7 +1272,8 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockResolver,
-            mockFeaturesContextResolver
+            mockFeaturesContextResolver,
+            fakeSampleRate
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -1310,6 +1332,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1383,6 +1406,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1456,6 +1480,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1528,6 +1553,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1601,6 +1627,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1679,6 +1706,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1757,6 +1785,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1913,6 +1942,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1977,6 +2007,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2043,6 +2074,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2157,6 +2189,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -2221,6 +2254,7 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())

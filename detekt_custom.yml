@@ -261,6 +261,9 @@ datadog:
       # region Kronos
       - "com.lyft.kronos.KronosClock.syncInBackground():java.lang.IllegalStateException"
       # endregion
+      #region Java util
+      - "java.util.Queue.offer(com.datadog.android.sessionreplay.internal.async.RecordedDataQueueItem):java.lang.IllegalArgumentException,java.lang.ClassCastException,java.lang.NullPointerException"
+      #endregion
     knownSafeCalls:
       # region Android APIs
       - "android.app.Activity.findNavControllerOrNull()"
@@ -274,6 +277,7 @@ datadog:
       - "android.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentPaused(android.app.FragmentManager, android.app.Fragment)"
       - "android.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentResumed(android.app.FragmentManager, android.app.Fragment)"
       - "android.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentStarted(android.app.FragmentManager, android.app.Fragment)"
+      - "android.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentStopped(android.app.FragmentManager, android.app.Fragment)"
       - "android.app.FragmentManager.registerFragmentLifecycleCallbacks(android.app.FragmentManager.FragmentLifecycleCallbacks, kotlin.Boolean)"
       - "android.app.FragmentManager.unregisterFragmentLifecycleCallbacks(android.app.FragmentManager.FragmentLifecycleCallbacks)"
       - "android.content.Context.createDeviceProtectedStorageContext()"
@@ -398,6 +402,7 @@ datadog:
       - "androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentPaused(androidx.fragment.app.FragmentManager, androidx.fragment.app.Fragment)"
       - "androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentResumed(androidx.fragment.app.FragmentManager, androidx.fragment.app.Fragment)"
       - "androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentStarted(androidx.fragment.app.FragmentManager, androidx.fragment.app.Fragment)"
+      - "androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentStopped(androidx.fragment.app.FragmentManager, androidx.fragment.app.Fragment)"
       - "androidx.fragment.app.FragmentManager.findFragmentById(kotlin.Int)"
       - "androidx.fragment.app.FragmentManager.registerFragmentLifecycleCallbacks(androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks, kotlin.Boolean)"
       - "androidx.fragment.app.FragmentManager.unregisterFragmentLifecycleCallbacks(androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks)"
@@ -516,6 +521,9 @@ datadog:
       - "java.util.concurrent.ExecutorService.shutdownNow()"
       - "java.util.concurrent.Executors.newSingleThreadExecutor()"
       - "java.util.concurrent.LinkedBlockingDeque.constructor()"
+      - "java.util.Queue.isEmpty()"
+      - "java.util.Queue.isNotEmpty()"
+      - "java.util.Queue.poll()"
       - "java.util.concurrent.ScheduledExecutorService.shutdownNow()"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.remove(java.lang.Runnable)"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.shutdown()"
@@ -714,6 +722,7 @@ datadog:
       - "kotlin.collections.Map.get(kotlin.String)"
       - "kotlin.collections.Map.isEmpty()"
       - "kotlin.collections.Map.isNotEmpty()"
+      - "kotlin.collections.Map.isNullOrEmpty()"
       - "kotlin.collections.Map.map(kotlin.Function1)"
       - "kotlin.collections.Map.mapKeys(kotlin.Function1)"
       - "kotlin.collections.Map.mapNotNull(kotlin.Function1)"
@@ -755,6 +764,7 @@ datadog:
       - "kotlin.collections.MutableList.forEachIndexed(kotlin.Function2)"
       - "kotlin.collections.MutableList.isEmpty()"
       - "kotlin.collections.MutableList.isNotEmpty()"
+      - "kotlin.collections.MutableList.isNullOrEmpty()"
       - "kotlin.collections.MutableList.iterator()"
       - "kotlin.collections.MutableList.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
       - "kotlin.collections.MutableList.remove(java.io.File)"

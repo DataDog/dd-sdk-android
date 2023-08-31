@@ -56,6 +56,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
@@ -183,6 +184,8 @@ internal class RumViewScopeTest {
 
     lateinit var fakeReplayStats: ViewEvent.ReplayStats
 
+    private var fakeSampleRate: Float = 0.0f
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         val isValidSource = forge.aBool()
@@ -225,6 +228,7 @@ internal class RumViewScopeTest {
         val fakeNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(fakeOffset)
         val maxLimit = max(Long.MAX_VALUE - fakeTimestamp, Long.MAX_VALUE)
         val minLimit = min(-fakeTimestamp, maxLimit)
+        fakeSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 
         fakeDatadogContext = fakeDatadogContext.copy(
             time = fakeTimeInfoAtScopeStart.copy(
@@ -265,7 +269,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
-            trackFrustrations = true
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate
         )
         mockSessionReplayContext(testedScope)
     }
@@ -367,7 +372,8 @@ internal class RumViewScopeTest {
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             type = fakeViewEventType,
-            trackFrustrations = fakeTrackFrustrations
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
         )
 
         // Then
@@ -480,7 +486,8 @@ internal class RumViewScopeTest {
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             type = expectedViewType,
-            trackFrustrations = fakeTrackFrustrations
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
         )
 
         // When
@@ -678,7 +685,8 @@ internal class RumViewScopeTest {
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             type = viewType,
-            trackFrustrations = fakeTrackFrustrations
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
         )
 
         // When
@@ -734,7 +742,8 @@ internal class RumViewScopeTest {
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             type = viewType,
-            trackFrustrations = fakeTrackFrustrations
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
         )
 
         // When
@@ -836,6 +845,7 @@ internal class RumViewScopeTest {
                 hasServiceName(fakeDatadogContext.service)
                 hasVersion(fakeDatadogContext.version)
                 hasSessionActive(fakeParentContext.isSessionActive)
+                hasSampleRate(fakeSampleRate)
             }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -907,6 +917,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -978,6 +989,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1055,6 +1067,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1129,6 +1142,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1203,6 +1217,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1264,6 +1279,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1297,7 +1313,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             viewUpdatePredicate = mockViewUpdatePredicate,
             featuresContextResolver = mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
         )
         mockSessionReplayContext(testedScope)
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
@@ -1356,6 +1373,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1429,6 +1447,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1459,7 +1478,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             viewUpdatePredicate = mockViewUpdatePredicate,
             featuresContextResolver = mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
         )
         mockSessionReplayContext(testedScope)
         val expectedAttributes = mutableMapOf<String, Any?>()
@@ -1521,6 +1541,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1553,7 +1574,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             viewUpdatePredicate = mockViewUpdatePredicate,
             featuresContextResolver = mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
         )
         mockSessionReplayContext(testedScope)
         val expectedAttributes = mutableMapOf<String, Any?>()
@@ -1616,6 +1638,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1690,6 +1713,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1763,6 +1787,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1829,6 +1854,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1938,6 +1964,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2006,6 +2033,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2092,6 +2120,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2160,6 +2189,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2247,6 +2277,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2316,6 +2347,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2405,6 +2437,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2476,6 +2509,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2545,6 +2579,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2616,6 +2651,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2695,6 +2731,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     containsExactlyContextAttributes(attributes)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2759,6 +2796,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2845,6 +2883,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2933,6 +2972,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3020,6 +3060,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3155,6 +3196,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3233,6 +3275,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3392,6 +3435,7 @@ internal class RumViewScopeTest {
         assertThat(actionScope.waitForStop).isEqualTo(waitForStop)
         assertThat(actionScope.attributes).containsAllEntriesOf(attributes)
         assertThat(actionScope.parentScope).isSameAs(testedScope)
+        assertThat(actionScope.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
     }
 
     @Test
@@ -3543,6 +3587,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3806,6 +3851,7 @@ internal class RumViewScopeTest {
         assertThat(resourceScope.eventTimestamp)
             .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
         assertThat(resourceScope.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
+        assertThat(resourceScope.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
     }
 
     @Test
@@ -3839,6 +3885,7 @@ internal class RumViewScopeTest {
         assertThat(resourceScope.eventTimestamp)
             .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
         assertThat(resourceScope.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
+        assertThat(resourceScope.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
     }
 
     @Test
@@ -4067,6 +4114,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4132,6 +4180,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4198,6 +4247,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4266,6 +4316,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4312,6 +4363,7 @@ internal class RumViewScopeTest {
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4380,6 +4432,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4447,6 +4500,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4631,6 +4685,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5018,6 +5073,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5360,6 +5416,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5411,6 +5468,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5472,6 +5530,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5533,6 +5592,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5787,168 +5847,6 @@ internal class RumViewScopeTest {
 
     // region Loading Time
 
-    @ParameterizedTest
-    @EnumSource(ViewEvent.LoadingType::class)
-    fun `𝕄 send event 𝕎 handleEvent(UpdateViewLoadingTime) on active view`(
-        loadingType: ViewEvent.LoadingType,
-        forge: Forge
-    ) {
-        // Given
-        val loadingTime = forge.aLong(min = 1)
-
-        // When
-        val result = testedScope.handleEvent(
-            RumRawEvent.UpdateViewLoadingTime(fakeKey, loadingTime, loadingType),
-            mockWriter
-        )
-
-        // Then
-        argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertThat(lastValue)
-                .apply {
-                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
-                    hasUrl(fakeUrl)
-                    hasDurationGreaterThan(1)
-                    hasLoadingTime(loadingTime)
-                    hasLoadingType(loadingType)
-                    hasVersion(2)
-                    hasErrorCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasFrustrationCount(0)
-                    hasLongTaskCount(0)
-                    hasFrozenFrameCount(0)
-                    hasCpuMetric(null)
-                    hasMemoryMetric(null, null)
-                    hasRefreshRateMetric(null, null)
-                    isActive(true)
-                    isSlowRendered(false)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasViewId(testedScope.viewId)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasLiteSessionPlan()
-                    hasReplay(fakeHasReplay)
-                    hasReplayStats(fakeReplayStats)
-                    containsExactlyContextAttributes(fakeAttributes)
-                    hasSource(fakeSourceViewEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                    hasSessionActive(fakeParentContext.isSessionActive)
-                }
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isSameAs(testedScope)
-    }
-
-    @ParameterizedTest
-    @EnumSource(ViewEvent.LoadingType::class)
-    fun `𝕄 send event 𝕎 handleEvent(UpdateViewLoadingTime) on stopped view`(
-        loadingType: ViewEvent.LoadingType,
-        forge: Forge
-    ) {
-        // Given
-        testedScope.stopped = true
-        val loadingTime = forge.aLong(min = 1)
-
-        // When
-        val result = testedScope.handleEvent(
-            RumRawEvent.UpdateViewLoadingTime(fakeKey, loadingTime, loadingType),
-            mockWriter
-        )
-
-        // Then
-        argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertThat(lastValue)
-                .apply {
-                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
-                    hasUrl(fakeUrl)
-                    hasDurationGreaterThan(1)
-                    hasLoadingTime(loadingTime)
-                    hasLoadingType(loadingType)
-                    hasVersion(2)
-                    hasErrorCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasFrustrationCount(0)
-                    hasLongTaskCount(0)
-                    hasFrozenFrameCount(0)
-                    hasCpuMetric(null)
-                    hasMemoryMetric(null, null)
-                    hasRefreshRateMetric(null, null)
-                    isActive(false)
-                    isSlowRendered(false)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasViewId(testedScope.viewId)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasLiteSessionPlan()
-                    hasReplay(fakeHasReplay)
-                    hasReplayStats(fakeReplayStats)
-                    containsExactlyContextAttributes(fakeAttributes)
-                    hasSource(fakeSourceViewEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                    hasSessionActive(fakeParentContext.isSessionActive)
-                }
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNull()
-    }
-
-    @ParameterizedTest
-    @EnumSource(ViewEvent.LoadingType::class)
-    fun `𝕄 do nothing 𝕎 handleEvent(UpdateViewLoadingTime) with different key`(
-        loadingType: ViewEvent.LoadingType,
-        forge: Forge
-    ) {
-        // Given
-        val differentKey = fakeKey + "different".toByteArray()
-        val loadingTime = forge.aLong(min = 1)
-
-        // When
-        val result = testedScope.handleEvent(
-            RumRawEvent.UpdateViewLoadingTime(differentKey, loadingTime, loadingType),
-            mockWriter
-        )
-
-        // Then
-        verifyNoInteractions(mockWriter)
-        assertThat(result).isSameAs(testedScope)
-    }
-
     @Test
     fun `𝕄 send event with custom timing 𝕎 handleEvent(AddCustomTiming) on active view`(
         forge: Forge
@@ -6011,6 +5909,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6084,6 +5983,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
             assertThat(lastValue)
                 .apply {
@@ -6136,6 +6036,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6239,6 +6140,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6312,6 +6214,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6384,6 +6287,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6466,6 +6370,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6548,6 +6453,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6598,11 +6504,6 @@ internal class RumViewScopeTest {
             RumRawEvent.LongTaskDropped(forge.anAlphabeticalString()),
             RumRawEvent.ErrorDropped(forge.anAlphabeticalString()),
             RumRawEvent.ActionDropped(forge.anAlphabeticalString()),
-            RumRawEvent.UpdateViewLoadingTime(
-                forge.anAlphabeticalString(),
-                forge.aLong(),
-                forge.aValueFrom(ViewEvent.LoadingType::class.java)
-            ),
             RumRawEvent.AddCustomTiming(forge.anAlphabeticalString()),
             RumRawEvent.KeepAlive()
         )
@@ -6973,6 +6874,7 @@ internal class RumViewScopeTest {
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
                     containsExactlyContextAttributes(attributes)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -7025,6 +6927,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
 
@@ -7092,6 +6995,7 @@ internal class RumViewScopeTest {
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -7150,7 +7054,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
         )
 
         // When
@@ -7242,15 +7147,6 @@ internal class RumViewScopeTest {
                     RumRawEvent.AddCustomTiming(
                         fakeName,
                         eventTime = eventTime
-                    ),
-                    fakeKey
-                ),
-                RumRawEventData(
-                    RumRawEvent.UpdateViewLoadingTime(
-                        fakeKey,
-                        forge.aLong(),
-                        forge.aValueFrom(ViewEvent.LoadingType::class.java),
-                        eventTime
                     ),
                     fakeKey
                 ),

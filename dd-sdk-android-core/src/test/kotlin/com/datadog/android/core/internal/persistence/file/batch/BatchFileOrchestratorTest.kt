@@ -7,6 +7,9 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.metrics.BatchClosedMetadata
+import com.datadog.android.core.internal.metrics.MetricsDispatcher
+import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.utils.forge.Configurator
@@ -29,9 +32,15 @@ import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
@@ -60,6 +69,9 @@ internal class BatchFileOrchestratorTest {
 
     lateinit var fakeRootDir: File
 
+    @Mock
+    lateinit var mockMetricsDispatcher: MetricsDispatcher
+
     @BeforeEach
     fun `set up`() {
         fakeRootDir = File(tempDir, fakeRootDirName)
@@ -67,11 +79,94 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             fakeRootDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
     }
 
     // region getWritableFile
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `𝕄 not send batch_closed metric 𝕎 getWritableFile() {no prev file}`(
+        forceNewFile: Boolean
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+
+        // When
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
+
+        // Then
+        checkNotNull(result)
+        verifyNoInteractions(mockMetricsDispatcher)
+    }
+
+    @Test
+    fun `M sent batch_closed metric W getWritableFile() { forceNewFile=true }`(
+        @IntForgery(min = 2, max = 10) iterations: Int,
+        @StringForgery data: String
+    ) {
+        // When
+        val files = mutableListOf<File>()
+        val startTimestamps = mutableListOf<Long>()
+        val endTimestamps = mutableListOf<Long>()
+        repeat(iterations) {
+            startTimestamps.add(System.currentTimeMillis())
+            val file = testedOrchestrator.getWritableFile(true)
+            file?.writeText(data)
+            files.add(file!!)
+            endTimestamps.add(System.currentTimeMillis())
+        }
+
+        // Then
+        val fileArgumentCaptor = argumentCaptor<File>()
+        val metadataArgumentCaptor = argumentCaptor<BatchClosedMetadata>()
+        verify(mockMetricsDispatcher, times(files.size - 1)).sendBatchClosedMetric(
+            fileArgumentCaptor.capture(),
+            metadataArgumentCaptor.capture()
+        )
+
+        assertThat(fileArgumentCaptor.allValues).isEqualTo(files.dropLast(1))
+        metadataArgumentCaptor.allValues.forEachIndexed { index, metadata ->
+            assertThat(metadata.forcedNew).isTrue()
+            assertThat(metadata.eventsCount).isEqualTo(1L)
+            assertThat(metadata.lastTimeWasUsedInMs)
+                .isBetween(startTimestamps[index], endTimestamps[index])
+        }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
+    }
+
+    @Test
+    fun `M sent batch_closed metric W getWritableFile() { forceNewFile false, true }`(
+        @IntForgery(min = 2, max = 10) iterations: Int,
+        @StringForgery(size = 10) data: String
+    ) {
+        // Given
+        var previousFile: File? = null
+        val startTimestamp = System.currentTimeMillis()
+        repeat(iterations) {
+            previousFile = testedOrchestrator.getWritableFile(false)
+            previousFile?.writeText(data)
+        }
+        val endTimestamp = System.currentTimeMillis()
+
+        // When
+        testedOrchestrator.getWritableFile(true)
+
+        // Then
+        argumentCaptor<BatchClosedMetadata>() {
+            verify(mockMetricsDispatcher).sendBatchClosedMetric(
+                eq(previousFile!!),
+                capture()
+            )
+            assertThat(firstValue.forcedNew).isTrue
+            assertThat(firstValue.eventsCount).isEqualTo(iterations.toLong())
+            assertThat(firstValue.lastTimeWasUsedInMs)
+                .isBetween(startTimestamp, endTimestamp)
+        }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
@@ -85,7 +180,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             notADir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -98,6 +194,7 @@ internal class BatchFileOrchestratorTest {
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
         )
+        verifyNoInteractions(mockMetricsDispatcher)
     }
 
     @ParameterizedTest
@@ -111,7 +208,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             corruptedDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -124,6 +222,7 @@ internal class BatchFileOrchestratorTest {
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
         )
+        verifyNoInteractions(mockMetricsDispatcher)
     }
 
     @ParameterizedTest
@@ -138,7 +237,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             restrictedDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -151,6 +251,7 @@ internal class BatchFileOrchestratorTest {
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
         )
+        verifyNoInteractions(mockMetricsDispatcher)
     }
 
     @ParameterizedTest
@@ -166,6 +267,7 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(fakeRootDir).exists().isDirectory()
+        verifyNoInteractions(mockMetricsDispatcher)
     }
 
     @ParameterizedTest
@@ -200,6 +302,11 @@ internal class BatchFileOrchestratorTest {
         assertThat(oldFile).doesNotExist()
         assertThat(oldFileMeta).doesNotExist()
         assertThat(youngFile).exists()
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(oldFile),
+            argThat { this is RemovalReason.Obsolete }
+        )
+        verifyNoMoreInteractions(mockMetricsDispatcher)
     }
 
     @ParameterizedTest
@@ -240,6 +347,10 @@ internal class BatchFileOrchestratorTest {
         assertThat(oldFileMeta).doesNotExist()
         assertThat(youngFile).exists()
         assertThat(evenOlderFile).exists()
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(oldFile),
+            argThat { this is RemovalReason.Obsolete }
+        )
     }
 
     @ParameterizedTest
@@ -275,6 +386,25 @@ internal class BatchFileOrchestratorTest {
         assertThat(oldFile).doesNotExist()
         assertThat(oldFileMeta).doesNotExist()
         assertThat(evenOlderFile).doesNotExist()
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(evenOlderFile),
+            argThat { this is RemovalReason.Obsolete }
+        )
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(oldFile),
+            argThat { this is RemovalReason.Obsolete }
+        )
+        argumentCaptor<BatchClosedMetadata>() {
+            verify(mockMetricsDispatcher).sendBatchClosedMetric(
+                eq(result),
+                capture()
+            )
+            assertThat(firstValue.forcedNew).isEqualTo(forceNewFile)
+            assertThat(firstValue.eventsCount).isEqualTo(1L)
+            assertThat(firstValue.lastTimeWasUsedInMs)
+                .isBetween(start, end)
+        }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
     }
 
     @ParameterizedTest
@@ -295,6 +425,7 @@ internal class BatchFileOrchestratorTest {
             .hasParent(fakeRootDir)
         assertThat(result.name.toLong())
             .isBetween(start, end)
+        verifyNoInteractions(mockMetricsDispatcher)
     }
 
     @Test
@@ -315,6 +446,7 @@ internal class BatchFileOrchestratorTest {
         checkNotNull(result)
         assertThat(result).isEqualTo(previousFile)
         assertThat(previousFile.readText()).isEqualTo(previousData)
+        verifyNoInteractions(mockMetricsDispatcher)
     }
 
     @ParameterizedTest
@@ -325,7 +457,10 @@ internal class BatchFileOrchestratorTest {
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val beforeFileCreateTimestamp = System.currentTimeMillis()
         val previousFile = testedOrchestrator.getWritableFile()
+        val afterFileCreateTimestamp = System.currentTimeMillis()
+
         checkNotNull(previousFile)
         previousFile.writeText(previousData)
         Thread.sleep(RECENT_DELAY_MS + 1)
@@ -343,6 +478,14 @@ internal class BatchFileOrchestratorTest {
         assertThat(result.name.toLong())
             .isBetween(start, end)
         assertThat(previousFile.readText()).isEqualTo(previousData)
+        argumentCaptor<BatchClosedMetadata>() {
+            verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile), capture())
+            assertThat(firstValue.forcedNew).isEqualTo(forceNewFile)
+            assertThat(firstValue.lastTimeWasUsedInMs)
+                .isBetween(beforeFileCreateTimestamp, afterFileCreateTimestamp)
+            assertThat(firstValue.eventsCount).isEqualTo(1L)
+        }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
     }
 
     @ParameterizedTest
@@ -370,6 +513,7 @@ internal class BatchFileOrchestratorTest {
         assertThat(result.name.toLong())
             .isBetween(start, end)
         assertThat(previousFile.readText()).isEqualTo(previousData)
+        verifyNoInteractions(mockMetricsDispatcher)
     }
 
     @ParameterizedTest
@@ -377,7 +521,9 @@ internal class BatchFileOrchestratorTest {
     fun `𝕄 return new File 𝕎 getWritableFile() {previous file is deleted}`(forceNewFile: Boolean) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val beforeFileCreateTimestamp = System.currentTimeMillis()
         val previousFile = testedOrchestrator.getWritableFile()
+        val afterFileCreateTimestamp = System.currentTimeMillis()
         checkNotNull(previousFile)
         previousFile.createNewFile()
         previousFile.delete()
@@ -396,6 +542,14 @@ internal class BatchFileOrchestratorTest {
         assertThat(result.name.toLong())
             .isBetween(start, end)
         assertThat(previousFile).doesNotExist()
+        argumentCaptor<BatchClosedMetadata>() {
+            verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile), capture())
+            assertThat(firstValue.forcedNew).isEqualTo(forceNewFile)
+            assertThat(firstValue.lastTimeWasUsedInMs)
+                .isBetween(beforeFileCreateTimestamp, afterFileCreateTimestamp)
+            assertThat(firstValue.eventsCount).isEqualTo(1L)
+        }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
     }
 
     @ParameterizedTest
@@ -406,7 +560,9 @@ internal class BatchFileOrchestratorTest {
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val beforeFileCreateTimestamp = System.currentTimeMillis()
         val previousFile = testedOrchestrator.getWritableFile()
+        val afterFileCreateTimestamp = System.currentTimeMillis()
         checkNotNull(previousFile)
         previousFile.writeText(previousData)
         Thread.sleep(1)
@@ -424,6 +580,14 @@ internal class BatchFileOrchestratorTest {
         assertThat(result.name.toLong())
             .isBetween(start, end)
         assertThat(previousFile.readText()).isEqualTo(previousData)
+        argumentCaptor<BatchClosedMetadata>() {
+            verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile), capture())
+            assertThat(firstValue.forcedNew).isEqualTo(forceNewFile)
+            assertThat(firstValue.lastTimeWasUsedInMs)
+                .isBetween(beforeFileCreateTimestamp, afterFileCreateTimestamp)
+            assertThat(firstValue.eventsCount).isEqualTo(1L)
+        }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
     }
 
     @ParameterizedTest
@@ -434,6 +598,7 @@ internal class BatchFileOrchestratorTest {
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val beforeFileCreateTimestamp = System.currentTimeMillis()
         var previousFile = testedOrchestrator.getWritableFile()
 
         repeat(4) {
@@ -450,6 +615,7 @@ internal class BatchFileOrchestratorTest {
                 assumeTrue(file == previousFile)
                 file?.appendText(previousData[i])
             }
+            val afterLastFileUsageTimestamp = System.currentTimeMillis()
 
             // When
             val start = System.currentTimeMillis()
@@ -466,8 +632,16 @@ internal class BatchFileOrchestratorTest {
             assertThat(previousFile?.readText())
                 .isEqualTo(previousData.joinToString(separator = ""))
 
+            argumentCaptor<BatchClosedMetadata>() {
+                verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile!!), capture())
+                assertThat(firstValue.forcedNew).isEqualTo(forceNewFile)
+                assertThat(firstValue.lastTimeWasUsedInMs)
+                    .isBetween(beforeFileCreateTimestamp, afterLastFileUsageTimestamp)
+                assertThat(firstValue.eventsCount).isEqualTo(MAX_ITEM_PER_BATCH.toLong())
+            }
             previousFile = nextFile
         }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
     }
 
     @ParameterizedTest
@@ -521,7 +695,9 @@ internal class BatchFileOrchestratorTest {
     fun `𝕄 return new File 𝕎 getWritableFile() {forceNewFile=true}`() {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val beforeFirstFileStart = System.currentTimeMillis()
         val firstFile = testedOrchestrator.getWritableFile()
+        val afterFirstFileStart = System.currentTimeMillis()
 
         // When
         val start = System.currentTimeMillis()
@@ -539,6 +715,14 @@ internal class BatchFileOrchestratorTest {
             .hasParent(fakeRootDir)
         assertThat(secondFile.name.toLong())
             .isBetween(start, end)
+        argumentCaptor<BatchClosedMetadata>() {
+            verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(firstFile), capture())
+            assertThat(firstValue.forcedNew).isTrue
+            assertThat(firstValue.lastTimeWasUsedInMs)
+                .isBetween(beforeFirstFileStart, afterFirstFileStart)
+            assertThat(firstValue.eventsCount).isEqualTo(1L)
+        }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
     }
 
     // endregion
@@ -555,7 +739,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             notADir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -580,7 +765,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             corruptedDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -606,7 +792,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             restrictedDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -732,7 +919,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             notADir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -757,7 +945,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             corruptedDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -783,7 +972,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             restrictedDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -921,7 +1111,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             notADir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -946,7 +1137,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             corruptedDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When
@@ -972,7 +1164,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator = BatchFileOrchestrator(
             restrictedDir,
             TEST_PERSISTENCE_CONFIG,
-            mockLogger
+            mockLogger,
+            mockMetricsDispatcher
         )
 
         // When

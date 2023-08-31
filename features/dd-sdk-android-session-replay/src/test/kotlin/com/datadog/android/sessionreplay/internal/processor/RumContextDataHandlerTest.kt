@@ -6,10 +6,12 @@
 
 package com.datadog.android.sessionreplay.internal.processor
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -24,6 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -41,6 +44,9 @@ internal class RumContextDataHandlerTest {
     @Forgery
     lateinit var fakeRumContext: SessionReplayRumContext
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     private lateinit var testedHandler: RumContextDataHandler
     private val invalidRumContext = SessionReplayRumContext()
 
@@ -50,7 +56,8 @@ internal class RumContextDataHandlerTest {
 
         testedHandler = RumContextDataHandler(
             mockRumContextProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockInternalLogger
         )
     }
 
@@ -83,18 +90,26 @@ internal class RumContextDataHandlerTest {
     fun `M return null W createRumContextData { invalid context }`() {
         // Given
         whenever(mockRumContextProvider.getRumContext()).thenReturn(invalidRumContext)
+        val expectedLogMessage = RumContextDataHandler.INVALID_RUM_CONTEXT_ERROR_MESSAGE_FORMAT
+            .format(Locale.ENGLISH, invalidRumContext.toString())
 
         // When
         val rumContextData = testedHandler.createRumContextData()
 
         // Then
         assertThat(rumContextData).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            expectedLogMessage
+        )
     }
 
     @Test
     fun `M not update prevRumContext W createRumContextData { invalid context }`() {
         // Given
-
+        val expectedLogMessage = RumContextDataHandler.INVALID_RUM_CONTEXT_ERROR_MESSAGE_FORMAT
+            .format(Locale.ENGLISH, invalidRumContext.toString())
         // overwrite prevRumContext with a valid context
         testedHandler.createRumContextData()
 
@@ -110,5 +125,10 @@ internal class RumContextDataHandlerTest {
 
         // Then
         assertThat(rumContextData?.prevRumContext).isEqualTo(fakeRumContext)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            expectedLogMessage
+        )
     }
 }

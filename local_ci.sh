@@ -83,7 +83,8 @@ if [[ $CLEANUP == 1 ]]; then
   rm -rf integrations/dd-sdk-android-compose/build/
   rm -rf integrations/dd-sdk-android-fresco/build/
   rm -rf integrations/dd-sdk-android-glide/build/
-  rm -rf integrations/dd-sdk-android-ktx/build/
+  rm -rf integrations/dd-sdk-android-rum-coroutines/build/
+  rm -rf integrations/dd-sdk-android-trace-coroutines/build/
   rm -rf integrations/dd-sdk-android-okhttp/build/
   rm -rf integrations/dd-sdk-android-rx/build/
   rm -rf integrations/dd-sdk-android-sqldelight/build/

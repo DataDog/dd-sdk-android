@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.processor
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
@@ -18,11 +19,17 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.util.ArrayList
 import java.util.LinkedList
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -32,11 +39,14 @@ import java.util.LinkedList
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class MutationResolverTest {
 
-    lateinit var testedMutationResolver: MutationResolver
+    private lateinit var testedMutationResolver: MutationResolver
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`() {
-        testedMutationResolver = MutationResolver()
+        testedMutationResolver = MutationResolver(mockInternalLogger)
     }
 
     // region adds mutations
@@ -284,23 +294,6 @@ internal class MutationResolverTest {
         assertThat(mutations?.adds).isNullOrEmpty()
         assertThat(mutations?.removes).isNullOrEmpty()
         assertThat(mutations?.updates).isEqualTo(mutationTestData.expectedMutation)
-    }
-
-    @ParameterizedTest
-    @MethodSource("typeMutationData")
-    fun `M identify the updated wireframes W resolveMutations {type}`(
-        mutationTestData: MutationTestData
-    ) {
-        // When
-        val mutations = testedMutationResolver.resolveMutations(
-            mutationTestData.prevSnapshot,
-            mutationTestData.newSnapshot
-        )
-
-        // Then
-        assertThat(mutations?.adds).isNullOrEmpty()
-        assertThat(mutations?.removes).isNullOrEmpty()
-        assertThat(mutations?.updates).isNullOrEmpty()
     }
 
     // endregion
@@ -572,6 +565,44 @@ internal class MutationResolverTest {
 
         // Then
         assertThat(mutations).isNull()
+    }
+
+    @ParameterizedTest
+    @MethodSource("typeMutationData")
+    fun `M do nothing W resolveMutations {wrong type}`(
+        mutationTestData: MutationTestData
+    ) {
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            mutationTestData.prevSnapshot,
+            mutationTestData.newSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isNullOrEmpty()
+        val captor = argumentCaptor<() -> String> {
+            verify(mockInternalLogger, times(mutationTestData.prevSnapshot.size)).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.MAINTAINER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+        }
+        mutationTestData.prevSnapshot.forEachIndexed { index, wireframe ->
+            assertThat(captor.allValues[index].invoke())
+                .isEqualTo(
+                    MutationResolver.MISS_MATCHING_TYPES_IN_SNAPSHOTS_ERROR_MESSAGE_FORMAT
+                        .format(
+                            Locale.ENGLISH,
+                            wireframe.javaClass.name,
+                            mutationTestData.newSnapshot[index].javaClass.name
+                        )
+                )
+        }
     }
 
     // endregion

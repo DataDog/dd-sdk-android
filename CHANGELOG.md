@@ -1,3 +1,17 @@
+# 2.0.0-beta3 / 2023-07-26
+
+This is a beta release of SDK v2. Compared to SDK v1 it contains breaking changes related to the SDK setup and APIs. See the [migration guide](https://github.com/DataDog/dd-sdk-android/blob/5c9feb900856a6d7b3623820dade1eaead1498b9/CHANGELOG.md) for details.
+
+Changes in comparison with `2.0.0-beta2`:
+
+* [IMPROVEMENT] RUM: Remove tracking of view loading time and fix unit tests. See [#1545](https://github.com/DataDog/dd-sdk-android/pull/1545)
+* [IMPROVEMENT] Don't report OkHttp throwables to telemetry. See [#1548](https://github.com/DataDog/dd-sdk-android/pull/1548)
+* [IMPROVEMENT] Use `implementation` dependency for features in integrations modules. See [#1552](https://github.com/DataDog/dd-sdk-android/pull/1552)
+* [IMPROVEMENT] Remove `dd-sdk-android-ktx` module. See [#1555](https://github.com/DataDog/dd-sdk-android/pull/1555)
+* [BUGFIX] RUM: Fix memory leak in `JankStats` usage. See [#1553](https://github.com/DataDog/dd-sdk-android/pull/1553)
+* [DOCS] Remove redundant docs. See [#1540](https://github.com/DataDog/dd-sdk-android/pull/1540)
+* [DOCS] Update documentation for SDK v2. See [#1549](https://github.com/DataDog/dd-sdk-android/pull/1549)
+
 # 2.0.0-beta2 / 2023-07-17
 
 This is a beta release of SDK v2. Compared to SDK v1 it contains breaking changes related to the SDK setup and APIs. See the [migration guide](https://github.com/DataDog/dd-sdk-android/blob/8d1f9abb101039abcd44ffed2823655c33e5129f/MIGRATION.MD) for details.

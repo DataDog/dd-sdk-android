@@ -26,12 +26,9 @@ import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.io.File
+import java.io.FileNotFoundException
 import java.nio.ByteBuffer
 import java.util.Locale
 
@@ -183,17 +180,12 @@ internal class PlainBatchFileReaderWriterTest {
         // Then
         assertThat(result).isFalse()
         assertThat(file).doesNotExist()
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-                capture(),
-                any(),
-                eq(false)
-            )
-            assertThat(firstValue())
-                .isEqualTo(PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path))
-        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
+            FileNotFoundException::class.java
+        )
     }
 
     @Test
@@ -215,17 +207,12 @@ internal class PlainBatchFileReaderWriterTest {
 
         // Then
         assertThat(result).isFalse()
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-                capture(),
-                any(),
-                eq(false)
-            )
-            assertThat(firstValue())
-                .isEqualTo(PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path))
-        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
+            FileNotFoundException::class.java
+        )
     }
 
     // endregion
@@ -246,18 +233,12 @@ internal class PlainBatchFileReaderWriterTest {
         // Then
         assertThat(result).isEmpty()
         assertThat(file).doesNotExist()
-
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-                capture(),
-                any(),
-                eq(false)
-            )
-            assertThat(firstValue())
-                .isEqualTo(PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path))
-        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path),
+            FileNotFoundException::class.java
+        )
     }
 
     @Test
@@ -273,17 +254,12 @@ internal class PlainBatchFileReaderWriterTest {
 
         // Then
         assertThat(result).isEmpty()
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-                capture(),
-                any(),
-                eq(false)
-            )
-            assertThat(firstValue())
-                .isEqualTo(PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path))
-        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path),
+            FileNotFoundException::class.java
+        )
     }
 
     @Test
@@ -378,17 +354,12 @@ internal class PlainBatchFileReaderWriterTest {
 
         // Then
         assertThat(result).containsExactlyElementsOf(events.minus(events[malformedMetaIndex]))
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.MAINTAINER),
-                capture(),
-                any(),
-                eq(false)
-            )
-            assertThat(firstValue())
-                .isEqualTo(PlainBatchFileReaderWriter.ERROR_FAILED_META_PARSE)
-        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            PlainBatchFileReaderWriter.ERROR_FAILED_META_PARSE,
+            JsonParseException::class.java
+        )
     }
 
     @Test

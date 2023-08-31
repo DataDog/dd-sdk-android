@@ -45,6 +45,7 @@ import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
+import com.datadog.android.vendor.sample.LocalServer
 import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
@@ -83,6 +84,8 @@ class SampleApplication : Application() {
 
     private val retrofitBaseDataSource = retrofitClient.create(RemoteDataSource::class.java)
 
+    private val localServer = LocalServer()
+
     override fun onCreate() {
         super.onCreate()
         Stetho.initializeWithDefaults(this)
@@ -91,6 +94,8 @@ class SampleApplication : Application() {
         initializeTimber()
 
         initializeImageLoaders()
+
+        localServer.init(this)
     }
 
     private fun initializeImageLoaders() {
@@ -265,7 +270,8 @@ class SampleApplication : Application() {
             return ViewModelFactory(
                 getOkHttpClient(context),
                 getRemoteDataSource(context),
-                LocalDataSource(context)
+                LocalDataSource(context),
+                getLocalServer(context)
             )
         }
 
@@ -277,6 +283,11 @@ class SampleApplication : Application() {
         private fun getRemoteDataSource(context: Context): RemoteDataSource {
             val application = context.applicationContext as SampleApplication
             return application.retrofitBaseDataSource
+        }
+
+        internal fun getLocalServer(context: Context): LocalServer {
+            val application = context.applicationContext as SampleApplication
+            return application.localServer
         }
     }
 }

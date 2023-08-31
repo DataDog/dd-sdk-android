@@ -42,8 +42,9 @@ interface com.datadog.android.api.InternalLogger
     - USER
     - MAINTAINER
     - TELEMETRY
-  fun log(Level, Target, () -> String, Throwable? = null, Boolean = false)
-  fun log(Level, List<Target>, () -> String, Throwable? = null, Boolean = false)
+  fun log(Level, Target, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
+  fun log(Level, List<Target>, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
+  fun logMetric(() -> String, Map<String, Any?>)
   companion object 
     val UNBOUND: InternalLogger
 interface com.datadog.android.api.SdkCore

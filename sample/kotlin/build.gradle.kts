@@ -114,8 +114,7 @@ android {
 }
 
 dependencies {
-
-    implementation(project(":dd-sdk-android-core"))
+    // Datadog Libraries
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-trace"))
@@ -123,7 +122,8 @@ dependencies {
     implementation(project(":features:dd-sdk-android-webview"))
     implementation(project(":features:dd-sdk-android-session-replay"))
     implementation(project(":features:dd-sdk-android-session-replay-material"))
-    implementation(project(":integrations:dd-sdk-android-ktx"))
+    implementation(project(":integrations:dd-sdk-android-trace-coroutines"))
+    implementation(project(":integrations:dd-sdk-android-rum-coroutines"))
     implementation(project(":integrations:dd-sdk-android-rx"))
     implementation(project(":integrations:dd-sdk-android-timber"))
     implementation(project(":integrations:dd-sdk-android-coil"))
@@ -132,6 +132,9 @@ dependencies {
     implementation(project(":integrations:dd-sdk-android-sqldelight"))
     implementation(project(":integrations:dd-sdk-android-compose"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
+
+    // Sample Vendor Library
+    implementation(project(":sample:vendor-lib"))
 
     implementation(libs.kotlin)
 
@@ -157,9 +160,6 @@ dependencies {
         exclude(group = "io.opentracing")
     }
 
-    // Ktor (local web server)
-    implementation(libs.bundles.ktor)
-
     // Image Loading Library
     implementation(libs.coil)
     implementation(libs.bundles.fresco)
@@ -176,7 +176,7 @@ dependencies {
     implementation(libs.rxJava3)
     implementation("com.squareup.retrofit2:adapter-rxjava3:2.9.0")
     implementation(libs.rxJava3Android)
-    implementation(libs.bundles.coroutines)
+    implementation(libs.coroutinesCore)
 
     // Network
     implementation("com.squareup.retrofit2:retrofit:2.9.0")

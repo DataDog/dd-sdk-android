@@ -30,6 +30,9 @@ internal fun List<JsonObject>.verifyEventMatches(
         .withFailMessage(
             "We were expecting ${expected.size} rum " +
                 "events instead they were ${this.size}: \n" +
+                " -- EXPECTED -- \n" +
+                expected.joinToString("\n") { "\t>> $it" } +
+                "\n -- ACTUAL -- \n" +
                 this.joinToString("\n") { "\t>> $it" }
         )
         .isEqualTo(expected.size)
