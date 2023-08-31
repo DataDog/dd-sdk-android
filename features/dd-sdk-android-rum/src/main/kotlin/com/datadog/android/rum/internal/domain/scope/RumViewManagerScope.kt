@@ -13,8 +13,6 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.DdRumContentProvider
-import com.datadog.android.rum.internal.AppStartTimeProvider
-import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -22,7 +20,6 @@ import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import java.lang.ref.WeakReference
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 internal class RumViewManagerScope(
     private val parentScope: RumScope,
@@ -34,7 +31,6 @@ internal class RumViewManagerScope(
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
-    private val appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider(),
     internal var applicationDisplayed: Boolean,
     internal val sampleRate: Float
 ) : RumScope {
@@ -47,14 +43,12 @@ internal class RumViewManagerScope(
 
     @WorkerThread
     override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope? {
-        val canDisplayApplication = !stopped && event !is RumRawEvent.StopSession
-        if (!applicationDisplayed && canDisplayApplication) {
-            val processImportance = DdRumContentProvider.processImportance
-            val isForegroundProcess = processImportance ==
-                ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-            if (isForegroundProcess) {
-                startApplicationLaunchView(event, writer)
-            }
+        if (event is RumRawEvent.ApplicationStarted &&
+            !applicationDisplayed &&
+            !stopped
+        ) {
+            startApplicationLaunchView(event, writer)
+            return this
         }
 
         delegateToChildren(event, writer)
@@ -100,27 +94,13 @@ internal class RumViewManagerScope(
     }
 
     @WorkerThread
-    private fun startApplicationLaunchView(event: RumRawEvent, writer: DataWriter<Any>) {
-        val processStartTime = appStartTimeProvider.appStartTimeNs
-        // processStartTime is the time in nanoseconds since VM start. To get a timestamp, we want
-        // to convert it to milliseconds since epoch provided by System.currentTimeMillis.
-        // To do so, we take the offset of those times in the event time, which should be consistent,
-        // then add that to our processStartTime to get the correct value.
-        val timestampNs = (
-            TimeUnit.MILLISECONDS.toNanos(event.eventTime.timestamp) -
-                event.eventTime.nanoTime
-            ) + processStartTime
-        val applicationLaunchViewTime = Time(
-            timestamp = TimeUnit.NANOSECONDS.toMillis(timestampNs),
-            nanoTime = processStartTime
-        )
-        val viewScope = createAppLaunchViewScope(applicationLaunchViewTime)
-        val startupTime = event.eventTime.nanoTime - processStartTime
+    private fun startApplicationLaunchView(
+        event: RumRawEvent.ApplicationStarted,
+        writer: DataWriter<Any>
+    ) {
+        val viewScope = createAppLaunchViewScope(event.eventTime)
         applicationDisplayed = true
-        viewScope.handleEvent(
-            RumRawEvent.ApplicationStarted(applicationLaunchViewTime, startupTime),
-            writer
-        )
+        viewScope.handleEvent(event, writer)
         childrenScopes.add(viewScope)
     }
 

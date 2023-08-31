@@ -12,7 +12,6 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
-import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.storage.NoOpDataWriter
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -79,9 +78,6 @@ internal class RumSessionScopeTest {
 
     @Mock
     lateinit var mockSessionListener: RumSessionListener
-
-    @Mock
-    lateinit var mockAppStartTimeProvider: AppStartTimeProvider
 
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
@@ -345,6 +341,25 @@ internal class RumSessionScopeTest {
         val sampledRate = tracked.toFloat() * 100f / (tracked + untracked).toFloat()
         // because sampling is random based we can't guarantee exactly 75%
         assertThat(sampledRate).isCloseTo(fakeSampleRate, offset(5f))
+    }
+
+    @Test
+    fun `𝕄 create new session context 𝕎 handleEvent(appStarted)+getRumContext() {sampling = 100}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(100f)
+
+        // When
+        val result = testedScope.handleEvent(forge.applicationStartedEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
+        assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
     }
 
     @Test
@@ -1171,7 +1186,6 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockSessionListener,
             applicationDisplayed = false,
-            mockAppStartTimeProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )

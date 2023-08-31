@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.app.ActivityManager
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.Feature
@@ -13,8 +14,10 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.utils.forge.Configurator
@@ -34,6 +37,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
@@ -43,6 +47,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -65,6 +70,9 @@ internal class RumApplicationScopeTest {
 
     @Mock
     lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
+
+    @Mock
+    lateinit var mockAppStartTimeProvider: AppStartTimeProvider
 
     @Mock
     lateinit var mockCpuVitalMonitor: VitalMonitor
@@ -118,7 +126,8 @@ internal class RumApplicationScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockSessionListener
+            mockSessionListener,
+            mockAppStartTimeProvider
         )
     }
 
@@ -183,7 +192,7 @@ internal class RumApplicationScopeTest {
         testedScope.childScopes.clear()
         testedScope.childScopes.add(mockSession)
         val stopEvent = RumRawEvent.StopSession()
-        whenever(mockSession.handleEvent(stopEvent, mockWriter)) doReturn mockSession
+        whenever(mockSession.handleEvent(any(), eq(mockWriter))) doReturn mockSession
 
         // When
         testedScope.handleEvent(stopEvent, mockWriter)
@@ -337,6 +346,89 @@ internal class RumApplicationScopeTest {
             assertThat(rumContext["application_id"]).isEqualTo(fakeApplicationId)
             assertThat(rumContext["session_id"]).isEqualTo(newSessionId)
             assertThat(rumContext["view_id"]).isNotNull
+        }
+    }
+
+    @Test
+    fun `M send ApplicationStarted event once W handleEvent { app is in foreground }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeEvents = forge.aList {
+            forge.anyRumEvent(excluding = listOf(RumRawEvent.ApplicationStarted::class.java))
+        }
+        val firstEvent = fakeEvents.first()
+        val appStartTimeNs = forge.aLong(min = 0, max = fakeEvents.first().eventTime.nanoTime)
+        whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn appStartTimeNs
+        DdRumContentProvider.processImportance =
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        val mockSessionScope = mock<RumScope>()
+        testedScope.childScopes.clear()
+        testedScope.childScopes += mockSessionScope
+
+        val expectedEventTimestamp =
+            TimeUnit.NANOSECONDS.toMillis(
+                TimeUnit.MILLISECONDS.toNanos(firstEvent.eventTime.timestamp) -
+                    firstEvent.eventTime.nanoTime + appStartTimeNs
+            )
+
+        // When
+        fakeEvents.forEach {
+            testedScope.handleEvent(it, mockWriter)
+        }
+
+        // Then
+        argumentCaptor<RumRawEvent> {
+            verify(mockSessionScope).handleEvent(capture(), eq(mockWriter))
+            assertThat(firstValue).isInstanceOf(RumRawEvent.ApplicationStarted::class.java)
+            val appStartEventTime = (firstValue as RumRawEvent.ApplicationStarted).eventTime
+            assertThat(appStartEventTime.timestamp).isEqualTo(expectedEventTimestamp)
+            assertThat(appStartEventTime.nanoTime).isEqualTo(appStartTimeNs)
+
+            val processStartTimeNs =
+                (firstValue as RumRawEvent.ApplicationStarted).applicationStartupNanos
+            assertThat(processStartTimeNs).isEqualTo(firstEvent.eventTime.nanoTime - appStartTimeNs)
+
+            assertThat(allValues.filterIsInstance<RumRawEvent.ApplicationStarted>()).hasSize(1)
+        }
+    }
+
+    @Test
+    fun `M not send ApplicationStarted event W handleEvent { app is not in foreground }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeEvents = forge.aList {
+            forge.anyRumEvent(excluding = listOf(RumRawEvent.ApplicationStarted::class.java))
+        }
+        val appStartTimeNs = forge.aLong(min = 0, max = fakeEvents.first().eventTime.nanoTime)
+        whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn appStartTimeNs
+        DdRumContentProvider.processImportance = forge.anElementFrom(
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
+            @Suppress("DEPRECATION")
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING_PRE_28,
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE,
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE,
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE_PRE_26,
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_CANT_SAVE_STATE,
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_SERVICE,
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED,
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_GONE
+        )
+        val mockSessionScope = mock<RumScope>()
+        testedScope.childScopes.clear()
+        testedScope.childScopes += mockSessionScope
+
+        // When
+        fakeEvents.forEach {
+            testedScope.handleEvent(it, mockWriter)
+        }
+
+        // Then
+        argumentCaptor<RumRawEvent> {
+            verify(mockSessionScope).handleEvent(capture(), eq(mockWriter))
+            assertThat(allValues).doesNotHaveSameClassAs(RumRawEvent.ApplicationStarted::class.java)
         }
     }
 }

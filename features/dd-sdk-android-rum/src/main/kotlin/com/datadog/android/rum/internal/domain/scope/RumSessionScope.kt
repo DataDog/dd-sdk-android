@@ -12,8 +12,6 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
-import com.datadog.android.rum.internal.AppStartTimeProvider
-import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.storage.NoOpDataWriter
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -37,7 +35,6 @@ internal class RumSessionScope(
     frameRateVitalMonitor: VitalMonitor,
     internal val sessionListener: RumSessionListener?,
     applicationDisplayed: Boolean,
-    appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider(),
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {
@@ -63,7 +60,6 @@ internal class RumSessionScope(
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
-        appStartTimeProvider,
         applicationDisplayed,
         sampleRate
     )
@@ -142,9 +138,10 @@ internal class RumSessionScope(
         val isTimedOut = timeSinceSessionStartNs >= sessionMaxDurationNanos
 
         val isInteraction = (event is RumRawEvent.StartView) || (event is RumRawEvent.StartAction)
-        val isBackgroundEvent = (event.javaClass in RumViewManagerScope.validBackgroundEventTypes)
+        val isBackgroundEvent = event.javaClass in RumViewManagerScope.validBackgroundEventTypes
+        val isApplicationStartEvent = event is RumRawEvent.ApplicationStarted
 
-        if (isInteraction) {
+        if (isInteraction || isApplicationStartEvent) {
             if (isNewSession || isExpired || isTimedOut) {
                 renewSession(nanoTime)
             }
