@@ -104,6 +104,7 @@ internal class InvocationUtilsTest {
             target = any(),
             captor.capture(),
             anyOrNull(),
+            anyOrNull(),
             anyOrNull()
         )
         assertThat(captor.firstValue()).isEqualTo(fakeMessage)
