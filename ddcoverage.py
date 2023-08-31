@@ -12,7 +12,7 @@ from argparse import ArgumentParser, Namespace
 from xml.etree import ElementTree
 from datadog import initialize, api
 
-branch_tag = str(os.environ['CI_BUILD_REF_NAME']).split('/')[0]
+branch_tag = str(os.environ['CI_COMMIT_REF_NAME']).split('/')[0]
 
 def parse_arguments(args: list) -> Namespace:
     parser = ArgumentParser()
