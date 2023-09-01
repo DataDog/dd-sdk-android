@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/default_padding"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <TextView
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:id="@+id/text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/datadog_violet"
+        android:text="@string/text_view" />
+
+    <com.google.android.material.textview.MaterialTextView
+        app:layout_constraintTop_toBottomOf="@+id/text_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/material_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/holo_red_dark"
+        android:text="@string/material_text_view" />
+
+    <androidx.appcompat.widget.AppCompatTextView
+        app:layout_constraintTop_toBottomOf="@+id/material_text_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/app_compat_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/holo_orange_light"
+        android:text="@string/app_compat_text_view"/>
+
+    <EditText
+        app:layout_constraintTop_toBottomOf="@+id/app_compat_text_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/edit_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/datadog_violet"
+        android:hint="@string/edit_text_view"
+        android:textColorHint="@color/datadog_violet"/>
+
+    <AutoCompleteTextView
+        app:layout_constraintTop_toBottomOf="@+id/edit_text_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/auto_complete_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:autofillHints="emailAddress"
+        android:backgroundTint="@android:color/holo_orange_light"
+        android:textColorHint="@android:color/holo_orange_light"
+        android:hint="@string/auto_complete_text_view"/>
+
+    <androidx.appcompat.widget.AppCompatEditText
+        app:layout_constraintTop_toBottomOf="@+id/auto_complete_text_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/app_compat_edit_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@android:color/holo_orange_light"
+        android:textColorHint="@android:color/holo_orange_light"
+        android:hint="@string/app_compat_edit_text_view"/>
+
+    <androidx.appcompat.widget.AppCompatAutoCompleteTextView
+        app:layout_constraintTop_toBottomOf="@+id/app_compat_edit_text_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/app_compat_auto_complete_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:autofillHints="emailAddress"
+        android:backgroundTint="@color/datadog_violet"
+        android:textColorHint="@color/datadog_violet"
+        android:hint="@string/app_compat_auto_complete_text_view"/>
+
+    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+        app:layout_constraintTop_toBottomOf="@+id/app_compat_auto_complete_text_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/material_auto_complete_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:autofillHints="emailAddress"
+        android:backgroundTint="@color/datadog_violet"
+        android:textColorHint="@color/datadog_violet"
+        android:hint="@string/material_auto_complete_text_view"/>
+
+    <CheckedTextView
+        app:layout_constraintTop_toBottomOf="@+id/material_auto_complete_text_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/checked_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="false"
+        android:checkMark="?android:attr/listChoiceIndicatorMultiple"
+        android:text="@string/checked_text_view"/>
+
+    <androidx.appcompat.widget.AppCompatCheckedTextView
+        app:layout_constraintTop_toBottomOf="@+id/checked_text_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/app_compat_checked_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:checkMark="?android:attr/listChoiceIndicatorMultiple"
+        android:text="@string/app_compat_checked_text_view"/>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
