@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
 @Suppress("TooManyFunctions")
 internal class RecordedDataProcessor(
     private val writer: RecordWriter,
-    private val mutationResolver: MutationResolver = MutationResolver(),
+    private val mutationResolver: MutationResolver,
     private val nodeFlattener: NodeFlattener = NodeFlattener()
 ) : Processor {
 
@@ -72,7 +72,6 @@ internal class RecordedDataProcessor(
         val wireframes = snapshots.flatMap { nodeFlattener.flattenNode(it) }
 
         if (wireframes.isEmpty()) {
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
             return
         }
 

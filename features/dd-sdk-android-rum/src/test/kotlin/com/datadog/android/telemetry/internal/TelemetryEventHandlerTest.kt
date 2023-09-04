@@ -31,6 +31,7 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.tools.unit.forge.aThrowable
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -390,7 +391,14 @@ internal class TelemetryEventHandlerTest {
         // When
         if (trackNetworkRequests) {
             testedTelemetryHandler.handleEvent(
-                RumRawEvent.SendTelemetry(TelemetryType.INTERCEPTOR_SETUP, "", null, null, null),
+                RumRawEvent.SendTelemetry(
+                    TelemetryType.INTERCEPTOR_SETUP,
+                    "",
+                    null,
+                    null,
+                    coreConfiguration = null,
+                    additionalProperties = null
+                ),
                 mockWriter
             )
         }
@@ -465,9 +473,11 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
-    fun `𝕄 not write event 𝕎 handleEvent(SendTelemetry) { seen in the session }`(forge: Forge) {
+    fun `𝕄 not write event 𝕎 handleEvent(SendTelemetry){seen in the session, not metric}`(
+        forge: Forge
+    ) {
         // Given
-        val rawEvent = forge.createRumRawTelemetryEvent()
+        val rawEvent = forge.createRumRawTelemetryEvent().copy(isMetric = false)
         val anotherEvent = rawEvent.copy()
 
         // When
@@ -508,6 +518,55 @@ internal class TelemetryEventHandlerTest {
                 )
             }
             verifyNoMoreInteractions(mockWriter)
+        }
+    }
+
+    @Test
+    fun `𝕄 write event 𝕎 handleEvent(SendTelemetry){seen in the session, is metric}`(
+        forge: Forge
+    ) {
+        // Given
+        val rawEvent = forge.createRumRawTelemetryEvent().copy(isMetric = true)
+        val events = listOf(rawEvent, rawEvent.copy())
+
+        // When
+        testedTelemetryHandler.handleEvent(events[0], mockWriter)
+        testedTelemetryHandler.handleEvent(events[1], mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
+            allValues.withIndex().forEach {
+                when (val capturedValue = it.value) {
+                    is TelemetryDebugEvent -> {
+                        assertDebugEventMatchesRawEvent(
+                            capturedValue,
+                            events[it.index],
+                            fakeRumContext
+                        )
+                    }
+
+                    is TelemetryErrorEvent -> {
+                        assertErrorEventMatchesRawEvent(
+                            capturedValue,
+                            events[it.index],
+                            fakeRumContext
+                        )
+                    }
+
+                    is TelemetryConfigurationEvent -> {
+                        assertConfigEventMatchesRawEvent(
+                            capturedValue,
+                            events[it.index],
+                            fakeRumContext
+                        )
+                    }
+
+                    else -> throw IllegalArgumentException(
+                        "Unexpected type=${lastValue::class.jvmName} of the captured value."
+                    )
+                }
+            }
         }
     }
 
@@ -700,6 +759,7 @@ internal class TelemetryEventHandlerTest {
             .hasSessionId(rumContext.sessionId)
             .hasViewId(rumContext.viewId)
             .hasActionId(rumContext.actionId)
+            .hasAdditionalProperties(rawEvent.additionalProperties ?: emptyMap())
     }
 
     private fun assertErrorEventMatchesRawEvent(
@@ -755,7 +815,9 @@ internal class TelemetryEventHandlerTest {
             aString(),
             null,
             null,
-            null
+            coreConfiguration = null,
+            additionalProperties = aNullable { exhaustiveAttributes() },
+            isMetric = aBool()
         )
     }
 
@@ -766,7 +828,9 @@ internal class TelemetryEventHandlerTest {
             aString(),
             throwable?.loggableStackTrace(),
             throwable?.javaClass?.canonicalName,
-            null
+            coreConfiguration = null,
+            additionalProperties = null,
+            isMetric = aBool()
         )
     }
 
@@ -778,7 +842,9 @@ internal class TelemetryEventHandlerTest {
             "",
             null,
             null,
-            configuration ?: getForgery()
+            coreConfiguration = (configuration ?: getForgery()),
+            additionalProperties = null,
+            isMetric = aBool()
         )
     }
 

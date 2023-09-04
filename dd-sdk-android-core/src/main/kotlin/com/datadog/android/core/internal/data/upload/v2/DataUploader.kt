@@ -8,9 +8,7 @@ package com.datadog.android.core.internal.data.upload.v2
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.internal.data.upload.UploadStatus
-import com.datadog.tools.annotation.NoOpImplementation
 
-@NoOpImplementation
 internal interface DataUploader {
     fun upload(
         context: DatadogContext,

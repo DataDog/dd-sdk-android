@@ -7,7 +7,7 @@
 package com.datadog.android.sample.data.db.realm
 
 import android.content.Context
-import com.datadog.android.ktx.rum.useMonitored
+import com.datadog.android.rum.useMonitored
 import com.datadog.android.sample.data.db.DataSource
 import com.datadog.android.sample.data.db.DatadogDbContract
 import com.datadog.android.sample.data.model.Log

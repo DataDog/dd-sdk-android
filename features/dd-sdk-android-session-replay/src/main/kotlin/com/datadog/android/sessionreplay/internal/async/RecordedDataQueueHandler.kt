@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.async
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
@@ -16,6 +17,7 @@ import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.lang.ClassCastException
 import java.lang.NullPointerException
+import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
@@ -28,21 +30,25 @@ import java.util.concurrent.TimeUnit
  * Allows for asynchronous enrichment, which still preserving the event order.
  * The items are added to the queue from the main thread and processed on a background thread.
  */
+@Suppress("TooManyFunctions")
 internal class RecordedDataQueueHandler {
-
     private var executorService: ExecutorService
     private var processor: RecordedDataProcessor
     private var rumContextDataHandler: RumContextDataHandler
     private var timeProvider: TimeProvider
+    private val internalLogger: InternalLogger
+    internal val recordedDataQueue: Queue<RecordedDataQueueItem>
 
     internal constructor(
         processor: RecordedDataProcessor,
         rumContextDataHandler: RumContextDataHandler,
-        timeProvider: TimeProvider
+        timeProvider: TimeProvider,
+        internalLogger: InternalLogger
     ) : this(
         processor = processor,
         rumContextDataHandler = rumContextDataHandler,
         timeProvider = timeProvider,
+        internalLogger = internalLogger,
 
         /**
          * TODO: RUMM-0000 consider change to LoggingThreadPoolExecutor once V2 is merged.
@@ -56,7 +62,8 @@ internal class RecordedDataQueueHandler {
             THREAD_POOL_MAX_KEEP_ALIVE_MS,
             TimeUnit.MILLISECONDS,
             LinkedBlockingDeque()
-        )
+        ),
+        recordedQueue = ConcurrentLinkedQueue()
     )
 
     @VisibleForTesting
@@ -64,16 +71,17 @@ internal class RecordedDataQueueHandler {
         processor: RecordedDataProcessor,
         rumContextDataHandler: RumContextDataHandler,
         timeProvider: TimeProvider,
-        executorService: ExecutorService
+        executorService: ExecutorService,
+        internalLogger: InternalLogger,
+        recordedQueue: Queue<RecordedDataQueueItem> = ConcurrentLinkedQueue()
     ) {
         this.processor = processor
         this.rumContextDataHandler = rumContextDataHandler
         this.executorService = executorService
         this.timeProvider = timeProvider
+        this.internalLogger = internalLogger
+        this.recordedDataQueue = recordedQueue
     }
-
-    // region internal
-    internal val recordedDataQueue = ConcurrentLinkedQueue<RecordedDataQueueItem>()
 
     @MainThread
     internal fun addTouchEventItem(
@@ -133,10 +141,9 @@ internal class RecordedDataQueueHandler {
                 triggerProcessingLoop(currentTime)
             }
         } catch (e: RejectedExecutionException) {
-            // TODO: REPLAY-1364 Add logs here once the sdkLogger is added
+            logConsumeQueueException(e)
         } catch (e: NullPointerException) {
-            // in theory will never happen but we'll log it
-            // TODO: REPLAY-1364 Add logs here once the sdkLogger is added
+            logConsumeQueueException(e)
         }
     }
 
@@ -149,6 +156,9 @@ internal class RecordedDataQueueHandler {
     @Synchronized
     private fun triggerProcessingLoop(currentTime: Long) {
         while (recordedDataQueue.isNotEmpty()) {
+            // peeking is safe here because we are in a synchronized block
+            // and we check for isEmpty first
+            @SuppressWarnings("UnsafeThirdPartyFunctionCall")
             val nextItem = recordedDataQueue.peek()
 
             if (nextItem != null) {
@@ -168,6 +178,7 @@ internal class RecordedDataQueueHandler {
         when (nextItem) {
             is SnapshotRecordedDataQueueItem ->
                 processSnapshotEvent(nextItem)
+
             is TouchEventRecordedDataQueueItem ->
                 processTouchEvent(nextItem)
         }
@@ -194,14 +205,30 @@ internal class RecordedDataQueueHandler {
         try {
             recordedDataQueue.offer(recordedDataQueueItem)
         } catch (e: IllegalArgumentException) {
-            // TODO: REPLAY-1364 Add logs here once the sdkLogger is added
+            logAddToQueueException(e)
         } catch (e: ClassCastException) {
-            // in theory will never happen but we'll log it
-            // TODO: REPLAY-1364 Add logs here once the sdkLogger is added
+            logAddToQueueException(e)
         } catch (e: NullPointerException) {
-            // in theory will never happen but we'll log it
-            // TODO: REPLAY-1364 Add logs here once the sdkLogger is added
+            logAddToQueueException(e)
         }
+    }
+
+    private fun logAddToQueueException(e: Exception) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            { FAILED_TO_ADD_RECORDS_TO_QUEUE_ERROR_MESSAGE },
+            e
+        )
+    }
+
+    private fun logConsumeQueueException(e: Exception) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            { FAILED_TO_CONSUME_RECORDS_QUEUE_ERROR_MESSAGE },
+            e
+        )
     }
 
     // end region
@@ -212,5 +239,9 @@ internal class RecordedDataQueueHandler {
 
         private val THREAD_POOL_MAX_KEEP_ALIVE_MS = TimeUnit.SECONDS.toMillis(5)
         private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
+        internal const val FAILED_TO_CONSUME_RECORDS_QUEUE_ERROR_MESSAGE =
+            "SR RecordedDataQueueHandler: failed to consume records from queue"
+        internal const val FAILED_TO_ADD_RECORDS_TO_QUEUE_ERROR_MESSAGE =
+            "SR RecordedDataQueueHandler: failed to add records into the queue"
     }
 }

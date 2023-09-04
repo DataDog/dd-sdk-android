@@ -20,10 +20,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
 import java.lang.IllegalStateException
@@ -130,7 +127,6 @@ class NavigationViewTrackingStrategy(
             val rumFeature = sdkCore
                 .getFeature(Feature.RUM_FEATURE_NAME)
                 ?.unwrap<RumFeature>()
-            val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor
             val fragmentActivity = activity as? FragmentActivity
             val navController = activity.findNavControllerOrNull(navigationViewId)
             if (fragmentActivity != null && navController != null && rumFeature != null) {
@@ -138,8 +134,7 @@ class NavigationViewTrackingStrategy(
                     navController,
                     argumentsProvider = { emptyMap() },
                     componentPredicate = predicate,
-                    rumFeature = rumFeature,
-                    advancedRumMonitor = rumMonitor ?: NoOpAdvancedRumMonitor()
+                    rumFeature = rumFeature
                 )
                 navControllerFragmentCallbacks.register(
                     startedActivity as FragmentActivity,
@@ -210,13 +205,11 @@ class NavigationViewTrackingStrategy(
         private val navController: NavController,
         argumentsProvider: (Fragment) -> Map<String, Any?>,
         componentPredicate: ComponentPredicate<Fragment>,
-        rumFeature: RumFeature,
-        advancedRumMonitor: AdvancedRumMonitor
+        rumFeature: RumFeature
     ) : AndroidXFragmentLifecycleCallbacks(
         argumentsProvider,
         componentPredicate,
         rumMonitor = NoOpRumMonitor(),
-        advancedRumMonitor = AdvancedMonitorDecorator(advancedRumMonitor),
         rumFeature = rumFeature
     ) {
         override fun resolveKey(fragment: Fragment): Any {
@@ -225,19 +218,6 @@ class NavigationViewTrackingStrategy(
 
         companion object {
             val NO_DESTINATION_FOUND = Any()
-        }
-    }
-
-    internal class AdvancedMonitorDecorator(private val advancedRumMonitor: AdvancedRumMonitor) :
-        AdvancedRumMonitor by advancedRumMonitor {
-        override fun updateViewLoadingTime(
-            key: Any,
-            loadingTimeInNs: Long,
-            type: ViewEvent.LoadingType
-        ) {
-            if (key != NavControllerFragmentLifecycleCallbacks.NO_DESTINATION_FOUND) {
-                advancedRumMonitor.updateViewLoadingTime(key, loadingTimeInNs, type)
-            }
         }
     }
 }

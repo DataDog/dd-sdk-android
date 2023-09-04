@@ -13,15 +13,13 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.DdRumContentProvider
-import com.datadog.android.rum.internal.AppStartTimeProvider
-import com.datadog.android.rum.internal.DefaultAppStartTimeProvider
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import java.lang.ref.WeakReference
-import java.util.concurrent.TimeUnit
+import java.util.Locale
 
 internal class RumViewManagerScope(
     private val parentScope: RumScope,
@@ -33,31 +31,39 @@ internal class RumViewManagerScope(
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
-    private val appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider(),
-    internal var applicationDisplayed: Boolean
+    internal var applicationDisplayed: Boolean,
+    internal val sampleRate: Float
 ) : RumScope {
 
     internal val childrenScopes = mutableListOf<RumScope>()
     internal var stopped = false
+    private var lastStoppedViewTime: Time? = null
 
     // region RumScope
 
     @WorkerThread
     override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope? {
-        val canDisplayApplication = !stopped && event !is RumRawEvent.StopSession
-        if (!applicationDisplayed && canDisplayApplication) {
-            val processImportance = DdRumContentProvider.processImportance
-            val isForegroundProcess = processImportance ==
-                ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-            if (isForegroundProcess) {
-                startApplicationLaunchView(event, writer)
-            }
+        if (event is RumRawEvent.ApplicationStarted &&
+            !applicationDisplayed &&
+            !stopped
+        ) {
+            startApplicationLaunchView(event, writer)
+            return this
         }
 
         delegateToChildren(event, writer)
 
         if (event is RumRawEvent.StartView && !stopped) {
-            startForegroundView(event)
+            startForegroundView(event, writer)
+            lastStoppedViewTime?.let {
+                val gap = event.eventTime.nanoTime - it.nanoTime
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    listOf(InternalLogger.Target.TELEMETRY, InternalLogger.Target.MAINTAINER),
+                    { MESSAGE_GAP_BETWEEN_VIEWS.format(Locale.US, gap) }
+                )
+            }
+            lastStoppedViewTime = null
         } else if (event is RumRawEvent.StopSession) {
             stopped = true
         } else if (childrenScopes.count { it.isActive() } == 0) {
@@ -88,27 +94,13 @@ internal class RumViewManagerScope(
     }
 
     @WorkerThread
-    private fun startApplicationLaunchView(event: RumRawEvent, writer: DataWriter<Any>) {
-        val processStartTime = appStartTimeProvider.appStartTimeNs
-        // processStartTime is the time in nanoseconds since VM start. To get a timestamp, we want
-        // to convert it to milliseconds since epoch provided by System.currentTimeMillis.
-        // To do so, we take the offset of those times in the event time, which should be consistent,
-        // then add that to our processStartTime to get the correct value.
-        val timestampNs = (
-            TimeUnit.MILLISECONDS.toNanos(event.eventTime.timestamp) -
-                event.eventTime.nanoTime
-            ) + processStartTime
-        val applicationLaunchViewTime = Time(
-            timestamp = TimeUnit.NANOSECONDS.toMillis(timestampNs),
-            nanoTime = processStartTime
-        )
-        val viewScope = createAppLaunchViewScope(applicationLaunchViewTime)
-        val startupTime = event.eventTime.nanoTime - processStartTime
+    private fun startApplicationLaunchView(
+        event: RumRawEvent.ApplicationStarted,
+        writer: DataWriter<Any>
+    ) {
+        val viewScope = createAppLaunchViewScope(event.eventTime)
         applicationDisplayed = true
-        viewScope.handleEvent(
-            RumRawEvent.ApplicationStarted(applicationLaunchViewTime, startupTime),
-            writer
-        )
+        viewScope.handleEvent(event, writer)
         childrenScopes.add(viewScope)
     }
 
@@ -120,7 +112,13 @@ internal class RumViewManagerScope(
         val iterator = childrenScopes.iterator()
         @Suppress("UnsafeThirdPartyFunctionCall") // next/remove can't fail: we checked hasNext
         while (iterator.hasNext()) {
-            val result = iterator.next().handleEvent(event, writer)
+            val childScope = iterator.next()
+            if (event is RumRawEvent.StopView) {
+                if (childScope.isActive() && (childScope as? RumViewScope)?.keyRef?.get() == event.key) {
+                    lastStoppedViewTime = event.eventTime
+                }
+            }
+            val result = childScope.handleEvent(event, writer)
             if (result == null) {
                 iterator.remove()
             }
@@ -148,7 +146,7 @@ internal class RumViewManagerScope(
     }
 
     @WorkerThread
-    private fun startForegroundView(event: RumRawEvent.StartView) {
+    private fun startForegroundView(event: RumRawEvent.StartView, writer: DataWriter<Any>) {
         val viewScope = RumViewScope.fromEvent(
             this,
             sdkCore,
@@ -158,10 +156,12 @@ internal class RumViewManagerScope(
             cpuVitalMonitor,
             memoryVitalMonitor,
             frameRateVitalMonitor,
-            trackFrustrations
+            trackFrustrations,
+            sampleRate
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
+        viewScope.handleEvent(RumRawEvent.KeepAlive(), writer)
         viewChangedListener?.onViewChanged(
             RumViewInfo(
                 keyRef = WeakReference(event.key),
@@ -191,6 +191,7 @@ internal class RumViewManagerScope(
             val viewScope = createBackgroundViewScope(event)
             viewScope.handleEvent(event, writer)
             childrenScopes.add(viewScope)
+            lastStoppedViewTime = null
         } else if (!isSilentOrphanEvent) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -214,7 +215,8 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             type = RumViewScope.RumViewType.BACKGROUND,
-            trackFrustrations = trackFrustrations
+            trackFrustrations = trackFrustrations,
+            sampleRate = sampleRate
         )
     }
 
@@ -232,7 +234,8 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             type = RumViewScope.RumViewType.APPLICATION_LAUNCH,
-            trackFrustrations = trackFrustrations
+            trackFrustrations = trackFrustrations,
+            sampleRate = sampleRate
         )
     }
 
@@ -267,6 +270,7 @@ internal class RumViewManagerScope(
         internal const val RUM_APP_LAUNCH_VIEW_URL = "com/datadog/application-launch/view"
         internal const val RUM_APP_LAUNCH_VIEW_NAME = "ApplicationLaunch"
 
+        private const val MESSAGE_GAP_BETWEEN_VIEWS = "Gap between views was %d nanoseconds"
         internal const val MESSAGE_MISSING_VIEW =
             "A RUM event was detected, but no view is active. " +
                 "To track views automatically, try calling the " +

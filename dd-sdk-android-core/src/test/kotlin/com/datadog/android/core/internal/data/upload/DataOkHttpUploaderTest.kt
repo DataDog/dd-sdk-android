@@ -192,7 +192,8 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.SUCCESS)
+        assertThat(result).isInstanceOf(UploadStatus.Success::class.java)
+        assertThat(result.code).isEqualTo(202)
         verifyRequest(fakeDatadogRequest, expectedUserAgentHeader = validValue)
         verifyResponseIsClosed()
     }
@@ -215,7 +216,8 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.SUCCESS)
+        assertThat(result).isInstanceOf(UploadStatus.Success::class.java)
+        assertThat(result.code).isEqualTo(202)
         verifyRequest(fakeDatadogRequest, expectedUserAgentHeader = fakeSdkUserAgent)
         verifyResponseIsClosed()
     }
@@ -242,7 +244,8 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.INVALID_TOKEN_ERROR)
+        assertThat(result).isInstanceOf(UploadStatus.InvalidTokenError::class.java)
+        assertThat(result.code).isEqualTo(UploadStatus.UNKNOWN_RESPONSE_CODE)
         verifyNoInteractions(mockCallFactory)
     }
 
@@ -263,7 +266,8 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.SUCCESS)
+        assertThat(result).isInstanceOf(UploadStatus.Success::class.java)
+        assertThat(result.code).isEqualTo(202)
         verifyRequest(fakeDatadogRequest)
         verifyResponseIsClosed()
     }
@@ -283,7 +287,8 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.HTTP_CLIENT_ERROR)
+        assertThat(result).isInstanceOf(UploadStatus.HttpClientError::class.java)
+        assertThat(result.code).isEqualTo(400)
         verifyRequest(fakeDatadogRequest)
         verifyResponseIsClosed()
     }
@@ -303,7 +308,8 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.INVALID_TOKEN_ERROR)
+        assertThat(result).isInstanceOf(UploadStatus.InvalidTokenError::class.java)
+        assertThat(result.code).isEqualTo(401)
         verifyRequest(fakeDatadogRequest)
         verifyResponseIsClosed()
     }
@@ -323,7 +329,8 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.INVALID_TOKEN_ERROR)
+        assertThat(result).isInstanceOf(UploadStatus.InvalidTokenError::class.java)
+        assertThat(result.code).isEqualTo(403)
         verifyRequest(fakeDatadogRequest)
         verifyResponseIsClosed()
     }
@@ -343,7 +350,8 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.HTTP_CLIENT_RATE_LIMITING)
+        assertThat(result).isInstanceOf(UploadStatus.HttpClientRateLimiting::class.java)
+        assertThat(result.code).isEqualTo(408)
         verifyRequest(fakeDatadogRequest)
         verifyResponseIsClosed()
     }
@@ -363,7 +371,8 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.HTTP_CLIENT_ERROR)
+        assertThat(result).isInstanceOf(UploadStatus.HttpClientError::class.java)
+        assertThat(result.code).isEqualTo(413)
         verifyRequest(fakeDatadogRequest)
         verifyResponseIsClosed()
     }
@@ -383,7 +392,8 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.HTTP_CLIENT_RATE_LIMITING)
+        assertThat(result).isInstanceOf(UploadStatus.HttpClientRateLimiting::class.java)
+        assertThat(result.code).isEqualTo(429)
         verifyRequest(fakeDatadogRequest)
         verifyResponseIsClosed()
     }
@@ -403,7 +413,8 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.HTTP_SERVER_ERROR)
+        assertThat(result).isInstanceOf(UploadStatus.HttpServerError::class.java)
+        assertThat(result.code).isEqualTo(500)
         verifyRequest(fakeDatadogRequest)
         verifyResponseIsClosed()
     }
@@ -423,7 +434,8 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.HTTP_SERVER_ERROR)
+        assertThat(result).isInstanceOf(UploadStatus.HttpServerError::class.java)
+        assertThat(result.code).isEqualTo(503)
         verifyRequest(fakeDatadogRequest)
         verifyResponseIsClosed()
     }
@@ -453,7 +465,8 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.UNKNOWN_ERROR)
+        assertThat(result).isInstanceOf(UploadStatus.UnknownError::class.java)
+        assertThat(result.code).isEqualTo(statusCode)
         verifyRequest(fakeDatadogRequest)
         verifyResponseIsClosed()
     }
@@ -473,7 +486,8 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.NETWORK_ERROR)
+        assertThat(result).isInstanceOf(UploadStatus.NetworkError::class.java)
+        assertThat(result.code).isEqualTo(UploadStatus.UNKNOWN_RESPONSE_CODE)
         verifyRequest(fakeDatadogRequest)
     }
 
@@ -492,7 +506,8 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.NETWORK_ERROR)
+        assertThat(result).isInstanceOf(UploadStatus.NetworkError::class.java)
+        assertThat(result.code).isEqualTo(UploadStatus.UNKNOWN_RESPONSE_CODE)
         verifyRequest(fakeDatadogRequest)
     }
 
@@ -512,7 +527,8 @@ internal class DataOkHttpUploaderTest {
         val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.REQUEST_CREATION_ERROR)
+        assertThat(result).isInstanceOf(UploadStatus.RequestCreationError::class.java)
+        assertThat(result.code).isEqualTo(UploadStatus.UNKNOWN_RESPONSE_CODE)
         verifyNoInteractions(mockCallFactory)
     }
 

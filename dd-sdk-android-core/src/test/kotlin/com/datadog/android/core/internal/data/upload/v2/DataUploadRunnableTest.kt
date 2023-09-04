@@ -9,8 +9,8 @@ package com.datadog.android.core.internal.data.upload.v2
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
-import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.ContextProvider
+import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.UploadStatus
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.BatchConfirmation
@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -87,7 +87,7 @@ internal class DataUploadRunnableTest {
     lateinit var fakeContext: DatadogContext
 
     @Forgery
-    lateinit var fakeUploadFrequency: UploadFrequency
+    lateinit var fakeDataUploadConfiguration: DataUploadConfiguration
 
     private lateinit var testedRunnable: DataUploadRunnable
 
@@ -118,7 +118,7 @@ internal class DataUploadRunnableTest {
             mockContextProvider,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            fakeUploadFrequency,
+            fakeDataUploadConfiguration,
             TEST_BATCH_UPLOAD_WAIT_TIMEOUT_MS,
             mockInternalLogger
         )
@@ -169,8 +169,8 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
         whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
+            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
+                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
             }
             it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
         }
@@ -183,7 +183,7 @@ internal class DataUploadRunnableTest {
                 batchData,
                 batchMetadata
             )
-        ) doReturn UploadStatus.SUCCESS
+        ) doReturn forge.getForgery(UploadStatus.Success::class.java)
 
         // When
         testedRunnable.run()
@@ -224,8 +224,8 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
         whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
+            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
+                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
             }
             it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
         }
@@ -238,7 +238,7 @@ internal class DataUploadRunnableTest {
                 batchData,
                 batchMetadata
             )
-        ) doReturn UploadStatus.SUCCESS
+        ) doReturn forge.getForgery(UploadStatus.Success::class.java)
 
         // When
         testedRunnable.run()
@@ -278,8 +278,8 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
         whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
+            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
+                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
             }
             it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
         }
@@ -292,7 +292,7 @@ internal class DataUploadRunnableTest {
                 batchData,
                 batchMetadata
             )
-        ) doReturn UploadStatus.SUCCESS
+        ) doReturn forge.getForgery(UploadStatus.Success::class.java)
 
         // When
         testedRunnable.run()
@@ -447,8 +447,8 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
         whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
+            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
+                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
             }
             it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
         }
@@ -459,7 +459,7 @@ internal class DataUploadRunnableTest {
                 batchData,
                 batchMetadata
             )
-        ) doReturn UploadStatus.SUCCESS
+        ) doReturn forge.getForgery(UploadStatus.Success::class.java)
 
         // When
         testedRunnable.run()
@@ -477,11 +477,7 @@ internal class DataUploadRunnableTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-        UploadStatus::class,
-        names = ["NETWORK_ERROR", "HTTP_SERVER_ERROR", "HTTP_CLIENT_RATE_LIMITING"],
-        mode = EnumSource.Mode.INCLUDE
-    )
+    @MethodSource("retryBatchStatusValues")
     fun `batch kept on error`(
         uploadStatus: UploadStatus,
         @StringForgery batch: List<String>,
@@ -499,8 +495,8 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
         whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
+            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
+                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
             }
             it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
         }
@@ -529,11 +525,7 @@ internal class DataUploadRunnableTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-        UploadStatus::class,
-        names = ["NETWORK_ERROR", "HTTP_SERVER_ERROR", "HTTP_CLIENT_RATE_LIMITING"],
-        mode = EnumSource.Mode.INCLUDE
-    )
+    @MethodSource("retryBatchStatusValues")
     fun `batch kept after n errors`(
         uploadStatus: UploadStatus,
         @StringForgery batch: List<String>,
@@ -552,8 +544,8 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
         whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
+            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
+                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
             }
             it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
         }
@@ -583,11 +575,7 @@ internal class DataUploadRunnableTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-        UploadStatus::class,
-        names = ["INVALID_TOKEN_ERROR", "HTTP_REDIRECTION", "HTTP_CLIENT_ERROR", "UNKNOWN_ERROR"],
-        mode = EnumSource.Mode.INCLUDE
-    )
+    @MethodSource("dropBatchStatusValues")
     fun `batch dropped on error`(
         uploadStatus: UploadStatus,
         @StringForgery batch: List<String>,
@@ -605,8 +593,8 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
         whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
+            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
+                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
             }
             it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
         }
@@ -650,8 +638,8 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
         whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
+            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
+                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
             }
             it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
         }
@@ -661,7 +649,7 @@ internal class DataUploadRunnableTest {
                 batchData,
                 batchMetadata
             )
-        ) doReturn UploadStatus.SUCCESS
+        ) doReturn forge.getForgery(UploadStatus.Success::class.java)
 
         // When
         repeat(5) {
@@ -696,8 +684,8 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
         whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
+            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
+                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
             }
             it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
         }
@@ -707,7 +695,7 @@ internal class DataUploadRunnableTest {
                 batchData,
                 batchMetadata
             )
-        ) doReturn UploadStatus.SUCCESS
+        ) doReturn forge.getForgery(UploadStatus.Success::class.java)
 
         // When
         repeat(runCount) {
@@ -733,11 +721,7 @@ internal class DataUploadRunnableTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-        UploadStatus::class,
-        names = ["HTTP_REDIRECTION", "HTTP_CLIENT_ERROR", "UNKNOWN_ERROR", "INVALID_TOKEN_ERROR"],
-        mode = EnumSource.Mode.INCLUDE
-    )
+    @MethodSource("dropBatchStatusValues")
     fun `𝕄 reduce delay between runs 𝕎 batch fails and should be dropped`(
         uploadStatus: UploadStatus,
         @StringForgery batch: List<String>,
@@ -756,8 +740,8 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
         whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
+            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
+                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
             }
             it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
         }
@@ -823,8 +807,10 @@ internal class DataUploadRunnableTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("retryBatchStatusValues")
     fun `𝕄 increase delay between runs 𝕎 batch fails and should be retried`(
+        status: UploadStatus,
         @IntForgery(16, 64) runCount: Int,
         @StringForgery batch: List<String>,
         @StringForgery batchMeta: String,
@@ -841,8 +827,8 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
         whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
+            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
+                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
             }
             it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
         }
@@ -852,19 +838,7 @@ internal class DataUploadRunnableTest {
                 batchData,
                 batchMetadata
             )
-        ) doAnswer {
-            forge.aValueFrom(
-                UploadStatus::class.java,
-                exclude = listOf(
-                    UploadStatus.HTTP_REDIRECTION,
-                    UploadStatus.HTTP_CLIENT_ERROR,
-                    UploadStatus.UNKNOWN_ERROR,
-                    UploadStatus.INVALID_TOKEN_ERROR,
-                    UploadStatus.SUCCESS,
-                    UploadStatus.REQUEST_CREATION_ERROR
-                )
-            )
-        }
+        ) doReturn status
 
         // When
         repeat(runCount) {
@@ -956,5 +930,32 @@ internal class DataUploadRunnableTest {
 
     companion object {
         const val TEST_BATCH_UPLOAD_WAIT_TIMEOUT_MS = 100L
+
+        @JvmStatic
+        fun retryBatchStatusValues(): List<UploadStatus> {
+            val forge = Forge().apply {
+                Configurator().configure(this)
+            }
+
+            return listOf(
+                forge.getForgery(UploadStatus.HttpServerError::class.java),
+                forge.getForgery(UploadStatus.HttpClientRateLimiting::class.java),
+                forge.getForgery(UploadStatus.NetworkError::class.java)
+            )
+        }
+
+        @JvmStatic
+        fun dropBatchStatusValues(): List<UploadStatus> {
+            val forge = Forge().apply {
+                Configurator().configure(this)
+            }
+
+            return listOf(
+                forge.getForgery(UploadStatus.HttpClientError::class.java),
+                forge.getForgery(UploadStatus.HttpRedirection::class.java),
+                forge.getForgery(UploadStatus.UnknownError::class.java),
+                forge.getForgery(UploadStatus.UnknownStatus::class.java)
+            )
+        }
     }
 }

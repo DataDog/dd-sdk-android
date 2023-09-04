@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.internal.tracking
 
-import android.content.Context
 import android.os.Bundle
+import androidx.annotation.MainThread
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -15,24 +15,27 @@ import androidx.fragment.app.FragmentManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
+import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 internal open class AndroidXFragmentLifecycleCallbacks(
     internal val argumentsProvider: (Fragment) -> Map<String, Any?>,
     private val componentPredicate: ComponentPredicate<Fragment>,
-    internal var viewLoadingTimer: ViewLoadingTimer = ViewLoadingTimer(),
     private val rumFeature: RumFeature,
-    private val rumMonitor: RumMonitor,
-    private val advancedRumMonitor: AdvancedRumMonitor
+    private val rumMonitor: RumMonitor
 ) : FragmentLifecycleCallbacks<FragmentActivity>, FragmentManager.FragmentLifecycleCallbacks() {
 
     protected lateinit var sdkCore: FeatureSdkCore
+    private val executor: ScheduledExecutorService by lazy {
+        LoggingScheduledThreadPoolExecutor(1, internalLogger)
+    }
 
     private val internalLogger: InternalLogger
         get() = if (this::sdkCore.isInitialized) {
@@ -54,24 +57,9 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 
     // endregion
 
-    // region FragmentManager.FragmentLifecycleCallbacks
-
-    override fun onFragmentAttached(fm: FragmentManager, f: Fragment, context: Context) {
-        super.onFragmentAttached(fm, f, context)
-        componentPredicate.runIfValid(f, internalLogger) {
-            viewLoadingTimer.onCreated(resolveKey(it))
-        }
-    }
-
-    override fun onFragmentStarted(fm: FragmentManager, f: Fragment) {
-        super.onFragmentStarted(fm, f)
-        componentPredicate.runIfValid(f, internalLogger) {
-            viewLoadingTimer.onStartLoading(resolveKey(it))
-        }
-    }
-
     // TODO: RUMM-0000 Update Androidx packages and handle deprecated APIs
     @Suppress("DEPRECATION")
+    @MainThread
     override fun onFragmentActivityCreated(
         fm: FragmentManager,
         f: Fragment,
@@ -88,38 +76,30 @@ internal open class AndroidXFragmentLifecycleCallbacks(
         }
     }
 
+    @MainThread
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
         componentPredicate.runIfValid(f, internalLogger) {
             val key = resolveKey(it)
-            viewLoadingTimer.onFinishedLoading(key)
             val viewName = componentPredicate.resolveViewName(f)
             @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
             rumMonitor.startView(key, viewName, argumentsProvider(it))
-            val loadingTime = viewLoadingTimer.getLoadingTime(key)
-            if (loadingTime != null) {
-                advancedRumMonitor.updateViewLoadingTime(
-                    key,
-                    loadingTime,
-                    resolveLoadingType(viewLoadingTimer.isFirstTimeLoading(key))
-                )
+        }
+    }
+
+    @MainThread
+    override fun onFragmentStopped(fm: FragmentManager, f: Fragment) {
+        super.onFragmentStopped(fm, f)
+        executor.scheduleSafe(
+            "Delayed view stop",
+            STOP_VIEW_DELAY_MS,
+            TimeUnit.MILLISECONDS,
+            sdkCore.internalLogger
+        ) {
+            componentPredicate.runIfValid(f, internalLogger) {
+                val key = resolveKey(it)
+                rumMonitor.stopView(key)
             }
-        }
-    }
-
-    override fun onFragmentPaused(fm: FragmentManager, f: Fragment) {
-        super.onFragmentPaused(fm, f)
-        componentPredicate.runIfValid(f, internalLogger) {
-            val key = resolveKey(it)
-            rumMonitor.stopView(key)
-            viewLoadingTimer.onPaused(key)
-        }
-    }
-
-    override fun onFragmentDestroyed(fm: FragmentManager, f: Fragment) {
-        super.onFragmentDestroyed(fm, f)
-        componentPredicate.runIfValid(f, internalLogger) {
-            viewLoadingTimer.onDestroyed(resolveKey(it))
         }
     }
 
@@ -131,13 +111,9 @@ internal open class AndroidXFragmentLifecycleCallbacks(
         return fragment
     }
 
-    private fun resolveLoadingType(firstTimeLoading: Boolean): ViewEvent.LoadingType {
-        return if (firstTimeLoading) {
-            ViewEvent.LoadingType.FRAGMENT_DISPLAY
-        } else {
-            ViewEvent.LoadingType.FRAGMENT_REDISPLAY
-        }
-    }
-
     // endregion
+
+    companion object {
+        private const val STOP_VIEW_DELAY_MS = 200L
+    }
 }

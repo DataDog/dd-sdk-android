@@ -58,4 +58,6 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: fun Int.toHexString(): String
  * apiMethodSignature: fun Long.toHexString(): String
  * apiMethodSignature: fun Throwable.loggableStackTrace(): String
+ * apiMethodSignature: fun <T: java.io.Closeable, R> T.useMonitored(com.datadog.android.api.SdkCore = Datadog.getInstance(), (T) -> R): R
+ * apiMethodSignature: fun okhttp3.Request.Builder.parentSpan(io.opentracing.Span): okhttp3.Request.Builder
  */

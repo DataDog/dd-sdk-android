@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.persistence.file.advanced
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.privacy.TrackingConsent
@@ -56,6 +57,9 @@ internal class FeatureFileOrchestratorTest {
     @TempDir
     lateinit var fakeStorageDir: File
 
+    @Mock
+    lateinit var mockMetricsDispatcher: MetricsDispatcher
+
     @BeforeEach
     fun `set up`() {
         whenever(mockConsentProvider.getConsent()) doReturn fakeConsent
@@ -71,7 +75,8 @@ internal class FeatureFileOrchestratorTest {
             fakeStorageDir,
             fakeFeatureName,
             mockExecutorService,
-            mockInternalLogger
+            mockInternalLogger,
+            mockMetricsDispatcher
         )
 
         // Then
@@ -91,7 +96,8 @@ internal class FeatureFileOrchestratorTest {
             fakeStorageDir,
             fakeFeatureName,
             mockExecutorService,
-            mockInternalLogger
+            mockInternalLogger,
+            mockMetricsDispatcher
         )
 
         // Then
@@ -111,7 +117,8 @@ internal class FeatureFileOrchestratorTest {
             fakeStorageDir,
             fakeFeatureName,
             mockExecutorService,
-            mockInternalLogger
+            mockInternalLogger,
+            mockMetricsDispatcher
         )
 
         // Then

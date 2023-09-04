@@ -13,6 +13,7 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -60,14 +61,32 @@ internal class TelemetryTest {
 
     @Test
     fun `𝕄 report debug event 𝕎 debug()`(
-        @StringForgery message: String
+        @StringForgery message: String,
+        forge: Forge
     ) {
+        // Given
+        val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
         // When
-        testedTelemetry.debug(message)
+        testedTelemetry.debug(message, fakeAdditionalProperties)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .sendDebugTelemetryEvent(message)
+            .sendDebugTelemetryEvent(message, fakeAdditionalProperties)
+    }
+
+    @Test
+    fun `𝕄 report metric event 𝕎 metric()`(
+        @StringForgery message: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeAdditionalProperties = forge.aNullable { exhaustiveAttributes() }
+        // When
+        testedTelemetry.metric(message, fakeAdditionalProperties)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .sendMetricEvent(message, fakeAdditionalProperties)
     }
 
     companion object {

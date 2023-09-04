@@ -6,10 +6,12 @@
 
 package com.datadog.android.sessionreplay.internal.processor
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.LinkedList
+import java.util.Locale
 
-internal class MutationResolver {
+internal class MutationResolver(private val internalLogger: InternalLogger) {
 
     /**
      * Computes a diff between two arrays.
@@ -309,7 +311,18 @@ internal class MutationResolver {
         return if (prevWireframe == currentWireframe) {
             null
         } else if (!prevWireframe.javaClass.isAssignableFrom(currentWireframe.javaClass)) {
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                {
+                    MISS_MATCHING_TYPES_IN_SNAPSHOTS_ERROR_MESSAGE_FORMAT
+                        .format(
+                            Locale.ENGLISH,
+                            prevWireframe.javaClass.name,
+                            currentWireframe.javaClass.name
+                        )
+                }
+            )
             null
         } else {
             when (prevWireframe) {
@@ -410,5 +423,11 @@ internal class MutationResolver {
         // Index of element in other array (in `oldArray` for `na: [Entry]`
         // and in `newArray` for `oa: [Entry]`).
         class Index(val index: Int) : Entry()
+    }
+
+    companion object {
+        const val MISS_MATCHING_TYPES_IN_SNAPSHOTS_ERROR_MESSAGE_FORMAT =
+            "SR MutationResolver: wireframe of type [%1s] is " +
+                "not matching the wireframe of type [%2s]"
     }
 }

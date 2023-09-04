@@ -6,7 +6,6 @@ import android.app.Activity
 import android.app.DialogFragment
 import android.app.Fragment
 import android.app.FragmentManager
-import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import androidx.annotation.RequiresApi
@@ -15,27 +14,30 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
+import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
+import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 @Suppress("DEPRECATION")
 @RequiresApi(Build.VERSION_CODES.O)
 internal class OreoFragmentLifecycleCallbacks(
     private val argumentsProvider: (Fragment) -> Map<String, Any?>,
     private val componentPredicate: ComponentPredicate<Fragment>,
-    private val viewLoadingTimer: ViewLoadingTimer = ViewLoadingTimer(),
     private val rumFeature: RumFeature,
     private val rumMonitor: RumMonitor,
-    private val advancedRumMonitor: AdvancedRumMonitor,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
 ) : FragmentLifecycleCallbacks<Activity>, FragmentManager.FragmentLifecycleCallbacks() {
 
     private lateinit var sdkCore: FeatureSdkCore
+    private val executor: ScheduledExecutorService by lazy {
+        LoggingScheduledThreadPoolExecutor(1, internalLogger)
+    }
 
     private val internalLogger: InternalLogger
         get() = if (this::sdkCore.isInitialized) {
@@ -79,58 +81,29 @@ internal class OreoFragmentLifecycleCallbacks(
         }
     }
 
-    override fun onFragmentAttached(fm: FragmentManager?, f: Fragment, context: Context?) {
-        super.onFragmentAttached(fm, f, context)
-        if (isNotAViewFragment(f)) return
-        componentPredicate.runIfValid(f, internalLogger) {
-            viewLoadingTimer.onCreated(it)
-        }
-    }
-
-    override fun onFragmentStarted(fm: FragmentManager?, f: Fragment) {
-        super.onFragmentStarted(fm, f)
-        if (isNotAViewFragment(f)) return
-        componentPredicate.runIfValid(f, internalLogger) {
-            viewLoadingTimer.onStartLoading(it)
-        }
-    }
-
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
         if (isNotAViewFragment(f)) return
 
         componentPredicate.runIfValid(f, internalLogger) {
             val viewName = componentPredicate.resolveViewName(f)
-            viewLoadingTimer.onFinishedLoading(f)
             @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
             rumMonitor.startView(it, viewName, argumentsProvider(it))
-            val loadingTime = viewLoadingTimer.getLoadingTime(it)
-            if (loadingTime != null) {
-                advancedRumMonitor.updateViewLoadingTime(
-                    it,
-                    loadingTime,
-                    resolveLoadingType(viewLoadingTimer.isFirstTimeLoading(it))
-                )
+        }
+    }
+
+    override fun onFragmentStopped(fm: FragmentManager, f: Fragment) {
+        super.onFragmentStopped(fm, f)
+        if (isNotAViewFragment(f)) return
+        executor.scheduleSafe(
+            "Delayed view stop",
+            STOP_VIEW_DELAY_MS,
+            TimeUnit.MILLISECONDS,
+            sdkCore.internalLogger
+        ) {
+            componentPredicate.runIfValid(f, internalLogger) {
+                rumMonitor.stopView(it)
             }
-        }
-    }
-
-    override fun onFragmentPaused(fm: FragmentManager, f: Fragment) {
-        super.onFragmentPaused(fm, f)
-        if (isNotAViewFragment(f)) return
-
-        componentPredicate.runIfValid(f, internalLogger) {
-            rumMonitor.stopView(it)
-            viewLoadingTimer.onPaused(it)
-        }
-    }
-
-    override fun onFragmentDestroyed(fm: FragmentManager?, f: Fragment) {
-        super.onFragmentDestroyed(fm, f)
-        if (isNotAViewFragment(f)) return
-
-        componentPredicate.runIfValid(f, internalLogger) {
-            viewLoadingTimer.onDestroyed(it)
         }
     }
 
@@ -138,20 +111,13 @@ internal class OreoFragmentLifecycleCallbacks(
 
     // region Internal
 
-    private fun resolveLoadingType(firstTimeLoading: Boolean): ViewEvent.LoadingType {
-        return if (firstTimeLoading) {
-            ViewEvent.LoadingType.FRAGMENT_DISPLAY
-        } else {
-            ViewEvent.LoadingType.FRAGMENT_REDISPLAY
-        }
-    }
-
     private fun isNotAViewFragment(fragment: Fragment): Boolean {
         return fragment::class.java.name == REPORT_FRAGMENT_NAME
     }
 
     private companion object {
         private const val REPORT_FRAGMENT_NAME = "androidx.lifecycle.ReportFragment"
+        private const val STOP_VIEW_DELAY_MS = 200L
     }
 
     // endregion

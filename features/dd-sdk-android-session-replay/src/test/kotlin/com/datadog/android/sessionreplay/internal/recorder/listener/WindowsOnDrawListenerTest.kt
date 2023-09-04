@@ -97,7 +97,9 @@ internal class WindowsOnDrawListenerTest {
     fun `set up`(forge: Forge) {
         whenever(mockMiscUtils.resolveSystemInformation(mockContext))
             .thenReturn(fakeSystemInformation)
-        fakeMockedDecorViews = forge.aMockedDecorViewList()
+        fakeMockedDecorViews = forge.aMockedDecorViewList().onEach {
+            whenever(it.context).thenReturn(mockContext)
+        }
         fakeWindowsSnapshots = fakeMockedDecorViews.map { forge.getForgery() }
         whenever(mockContext.theme).thenReturn(mockTheme)
         fakeMockedDecorViews.forEachIndexed { index, decorView ->
@@ -124,7 +126,6 @@ internal class WindowsOnDrawListenerTest {
         }
         whenever(mockContext.resources).thenReturn(mockResources)
         testedListener = WindowsOnDrawListener(
-            mockContext,
             fakeMockedDecorViews,
             mockRecordedDataQueueHandler,
             mockSnapshotProducer,
@@ -172,7 +173,6 @@ internal class WindowsOnDrawListenerTest {
         // Given
         stubDebouncer()
         testedListener = WindowsOnDrawListener(
-            mockContext,
             emptyList(),
             mockRecordedDataQueueHandler,
             mockSnapshotProducer,
@@ -191,6 +191,19 @@ internal class WindowsOnDrawListenerTest {
     fun `M do nothing W onDraw(){ windows lost the strong reference }`() {
         // Given
         testedListener.weakReferencedDecorViews.forEach { it.clear() }
+        stubDebouncer()
+
+        // When
+        testedListener.onDraw()
+
+        // Then
+        verify(mockRecordedDataQueueHandler, never()).tryToConsumeItems()
+    }
+
+    @Test
+    fun `M do nothing W onDraw(){ no available view context }`() {
+        // Given
+        fakeMockedDecorViews.forEach { whenever(it.context).thenReturn(null) }
         stubDebouncer()
 
         // When

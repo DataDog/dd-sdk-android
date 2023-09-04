@@ -210,7 +210,6 @@ rxJava3Android = { module = "io.reactivex.rxjava3:rxandroid", version.ref = "rxJ
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 
 coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
-coroutinesAndroid = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 
 # Local Server
 ktorCore = { module = "io.ktor:ktor", version.ref = "ktor" }
@@ -276,11 +275,6 @@ glide = [
     "glideAnnotations",
     "glideCore",
     "glideOkHttp3",
-]
-
-coroutines = [
-    "coroutinesCore",
-    "coroutinesAndroid"
 ]
 
 ktor = [

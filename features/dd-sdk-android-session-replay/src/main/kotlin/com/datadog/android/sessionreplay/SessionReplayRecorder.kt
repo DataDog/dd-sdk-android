@@ -12,10 +12,12 @@ import android.os.Looper
 import android.view.Window
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
 import com.datadog.android.sessionreplay.internal.RecordWriter
 import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
+import com.datadog.android.sessionreplay.internal.processor.MutationResolver
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.ComposedOptionSelectorDetector
@@ -45,8 +47,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val sessionReplayLifecycleCallback: LifecycleCallback
     private val recordedDataQueueHandler: RecordedDataQueueHandler
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor
-    private val uiHandler: Handler
+    private val internalLogger: InternalLogger
 
+    private val uiHandler: Handler
     private var shouldRecord = false
 
     constructor(
@@ -57,15 +60,18 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         timeProvider: TimeProvider,
         customMappers: List<MapperTypeWrapper> = emptyList(),
         customOptionSelectorDetectors: List<OptionSelectorDetector> = emptyList(),
-        windowInspector: WindowInspector = WindowInspector
+        windowInspector: WindowInspector = WindowInspector,
+        internalLogger: InternalLogger
     ) {
         val rumContextDataHandler = RumContextDataHandler(
             rumContextProvider,
-            timeProvider
+            timeProvider,
+            internalLogger
         )
 
         val processor = RecordedDataProcessor(
-            recordWriter
+            recordWriter,
+            MutationResolver(internalLogger)
         )
 
         this.appContext = appContext
@@ -79,7 +85,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.recordedDataQueueHandler = RecordedDataQueueHandler(
             processor = processor,
             rumContextDataHandler = rumContextDataHandler,
-            timeProvider = timeProvider
+            timeProvider = timeProvider,
+            internalLogger = internalLogger
         )
         this.viewOnDrawInterceptor = ViewOnDrawInterceptor(
             recordedDataQueueHandler = recordedDataQueueHandler,
@@ -93,13 +100,16 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.windowCallbackInterceptor = WindowCallbackInterceptor(
             recordedDataQueueHandler,
             viewOnDrawInterceptor,
-            timeProvider
+            timeProvider,
+            internalLogger
         )
         this.sessionReplayLifecycleCallback = SessionReplayLifecycleCallback(this)
         this.uiHandler = Handler(Looper.getMainLooper())
+        this.internalLogger = internalLogger
     }
 
     @VisibleForTesting
+    @Suppress("LongParameterList")
     constructor(
         appContext: Application,
         rumContextProvider: RumContextProvider,
@@ -113,7 +123,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         sessionReplayLifecycleCallback: LifecycleCallback,
         viewOnDrawInterceptor: ViewOnDrawInterceptor,
         recordedDataQueueHandler: RecordedDataQueueHandler,
-        uiHandler: Handler
+        uiHandler: Handler,
+        internalLogger: InternalLogger
     ) {
         this.appContext = appContext
         this.rumContextProvider = rumContextProvider
@@ -128,6 +139,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.windowCallbackInterceptor = windowCallbackInterceptor
         this.sessionReplayLifecycleCallback = sessionReplayLifecycleCallback
         this.uiHandler = uiHandler
+        this.internalLogger = internalLogger
     }
 
     @MainThread
@@ -145,9 +157,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         uiHandler.post {
             shouldRecord = true
             val windows = sessionReplayLifecycleCallback.getCurrentWindows()
-            val decorViews = windowInspector.getGlobalWindowViews()
+            val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
             windowCallbackInterceptor.intercept(windows, appContext)
-            viewOnDrawInterceptor.intercept(decorViews, appContext)
+            viewOnDrawInterceptor.intercept(decorViews)
         }
     }
 
@@ -163,18 +175,18 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     @MainThread
     override fun onWindowsAdded(windows: List<Window>) {
         if (shouldRecord) {
-            val decorViews = windowInspector.getGlobalWindowViews()
+            val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
             windowCallbackInterceptor.intercept(windows, appContext)
-            viewOnDrawInterceptor.intercept(decorViews, appContext)
+            viewOnDrawInterceptor.intercept(decorViews)
         }
     }
 
     @MainThread
     override fun onWindowsRemoved(windows: List<Window>) {
         if (shouldRecord) {
-            val decorViews = windowInspector.getGlobalWindowViews()
+            val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
             windowCallbackInterceptor.stopIntercepting(windows)
-            viewOnDrawInterceptor.intercept(decorViews, appContext)
+            viewOnDrawInterceptor.intercept(decorViews)
         }
     }
 }

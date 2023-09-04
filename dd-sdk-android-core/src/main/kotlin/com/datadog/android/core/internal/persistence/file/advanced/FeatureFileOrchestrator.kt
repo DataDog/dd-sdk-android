@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.persistence.file.advanced
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -38,18 +39,21 @@ internal class FeatureFileOrchestrator(
         storageDir: File,
         featureName: String,
         executorService: ExecutorService,
-        internalLogger: InternalLogger
+        internalLogger: InternalLogger,
+        metricsDispatcher: MetricsDispatcher
     ) : this(
         consentProvider,
         BatchFileOrchestrator(
             File(storageDir, PENDING_DIR.format(Locale.US, featureName)),
             PERSISTENCE_CONFIG,
-            internalLogger
+            internalLogger,
+            metricsDispatcher
         ),
         BatchFileOrchestrator(
             File(storageDir, GRANTED_DIR.format(Locale.US, featureName)),
             PERSISTENCE_CONFIG,
-            internalLogger
+            internalLogger,
+            metricsDispatcher
         ),
         ConsentAwareFileMigrator(
             FileMover(internalLogger),
