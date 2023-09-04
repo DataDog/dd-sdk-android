@@ -218,6 +218,8 @@ internal open class MockServerActivityTestRule<T : Activity>(
     // endregion
 
     companion object {
+        const val UI_THREAD_DELAY_IN_MS = 1000L
+        const val PAYLOAD_UPDATE_REQUEST = "updateSrPayloads"
         private const val TAG = "MockServerActivityTestRule"
 
         const val HEADER_CONTENT_TYPE = "Content-Type"

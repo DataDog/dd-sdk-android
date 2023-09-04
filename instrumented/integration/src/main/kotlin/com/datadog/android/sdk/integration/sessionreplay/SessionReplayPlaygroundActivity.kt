@@ -7,19 +7,13 @@
 package com.datadog.android.sdk.integration.sessionreplay
 
 import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
 import com.datadog.android.sdk.integration.R
 
 internal open class SessionReplayPlaygroundActivity : BaseSessionReplayActivity() {
-    lateinit var titleTextView: TextView
-    lateinit var clickMeButton: Button
 
     @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.session_replay_layout)
-        titleTextView = findViewById(R.id.title)
-        clickMeButton = findViewById(R.id.button)
     }
 }
