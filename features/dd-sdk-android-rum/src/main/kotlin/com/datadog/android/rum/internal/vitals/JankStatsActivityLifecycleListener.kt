@@ -75,6 +75,7 @@ internal class JankStatsActivityLifecycleListener(
     override fun onActivityPaused(activity: Activity) {
     }
 
+    @Suppress("NestedBlockDepth")
     @MainThread
     override fun onActivityStopped(activity: Activity) {
         val window = activity.window
@@ -96,7 +97,30 @@ internal class JankStatsActivityLifecycleListener(
                 InternalLogger.Target.MAINTAINER,
                 { "Disabling jankStats for window $window" }
             )
-            activeWindowsListener[window]?.isTrackingEnabled = false
+            try {
+                activeWindowsListener[window]?.let {
+                    if (it.isTrackingEnabled) {
+                        it.isTrackingEnabled = false
+                    } else {
+                        internalLogger.log(
+                            InternalLogger.Level.ERROR,
+                            InternalLogger.Target.TELEMETRY,
+                            { JANK_STATS_TRACKING_ALREADY_DISABLED_ERROR }
+                        )
+                    }
+                }
+            } catch (iae: IllegalArgumentException) {
+                // android.view.View.removeFrameMetricsListener may throw it (attempt to remove
+                // OnFrameMetricsAvailableListener that was never added). Unclear why, because
+                // JankStats registers listener in the constructor, so if we have the instance,
+                // listener should be there.
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.TELEMETRY,
+                    { JANK_STATS_TRACKING_DISABLE_ERROR },
+                    iae
+                )
+            }
         }
     }
 
@@ -139,6 +163,13 @@ internal class JankStatsActivityLifecycleListener(
     // endregion
 
     companion object {
+
+        internal const val JANK_STATS_TRACKING_ALREADY_DISABLED_ERROR =
+            "Trying to disable JankStats instance which was already disabled before, this" +
+                " shouldn't happen."
+        internal const val JANK_STATS_TRACKING_DISABLE_ERROR =
+            "Failed to disable JankStats tracking"
+
         private val ONE_SECOND_NS: Double = TimeUnit.SECONDS.toNanos(1).toDouble()
 
         private const val MIN_FPS: Double = 1.0
