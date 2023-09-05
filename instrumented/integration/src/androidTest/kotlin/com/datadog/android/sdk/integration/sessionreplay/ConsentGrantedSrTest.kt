@@ -6,15 +6,12 @@
 
 package com.datadog.android.sdk.integration.sessionreplay
 
-import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.SessionReplayTestRule
-import com.datadog.tools.unit.ConditionWatcher
 import org.junit.Rule
 import org.junit.Test
 
-internal class ConsentGrantedSrTest : SrSnapshotTest<SessionReplayPlaygroundActivity>() {
+internal class ConsentGrantedSrTest : SrTest<SessionReplayPlaygroundActivity>() {
 
     @get:Rule
     val rule = SessionReplayTestRule(
@@ -24,18 +21,9 @@ internal class ConsentGrantedSrTest : SrSnapshotTest<SessionReplayPlaygroundActi
     )
 
     @Test
-    fun verifySessionFirstSnapshot() {
-        // Wait to make sure all batches are consumed
-        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-        runInstrumentationScenario(rule)
-        ConditionWatcher {
-            // verify the captured log events into the MockedWebServer
-            verifyExpectedSrData(
-                rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl),
-                EXPECTED_PAYLOAD_FILE_NAME
-            )
-            true
-        }.doWait(timeoutMs = INITIAL_WAIT_MS)
+    fun assessRecordedScreenPayload() {
+        runInstrumentationScenario()
+        assessSrPayload(EXPECTED_PAYLOAD_FILE_NAME, rule)
     }
 
     companion object {

@@ -7,9 +7,14 @@
 package com.datadog.android.sdk.integration.sessionreplay
 
 import android.app.Activity
+import androidx.test.espresso.Espresso
+import androidx.test.espresso.matcher.ViewMatchers
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.HandledRequest
-import com.datadog.android.sdk.rules.MockServerActivityTestRule
+import com.datadog.android.sdk.rules.SessionReplayTestRule
+import com.datadog.android.sdk.utils.waitFor
+import com.datadog.tools.unit.ConditionWatcher
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -19,15 +24,44 @@ import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.zip.Inflater
 
-internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> {
+internal abstract class SrTest<R : Activity> {
+    protected fun assessSrPayload(payloadFileName: String, rule: SessionReplayTestRule<R>) {
+        if (isPayloadUpdateRequest()) {
+            ConditionWatcher {
+                updateExpectedDataInPayload(
+                    rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl),
+                    payloadFileName
+                )
+                true
+            }.doWait(timeoutMs = INITIAL_WAIT_MS)
+        } else {
+            ConditionWatcher {
+                // verify the captured log events into the MockedWebServer
+                verifyExpectedSrData(
+                    rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl),
+                    payloadFileName,
+                    MatchingStrategy.CONTAINS
+                )
+                true
+            }.doWait(timeoutMs = INITIAL_WAIT_MS)
+        }
+    }
 
-    protected abstract fun runInstrumentationScenario(mockServerRule: T)
+    protected fun runInstrumentationScenario() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.waitForIdleSync()
+        // we need this to avoid the Bitrise flakiness by requiring waiting for
+        // SurfaceFlinger to call the onDraw method which will trigger the screen snapshot.
+        Espresso.onView(ViewMatchers.isRoot()).perform(waitFor(UI_THREAD_DELAY_IN_MS))
+        instrumentation.waitForIdleSync()
+    }
 
-    protected fun verifyExpectedSrData(
+    private fun verifyExpectedSrData(
         handledRequests: List<HandledRequest>,
         expectedPayloadFileName: String,
         matchingStrategy: MatchingStrategy = MatchingStrategy.EXACT
@@ -54,11 +88,47 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
         }
     }
 
+    private fun updateExpectedDataInPayload(
+        handledRequests: List<HandledRequest>,
+        expectedPayloadFileName: String
+    ) {
+        val records = handledRequests
+            .mapNotNull { it.extractSrSegmentAsJson()?.asJsonObject }
+            .flatMap { it.getAsJsonArray("records") }
+            // we are dropping the incremental records as they are producing noise and
+            // flakiness. In the end we are only interested in full snapshot records.
+            .filter { it.asJsonObject.get("type").asString != "11" }
+            .map { it.dropInconsistentProperties() }
+        assertThat(records.size).isGreaterThan(2)
+        val payloadUpdateFile = resolvePayloadUpdateFile(expectedPayloadFileName)
+        if (!payloadUpdateFile.exists()) {
+            payloadUpdateFile.createNewFile()
+        }
+        // we only take the first 3 records which will contain the:
+        // 1. Meta Record
+        // 2. Focus Record
+        // 3. Full Snapshot Record
+        val payloadUpdateData = records.take(3).toString()
+        payloadUpdateFile.writeText(payloadUpdateData)
+    }
+
+    private fun isPayloadUpdateRequest(): Boolean {
+        return InstrumentationRegistry.getArguments().getString(PAYLOAD_UPDATE_REQUEST)
+            ?.toBoolean() ?: false
+    }
+
     private fun resolveTestExpectedPayload(fileName: String): JsonElement {
         return InstrumentationRegistry
-            .getInstrumentation().context.assets.open(fileName).use {
+            .getInstrumentation()
+            .context
+            .assets
+            .open("$PAYLOADS_FOLDER/$fileName").use {
                 JsonParser.parseString(it.readBytes().toString(Charsets.UTF_8))
             }
+    }
+
+    private fun resolvePayloadUpdateFile(payloadFileName: String): File {
+        return File(resolvePayloadsDirectory(), payloadFileName)
     }
 
     private fun HandledRequest.extractSrSegmentAsJson(): JsonElement? {
@@ -160,6 +230,18 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
         }
     }
 
+    @Suppress("UseCheckOrError")
+    private fun resolvePayloadsDirectory(): File {
+        return InstrumentationRegistry.getInstrumentation().targetContext.externalCacheDir?.let {
+            val payloadsDir = File(it, PAYLOADS_FOLDER).apply {
+                if (!this.exists()) {
+                    this.mkdirs()
+                }
+            }
+            return payloadsDir
+        } ?: throw IllegalStateException("Could not resolve the payloads directory")
+    }
+
     /**
      * The matching strategy to use when comparing the expected payload with the actual one.
      * @see EXACT will compare the payloads exactly as they are.
@@ -172,9 +254,12 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
 
     companion object {
         internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
+        private const val UI_THREAD_DELAY_IN_MS = 1000L
+        private const val PAYLOAD_UPDATE_REQUEST = "updateSrPayloads"
         private val SEGMENT_FORM_DATA_REGEX =
             Regex("content-disposition: form-data; name=\"segment\"; filename=\"(.+)\"")
         private val CONTENT_LENGTH_REGEX =
             Regex("content-length: (\\d+)")
+        private const val PAYLOADS_FOLDER = "session_replay_payloads"
     }
 }
