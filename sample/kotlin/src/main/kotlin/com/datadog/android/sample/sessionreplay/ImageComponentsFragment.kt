@@ -12,8 +12,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.appcompat.widget.AppCompatImageButton
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.sample.R
@@ -28,6 +30,8 @@ internal class ImageComponentsFragment : Fragment() {
     private lateinit var buttonRemote: Button
     private lateinit var viewRemote: View
     private lateinit var imageViewRemote: ImageView
+    private lateinit var imageButtonRemote: ImageButton
+    private lateinit var appCompatButtonRemote: AppCompatImageButton
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -39,6 +43,8 @@ internal class ImageComponentsFragment : Fragment() {
         buttonRemote = rootView.findViewById(R.id.buttonRemote)
         viewRemote = rootView.findViewById(R.id.viewRemote)
         imageViewRemote = rootView.findViewById(R.id.imageView_remote)
+        imageButtonRemote = rootView.findViewById(R.id.imageButtonRemote)
+        appCompatButtonRemote = rootView.findViewById(R.id.appCompatImageButtonRemote)
         return rootView
     }
 
@@ -55,6 +61,7 @@ internal class ImageComponentsFragment : Fragment() {
         loadImageView()
         loadButton()
         loadTextView()
+        loadImageButtonBackground()
     }
 
     private fun loadView() {
@@ -87,7 +94,7 @@ internal class ImageComponentsFragment : Fragment() {
             buttonRemote,
             object : ImageLoadedCallback {
                 override fun onImageLoaded(resource: Drawable) {
-                    buttonRemote.setCompoundDrawablesWithIntrinsicBounds(resource, null, null, null)
+                    buttonRemote.setCompoundDrawablesWithIntrinsicBounds(null, null, null, resource)
                 }
             }
         )
@@ -99,7 +106,20 @@ internal class ImageComponentsFragment : Fragment() {
             textViewRemote,
             object : ImageLoadedCallback {
                 override fun onImageLoaded(resource: Drawable) {
-                    textViewRemote.setCompoundDrawablesWithIntrinsicBounds(resource, null, null, null)
+                    textViewRemote.setCompoundDrawablesWithIntrinsicBounds(null, null, null, resource)
+                }
+            }
+        )
+    }
+
+    private fun loadImageButtonBackground() {
+        viewModel.fetchRemoteImage(
+            LARGE_IMAGE_URL,
+            imageButtonRemote,
+            object : ImageLoadedCallback {
+                override fun onImageLoaded(resource: Drawable) {
+                    imageButtonRemote.background = resource
+                    appCompatButtonRemote.background = resource
                 }
             }
         )

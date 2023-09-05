@@ -12,6 +12,7 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.CheckedTextView
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.NumberPicker
 import android.widget.RadioButton
@@ -23,6 +24,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckedTextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.EditTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.ImageButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskCheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskCheckedTextViewMapper
@@ -111,11 +113,13 @@ internal class SessionReplayPrivacyTest {
         private val mockEditTextViewMapper: EditTextViewMapper = mock()
         private val mockImageMapper: ViewScreenshotWireframeMapper = mock()
         private val mockUnsupportedViewMapper: UnsupportedViewMapper = mock()
+        private val mockImageButtonViewMapper: ImageButtonMapper = mock()
 
         private val baseMappers = listOf(
             MapperTypeWrapper(Button::class.java, mockButtonMapper.toGenericMapper()),
             MapperTypeWrapper(EditText::class.java, mockEditTextViewMapper.toGenericMapper()),
             MapperTypeWrapper(ImageView::class.java, mockImageMapper.toGenericMapper()),
+            MapperTypeWrapper(ImageButton::class.java, mockImageButtonViewMapper.toGenericMapper()),
             MapperTypeWrapper(AppCompatToolbar::class.java, mockUnsupportedViewMapper.toGenericMapper())
         )
 

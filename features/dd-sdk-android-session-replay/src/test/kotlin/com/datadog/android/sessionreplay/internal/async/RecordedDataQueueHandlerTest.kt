@@ -57,7 +57,7 @@ import java.util.concurrent.TimeUnit
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class RecordedDataQueueHandlerTest {
-    lateinit var testedHandler: RecordedDataQueueHandler
+    private lateinit var testedHandler: RecordedDataQueueHandler
 
     @Mock
     lateinit var mockProcessor: RecordedDataProcessor
@@ -312,7 +312,7 @@ internal class RecordedDataQueueHandlerTest {
         spyExecutorService.awaitTermination(1, TimeUnit.SECONDS)
 
         // Then
-        assertThat(testedHandler.recordedDataQueue.isEmpty()).isTrue()
+        assertThat(testedHandler.recordedDataQueue.isEmpty()).isTrue
         verifyNoMoreInteractions(mockProcessor)
     }
 

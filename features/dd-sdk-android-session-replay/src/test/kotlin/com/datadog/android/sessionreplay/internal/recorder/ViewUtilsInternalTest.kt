@@ -6,13 +6,17 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
+import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewStub
+import android.widget.TextView
 import androidx.appcompat.widget.ActionBarContextView
 import androidx.appcompat.widget.Toolbar
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -20,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
@@ -35,10 +40,40 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class ViewUtilsInternalTest {
 
-    lateinit var testViewUtilsInternal: ViewUtilsInternal
+    private lateinit var testViewUtilsInternal: ViewUtilsInternal
+
+    @Mock
+    lateinit var mockTextView: TextView
+
+    @Mock
+    lateinit var mockDrawable: Drawable
+
+    @IntForgery(min = 1)
+    var fakeViewPadding: Int = 0
+
+    @IntForgery(min = 1)
+    var fakeViewHeight: Int = 0
+
+    @IntForgery(min = 1)
+    var fakeViewWidth: Int = 0
+
+    @IntForgery(min = 1)
+    var fakeDrawableWidth: Int = 0
+
+    @IntForgery(min = 1)
+    var fakeDrawableHeight: Int = 0
 
     @BeforeEach
     fun `set up`() {
+        whenever(mockTextView.paddingStart).thenReturn(fakeViewPadding)
+        whenever(mockTextView.paddingEnd).thenReturn(fakeViewPadding)
+        whenever(mockTextView.paddingTop).thenReturn(fakeViewPadding)
+        whenever(mockTextView.paddingBottom).thenReturn(fakeViewPadding)
+        whenever(mockTextView.height).thenReturn(fakeViewHeight)
+        whenever(mockTextView.width).thenReturn(fakeViewWidth)
+        whenever(mockDrawable.intrinsicWidth).thenReturn(fakeDrawableWidth)
+        whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight)
+
         testViewUtilsInternal = ViewUtilsInternal()
     }
 
@@ -182,5 +217,114 @@ internal class ViewUtilsInternalTest {
         assertThat(testViewUtilsInternal.isToolbar(mockView)).isFalse
     }
 
+    @Test
+    fun `M return globalbounds W resolveDrawableBounds()`(
+        @Mock mockView: View,
+        @Mock mockDrawable: Drawable,
+        @IntForgery(0, 100) fakeWidth: Int,
+        @IntForgery(0, 100) fakeHeight: Int
+    ) {
+        // Given
+        whenever(mockDrawable.intrinsicWidth).thenReturn(fakeWidth)
+        whenever(mockDrawable.intrinsicHeight).thenReturn(fakeHeight)
+
+        // When
+        val bounds = testViewUtilsInternal.resolveDrawableBounds(
+            mockView,
+            mockDrawable,
+            0f
+        )
+
+        // Then
+        assertThat(bounds.x).isEqualTo(0)
+        assertThat(bounds.y).isEqualTo(0)
+        assertThat(bounds.width).isEqualTo(fakeWidth.toLong())
+        assertThat(bounds.height).isEqualTo(fakeHeight.toLong())
+    }
+
     // endregion
+
+    @Test
+    fun `M return bounds W resolveCompoundDrawableBounds() { for left drawable }`() {
+        // Given
+        val viewPadding = mockTextView.paddingStart.toLong()
+        val viewHeight = mockTextView.height.toLong()
+        val drawableHeight = mockDrawable.intrinsicHeight.toLong()
+
+        // When
+        val actualBounds = testViewUtilsInternal.resolveCompoundDrawableBounds(
+            mockTextView,
+            mockDrawable,
+            0f,
+            ImageWireframeHelper.CompoundDrawablePositions.LEFT
+        )
+
+        // Then
+        assertThat(actualBounds.x).isEqualTo(viewPadding)
+        assertThat(actualBounds.y).isEqualTo(viewHeight / 2 - drawableHeight / 2)
+    }
+
+    @Test
+    fun `M return bounds W resolveCompoundDrawableBounds() { for top drawable }`() {
+        // Given
+        val viewPadding = mockTextView.paddingTop.toLong()
+        val viewWidth = mockTextView.width.toLong()
+        val drawableWidth = mockDrawable.intrinsicWidth.toLong()
+
+        // When
+        val actualBounds = testViewUtilsInternal.resolveCompoundDrawableBounds(
+            mockTextView,
+            mockDrawable,
+            0f,
+            ImageWireframeHelper.CompoundDrawablePositions.TOP
+        )
+
+        // Then
+        assertThat(actualBounds.x).isEqualTo(viewWidth / 2 - drawableWidth / 2)
+        assertThat(actualBounds.y).isEqualTo(viewPadding)
+    }
+
+    @Test
+    fun `M return bounds W resolveCompoundDrawableBounds() { for right drawable }`() {
+        // Given
+        val viewPadding = mockTextView.paddingEnd.toLong()
+        val viewWidth = mockTextView.width.toLong()
+        val viewHeight = mockTextView.height.toLong()
+        val drawableWidth = mockDrawable.intrinsicWidth.toLong()
+        val drawableHeight = mockDrawable.intrinsicHeight.toLong()
+
+        // When
+        val actualBounds = testViewUtilsInternal.resolveCompoundDrawableBounds(
+            mockTextView,
+            mockDrawable,
+            0f,
+            ImageWireframeHelper.CompoundDrawablePositions.RIGHT
+        )
+
+        // Then
+        assertThat(actualBounds.x).isEqualTo(viewWidth - (drawableWidth + viewPadding))
+        assertThat(actualBounds.y).isEqualTo(viewHeight / 2 - drawableHeight / 2)
+    }
+
+    @Test
+    fun `M return bounds W resolveCompoundDrawableBounds() { for bottom drawable }`() {
+        // Given
+        val viewPadding = mockTextView.paddingBottom.toLong()
+        val viewWidth = mockTextView.width.toLong()
+        val viewHeight = mockTextView.height.toLong()
+        val drawableWidth = mockDrawable.intrinsicWidth.toLong()
+        val drawableHeight = mockDrawable.intrinsicHeight.toLong()
+
+        // When
+        val actualBounds = testViewUtilsInternal.resolveCompoundDrawableBounds(
+            mockTextView,
+            mockDrawable,
+            0f,
+            ImageWireframeHelper.CompoundDrawablePositions.BOTTOM
+        )
+
+        // Then
+        assertThat(actualBounds.x).isEqualTo(viewWidth / 2 - drawableWidth / 2)
+        assertThat(actualBounds.y).isEqualTo(viewHeight - (drawableHeight + viewPadding))
+    }
 }
