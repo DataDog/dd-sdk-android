@@ -24,75 +24,6 @@
       },
       {
         "width": 395,
-        "height": 19,
-        "type": "text",
-        "text": "Default Text View",
-        "textStyle": {
-          "family": "roboto, sans-serif",
-          "size": 14,
-          "color": "#a538afff"
-        },
-        "textPosition": {
-          "padding": {
-            "top": 0,
-            "bottom": 0,
-            "left": 0,
-            "right": 0
-          },
-          "alignment": {
-            "horizontal": "left",
-            "vertical": "top"
-          }
-        }
-      },
-      {
-        "width": 395,
-        "height": 19,
-        "type": "text",
-        "text": "Material Text View",
-        "textStyle": {
-          "family": "roboto, sans-serif",
-          "size": 14,
-          "color": "#cc0000ff"
-        },
-        "textPosition": {
-          "padding": {
-            "top": 0,
-            "bottom": 0,
-            "left": 0,
-            "right": 0
-          },
-          "alignment": {
-            "horizontal": "left",
-            "vertical": "top"
-          }
-        }
-      },
-      {
-        "width": 395,
-        "height": 19,
-        "type": "text",
-        "text": "App Compat Text View",
-        "textStyle": {
-          "family": "roboto, sans-serif",
-          "size": 14,
-          "color": "#ffbb33ff"
-        },
-        "textPosition": {
-          "padding": {
-            "top": 0,
-            "bottom": 0,
-            "left": 0,
-            "right": 0
-          },
-          "alignment": {
-            "horizontal": "left",
-            "vertical": "top"
-          }
-        }
-      },
-      {
-        "width": 395,
         "height": 44,
         "type": "text",
         "text": "***",
@@ -118,7 +49,7 @@
         "width": 395,
         "height": 1,
         "shapeStyle": {
-          "backgroundColor": "#a538afff",
+          "backgroundColor": "#ffffffff",
           "opacity": 1.0
         },
         "type": "shape"
@@ -150,7 +81,7 @@
         "width": 395,
         "height": 1,
         "shapeStyle": {
-          "backgroundColor": "#ffbb33ff",
+          "backgroundColor": "#ffffffff",
           "opacity": 1.0
         },
         "type": "shape"
@@ -182,7 +113,7 @@
         "width": 395,
         "height": 1,
         "shapeStyle": {
-          "backgroundColor": "#ffbb33ff",
+          "backgroundColor": "#ffffffff",
           "opacity": 1.0
         },
         "type": "shape"
@@ -214,7 +145,7 @@
         "width": 395,
         "height": 1,
         "shapeStyle": {
-          "backgroundColor": "#a538afff",
+          "backgroundColor": "#ffffffff",
           "opacity": 1.0
         },
         "type": "shape"
@@ -246,27 +177,27 @@
         "width": 395,
         "height": 1,
         "shapeStyle": {
-          "backgroundColor": "#a538afff",
+          "backgroundColor": "#ffffffff",
           "opacity": 1.0
         },
         "type": "shape"
       },
       {
         "width": 395,
-        "height": 32,
+        "height": 44,
         "type": "text",
-        "text": "Checked Text View",
+        "text": "***",
         "textStyle": {
           "family": "roboto, sans-serif",
-          "size": 14,
+          "size": 17,
           "color": "#ffffffff"
         },
         "textPosition": {
           "padding": {
-            "top": 0,
-            "bottom": 12,
-            "left": 0,
-            "right": 32
+            "top": 9,
+            "bottom": 11,
+            "left": 3,
+            "right": 3
           },
           "alignment": {
             "horizontal": "left",
@@ -275,30 +206,30 @@
         }
       },
       {
-        "width": 19,
-        "height": 19,
-        "border": {
-          "color": "#ffffffff",
-          "width": 1
+        "width": 395,
+        "height": 1,
+        "shapeStyle": {
+          "backgroundColor": "#ffffffff",
+          "opacity": 1.0
         },
         "type": "shape"
       },
       {
         "width": 395,
-        "height": 32,
+        "height": 44,
         "type": "text",
-        "text": "App Compat Checked Text View",
+        "text": "***",
         "textStyle": {
           "family": "roboto, sans-serif",
-          "size": 14,
+          "size": 17,
           "color": "#ffffffff"
         },
         "textPosition": {
           "padding": {
-            "top": 0,
-            "bottom": 12,
-            "left": 0,
-            "right": 32
+            "top": 9,
+            "bottom": 11,
+            "left": 3,
+            "right": 3
           },
           "alignment": {
             "horizontal": "left",
@@ -307,11 +238,11 @@
         }
       },
       {
-        "width": 19,
-        "height": 19,
-        "border": {
-          "color": "#ffffffff",
-          "width": 1
+        "width": 395,
+        "height": 1,
+        "shapeStyle": {
+          "backgroundColor": "#ffffffff",
+          "opacity": 1.0
         },
         "type": "shape"
       },
