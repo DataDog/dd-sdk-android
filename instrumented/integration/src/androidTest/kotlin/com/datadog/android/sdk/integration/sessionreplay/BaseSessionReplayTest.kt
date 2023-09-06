@@ -34,7 +34,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.zip.Inflater
 
-internal abstract class SrTest<R : Activity> {
+internal abstract class BaseSessionReplayTest<R : Activity> {
 
     @After
     fun tearDown() {

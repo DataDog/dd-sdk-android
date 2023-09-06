@@ -14,7 +14,7 @@ import com.datadog.tools.unit.ConditionWatcher
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-internal class ConsentNotGrantedSrTest : SrTest<SessionReplayPlaygroundActivity>() {
+internal class ConsentNotGrantedSrTest : BaseSessionReplayTest<SessionReplayPlaygroundActivity>() {
 
     @get:Rule
     val rule = SessionReplayTestRule(

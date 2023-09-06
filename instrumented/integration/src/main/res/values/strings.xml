@@ -18,6 +18,7 @@
     <string name="session_replay_end_to_end">Session Replay (End to End)</string>
     <string name="session_replay_text_fields_end_to_end">Session Replay Text Fields (End to End)</string>
     <string name="session_replay_sensitive_fields_end_to_end">Session Replay Sensitive Fields (End to End)</string>
+    <string name="session_replay_radio_checkbox_fields_end_to_end">Session Replay Radio and Checkbox Fields (End to End)</string>
     <string name="fragment_a">Fragment A</string>
     <string name="fragment_b">Fragment B</string>
     <string name="fragment_c">Fragment C</string>
@@ -54,5 +55,16 @@
     <string name="a_number_password">1213213</string>
     <string name="an_email">noreply@datadoghq.com</string>
     <string name="an_address">5th Madison Avenue, New York, NY 10001</string>
+    <string name="default_checkbox">Default CheckBox</string>
+    <string name="app_compat_checkbox">App Compat CheckBox</string>
+    <string name="material_checkbox">Material CheckBox</string>
+    <string name="default_radio">Default Radio</string>
+    <string name="app_compat_radio">App Compat Radio</string>
+    <string name="material_radio">Material Radio</string>
+    <string name="default_spinner">Default spinner</string>
+    <string name="app_compat_spinner">App Compat Spinner</string>
+    <string name="app_compat_switch">App Compat Switch</string>
+    <string name="material_switch">Material Switch</string>
+
 
 </resources>

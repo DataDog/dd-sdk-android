@@ -178,7 +178,7 @@ if [[ $UPDATE_SESSION_REPLAY_PAYLOAD == 1 ]]; then
 
   echo "---- Updating session replay payload"
   echo "---- Build and install the integration test app on the device"
-  ./gradlew :instrumented:integration:assembleDebug :instrumented:integration:installDebug :instrumented:integration:assembleDebugAndroidTest :instrumented:integration:installDebugAndroidTest
+  ./gradlew :instrumented:integration:uninstallAll :instrumented:integration:assembleDebug :instrumented:integration:installDebug :instrumented:integration:assembleDebugAndroidTest :instrumented:integration:installDebugAndroidTest
 
   echo "---- Run the Session Replay integration tests and generate new payloads"
   adb shell am instrument -w -r -e debug false -e updateSrPayloads true -e package  $SESSION_REPLAY_TESTS_PACKAGE $SESSION_REPLAY_TESTS_RUNNER

@@ -7,15 +7,15 @@
 package com.datadog.android.sdk.integration.sessionreplay.sensitivefields
 
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.sdk.integration.sessionreplay.BaseSessionReplayTest
 import com.datadog.android.sdk.integration.sessionreplay.SessionReplaySensitiveFieldsActivity
-import com.datadog.android.sdk.integration.sessionreplay.SrTest
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.SR_PRIVACY_LEVEL
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import org.junit.Rule
 import org.junit.Test
 
-internal class SrSensitiveFieldsMaskUserInputTest : SrTest<SessionReplaySensitiveFieldsActivity>() {
+internal class SrSensitiveFieldsMaskUserInputTest : BaseSessionReplayTest<SessionReplaySensitiveFieldsActivity>() {
 
     @get:Rule
     val rule = SessionReplayTestRule(

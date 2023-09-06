@@ -62,9 +62,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
         InstrumentationRegistry
             .getInstrumentation()
             .targetContext
-            .cacheDir.deleteRecursively {
-                Log.i("MockServerActivityTestRule", "Before activity launched, deleting file $it")
-            }
+            .cacheDir.deleteRecursively()
         requests.clear()
         mockWebServer.start()
         mockWebServer.dispatcher =

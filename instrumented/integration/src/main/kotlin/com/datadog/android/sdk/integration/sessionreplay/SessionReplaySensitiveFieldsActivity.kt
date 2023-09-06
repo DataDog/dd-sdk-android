@@ -11,7 +11,6 @@ import com.datadog.android.sdk.integration.R
 
 internal open class SessionReplaySensitiveFieldsActivity : BaseSessionReplayActivity() {
 
-    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.sr_sensitive_input_fields_layout)

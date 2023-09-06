@@ -9,10 +9,10 @@ package com.datadog.android.sdk.integration.sessionreplay
 import android.os.Bundle
 import com.datadog.android.sdk.integration.R
 
-internal open class SessionReplayTextFieldsWithInputActivity : BaseSessionReplayActivity() {
+internal open class SessionReplayRadioCheckboxFieldsActivity : BaseSessionReplayActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.sr_text_fields_with_input_layout)
+        setContentView(R.layout.sr_radio_checkbox_fields_layout)
     }
 }
