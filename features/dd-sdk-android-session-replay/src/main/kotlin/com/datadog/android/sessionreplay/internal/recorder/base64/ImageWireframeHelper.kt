@@ -7,6 +7,9 @@
 package com.datadog.android.sessionreplay.internal.recorder.base64
 
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.InsetDrawable
+import android.graphics.drawable.LayerDrawable
 import android.view.View
 import android.widget.TextView
 import androidx.annotation.MainThread
@@ -14,6 +17,7 @@ import androidx.annotation.VisibleForTesting
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.sessionreplay.internal.recorder.safeGetDrawable
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 
@@ -37,16 +41,9 @@ internal class ImageWireframeHelper(
         prefix: String = DRAWABLE_CHILD_NAME
     ): MobileSegment.Wireframe.ImageWireframe? {
         val id = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, prefix + currentWireframeIndex)
+        val drawableProperties = resolveDrawableProperties(view, drawable)
 
-        @Suppress("ComplexCondition")
-        if (
-            drawable == null ||
-            id == null ||
-            drawable.intrinsicWidth <= 0 ||
-            drawable.intrinsicHeight <= 0
-        ) {
-            return null
-        }
+        if (id == null || !drawableProperties.isValid()) return null
 
         val displayMetrics = view.resources.displayMetrics
         val applicationContext = view.context.applicationContext
@@ -66,10 +63,13 @@ internal class ImageWireframeHelper(
                 isEmpty = true
             )
 
+        @Suppress("UnsafeCallOnNullableType") // drawable already checked for null in isValid
         base64Serializer.handleBitmap(
             applicationContext = applicationContext,
             displayMetrics = displayMetrics,
-            drawable = drawable,
+            drawable = drawableProperties.drawable!!,
+            drawableWidth = drawableProperties.drawableWidth,
+            drawableHeight = drawableProperties.drawableHeight,
             imageWireframe = imageWireframe
         )
 
@@ -129,6 +129,23 @@ internal class ImageWireframeHelper(
         return result
     }
 
+    private fun resolveDrawableProperties(view: View, drawable: Drawable?): DrawableProperties {
+        if (drawable == null) return DrawableProperties(null, 0, 0)
+
+        return when (drawable) {
+            is LayerDrawable -> {
+                if (drawable.numberOfLayers > 0) {
+                    resolveDrawableProperties(view, drawable.safeGetDrawable(0))
+                } else {
+                    DrawableProperties(drawable, drawable.intrinsicWidth, drawable.intrinsicHeight)
+                }
+            }
+            is InsetDrawable -> resolveDrawableProperties(view, drawable.drawable)
+            is GradientDrawable -> DrawableProperties(drawable, view.width, view.height)
+            else -> DrawableProperties(drawable, drawable.intrinsicWidth, drawable.intrinsicHeight)
+        }
+    }
+
     @Suppress("MagicNumber")
     private fun convertIndexToCompoundDrawablePosition(compoundDrawableIndex: Int): CompoundDrawablePositions? {
         return when (compoundDrawableIndex) {
@@ -145,6 +162,16 @@ internal class ImageWireframeHelper(
         TOP,
         RIGHT,
         BOTTOM
+    }
+
+    private data class DrawableProperties(
+        val drawable: Drawable?,
+        val drawableWidth: Int,
+        val drawableHeight: Int
+    ) {
+        fun isValid(): Boolean {
+            return drawable != null && drawableWidth > 0 && drawableHeight > 0
+        }
     }
 
     internal companion object {

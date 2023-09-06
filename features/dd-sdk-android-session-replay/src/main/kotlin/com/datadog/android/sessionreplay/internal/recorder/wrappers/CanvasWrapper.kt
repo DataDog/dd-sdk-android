@@ -8,8 +8,11 @@ package com.datadog.android.sessionreplay.internal.recorder.wrappers
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import com.datadog.android.api.InternalLogger
 
-internal class CanvasWrapper {
+internal class CanvasWrapper(
+    private val logger: InternalLogger = InternalLogger.UNBOUND
+) {
     internal fun createCanvas(bitmap: Bitmap): Canvas? {
         @Suppress("SwallowedException", "TooGenericExceptionCaught")
         return try {
@@ -17,10 +20,26 @@ internal class CanvasWrapper {
         } catch (e: IllegalStateException) {
             // should never happen since we are passing an immutable bitmap
             // TODO: REPLAY-1364 Add logs here once the sdkLogger is added
+            logger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                { FAILED_TO_CREATE_CANVAS },
+                e
+            )
             null
         } catch (e: RuntimeException) {
             // TODO: REPLAY-1364 Add logs here once the sdkLogger is added
+            logger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                { FAILED_TO_CREATE_CANVAS },
+                e
+            )
             null
         }
+    }
+
+    private companion object {
+        private const val FAILED_TO_CREATE_CANVAS = "Failed to create canvas"
     }
 }

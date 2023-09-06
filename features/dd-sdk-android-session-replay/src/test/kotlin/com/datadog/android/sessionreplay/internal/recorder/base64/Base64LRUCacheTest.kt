@@ -13,6 +13,7 @@ import android.graphics.drawable.StateListDrawable
 import androidx.collection.LruCache
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64LRUCache.Companion.MAX_CACHE_MEMORY_SIZE_BYTES
+import com.datadog.android.sessionreplay.internal.recorder.safeGetDrawable
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -116,34 +117,44 @@ internal class Base64LRUCacheTest {
         val mockBgLayer: Drawable = mock()
         val mockFgLayer: Drawable = mock()
         whenever(mockRippleDrawable.numberOfLayers).thenReturn(2)
-        whenever(mockRippleDrawable.getDrawable(0)).thenReturn(mockBgLayer)
-        whenever(mockRippleDrawable.getDrawable(1)).thenReturn(mockFgLayer)
+        whenever(mockRippleDrawable.safeGetDrawable(0))
+            .thenReturn(mockBgLayer)
+        whenever(mockRippleDrawable.safeGetDrawable(1))
+            .thenReturn(mockFgLayer)
+        whenever(mockRippleDrawable.numberOfLayers).thenReturn(2)
 
         val fakeBase64 = forge.aString()
-
-        // When
         testedCache.put(mockRippleDrawable, fakeBase64)
 
-        // Then
+        val expectedPrefix = System.identityHashCode(mockBgLayer).toString() + "-" +
+            System.identityHashCode(mockFgLayer).toString() + "-"
+        val expectedHash = System.identityHashCode(mockRippleDrawable).toString()
+
+        // When
         val key = testedCache.generateKey(mockRippleDrawable)
-        assertThat(key).contains(System.identityHashCode(mockBgLayer).toString())
+
+        // Then
+        assertThat(key).isEqualTo(expectedPrefix + expectedHash)
     }
 
     @Test
-    fun `M not generate key prefix W put() { layerDrawable with only one layer }`(forge: Forge) {
+    fun `M not generate key prefix W put() { layerDrawable with only one layer }`(
+        @Mock mockRippleDrawable: RippleDrawable,
+        @Mock mockBgLayer: Drawable,
+        @StringForgery fakeBase64: String
+    ) {
         // Given
-        val mockRippleDrawable: RippleDrawable = mock()
-        val mockBgLayer: Drawable = mock()
         whenever(mockRippleDrawable.numberOfLayers).thenReturn(1)
-        whenever(mockRippleDrawable.getDrawable(0)).thenReturn(mockBgLayer)
-
-        val fakeBase64 = forge.aString()
-
-        // When
+        whenever(mockRippleDrawable.safeGetDrawable(0)).thenReturn(mockBgLayer)
         testedCache.put(mockRippleDrawable, fakeBase64)
 
-        // Then
+        val expectedPrefix = System.identityHashCode(mockBgLayer).toString() + "-"
+        val drawableHash = System.identityHashCode(mockRippleDrawable).toString()
+
+        // When
         val key = testedCache.generateKey(mockRippleDrawable)
-        assertThat(key).isEqualTo(System.identityHashCode(mockRippleDrawable).toString())
+
+        // Then
+        assertThat(key).isEqualTo(expectedPrefix + drawableHash)
     }
 }

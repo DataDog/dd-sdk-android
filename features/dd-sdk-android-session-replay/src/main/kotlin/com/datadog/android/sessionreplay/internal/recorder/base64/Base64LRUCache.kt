@@ -14,6 +14,7 @@ import android.graphics.drawable.DrawableContainer
 import android.graphics.drawable.LayerDrawable
 import androidx.annotation.VisibleForTesting
 import androidx.collection.LruCache
+import com.datadog.android.sessionreplay.internal.recorder.safeGetDrawable
 import com.datadog.android.sessionreplay.internal.utils.CacheUtils
 import com.datadog.android.sessionreplay.internal.utils.InvocationUtils
 
@@ -99,18 +100,14 @@ internal class Base64LRUCache(
     }
 
     private fun getPrefixForLayerDrawable(drawable: LayerDrawable): String {
-        return if (drawable.numberOfLayers > 1) {
-            val sb = StringBuilder()
-            for (index in 0 until drawable.numberOfLayers) {
-                val layer = drawable.getDrawable(index)
-                val layerHash = System.identityHashCode(layer).toString()
-                sb.append(layerHash)
-                sb.append("-")
-            }
-            "$sb"
-        } else {
-            ""
+        val sb = StringBuilder()
+        for (index in 0 until drawable.numberOfLayers) {
+            val layer = drawable.safeGetDrawable(index)
+            val layerHash = System.identityHashCode(layer).toString()
+            sb.append(layerHash)
+            sb.append("-")
         }
+        return "$sb"
     }
 
     internal companion object {

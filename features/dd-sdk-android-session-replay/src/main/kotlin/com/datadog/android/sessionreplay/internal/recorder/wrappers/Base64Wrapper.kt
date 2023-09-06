@@ -7,9 +7,12 @@
 package com.datadog.android.sessionreplay.internal.recorder.wrappers
 
 import android.util.Base64
+import com.datadog.android.api.InternalLogger
 import java.lang.AssertionError
 
-internal class Base64Wrapper {
+internal class Base64Wrapper(
+    private val logger: InternalLogger = InternalLogger.UNBOUND
+) {
     internal fun encodeToString(byteArray: ByteArray, flags: Int): String {
         @Suppress("SwallowedException", "TooGenericExceptionCaught")
         return try {
@@ -17,7 +20,17 @@ internal class Base64Wrapper {
         } catch (e: AssertionError) {
             // This should never happen since we are using the default encoding
             // TODO: REPLAY-1364 Add logs here once the sdkLogger is added
+            logger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                { FAILED_TO_ENCODE_TO_STRING },
+                e
+            )
             ""
         }
+    }
+
+    private companion object {
+        private const val FAILED_TO_ENCODE_TO_STRING = "Failed to encode to string"
     }
 }

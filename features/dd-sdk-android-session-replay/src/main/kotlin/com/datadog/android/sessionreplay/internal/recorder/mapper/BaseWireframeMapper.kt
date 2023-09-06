@@ -18,6 +18,7 @@ import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
 import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
+import com.datadog.android.sessionreplay.internal.recorder.safeGetDrawable
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.StringUtils
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
@@ -95,7 +96,7 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
             val color = colorAndAlphaAsStringHexa(color, alpha)
             MobileSegment.ShapeStyle(color, viewAlpha) to null
         } else if (this is RippleDrawable && numberOfLayers >= 1) {
-            getDrawable(0).resolveShapeStyleAndBorder(viewAlpha)
+            this.safeGetDrawable(0)?.resolveShapeStyleAndBorder(viewAlpha)
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && this is InsetDrawable) {
             drawable?.resolveShapeStyleAndBorder(viewAlpha)
         } else {
@@ -172,6 +173,8 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
         width: Long,
         height: Long
     ): MobileSegment.Wireframe? {
+        val resources = view.resources
+
         @Suppress("ThreadSafety") // TODO REPLAY-1861 caller thread of .map is unknown?
         return imageWireframeHelper?.createImageWireframe(
             view = view,
@@ -180,7 +183,7 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
             y = bounds.y,
             width,
             height,
-            view.background,
+            view.background?.constantState?.newDrawable(resources),
             shapeStyle = null,
             border = null,
             prefix = PREFIX_BACKGROUND_DRAWABLE

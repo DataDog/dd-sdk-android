@@ -100,6 +100,8 @@ internal class DrawableUtilsTest {
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
             mockDrawable,
+            mockDrawable.intrinsicWidth,
+            mockDrawable.intrinsicHeight,
             mockDisplayMetrics,
             requestedSize,
             mockConfig
@@ -134,6 +136,8 @@ internal class DrawableUtilsTest {
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
             mockDrawable,
+            mockDrawable.intrinsicWidth,
+            mockDrawable.intrinsicHeight,
             mockDisplayMetrics
         )
 
@@ -165,6 +169,8 @@ internal class DrawableUtilsTest {
         // When
         val result = testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
             mockDrawable,
+            mockDrawable.intrinsicWidth,
+            mockDrawable.intrinsicHeight,
             mockDisplayMetrics,
             config = mockConfig
         )
@@ -198,6 +204,8 @@ internal class DrawableUtilsTest {
         // When
         val result = testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
             mockDrawable,
+            mockDrawable.intrinsicWidth,
+            mockDrawable.intrinsicHeight,
             mockDisplayMetrics,
             config = mockConfig
         )
@@ -218,6 +226,8 @@ internal class DrawableUtilsTest {
         // When
         val result = testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
             mockDrawable,
+            mockDrawable.intrinsicWidth,
+            mockDrawable.intrinsicHeight,
             mockDisplayMetrics,
             config = mockConfig
         )
@@ -242,6 +252,8 @@ internal class DrawableUtilsTest {
         // When
         val actualBitmap = testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
             mockDrawable,
+            mockDrawable.intrinsicWidth,
+            mockDrawable.intrinsicHeight,
             mockDisplayMetrics,
             config = mockConfig
         )
@@ -447,5 +459,26 @@ internal class DrawableUtilsTest {
         // Then
         assertThat(result.width).isEqualTo(expectedWidth)
         assertThat(result.height).isEqualTo(expectedHeight)
+    }
+
+    @Test
+    fun `M return scaled bitmap W createScaledBitmap()`(
+        @Mock mockScaledBitmap: Bitmap
+    ) {
+        // Given
+        whenever(
+            mockBitmapWrapper.createScaledBitmap(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ).thenReturn(mockScaledBitmap)
+
+        // When
+        val actualBitmap = testedDrawableUtils.createScaledBitmap(mockBitmap)
+
+        // Then
+        assertThat(actualBitmap).isEqualTo(mockScaledBitmap)
     }
 }

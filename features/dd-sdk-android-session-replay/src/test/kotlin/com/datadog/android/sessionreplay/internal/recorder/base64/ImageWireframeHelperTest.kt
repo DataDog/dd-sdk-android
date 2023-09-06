@@ -9,6 +9,9 @@ package com.datadog.android.sessionreplay.internal.recorder.base64
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.InsetDrawable
+import android.graphics.drawable.RippleDrawable
 import android.util.DisplayMetrics
 import android.view.View
 import android.widget.TextView
@@ -35,6 +38,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -369,6 +374,75 @@ internal class ImageWireframeHelperTest {
 
         // Then
         assertThat(wireframes).isEmpty()
+    }
+
+    @Test
+    fun `M resolve view width and height W createImageWireframe() { RippleDrawable }`(
+        @Mock mockDrawable: RippleDrawable,
+        @Mock mockInsetDrawable: InsetDrawable,
+        @Mock mockGradientDrawable: GradientDrawable,
+        @IntForgery(min = 1) fakeViewWidth: Int,
+        @IntForgery(min = 1) fakeViewHeight: Int
+    ) {
+        // Given
+        whenever(mockView.width).thenReturn(fakeViewWidth)
+        whenever(mockView.height).thenReturn(fakeViewHeight)
+        whenever(mockDrawable.numberOfLayers).thenReturn(1)
+        whenever(mockDrawable.getDrawable(0)).thenReturn(mockInsetDrawable)
+        whenever(mockInsetDrawable.drawable).thenReturn(mockGradientDrawable)
+
+        // When
+        testedHelper.createImageWireframe(
+            view = mockView,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 0,
+            height = 0,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null
+        )
+
+        // Then
+        val captor = argumentCaptor<Int>()
+        verify(mockBase64Serializer).handleBitmap(
+            applicationContext = any(),
+            displayMetrics = any(),
+            drawable = any(),
+            drawableWidth = captor.capture(),
+            drawableHeight = captor.capture(),
+            imageWireframe = any()
+        )
+        assertThat(captor.allValues).containsExactly(fakeViewWidth, fakeViewHeight)
+    }
+
+    @Test
+    fun `M resolve drawable width and height W createImageWireframe() { TextView }`() {
+        // When
+        testedHelper.createImageWireframe(
+            view = mockView,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 0,
+            height = 0,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null
+        )
+
+        // Then
+        val captor = argumentCaptor<Int>()
+        verify(mockBase64Serializer).handleBitmap(
+            applicationContext = any(),
+            displayMetrics = any(),
+            drawable = any(),
+            drawableWidth = captor.capture(),
+            drawableHeight = captor.capture(),
+            imageWireframe = any()
+        )
+        assertThat(captor.allValues).containsExactly(fakeDrawableWidth.toInt(), fakeDrawableHeight.toInt())
     }
 
     // endregion

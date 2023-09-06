@@ -29,7 +29,7 @@ import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
-@Suppress("UndocumentedPublicClass")
+@Suppress("TooManyFunctions")
 internal class Base64Serializer private constructor(
     private val threadPoolExecutor: ExecutorService,
     private val drawableUtils: DrawableUtils,
@@ -50,45 +50,18 @@ internal class Base64Serializer private constructor(
         applicationContext: Context,
         displayMetrics: DisplayMetrics,
         drawable: Drawable,
+        drawableWidth: Int,
+        drawableHeight: Int,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe
     ) {
-        registerCacheForCallbacks(applicationContext)
-        registerBitmapPoolForCallbacks(applicationContext)
+        registerCallbacks(applicationContext)
 
         asyncImageProcessingCallback?.startProcessingImage()
 
-        var shouldCacheBitmap = false
-        val cachedBase64 = base64LRUCache?.get(drawable)
-        if (cachedBase64 != null) {
-            finalizeRecordedDataItem(cachedBase64, imageWireframe, asyncImageProcessingCallback)
-            return
-        }
-
-        val bitmap = if (
-            drawable is BitmapDrawable &&
-            drawable.bitmap != null &&
-            !drawable.bitmap.isRecycled
-        ) {
-            drawable.bitmap
-        } else {
-            drawableUtils.createBitmapOfApproxSizeFromDrawable(
-                drawable,
-                displayMetrics
-            )?.let {
-                shouldCacheBitmap = true
-                it
-            }
-        }
-
-        if (bitmap == null) {
-            asyncImageProcessingCallback?.finishProcessingImage()
-            return
-        }
-
-        Runnable {
-            @Suppress("ThreadSafety") // this runs inside an executor
-            serialiseBitmap(drawable, bitmap, shouldCacheBitmap, imageWireframe, asyncImageProcessingCallback)
-        }.let { executeRunnable(it) }
+        tryToGetBase64FromCache(drawable, imageWireframe)
+            ?: tryToGetBitmapFromBitmapDrawable(drawable, imageWireframe)
+            ?: tryToDrawNewBitmap(drawable, drawableWidth, drawableHeight, displayMetrics, imageWireframe)
+            ?: asyncImageProcessingCallback?.finishProcessingImage()
     }
 
     internal fun registerAsyncLoadingCallback(
@@ -172,6 +145,85 @@ internal class Base64Serializer private constructor(
         return base64Result
     }
 
+    @MainThread
+    private fun tryToDrawNewBitmap(
+        drawable: Drawable,
+        drawableWidth: Int,
+        drawableHeight: Int,
+        displayMetrics: DisplayMetrics,
+        imageWireframe: MobileSegment.Wireframe.ImageWireframe
+    ): Bitmap? {
+        drawableUtils.createBitmapOfApproxSizeFromDrawable(
+            drawable,
+            drawableWidth,
+            drawableHeight,
+            displayMetrics
+        )?.let { resizedBitmap ->
+            serializeBitmapAsynchronously(
+                drawable,
+                bitmap = resizedBitmap,
+                shouldCacheBitmap = true,
+                imageWireframe
+            )
+            return resizedBitmap
+        }
+
+        return null
+    }
+
+    @MainThread
+    private fun tryToGetBitmapFromBitmapDrawable(
+        drawable: Drawable,
+        imageWireframe: MobileSegment.Wireframe.ImageWireframe
+    ): Bitmap? {
+        var result: Bitmap? = null
+        if (shouldUseDrawableBitmap(drawable)) {
+            drawableUtils.createScaledBitmap(
+                (drawable as BitmapDrawable).bitmap
+            )?.let { scaledBitmap ->
+                val shouldCacheBitmap = scaledBitmap != drawable.bitmap
+
+                serializeBitmapAsynchronously(
+                    drawable,
+                    scaledBitmap,
+                    shouldCacheBitmap,
+                    imageWireframe
+                )
+
+                result = scaledBitmap
+            }
+        }
+        return result
+    }
+
+    private fun tryToGetBase64FromCache(
+        drawable: Drawable,
+        imageWireframe: MobileSegment.Wireframe.ImageWireframe
+    ): String? {
+        return base64LRUCache?.get(drawable)?.let { base64String ->
+            finalizeRecordedDataItem(base64String, imageWireframe, asyncImageProcessingCallback)
+            base64String
+        }
+    }
+
+    private fun serializeBitmapAsynchronously(
+        drawable: Drawable,
+        bitmap: Bitmap,
+        shouldCacheBitmap: Boolean,
+        imageWireframe: MobileSegment.Wireframe.ImageWireframe
+    ) {
+        Runnable {
+            @Suppress("ThreadSafety") // this runs inside an executor
+            serialiseBitmap(
+                drawable,
+                bitmap,
+                shouldCacheBitmap,
+                imageWireframe,
+                asyncImageProcessingCallback
+            )
+        }.let { executeRunnable(it) }
+    }
+
     private fun finalizeRecordedDataItem(
         base64String: String,
         wireframe: MobileSegment.Wireframe.ImageWireframe,
@@ -195,6 +247,20 @@ internal class Base64Serializer private constructor(
             // TODO: REPLAY-1364 Add logs here once the sdkLogger is added
             // should never happen since task is not null
         }
+    }
+
+    private fun shouldUseDrawableBitmap(drawable: Drawable): Boolean {
+        return drawable is BitmapDrawable &&
+            drawable.bitmap != null &&
+            !drawable.bitmap.isRecycled &&
+            drawable.bitmap.width > 0 &&
+            drawable.bitmap.height > 0
+    }
+
+    @MainThread
+    private fun registerCallbacks(applicationContext: Context) {
+        registerCacheForCallbacks(applicationContext)
+        registerBitmapPoolForCallbacks(applicationContext)
     }
 
     // endregion

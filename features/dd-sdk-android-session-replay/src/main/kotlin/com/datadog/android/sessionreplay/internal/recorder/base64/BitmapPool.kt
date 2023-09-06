@@ -126,7 +126,10 @@ internal class BitmapPool(
         val cacheIndex = bitmapIndex.incrementAndGet()
         val cacheKey = "$key-$cacheIndex"
 
-        cache.put(cacheKey, bitmap)
+        @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
+        bitmapPoolHelper.safeCall {
+            cache.put(cacheKey, bitmap)
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             bitmapPoolHelper.safeCall {

@@ -36,11 +36,13 @@ internal class DrawableUtils(
     @Suppress("ReturnCount")
     internal fun createBitmapOfApproxSizeFromDrawable(
         drawable: Drawable,
+        drawableWidth: Int,
+        drawableHeight: Int,
         displayMetrics: DisplayMetrics,
         requestedSizeInBytes: Int = MAX_BITMAP_SIZE_IN_BYTES,
         config: Config = Config.ARGB_8888
     ): Bitmap? {
-        val (width, height) = getScaledWidthAndHeight(drawable, requestedSizeInBytes)
+        val (width, height) = getScaledWidthAndHeight(drawableWidth, drawableHeight, requestedSizeInBytes)
 
         val bitmap = getBitmapBySize(displayMetrics, width, height, config) ?: return null
         val canvas = canvasWrapper.createCanvas(bitmap) ?: return null
@@ -52,6 +54,15 @@ internal class DrawableUtils(
         drawable.setBounds(0, 0, canvas.width, canvas.height)
         drawable.draw(canvas)
         return bitmap
+    }
+
+    @MainThread
+    internal fun createScaledBitmap(
+        bitmap: Bitmap,
+        requestedSizeInBytes: Int = MAX_BITMAP_SIZE_IN_BYTES
+    ): Bitmap? {
+        val (width, height) = getScaledWidthAndHeight(bitmap.width, bitmap.height, requestedSizeInBytes)
+        return bitmapWrapper.createScaledBitmap(bitmap, width, height, false)
     }
 
     internal fun getDrawableScaledDimensions(
@@ -102,11 +113,12 @@ internal class DrawableUtils(
     }
 
     private fun getScaledWidthAndHeight(
-        drawable: Drawable,
+        drawableWidth: Int,
+        drawableHeight: Int,
         requestedSizeInBytes: Int
     ): Pair<Int, Int> {
-        var width = drawable.intrinsicWidth
-        var height = drawable.intrinsicHeight
+        var width = drawableWidth
+        var height = drawableHeight
         val sizeAfterCreation = width * height * ARGB_8888_PIXEL_SIZE_BYTES
 
         if (sizeAfterCreation > requestedSizeInBytes) {
