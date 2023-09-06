@@ -13,6 +13,7 @@ import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
 import com.datadog.android.sessionreplay.internal.RecordWriter
+import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
@@ -82,6 +83,9 @@ internal class SessionReplayRecorderTest {
 
     lateinit var testedSessionReplayRecorder: SessionReplayRecorder
 
+    @Mock
+    lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeActiveWindows = forge.aList { mock() }
@@ -105,7 +109,7 @@ internal class SessionReplayRecorderTest {
             mockWindowCallbackInterceptor,
             mockLifecycleCallback,
             mockViewOnDrawInterceptor,
-            mock(),
+            mockRecordedDataQueueHandler,
             mockUiHandler,
             mockInternalLogger
         )
@@ -271,6 +275,15 @@ internal class SessionReplayRecorderTest {
         verify(mockWindowCallbackInterceptor, never()).stopIntercepting(fakeAddedWindows)
         verify(mockViewOnDrawInterceptor, never())
             .intercept(fakeNewDecorViews)
+    }
+
+    @Test
+    fun `M delegate to recordedDataQueueHandler W stopProcessingRecords`() {
+        // When
+        testedSessionReplayRecorder.stopProcessingRecords()
+
+        // Then
+        verify(mockRecordedDataQueueHandler).clearAndStopProcessingQueue()
     }
 
     companion object {

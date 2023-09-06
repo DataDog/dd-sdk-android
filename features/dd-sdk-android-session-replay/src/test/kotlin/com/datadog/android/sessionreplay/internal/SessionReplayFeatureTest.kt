@@ -161,6 +161,18 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
+    fun `M stop processing records in the recorder W onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(mockRecorder).stopProcessingRecords()
+    }
+
+    @Test
     fun `M invalidate the feature components W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)

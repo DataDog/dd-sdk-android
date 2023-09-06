@@ -494,6 +494,7 @@ datadog:
       - "java.util.LinkedList.poll()"
       - "java.util.LinkedList.remove(com.datadog.android.privacy.TrackingConsentProviderCallback)"
       - "java.util.LinkedHashMap.remove(kotlin.String)"
+      - "java.util.Queue.clear()"
       - "java.util.Stack.constructor()"
       - "java.util.Stack.isNotEmpty()"
       - "java.util.Stack.pop()"

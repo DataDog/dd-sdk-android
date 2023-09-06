@@ -24,6 +24,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.fail
@@ -40,10 +41,12 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Queue
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.RejectedExecutionException
@@ -279,8 +282,7 @@ internal class RecordedDataQueueHandlerTest {
     }
 
     @Test
-    fun `M touch event item contains correct fields W add() { valid RumContextData }`
-    () {
+    fun `M touch event item contains correct fields W add() { valid RumContextData }`() {
         // Given
         whenever(mockRumContextDataHandler.createRumContextData())
             .thenReturn(fakeRumContextData)
@@ -517,6 +519,63 @@ internal class RecordedDataQueueHandlerTest {
         spyExecutorService.awaitTermination(1, TimeUnit.SECONDS)
 
         assertThat(testedHandler.recordedDataQueue.size).isEqualTo(2)
+    }
+
+    @Test
+    fun `M clear pending queue and stop processor W clearAndStopProcessing() { pending items }`() {
+        // Given
+        createFakeSnapshotItemWithDelayMs(1)
+        createFakeSnapshotItemWithDelayMs(2)
+        createFakeSnapshotItemWithDelayMs(3)
+
+        // When
+        testedHandler.clearAndStopProcessingQueue()
+
+        // Then
+        assertThat(testedHandler.recordedDataQueue).isEmpty()
+        verify(spyExecutorService).shutdown()
+    }
+
+    @Test
+    fun `M handle concurrency W clearAndStopProcessing() { pending items }`() {
+        // Given
+        List(2) {
+            val itemRumContextData = fakeRumContextData.copy(timestamp = 1)
+            spy(
+                SnapshotRecordedDataQueueItem(
+                    rumContextData = itemRumContextData,
+                    systemInformation = mockSystemInformation
+                )
+            ).apply {
+                this.nodes = fakeNodeData
+                doReturn(true).whenever(this).isValid()
+                doReturn(false).whenever(this).isReady()
+            }
+        }.forEach {
+            testedHandler.recordedDataQueue.offer(it)
+        }
+
+        // When
+        val countDownLatch = CountDownLatch(3)
+        assertDoesNotThrow {
+            Thread {
+                testedHandler.tryToConsumeItems()
+                countDownLatch.countDown()
+            }.start()
+            Thread {
+                testedHandler.clearAndStopProcessingQueue()
+                countDownLatch.countDown()
+            }.start()
+            Thread {
+                testedHandler.tryToConsumeItems()
+                countDownLatch.countDown()
+            }.start()
+        }
+        countDownLatch.await(1, TimeUnit.SECONDS)
+
+        // Then
+        verifyNoInteractions(mockProcessor)
+        assertThat(testedHandler.recordedDataQueue).isEmpty()
     }
 
     private fun createFakeSnapshotItemWithDelayMs(delay: Int): SnapshotRecordedDataQueueItem {

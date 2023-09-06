@@ -23,4 +23,8 @@ internal class NoOpRecorder : Recorder {
     override fun stopRecorders() {
         // No Op
     }
+
+    override fun stopProcessingRecords() {
+        // No Op
+    }
 }
