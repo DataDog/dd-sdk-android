@@ -18,6 +18,7 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.data.upload.v2.DataUploader
+import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.persistence.BatchConfirmation
 import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.persistence.BatchReader
@@ -42,12 +43,13 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.fail
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -151,10 +153,12 @@ internal class UploadWorkerTest {
         val batchBMetadata = forge.aNullable { batchBMeta.toByteArray() }
 
         val batchAConfirmation = mock<BatchConfirmation>()
+        val batchId1 = mock<BatchId>()
+        val batchId2 = mock<BatchId>()
         stubReadSequence(
             mockStorageA,
             mockBatchReaderA,
-            mock(),
+            batchId1,
             batchAConfirmation,
             batchAData,
             batchAMetadata
@@ -164,26 +168,28 @@ internal class UploadWorkerTest {
         stubReadSequence(
             mockStorageB,
             mockBatchReaderB,
-            mock(),
+            batchId2,
             batchBConfirmation,
             batchBData,
             batchBMetadata
         )
 
+        val uploadStatus1 = forge.getForgery(UploadStatus.Success::class.java)
+        val uploadStatus2 = forge.getForgery(UploadStatus.Success::class.java)
         whenever(
             mockUploaderA.upload(
                 fakeContext,
                 batchAData,
                 batchAMetadata
             )
-        ) doReturn UploadStatus.SUCCESS
+        ) doReturn uploadStatus1
         whenever(
             mockUploaderB.upload(
                 fakeContext,
                 batchBData,
                 batchBMetadata
             )
-        ) doReturn UploadStatus.SUCCESS
+        ) doReturn uploadStatus2
 
         // When
         val result = testedWorker.doWork()
@@ -200,6 +206,16 @@ internal class UploadWorkerTest {
             batchBMetadata
         )
 
+        verify(mockStorageA).confirmBatchRead(
+            eq(batchId1),
+            argThat { this.toString() == "intake-code-${uploadStatus1.code}" },
+            any()
+        )
+        verify(mockStorageB).confirmBatchRead(
+            eq(batchId2),
+            argThat { this.toString() == "intake-code-${uploadStatus2.code}" },
+            any()
+        )
         verify(batchAConfirmation).markAsRead(true)
         verify(batchBConfirmation).markAsRead(true)
 
@@ -208,7 +224,7 @@ internal class UploadWorkerTest {
     }
 
     @ParameterizedTest
-    @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
+    @MethodSource("errorStatusValues")
     fun `𝕄 send and keep batches 𝕎 doWork() {single batch per feature with error}`(
         status: UploadStatus,
         @StringForgery batchA: List<String>,
@@ -224,20 +240,22 @@ internal class UploadWorkerTest {
         val batchBMetadata = forge.aNullable { batchBMeta.toByteArray() }
 
         val batchAConfirmation = mock<BatchConfirmation>()
+        val batchId1 = mock<BatchId>()
         stubReadSequence(
             mockStorageA,
             mockBatchReaderA,
-            mock(),
+            batchId1,
             batchAConfirmation,
             batchAData,
             batchAMetadata
         )
 
         val batchBConfirmation = mock<BatchConfirmation>()
+        val batchId2 = mock<BatchId>()
         stubReadSequence(
             mockStorageB,
             mockBatchReaderB,
-            mock(),
+            batchId2,
             batchBConfirmation,
             batchBData,
             batchBMetadata
@@ -272,8 +290,18 @@ internal class UploadWorkerTest {
             batchBData,
             batchBMetadata
         )
-        verify(batchAConfirmation).markAsRead(false)
-        verify(batchBConfirmation).markAsRead(false)
+        verify(mockStorageA).confirmBatchRead(
+            eq(batchId1),
+            argThat { this.toString() == "intake-code-${status.code}" },
+            any()
+        )
+        verify(mockStorageB).confirmBatchRead(
+            eq(batchId2),
+            argThat { this.toString() == "intake-code-${status.code}" },
+            any()
+        )
+        verify(batchAConfirmation).markAsRead(!status.shouldRetry)
+        verify(batchBConfirmation).markAsRead(!status.shouldRetry)
 
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
@@ -305,15 +333,17 @@ internal class UploadWorkerTest {
         )
 
         val batchBConfirmation = mock<BatchConfirmation>()
+        val batchId = mock<BatchId>()
         stubReadSequence(
             mockStorageB,
             mockBatchReaderB,
-            mock(),
+            batchId,
             batchBConfirmation,
             batchB,
             batchBMeta
         )
 
+        val aStatuses = batchesA.map { forge.getForgery(UploadStatus.Success::class.java) }
         batchesA.forEachIndexed { index, batch ->
             whenever(
                 mockUploaderA.upload(
@@ -321,16 +351,17 @@ internal class UploadWorkerTest {
                     batch,
                     batchesAMeta[index]
                 )
-            ) doReturn UploadStatus.SUCCESS
+            ) doReturn aStatuses[index]
         }
 
+        val successStatus = forge.getForgery(UploadStatus.Success::class.java)
         whenever(
             mockUploaderB.upload(
                 fakeContext,
                 batchB,
                 batchBMeta
             )
-        ) doReturn UploadStatus.SUCCESS
+        ) doReturn successStatus
 
         // When
         val result = testedWorker.doWork()
@@ -342,6 +373,11 @@ internal class UploadWorkerTest {
                 batch,
                 batchesAMeta[index]
             )
+            verify(mockStorageA).confirmBatchRead(
+                eq(aIds[index]),
+                argThat { this.toString() == "intake-code-${aStatuses[index].code}" },
+                any()
+            )
 
             verify(aConfirmations[index]).markAsRead(true)
         }
@@ -350,6 +386,11 @@ internal class UploadWorkerTest {
             fakeContext,
             batchB,
             batchBMeta
+        )
+        verify(mockStorageB).confirmBatchRead(
+            eq(batchId),
+            argThat { this.toString() == "intake-code-${successStatus.code}" },
+            any()
         )
         verify(batchBConfirmation).markAsRead(true)
 
@@ -372,6 +413,7 @@ internal class UploadWorkerTest {
 
         val batchB = forge.aList { forge.aString().toByteArray() }
         val batchBMeta = forge.aString().toByteArray()
+        val aStatuses = batchesA.map { forge.getForgery(UploadStatus.Success::class.java) }
 
         stubMultipleReadSequence(
             mockStorageA,
@@ -383,10 +425,11 @@ internal class UploadWorkerTest {
         )
 
         val batchBConfirmation = mock<BatchConfirmation>()
+        val batchId = mock<BatchId>()
         stubReadSequence(
             mockStorageB,
             mockBatchReaderB,
-            mock(),
+            batchId,
             batchBConfirmation,
             batchB,
             batchBMeta
@@ -403,16 +446,17 @@ internal class UploadWorkerTest {
                     batch,
                     batchesAMeta[index]
                 )
-            ) doReturn UploadStatus.SUCCESS
+            ) doReturn aStatuses[index]
         }
 
+        val successStatus = forge.getForgery(UploadStatus.Success::class.java)
         whenever(
             mockUploaderB.upload(
                 fakeContext,
                 batchB,
                 batchBMeta
             )
-        ) doReturn UploadStatus.SUCCESS
+        ) doReturn successStatus
 
         // When
         val result = testedWorker.doWork()
@@ -424,7 +468,11 @@ internal class UploadWorkerTest {
                 batch,
                 batchesAMeta[index]
             )
-
+            verify(mockStorageA).confirmBatchRead(
+                eq(aIds[index]),
+                argThat { this.toString() == "intake-code-${aStatuses[index].code}" },
+                any()
+            )
             verify(aConfirmations[index]).markAsRead(true)
         }
 
@@ -432,6 +480,11 @@ internal class UploadWorkerTest {
             fakeContext,
             batchB,
             batchBMeta
+        )
+        verify(mockStorageB).confirmBatchRead(
+            eq(batchId),
+            argThat { this.toString() == "intake-code-${successStatus.code}" },
+            any()
         )
         verify(batchBConfirmation).markAsRead(true)
 
@@ -442,8 +495,8 @@ internal class UploadWorkerTest {
     }
 
     @ParameterizedTest
-    @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
-    fun `𝕄 send batches 𝕎 doWork() {multiple batches, some fails}`(
+    @MethodSource("errorStatusValues")
+    fun `𝕄 send batches 𝕎 doWork() {multiple batches, some fails with retry}`(
         failingStatus: UploadStatus,
         forge: Forge
     ) {
@@ -462,6 +515,13 @@ internal class UploadWorkerTest {
         val batchBMeta = forge.aString().toByteArray()
 
         val failingBatchIndex = forge.anInt(min = 0, max = batchesA.size)
+        val aStatuses = List(batchesA.size) { index ->
+            if (index == failingBatchIndex) {
+                failingStatus
+            } else {
+                forge.getForgery(UploadStatus.Success::class.java)
+            }
+        }
 
         stubMultipleReadSequence(
             mockStorageA,
@@ -473,15 +533,17 @@ internal class UploadWorkerTest {
         )
 
         val batchBConfirmation = mock<BatchConfirmation>()
+        val batchId = mock<BatchId>()
         stubReadSequence(
             mockStorageB,
             mockBatchReaderB,
-            mock(),
+            batchId,
             batchBConfirmation,
             batchB,
             batchBMeta
         )
 
+        val fakeUploadSuccess2 = forge.getForgery(UploadStatus.Success::class.java)
         batchesA.forEachIndexed { index, batch ->
             whenever(
                 mockUploaderA.upload(
@@ -489,7 +551,7 @@ internal class UploadWorkerTest {
                     batch,
                     batchesAMeta[index]
                 )
-            ) doReturn if (index == failingBatchIndex) failingStatus else UploadStatus.SUCCESS
+            ) doReturn aStatuses[index]
         }
 
         whenever(
@@ -498,7 +560,7 @@ internal class UploadWorkerTest {
                 batchB,
                 batchBMeta
             )
-        ) doReturn UploadStatus.SUCCESS
+        ) doReturn fakeUploadSuccess2
 
         // When
         val result = testedWorker.doWork()
@@ -511,17 +573,27 @@ internal class UploadWorkerTest {
                 batchesAMeta[index]
             )
 
-            if (index != failingBatchIndex) {
-                verify(aConfirmations[index]).markAsRead(true)
+            if (index == failingBatchIndex) {
+                verify(aConfirmations[index]).markAsRead(!failingStatus.shouldRetry)
             } else {
-                verify(aConfirmations[index]).markAsRead(false)
+                verify(aConfirmations[index]).markAsRead(true)
             }
+            verify(mockStorageA).confirmBatchRead(
+                eq(aIds[index]),
+                argThat { this.toString() == "intake-code-${aStatuses[index].code}" },
+                any()
+            )
         }
 
         verify(mockUploaderB).upload(
             fakeContext,
             batchB,
             batchBMeta
+        )
+        verify(mockStorageB).confirmBatchRead(
+            eq(batchId),
+            argThat { this.toString() == "intake-code-${fakeUploadSuccess2.code}" },
+            any()
         )
         verify(batchBConfirmation).markAsRead(true)
 
@@ -612,8 +684,8 @@ internal class UploadWorkerTest {
 
                     invocationCount++
 
-                    whenever(storage.confirmBatchRead(eq(batchId), any())) doAnswer {
-                        (it.getArgument<(BatchConfirmation) -> Unit>(1)).invoke(batchConfirmation)
+                    whenever(storage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
+                        (it.getArgument<(BatchConfirmation) -> Unit>(2)).invoke(batchConfirmation)
                     }
 
                     (invocation.getArgument<(BatchId, BatchReader) -> Unit>(1)).invoke(
@@ -648,8 +720,12 @@ internal class UploadWorkerTest {
             }
         }
 
-        override fun confirmBatchRead(batchId: BatchId, callback: (BatchConfirmation) -> Unit) {
-            executor.execute { delegate.confirmBatchRead(batchId, callback) }
+        override fun confirmBatchRead(
+            batchId: BatchId,
+            removalReason: RemovalReason,
+            callback: (BatchConfirmation) -> Unit
+        ) {
+            executor.execute { delegate.confirmBatchRead(batchId, removalReason, callback) }
         }
 
         override fun dropAll() {
@@ -685,6 +761,25 @@ internal class UploadWorkerTest {
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
             return listOf(appContext, logger)
+        }
+
+        @JvmStatic
+        fun errorStatusValues(): List<UploadStatus> {
+            val forge = Forge().apply {
+                Configurator().configure(this)
+            }
+
+            return listOf(
+                forge.getForgery(UploadStatus.HttpServerError::class.java),
+                forge.getForgery(UploadStatus.NetworkError::class.java),
+                forge.getForgery(UploadStatus.HttpClientRateLimiting::class.java),
+                forge.getForgery(UploadStatus.HttpClientError::class.java),
+                forge.getForgery(UploadStatus.UnknownStatus::class.java),
+                forge.getForgery(UploadStatus.UnknownError::class.java),
+                forge.getForgery(UploadStatus.HttpRedirection::class.java),
+                forge.getForgery(UploadStatus.InvalidTokenError::class.java),
+                forge.getForgery(UploadStatus.RequestCreationError::class.java)
+            )
         }
     }
 }

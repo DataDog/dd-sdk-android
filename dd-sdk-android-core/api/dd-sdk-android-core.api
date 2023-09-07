@@ -75,8 +75,9 @@ public final class com/datadog/android/_InternalProxy$_TelemetryProxy {
 
 public abstract interface class com/datadog/android/api/InternalLogger {
 	public static final field Companion Lcom/datadog/android/api/InternalLogger$Companion;
-	public abstract fun log (Lcom/datadog/android/api/InternalLogger$Level;Lcom/datadog/android/api/InternalLogger$Target;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;Z)V
-	public abstract fun log (Lcom/datadog/android/api/InternalLogger$Level;Ljava/util/List;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;Z)V
+	public abstract fun log (Lcom/datadog/android/api/InternalLogger$Level;Lcom/datadog/android/api/InternalLogger$Target;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZLjava/util/Map;)V
+	public abstract fun log (Lcom/datadog/android/api/InternalLogger$Level;Ljava/util/List;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZLjava/util/Map;)V
+	public abstract fun logMetric (Lkotlin/jvm/functions/Function0;Ljava/util/Map;)V
 }
 
 public final class com/datadog/android/api/InternalLogger$Companion {
@@ -84,8 +85,8 @@ public final class com/datadog/android/api/InternalLogger$Companion {
 }
 
 public final class com/datadog/android/api/InternalLogger$DefaultImpls {
-	public static synthetic fun log$default (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/api/InternalLogger$Level;Lcom/datadog/android/api/InternalLogger$Target;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZILjava/lang/Object;)V
-	public static synthetic fun log$default (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/api/InternalLogger$Level;Ljava/util/List;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZILjava/lang/Object;)V
+	public static synthetic fun log$default (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/api/InternalLogger$Level;Lcom/datadog/android/api/InternalLogger$Target;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZLjava/util/Map;ILjava/lang/Object;)V
+	public static synthetic fun log$default (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/api/InternalLogger$Level;Ljava/util/List;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZLjava/util/Map;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/api/InternalLogger$Level : java/lang/Enum {

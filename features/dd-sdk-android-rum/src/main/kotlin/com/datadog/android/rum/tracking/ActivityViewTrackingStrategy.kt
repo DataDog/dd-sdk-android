@@ -8,10 +8,14 @@ package com.datadog.android.rum.tracking
 
 import android.app.Activity
 import androidx.annotation.MainThread
+import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
+import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 /**
  * A [ViewTrackingStrategy] that will track [Activity] as RUM Views.
@@ -28,6 +32,10 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
 ) :
     ActivityLifecycleTrackingStrategy(),
     ViewTrackingStrategy {
+
+    private val executor: ScheduledExecutorService by lazy {
+        LoggingScheduledThreadPoolExecutor(1, internalLogger)
+    }
 
     // region ActivityLifecycleTrackingStrategy
 
@@ -46,10 +54,17 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
     }
 
     @MainThread
-    override fun onActivityPaused(activity: Activity) {
-        super.onActivityPaused(activity)
-        componentPredicate.runIfValid(activity, internalLogger) {
-            getRumMonitor()?.stopView(it)
+    override fun onActivityStopped(activity: Activity) {
+        super.onActivityStopped(activity)
+        executor.scheduleSafe(
+            "Delayed view stop",
+            STOP_VIEW_DELAY_MS,
+            TimeUnit.MILLISECONDS,
+            internalLogger
+        ) {
+            componentPredicate.runIfValid(activity, internalLogger) {
+                getRumMonitor()?.stopView(it)
+            }
         }
     }
 
@@ -84,4 +99,8 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
     }
 
     // endregion
+
+    internal companion object {
+        private const val STOP_VIEW_DELAY_MS = 200L
+    }
 }

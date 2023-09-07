@@ -10,74 +10,83 @@ import android.annotation.SuppressLint
 import android.os.Build
 import android.view.View
 import android.view.inspector.WindowInspector
+import com.datadog.android.api.InternalLogger
+import java.lang.NullPointerException
 import java.lang.reflect.Field
 
 @SuppressLint("PrivateApi")
 internal object WindowInspector {
 
-    @Suppress("SwallowedException", "TooGenericExceptionCaught")
+    private const val FAILED_TO_RETRIEVE_DECOR_VIEWS_ERROR_MESSAGE =
+        "SR WindowInspector failed to retrieve the decor views"
+
+    @Suppress("SwallowedException", "TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall")
     private val GLOBAL_WM_CLASS by lazy {
-        try {
-            return@lazy Class.forName("android.view.WindowManagerGlobal")
-        } catch (e: Throwable) {
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
-            // sdkLogger.errorWithTelemetry("WindowInspector failed to retrieve the decor views", e)
-        }
-        return@lazy null
+        return@lazy Class.forName("android.view.WindowManagerGlobal")
     }
 
-    @Suppress("SwallowedException", "TooGenericExceptionCaught")
+    @Suppress("SwallowedException", "TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall")
     private val GLOBAL_WM_INSTANCE by lazy {
-        try {
-            return@lazy GLOBAL_WM_CLASS?.getMethod("getInstance")?.invoke(null)
-        } catch (e: Throwable) {
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
-            // sdkLogger.errorWithTelemetry("WindowInspector failed to retrieve the decor views", e)
-        }
-        return@lazy null
+        return@lazy GLOBAL_WM_CLASS?.getMethod("getInstance")?.invoke(null)
     }
 
-    @Suppress("SwallowedException", "TooGenericExceptionCaught")
+    @Suppress("SwallowedException", "TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall")
     private val VIEWS_FIELD by lazy {
-        try {
-            return@lazy GLOBAL_WM_CLASS?.getDeclaredField("mViews")
-        } catch (e: Throwable) {
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
-            // sdkLogger.errorWithTelemetry("WindowInspector failed to retrieve the decor views", e)
-        }
-        return@lazy null
+        return@lazy GLOBAL_WM_CLASS?.getDeclaredField("mViews")
     }
 
-    fun getGlobalWindowViews(): List<View> {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            WindowInspector.getGlobalWindowViews()
-        } else {
-            getGlobalWindowViewsLegacy(GLOBAL_WM_INSTANCE, VIEWS_FIELD)
-        }
-    }
-
-    @Suppress("SwallowedException", "TooGenericExceptionCaught")
-    internal fun getGlobalWindowViewsLegacy(globalWmInstance: Any?, viewsField: Field?): List<View> {
-        try {
-            if (globalWmInstance != null && viewsField != null) {
-                viewsField.isAccessible = true
-                val decorViews = when (val views: Any? = viewsField.get(globalWmInstance)) {
-                    is List<*> -> {
-                        @Suppress("UnsafeThirdPartyFunctionCall") // mapNotNull is a safe call
-                        views.mapNotNull { it as? View }
-                    }
-                    is Array<*> -> {
-                        views.toList().mapNotNull { it as? View }
-                    }
-                    else -> {
-                        emptyList()
-                    }
-                }
-                return decorViews
+    @SuppressWarnings("TooGenericExceptionCaught")
+    fun getGlobalWindowViews(internalLogger: InternalLogger): List<View> {
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // this can throw also maybe but we don't know what type exactly. In order to be
+                // safe as this function is being called on the MainThread every time we want to
+                // take a snapshot we will catch all the `Throwable`s in a single catch block.
+                WindowInspector.getGlobalWindowViews()
+            } else {
+                getGlobalWindowViewsLegacy(GLOBAL_WM_INSTANCE, VIEWS_FIELD)
             }
         } catch (e: Throwable) {
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
-            // sdkLogger.errorWithTelemetry("WindowInspector failed to retrieve the decor views", e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.TELEMETRY,
+                { FAILED_TO_RETRIEVE_DECOR_VIEWS_ERROR_MESSAGE },
+                e,
+                true
+            )
+            emptyList()
+        }
+    }
+
+    @Suppress("SwallowedException", "UnsafeThirdPartyFunctionCall")
+    @Throws(
+        NoSuchFieldException::class,
+        NullPointerException::class,
+        SecurityException::class,
+        LinkageError::class,
+        ClassNotFoundException::class,
+        ExceptionInInitializerError::class
+    )
+    internal fun getGlobalWindowViewsLegacy(
+        globalWmInstance: Any?,
+        viewsField: Field?
+    ): List<View> {
+        if (globalWmInstance != null && viewsField != null) {
+            viewsField.isAccessible = true
+            val decorViews = when (val views: Any? = viewsField.get(globalWmInstance)) {
+                is List<*> -> {
+                    views.mapNotNull { it as? View }
+                }
+
+                is Array<*> -> {
+                    views.toList().mapNotNull { it as? View }
+                }
+
+                else -> {
+                    emptyList()
+                }
+            }
+            return decorViews
         }
         return emptyList()
     }

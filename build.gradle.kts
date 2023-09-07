@@ -146,6 +146,7 @@ tasks.register("unitTestTools") {
     dependsOn(
         ":sample:kotlin:assembleUs1Release",
         ":sample:wear:assembleUs1Release",
+        ":sample:vendor-lib:assembleRelease",
         ":tools:unit:testJvmReleaseUnitTest",
         ":tools:detekt:test",
         ":tools:lint:test",

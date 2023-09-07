@@ -17,6 +17,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
+import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
@@ -55,10 +56,12 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.reset
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -646,6 +649,22 @@ internal class DatadogCoreTest {
         assertThat(testedCore.contextProvider).isNull()
         assertThat(testedCore.isActive).isFalse
         assertThat(testedCore.features).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 unregister process lifecycle monitor 𝕎 stop()`() {
+        // Given
+        val expectedInvocations = if (fakeConfiguration.crashReportsEnabled) 2 else 1
+
+        // When
+        testedCore.stop()
+
+        // Then
+        argumentCaptor<ProcessLifecycleMonitor> {
+            verify(appContext.mockInstance, times(expectedInvocations))
+                .unregisterActivityLifecycleCallbacks(capture())
+            assertThat(lastValue).isInstanceOf(ProcessLifecycleMonitor::class.java)
+        }
     }
 
     companion object {

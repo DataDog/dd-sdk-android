@@ -9,16 +9,19 @@ package com.datadog.android.core.internal.data.upload
 import com.datadog.android.api.InternalLogger
 
 @Suppress("StringLiteralDuplication")
-internal enum class UploadStatus(val shouldRetry: Boolean) {
-    SUCCESS(shouldRetry = false),
-    NETWORK_ERROR(shouldRetry = true),
-    REQUEST_CREATION_ERROR(shouldRetry = false),
-    INVALID_TOKEN_ERROR(shouldRetry = false),
-    HTTP_REDIRECTION(shouldRetry = false),
-    HTTP_CLIENT_ERROR(shouldRetry = false),
-    HTTP_SERVER_ERROR(shouldRetry = true),
-    HTTP_CLIENT_RATE_LIMITING(shouldRetry = true),
-    UNKNOWN_ERROR(shouldRetry = false);
+internal sealed class UploadStatus(val shouldRetry: Boolean = false, val code: Int = UNKNOWN_RESPONSE_CODE) {
+
+    internal class Success(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
+    internal object NetworkError : UploadStatus(shouldRetry = true)
+    internal object RequestCreationError : UploadStatus(shouldRetry = false)
+    internal class InvalidTokenError(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
+    internal class HttpRedirection(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
+    internal class HttpClientError(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
+    internal class HttpServerError(responseCode: Int) : UploadStatus(shouldRetry = true, code = responseCode)
+    internal class HttpClientRateLimiting(responseCode: Int) : UploadStatus(shouldRetry = true, code = responseCode)
+    internal class UnknownError(responseCode: Int) : UploadStatus(shouldRetry = false, code = responseCode)
+
+    internal object UnknownStatus : UploadStatus(shouldRetry = false, code = UNKNOWN_RESPONSE_CODE)
 
     @SuppressWarnings("LongMethod")
     fun logStatus(
@@ -33,13 +36,13 @@ internal enum class UploadStatus(val shouldRetry: Boolean) {
             "Batch $requestId [$byteSize bytes] ($context)"
         }
         when (this) {
-            NETWORK_ERROR -> logger.log(
+            is NetworkError -> logger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { "$batchInfo failed because of a network error; we will retry later." }
             )
 
-            INVALID_TOKEN_ERROR -> logger.log(
+            is InvalidTokenError -> logger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
                 {
@@ -49,13 +52,13 @@ internal enum class UploadStatus(val shouldRetry: Boolean) {
                 }
             )
 
-            HTTP_REDIRECTION -> logger.log(
+            is HttpRedirection -> logger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { "$batchInfo failed because of a network redirection; the batch was dropped." }
             )
 
-            HTTP_CLIENT_ERROR -> {
+            is HttpClientError -> {
                 logger.log(
                     InternalLogger.Level.ERROR,
                     listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
@@ -66,7 +69,7 @@ internal enum class UploadStatus(val shouldRetry: Boolean) {
                 )
             }
 
-            HTTP_CLIENT_RATE_LIMITING -> {
+            is HttpClientRateLimiting -> {
                 logger.log(
                     InternalLogger.Level.WARN,
                     listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
@@ -74,19 +77,19 @@ internal enum class UploadStatus(val shouldRetry: Boolean) {
                 )
             }
 
-            HTTP_SERVER_ERROR -> logger.log(
+            is HttpServerError -> logger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
                 { "$batchInfo failed because of a server processing error; we will retry later." }
             )
 
-            UNKNOWN_ERROR -> logger.log(
+            is UnknownError -> logger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
                 { "$batchInfo failed because of an unknown error; the batch was dropped." }
             )
 
-            REQUEST_CREATION_ERROR -> logger.log(
+            is RequestCreationError -> logger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
                 {
@@ -95,11 +98,18 @@ internal enum class UploadStatus(val shouldRetry: Boolean) {
                 }
             )
 
-            SUCCESS -> logger.log(
+            is Success -> logger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 { "$batchInfo sent successfully." }
             )
+
+            else -> {
+                // no-op
+            }
         }
+    }
+    companion object {
+        internal const val UNKNOWN_RESPONSE_CODE = 0
     }
 }

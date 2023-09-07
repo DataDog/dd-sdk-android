@@ -17,11 +17,15 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.data.upload.v2.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.v2.NoOpDataUploader
+import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher
+import com.datadog.android.core.internal.metrics.NoOpMetricsDispatcher
 import com.datadog.android.core.internal.persistence.ConsentAwareStorage
 import com.datadog.android.core.internal.persistence.NoOpStorage
 import com.datadog.android.core.internal.persistence.Storage
@@ -45,6 +49,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -52,6 +57,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -129,7 +135,32 @@ internal class SdkFeatureTest {
     }
 
     @Test
+    fun `M register ProcessLifecycleMonitor for MetricsDispatcher W initialize()`() {
+        // When
+        testedFeature.initialize(appContext.mockInstance)
+
+        // Then
+        argumentCaptor<Application.ActivityLifecycleCallbacks>() {
+            verify((appContext.mockInstance)).registerActivityLifecycleCallbacks(capture())
+            assertThat(firstValue).isInstanceOf(ProcessLifecycleMonitor::class.java)
+            assertThat((firstValue as ProcessLifecycleMonitor).callback)
+                .isInstanceOf(BatchMetricsDispatcher::class.java)
+        }
+    }
+
+    @Test
+    fun `M not throw W initialize(){ no app context }`() {
+        // When
+        assertDoesNotThrow {
+            testedFeature.initialize(mock())
+        }
+    }
+
+    @Test
     fun `𝕄 initialize uploader 𝕎 initialize()`() {
+        // Given
+        val expectedUploadConfiguration = DataUploadConfiguration(fakeCoreUploadFrequency)
+
         // When
         testedFeature.initialize(appContext.mockInstance)
 
@@ -137,7 +168,10 @@ internal class SdkFeatureTest {
         assertThat(testedFeature.uploadScheduler)
             .isInstanceOf(DataUploadScheduler::class.java)
         val dataUploadRunnable = (testedFeature.uploadScheduler as DataUploadScheduler).runnable
-        assertThat(dataUploadRunnable.uploadFrequency).isEqualTo(fakeCoreUploadFrequency)
+        assertThat(dataUploadRunnable.minDelayMs).isEqualTo(expectedUploadConfiguration.minDelayMs)
+        assertThat(dataUploadRunnable.maxDelayMs).isEqualTo(expectedUploadConfiguration.maxDelayMs)
+        assertThat(dataUploadRunnable.currentDelayIntervalMs)
+            .isEqualTo(expectedUploadConfiguration.defaultDelayMs)
         argumentCaptor<Runnable> {
             verify(coreFeature.mockUploadExecutor).schedule(
                 any(),
@@ -145,7 +179,6 @@ internal class SdkFeatureTest {
                 eq(TimeUnit.MILLISECONDS)
             )
         }
-
         assertThat(testedFeature.uploader).isInstanceOf(DataOkHttpUploader::class.java)
     }
 
@@ -153,6 +186,7 @@ internal class SdkFeatureTest {
     fun `𝕄 use the storage frequency if set 𝕎 initialize()`(forge: Forge) {
         // Given
         val fakeUploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
+        val expectedUploadConfiguration = DataUploadConfiguration(fakeUploadFrequency)
         val fakeStorageConfig = mockWrappedFeature.storageConfiguration
             .copy(uploadFrequency = fakeUploadFrequency)
         whenever(mockWrappedFeature.storageConfiguration)
@@ -165,7 +199,10 @@ internal class SdkFeatureTest {
         assertThat(testedFeature.uploadScheduler)
             .isInstanceOf(DataUploadScheduler::class.java)
         val dataUploadRunnable = (testedFeature.uploadScheduler as DataUploadScheduler).runnable
-        assertThat(dataUploadRunnable.uploadFrequency).isEqualTo(fakeUploadFrequency)
+        assertThat(dataUploadRunnable.minDelayMs).isEqualTo(expectedUploadConfiguration.minDelayMs)
+        assertThat(dataUploadRunnable.maxDelayMs).isEqualTo(expectedUploadConfiguration.maxDelayMs)
+        assertThat(dataUploadRunnable.currentDelayIntervalMs)
+            .isEqualTo(expectedUploadConfiguration.defaultDelayMs)
     }
 
     @Test
@@ -265,6 +302,20 @@ internal class SdkFeatureTest {
     }
 
     @Test
+    fun `𝕄 unregister ProcessLifecycleMonitor 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize(appContext.mockInstance)
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        verify(appContext.mockInstance).unregisterActivityLifecycleCallbacks(
+            argThat { this is ProcessLifecycleMonitor }
+        )
+    }
+
+    @Test
     fun `𝕄 cleanup data 𝕎 stop()`() {
         // Given
         testedFeature.initialize(appContext.mockInstance)
@@ -281,6 +332,8 @@ internal class SdkFeatureTest {
             .isInstanceOf(NoOpDataUploader::class.java)
         assertThat(testedFeature.fileOrchestrator)
             .isInstanceOf(NoOpFileOrchestrator::class.java)
+        assertThat(testedFeature.processLifecycleMonitor).isNull()
+        assertThat(testedFeature.metricsDispatcher).isInstanceOf(NoOpMetricsDispatcher::class.java)
     }
 
     @Test

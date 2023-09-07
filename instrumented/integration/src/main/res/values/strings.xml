@@ -16,6 +16,7 @@
     <string name="rum_activity_view_tracking_end_to_end">Rum Activity View (End to End)</string>
     <string name="activity_telemetry_end_to_end">Telemetry (End to End)</string>
     <string name="session_replay_end_to_end">Session Replay (End to End)</string>
+    <string name="session_replay_text_fields_end_to_end">Session Replay Text Fields (End to End)</string>
     <string name="fragment_a">Fragment A</string>
     <string name="fragment_b">Fragment B</string>
     <string name="fragment_c">Fragment C</string>
@@ -26,4 +27,19 @@
     <string name="start_kiosk">Start Kiosk</string>
     <string name="back_text">Back</string>
     <string name="end_session">End Session</string>
+
+    <!-- Session Replay tests -->
+
+    <string name="text_view">Default Text View</string>
+    <string name="material_text_view">Material Text View</string>
+    <string name="app_compat_text_view">App Compat Text View</string>
+    <string name="auto_complete_text_view">Default Auto Complete Text View</string>
+    <string name="edit_text_view">Edit Text View</string>
+    <string name="app_compat_edit_text_view">App Compat Edit Text View</string>
+    <string name="app_compat_auto_complete_text_view">App Compat Auto Complete Text View</string>
+    <string name="material_auto_complete_text_view">Material Auto Complete Text View</string>
+    <string name="text_view_components">Text View Components</string>
+    <string name="checked_text_view">Checked Text View</string>
+    <string name="app_compat_checked_text_view">App Compat Checked Text View</string>
+
 </resources>

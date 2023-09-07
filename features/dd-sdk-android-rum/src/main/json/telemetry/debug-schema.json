@@ -13,6 +13,7 @@
       "properties": {
         "telemetry": {
           "type": "object",
+          "additionalProperties": true,
           "description": "The telemetry log information",
           "required": ["status", "message"],
           "properties": {

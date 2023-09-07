@@ -6,9 +6,6 @@
 
 package com.datadog.android.core.internal.data.upload
 
-import com.datadog.tools.annotation.NoOpImplementation
-
-@NoOpImplementation
 internal interface DataUploader {
 
     fun upload(data: ByteArray): UploadStatus

@@ -10,6 +10,7 @@ import android.app.Application
 import android.os.Handler
 import android.view.View
 import android.view.Window
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
 import com.datadog.android.sessionreplay.internal.RecordWriter
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
@@ -73,6 +74,9 @@ internal class SessionReplayRecorderTest {
     @Mock
     lateinit var mockUiHandler: Handler
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     lateinit var fakeActiveWindows: List<Window>
     lateinit var fakeActiveWindowsDecorViews: List<View>
 
@@ -83,7 +87,8 @@ internal class SessionReplayRecorderTest {
         fakeActiveWindows = forge.aList { mock() }
         fakeActiveWindowsDecorViews = fakeActiveWindows.map { mock() }
         whenever(mockLifecycleCallback.getCurrentWindows()).thenReturn(fakeActiveWindows)
-        whenever(mockWindowInspector.getGlobalWindowViews()).thenReturn(fakeActiveWindowsDecorViews)
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(fakeActiveWindowsDecorViews)
         whenever(mockUiHandler.post(any())).then {
             it.getArgument<Runnable>(0).run()
             true
@@ -101,7 +106,8 @@ internal class SessionReplayRecorderTest {
             mockLifecycleCallback,
             mockViewOnDrawInterceptor,
             mock(),
-            mockUiHandler
+            mockUiHandler,
+            mockInternalLogger
         )
     }
 
@@ -131,8 +137,7 @@ internal class SessionReplayRecorderTest {
         // Then
         verify(mockWindowCallbackInterceptor).intercept(fakeActiveWindows, appContext.mockInstance)
         verify(mockViewOnDrawInterceptor).intercept(
-            fakeActiveWindowsDecorViews,
-            appContext.mockInstance
+            fakeActiveWindowsDecorViews
         )
     }
 
@@ -154,14 +159,15 @@ internal class SessionReplayRecorderTest {
         testedSessionReplayRecorder.resumeRecorders()
         val fakeAddedWindows = forge.aList { mock<Window>() }
         val fakeNewDecorViews = fakeAddedWindows.map { mock<View>() }
-        whenever(mockWindowInspector.getGlobalWindowViews()).thenReturn(fakeNewDecorViews)
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(fakeNewDecorViews)
 
         // When
         testedSessionReplayRecorder.onWindowsAdded(fakeAddedWindows)
 
         // Then
         verify(mockWindowCallbackInterceptor).intercept(fakeAddedWindows, appContext.mockInstance)
-        verify(mockViewOnDrawInterceptor).intercept(fakeNewDecorViews, appContext.mockInstance)
+        verify(mockViewOnDrawInterceptor).intercept(fakeNewDecorViews)
     }
 
     @Test
@@ -173,7 +179,8 @@ internal class SessionReplayRecorderTest {
         testedSessionReplayRecorder.stopRecorders()
         val fakeAddedWindows = forge.aList { mock<Window>() }
         val fakeNewDecorViews = fakeAddedWindows.map { mock<View>() }
-        whenever(mockWindowInspector.getGlobalWindowViews()).thenReturn(fakeNewDecorViews)
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(fakeNewDecorViews)
 
         // When
         testedSessionReplayRecorder.onWindowsAdded(fakeAddedWindows)
@@ -182,7 +189,7 @@ internal class SessionReplayRecorderTest {
         verify(mockWindowCallbackInterceptor, never())
             .intercept(fakeAddedWindows, appContext.mockInstance)
         verify(mockViewOnDrawInterceptor, never())
-            .intercept(fakeNewDecorViews, appContext.mockInstance)
+            .intercept(fakeNewDecorViews)
     }
 
     @Test
@@ -194,7 +201,8 @@ internal class SessionReplayRecorderTest {
         testedSessionReplayRecorder.stopRecorders()
         val fakeAddedWindows = forge.aList { mock<Window>() }
         val fakeNewDecorViews = fakeAddedWindows.map { mock<View>() }
-        whenever(mockWindowInspector.getGlobalWindowViews()).thenReturn(fakeNewDecorViews)
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(fakeNewDecorViews)
 
         // When
         testedSessionReplayRecorder.onWindowsAdded(fakeAddedWindows)
@@ -203,7 +211,7 @@ internal class SessionReplayRecorderTest {
         verify(mockWindowCallbackInterceptor, never())
             .intercept(fakeAddedWindows, appContext.mockInstance)
         verify(mockViewOnDrawInterceptor, never())
-            .intercept(fakeNewDecorViews, appContext.mockInstance)
+            .intercept(fakeNewDecorViews)
     }
 
     @Test
@@ -214,14 +222,15 @@ internal class SessionReplayRecorderTest {
         testedSessionReplayRecorder.resumeRecorders()
         val fakeAddedWindows = forge.aList { mock<Window>() }
         val fakeNewDecorViews = fakeAddedWindows.map { mock<View>() }
-        whenever(mockWindowInspector.getGlobalWindowViews()).thenReturn(fakeNewDecorViews)
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(fakeNewDecorViews)
 
         // When
         testedSessionReplayRecorder.onWindowsRemoved(fakeAddedWindows)
 
         // Then
         verify(mockWindowCallbackInterceptor).stopIntercepting(fakeAddedWindows)
-        verify(mockViewOnDrawInterceptor).intercept(fakeNewDecorViews, appContext.mockInstance)
+        verify(mockViewOnDrawInterceptor).intercept(fakeNewDecorViews)
     }
 
     @Test
@@ -233,7 +242,8 @@ internal class SessionReplayRecorderTest {
         testedSessionReplayRecorder.stopRecorders()
         val fakeAddedWindows = forge.aList { mock<Window>() }
         val fakeNewDecorViews = fakeAddedWindows.map { mock<View>() }
-        whenever(mockWindowInspector.getGlobalWindowViews()).thenReturn(fakeNewDecorViews)
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(fakeNewDecorViews)
 
         // When
         testedSessionReplayRecorder.onWindowsRemoved(fakeAddedWindows)
@@ -241,7 +251,7 @@ internal class SessionReplayRecorderTest {
         // Then
         verify(mockWindowCallbackInterceptor, never()).stopIntercepting(fakeAddedWindows)
         verify(mockViewOnDrawInterceptor, never())
-            .intercept(fakeNewDecorViews, appContext.mockInstance)
+            .intercept(fakeNewDecorViews)
     }
 
     @Test
@@ -251,7 +261,8 @@ internal class SessionReplayRecorderTest {
         // Given
         val fakeAddedWindows = forge.aList { mock<Window>() }
         val fakeNewDecorViews = fakeAddedWindows.map { mock<View>() }
-        whenever(mockWindowInspector.getGlobalWindowViews()).thenReturn(fakeNewDecorViews)
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(fakeNewDecorViews)
 
         // When
         testedSessionReplayRecorder.onWindowsRemoved(fakeAddedWindows)
@@ -259,7 +270,7 @@ internal class SessionReplayRecorderTest {
         // Then
         verify(mockWindowCallbackInterceptor, never()).stopIntercepting(fakeAddedWindows)
         verify(mockViewOnDrawInterceptor, never())
-            .intercept(fakeNewDecorViews, appContext.mockInstance)
+            .intercept(fakeNewDecorViews)
     }
 
     companion object {

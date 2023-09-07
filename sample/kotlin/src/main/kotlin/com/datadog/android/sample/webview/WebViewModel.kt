@@ -7,11 +7,12 @@ package com.datadog.android.sample.webview
 
 import androidx.lifecycle.ViewModel
 import com.datadog.android.sample.BuildConfig
-import com.datadog.android.sample.server.LocalServer
+import com.datadog.android.vendor.sample.LocalServer
 
-internal class WebViewModel : ViewModel() {
+internal class WebViewModel(
+    val localServer: LocalServer
+) : ViewModel() {
 
-    val localServer = LocalServer()
     val url: String = localServer.getUrl()
 
     fun onResume() {

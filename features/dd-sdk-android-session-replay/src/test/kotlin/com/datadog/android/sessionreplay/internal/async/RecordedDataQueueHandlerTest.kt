@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.async
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler.Companion.MAX_DELAY_MS
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
@@ -15,6 +16,7 @@ import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -25,6 +27,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.fail
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -39,8 +43,10 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.Queue
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -59,13 +65,16 @@ internal class RecordedDataQueueHandlerTest {
     @Mock
     lateinit var mockRumContextDataHandler: RumContextDataHandler
 
-    lateinit var mockExecutorService: ExecutorService
+    lateinit var spyExecutorService: ExecutorService
 
     @Mock
     lateinit var mockSystemInformation: SystemInformation
 
     @Mock
     lateinit var mockTimeProvider: SessionReplayTimeProvider
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @Forgery
     lateinit var fakeRumContextData: RumContextData
@@ -88,7 +97,7 @@ internal class RecordedDataQueueHandlerTest {
         whenever(mockRumContextDataHandler.createRumContextData())
             .thenReturn(fakeRumContextData)
 
-        mockExecutorService = spy(
+        spyExecutorService = spy(
             ThreadPoolExecutor(
                 1,
                 1,
@@ -106,7 +115,76 @@ internal class RecordedDataQueueHandlerTest {
             processor = mockProcessor,
             rumContextDataHandler = mockRumContextDataHandler,
             timeProvider = mockTimeProvider,
-            executorService = mockExecutorService
+            executorService = spyExecutorService,
+            internalLogger = mockInternalLogger
+        )
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        classes = [
+            NullPointerException::class,
+            RejectedExecutionException::class
+        ]
+    )
+    fun `M log exception W executor service throws`(exceptionType: Class<Throwable>) {
+        // Given
+        val fakeThrowable = exceptionType.newInstance()
+        val mockExecutorService = mock<ExecutorService>()
+        testedHandler = RecordedDataQueueHandler(
+            processor = mockProcessor,
+            rumContextDataHandler = mockRumContextDataHandler,
+            timeProvider = mockTimeProvider,
+            executorService = mockExecutorService,
+            internalLogger = mockInternalLogger
+        )
+        testedHandler.recordedDataQueue.add(fakeSnapshotQueueItem)
+        whenever(mockExecutorService.execute(any())).thenThrow(fakeThrowable)
+
+        // When
+        testedHandler.tryToConsumeItems()
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            RecordedDataQueueHandler.FAILED_TO_CONSUME_RECORDS_QUEUE_ERROR_MESSAGE,
+            fakeThrowable
+        )
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        classes = [
+            IllegalArgumentException::class,
+            ClassCastException::class,
+            NullPointerException::class
+        ]
+    )
+    fun `M log exception W addSnapshotItem { queue throws }`(exceptionType: Class<Throwable>) {
+        // Given
+        val fakeThrowable = exceptionType.newInstance()
+        val mockQueue: Queue<RecordedDataQueueItem> = mock()
+        whenever(mockQueue.offer(any())).thenThrow(fakeThrowable)
+        testedHandler = RecordedDataQueueHandler(
+            processor = mockProcessor,
+            rumContextDataHandler = mockRumContextDataHandler,
+            timeProvider = mockTimeProvider,
+            executorService = spyExecutorService,
+            internalLogger = mockInternalLogger,
+            recordedQueue = mockQueue
+        )
+        testedHandler.recordedDataQueue.add(fakeSnapshotQueueItem)
+
+        // When
+        testedHandler.addSnapshotItem(mockSystemInformation)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            RecordedDataQueueHandler.FAILED_TO_ADD_RECORDS_TO_QUEUE_ERROR_MESSAGE,
+            fakeThrowable
         )
     }
 
@@ -118,11 +196,11 @@ internal class RecordedDataQueueHandlerTest {
 
         // When
         testedHandler.tryToConsumeItems()
-        mockExecutorService.shutdown()
-        mockExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+        spyExecutorService.shutdown()
+        spyExecutorService.awaitTermination(1, TimeUnit.SECONDS)
 
         // Then
-        verify(mockExecutorService).execute(any())
+        verify(spyExecutorService).execute(any())
     }
 
     @Test
@@ -133,11 +211,11 @@ internal class RecordedDataQueueHandlerTest {
 
         // When
         testedHandler.tryToConsumeItems()
-        mockExecutorService.shutdown()
-        mockExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+        spyExecutorService.shutdown()
+        spyExecutorService.awaitTermination(1, TimeUnit.SECONDS)
 
         // Then
-        verify(mockExecutorService).execute(any())
+        verify(spyExecutorService).execute(any())
     }
 
     @Test
@@ -146,7 +224,7 @@ internal class RecordedDataQueueHandlerTest {
         testedHandler.tryToConsumeItems()
 
         // Then
-        verifyNoMoreInteractions(mockExecutorService)
+        verifyNoMoreInteractions(spyExecutorService)
     }
 
     @Test
@@ -230,8 +308,8 @@ internal class RecordedDataQueueHandlerTest {
 
         // When
         testedHandler.tryToConsumeItems()
-        mockExecutorService.shutdown()
-        mockExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+        spyExecutorService.shutdown()
+        spyExecutorService.awaitTermination(1, TimeUnit.SECONDS)
 
         // Then
         assertThat(testedHandler.recordedDataQueue.isEmpty()).isTrue()
@@ -252,8 +330,8 @@ internal class RecordedDataQueueHandlerTest {
 
         // When
         testedHandler.tryToConsumeItems()
-        mockExecutorService.shutdown()
-        mockExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+        spyExecutorService.shutdown()
+        spyExecutorService.awaitTermination(1, TimeUnit.SECONDS)
 
         // Then
         assertThat(testedHandler.recordedDataQueue.size).isEqualTo(0)
@@ -274,8 +352,8 @@ internal class RecordedDataQueueHandlerTest {
 
         // When
         testedHandler.tryToConsumeItems()
-        mockExecutorService.shutdown()
-        mockExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+        spyExecutorService.shutdown()
+        spyExecutorService.awaitTermination(1, TimeUnit.SECONDS)
 
         // Then
         assertThat(testedHandler.recordedDataQueue.size).isEqualTo(0)
@@ -297,8 +375,8 @@ internal class RecordedDataQueueHandlerTest {
 
         // When
         testedHandler.tryToConsumeItems()
-        mockExecutorService.shutdown()
-        mockExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+        spyExecutorService.shutdown()
+        spyExecutorService.awaitTermination(1, TimeUnit.SECONDS)
 
         // Then
         verifyNoMoreInteractions(mockProcessor)
@@ -315,8 +393,8 @@ internal class RecordedDataQueueHandlerTest {
 
         // When
         testedHandler.tryToConsumeItems()
-        mockExecutorService.shutdown()
-        mockExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+        spyExecutorService.shutdown()
+        spyExecutorService.awaitTermination(1, TimeUnit.SECONDS)
 
         // Then
         verify(mockProcessor).processScreenSnapshots(snapshotItemCaptor.capture())
@@ -336,8 +414,8 @@ internal class RecordedDataQueueHandlerTest {
 
         // When
         testedHandler.tryToConsumeItems()
-        mockExecutorService.shutdown()
-        mockExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+        spyExecutorService.shutdown()
+        spyExecutorService.awaitTermination(1, TimeUnit.SECONDS)
 
         // Then
         verify(mockProcessor).processTouchEventsRecords(touchEventItemCaptor.capture())
@@ -362,8 +440,8 @@ internal class RecordedDataQueueHandlerTest {
                 .thenReturn(itemTimestamp + it)
 
             testedHandler.tryToConsumeItems()
-            mockExecutorService.shutdown()
-            mockExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+            spyExecutorService.shutdown()
+            spyExecutorService.awaitTermination(1, TimeUnit.SECONDS)
         }
 
         // Then
@@ -435,8 +513,8 @@ internal class RecordedDataQueueHandlerTest {
             testedHandler.tryToConsumeItems()
         }
 
-        mockExecutorService.shutdown()
-        mockExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+        spyExecutorService.shutdown()
+        spyExecutorService.awaitTermination(1, TimeUnit.SECONDS)
 
         assertThat(testedHandler.recordedDataQueue.size).isEqualTo(2)
     }

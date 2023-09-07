@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -45,9 +46,11 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log SUCCESS only to USER 𝕎 logStatus()`() {
+    fun `𝕄 log SUCCESS only to USER 𝕎 logStatus()`(
+        @Forgery status: UploadStatus.Success
+    ) {
         // When
-        UploadStatus.SUCCESS.logStatus(
+        status.logStatus(
             fakeContext,
             fakeByteSize,
             mockLogger
@@ -63,9 +66,11 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log NETWORK_ERROR only to USER 𝕎 logStatus()`() {
+    fun `𝕄 log NETWORK_ERROR only to USER 𝕎 logStatus()`(
+        @Forgery status: UploadStatus.NetworkError
+    ) {
         // When
-        UploadStatus.NETWORK_ERROR.logStatus(
+        status.logStatus(
             fakeContext,
             fakeByteSize,
             mockLogger
@@ -82,9 +87,11 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log INVALID_TOKEN_ERROR only to USER 𝕎 logStatus()`() {
+    fun `𝕄 log INVALID_TOKEN_ERROR only to USER 𝕎 logStatus()`(
+        @Forgery status: UploadStatus.InvalidTokenError
+    ) {
         // When
-        UploadStatus.INVALID_TOKEN_ERROR.logStatus(
+        status.logStatus(
             fakeContext,
             fakeByteSize,
             mockLogger
@@ -103,9 +110,11 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log HTTP_REDIRECTION only to USER 𝕎 logStatus()`() {
+    fun `𝕄 log HTTP_REDIRECTION only to USER 𝕎 logStatus()`(
+        @Forgery status: UploadStatus.HttpRedirection
+    ) {
         // When
-        UploadStatus.HTTP_REDIRECTION.logStatus(
+        status.logStatus(
             fakeContext,
             fakeByteSize,
             mockLogger
@@ -122,9 +131,11 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log HTTP_CLIENT_ERROR to USER and TELEMETRY 𝕎 logStatus()`() {
+    fun `𝕄 log HTTP_CLIENT_ERROR to USER and TELEMETRY 𝕎 logStatus()`(
+        @Forgery status: UploadStatus.HttpClientError
+    ) {
         // When
-        UploadStatus.HTTP_CLIENT_ERROR.logStatus(
+        status.logStatus(
             fakeContext,
             fakeByteSize,
             mockLogger
@@ -142,9 +153,11 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log HTTP_CLIENT_ERROR_RATE_LIMITING to USER and TELEMETRY 𝕎 logStatus()`() {
+    fun `𝕄 log HTTP_CLIENT_ERROR_RATE_LIMITING to USER and TELEMETRY 𝕎 logStatus()`(
+        @Forgery status: UploadStatus.HttpClientRateLimiting
+    ) {
         // When
-        UploadStatus.HTTP_CLIENT_RATE_LIMITING.logStatus(
+        status.logStatus(
             fakeContext,
             fakeByteSize,
             mockLogger
@@ -160,9 +173,11 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log HTTP_SERVER_ERROR only to USER 𝕎 logStatus()`() {
+    fun `𝕄 log HTTP_SERVER_ERROR only to USER 𝕎 logStatus()`(
+        @Forgery status: UploadStatus.HttpServerError
+    ) {
         // When
-        UploadStatus.HTTP_SERVER_ERROR.logStatus(
+        status.logStatus(
             fakeContext,
             fakeByteSize,
             mockLogger
@@ -179,9 +194,11 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log UNKNOWN_ERROR only to USER 𝕎 logStatus()`() {
+    fun `𝕄 log UNKNOWN_ERROR only to USER 𝕎 logStatus()`(
+        @Forgery status: UploadStatus.UnknownError
+    ) {
         // When
-        UploadStatus.UNKNOWN_ERROR.logStatus(
+        status.logStatus(
             fakeContext,
             fakeByteSize,
             mockLogger
@@ -197,9 +214,11 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log INVALID_REQUEST_ERROR only to USER 𝕎 logStatus()`() {
+    fun `𝕄 log INVALID_REQUEST_ERROR only to USER 𝕎 logStatus()`(
+        @Forgery status: UploadStatus.RequestCreationError
+    ) {
         // When
-        UploadStatus.REQUEST_CREATION_ERROR.logStatus(
+        status.logStatus(
             fakeContext,
             fakeByteSize,
             mockLogger

@@ -4,13 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sdk.integration.sessionreplay
+package com.datadog.android.core.internal.data.upload
 
-import com.google.gson.JsonElement
-
-internal data class ExpectedSrData(
-    val sessionId: String,
-    val applicationId: String,
-    val viewId: String,
-    val records: List<JsonElement>
-)
+internal interface NoOpDataUploader : DataUploader {
+    override fun upload(data: ByteArray): UploadStatus {
+        return UploadStatus.UnknownStatus
+    }
+}

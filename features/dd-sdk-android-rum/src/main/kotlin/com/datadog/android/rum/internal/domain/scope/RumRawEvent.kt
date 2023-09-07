@@ -204,6 +204,9 @@ internal sealed class RumRawEvent {
         val stack: String?,
         val kind: String?,
         val coreConfiguration: TelemetryCoreConfiguration?,
-        override val eventTime: Time = Time()
+        val additionalProperties: Map<String, Any?>?,
+        val onlyOnce: Boolean = false,
+        override val eventTime: Time = Time(),
+        val isMetric: Boolean = false
     ) : RumRawEvent()
 }

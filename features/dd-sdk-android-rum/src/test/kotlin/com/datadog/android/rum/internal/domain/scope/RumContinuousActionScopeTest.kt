@@ -108,6 +108,8 @@ internal class RumContinuousActionScopeTest {
 
     var fakeServerOffset: Long = 0L
 
+    var fakeSampleRate: Float = 0.0f
+
     var fakeSourceActionEvent: ActionEvent.Source? = null
 
     @BoolForgery
@@ -130,6 +132,7 @@ internal class RumContinuousActionScopeTest {
             forge.aLong(min = minLimit, max = maxLimit)
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString().toByteArray()
+        fakeSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(rumMonitor.mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
@@ -152,7 +155,8 @@ internal class RumContinuousActionScopeTest {
             fakeServerOffset,
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
-            trackFrustrations = true
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate
         )
     }
 
@@ -252,6 +256,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -315,6 +320,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -377,6 +383,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -442,6 +449,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -521,6 +529,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -604,6 +613,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -670,6 +680,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -742,6 +753,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -808,6 +820,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -881,6 +894,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -931,6 +945,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -985,6 +1000,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1039,6 +1055,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1098,6 +1115,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1159,6 +1177,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1211,6 +1230,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1242,7 +1262,8 @@ internal class RumContinuousActionScopeTest {
             fakeServerOffset,
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
-            trackFrustrations = fakeTrackFrustrations
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate
         )
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
@@ -1289,6 +1310,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1353,6 +1375,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1411,6 +1434,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1473,6 +1497,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1536,6 +1561,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1592,6 +1618,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1652,6 +1679,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1708,6 +1736,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1831,6 +1860,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1891,6 +1921,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1945,6 +1976,7 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
