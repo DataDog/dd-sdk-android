@@ -38,11 +38,26 @@ internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
 
     fun setDebugListener(listener: RumDebugListener?)
 
-    fun sendDebugTelemetryEvent(message: String)
+    fun sendDebugTelemetryEvent(
+        message: String,
+        additionalProperties: Map<String, Any?>?
+    )
 
-    fun sendErrorTelemetryEvent(message: String, throwable: Throwable?)
+    fun sendErrorTelemetryEvent(
+        message: String,
+        throwable: Throwable?
+    )
 
-    fun sendErrorTelemetryEvent(message: String, stack: String?, kind: String?)
+    fun sendErrorTelemetryEvent(
+        message: String,
+        stack: String?,
+        kind: String?
+    )
+
+    fun sendMetricEvent(
+        message: String,
+        additionalProperties: Map<String, Any?>?
+    )
 
     @Suppress("FunctionMaxLength")
     fun sendConfigurationTelemetryEvent(coreConfiguration: TelemetryCoreConfiguration)

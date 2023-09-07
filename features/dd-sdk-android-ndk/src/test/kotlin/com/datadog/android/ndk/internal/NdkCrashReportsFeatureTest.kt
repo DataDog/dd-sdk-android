@@ -151,7 +151,8 @@ class NdkCrashReportsFeatureTest {
                     eq(InternalLogger.Target.USER),
                     capture(),
                     isNull(),
-                    eq(false)
+                    eq(false),
+                    eq(null)
                 )
             assertThat(lastValue()).isEqualTo(NdkCrashReportsFeature.NO_SDK_ROOT_DIR_MESSAGE)
         }

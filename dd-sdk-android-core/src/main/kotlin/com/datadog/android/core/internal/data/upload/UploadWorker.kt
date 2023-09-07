@@ -17,6 +17,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.NoOpInternalSdkCore
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.data.upload.v2.DataUploader
+import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import java.util.LinkedList
 import java.util.Queue
@@ -96,9 +97,12 @@ internal class UploadWorker(
                 val batch = reader.read()
                 val batchMeta = reader.currentMetadata()
 
-                val success = consumeBatch(context, batch, batchMeta, uploader)
-                storage.confirmBatchRead(batchId) { confirmation ->
-                    confirmation.markAsRead(deleteBatch = success)
+                val uploadStatus = consumeBatch(context, batch, batchMeta, uploader)
+                storage.confirmBatchRead(
+                    batchId,
+                    RemovalReason.IntakeCode(uploadStatus.code)
+                ) { confirmation ->
+                    confirmation.markAsRead(deleteBatch = !uploadStatus.shouldRetry)
                     @Suppress("UnsafeThirdPartyFunctionCall") // safe to add
                     taskQueue.offer(UploadNextBatchTask(taskQueue, sdkCore, feature))
                     lock.countDown()
@@ -115,9 +119,8 @@ internal class UploadWorker(
             batch: List<ByteArray>,
             batchMeta: ByteArray?,
             uploader: DataUploader
-        ): Boolean {
-            val status = uploader.upload(context, batch, batchMeta)
-            return status == UploadStatus.SUCCESS
+        ): UploadStatus {
+            return uploader.upload(context, batch, batchMeta)
         }
     }
 

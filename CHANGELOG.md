@@ -1,3 +1,55 @@
+# 2.1.0 / 2023-09-07
+
+* [BUGFIX] Session Replay: Do not resolve `WindowManager` from `Application` context. See [#1558](https://github.com/DataDog/dd-sdk-android/pull/1558)
+* [BUGFIX] RUM: Report `ApplicationLaunch` view even if first RUM event is not interaction. See [#1591](https://github.com/DataDog/dd-sdk-android/pull/1591)
+* [BUGFIX] RUM: Fix crash when disabling `JankStats` tracking. See [#1596](https://github.com/DataDog/dd-sdk-android/pull/1596)
+* [IMPROVEMENT] RUM: Add sample rate to reported RUM events. See [#1566](https://github.com/DataDog/dd-sdk-android/pull/1566)
+* [IMPROVEMENT] Session Replay: Remove the query parameters from SR requests. See [#1568](https://github.com/DataDog/dd-sdk-android/pull/1568)
+* [IMPROVEMENT] Session Replay: Use `internalLogger` in SR modules. See [#1574](https://github.com/DataDog/dd-sdk-android/pull/1574)
+* [IMPROVEMENT] Add the `additionalProperties` capability to telemetry debug log event. See [#1575](https://github.com/DataDog/dd-sdk-android/pull/1575)
+* [IMPROVEMENT] Global: Collect the `batch_deleted` telemetry. See [#1577](https://github.com/DataDog/dd-sdk-android/pull/1577)
+* [IMPROVEMENT] RUM: Fix view tracking gap. See [#1578](https://github.com/DataDog/dd-sdk-android/pull/1578)
+* [IMPROVEMENT] Fix tests around `InternalLogger`. See [#1579](https://github.com/DataDog/dd-sdk-android/pull/1579)
+* [IMPROVEMENT] Introduce the new `InternalLogger#metric` API. See [#1581](https://github.com/DataDog/dd-sdk-android/pull/1581)
+* [IMPROVEMENT] Global: Collect the `batch_closed` telemetry. See [#1586](https://github.com/DataDog/dd-sdk-android/pull/1586)
+* [IMPROVEMENT] Add multiple instance sample. See [#1587](https://github.com/DataDog/dd-sdk-android/pull/1587)
+* [IMPROVEMENT] Global: Provide the `inBackground` property for `batch_delete` metric. See [#1588](https://github.com/DataDog/dd-sdk-android/pull/1588)
+* [IMPROVEMENT] Global: Unregister process lifecycle monitor in core instance stop. See [#1589](https://github.com/DataDog/dd-sdk-android/pull/1589)
+* [IMPROVEMENT] Session Replay: Add SR integration tests for `TextView` and `EditText` view type. See [#1593](https://github.com/DataDog/dd-sdk-android/pull/1593)
+* [MAINTENANCE] Mention Datadog SDK explicitly in dogfood script. See [#1557](https://github.com/DataDog/dd-sdk-android/pull/1557)
+* [MAINTENANCE] Remove redundant `sqlite` product flavour folder in the sample app. See [#1559](https://github.com/DataDog/dd-sdk-android/pull/1559)
+* [MAINTENANCE] Next dev cycle 2.1.0. See [#1562](https://github.com/DataDog/dd-sdk-android/pull/1562)
+* [MAINTENANCE] Remove the bridge dogfooding step, bridge repo is archived. See [#1571](https://github.com/DataDog/dd-sdk-android/pull/1571)
+* [MAINTENANCE] Update gitlab CI env variables for gitlab 16. See [#1595](https://github.com/DataDog/dd-sdk-android/pull/1595)
+* [DOCS] Session Replay: Add the `README` files for SR modules. See [#1567](https://github.com/DataDog/dd-sdk-android/pull/1567)
+
+# 2.0.0 / 2023-07-31
+
+This is the first official production version of SDK v2 containing  the new architecture for features initialisation and dependencies distribution. See the [migration guide](https://github.com/DataDog/dd-sdk-android/blob/62aac79c3c68c4da02c96ab1071fb5e63f1b8b89/MIGRATION.MD) for details.
+
+Below you can find the change logs in comparison with out last stable version `1.19.3`:
+
+* [FEATURE] RUM: Introduce Mobile Session Replay (in Beta).
+* [IMPROVEMENT] RUM: Remove tracking of view loading time and fix unit tests. See [#1545](https://github.com/DataDog/dd-sdk-android/pull/1545)
+* [IMPROVEMENT] Don't report OkHttp throwables to telemetry. See [#1548](https://github.com/DataDog/dd-sdk-android/pull/1548)
+* [IMPROVEMENT] Use `implementation` dependency for features in integrations modules. See [#1552](https://github.com/DataDog/dd-sdk-android/pull/1552)
+* [IMPROVEMENT] Remove `dd-sdk-android-ktx` module. See [#1555](https://github.com/DataDog/dd-sdk-android/pull/1555)
+* [BUGFIX] RUM: Fix memory leak in `JankStats` usage. See [#1553](https://github.com/DataDog/dd-sdk-android/pull/1553)
+* [DOCS] Remove redundant docs. See [#1540](https://github.com/DataDog/dd-sdk-android/pull/1540)
+* [DOCS] Update documentation for SDK v2. See [#1549](https://github.com/DataDog/dd-sdk-android/pull/1549)
+* [IMPROVEMENT] Global: Provide the `uploadFrequency` per feature. See [#1533](https://github.com/DataDog/dd-sdk-android/pull/1533)
+* [IMPROVEMENT] RUM: Update documentation of `ViewEventMapper`. See [#1537](https://github.com/DataDog/dd-sdk-android/pull/1537)
+* [IMPROVEMENT] RUM: Support `navHost` hosted by `FragmentContainerView` for `NavigationViewTrackingStrategy`. See [#1538](https://github.com/DataDog/dd-sdk-android/pull/1538)
+* [IMPROVEMENT] Session Replay: Always listen and react to RUM session state. See [#1539](https://github.com/DataDog/dd-sdk-android/pull/1539)
+* [IMPROVEMENT] Session Replay: Remove explicit dependency on RUM module from Session Replay. See [#1541](https://github.com/DataDog/dd-sdk-android/pull/1541)
+* [IMPROVEMENT] Update Compose Navigation version to 2.6.0. See [#1542](https://github.com/DataDog/dd-sdk-android/pull/1542)
+* [IMPROVEMENT] Don't reexport `OkHttp` from `Glide`. See [#1543](https://github.com/DataDog/dd-sdk-android/pull/1543)
+* [IMPROVEMENT] Introduce known file cache and cleanup throttling in `BatchFileOrchestrator` in order to reduce the number of syscalls. See [#1506](https://github.com/DataDog/dd-sdk-android/pull/1506)
+* [IMPROVEMENT] Logs: Alter public API of `Logger` to receive `Any` data type. See [#1324](https://github.com/DataDog/dd-sdk-android/pull/1324)
+* [IMPROVEMENT] RUM: Use `JankStats` for FPS measuring. See [#1405](https://github.com/DataDog/dd-sdk-android/pull/1405)
+* [IMPROVEMENT] RUM: Fix `JankStats` usage. See [#1512](https://github.com/DataDog/dd-sdk-android/pull/1512)
+* [BUGFIX] RUM: Keep old `viewId`s for view scope. See [#1448](https://github.com/DataDog/dd-sdk-android/pull/1448)
+
 # 2.0.0-beta3 / 2023-07-26
 
 This is a beta release of SDK v2. Compared to SDK v1 it contains breaking changes related to the SDK setup and APIs. See the [migration guide](https://github.com/DataDog/dd-sdk-android/blob/5c9feb900856a6d7b3623820dade1eaead1498b9/CHANGELOG.md) for details.

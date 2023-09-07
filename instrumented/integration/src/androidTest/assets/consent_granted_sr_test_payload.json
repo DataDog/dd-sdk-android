@@ -1,0 +1,93 @@
+[{
+  "type": 4,
+  "data": {
+    "width": 411,
+    "height": 914
+  }
+}, {
+  "type": 6,
+  "data": {
+    "has_focus": true
+  }
+}, {
+  "type": 11,
+  "data": {
+    "source": 4,
+    "width": 411,
+    "height": 914
+  }
+}, {
+  "type": 10,
+  "data": {
+    "wireframes": [{
+      "x": 0,
+      "y": 0,
+      "width": 411,
+      "height": 914,
+      "shapeStyle": {
+        "backgroundColor": "#303030ff",
+        "opacity": 1.0
+      },
+      "type": "shape"
+    }, {
+      "x": 0,
+      "y": 104,
+      "width": 172,
+      "height": 19,
+      "type": "text",
+      "text": "Welcome to Session Replay",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 14,
+        "color": "#00ddffff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "alignment": {
+          "horizontal": "left",
+          "vertical": "top"
+        }
+      }
+    }, {
+      "x": 0,
+      "y": 134,
+      "width": 88,
+      "height": 48,
+      "border": {
+        "color": "#000000ff",
+        "width": 1
+      },
+      "type": "text",
+      "text": "Click Me",
+      "textStyle": {
+        "family": "roboto, sans-serif",
+        "size": 14,
+        "color": "#ffffffff"
+      },
+      "textPosition": {
+        "padding": {
+          "top": 14,
+          "bottom": 14,
+          "left": 11,
+          "right": 11
+        },
+        "alignment": {
+          "horizontal": "center",
+          "vertical": "center"
+        }
+      }
+    }, {
+      "x": 0,
+      "y": 48,
+      "width": 411,
+      "height": 56,
+      "type": "placeholder",
+      "label": "Toolbar"
+    }]
+  }
+}]

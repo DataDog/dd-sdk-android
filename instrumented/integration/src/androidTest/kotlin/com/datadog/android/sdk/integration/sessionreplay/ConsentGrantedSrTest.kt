@@ -27,14 +27,18 @@ internal class ConsentGrantedSrTest : SrSnapshotTest<SessionReplayPlaygroundActi
     fun verifySessionFirstSnapshot() {
         // Wait to make sure all batches are consumed
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-        val expectedData = runInstrumentationScenario(rule)
+        runInstrumentationScenario(rule)
         ConditionWatcher {
             // verify the captured log events into the MockedWebServer
             verifyExpectedSrData(
                 rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl),
-                expectedData
+                EXPECTED_PAYLOAD_FILE_NAME
             )
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)
+    }
+
+    companion object {
+        const val EXPECTED_PAYLOAD_FILE_NAME = "consent_granted_sr_test_payload.json"
     }
 }

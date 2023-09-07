@@ -40,7 +40,8 @@ internal class RumResourceScope(
     initialAttributes: Map<String, Any?>,
     serverTimeOffsetInMs: Long,
     internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
-    private val featuresContextResolver: FeaturesContextResolver
+    private val featuresContextResolver: FeaturesContextResolver,
+    internal val sampleRate: Float
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
@@ -248,7 +249,8 @@ internal class RumResourceScope(
                         traceId = traceId,
                         spanId = spanId,
                         rulePsr = rulePsr,
-                        session = ResourceEvent.DdSession(plan = ResourceEvent.Plan.PLAN_1)
+                        session = ResourceEvent.DdSession(plan = ResourceEvent.Plan.PLAN_1),
+                        configuration = ResourceEvent.Configuration(sessionSampleRate = sampleRate)
                     ),
                     service = datadogContext.service,
                     version = datadogContext.version
@@ -361,7 +363,10 @@ internal class RumResourceScope(
                         architecture = datadogContext.deviceInfo.architecture
                     ),
                     context = ErrorEvent.Context(additionalProperties = attributes),
-                    dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)),
+                    dd = ErrorEvent.Dd(
+                        session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1),
+                        configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
+                    ),
                     service = datadogContext.service,
                     version = datadogContext.version
                 )
@@ -407,7 +412,8 @@ internal class RumResourceScope(
             event: RumRawEvent.StartResource,
             firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
             timestampOffset: Long,
-            featuresContextResolver: FeaturesContextResolver
+            featuresContextResolver: FeaturesContextResolver,
+            sampleRate: Float
         ): RumScope {
             return RumResourceScope(
                 parentScope,
@@ -419,7 +425,8 @@ internal class RumResourceScope(
                 event.attributes,
                 timestampOffset,
                 firstPartyHostHeaderTypeResolver,
-                featuresContextResolver
+                featuresContextResolver,
+                sampleRate = sampleRate
             )
         }
     }

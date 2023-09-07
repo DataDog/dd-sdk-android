@@ -988,7 +988,7 @@ internal class RumFeatureTest {
     // region FeatureEventReceiver#onReceive + telemetry event
 
     @Test
-    fun `𝕄 handle telemetry debug event 𝕎 onReceive()`(
+    fun `𝕄 handle telemetry debug event 𝕎 onReceive(){no additionalProperties}`(
         @StringForgery fakeMessage: String
     ) {
         // Given
@@ -1002,7 +1002,52 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockRumMonitor).sendDebugTelemetryEvent(fakeMessage)
+        verify(mockRumMonitor).sendDebugTelemetryEvent(fakeMessage, null)
+        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `𝕄 handle telemetry debug event 𝕎 onReceive() {additionalProperties}`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeAdditionalProperties = forge.exhaustiveAttributes()
+        testedFeature.onInitialize(appContext.mockInstance)
+        val event = mapOf(
+            "type" to "telemetry_debug",
+            "message" to fakeMessage,
+            "additionalProperties" to fakeAdditionalProperties
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(mockRumMonitor).sendDebugTelemetryEvent(fakeMessage, fakeAdditionalProperties)
+        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `𝕄 handle telemetry debug event 𝕎 onReceive {additionalProperties is null}`(
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        val fakeAdditionalProperties = null
+        testedFeature.onInitialize(appContext.mockInstance)
+        val event = mapOf(
+            "type" to "telemetry_debug",
+            "message" to fakeMessage,
+            "additionalProperties" to fakeAdditionalProperties
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(mockRumMonitor).sendDebugTelemetryEvent(fakeMessage, fakeAdditionalProperties)
         verifyNoMoreInteractions(mockRumMonitor)
         verifyNoInteractions(mockInternalLogger)
     }
@@ -1077,6 +1122,69 @@ internal class RumFeatureTest {
         verifyNoMoreInteractions(mockRumMonitor)
 
         verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `𝕄 handle metric event 𝕎 onReceive()`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeAdditionalProperties = forge.exhaustiveAttributes()
+        testedFeature.onInitialize(appContext.mockInstance)
+        val event = mapOf(
+            "type" to RumFeature.MOBILE_METRIC_MESSAGE_TYPE,
+            "message" to fakeMessage,
+            "additionalProperties" to fakeAdditionalProperties
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(mockRumMonitor).sendMetricEvent(fakeMessage, fakeAdditionalProperties)
+        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `𝕄 handle metric event 𝕎 onReceive(){no additionalProperties}`(
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val event = mapOf(
+            "type" to RumFeature.MOBILE_METRIC_MESSAGE_TYPE,
+            "message" to fakeMessage
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(mockRumMonitor).sendMetricEvent(fakeMessage, null)
+        verifyNoMoreInteractions(mockRumMonitor)
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `𝕄 handle metric event 𝕎 onReceive(){no message}`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val event = mapOf(
+            "type" to RumFeature.MOBILE_METRIC_MESSAGE_TYPE
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            RumFeature.TELEMETRY_MISSING_MESSAGE_FIELD
+        )
+        verifyNoInteractions(mockRumMonitor)
     }
 
     @Test

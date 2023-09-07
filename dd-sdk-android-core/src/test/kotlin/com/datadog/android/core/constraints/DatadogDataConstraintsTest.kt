@@ -373,7 +373,8 @@ internal class DatadogDataConstraintsTest {
                 eq(InternalLogger.Target.USER),
                 capture(),
                 isNull(),
-                eq(false)
+                eq(false),
+                eq(null)
             )
 
             assertThat(allValues.map { it() })

@@ -18,7 +18,6 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.internal.AppStartTimeProvider
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
@@ -33,6 +32,7 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -49,11 +49,11 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -87,9 +87,6 @@ internal class RumViewManagerScopeTest {
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
 
     @Mock
-    lateinit var mockAppStartTimeProvider: AppStartTimeProvider
-
-    @Mock
     lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
@@ -110,14 +107,17 @@ internal class RumViewManagerScopeTest {
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
+    private var fakeSampleRate: Float = 0.0f
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        fakeSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
+
         whenever(mockSdkCore.time) doReturn fakeTime
 
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         whenever(mockChildScope.isActive()) doReturn true
-        whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn fakeTime.deviceTimeNs
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
         testedScope = RumViewManagerScope(
@@ -130,8 +130,8 @@ internal class RumViewManagerScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockAppStartTimeProvider,
-            applicationDisplayed = false
+            applicationDisplayed = false,
+            sampleRate = fakeSampleRate
         )
     }
 
@@ -220,6 +220,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.version).isEqualTo(2)
             }
         assertThat(testedScope.applicationDisplayed).isTrue()
+        assertThat(testedScope.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
     }
 
     @Test
@@ -247,6 +248,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.version).isEqualTo(2)
             }
         assertThat(testedScope.applicationDisplayed).isTrue()
+        assertThat(testedScope.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
     }
 
     @Test
@@ -277,6 +279,53 @@ internal class RumViewManagerScopeTest {
             }
     }
 
+    @Test
+    fun `𝕄 send gap message 𝕎 handleEvent(StopView) + handleEvent(StartView)`(
+        forge: Forge
+    ) {
+        // Given
+        val firstViewEvent = forge.startViewEvent()
+        testedScope.applicationDisplayed = true
+        testedScope.handleEvent(firstViewEvent, mockWriter)
+        val stopFirstViewEvent = RumRawEvent.StopView(firstViewEvent.key, emptyMap())
+        testedScope.handleEvent(stopFirstViewEvent, mockWriter)
+
+        // When
+        Thread.sleep(15)
+        val secondViewEvent = forge.startViewEvent()
+        testedScope.handleEvent(secondViewEvent, mockWriter)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            listOf(InternalLogger.Target.TELEMETRY, InternalLogger.Target.MAINTAINER),
+            { it.matches(Regex("Gap between views was \\d+ nanoseconds")) }
+        )
+    }
+
+    @Test
+    fun `𝕄 not send gap message 𝕎 handleEvent(StartView) + handleEvent(StartView)`(
+        forge: Forge
+    ) {
+        // Given
+        val firstViewEvent = forge.startViewEvent()
+        testedScope.applicationDisplayed = true
+        testedScope.handleEvent(firstViewEvent, mockWriter)
+
+        // When
+        Thread.sleep(15)
+        val secondViewEvent = forge.startViewEvent()
+        testedScope.handleEvent(secondViewEvent, mockWriter)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            listOf(InternalLogger.Target.TELEMETRY, InternalLogger.Target.MAINTAINER),
+            { it.matches(Regex("Gap between views was \\d+ nanoseconds")) },
+            mode = never()
+        )
+    }
+
     // endregion
 
     // region Background View
@@ -303,6 +352,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+                assertThat(it.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
             }
     }
 
@@ -333,6 +383,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.type).isEqualTo(RumViewScope.RumViewType.BACKGROUND)
+                assertThat(it.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
             }
     }
 
@@ -373,6 +424,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.type).isEqualTo(RumViewScope.RumViewType.BACKGROUND)
+                assertThat(it.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
             }
     }
 
@@ -426,7 +478,8 @@ internal class RumViewManagerScopeTest {
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            applicationDisplayed = false
+            applicationDisplayed = false,
+            sampleRate = fakeSampleRate
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -453,8 +506,8 @@ internal class RumViewManagerScopeTest {
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            appStartTimeProvider = mockAppStartTimeProvider,
-            applicationDisplayed = false
+            applicationDisplayed = false,
+            sampleRate = fakeSampleRate
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -484,8 +537,8 @@ internal class RumViewManagerScopeTest {
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            appStartTimeProvider = mockAppStartTimeProvider,
-            applicationDisplayed = false
+            applicationDisplayed = false,
+            sampleRate = fakeSampleRate
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -506,29 +559,23 @@ internal class RumViewManagerScopeTest {
     // region AppLaunch View
 
     @Test
-    fun `𝕄 start an AppLaunch ViewScope 𝕎 handleEvent { app not displayed, any event }`(
+    fun `𝕄 start an AppLaunch ViewScope 𝕎 handleEvent { app not displayed }`(
         forge: Forge
     ) {
         // Given
         DdRumContentProvider.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         testedScope.applicationDisplayed = false
-        val fakeEvent = forge.anyRumEvent()
-        val appStartTimeNs = forge.aLong(min = 0, max = fakeEvent.eventTime.nanoTime)
-        whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn appStartTimeNs
+        val fakeAppStartEvent = forge.applicationStartedEvent()
 
         // When
-        testedScope.handleEvent(fakeEvent, mockWriter)
+        testedScope.handleEvent(fakeAppStartEvent, mockWriter)
 
         // Then
-        val eventTimeNanos = TimeUnit.MILLISECONDS.toNanos(fakeEvent.eventTime.timestamp)
-        val timestampNs = (eventTimeNanos - fakeEvent.eventTime.nanoTime) + appStartTimeNs
-        val timestampMs = TimeUnit.NANOSECONDS.toMillis(timestampNs)
-        val scopeCount = if (fakeEvent is RumRawEvent.StartView) 2 else 1
-        assertThat(testedScope.childrenScopes).hasSize(scopeCount)
+        assertThat(testedScope.childrenScopes).hasSize(1)
         assertThat(testedScope.childrenScopes[0])
             .isInstanceOfSatisfying(RumViewScope::class.java) {
                 assertThat(it.eventTimestamp)
-                    .isEqualTo(resolveExpectedTimestamp(timestampMs))
+                    .isEqualTo(resolveExpectedTimestamp(fakeAppStartEvent.eventTime.timestamp))
                 assertThat(it.keyRef.get()).isEqualTo(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_URL)
                 assertThat(it.name).isEqualTo(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_NAME)
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
@@ -539,48 +586,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 not start an AppLaunch ViewScope 𝕎 handleEvent { event is relevant, not foreground }`(
-        forge: Forge
-    ) {
-        // Given
-        DdRumContentProvider.processImportance = forge.anElementFrom(
-            RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
-            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
-            @Suppress("DEPRECATION")
-            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING_PRE_28,
-            RunningAppProcessInfo.IMPORTANCE_VISIBLE,
-            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE,
-            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE_PRE_26,
-            RunningAppProcessInfo.IMPORTANCE_CANT_SAVE_STATE,
-            RunningAppProcessInfo.IMPORTANCE_SERVICE,
-            RunningAppProcessInfo.IMPORTANCE_CACHED,
-            RunningAppProcessInfo.IMPORTANCE_GONE
-        )
-        testedScope = RumViewManagerScope(
-            parentScope = mockParentScope,
-            sdkCore = mockSdkCore,
-            backgroundTrackingEnabled = false,
-            trackFrustrations = fakeTrackFrustrations,
-            viewChangedListener = mockViewChangedListener,
-            firstPartyHostHeaderTypeResolver = mockResolver,
-            cpuVitalMonitor = mockCpuVitalMonitor,
-            memoryVitalMonitor = mockMemoryVitalMonitor,
-            frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            applicationDisplayed = false
-        )
-        testedScope.applicationDisplayed = false
-        // Start view still creates a child scope
-        val fakeEvent = forge.anyRumEvent(excluding = listOf(RumRawEvent.StartView::class.java))
-
-        // When
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // Then
-        assertThat(testedScope.childrenScopes).hasSize(0)
-    }
-
-    @Test
-    fun `𝕄 not start an AppLaunch ViewScope 𝕎 handleEvent { app displ, evt relev, active view}`(
+    fun `𝕄 not start an AppLaunch ViewScope 𝕎 handleEvent { app displayed }`(
         forge: Forge
     ) {
         // Given
@@ -594,14 +600,14 @@ internal class RumViewManagerScopeTest {
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            appStartTimeProvider = mockAppStartTimeProvider,
-            applicationDisplayed = false
+            applicationDisplayed = true,
+            sampleRate = fakeSampleRate
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
-        // Start view still overide the current scope
-        val fakeEvent = forge.anyRumEvent(excluding = listOf(RumRawEvent.StartView::class.java))
+
+        val fakeEvent = forge.applicationStartedEvent()
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
@@ -612,18 +618,31 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `𝕄 not send warn dev log 𝕎 handleEvent { app not displayed, app launch event silent}`(
+    fun `𝕄 not start an AppLaunch ViewScope 𝕎 handleEvent { session stopped }`(
         forge: Forge
     ) {
         // Given
-        testedScope.applicationDisplayed = false
-        val fakeEvent = forge.silentOrphanEvent()
+        testedScope = RumViewManagerScope(
+            parentScope = mockParentScope,
+            sdkCore = mockSdkCore,
+            backgroundTrackingEnabled = false,
+            trackFrustrations = fakeTrackFrustrations,
+            viewChangedListener = mockViewChangedListener,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            cpuVitalMonitor = mockCpuVitalMonitor,
+            memoryVitalMonitor = mockMemoryVitalMonitor,
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            applicationDisplayed = false,
+            sampleRate = fakeSampleRate
+        )
+        testedScope.stopped = true
+        val fakeEvent = forge.applicationStartedEvent()
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyNoInteractions(mockInternalLogger)
+        verifyNoInteractions(mockWriter)
     }
 
     // endregion
@@ -644,27 +663,22 @@ internal class RumViewManagerScopeTest {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
-        val fakeEvent = forge.anyRumEvent()
-
-        val appStartTimeNs = forge.aLong(min = 0, max = fakeEvent.eventTime.nanoTime)
-        whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn appStartTimeNs
-        DdRumContentProvider.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        val fakeAppStartEvent = forge.applicationStartedEvent()
 
         // When
-        testedScope.handleEvent(fakeEvent, mockWriter)
+        testedScope.handleEvent(fakeAppStartEvent, mockWriter)
 
         // Then
-        val eventTimeNanos = TimeUnit.MILLISECONDS.toNanos(fakeEvent.eventTime.timestamp)
-        val timestampNs = (eventTimeNanos - fakeEvent.eventTime.nanoTime) + appStartTimeNs
-        val timestampMs = TimeUnit.NANOSECONDS.toMillis((timestampNs))
         argumentCaptor<ActionEvent> {
             verify(mockWriter, atLeastOnce()).write(eq(mockEventBatchWriter), capture())
-            assertThat(firstValue.action.type).isEqualTo(ActionEvent.ActionEventActionType.APPLICATION_START)
-            // Application start event occurse at the start time
-            assertThat(firstValue.date).isEqualTo(resolveExpectedTimestamp(timestampMs))
+            assertThat(firstValue.action.type)
+                .isEqualTo(ActionEvent.ActionEventActionType.APPLICATION_START)
+            // Application start event occurs at the start time
+            assertThat(firstValue.date)
+                .isEqualTo(resolveExpectedTimestamp(fakeAppStartEvent.eventTime.timestamp))
 
             // Duration lasts until the first event is sent to RUM (whatever that is)
-            val loadingTime = fakeEvent.eventTime.nanoTime - appStartTimeNs
+            val loadingTime = fakeAppStartEvent.applicationStartupNanos
             assertThat(firstValue.action.loadingTime).isEqualTo(loadingTime)
         }
     }
@@ -675,43 +689,13 @@ internal class RumViewManagerScopeTest {
     ) {
         // Given
         testedScope.applicationDisplayed = true
-        val childView: RumViewScope = mock()
-        val startViewEvent = forge.startViewEvent()
+        val fakeAppStartEvent = forge.applicationStartedEvent()
 
         // When
-        testedScope.handleEvent(startViewEvent, mockWriter)
+        testedScope.handleEvent(fakeAppStartEvent, mockWriter)
 
         // Then
-        verifyNoInteractions(childView, mockWriter)
-    }
-
-    @Test
-    fun `𝕄 not send ApplicationStarted event 𝕎 onViewDisplayed() {not foreground process}`(
-        forge: Forge
-    ) {
-        // Given
-        DdRumContentProvider.processImportance = forge.anElementFrom(
-            RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
-            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
-            @Suppress("DEPRECATION")
-            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING_PRE_28,
-            RunningAppProcessInfo.IMPORTANCE_VISIBLE,
-            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE,
-            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE_PRE_26,
-            RunningAppProcessInfo.IMPORTANCE_CANT_SAVE_STATE,
-            RunningAppProcessInfo.IMPORTANCE_SERVICE,
-            RunningAppProcessInfo.IMPORTANCE_CACHED,
-            RunningAppProcessInfo.IMPORTANCE_GONE
-        )
-        testedScope.applicationDisplayed = false
-        val childView: RumViewScope = mock()
-        val startViewEvent = forge.startViewEvent()
-
-        // When
-        testedScope.handleEvent(startViewEvent, mockWriter)
-
-        // Then
-        verifyNoInteractions(childView, mockWriter)
+        verifyNoInteractions(mockWriter)
     }
 
     // endregion

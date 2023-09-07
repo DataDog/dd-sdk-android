@@ -409,7 +409,8 @@ internal class DatadogTest {
                 eq(InternalLogger.Target.USER),
                 capture(),
                 isNull(),
-                eq(false)
+                eq(false),
+                eq(null)
             )
             val actualMessage = firstValue()
             val filteredActualMessage = actualMessage
