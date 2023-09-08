@@ -64,8 +64,9 @@ static-analysis:
     DETEKT_CUSTOM_RULES_YML_PATH: "detekt_custom.yml"
     DETEKT_GENERATE_CLASSPATH_BUILD_TASK: "printSdkDebugRuntimeClasspath"
     DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
+    FLAVORED_ANDROID_LINT: ":tools:lint:lint :sample:kotlin:lintUs1Release :sample:wear:lintUs1Release"
   trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v19802382-7e943274/static-analysis.yml"
+    include: "https://gitlab-templates.ddbuild.io/mobile/v19803715-abb9061c/static-analysis.yml"
     strategy: depend
 
 analysis:licenses:
