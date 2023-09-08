@@ -65,16 +65,8 @@ static-analysis:
     DETEKT_GENERATE_CLASSPATH_BUILD_TASK: "printSdkDebugRuntimeClasspath"
     DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
   trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v16647802-df6f90e7/static-analysis.yml"
+    include: "https://gitlab-templates.ddbuild.io/mobile/v19802382-7e943274/static-analysis.yml"
     strategy: depend
-
-analysis:android-lint:
-  tags: [ "runner:main" ]
-  image: $CI_IMAGE_DOCKER
-  stage: analysis
-  timeout: 30m
-  script:
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :lintCheckAll --stacktrace --no-daemon
 
 analysis:licenses:
   tags: [ "runner:main" ]
