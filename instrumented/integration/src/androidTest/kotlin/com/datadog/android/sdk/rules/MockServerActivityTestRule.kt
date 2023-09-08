@@ -104,10 +104,8 @@ internal open class MockServerActivityTestRule<T : Activity>(
         InstrumentationRegistry
             .getInstrumentation()
             .targetContext
-            .cacheDir.deleteRecursively {
-                Log.i("MockServerActivityTestRule", "After activity finished, deleting file $it")
-            }
-
+            .cacheDir.deleteRecursively()
+        GlobalRumMonitor.get().stopSession()
         Datadog.stopInstance()
         GlobalRumMonitor::class.java.getDeclaredMethod("reset").apply {
             isAccessible = true

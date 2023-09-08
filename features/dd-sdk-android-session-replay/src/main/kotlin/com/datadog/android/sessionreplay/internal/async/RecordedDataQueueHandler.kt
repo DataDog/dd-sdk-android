@@ -83,6 +83,12 @@ internal class RecordedDataQueueHandler {
         this.recordedDataQueue = recordedQueue
     }
 
+    @Synchronized
+    internal fun clearAndStopProcessingQueue() {
+        recordedDataQueue.clear()
+        executorService.shutdown()
+    }
+
     @MainThread
     internal fun addTouchEventItem(
         pointerInteractions: List<MobileSegment.MobileRecord>

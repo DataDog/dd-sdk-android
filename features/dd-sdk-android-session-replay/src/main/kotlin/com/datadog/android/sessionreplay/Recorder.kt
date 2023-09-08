@@ -6,20 +6,17 @@
 
 package com.datadog.android.sessionreplay
 
-import androidx.annotation.MainThread
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface Recorder {
-    @MainThread
     fun registerCallbacks()
 
-    @MainThread
     fun unregisterCallbacks()
 
-    @MainThread
+    fun stopProcessingRecords()
+
     fun resumeRecorders()
 
-    @MainThread
     fun stopRecorders()
 }

@@ -114,8 +114,8 @@ internal class SessionReplayFeature constructor(
 
     override fun onStop() {
         stopRecording()
-        @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
         sessionReplayRecorder.unregisterCallbacks()
+        sessionReplayRecorder.stopProcessingRecords()
         dataWriter = NoOpRecordWriter()
         sessionReplayRecorder = NoOpRecorder()
         initialized.set(false)

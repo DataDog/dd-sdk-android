@@ -142,17 +142,18 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.internalLogger = internalLogger
     }
 
-    @MainThread
+    override fun stopProcessingRecords() {
+        recordedDataQueueHandler.clearAndStopProcessingQueue()
+    }
+
     override fun registerCallbacks() {
         appContext.registerActivityLifecycleCallbacks(sessionReplayLifecycleCallback)
     }
 
-    @MainThread
     override fun unregisterCallbacks() {
         appContext.unregisterActivityLifecycleCallbacks(sessionReplayLifecycleCallback)
     }
 
-    @MainThread
     override fun resumeRecorders() {
         uiHandler.post {
             shouldRecord = true
@@ -163,7 +164,6 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         }
     }
 
-    @MainThread
     override fun stopRecorders() {
         uiHandler.post {
             viewOnDrawInterceptor.stopIntercepting()
