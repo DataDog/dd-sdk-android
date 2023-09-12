@@ -46,7 +46,7 @@ android {
         targetSdk = AndroidConfig.TARGET_SDK
     }
 
-    namespace = "com.datadog.android.tv"
+    namespace = "com.datadog.android.exoplayer"
 
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")

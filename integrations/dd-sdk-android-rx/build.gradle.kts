@@ -91,7 +91,6 @@ dependencies {
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)
-
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)

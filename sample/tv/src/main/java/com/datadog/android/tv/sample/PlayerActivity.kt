@@ -72,9 +72,7 @@ class PlayerActivity : AppCompatActivity() {
                 .build()
             runOnUiThread {
                 videoPlayer.setMediaItem(mediaItem)
-                Thread.sleep(100)
                 videoPlayer.playWhenReady = true
-                Thread.sleep(100)
                 videoPlayer.prepare()
             }
         } catch (t: Throwable) {

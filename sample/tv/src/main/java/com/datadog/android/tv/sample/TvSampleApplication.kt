@@ -27,21 +27,16 @@ import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.tv.sample.net.OkHttpDownloader
-import okhttp3.OkHttp
 import okhttp3.OkHttpClient
-import okhttp3.Protocol
-import okhttp3.Response
-import okhttp3.ResponseBody.Companion.toResponseBody
 import org.schabi.newpipe.extractor.NewPipe
 import timber.log.Timber
-import kotlin.random.Random
 
 /**
  * The main [Application] for the sample TV project.
  */
 class TvSampleApplication : Application() {
 
-    lateinit var okHttpClient: OkHttpClient
+    private lateinit var okHttpClient: OkHttpClient
 
     override fun onCreate() {
         super.onCreate()
@@ -111,22 +106,6 @@ class TvSampleApplication : Application() {
                     )
                 )
             )
-            .addInterceptor {
-                val request = it.request()
-                val url = request.url
-                val host = url.host
-                if (host.endsWith("googlevideo.coma") ) {
-                    Response.Builder()
-                        .request(request)
-                        .protocol(Protocol.HTTP_2)
-                        .code(500)
-                        .message("Error")
-                        .body("".toResponseBody())
-                        .build()
-                } else {
-                    it.proceed(request)
-                }
-            }
             .eventListenerFactory(DatadogEventListener.Factory())
             .build()
     }
