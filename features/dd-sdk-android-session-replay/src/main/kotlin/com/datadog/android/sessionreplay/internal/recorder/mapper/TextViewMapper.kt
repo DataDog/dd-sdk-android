@@ -95,7 +95,8 @@ open class TextViewMapper :
         imageWireframeHelper?.createCompoundDrawableWireframes(
             view,
             mappingContext,
-            currentIndex
+            currentIndex,
+            asyncImageProcessingCallback = asyncImageProcessingCallback
         )?.let { result ->
             wireframes.addAll(result)
         }

@@ -14,6 +14,7 @@ import android.view.View
 import android.widget.TextView
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
+import com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
@@ -38,7 +39,8 @@ internal class ImageWireframeHelper(
         drawable: Drawable? = null,
         shapeStyle: MobileSegment.ShapeStyle? = null,
         border: MobileSegment.ShapeBorder? = null,
-        prefix: String = DRAWABLE_CHILD_NAME
+        prefix: String = DRAWABLE_CHILD_NAME,
+        asyncImageProcessingCallback: AsyncImageProcessingCallback?
     ): MobileSegment.Wireframe.ImageWireframe? {
         val id = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, prefix + currentWireframeIndex)
         val drawableProperties = resolveDrawableProperties(view, drawable)
@@ -70,7 +72,8 @@ internal class ImageWireframeHelper(
             drawable = drawableProperties.drawable!!,
             drawableWidth = drawableProperties.drawableWidth,
             drawableHeight = drawableProperties.drawableHeight,
-            imageWireframe = imageWireframe
+            imageWireframe = imageWireframe,
+            asyncImageProcessingCallback = asyncImageProcessingCallback
         )
 
         return imageWireframe
@@ -80,7 +83,8 @@ internal class ImageWireframeHelper(
     internal fun createCompoundDrawableWireframes(
         view: TextView,
         mappingContext: MappingContext,
-        prevWireframeIndex: Int
+        prevWireframeIndex: Int,
+        asyncImageProcessingCallback: AsyncImageProcessingCallback?
     ): MutableList<MobileSegment.Wireframe> {
         val result = mutableListOf<MobileSegment.Wireframe>()
         var wireframeIndex = prevWireframeIndex
@@ -119,7 +123,8 @@ internal class ImageWireframeHelper(
                         .densityNormalized(density).toLong(),
                     drawable = drawable,
                     shapeStyle = null,
-                    border = null
+                    border = null,
+                    asyncImageProcessingCallback = asyncImageProcessingCallback
                 )?.let { resultWireframe ->
                     result.add(resultWireframe)
                 }

@@ -30,6 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -413,7 +414,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         }
         val mockImageWireframe: MobileSegment.Wireframe.ImageWireframe = mock()
 
-        whenever(mockImageWireframeHelper.createCompoundDrawableWireframes(any(), any(), any()))
+        whenever(mockImageWireframeHelper.createCompoundDrawableWireframes(any(), any(), any(), anyOrNull()))
             .thenReturn(mutableListOf(mockImageWireframe))
 
         whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))

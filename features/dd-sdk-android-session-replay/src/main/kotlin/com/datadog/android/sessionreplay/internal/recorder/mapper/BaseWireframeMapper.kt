@@ -32,6 +32,7 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
     private var base64Serializer: Base64Serializer? = null
     private var imageWireframeHelper: ImageWireframeHelper? = null
     private var uniqueIdentifierGenerator = UniqueIdentifierGenerator
+    internal var asyncImageProcessingCallback: AsyncImageProcessingCallback? = null
 
     internal constructor(
         base64Serializer: Base64Serializer,
@@ -111,7 +112,7 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
     internal fun registerAsyncImageProcessingCallback(
         asyncImageProcessingCallback: AsyncImageProcessingCallback
     ) {
-        base64Serializer?.registerAsyncLoadingCallback(asyncImageProcessingCallback)
+        this.asyncImageProcessingCallback = asyncImageProcessingCallback
     }
 
     private fun resolveViewBackground(
@@ -186,7 +187,8 @@ abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe>(
             view.background?.constantState?.newDrawable(resources),
             shapeStyle = null,
             border = null,
-            prefix = PREFIX_BACKGROUND_DRAWABLE
+            prefix = PREFIX_BACKGROUND_DRAWABLE,
+            asyncImageProcessingCallback = asyncImageProcessingCallback
         )
     }
 

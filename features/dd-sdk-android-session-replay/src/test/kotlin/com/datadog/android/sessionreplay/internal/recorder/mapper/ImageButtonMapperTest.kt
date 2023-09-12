@@ -14,6 +14,7 @@ import android.graphics.drawable.Drawable.ConstantState
 import android.util.DisplayMetrics
 import android.widget.ImageButton
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
@@ -83,6 +84,9 @@ internal class ImageButtonMapperTest {
 
     @Mock
     lateinit var mockBase64Serializer: Base64Serializer
+
+    @Mock
+    lateinit var mockAsyncImageProcessingCallback: AsyncImageProcessingCallback
 
     @Mock
     lateinit var mockViewUtils: ViewUtils
@@ -155,6 +159,8 @@ internal class ImageButtonMapperTest {
             imageWireframeHelper = mockImageWireframeHelper,
             uniqueIdentifierGenerator = mockUniqueIdentifierGenerator
         )
+
+        testedMapper.registerAsyncImageProcessingCallback(mockAsyncImageProcessingCallback)
     }
 
     @Test
@@ -172,7 +178,8 @@ internal class ImageButtonMapperTest {
                 mockImageButton.height.toLong(),
                 mockDrawable.constantState?.newDrawable(mockResources),
                 null,
-                null
+                null,
+                asyncImageProcessingCallback = mockAsyncImageProcessingCallback
             )
         ).thenReturn(expectedWireframe)
 
@@ -256,6 +263,7 @@ internal class ImageButtonMapperTest {
             anyOrNull(),
             anyOrNull(),
             anyOrNull(),
+            anyOrNull(),
             anyOrNull()
         )
         val allValues = captor.allValues
@@ -285,6 +293,7 @@ internal class ImageButtonMapperTest {
             any(),
             any(),
             any(),
+            anyOrNull(),
             anyOrNull(),
             anyOrNull(),
             anyOrNull(),
@@ -375,6 +384,7 @@ internal class ImageButtonMapperTest {
                 any(),
                 any(),
                 any(),
+                anyOrNull(),
                 anyOrNull(),
                 anyOrNull(),
                 anyOrNull(),
