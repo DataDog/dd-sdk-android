@@ -79,6 +79,7 @@ room = "2.5.1"
 rxJava3 = "3.0.0"
 timber = "5.0.1"
 coroutines = "1.4.2"
+exoplayer = "2.19.1"
 
 # Local Server
 ktor = "1.6.0"
@@ -213,6 +214,9 @@ timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutinesAndroid = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 
+exoplayer = { module = "com.google.android.exoplayer:exoplayer", version.ref = "exoplayer" }
+exoplayerDataSource = { module = "com.google.android.exoplayer:exoplayer-datasource", version.ref = "exoplayer" }
+
 # Local Server
 ktorCore = { module = "io.ktor:ktor", version.ref = "ktor" }
 ktorNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
@@ -282,6 +286,11 @@ glide = [
 coroutines = [
     "coroutinesCore",
     "coroutinesAndroid"
+]
+
+exoplayer = [
+    "exoplayer",
+    "exoplayerDataSource"
 ]
 
 ktor = [
