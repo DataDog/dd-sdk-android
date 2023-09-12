@@ -58,6 +58,7 @@ internal class TelemetryEventHandler(
                             event.additionalProperties
                         )
                     }
+
                     TelemetryType.ERROR -> {
                         createErrorEvent(
                             datadogContext,
@@ -67,6 +68,7 @@ internal class TelemetryEventHandler(
                             event.kind
                         )
                     }
+
                     TelemetryType.CONFIGURATION -> {
                         val coreConfiguration = event.coreConfiguration
                         if (coreConfiguration == null) {
@@ -85,6 +87,7 @@ internal class TelemetryEventHandler(
                             )
                         }
                     }
+
                     TelemetryType.INTERCEPTOR_SETUP -> {
                         trackNetworkRequests = true
                         null
@@ -198,12 +201,21 @@ internal class TelemetryEventHandler(
         )
     }
 
+    @Suppress("LongMethod")
     private fun createConfigurationEvent(
         datadogContext: DatadogContext,
         timestamp: Long,
         coreConfiguration: TelemetryCoreConfiguration
     ): TelemetryConfigurationEvent {
         val traceFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
+        val sessionReplayFeatureContext =
+            sdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)
+        val sessionReplaySampleRate = sessionReplayFeatureContext[SESSION_REPLAY_SAMPLE_RATE_KEY]
+            as? Long
+        val startSessionReplayManually =
+            sessionReplayFeatureContext[SESSION_REPLAY_MANUAL_RECORDING_KEY] as? Boolean
+        val sessionReplayPrivacy = sessionReplayFeatureContext[SESSION_REPLAY_PRIVACY_KEY]
+            as? String
         val rumConfig = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.unwrap<RumFeature>()
             ?.configuration
@@ -247,7 +259,11 @@ internal class TelemetryEventHandler(
                     batchUploadFrequency = coreConfiguration.batchUploadFrequency,
                     mobileVitalsUpdatePeriod = rumConfig?.vitalsMonitorUpdateFrequency?.periodInMs,
                     useTracing = traceFeature != null && isGlobalTracerRegistered(),
-                    trackNetworkRequests = trackNetworkRequests
+                    trackNetworkRequests = trackNetworkRequests,
+                    sessionReplaySampleRate = sessionReplaySampleRate,
+                    defaultPrivacyLevel = sessionReplayPrivacy,
+                    startSessionReplayRecordingManually = startSessionReplayManually
+
                 )
             )
         )
@@ -298,5 +314,9 @@ internal class TelemetryEventHandler(
         const val MAX_EVENT_NUMBER_REACHED_MESSAGE =
             "Max number of telemetry events per session reached, rejecting."
         const val TELEMETRY_SERVICE_NAME = "dd-sdk-android"
+        internal const val SESSION_REPLAY_SAMPLE_RATE_KEY = "session_replay_sample_rate"
+        internal const val SESSION_REPLAY_PRIVACY_KEY = "session_replay_privacy"
+        internal const val SESSION_REPLAY_MANUAL_RECORDING_KEY =
+            "session_replay_requires_manual_recording"
     }
 }
