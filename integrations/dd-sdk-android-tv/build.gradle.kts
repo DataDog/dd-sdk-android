@@ -89,9 +89,6 @@ dependencies {
     }
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
-
-    // TODO MTG-12 detekt(project(":tools:detekt"))
-    // TODO MTG-12 detekt(libs.detektCli)
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)

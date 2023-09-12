@@ -97,5 +97,5 @@ junitConfig()
 javadocConfig()
 dependencyUpdateConfig()
 publishingConfig(
-    "An Android TV integration to use with the Datadog monitoring library for Android applications."
+    "An ExoPlayer integration to use with the Datadog monitoring library for Android applications."
 )

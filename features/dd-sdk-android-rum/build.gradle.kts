@@ -125,9 +125,6 @@ dependencies {
     testImplementation(libs.okHttpMock)
     testImplementation(libs.bundles.openTracing)
     unmock(libs.robolectric)
-
-    // TODO MTG-12 detekt(project(":tools:detekt"))
-    // TODO MTG-12 detekt(libs.detektCli)
 }
 
 unMock {
