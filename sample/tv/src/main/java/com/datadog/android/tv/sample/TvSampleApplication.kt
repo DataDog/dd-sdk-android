@@ -10,7 +10,9 @@ import android.app.Application
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
@@ -25,19 +27,27 @@ import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.tv.sample.net.OkHttpDownloader
+import okhttp3.OkHttp
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.schabi.newpipe.extractor.NewPipe
 import timber.log.Timber
+import kotlin.random.Random
 
 /**
  * The main [Application] for the sample TV project.
  */
 class TvSampleApplication : Application() {
 
+    lateinit var okHttpClient: OkHttpClient
+
     override fun onCreate() {
         super.onCreate()
         initializeDatadog()
         initializeTimber()
+        initializeOkHttp()
         initializeNewPipe()
     }
 
@@ -74,7 +84,10 @@ class TvSampleApplication : Application() {
             env = "test",
             variant = ""
         )
-            .useSite(DatadogSite.US1).build()
+            .useSite(DatadogSite.US1)
+            .setBatchSize(BatchSize.SMALL)
+            .setUploadFrequency(UploadFrequency.FREQUENT)
+            .build()
     }
 
     @Suppress("TooGenericExceptionCaught", "CheckInternal")
@@ -88,8 +101,8 @@ class TvSampleApplication : Application() {
         Timber.plant(DatadogTree(logger))
     }
 
-    private fun initializeNewPipe() {
-        val okHttpClient = OkHttpClient.Builder()
+    private fun initializeOkHttp() {
+        okHttpClient = OkHttpClient.Builder()
             .addInterceptor(DatadogInterceptor(traceSampler = RateBasedSampler(FULL_SAMPLING_RATE)))
             .addNetworkInterceptor(
                 TracingInterceptor(
@@ -98,8 +111,27 @@ class TvSampleApplication : Application() {
                     )
                 )
             )
+            .addInterceptor {
+                val request = it.request()
+                val url = request.url
+                val host = url.host
+                if (host.endsWith("googlevideo.coma") ) {
+                    Response.Builder()
+                        .request(request)
+                        .protocol(Protocol.HTTP_2)
+                        .code(500)
+                        .message("Error")
+                        .body("".toResponseBody())
+                        .build()
+                } else {
+                    it.proceed(request)
+                }
+            }
             .eventListenerFactory(DatadogEventListener.Factory())
             .build()
+    }
+
+    private fun initializeNewPipe() {
         NewPipe.init(OkHttpDownloader(okHttpClient))
     }
 

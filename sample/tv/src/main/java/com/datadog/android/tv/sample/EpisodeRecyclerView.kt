@@ -7,6 +7,7 @@
 package com.datadog.android.tv.sample
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -69,8 +70,14 @@ internal class EpisodeRecyclerView private constructor() {
         }
 
         private fun updateEpisodeHighlight(selected: Boolean) {
-            val color = if (selected) R.color.dd_purple_200 else R.color.text_default
-            textView.setTextColor(textView.resources.getColor(color, null))
+            val colorRes = if (selected) R.color.dd_purple_200 else R.color.text_default
+            val textColor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                textView.resources.getColor(colorRes, null)
+            } else {
+                @Suppress("DEPRECATION")
+                textView.resources.getColor(colorRes)
+            }
+            textView.setTextColor(textColor)
         }
 
         fun render(episode: Episode) {
