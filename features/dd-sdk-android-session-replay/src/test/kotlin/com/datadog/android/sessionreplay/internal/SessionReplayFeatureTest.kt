@@ -36,7 +36,9 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -49,6 +51,7 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
@@ -77,15 +80,19 @@ internal class SessionReplayFeatureTest {
 
     lateinit var fakeSessionId: String
 
+    var fakeSampleRate: Float? = null
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        fakeSampleRate = forge.aNullable { aFloat() }
+        whenever(mockSampler.getSampleRate()).thenReturn(fakeSampleRate)
         fakeSessionId = UUID.randomUUID().toString()
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         testedFeature = SessionReplayFeature(
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
-            mockSampler
+            rateBasedSampler = mockSampler
         ) { _, _ -> mockRecorder }
     }
 
@@ -120,13 +127,45 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
+    fun `𝕄 update feature context for telemetry 𝕎 initialize()`() {
+        // Given
+        testedFeature = SessionReplayFeature(
+            sdkCore = mockSdkCore,
+            customEndpointUrl = fakeConfiguration.customEndpointUrl,
+            privacy = fakeConfiguration.privacy,
+            customMappers = emptyList(),
+            customOptionSelectorDetectors = emptyList(),
+            sampleRate = fakeConfiguration.sampleRate
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        argumentCaptor<(context: MutableMap<String, Any?>) -> Unit> {
+            val updatedContext = mutableMapOf<String, Any?>()
+            verify(mockSdkCore).updateFeatureContext(
+                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+                capture()
+            )
+            firstValue.invoke(updatedContext)
+            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_SAMPLE_RATE_KEY])
+                .isEqualTo(fakeConfiguration.sampleRate.toLong())
+            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_PRIVACY_KEY])
+                .isEqualTo(fakeConfiguration.privacy.toString().lowercase(Locale.US))
+            assertThat(updatedContext[SessionReplayFeature.SESSION_REPLAY_MANUAL_RECORDING_KEY])
+                .isEqualTo(false)
+        }
+    }
+
+    @Test
     fun `𝕄 set the feature event receiver 𝕎 initialize()`() {
         // Given
         testedFeature = SessionReplayFeature(
             sdkCore = mockSdkCore,
             customEndpointUrl = fakeConfiguration.customEndpointUrl,
             privacy = fakeConfiguration.privacy,
-            mockSampler
+            rateBasedSampler = mockSampler
         ) { _, _ -> mockRecorder }
 
         // When

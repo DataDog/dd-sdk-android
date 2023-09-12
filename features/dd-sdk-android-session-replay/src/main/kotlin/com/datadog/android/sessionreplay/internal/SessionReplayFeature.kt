@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * Session Replay feature class, which needs to be registered with Datadog SDK instance.
  */
-internal class SessionReplayFeature constructor(
+internal class SessionReplayFeature(
     private val sdkCore: FeatureSdkCore,
     customEndpointUrl: String?,
     internal val privacy: SessionReplayPrivacy,
@@ -101,6 +101,14 @@ internal class SessionReplayFeature constructor(
         @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
         sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
+        sdkCore.updateFeatureContext(SESSION_REPLAY_FEATURE_NAME) {
+            it[SESSION_REPLAY_SAMPLE_RATE_KEY] = rateBasedSampler.getSampleRate()?.toLong()
+            it[SESSION_REPLAY_PRIVACY_KEY] = privacy.toString().lowercase(Locale.US)
+            // False by default. This will be changed once we will conform to the browser SR
+            // implementation where a parameter will be passed in the Configuration constructor
+            // to enable manual recording.
+            it[SESSION_REPLAY_MANUAL_RECORDING_KEY] = false
+        }
     }
 
     override val requestFactory: RequestFactory =
@@ -263,5 +271,9 @@ internal class SessionReplayFeature constructor(
         const val RUM_SESSION_RENEWED_BUS_MESSAGE = "rum_session_renewed"
         const val RUM_KEEP_SESSION_BUS_MESSAGE_KEY = "keepSession"
         const val RUM_SESSION_ID_BUS_MESSAGE_KEY = "sessionId"
+        internal const val SESSION_REPLAY_SAMPLE_RATE_KEY = "session_replay_sample_rate"
+        internal const val SESSION_REPLAY_PRIVACY_KEY = "session_replay_privacy"
+        internal const val SESSION_REPLAY_MANUAL_RECORDING_KEY =
+            "session_replay_requires_manual_recording"
     }
 }

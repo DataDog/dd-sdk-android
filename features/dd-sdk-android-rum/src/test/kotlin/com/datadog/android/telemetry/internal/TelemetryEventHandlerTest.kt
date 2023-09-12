@@ -413,6 +413,88 @@ internal class TelemetryEventHandlerTest {
         }
     }
 
+    @Test
+    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration, no SessionReplay }`(
+        forge: Forge
+    ) {
+        // Given
+        val configRawEvent = forge.createRumRawTelemetryConfigurationEvent()
+
+        // When
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertConfigEventMatchesRawEvent(firstValue, configRawEvent)
+            assertThat(firstValue).hasSessionReplaySampleRate(null)
+            assertThat(firstValue).hasSessionReplayStartManually(null)
+            assertThat(firstValue).hasSessionReplayPrivacy(null)
+        }
+    }
+
+    @Test
+    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration, with SessionReplay }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeSampleRate = forge.aPositiveLong()
+        val fakeSessionReplayPrivacy = forge.aString()
+        val fakeSessionReplayIsStartManually = forge.aBool()
+        val fakeSessionReplayContext = mutableMapOf<String, Any?>(
+            TelemetryEventHandler.SESSION_REPLAY_PRIVACY_KEY to fakeSessionReplayPrivacy,
+            TelemetryEventHandler.SESSION_REPLAY_MANUAL_RECORDING_KEY to
+                fakeSessionReplayIsStartManually,
+            TelemetryEventHandler.SESSION_REPLAY_SAMPLE_RATE_KEY to fakeSampleRate
+        )
+        whenever(mockSdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
+            fakeSessionReplayContext
+        val configRawEvent = forge.createRumRawTelemetryConfigurationEvent()
+
+        // When
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertConfigEventMatchesRawEvent(firstValue, configRawEvent)
+            assertThat(firstValue).hasSessionReplaySampleRate(fakeSampleRate)
+            assertThat(firstValue).hasSessionReplayStartManually(fakeSessionReplayIsStartManually)
+            assertThat(firstValue).hasSessionReplayPrivacy(fakeSessionReplayPrivacy)
+        }
+    }
+
+    @Test
+    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { with SessionReplay, bad format }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeSampleRate = forge.aNullable { aString() }
+        val fakeSessionReplayPrivacy = forge.aNullable { aLong() }
+        val fakeSessionReplayIsStartManually = forge.aNullable { aString() }
+        val fakeSessionReplayContext = mutableMapOf<String, Any?>(
+            TelemetryEventHandler.SESSION_REPLAY_PRIVACY_KEY to fakeSessionReplayPrivacy,
+            TelemetryEventHandler.SESSION_REPLAY_MANUAL_RECORDING_KEY to
+                fakeSessionReplayIsStartManually,
+            TelemetryEventHandler.SESSION_REPLAY_SAMPLE_RATE_KEY to fakeSampleRate
+        )
+        whenever(mockSdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
+            fakeSessionReplayContext
+        val configRawEvent = forge.createRumRawTelemetryConfigurationEvent()
+
+        // When
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertConfigEventMatchesRawEvent(firstValue, configRawEvent)
+            assertThat(firstValue).hasSessionReplaySampleRate(null)
+            assertThat(firstValue).hasSessionReplayStartManually(null)
+            assertThat(firstValue).hasSessionReplayPrivacy(null)
+        }
+    }
+
     // endregion
 
     // region Sampling
@@ -795,6 +877,17 @@ internal class TelemetryEventHandlerTest {
             .hasSessionId(rumContext.sessionId)
             .hasViewId(rumContext.viewId)
             .hasActionId(rumContext.actionId)
+    }
+
+    private fun assertConfigEventMatchesRawEvent(
+        actual: TelemetryConfigurationEvent,
+        rawEvent: RumRawEvent.SendTelemetry
+    ) {
+        assertThat(actual)
+            .hasDate(rawEvent.eventTime.timestamp + fakeServerOffset)
+            .hasSource(TelemetryConfigurationEvent.Source.ANDROID)
+            .hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
+            .hasVersion(fakeDatadogContext.sdkVersion)
     }
 
     // endregion

@@ -306,6 +306,43 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
 
     // endregion
 
+    // region Session Replay configuration
+
+    fun hasSessionReplaySampleRate(expected: Long?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.sessionReplaySampleRate)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.sessionReplaySampleRate" +
+                    " $expected " +
+                    "but was ${actual.telemetry.configuration.sessionReplaySampleRate}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasSessionReplayPrivacy(expected: String?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.defaultPrivacyLevel)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.defaultPrivacyLevel" +
+                    " $expected " +
+                    "but was ${actual.telemetry.configuration.defaultPrivacyLevel}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasSessionReplayStartManually(expected: Boolean?): TelemetryConfigurationEventAssert {
+        val assertErrorMessage = "Expected event data to have" +
+            " telemetry.configuration.startSessionReplayRecordingManually" +
+            " $expected " +
+            "but was ${actual.telemetry.configuration.startSessionReplayRecordingManually}"
+        assertThat(actual.telemetry.configuration.startSessionReplayRecordingManually)
+            .overridingErrorMessage(assertErrorMessage)
+            .isEqualTo(expected)
+        return this
+    }
+
+    // endregion
+
     companion object {
         fun assertThat(actual: TelemetryConfigurationEvent) =
             TelemetryConfigurationEventAssert(actual)
