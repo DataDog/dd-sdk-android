@@ -37,7 +37,8 @@ android {
 
         vectorDrawables.useSupportLibrary = true
 
-        val config = sampleAppConfig(project.rootDir, "tv")
+        val file = File(File(project.rootDir, "config"), "tv.json")
+        val config = sampleAppConfig(file.path)
         buildConfigField(
             "String",
             "DD_RUM_APPLICATION_ID",
@@ -91,7 +92,6 @@ dependencies {
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-session-replay"))
     implementation(project(":features:dd-sdk-android-session-replay-material"))
-    implementation(project(":integrations:dd-sdk-android-ktx"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":integrations:dd-sdk-android-timber"))
     implementation(project(":integrations:dd-sdk-android-tv"))

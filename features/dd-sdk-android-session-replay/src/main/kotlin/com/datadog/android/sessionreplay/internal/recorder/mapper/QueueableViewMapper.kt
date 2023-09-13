@@ -18,7 +18,7 @@ internal class QueueableViewMapper(
 ) : BaseWireframeMapper<View, MobileSegment.Wireframe>(), AsyncImageProcessingCallback {
     override fun map(view: View, mappingContext: MappingContext):
         List<MobileSegment.Wireframe> {
-        (mapper as? BaseWireframeMapper)?.registerAsyncImageProcessingCallback(this)
+        (mapper as? BaseWireframeMapper<View, *>)?.registerAsyncImageProcessingCallback(this)
         return mapper.map(view, mappingContext)
     }
 

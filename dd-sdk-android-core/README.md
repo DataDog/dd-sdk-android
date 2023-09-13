@@ -1,13 +1,14 @@
-# Datadog SDK for Android
+# Datadog SDK for Android - core library
 
-## Getting Started 
+## Getting started
 
-To include the Datadog SDK for Android in your project, simply add the following
-to your application's `build.gradle` file.
+To include the Datadog SDK for Android in your project, simply add any product you want to use to your application's `build.gradle` file.
 
-```
+For example, in case of RUM:
+
+```groovy
 dependencies {
-    implementation "com.datadoghq:dd-sdk-android:<latest-version>"
+    implementation "com.datadoghq:dd-sdk-android-rum:<latest-version>"
 }
 ```
 
@@ -22,129 +23,46 @@ class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         val configuration = Configuration.Builder(
-            logsEnabled = true,
-            tracesEnabled = true,
-            crashReportsEnabled = true,
-            rumEnabled = true
+            clientToken = CLIENT_TOKEN,
+            env = ENV_NAME,
+            variant = APP_VARIANT_NAME
         )
             .useSite(DatadogSite.US1) // replace with the site you're targeting (e.g.: US3, EU1, …)
-            .trackInteractions()
-            .trackLongTasks(durationThreshold)
-            .useViewTrackingStrategy(strategy)
             .build()
-        val credentials = Credentials(CLIENT_TOKEN, ENV_NAME, APP_VARIANT_NAME, APPLICATION_ID)
-        Datadog.initialize(this, credentials, configuration, trackingConsent)
+        Datadog.initialize(this, configuration, trackingConsent)
     }
 }
 ```
 
-### Logger Initialization
+### Using a secondary instance of the SDK
 
-You can create a `Logger` instance using the dedicated builder, as follows:
+It is possible to initialize multiple instances of the SDK by associating them with a name. Many methods of the SDK can optionally take an SDK instance as an argument. If not provided, the call is associated with the default (nameless) SDK instance.
+
+Here is an example illustrating how to initialize a secondary core instance and use it:
 
 ```kotlin
-    logger = Logger.Builder()
-            .setNetworkInfoEnabled(true)
-            .setServiceName("com.example.app.android")
-            .setLogcatLogsEnabled(true)
-            .setDatadogLogsEnabled(true)
-            .setLoggerName("name")
-            .build()
+val namedSdkInstance = Datadog.initialize("myInstance", context, configuration, trackingConsent)
+val userInfo = UserInfo(...)
+Datadog.setUserInfo(userInfo, sdkCore = namedSdkInstance)
 ```
 
-### Logging
+**Note**: The SDK instance name should have the same value between application runs. Storage paths for SDK events are associated with it.
 
-You can then send logs with the following methods, mimicking the ones available
-in the Android Framework: 
+You can retrieve the named SDK instance by calling `Datadog.getInstance(<name>)` and use the `Datadog.isInitialized(<name>)` method to check if the particular SDK instance is initialized.
 
-```kotlin
-    logger.d("A debug message.")
-    logger.i("Some relevant information ?")
-    logger.w("An important warning…")
-    logger.e("An error was met!")
-    logger.wtf("What a Terrible Failure!")
-```
+## Setting up Datadog RUM SDK
 
-### Logging Errors
+See the dedicated [Datadog Android RUM Collection documentation][1] to learn how to send RUM data from your Android or Android TV application to Datadog.
 
-If you caught an exception and want to log it with a message, you can do so as
-follow:
+## Setting up the Datadog Logs SDK
 
-```kotlin
-    try {
-        doSomething()
-    } catch (e : IOException) {
-        logger.e("Error while doing something", e)
-    }
-```
+See the dedicated [Datadog Android Log Collection documentation][2] to learn how to forward logs from your Android or Android TV application to Datadog.
 
-> Note: All logging methods can have a throwable attached to them.
+## Setting up Datadog Trace SDK
 
-### Adding context
+See the dedicated [Datadog Android Trace Collection documentation][3] to learn how to send traces from your Android or Android TV application to Datadog.
 
-#### Tags
-
-Tags take the form of a single String, but can also represent key-value pairs when using a colon, and are 
-You can add tags to a specific logger as follows: 
-
-```kotlin
-    // This will add a tag "build_type:debug" or "build_type:release" accordingly
-    logger.addTag("build_type", BuildConfig.BUILD_TYPE)
-    
-    // This will add a tag "android"
-    logger.addTag("android")
-```
-
-You can remove tags from a specific logger as follows: 
-
-```kotlin
-    // This will remove any tag starting with "build_type:"
-    logger.removeTagsWithKey("build_type")
-    
-    // This will remove the tag "android"
-    logger.removeTag("android")
-``` 
-
-#### Attributes
-
-Attributes are always in the form of a key-value pair. The value can be any primitive, String or Date.
-You can add attributes to a specific logger as follows:
-
-```kotlin
-    // This will add an attribute "version_code" with an integer value
-    logger.addAttribute("version_code", BuildConfig.VERSION_CODE)
-    // This will add an attribute "version_name" with a String value
-    logger.addAttribute("version_name", BuildConfig.VERSION_NAME)
-```
-
-You can remove attributes from a specific logger as follows: 
-
-```kotlin
-    logger.removeAttribute("version_code")
-    logger.removeAttribute("version_name")
-``` 
-
-#### Local Attributes
-
-Sometimes, you might want to log a message with attributes only for that specific message. You can 
-do so by providing a map alongside the message, each entry being added as an attribute.
-
-```kotlin
-    logger.i("onPageStarted", attributes = mapOf("http.url", url))
-```
-
-In Java you can do so as follows:
-```java
-    Map<String, Object> attributes = new HashMap<>();
-    attributes.put("http.url", url);
-    logger.d(
-            "onPageStarted",
-            null, 
-            attributes
-    );
-```
-
-### Setting the Library's verbosity
+## Setting the Library's verbosity
 
 If you need to get information about the Library, you can set the verbosity
 level as follows: 
@@ -165,3 +83,7 @@ would like to change. For more information, read the
 ## License
 
 [Apache License, v2.0](../LICENSE)
+
+[1]: https://docs.datadoghq.com/real_user_monitoring/android/?tab=kotlin
+[2]: https://docs.datadoghq.com/logs/log_collection/android/?tab=kotlin
+[3]: https://docs.datadoghq.com/tracing/trace_collection/dd_libraries/android/?tab=kotlin

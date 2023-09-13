@@ -16,6 +16,6 @@ import com.datadog.android.sessionreplay.utils.ViewUtils
 internal class MaskInputTabWireframeMapper(
     viewUtils: ViewUtils = ViewUtils,
     uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
-    textViewMapper: WireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe> =
+    textViewMapper: WireframeMapper<TextView, MobileSegment.Wireframe> =
         MaskInputTextViewMapper()
 ) : TabWireframeMapper(viewUtils, uniqueIdentifierGenerator, textViewMapper)

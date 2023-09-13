@@ -7,15 +7,15 @@
 package com.datadog.android.rum.tracking
 
 import android.app.Activity
-import android.os.Bundle
 import androidx.annotation.MainThread
+import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
+import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.resolveViewName
 import com.datadog.android.rum.utils.runIfValid
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 /**
  * A [ViewTrackingStrategy] that will track [Activity] as RUM Views.
@@ -33,25 +33,11 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
     ActivityLifecycleTrackingStrategy(),
     ViewTrackingStrategy {
 
-    internal var viewLoadingTimer = ViewLoadingTimer()
+    private val executor: ScheduledExecutorService by lazy {
+        LoggingScheduledThreadPoolExecutor(1, internalLogger)
+    }
 
     // region ActivityLifecycleTrackingStrategy
-
-    @MainThread
-    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-        super.onActivityCreated(activity, savedInstanceState)
-        componentPredicate.runIfValid(activity, internalLogger) {
-            viewLoadingTimer.onCreated(it)
-        }
-    }
-
-    @MainThread
-    override fun onActivityStarted(activity: Activity) {
-        super.onActivityStarted(activity)
-        componentPredicate.runIfValid(activity, internalLogger) {
-            viewLoadingTimer.onStartLoading(it)
-        }
-    }
 
     @MainThread
     override fun onActivityResumed(activity: Activity) {
@@ -64,38 +50,21 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
                 emptyMap()
             }
             getRumMonitor()?.startView(it, viewName, attributes)
-            // we still need to call onFinishedLoading here for API bellow 29 as the
-            // onPostResumed is not available on these devices.
-            viewLoadingTimer.onFinishedLoading(it)
         }
     }
 
     @MainThread
-    override fun onActivityPostResumed(activity: Activity) {
-        // this method doesn't call super, because having super call creates a crash
-        // during DD SDK initialization on KitKat with ProGuard enabled, default super is
-        // empty anyway
-        // this method is only available from API 29 and above
-        componentPredicate.runIfValid(activity, internalLogger) {
-            viewLoadingTimer.onFinishedLoading(it)
-        }
-    }
-
-    @MainThread
-    override fun onActivityPaused(activity: Activity) {
-        super.onActivityPaused(activity)
-        componentPredicate.runIfValid(activity, internalLogger) {
-            updateLoadingTime(activity)
-            getRumMonitor()?.stopView(it)
-            viewLoadingTimer.onPaused(activity)
-        }
-    }
-
-    @MainThread
-    override fun onActivityDestroyed(activity: Activity) {
-        super.onActivityDestroyed(activity)
-        componentPredicate.runIfValid(activity, internalLogger) {
-            viewLoadingTimer.onDestroyed(it)
+    override fun onActivityStopped(activity: Activity) {
+        super.onActivityStopped(activity)
+        executor.scheduleSafe(
+            "Delayed view stop",
+            STOP_VIEW_DELAY_MS,
+            TimeUnit.MILLISECONDS,
+            internalLogger
+        ) {
+            componentPredicate.runIfValid(activity, internalLogger) {
+                getRumMonitor()?.stopView(it)
+            }
         }
     }
 
@@ -129,30 +98,9 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
         return withSdkCore { GlobalRumMonitor.get(it) }
     }
 
-    private fun getAdvancedRumMonitor(): AdvancedRumMonitor? {
-        return getRumMonitor() as? AdvancedRumMonitor
-    }
-
-    private fun updateLoadingTime(activity: Activity) {
-        viewLoadingTimer.getLoadingTime(activity)?.let { loadingTime ->
-            getAdvancedRumMonitor()?.let { monitor ->
-                val loadingType = resolveLoadingType(viewLoadingTimer.isFirstTimeLoading(activity))
-                monitor.updateViewLoadingTime(
-                    activity,
-                    loadingTime,
-                    loadingType
-                )
-            }
-        }
-    }
-
-    private fun resolveLoadingType(firstTimeLoading: Boolean): ViewEvent.LoadingType {
-        return if (firstTimeLoading) {
-            ViewEvent.LoadingType.ACTIVITY_DISPLAY
-        } else {
-            ViewEvent.LoadingType.ACTIVITY_REDISPLAY
-        }
-    }
-
     // endregion
+
+    internal companion object {
+        private const val STOP_VIEW_DELAY_MS = 200L
+    }
 }

@@ -87,6 +87,8 @@ internal class DatadogCore(
         )
     }
 
+    private var processLifecycleMonitor: ProcessLifecycleMonitor? = null
+
     // region SdkCore
 
     /** @inheritDoc */
@@ -358,12 +360,15 @@ internal class DatadogCore(
 
     private fun setupLifecycleMonitorCallback(appContext: Context) {
         if (appContext is Application) {
-            val callback = ProcessLifecycleCallback(
-                coreFeature.networkInfoProvider,
-                appContext,
-                internalLogger
-            )
-            appContext.registerActivityLifecycleCallbacks(ProcessLifecycleMonitor(callback))
+            processLifecycleMonitor = ProcessLifecycleMonitor(
+                ProcessLifecycleCallback(
+                    coreFeature.networkInfoProvider,
+                    appContext,
+                    internalLogger
+                )
+            ).apply {
+                appContext.registerActivityLifecycleCallbacks(this)
+            }
         }
     }
 
@@ -443,6 +448,10 @@ internal class DatadogCore(
             it.value.stop()
         }
         features.clear()
+
+        if (context is Application && processLifecycleMonitor != null) {
+            context.unregisterActivityLifecycleCallbacks(processLifecycleMonitor)
+        }
 
         coreFeature.stop()
     }

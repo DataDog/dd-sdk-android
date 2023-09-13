@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -77,6 +77,9 @@ internal class DataUploadRunnableTest {
 
     lateinit var testedRunnable: DataUploadRunnable
 
+    @Forgery
+    lateinit var fakeUploadSuccess: UploadStatus.Success
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         val fakeNetworkInfo =
@@ -114,7 +117,7 @@ internal class DataUploadRunnableTest {
             )
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn networkInfo
         whenever(mockReader.lockAndReadNext()) doReturn batch
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
+        whenever(mockDataUploader.upload(batch.data)) doReturn fakeUploadSuccess
 
         testedRunnable.run()
 
@@ -141,7 +144,7 @@ internal class DataUploadRunnableTest {
         )
         whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
+        whenever(mockDataUploader.upload(batch.data)) doReturn fakeUploadSuccess
 
         testedRunnable.run()
 
@@ -168,7 +171,7 @@ internal class DataUploadRunnableTest {
         )
         whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
+        whenever(mockDataUploader.upload(batch.data)) doReturn fakeUploadSuccess
 
         testedRunnable.run()
 
@@ -195,7 +198,7 @@ internal class DataUploadRunnableTest {
         )
         whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
+        whenever(mockDataUploader.upload(batch.data)) doReturn fakeUploadSuccess
 
         testedRunnable.run()
 
@@ -222,7 +225,7 @@ internal class DataUploadRunnableTest {
         )
         whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
+        whenever(mockDataUploader.upload(batch.data)) doReturn fakeUploadSuccess
 
         testedRunnable.run()
 
@@ -249,7 +252,7 @@ internal class DataUploadRunnableTest {
         )
         whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
+        whenever(mockDataUploader.upload(batch.data)) doReturn fakeUploadSuccess
 
         testedRunnable.run()
 
@@ -276,7 +279,7 @@ internal class DataUploadRunnableTest {
         )
         whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
+        whenever(mockDataUploader.upload(batch.data)) doReturn fakeUploadSuccess
 
         testedRunnable.run()
 
@@ -303,7 +306,7 @@ internal class DataUploadRunnableTest {
         )
         whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
+        whenever(mockDataUploader.upload(batch.data)) doReturn fakeUploadSuccess
 
         testedRunnable.run()
 
@@ -336,7 +339,7 @@ internal class DataUploadRunnableTest {
     @Test
     fun `batch sent successfully`(@Forgery batch: Batch) {
         whenever(mockReader.lockAndReadNext()) doReturn batch
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
+        whenever(mockDataUploader.upload(batch.data)) doReturn fakeUploadSuccess
 
         testedRunnable.run()
 
@@ -351,9 +354,12 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `batch kept on Network Error`(@Forgery batch: Batch) {
+    fun `batch kept on Network Error`(
+        @Forgery batch: Batch,
+        @Forgery status: UploadStatus.NetworkError
+    ) {
         whenever(mockReader.lockAndReadNext()) doReturn batch
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.NETWORK_ERROR
+        whenever(mockDataUploader.upload(batch.data)) doReturn status
 
         testedRunnable.run()
 
@@ -370,10 +376,11 @@ internal class DataUploadRunnableTest {
     @Test
     fun `batch kept after n Network Error`(
         @Forgery batch: Batch,
-        @IntForgery(min = 3, max = 42) runCount: Int
+        @IntForgery(min = 3, max = 42) runCount: Int,
+        @Forgery status: UploadStatus.NetworkError
     ) {
         whenever(mockReader.lockAndReadNext()) doReturn batch
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.NETWORK_ERROR
+        whenever(mockDataUploader.upload(batch.data)) doReturn status
 
         repeat(runCount) {
             testedRunnable.run()
@@ -389,9 +396,12 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `batch dropped on Redirection`(@Forgery batch: Batch) {
+    fun `batch dropped on Redirection`(
+        @Forgery batch: Batch,
+        @Forgery status: UploadStatus.HttpRedirection
+    ) {
         whenever(mockReader.lockAndReadNext()) doReturn batch
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.HTTP_REDIRECTION
+        whenever(mockDataUploader.upload(batch.data)) doReturn status
 
         testedRunnable.run()
 
@@ -406,10 +416,12 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `batch dropped on Client Error`(@Forgery batch: Batch) {
+    fun `batch dropped on Client Error`(
+        @Forgery batch: Batch,
+        @Forgery status: UploadStatus.HttpClientError
+    ) {
         whenever(mockReader.lockAndReadNext()) doReturn batch
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.HTTP_CLIENT_ERROR
-
+        whenever(mockDataUploader.upload(batch.data)) doReturn status
         testedRunnable.run()
 
         verify(mockReader).drop(batch)
@@ -423,10 +435,12 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `batch dropped on Invalid Token Error`(@Forgery batch: Batch) {
+    fun `batch dropped on Invalid Token Error`(
+        @Forgery batch: Batch,
+        @Forgery status: UploadStatus.InvalidTokenError
+    ) {
         whenever(mockReader.lockAndReadNext()) doReturn batch
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.INVALID_TOKEN_ERROR
-
+        whenever(mockDataUploader.upload(batch.data)) doReturn status
         testedRunnable.run()
 
         verify(mockReader).drop(batch)
@@ -440,10 +454,12 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `batch kept on Server Error`(@Forgery batch: Batch) {
+    fun `batch kept on Server Error`(
+        @Forgery batch: Batch,
+        @Forgery status: UploadStatus.HttpServerError
+    ) {
         whenever(mockReader.lockAndReadNext()) doReturn batch
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.HTTP_SERVER_ERROR
-
+        whenever(mockDataUploader.upload(batch.data)) doReturn status
         testedRunnable.run()
 
         verify(mockReader, never()).drop(batch)
@@ -459,10 +475,11 @@ internal class DataUploadRunnableTest {
     @Test
     fun `batch kept after n Server Error`(
         @Forgery batch: Batch,
-        @IntForgery(min = 3, max = 42) runCount: Int
+        @IntForgery(min = 3, max = 42) runCount: Int,
+        @Forgery status: UploadStatus.HttpServerError
     ) {
         whenever(mockReader.lockAndReadNext()) doReturn batch
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.HTTP_SERVER_ERROR
+        whenever(mockDataUploader.upload(batch.data)) doReturn status
 
         repeat(runCount) {
             testedRunnable.run()
@@ -479,9 +496,12 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `batch dropped on Unknown error`(@Forgery batch: Batch) {
+    fun `batch dropped on Unknown error`(
+        @Forgery batch: Batch,
+        @Forgery status: UploadStatus.UnknownError
+    ) {
         whenever(mockReader.lockAndReadNext()) doReturn batch
-        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.UNKNOWN_ERROR
+        whenever(mockDataUploader.upload(batch.data)) doReturn status
 
         testedRunnable.run()
 
@@ -499,7 +519,7 @@ internal class DataUploadRunnableTest {
     fun `when has batches the upload frequency will increase`(
         @Forgery batch: Batch
     ) {
-        whenever(mockDataUploader.upload(any())) doReturn UploadStatus.SUCCESS
+        whenever(mockDataUploader.upload(any())) doReturn fakeUploadSuccess
         whenever(mockReader.lockAndReadNext()).doReturn(batch)
 
         repeat(5) {
@@ -521,7 +541,7 @@ internal class DataUploadRunnableTest {
         @IntForgery(16, 64) runCount: Int
     ) {
         // Given
-        whenever(mockDataUploader.upload(any())) doReturn UploadStatus.SUCCESS
+        whenever(mockDataUploader.upload(any())) doReturn fakeUploadSuccess
         whenever(mockReader.lockAndReadNext()).doReturn(batch)
 
         // When
@@ -548,11 +568,7 @@ internal class DataUploadRunnableTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-        UploadStatus::class,
-        names = ["HTTP_REDIRECTION", "HTTP_CLIENT_ERROR", "UNKNOWN_ERROR"],
-        mode = EnumSource.Mode.INCLUDE
-    )
+    @MethodSource("dropBatchStatusValues")
     fun `𝕄 reduce delay between runs 𝕎 batch fails and should be dropped`(
         uploadStatus: UploadStatus,
         @Forgery batch: Batch,
@@ -592,7 +608,7 @@ internal class DataUploadRunnableTest {
         @IntForgery(16, 64) runCount: Int
     ) {
         // Given
-        whenever(mockDataUploader.upload(any())) doReturn UploadStatus.SUCCESS
+        whenever(mockDataUploader.upload(any())) doReturn fakeUploadSuccess
         whenever(mockReader.lockAndReadNext()) doReturn null
 
         // When
@@ -618,24 +634,14 @@ internal class DataUploadRunnableTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("retryBatchStatusValues")
     fun `𝕄 increase delay between runs 𝕎 batch fails and should be retried`(
-        @IntForgery(16, 64) runCount: Int,
-        forge: Forge
+        status: UploadStatus,
+        @IntForgery(16, 64) runCount: Int
     ) {
         // Given
-        whenever(mockDataUploader.upload(any())) doAnswer {
-            forge.aValueFrom(
-                UploadStatus::class.java,
-                exclude = listOf(
-                    UploadStatus.SUCCESS,
-                    UploadStatus.HTTP_REDIRECTION,
-                    UploadStatus.HTTP_CLIENT_ERROR,
-                    UploadStatus.UNKNOWN_ERROR,
-                    UploadStatus.REQUEST_CREATION_ERROR
-                )
-            )
-        }
+        whenever(mockDataUploader.upload(any())) doReturn status
         whenever(mockReader.lockAndReadNext()) doReturn null
 
         // When
@@ -658,6 +664,36 @@ internal class DataUploadRunnableTest {
                     .isBetween(testedRunnable.minDelayMs, testedRunnable.maxDelayMs)
                 next
             }
+        }
+    }
+
+    companion object {
+
+        @JvmStatic
+        fun dropBatchStatusValues(): List<UploadStatus> {
+            val forge = Forge().apply {
+                Configurator().configure(this)
+            }
+
+            return listOf(
+                forge.getForgery(UploadStatus.HttpClientError::class.java),
+                forge.getForgery(UploadStatus.HttpRedirection::class.java),
+                forge.getForgery(UploadStatus.UnknownError::class.java),
+                forge.getForgery(UploadStatus.UnknownStatus::class.java)
+            )
+        }
+
+        @JvmStatic
+        fun retryBatchStatusValues(): List<UploadStatus> {
+            val forge = Forge().apply {
+                Configurator().configure(this)
+            }
+
+            return listOf(
+                forge.getForgery(UploadStatus.HttpServerError::class.java),
+                forge.getForgery(UploadStatus.HttpClientRateLimiting::class.java),
+                forge.getForgery(UploadStatus.NetworkError::class.java)
+            )
         }
     }
 }

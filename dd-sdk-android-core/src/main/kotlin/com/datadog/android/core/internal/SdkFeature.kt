@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal
 
+import android.app.Application
 import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
@@ -16,6 +17,8 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
@@ -23,11 +26,16 @@ import com.datadog.android.core.internal.data.upload.v2.DataFlusher
 import com.datadog.android.core.internal.data.upload.v2.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.v2.DataUploader
 import com.datadog.android.core.internal.data.upload.v2.NoOpDataUploader
+import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher
+import com.datadog.android.core.internal.metrics.MetricsDispatcher
+import com.datadog.android.core.internal.metrics.NoOpMetricsDispatcher
 import com.datadog.android.core.internal.persistence.ConsentAwareStorage
 import com.datadog.android.core.internal.persistence.NoOpStorage
 import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
@@ -46,27 +54,42 @@ internal class SdkFeature(
 
     internal val initialized = AtomicBoolean(false)
     internal val eventReceiver = AtomicReference<FeatureEventReceiver>(null)
-
     internal var storage: Storage = NoOpStorage()
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var uploadScheduler: UploadScheduler = NoOpUploadScheduler()
     internal var fileOrchestrator: FileOrchestrator = NoOpFileOrchestrator()
+    internal var metricsDispatcher: MetricsDispatcher = NoOpMetricsDispatcher()
+    internal var processLifecycleMonitor: ProcessLifecycleMonitor? = null
 
-    // region SDK Feature
+    // region SdkFeature
 
     fun initialize(context: Context) {
         if (initialized.get()) {
             return
         }
 
+        var dataUploadConfiguration: DataUploadConfiguration? = null
         if (wrappedFeature is StorageBackedFeature) {
-            storage = createStorage(wrappedFeature.name, wrappedFeature.storageConfiguration)
+            val uploadFrequency = resolveUploadFrequency()
+            dataUploadConfiguration = DataUploadConfiguration(uploadFrequency)
+            val storageConfiguration = wrappedFeature.storageConfiguration
+            val recentDelayMs = resolveBatchingDelay(coreFeature, storageConfiguration)
+            val filePersistenceConfig = coreFeature.buildFilePersistenceConfig().copy(
+                maxBatchSize = storageConfiguration.maxBatchSize,
+                maxItemSize = storageConfiguration.maxItemSize,
+                maxItemsPerBatch = storageConfiguration.maxItemsPerBatch,
+                oldFileThreshold = storageConfiguration.oldBatchThreshold,
+                recentDelayMs = recentDelayMs
+            )
+            setupMetricsDispatcher(dataUploadConfiguration, filePersistenceConfig, context)
+
+            storage = createStorage(wrappedFeature.name, filePersistenceConfig)
         }
 
         wrappedFeature.onInitialize(context)
 
-        if (wrappedFeature is StorageBackedFeature) {
-            setupUploader(wrappedFeature.requestFactory)
+        if (wrappedFeature is StorageBackedFeature && dataUploadConfiguration != null) {
+            setupUploader(wrappedFeature.requestFactory, dataUploadConfiguration)
         }
 
         if (wrappedFeature is TrackingConsentProviderCallback) {
@@ -97,7 +120,10 @@ internal class SdkFeature(
             storage = NoOpStorage()
             uploader = NoOpDataUploader()
             fileOrchestrator = NoOpFileOrchestrator()
-
+            metricsDispatcher = NoOpMetricsDispatcher()
+            (coreFeature.contextRef.get() as? Application)
+                ?.unregisterActivityLifecycleCallbacks(processLifecycleMonitor)
+            processLifecycleMonitor = null
             initialized.set(false)
         }
     }
@@ -142,7 +168,47 @@ internal class SdkFeature(
 
     // region Internal
 
-    private fun setupUploader(requestFactory: RequestFactory) {
+    private fun setupMetricsDispatcher(
+        dataUploadConfiguration: DataUploadConfiguration,
+        filePersistenceConfig: FilePersistenceConfig,
+        context: Context
+    ) {
+        metricsDispatcher = BatchMetricsDispatcher(
+            wrappedFeature.name,
+            dataUploadConfiguration,
+            filePersistenceConfig,
+            internalLogger,
+            coreFeature.timeProvider
+        ).apply {
+            if (context is Application) {
+                processLifecycleMonitor = ProcessLifecycleMonitor(this)
+                context.registerActivityLifecycleCallbacks(
+                    processLifecycleMonitor
+                )
+            }
+        }
+    }
+
+    private fun resolveBatchingDelay(
+        coreFeature: CoreFeature,
+        featureStorageConfiguration: FeatureStorageConfiguration
+    ): Long {
+        return featureStorageConfiguration.batchSize?.windowDurationMs
+            ?: coreFeature.batchSize.windowDurationMs
+    }
+
+    private fun resolveUploadFrequency(): UploadFrequency {
+        return if (wrappedFeature is StorageBackedFeature) {
+            wrappedFeature.storageConfiguration.uploadFrequency ?: coreFeature.uploadFrequency
+        } else {
+            coreFeature.uploadFrequency
+        }
+    }
+
+    private fun setupUploader(
+        requestFactory: RequestFactory,
+        uploadConfiguration: DataUploadConfiguration
+    ) {
         uploadScheduler = if (coreFeature.isMainProcess) {
             uploader = createUploader(requestFactory)
             DataUploadScheduler(
@@ -151,7 +217,7 @@ internal class SdkFeature(
                 coreFeature.contextProvider,
                 coreFeature.networkInfoProvider,
                 coreFeature.systemInfoProvider,
-                coreFeature.uploadFrequency,
+                uploadConfiguration,
                 coreFeature.uploadExecutorService,
                 internalLogger
             )
@@ -165,14 +231,15 @@ internal class SdkFeature(
 
     private fun createStorage(
         featureName: String,
-        storageConfiguration: FeatureStorageConfiguration
+        filePersistenceConfig: FilePersistenceConfig
     ): Storage {
         val fileOrchestrator = FeatureFileOrchestrator(
             consentProvider = coreFeature.trackingConsentProvider,
             storageDir = coreFeature.storageDir,
             featureName = featureName,
             executorService = coreFeature.persistenceExecutorService,
-            internalLogger = internalLogger
+            internalLogger = internalLogger,
+            metricsDispatcher = metricsDispatcher
         )
         this.fileOrchestrator = fileOrchestrator
 
@@ -190,12 +257,8 @@ internal class SdkFeature(
             ),
             fileMover = FileMover(internalLogger),
             internalLogger = internalLogger,
-            filePersistenceConfig = coreFeature.buildFilePersistenceConfig().copy(
-                maxBatchSize = storageConfiguration.maxBatchSize,
-                maxItemSize = storageConfiguration.maxItemSize,
-                maxItemsPerBatch = storageConfiguration.maxItemsPerBatch,
-                oldFileThreshold = storageConfiguration.oldBatchThreshold
-            )
+            filePersistenceConfig = filePersistenceConfig,
+            metricsDispatcher = metricsDispatcher
         )
     }
 

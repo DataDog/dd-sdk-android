@@ -11,8 +11,8 @@ import com.google.gson.Gson
 import java.io.File
 import java.util.Locale
 
-fun sampleAppConfig(rootDir: File, flavorName: String): SampleAppConfig {
-    val file = File("${rootDir.absolutePath}/config/$flavorName.json")
+fun sampleAppConfig(filePath: String): SampleAppConfig {
+    val file = File(filePath)
     if (!file.exists()) {
         return SampleAppConfig()
     }
@@ -24,7 +24,7 @@ fun sampleAppConfig(rootDir: File, flavorName: String): SampleAppConfig {
 
 @Suppress("UnstableApiUsage")
 fun configureFlavorForSampleApp(flavor: ApplicationProductFlavor, rootDir: File) {
-    val config = sampleAppConfig(rootDir, flavor.name)
+    val config = sampleAppConfig("${rootDir.absolutePath}/config/${flavor.name}.json")
     println("Configuring flavor: [${flavor.name}] with config: [$config]")
     flavor.buildConfigField(
         "String",

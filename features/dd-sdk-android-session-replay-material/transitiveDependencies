@@ -12,7 +12,7 @@ androidx.collection:collection:1.1.0                            :   41 Kb
 androidx.constraintlayout:constraintlayout-solver:2.0.1         :  197 Kb
 androidx.constraintlayout:constraintlayout:2.0.1                :  373 Kb
 androidx.coordinatorlayout:coordinatorlayout:1.1.0              :   43 Kb
-androidx.core:core:1.8.0                                        : 1052 Kb
+androidx.core:core:1.6.0                                        :  905 Kb
 androidx.cursoradapter:cursoradapter:1.0.0                      :   10 Kb
 androidx.customview:customview:1.0.0                            :   32 Kb
 androidx.documentfile:documentfile:1.0.0                        :   10 Kb

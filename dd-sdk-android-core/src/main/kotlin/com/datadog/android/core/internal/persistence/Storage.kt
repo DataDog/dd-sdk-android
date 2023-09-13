@@ -10,6 +10,7 @@ import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -52,10 +53,15 @@ internal interface Storage {
     /**
      * Utility to update the state of a batch, asynchronously.
      * @param batchId the id of the Batch to confirm
+     * @param removalReason the reason why the batch is being removed
      * @param callback an operation to perform with a [BatchConfirmation]
      */
     @WorkerThread
-    fun confirmBatchRead(batchId: BatchId, callback: (BatchConfirmation) -> Unit)
+    fun confirmBatchRead(
+        batchId: BatchId,
+        removalReason: RemovalReason,
+        callback: (BatchConfirmation) -> Unit
+    )
 
     /**
      * Removes all the files backed by this storage, synchronously.

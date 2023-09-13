@@ -18,7 +18,8 @@ interface EventMapper<T : Any> {
      * @return the modified event [T] or NULL
      *
      * Please note that if you return NULL from this method the event will be dropped and will not
-     * be serialised.
+     * be serialised. If the object returned has a different reference than the object
+     * which was passed to the function, it will be dropped as well.
      */
     fun map(event: T): T?
 }

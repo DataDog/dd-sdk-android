@@ -99,6 +99,16 @@ internal class TelemetryDebugEventAssert(actual: TelemetryDebugEvent) :
         return this
     }
 
+    fun hasAdditionalProperties(additionalProperties: Map<String, Any?>): TelemetryDebugEventAssert {
+        assertThat(actual.telemetry.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.additionalProperties $additionalProperties" +
+                    " but was ${actual.telemetry.additionalProperties}"
+            )
+            .isEqualTo(additionalProperties)
+        return this
+    }
+
     companion object {
         fun assertThat(actual: TelemetryDebugEvent) = TelemetryDebugEventAssert(actual)
     }

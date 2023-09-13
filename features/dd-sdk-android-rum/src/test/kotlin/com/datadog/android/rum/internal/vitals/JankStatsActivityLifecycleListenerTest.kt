@@ -14,10 +14,12 @@ import androidx.metrics.performance.FrameData
 import androidx.metrics.performance.JankStats
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.rum.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -29,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.reset
@@ -73,6 +76,7 @@ internal class JankStatsActivityLifecycleListenerTest {
         whenever(mockActivity.window) doReturn mockWindow
         whenever(mockActivity.display) doReturn mockDisplay
         whenever(mockJankStatsProvider.createJankStatsAndTrack(any(), any(), any())) doReturn mockJankStats
+        whenever(mockJankStats.isTrackingEnabled) doReturn true
 
         testedJankListener = JankStatsActivityLifecycleListener(
             mockObserver,
@@ -93,7 +97,7 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 handle null jankstats 𝕎 onActivityStarted() {}`() {
+    fun `𝕄 handle null jankStats 𝕎 onActivityStarted() {}`() {
         // Given
         whenever(mockJankStatsProvider.createJankStatsAndTrack(any(), any(), any())) doReturn null
 
@@ -142,7 +146,76 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
-    fun `𝕄 foNothing 𝕎 onActivityStopped() {}`() {
+    fun `𝕄 log error 𝕎 onActivityStopped() { jankStats instance is already stopped }`() {
+        // Given
+        whenever(mockJankStats.isTrackingEnabled) doReturn false
+
+        // When
+        testedJankListener.onActivityStarted(mockActivity)
+        testedJankListener.onActivityStopped(mockActivity)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            JankStatsActivityLifecycleListener.JANK_STATS_TRACKING_ALREADY_DISABLED_ERROR
+        )
+    }
+
+    @Test
+    fun `𝕄 log error 𝕎 onActivityStopped() { jankStats stop tracking throws error }`() {
+        // Given
+        val exception = IllegalArgumentException()
+        whenever(mockJankStats::isTrackingEnabled.set(false)) doThrow exception
+
+        // When
+        testedJankListener.onActivityStarted(mockActivity)
+        testedJankListener.onActivityStopped(mockActivity)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.TELEMETRY,
+            message = JankStatsActivityLifecycleListener.JANK_STATS_TRACKING_DISABLE_ERROR,
+            throwable = exception
+        )
+    }
+
+    @Test
+    fun `𝕄 remove window 𝕎 onActivityDestroyed() { no more activities for window }`() {
+        // Given
+
+        // When
+        testedJankListener.onActivityStarted(mockActivity)
+        testedJankListener.onActivityStopped(mockActivity)
+        testedJankListener.onActivityDestroyed(mockActivity)
+
+        // Then
+        assertThat(testedJankListener.activeActivities).isEmpty()
+        assertThat(testedJankListener.activeWindowsListener).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 not remove window 𝕎 onActivityDestroyed() { there are activities for window }`() {
+        // Given
+        val anotherActivity = mock<Activity>().apply {
+            whenever(window) doReturn mockWindow
+            whenever(display) doReturn mockDisplay
+        }
+
+        // When
+        testedJankListener.onActivityStarted(mockActivity)
+        testedJankListener.onActivityStopped(mockActivity)
+        testedJankListener.onActivityStarted(anotherActivity)
+        testedJankListener.onActivityDestroyed(mockActivity)
+
+        // Then
+        assertThat(testedJankListener.activeActivities).isNotEmpty
+        assertThat(testedJankListener.activeWindowsListener).isNotEmpty
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 onActivityStopped() {}`() {
         // Given
 
         // When

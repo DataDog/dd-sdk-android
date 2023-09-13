@@ -648,6 +648,16 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasSampleRate(sampleRate: Float?): ViewEventAssert {
+        assertThat(actual.dd.configuration?.sessionSampleRate ?: 0)
+            .overridingErrorMessage(
+                "Expected RUM event to have sample rate: $sampleRate" +
+                    " but instead was: ${actual.dd.configuration?.sessionSampleRate}"
+            )
+            .isEqualTo(sampleRate)
+        return this
+    }
+
     companion object {
 
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)

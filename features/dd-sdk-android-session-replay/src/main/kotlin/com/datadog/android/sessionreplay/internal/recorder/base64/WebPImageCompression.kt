@@ -15,19 +15,19 @@ import java.io.ByteArrayOutputStream
 /**
  * Handle webp image compression.
  */
-class WebPImageCompression internal constructor() : ImageCompression {
+internal class WebPImageCompression : ImageCompression {
 
     override fun getMimeType(): String? =
         MimeTypeMap.getSingleton().getMimeTypeFromExtension(WEBP_EXTENSION)
 
     @WorkerThread
-    override fun compressBitmapToStream(bitmap: Bitmap): ByteArrayOutputStream {
-        val byteArrayOutputStream = ByteArrayOutputStream()
+    override fun compressBitmap(bitmap: Bitmap): ByteArray {
+        // preallocate stream size
+        val byteArrayOutputStream = ByteArrayOutputStream(bitmap.allocationByteCount)
         val imageFormat = getImageCompressionFormat()
-        // stream is not null and image quality is between 0 and 100
-        @Suppress("UnsafeThirdPartyFunctionCall")
+        @Suppress("UnsafeThirdPartyFunctionCall") // stream is not null and image quality is between 0 and 100
         bitmap.compress(imageFormat, IMAGE_QUALITY, byteArrayOutputStream)
-        return byteArrayOutputStream
+        return byteArrayOutputStream.toByteArray()
     }
 
     private fun getImageCompressionFormat(): Bitmap.CompressFormat =

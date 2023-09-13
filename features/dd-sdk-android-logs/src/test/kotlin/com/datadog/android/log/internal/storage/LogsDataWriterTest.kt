@@ -139,7 +139,8 @@ internal class LogsDataWriterTest {
                 eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
                 capture(),
                 eq(fakeThrowable),
-                eq(false)
+                eq(false),
+                eq(null)
             )
             assertThat(firstValue()).isEqualTo("Error serializing LogEvent model")
         }

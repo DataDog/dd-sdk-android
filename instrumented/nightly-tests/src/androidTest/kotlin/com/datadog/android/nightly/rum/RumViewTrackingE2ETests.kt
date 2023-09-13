@@ -20,6 +20,7 @@ import com.datadog.android.nightly.activities.ViewTrackingFragmentActivity
 import com.datadog.android.nightly.activities.ViewTrackingMixedFragmentActivity
 import com.datadog.android.nightly.activities.ViewTrackingMixedNoFragmentActivity
 import com.datadog.android.nightly.activities.ViewTrackingNavigationActivity
+import com.datadog.android.nightly.activities.ViewTrackingNavigationFragmentContainerViewActivity
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.defaultConfigurationBuilder
 import com.datadog.android.nightly.utils.initializeSdk
@@ -272,6 +273,35 @@ internal class RumViewTrackingE2ETests {
      * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#constructor(Int, Boolean, ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())
      */
     @Test
+    fun rum_navigation_view_tracking_strategy_fragment_container_view() {
+        measureSdkInitialize {
+            val config = defaultConfigurationBuilder(
+                crashReportsEnabled = true
+            ).build()
+            initializeSdk(
+                InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
+                rumConfigProvider = {
+                    it.useViewTrackingStrategy(
+                        NavigationViewTrackingStrategy(
+                            R.id.nav_host_fragment,
+                            true
+                        )
+                    )
+                        .build()
+                },
+                config = config
+            )
+        }
+        launch(ViewTrackingNavigationFragmentContainerViewActivity::class.java)
+            .moveToState(Lifecycle.State.DESTROYED)
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#constructor(Int, Boolean, ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())
+     */
+    @Test
     fun rum_navigation_view_tracking_strategy_all_views_dropped() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
@@ -309,6 +339,43 @@ internal class RumViewTrackingE2ETests {
      * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#constructor(Int, Boolean, ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())
      */
     @Test
+    fun rum_navigation_view_tracking_strategy_fragment_container_view_all_views_dropped() {
+        measureSdkInitialize {
+            val config = defaultConfigurationBuilder(
+                crashReportsEnabled = true
+            ).build()
+            initializeSdk(
+                InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
+                rumConfigProvider = {
+                    it.useViewTrackingStrategy(
+                        NavigationViewTrackingStrategy(
+                            R.id.nav_host_fragment,
+                            true,
+                            object : ComponentPredicate<NavDestination> {
+                                override fun accept(component: NavDestination): Boolean {
+                                    return false
+                                }
+
+                                override fun getViewName(component: NavDestination): String {
+                                    return "ViewTrackingNavigationFragmentContainerViewActivityAllViewsDropped"
+                                }
+                            }
+                        )
+                    ).build()
+                },
+                config = config
+            )
+        }
+        launch(ViewTrackingNavigationFragmentContainerViewActivity::class.java)
+            .moveToState(Lifecycle.State.DESTROYED)
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#constructor(Int, Boolean, ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())
+     */
+    @Test
     fun rum_navigation_view_tracking_strategy_custom_view_name() {
         measureSdkInitialize {
             val config = defaultConfigurationBuilder(
@@ -338,6 +405,43 @@ internal class RumViewTrackingE2ETests {
             )
         }
         launch(ViewTrackingNavigationActivity::class.java)
+            .moveToState(Lifecycle.State.DESTROYED)
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.rum.RumConfiguration$Builder#fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
+     * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#constructor(Int, Boolean, ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())
+     */
+    @Test
+    fun rum_navigation_view_tracking_strategy_fragment_container_view_custom_view_name() {
+        measureSdkInitialize {
+            val config = defaultConfigurationBuilder(
+                crashReportsEnabled = true
+            ).build()
+            initializeSdk(
+                InstrumentationRegistry.getInstrumentation().targetContext,
+                forgeSeed = forge.seed,
+                rumConfigProvider = {
+                    it.useViewTrackingStrategy(
+                        NavigationViewTrackingStrategy(
+                            R.id.nav_host_fragment,
+                            true,
+                            object : ComponentPredicate<NavDestination> {
+                                override fun accept(component: NavDestination): Boolean {
+                                    return true
+                                }
+
+                                override fun getViewName(component: NavDestination): String {
+                                    return component.label.toString()
+                                }
+                            }
+                        )
+                    ).build()
+                },
+                config = config
+            )
+        }
+        launch(ViewTrackingNavigationFragmentContainerViewActivity::class.java)
             .moveToState(Lifecycle.State.DESTROYED)
     }
 
