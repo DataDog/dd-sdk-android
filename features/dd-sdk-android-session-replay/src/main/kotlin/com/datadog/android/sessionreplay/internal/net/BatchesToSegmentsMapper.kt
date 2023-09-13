@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.net
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsJsonArray
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsJsonObject
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsLong
@@ -21,7 +22,7 @@ import com.google.gson.JsonParser
  *  Maps a batch to a Pair<MobileSegment, SerializedMobileSegment> for uploading.
  *  This class is meant for internal usage.
  */
-internal class BatchesToSegmentsMapper {
+internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogger) {
 
     fun map(batchData: List<ByteArray>): Pair<MobileSegment, JsonObject>? {
         return groupBatchDataIntoSegments(batchData)
@@ -29,18 +30,29 @@ internal class BatchesToSegmentsMapper {
 
     // region Internal
 
-    private fun groupBatchDataIntoSegments(batchData: List<ByteArray>): Pair<MobileSegment, JsonObject>? {
+    private fun groupBatchDataIntoSegments(batchData: List<ByteArray>):
+        Pair<MobileSegment, JsonObject>? {
         val reducedEnrichedRecord = batchData
             .asSequence()
             .mapNotNull {
                 @Suppress("SwallowedException")
                 try {
-                    JsonParser.parseString(String(it)).safeGetAsJsonObject()
+                    JsonParser.parseString(String(it)).safeGetAsJsonObject(internalLogger)
                 } catch (e: JsonParseException) {
-                    // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
+                    internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.TELEMETRY,
+                        { UNABLE_TO_DESERIALIZE_ENRICHED_RECORD_ERROR_MESSAGE },
+                        e
+                    )
                     null
                 } catch (e: IllegalStateException) {
-                    // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
+                    internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.TELEMETRY,
+                        { UNABLE_TO_DESERIALIZE_ENRICHED_RECORD_ERROR_MESSAGE },
+                        e
+                    )
                     null
                 }
             }
@@ -69,7 +81,7 @@ internal class BatchesToSegmentsMapper {
         val orderedRecords = records
             .asSequence()
             .mapNotNull {
-                it.safeGetAsJsonObject()
+                it.safeGetAsJsonObject(internalLogger)
             }
             .mapNotNull {
                 val timestamp = it.timestamp()
@@ -90,13 +102,18 @@ internal class BatchesToSegmentsMapper {
             return null
         }
 
-        val startTimestamp = orderedRecords.firstOrNull()?.safeGetAsJsonObject()?.timestamp()
-        val stopTimestamp = orderedRecords.lastOrNull()?.safeGetAsJsonObject()?.timestamp()
+        val startTimestamp = orderedRecords
+            .firstOrNull()
+            ?.safeGetAsJsonObject(internalLogger)
+            ?.timestamp()
+        val stopTimestamp = orderedRecords
+            .lastOrNull()
+            ?.safeGetAsJsonObject(internalLogger)
+            ?.timestamp()
 
         if (startTimestamp == null || stopTimestamp == null) {
             // this is just to avoid having kotlin warnings but the elements
             // without timestamp property were already removed in the logic above
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
             return null
         }
 
@@ -114,23 +131,24 @@ internal class BatchesToSegmentsMapper {
             source = MobileSegment.Source.ANDROID,
             records = emptyList()
         )
-        val segmentAsJsonObject = segment.toJson().safeGetAsJsonObject() ?: return null
+        val segmentAsJsonObject = segment.toJson().safeGetAsJsonObject(internalLogger)
+            ?: return null
         segmentAsJsonObject.add(RECORDS_KEY, orderedRecords)
         return Pair(segment, segmentAsJsonObject)
     }
 
     private fun hasFullSnapshotRecord(records: JsonArray) =
         records.firstOrNull {
-            it.asJsonObject.getAsJsonPrimitive(RECORD_TYPE_KEY)?.safeGetAsLong() ==
+            it.asJsonObject.getAsJsonPrimitive(RECORD_TYPE_KEY)?.safeGetAsLong(internalLogger) ==
                 FULL_SNAPSHOT_RECORD_TYPE
         } != null
 
     private fun JsonObject.records(): JsonArray? {
-        return get(EnrichedRecord.RECORDS_KEY)?.safeGetAsJsonArray()
+        return get(EnrichedRecord.RECORDS_KEY)?.safeGetAsJsonArray(internalLogger)
     }
 
     private fun JsonObject.timestamp(): Long? {
-        return getAsJsonPrimitive(TIMESTAMP_KEY)?.safeGetAsLong()
+        return getAsJsonPrimitive(TIMESTAMP_KEY)?.safeGetAsLong(internalLogger)
     }
 
     private fun JsonObject.rumContext(): SessionReplayRumContext? {
@@ -138,7 +156,13 @@ internal class BatchesToSegmentsMapper {
         val sessionId = get(EnrichedRecord.SESSION_ID_KEY)?.asString
         val viewId = get(EnrichedRecord.VIEW_ID_KEY)?.asString
         if (applicationId == null || sessionId == null || viewId == null) {
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.TELEMETRY,
+                { ILLEGAL_STATE_ENRICHED_RECORD_ERROR_MESSAGE },
+                null,
+                true
+            )
             return null
         }
         return SessionReplayRumContext(
@@ -155,5 +179,9 @@ internal class BatchesToSegmentsMapper {
         internal const val RECORDS_KEY = "records"
         private const val RECORD_TYPE_KEY = "type"
         internal const val TIMESTAMP_KEY = "timestamp"
+        internal const val UNABLE_TO_DESERIALIZE_ENRICHED_RECORD_ERROR_MESSAGE =
+            "SR BatchesToSegmentMapper: unable to deserialize EnrichedRecord"
+        internal const val ILLEGAL_STATE_ENRICHED_RECORD_ERROR_MESSAGE =
+            "SR BatchesToSegmentMapper: Enriched record was missing the context information"
     }
 }

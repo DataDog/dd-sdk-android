@@ -47,7 +47,7 @@ internal class DataOkHttpUploader(
                 },
                 e
             )
-            return UploadStatus.REQUEST_CREATION_ERROR
+            return UploadStatus.RequestCreationError
         }
 
         val uploadStatus = try {
@@ -55,11 +55,11 @@ internal class DataOkHttpUploader(
         } catch (e: Throwable) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                InternalLogger.Target.USER,
                 { "Unable to execute the request; we will retry later." },
                 e
             )
-            UploadStatus.NETWORK_ERROR
+            UploadStatus.NetworkError
         }
 
         uploadStatus.logStatus(
@@ -96,7 +96,7 @@ internal class DataOkHttpUploader(
             }
             ?.value
         if (apiKey != null && (apiKey.isEmpty() || !isValidHeaderValue(apiKey))) {
-            return UploadStatus.INVALID_TOKEN_ERROR
+            return UploadStatus.InvalidTokenError(UploadStatus.UNKNOWN_RESPONSE_CODE)
         }
 
         val okHttpRequest = buildOkHttpRequest(request)
@@ -152,22 +152,22 @@ internal class DataOkHttpUploader(
         request: DatadogRequest
     ): UploadStatus {
         return when (code) {
-            HTTP_ACCEPTED -> UploadStatus.SUCCESS
-            HTTP_BAD_REQUEST -> UploadStatus.HTTP_CLIENT_ERROR
-            HTTP_UNAUTHORIZED -> UploadStatus.INVALID_TOKEN_ERROR
-            HTTP_FORBIDDEN -> UploadStatus.INVALID_TOKEN_ERROR
-            HTTP_CLIENT_TIMEOUT -> UploadStatus.HTTP_CLIENT_RATE_LIMITING
-            HTTP_ENTITY_TOO_LARGE -> UploadStatus.HTTP_CLIENT_ERROR
-            HTTP_TOO_MANY_REQUESTS -> UploadStatus.HTTP_CLIENT_RATE_LIMITING
-            HTTP_INTERNAL_ERROR -> UploadStatus.HTTP_SERVER_ERROR
-            HTTP_UNAVAILABLE -> UploadStatus.HTTP_SERVER_ERROR
+            HTTP_ACCEPTED -> UploadStatus.Success(code)
+            HTTP_BAD_REQUEST -> UploadStatus.HttpClientError(code)
+            HTTP_UNAUTHORIZED -> UploadStatus.InvalidTokenError(code)
+            HTTP_FORBIDDEN -> UploadStatus.InvalidTokenError(code)
+            HTTP_CLIENT_TIMEOUT -> UploadStatus.HttpClientRateLimiting(code)
+            HTTP_ENTITY_TOO_LARGE -> UploadStatus.HttpClientError(code)
+            HTTP_TOO_MANY_REQUESTS -> UploadStatus.HttpClientRateLimiting(code)
+            HTTP_INTERNAL_ERROR -> UploadStatus.HttpServerError(code)
+            HTTP_UNAVAILABLE -> UploadStatus.HttpServerError(code)
             else -> {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
                     listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                     { "Unexpected status code $code on upload request: ${request.description}" }
                 )
-                UploadStatus.UNKNOWN_ERROR
+                UploadStatus.UnknownError(code)
             }
         }
     }

@@ -5,46 +5,18 @@
 To include the Datadog integration for [Jetpack Compose][1] in your project, add the
 following to your application's `build.gradle` file.
 
-```
+```groovy
 dependencies {
-    implementation "com.datadoghq:dd-sdk-android:<latest-version>"
+    implementation "com.datadoghq:dd-sdk-android-rum:<latest-version>"
     implementation "com.datadoghq:dd-sdk-android-compose:<latest-version>"
 }
 ```
 
-### Initial setup
+### Initial Setup
 
-Before using the SDK, set up the library with your application
-context, client token, and application ID.
-To generate a client token and an application ID, check **UX Monitoring > RUM Applications > New Application**
-in the Datadog dashboard.
-
-```kotlin
-class SampleApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
-
-        val configuration = Configuration.Builder(
-            rumEnabled = true,
-            ...
-        )
-            .trackInteractions()
-            .useViewTrackingStrategy(strategy)
-            ...
-            .build()
-
-        val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
-        Datadog.initialize(this, credentials, configuration, trackingConsent)
-
-        val monitor = RumMonitor.Builder().build()
-        GlobalRum.registerIfAbsent(monitor)
-   }
-}
-```
+1. Setup RUM monitoring, see the dedicated [Datadog Android RUM Collection documentation][2] to learn how.
 
 #### Navigation for Compose support
-
-**Support of Navigation for Compose is experimental, because `androidx.navigation:navigation-compose` is still in alpha, so overall API may be a subject to change.**
 
 If you are migrating your existing app to Jetpack Compose, and use fragment-based Navigation as it is recommended in the [guide][2], continue to use `useViewTrackingStrategy` with the strategy which suits you best.
 
@@ -60,10 +32,7 @@ You also must reject Activities or Fragments, which are hosts of Compose views d
 Here is an example in case of `ActivityViewTrackingStrategy` usage:
 
 ```kotlin
-val configuration = Configuration.Builder(
-    rumEnabled = true,
-    ...
-)
+val configuration = RumConfiguration.Builder(applicationId = applicationId)
     .useViewTrackingStrategy(
         ActivityViewTrackingStrategy(
             trackExtras = ...,
@@ -137,4 +106,5 @@ For details on contributing, read the
 [Apache License, v2.0](../../LICENSE)
 
 [1]: https://developer.android.com/jetpack/compose
-[2]: https://developer.android.com/jetpack/compose/navigation#interoperability
+[2]: https://docs.datadoghq.com/real_user_monitoring/android/?tab=kotlin
+[3]: https://developer.android.com/jetpack/compose/navigation#interoperability

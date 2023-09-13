@@ -8,7 +8,7 @@ androidx.appcompat:appcompat:1.3.0                              : 1058 Kb
 androidx.arch.core:core-common:2.1.0                            :   10 Kb
 androidx.arch.core:core-runtime:2.1.0                           :    5 Kb
 androidx.collection:collection:1.1.0                            :   41 Kb
-androidx.core:core:1.8.0                                        : 1052 Kb
+androidx.core:core:1.6.0                                        :  905 Kb
 androidx.cursoradapter:cursoradapter:1.0.0                      :   10 Kb
 androidx.customview:customview:1.0.0                            :   32 Kb
 androidx.drawerlayout:drawerlayout:1.0.0                        :   31 Kb
@@ -35,5 +35,5 @@ org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.10                  :  969 b
 org.jetbrains.kotlin:kotlin-stdlib:1.8.10                       : 1598 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
 
-Total transitive dependencies size                              :    6 Mb
+Total transitive dependencies size                              :    5 Mb
 

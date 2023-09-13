@@ -53,7 +53,7 @@ internal class WebPImageCompressionTest {
         val captor = argumentCaptor<Bitmap.CompressFormat>()
 
         // When
-        testedImageCompression.compressBitmapToStream(mockBitmap)
+        testedImageCompression.compressBitmap(mockBitmap)
 
         verify(mockBitmap).compress(
             captor.capture(),
@@ -72,7 +72,7 @@ internal class WebPImageCompressionTest {
         val captor = argumentCaptor<Bitmap.CompressFormat>()
 
         // When
-        testedImageCompression.compressBitmapToStream(mockBitmap)
+        testedImageCompression.compressBitmap(mockBitmap)
 
         verify(mockBitmap).compress(
             captor.capture(),

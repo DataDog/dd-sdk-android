@@ -1,12 +1,14 @@
 #!/usr/bin/env sh
 
-local_ci_usage="Usage: local_ci.sh [-s|--setup] [-n|--clean] [-a|--analysis] [-c|--compile] [-t|--test]"
+local_ci_usage="Usage: local_ci.sh [-s|--setup] [-n|--clean] [-a|--analysis] [-c|--compile] [-t|--test] [--update-session-replay-payloads] [-h|--help]"
+
 
 SETUP=0
 CLEANUP=0
 ANALYSIS=0
 COMPILE=0
 TEST=0
+UPDATE_SESSION_REPLAY_PAYLOAD=0
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -28,6 +30,10 @@ while [[ $# -gt 0 ]]; do
     ;;
   -t | --test)
     TEST=1
+    shift
+    ;;
+  --update-session-replay-payloads)
+    UPDATE_SESSION_REPLAY_PAYLOAD=1
     shift
     ;;
   -h | --help)
@@ -83,7 +89,8 @@ if [[ $CLEANUP == 1 ]]; then
   rm -rf integrations/dd-sdk-android-compose/build/
   rm -rf integrations/dd-sdk-android-fresco/build/
   rm -rf integrations/dd-sdk-android-glide/build/
-  rm -rf integrations/dd-sdk-android-ktx/build/
+  rm -rf integrations/dd-sdk-android-rum-coroutines/build/
+  rm -rf integrations/dd-sdk-android-trace-coroutines/build/
   rm -rf integrations/dd-sdk-android-okhttp/build/
   rm -rf integrations/dd-sdk-android-rx/build/
   rm -rf integrations/dd-sdk-android-sqldelight/build/
@@ -160,6 +167,24 @@ if [[ $TEST == 1 ]]; then
 
   echo "---- Unit tests (Release)"
   ./gradlew uTR
+fi
+
+
+if [[ $UPDATE_SESSION_REPLAY_PAYLOAD == 1 ]]; then
+  PAYLOAD_INPUT_DIRECTORY_PATH="storage/emulated/0/Android/data/com.datadog.android.sdk.integration/cache/session_replay_payloads/."
+  PAYLOAD_OUTPUT_DIRECTORY_PATH="instrumented/integration/src/androidTest/assets/session_replay_payloads/"
+  SESSION_REPLAY_TESTS_PACKAGE="com.datadog.android.sdk.integration.sessionreplay"
+  SESSION_REPLAY_TESTS_RUNNER="com.datadog.android.sdk.integration.test/androidx.test.runner.AndroidJUnitRunner"
+
+  echo "---- Updating session replay payload"
+  echo "---- Build and install the integration test app on the device"
+  ./gradlew :instrumented:integration:assembleDebug :instrumented:integration:installDebug :instrumented:integration:assembleDebugAndroidTest :instrumented:integration:installDebugAndroidTest
+
+  echo "---- Run the Session Replay integration tests and generate new payloads"
+  adb shell am instrument -w -r -e debug false -e updateSrPayloads true -e package  $SESSION_REPLAY_TESTS_PACKAGE $SESSION_REPLAY_TESTS_RUNNER
+
+  echo "---- Override the existing payloads with the new ones from the device"
+  adb pull $PAYLOAD_INPUT_DIRECTORY_PATH $PAYLOAD_OUTPUT_DIRECTORY_PATH
 fi
 
 echo "-- Done ✔︎"

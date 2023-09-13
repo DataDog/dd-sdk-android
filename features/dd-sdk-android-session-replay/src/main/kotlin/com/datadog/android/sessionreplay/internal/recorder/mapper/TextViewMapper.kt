@@ -9,11 +9,15 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.Typeface
 import android.view.Gravity
 import android.widget.TextView
+import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
+import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.AllowObfuscationRule
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.TextValueObfuscationRule
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 
 /**
  * A [WireframeMapper] implementation to map a [TextView] component.
@@ -23,26 +27,86 @@ import com.datadog.android.sessionreplay.model.MobileSegment
  */
 @Suppress("TooManyFunctions")
 open class TextViewMapper :
-    BaseWireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe> {
+    BaseWireframeMapper<TextView, MobileSegment.Wireframe> {
 
-    internal val textValueObfuscationRule: TextValueObfuscationRule
+    internal var textValueObfuscationRule: TextValueObfuscationRule = AllowObfuscationRule()
+    private var base64Serializer: Base64Serializer? = null
+    private var imageWireframeHelper: ImageWireframeHelper? = null
+    private var uniqueIdentifierGenerator: UniqueIdentifierGenerator? = null
 
-    constructor() {
-        textValueObfuscationRule = AllowObfuscationRule()
+    constructor()
+
+    internal constructor(
+        base64Serializer: Base64Serializer,
+        imageWireframeHelper: ImageWireframeHelper,
+        uniqueIdentifierGenerator: UniqueIdentifierGenerator,
+        textValueObfuscationRule: TextValueObfuscationRule? = null
+    ) : super(base64Serializer, imageWireframeHelper, uniqueIdentifierGenerator) {
+        this.base64Serializer = base64Serializer
+        this.imageWireframeHelper = imageWireframeHelper
+        this.uniqueIdentifierGenerator = uniqueIdentifierGenerator
+        textValueObfuscationRule?.let {
+            this.textValueObfuscationRule = it
+        }
     }
 
-    internal constructor(textValueObfuscationRule: TextValueObfuscationRule) {
+    internal constructor(
+        textValueObfuscationRule: TextValueObfuscationRule
+    ) {
         this.textValueObfuscationRule = textValueObfuscationRule
     }
 
     override fun map(view: TextView, mappingContext: MappingContext):
-        List<MobileSegment.Wireframe.TextWireframe> {
+        List<MobileSegment.Wireframe> {
+        val wireframes = mutableListOf<MobileSegment.Wireframe>()
+
+        wireframes.addAll(super.map(view, mappingContext))
+
+        val density = mappingContext.systemInformation.screenDensity
         val viewGlobalBounds = resolveViewGlobalBounds(
             view,
-            mappingContext.systemInformation.screenDensity
+            density
         )
-        val (shapeStyle, border) = view.background?.resolveShapeStyleAndBorder(view.alpha)
-            ?: (null to null)
+
+        resolveTextElements(
+            view,
+            mappingContext,
+            viewGlobalBounds
+        ).let(wireframes::addAll)
+
+        resolveImages(
+            view,
+            mappingContext,
+            wireframes.size
+        ).let(wireframes::addAll)
+
+        return wireframes
+    }
+
+    // region Internal
+
+    private fun resolveImages(
+        view: TextView,
+        mappingContext: MappingContext,
+        currentIndex: Int
+    ): List<MobileSegment.Wireframe> {
+        val wireframes = mutableListOf<MobileSegment.Wireframe>()
+
+        imageWireframeHelper?.createCompoundDrawableWireframes(
+            view,
+            mappingContext,
+            currentIndex
+        )?.let { result ->
+            wireframes.addAll(result)
+        }
+
+        return wireframes
+    }
+    private fun resolveTextElements(
+        view: TextView,
+        mappingContext: MappingContext,
+        viewGlobalBounds: GlobalBounds
+    ): List<MobileSegment.Wireframe> {
         return listOf(
             MobileSegment.Wireframe.TextWireframe(
                 id = resolveViewId(view),
@@ -50,8 +114,8 @@ open class TextViewMapper :
                 y = viewGlobalBounds.y,
                 width = viewGlobalBounds.width,
                 height = viewGlobalBounds.height,
-                shapeStyle = shapeStyle,
-                border = border,
+                shapeStyle = null,
+                border = null,
                 text = textValueObfuscationRule.resolveObfuscatedValue(view, mappingContext),
                 textStyle = resolveTextStyle(view, mappingContext.systemInformation.screenDensity),
                 textPosition = resolveTextPosition(
@@ -61,8 +125,6 @@ open class TextViewMapper :
             )
         )
     }
-
-    // region Internal
 
     private fun resolveTextStyle(textView: TextView, pixelsDensity: Float):
         MobileSegment.TextStyle {

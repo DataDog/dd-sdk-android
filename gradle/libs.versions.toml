@@ -17,7 +17,7 @@ androidXRecyclerView = "1.1.0"
 androidXWorkManager = "2.8.1"
 androidXConstraintLayout = "2.0.4"
 androidXComposeRuntime = "1.4.2"
-androidXComposeNavigation = "2.6.0-beta01"
+androidXComposeNavigation = "2.6.0"
 androidXComposeUi = "1.4.2"
 androidXComposeMaterial = "1.4.2"
 androidXMetrics = "1.0.0-alpha04"
@@ -212,7 +212,6 @@ rxJava3Android = { module = "io.reactivex.rxjava3:rxandroid", version.ref = "rxJ
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 
 coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
-coroutinesAndroid = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 
 exoplayer = { module = "com.google.android.exoplayer:exoplayer", version.ref = "exoplayer" }
 exoplayerDataSource = { module = "com.google.android.exoplayer:exoplayer-datasource", version.ref = "exoplayer" }
@@ -281,11 +280,6 @@ glide = [
     "glideAnnotations",
     "glideCore",
     "glideOkHttp3",
-]
-
-coroutines = [
-    "coroutinesCore",
-    "coroutinesAndroid"
 ]
 
 exoplayer = [

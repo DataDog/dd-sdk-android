@@ -36,7 +36,7 @@ import timber.log.Timber
  */
 class TvSampleApplication : Application() {
 
-    private lateinit var okHttpClient: OkHttpClient
+    internal lateinit var okHttpClient: OkHttpClient
 
     override fun onCreate() {
         super.onCreate()

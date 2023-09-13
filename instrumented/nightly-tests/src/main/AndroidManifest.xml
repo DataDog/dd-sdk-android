@@ -20,6 +20,7 @@
         <activity android:name=".activities.ViewTrackingActivity"/>
         <activity android:name=".activities.ViewTrackingFragmentActivity"/>
         <activity android:name=".activities.ViewTrackingNavigationActivity"/>
+        <activity android:name=".activities.ViewTrackingNavigationFragmentContainerViewActivity"/>
         <activity android:name=".activities.UserInteractionTrackingActivity"/>
         <activity android:name=".activities.UserInteractionCustomTargetActivity"/>
         <activity android:name=".activities.ViewTrackingMixedFragmentActivity"/>

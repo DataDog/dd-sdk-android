@@ -1,0 +1,33 @@
+Dependencies List
+
+androidx.annotation:annotation-experimental:1.1.0               :   16 Kb
+androidx.annotation:annotation:1.3.0                            :   30 Kb
+androidx.arch.core:core-common:2.1.0                            :   10 Kb
+androidx.collection:collection:1.1.0                            :   41 Kb
+androidx.core:core:1.8.0                                        : 1052 Kb
+androidx.lifecycle:lifecycle-common:2.3.1                       :   22 Kb
+androidx.lifecycle:lifecycle-runtime:2.3.1                      :   10 Kb
+androidx.media:media:1.6.0                                      :  330 Kb
+androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
+com.google.android.exoplayer:exoplayer-common:2.19.1            :  445 Kb
+com.google.android.exoplayer:exoplayer-container:2.19.1         :   22 Kb
+com.google.android.exoplayer:exoplayer-core:2.19.1              : 1251 Kb
+com.google.android.exoplayer:exoplayer-dash:2.19.1              :  132 Kb
+com.google.android.exoplayer:exoplayer-database:2.19.1          :    7 Kb
+com.google.android.exoplayer:exoplayer-datasource:2.19.1        :  141 Kb
+com.google.android.exoplayer:exoplayer-decoder:2.19.1           :   17 Kb
+com.google.android.exoplayer:exoplayer-extractor:2.19.1         :  699 Kb
+com.google.android.exoplayer:exoplayer-hls:2.19.1               :  159 Kb
+com.google.android.exoplayer:exoplayer-rtsp:2.19.1              :  150 Kb
+com.google.android.exoplayer:exoplayer-smoothstreaming:2.19.1   :   47 Kb
+com.google.android.exoplayer:exoplayer-ui:2.19.1                :  445 Kb
+com.google.android.exoplayer:exoplayer:2.19.1                   :    6 Kb
+com.google.guava:failureaccess:1.0.1                            :    4 Kb
+com.google.guava:guava:31.1-android                             :    2 Mb
+com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava:    2 Kb
+org.jetbrains.kotlin:kotlin-stdlib-common:1.8.10                :  212 Kb
+org.jetbrains.kotlin:kotlin-stdlib:1.8.10                       : 1598 Kb
+org.jetbrains:annotations:13.0                                  :   17 Kb
+
+Total transitive dependencies size                              :    9 Mb
+

@@ -243,7 +243,8 @@ internal class LogsFeatureTest {
                 eq(InternalLogger.Target.USER),
                 capture(),
                 isNull(),
-                eq(false)
+                eq(false),
+                eq(null)
             )
             assertThat(firstValue()).isEqualTo(
                 LogsFeature.UNSUPPORTED_EVENT_TYPE.format(
@@ -276,7 +277,8 @@ internal class LogsFeatureTest {
                 eq(InternalLogger.Target.USER),
                 capture(),
                 isNull(),
-                eq(false)
+                eq(false),
+                eq(null)
             )
             assertThat(firstValue()).isEqualTo(
                 LogsFeature.UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"])
@@ -336,7 +338,8 @@ internal class LogsFeatureTest {
                 eq(InternalLogger.Target.USER),
                 capture(),
                 isNull(),
-                eq(false)
+                eq(false),
+                eq(null)
             )
             assertThat(firstValue()).isEqualTo(
                 LogsFeature.JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING
@@ -559,7 +562,8 @@ internal class LogsFeatureTest {
                 eq(InternalLogger.Target.USER),
                 capture(),
                 isNull(),
-                eq(false)
+                eq(false),
+                eq(null)
             )
             assertThat(firstValue()).isEqualTo(
                 LogsFeature.NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING
@@ -763,7 +767,8 @@ internal class LogsFeatureTest {
                 eq(InternalLogger.Target.USER),
                 capture(),
                 isNull(),
-                eq(false)
+                eq(false),
+                eq(null)
             )
             assertThat(firstValue()).isEqualTo(
                 LogsFeature.SPAN_LOG_EVENT_MISSING_MANDATORY_FIELDS_WARNING

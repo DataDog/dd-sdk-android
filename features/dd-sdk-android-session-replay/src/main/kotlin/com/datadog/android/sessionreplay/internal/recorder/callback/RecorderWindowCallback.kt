@@ -10,6 +10,7 @@ import android.content.Context
 import android.view.MotionEvent
 import android.view.Window
 import androidx.annotation.MainThread
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
@@ -21,11 +22,12 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("TooGenericExceptionCaught")
 internal class RecorderWindowCallback(
-    private val appContext: Context,
+    appContext: Context,
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     internal val wrappedCallback: Window.Callback,
     private val timeProvider: TimeProvider,
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor,
+    private val internalLogger: InternalLogger,
     private val copyEvent: (MotionEvent) -> MotionEvent = {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         MotionEvent.obtain(it)
@@ -54,16 +56,24 @@ internal class RecorderWindowCallback(
                 copy.recycle()
             }
         } else {
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
-            // sdkLogger.errorWithTelemetry("Received MotionEvent=null")
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { MOTION_EVENT_WAS_NULL_ERROR_MESSAGE },
+                null
+            )
         }
 
         @Suppress("SwallowedException")
         return try {
             wrappedCallback.dispatchTouchEvent(event)
-        } catch (e: Throwable) {
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
-            // sdkLogger.errorWithTelemetry("Wrapped callback failed processing MotionEvent", e)
+        } catch (e: Exception) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { FAIL_TO_PROCESS_MOTION_EVENT_ERROR_MESSAGE },
+                e
+            )
             EVENT_CONSUMED
         }
     }
@@ -82,6 +92,7 @@ internal class RecorderWindowCallback(
                 // reset the on move update time in order to take into account the first move event
                 lastOnMoveUpdateTimeInNs = 0
             }
+
             MotionEvent.ACTION_MOVE -> {
                 if (System.nanoTime() - lastOnMoveUpdateTimeInNs >= motionUpdateThresholdInNs) {
                     updatePositions(event, MobileSegment.PointerEventType.MOVE)
@@ -94,6 +105,7 @@ internal class RecorderWindowCallback(
                     flushPositions()
                 }
             }
+
             MotionEvent.ACTION_UP -> {
                 updatePositions(event, MobileSegment.PointerEventType.UP)
                 flushPositions()
@@ -141,12 +153,12 @@ internal class RecorderWindowCallback(
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
-        val rootViews = windowInspector.getGlobalWindowViews()
+        val rootViews = windowInspector.getGlobalWindowViews(internalLogger)
         if (rootViews.isNotEmpty()) {
             // a new window was added or removed so we stop recording the previous root views
             // and we start recording the new ones.
             viewOnDrawInterceptor.stopIntercepting()
-            viewOnDrawInterceptor.intercept(rootViews, appContext)
+            viewOnDrawInterceptor.intercept(rootViews)
         }
     }
 
@@ -161,5 +173,9 @@ internal class RecorderWindowCallback(
 
         // every 10 frames we flush the buffer
         internal val FLUSH_BUFFER_THRESHOLD_NS: Long = MOTION_UPDATE_DELAY_THRESHOLD_NS * 10
+        internal const val MOTION_EVENT_WAS_NULL_ERROR_MESSAGE =
+            "RecorderWindowCallback: intercepted null motion event"
+        internal const val FAIL_TO_PROCESS_MOTION_EVENT_ERROR_MESSAGE =
+            "RecorderWindowCallback: wrapped callback failed to handle the motion event"
     }
 }

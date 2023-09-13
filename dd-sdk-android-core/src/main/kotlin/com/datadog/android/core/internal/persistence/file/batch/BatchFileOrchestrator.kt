@@ -9,6 +9,9 @@ package com.datadog.android.core.internal.persistence.file.batch
 import androidx.annotation.WorkerThread
 import androidx.collection.LruCache
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.metrics.BatchClosedMetadata
+import com.datadog.android.core.internal.metrics.MetricsDispatcher
+import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.canWriteSafe
@@ -28,7 +31,8 @@ import kotlin.math.roundToLong
 internal class BatchFileOrchestrator(
     private val rootDir: File,
     private val config: FilePersistenceConfig,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val metricsDispatcher: MetricsDispatcher
 ) : FileOrchestrator {
 
     private val fileFilter = BatchFileFilter(internalLogger)
@@ -43,7 +47,8 @@ internal class BatchFileOrchestrator(
 
     // keep track of how many items were written in the last known file
     private var previousFile: File? = null
-    private var previousFileItemCount: Int = 0
+    private var previousFileItemCount: Long = 0
+    private var lastFileAccessTimestamp: Long = 0L
 
     @Suppress("UnsafeThirdPartyFunctionCall") // argument is not negative
     private val knownBatchFiles = LruCache<File, Unit>(KNOWN_FILES_MAX_CACHE_SIZE)
@@ -66,7 +71,7 @@ internal class BatchFileOrchestrator(
         return if (!forceNewFile) {
             getReusableWritableFile() ?: createNewFile()
         } else {
-            createNewFile()
+            createNewFile(true)
         }
     }
 
@@ -192,11 +197,23 @@ internal class BatchFileOrchestrator(
         }
     }
 
-    private fun createNewFile(): File {
+    private fun createNewFile(wasForced: Boolean = false): File {
         val newFileName = System.currentTimeMillis().toString()
         val newFile = File(rootDir, newFileName)
+        val closedFile = previousFile
+        if (closedFile != null) {
+            metricsDispatcher.sendBatchClosedMetric(
+                closedFile,
+                BatchClosedMetadata(
+                    lastTimeWasUsedInMs = lastFileAccessTimestamp,
+                    eventsCount = previousFileItemCount,
+                    forcedNew = wasForced
+                )
+            )
+        }
         previousFile = newFile
         previousFileItemCount = 1
+        lastFileAccessTimestamp = System.currentTimeMillis()
         @Suppress("UnsafeThirdPartyFunctionCall") // value is not null
         knownBatchFiles.put(newFile, Unit)
         return newFile
@@ -224,6 +241,7 @@ internal class BatchFileOrchestrator(
 
         return if (isRecentEnough && hasRoomForMore && hasSlotForMore) {
             previousFileItemCount = lastKnownFileItemCount + 1
+            lastFileAccessTimestamp = System.currentTimeMillis()
             lastFile
         } else {
             null
@@ -243,7 +261,9 @@ internal class BatchFileOrchestrator(
             .asSequence()
             .filter { (it.name.toLongOrNull() ?: 0) < threshold }
             .forEach {
-                it.deleteSafe(internalLogger)
+                if (it.deleteSafe(internalLogger)) {
+                    metricsDispatcher.sendBatchDeletedMetric(it, RemovalReason.Obsolete)
+                }
                 @Suppress("UnsafeThirdPartyFunctionCall") // value is not null
                 knownBatchFiles.remove(it)
                 if (it.metadata.existsSafe(internalLogger)) {
@@ -265,7 +285,7 @@ internal class BatchFileOrchestrator(
             )
             files.fold(sizeToFree) { remainingSizeToFree, file ->
                 if (remainingSizeToFree > 0) {
-                    val deletedFileSize = deleteFile(file)
+                    val deletedFileSize = deleteFile(file, true)
                     val deletedMetaFileSize = deleteFile(file.metadata)
                     remainingSizeToFree - deletedFileSize - deletedMetaFileSize
                 } else {
@@ -275,13 +295,17 @@ internal class BatchFileOrchestrator(
         }
     }
 
-    private fun deleteFile(file: File): Long {
+    private fun deleteFile(file: File, sendMetric: Boolean = false): Long {
         if (!file.existsSafe(internalLogger)) return 0
 
         val size = file.lengthSafe(internalLogger)
         @Suppress("UnsafeThirdPartyFunctionCall") // value is not null
         knownBatchFiles.remove(file)
-        return if (file.deleteSafe(internalLogger)) {
+        val wasDeleted = file.deleteSafe(internalLogger)
+        return if (wasDeleted) {
+            if (sendMetric) {
+                metricsDispatcher.sendBatchDeletedMetric(file, RemovalReason.Purged)
+            }
             size
         } else {
             0

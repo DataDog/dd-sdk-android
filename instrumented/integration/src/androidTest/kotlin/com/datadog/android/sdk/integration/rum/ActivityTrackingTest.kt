@@ -93,15 +93,7 @@ internal abstract class ActivityTrackingTest :
             ExpectedViewEvent(
                 viewUrl,
                 docVersion = 2,
-                viewArguments = expectedViewArguments,
-                extraViewAttributes = mapOf(
-                    "loading_type" to "activity_redisplay"
-                ),
-                extraViewAttributesWithPredicate = mapOf(
-                    "loading_time" to { time ->
-                        time.asLong > 0
-                    }
-                )
+                viewArguments = expectedViewArguments
             )
         )
 
@@ -116,7 +108,7 @@ internal abstract class ActivityTrackingTest :
 
         // activity on pause
         instrumentation.runOnMainSync {
-            instrumentation.callActivityOnPause(activity)
+            instrumentation.callActivityOnStop(activity)
         }
 
         return expectedEvents

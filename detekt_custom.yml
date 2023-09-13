@@ -85,7 +85,6 @@ datadog:
     treatUnknownConstructorAsThrowing: true
     knownThrowingCalls:
       # region Android
-      - "android.app.Activity.findNavController(kotlin.Int):java.lang.IllegalStateException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, android.content.pm.PackageManager.PackageInfoFlags):android.content.pm.PackageManager.NameNotFoundException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, kotlin.Int):android.content.pm.PackageManager.NameNotFoundException"
       - "android.content.res.Resources.getResourceEntryName(kotlin.Int):android.content.res.Resources.NotFoundException"
@@ -105,7 +104,6 @@ datadog:
       - "android.view.View.getLocationInWindow(kotlin.IntArray):java.lang.IllegalArgumentException"
       - "android.widget.FrameLayout.addView(android.view.View, android.view.ViewGroup.LayoutParams):java.lang.IllegalArgumentException"
       - "android.widget.LinearLayout.addView(android.view.View):java.lang.IllegalArgumentException"
-      - "androidx.work.WorkManager.enqueueUniqueWork(kotlin.String, androidx.work.ExistingWorkPolicy, androidx.work.OneTimeWorkRequest):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "android.content.res.Resources.getResourceName(kotlin.Int):android.content.res.Resources.NotFoundException"
       - "android.content.res.Resources.openRawResource(kotlin.Int):android.content.res.Resources.NotFoundException"
       - "androidx.collection.LruCache.constructor(kotlin.Int):java.lang.IllegalArgumentException"
@@ -113,7 +111,8 @@ datadog:
       - "androidx.collection.LruCache.put(java.io.File, kotlin.Unit):java.lang.NullPointerException"
       - "androidx.collection.LruCache.remove(java.io.File):java.lang.NullPointerException"
       - "androidx.metrics.performance.JankStats.createAndTrack(android.view.Window, androidx.metrics.performance.JankStats.OnFrameListener):java.lang.IllegalStateException"
-      - "androidx.navigation.Navigation.findNavController(android.app.Activity, kotlin.Int):"
+      - "androidx.navigation.Navigation.findNavController(android.app.Activity, kotlin.Int):java.lang.IllegalStateException"
+      - "androidx.work.WorkManager.enqueueUniqueWork(kotlin.String, androidx.work.ExistingWorkPolicy, androidx.work.OneTimeWorkRequest):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       # endregion
       # region Java File
       - "java.io.ByteArrayOutputStream.write(kotlin.ByteArray, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
@@ -262,6 +261,9 @@ datadog:
       # region Kronos
       - "com.lyft.kronos.KronosClock.syncInBackground():java.lang.IllegalStateException"
       # endregion
+      #region Java util
+      - "java.util.Queue.offer(com.datadog.android.sessionreplay.internal.async.RecordedDataQueueItem):java.lang.IllegalArgumentException,java.lang.ClassCastException,java.lang.NullPointerException"
+      #endregion
     knownSafeCalls:
       # region Android APIs
       - "android.app.Activity.findNavControllerOrNull()"
@@ -275,6 +277,7 @@ datadog:
       - "android.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentPaused(android.app.FragmentManager, android.app.Fragment)"
       - "android.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentResumed(android.app.FragmentManager, android.app.Fragment)"
       - "android.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentStarted(android.app.FragmentManager, android.app.Fragment)"
+      - "android.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentStopped(android.app.FragmentManager, android.app.Fragment)"
       - "android.app.FragmentManager.registerFragmentLifecycleCallbacks(android.app.FragmentManager.FragmentLifecycleCallbacks, kotlin.Boolean)"
       - "android.app.FragmentManager.unregisterFragmentLifecycleCallbacks(android.app.FragmentManager.FragmentLifecycleCallbacks)"
       - "android.content.Context.createDeviceProtectedStorageContext()"
@@ -340,6 +343,8 @@ datadog:
       - "android.view.Window.Callback.onMenuItemSelected(kotlin.Int, android.view.MenuItem)"
       - "android.view.View.getChildAt(kotlin.Int)"
       - "android.view.View.hashCode()"
+      - "androidx.collection.LruCache.size()"
+      - "androidx.collection.LruCache.maxSize()"
       # endregion
       # region Android Webview APIs
       - "android.webkit.ConsoleMessage.MessageLevel.toLogLevel()"
@@ -358,6 +363,7 @@ datadog:
       - "android.webkit.WebViewClient.onReceivedSslError(android.webkit.WebView, android.webkit.SslErrorHandler, android.net.http.SslError)"
       # endregion
       # region Android View APIs
+      - "android.widget.ImageView.getScaleType()"
       - "android.widget.FrameLayout.LayoutParams.constructor(kotlin.Int, kotlin.Int)"
       - "android.widget.FrameLayout.removeView(android.view.View)"
       - "android.widget.LinearLayout.constructor(android.content.Context)"
@@ -372,6 +378,9 @@ datadog:
       # region Android Graphics
       - "android.graphics.Bitmap.recycle()"
       - "android.graphics.Color.argb(kotlin.Int, kotlin.Int, kotlin.Int, kotlin.Int)"
+      - "android.graphics.Color.blue(kotlin.Int)"
+      - "android.graphics.Color.green(kotlin.Int)"
+      - "android.graphics.Color.red(kotlin.Int)"
       - "android.graphics.Color.rgb(kotlin.Int, kotlin.Int, kotlin.Int)"
       - "android.graphics.Color.red(kotlin.Int)"
       - "android.graphics.Color.green(kotlin.Int)"
@@ -396,6 +405,8 @@ datadog:
       - "androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentPaused(androidx.fragment.app.FragmentManager, androidx.fragment.app.Fragment)"
       - "androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentResumed(androidx.fragment.app.FragmentManager, androidx.fragment.app.Fragment)"
       - "androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentStarted(androidx.fragment.app.FragmentManager, androidx.fragment.app.Fragment)"
+      - "androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentStopped(androidx.fragment.app.FragmentManager, androidx.fragment.app.Fragment)"
+      - "androidx.fragment.app.FragmentManager.findFragmentById(kotlin.Int)"
       - "androidx.fragment.app.FragmentManager.registerFragmentLifecycleCallbacks(androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks, kotlin.Boolean)"
       - "androidx.fragment.app.FragmentManager.unregisterFragmentLifecycleCallbacks(androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks)"
       - "androidx.lifecycle.Lifecycle.addObserver(androidx.lifecycle.LifecycleObserver)"
@@ -486,6 +497,7 @@ datadog:
       - "java.util.LinkedList.poll()"
       - "java.util.LinkedList.remove(com.datadog.android.privacy.TrackingConsentProviderCallback)"
       - "java.util.LinkedHashMap.remove(kotlin.String)"
+      - "java.util.Queue.clear()"
       - "java.util.Stack.constructor()"
       - "java.util.Stack.isNotEmpty()"
       - "java.util.Stack.pop()"
@@ -513,6 +525,9 @@ datadog:
       - "java.util.concurrent.ExecutorService.shutdownNow()"
       - "java.util.concurrent.Executors.newSingleThreadExecutor()"
       - "java.util.concurrent.LinkedBlockingDeque.constructor()"
+      - "java.util.Queue.isEmpty()"
+      - "java.util.Queue.isNotEmpty()"
+      - "java.util.Queue.poll()"
       - "java.util.concurrent.ScheduledExecutorService.shutdownNow()"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.remove(java.lang.Runnable)"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.shutdown()"
@@ -582,6 +597,7 @@ datadog:
       - "java.lang.Object.constructor()"
       - "java.lang.Runtime.availableProcessors()"
       - "java.lang.Runtime.getRuntime()"
+      - "java.lang.Runtime.maxMemory()"
       - "java.lang.System.currentTimeMillis()"
       - "java.lang.System.getProperty(kotlin.String)"
       - "java.lang.System.identityHashCode(kotlin.Any)"
@@ -710,6 +726,7 @@ datadog:
       - "kotlin.collections.Map.get(kotlin.String)"
       - "kotlin.collections.Map.isEmpty()"
       - "kotlin.collections.Map.isNotEmpty()"
+      - "kotlin.collections.Map.isNullOrEmpty()"
       - "kotlin.collections.Map.map(kotlin.Function1)"
       - "kotlin.collections.Map.mapKeys(kotlin.Function1)"
       - "kotlin.collections.Map.mapNotNull(kotlin.Function1)"
@@ -726,6 +743,7 @@ datadog:
       - "kotlin.collections.MutableList.add(com.datadog.android.plugin.DatadogPlugin)"
       - "kotlin.collections.MutableList.add(com.datadog.android.sessionreplay.internal.processor.MutationResolver.Entry)"
       - "kotlin.collections.MutableList.add(com.datadog.android.sessionreplay.model.MobileSegment.Add)"
+      - "kotlin.collections.MutableList.add(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe)"
       - "kotlin.collections.MutableList.add(com.datadog.android.sessionreplay.model.MobileSegment.WireframeUpdateMutation)"
       - "kotlin.collections.MutableList.add(com.datadog.android.rum.internal.domain.scope.RumScope)"
       - "kotlin.collections.MutableList.add(com.datadog.android.rum.model.ActionEvent.Type)"
@@ -750,6 +768,7 @@ datadog:
       - "kotlin.collections.MutableList.forEachIndexed(kotlin.Function2)"
       - "kotlin.collections.MutableList.isEmpty()"
       - "kotlin.collections.MutableList.isNotEmpty()"
+      - "kotlin.collections.MutableList.isNullOrEmpty()"
       - "kotlin.collections.MutableList.iterator()"
       - "kotlin.collections.MutableList.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
       - "kotlin.collections.MutableList.remove(java.io.File)"
@@ -837,6 +856,7 @@ datadog:
       - "kotlin.Float.toFloat()"
       - "kotlin.Int.inv()"
       - "kotlin.Int.toChar()"
+      - "kotlin.Int.toDouble()"
       - "kotlin.Int.toFloat()"
       - "kotlin.Int.toLong()"
       - "kotlin.Int.and(kotlin.Int)"
@@ -856,6 +876,8 @@ datadog:
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext, com.google.gson.JsonArray)"
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.model.MobileSegment, com.google.gson.JsonObject)"
       - "kotlin.Pair.constructor(com.google.gson.JsonObject, kotlin.Long)"
+      - "kotlin.Pair.constructor(kotlin.Int, kotlin.Int)"
+      - "kotlin.Pair.constructor(kotlin.Long, kotlin.Long)"
       - "kotlin.Triple.constructor(kotlin.String, kotlin.String, kotlin.String)"
       - "kotlin.Triple.constructor(kotlin.Nothing?, kotlin.Nothing?, kotlin.Nothing?)"
       # endregion

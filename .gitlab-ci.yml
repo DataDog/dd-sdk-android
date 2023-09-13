@@ -64,17 +64,10 @@ static-analysis:
     DETEKT_CUSTOM_RULES_YML_PATH: "detekt_custom.yml"
     DETEKT_GENERATE_CLASSPATH_BUILD_TASK: "printSdkDebugRuntimeClasspath"
     DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
+    FLAVORED_ANDROID_LINT: ":tools:lint:lint :sample:kotlin:lintUs1Release :sample:wear:lintUs1Release"
   trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v16647802-df6f90e7/static-analysis.yml"
+    include: "https://gitlab-templates.ddbuild.io/mobile/v19816199-1de41858/static-analysis.yml"
     strategy: depend
-
-analysis:android-lint:
-  tags: [ "runner:main" ]
-  image: $CI_IMAGE_DOCKER
-  stage: analysis
-  timeout: 30m
-  script:
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :lintCheckAll --stacktrace --no-daemon
 
 analysis:licenses:
   tags: [ "runner:main" ]
@@ -242,7 +235,7 @@ publish:release-glide:
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
     - ./gradlew :integrations:dd-sdk-android-glide:publishToSonatype --stacktrace --no-daemon
 
-publish:release-ktx:
+publish:release-trace-coroutines:
   tags: [ "runner:main" ]
   only:
     - tags
@@ -256,7 +249,23 @@ publish:release-ktx:
     - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
-    - ./gradlew :integrations:dd-sdk-android-ktx:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-trace-coroutines:publishToSonatype --stacktrace --no-daemon
+
+publish:release-rum-coroutines:
+  tags: [ "runner:main" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
+    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
+    - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
+    - ./gradlew :integrations:dd-sdk-android-rum-coroutines:publishToSonatype --stacktrace --no-daemon
 
 publish:release-ndk:
   tags: [ "runner:main" ]
@@ -497,18 +506,6 @@ notify:dogfood-demo:
     - pip3 install GitPython requests
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_token --with-decryption --query "Parameter.Value" --out text >> ./gh_token
     - python3 dogfood.py -v $CI_COMMIT_TAG -t demo
-
-notify:dogfood-bridge:
-  tags: [ "runner:main" ]
-  only:
-    - tags
-  image: $CI_IMAGE_DOCKER
-  stage: notify
-  when: on_success
-  script:
-    - pip3 install GitPython requests
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_token --with-decryption --query "Parameter.Value" --out text >> ./gh_token
-    - python3 dogfood.py -v $CI_COMMIT_TAG -t bridge
 
 notify:dogfood-gradle-plugin:
   tags: [ "runner:main" ]

@@ -11,6 +11,7 @@ import android.content.res.Resources
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.Window
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.callback.NoOpWindowCallback
@@ -56,6 +57,9 @@ internal class WindowCallbackInterceptorTest {
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     lateinit var fakeWindowsList: List<Window>
 
     lateinit var mockActivity: Activity
@@ -67,7 +71,8 @@ internal class WindowCallbackInterceptorTest {
         testedInterceptor = WindowCallbackInterceptor(
             mockRecordedDataQueueHandler,
             mockViewOnDrawInterceptor,
-            mockTimeProvider
+            mockTimeProvider,
+            mockInternalLogger
         )
     }
 

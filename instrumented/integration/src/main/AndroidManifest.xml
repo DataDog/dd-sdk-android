@@ -54,8 +54,16 @@
             android:label="@string/session_replay_end_to_end"
             android:windowSoftInputMode="adjustResize"/>
         <activity
-            android:name=".sessionreplay.SessionReplaySampledOutPlaygroundActivity"
-            android:label="@string/session_replay_end_to_end"
+            android:name=".sessionreplay.SessionReplayTextFieldsActivity"
+            android:label="@string/session_replay_text_fields_end_to_end"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
+            android:name=".sessionreplay.SessionReplaySensitiveFieldsActivity"
+            android:label="@string/session_replay_sensitive_fields_end_to_end"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
+            android:name=".sessionreplay.SessionReplayTextFieldsWithInputActivity"
+            android:label="@string/session_replay_text_fields_end_to_end"
             android:windowSoftInputMode="adjustResize"/>
         <activity
             android:exported="true"

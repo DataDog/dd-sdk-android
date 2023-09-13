@@ -8,5 +8,6 @@
 <resources>
     <string name="app_name">Datadog Nightly Tests</string>
     <string name="navigation_home_fragment_label">ViewTrackingNavigationCustomView</string>
+    <string name="navigation_home_fragment_container_view_label">ViewTrackingNavigationCustomFragmentContainerView</string>
     <string name="user_interaction_strategy_button_label">UserInteractionTrackingButton</string>
 </resources>

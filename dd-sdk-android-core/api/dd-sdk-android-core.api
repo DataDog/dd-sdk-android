@@ -75,8 +75,9 @@ public final class com/datadog/android/_InternalProxy$_TelemetryProxy {
 
 public abstract interface class com/datadog/android/api/InternalLogger {
 	public static final field Companion Lcom/datadog/android/api/InternalLogger$Companion;
-	public abstract fun log (Lcom/datadog/android/api/InternalLogger$Level;Lcom/datadog/android/api/InternalLogger$Target;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;Z)V
-	public abstract fun log (Lcom/datadog/android/api/InternalLogger$Level;Ljava/util/List;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;Z)V
+	public abstract fun log (Lcom/datadog/android/api/InternalLogger$Level;Lcom/datadog/android/api/InternalLogger$Target;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZLjava/util/Map;)V
+	public abstract fun log (Lcom/datadog/android/api/InternalLogger$Level;Ljava/util/List;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZLjava/util/Map;)V
+	public abstract fun logMetric (Lkotlin/jvm/functions/Function0;Ljava/util/Map;)V
 }
 
 public final class com/datadog/android/api/InternalLogger$Companion {
@@ -84,8 +85,8 @@ public final class com/datadog/android/api/InternalLogger$Companion {
 }
 
 public final class com/datadog/android/api/InternalLogger$DefaultImpls {
-	public static synthetic fun log$default (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/api/InternalLogger$Level;Lcom/datadog/android/api/InternalLogger$Target;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZILjava/lang/Object;)V
-	public static synthetic fun log$default (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/api/InternalLogger$Level;Ljava/util/List;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZILjava/lang/Object;)V
+	public static synthetic fun log$default (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/api/InternalLogger$Level;Lcom/datadog/android/api/InternalLogger$Target;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZLjava/util/Map;ILjava/lang/Object;)V
+	public static synthetic fun log$default (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/api/InternalLogger$Level;Ljava/util/List;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZLjava/util/Map;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/api/InternalLogger$Level : java/lang/Enum {
@@ -394,18 +395,22 @@ public abstract interface class com/datadog/android/api/storage/EventBatchWriter
 
 public final class com/datadog/android/api/storage/FeatureStorageConfiguration {
 	public static final field Companion Lcom/datadog/android/api/storage/FeatureStorageConfiguration$Companion;
-	public fun <init> (JIJJ)V
+	public fun <init> (JIJJLcom/datadog/android/core/configuration/UploadFrequency;Lcom/datadog/android/core/configuration/BatchSize;)V
 	public final fun component1 ()J
 	public final fun component2 ()I
 	public final fun component3 ()J
 	public final fun component4 ()J
-	public final fun copy (JIJJ)Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
-	public static synthetic fun copy$default (Lcom/datadog/android/api/storage/FeatureStorageConfiguration;JIJJILjava/lang/Object;)Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
+	public final fun component5 ()Lcom/datadog/android/core/configuration/UploadFrequency;
+	public final fun component6 ()Lcom/datadog/android/core/configuration/BatchSize;
+	public final fun copy (JIJJLcom/datadog/android/core/configuration/UploadFrequency;Lcom/datadog/android/core/configuration/BatchSize;)Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/api/storage/FeatureStorageConfiguration;JIJJLcom/datadog/android/core/configuration/UploadFrequency;Lcom/datadog/android/core/configuration/BatchSize;ILjava/lang/Object;)Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBatchSize ()Lcom/datadog/android/core/configuration/BatchSize;
 	public final fun getMaxBatchSize ()J
 	public final fun getMaxItemSize ()J
 	public final fun getMaxItemsPerBatch ()I
 	public final fun getOldBatchThreshold ()J
+	public final fun getUploadFrequency ()Lcom/datadog/android/core/configuration/UploadFrequency;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

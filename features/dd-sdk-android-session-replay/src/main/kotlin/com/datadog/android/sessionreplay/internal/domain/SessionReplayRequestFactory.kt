@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay.internal.domain
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestFactory
-import com.datadog.android.rum.RumAttributes
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import okhttp3.RequestBody
@@ -19,7 +18,7 @@ import java.util.UUID
 
 internal class SessionReplayRequestFactory(
     internal val customEndpointUrl: String?,
-    private val batchToSegmentsMapper: BatchesToSegmentsMapper = BatchesToSegmentsMapper(),
+    private val batchToSegmentsMapper: BatchesToSegmentsMapper,
     private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory()
 ) : RequestFactory {
 
@@ -43,30 +42,13 @@ internal class SessionReplayRequestFactory(
         return resolveRequest(context, body)
     }
 
-    private fun tags(datadogContext: DatadogContext): String {
-        val elements = mutableListOf(
-            "${RumAttributes.SERVICE_NAME}:${datadogContext.service}",
-            "${RumAttributes.APPLICATION_VERSION}:" +
-                datadogContext.version,
-            "${RumAttributes.SDK_VERSION}:${datadogContext.sdkVersion}",
-            "${RumAttributes.ENV}:${datadogContext.env}"
-        )
-        if (datadogContext.variant.isNotEmpty()) {
-            elements.add("${RumAttributes.VARIANT}:${datadogContext.variant}")
-        }
-        return elements.joinToString(",")
-    }
-
     private fun buildUrl(datadogContext: DatadogContext): String {
-        val queryParams = buildQueryParameters(datadogContext)
-        val intakeUrl = String.format(
+        return String.format(
             Locale.US,
             UPLOAD_URL,
             customEndpointUrl ?: datadogContext.site.intakeEndpoint,
             "replay"
         )
-        return intakeUrl + queryParams.map { "${it.key}=${it.value}" }
-            .joinToString("&", prefix = "?")
     }
 
     private fun resolveHeaders(datadogContext: DatadogContext, requestId: String):
@@ -76,13 +58,6 @@ internal class SessionReplayRequestFactory(
             RequestFactory.HEADER_EVP_ORIGIN to datadogContext.source,
             RequestFactory.HEADER_EVP_ORIGIN_VERSION to datadogContext.sdkVersion,
             RequestFactory.HEADER_REQUEST_ID to requestId
-        )
-    }
-
-    private fun buildQueryParameters(datadogContext: DatadogContext): Map<String, Any> {
-        return mapOf(
-            RequestFactory.QUERY_PARAM_SOURCE to datadogContext.source,
-            RequestFactory.QUERY_PARAM_TAGS to tags(datadogContext)
         )
     }
 

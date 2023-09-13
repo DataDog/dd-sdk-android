@@ -13,17 +13,18 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 internal class ButtonMapper(
     private val textWireframeMapper: TextViewMapper = TextViewMapper()
 ) :
-    WireframeMapper<Button, MobileSegment.Wireframe.TextWireframe> {
+    WireframeMapper<Button, MobileSegment.Wireframe> {
     override fun map(view: Button, mappingContext: MappingContext):
-        List<MobileSegment.Wireframe.TextWireframe> {
-        return textWireframeMapper.map(view, mappingContext).map {
-            if (it.shapeStyle == null && it.border == null) {
-                // we were not able to resolve the background for this button so just add a border
-                it.copy(border = MobileSegment.ShapeBorder(BLACK_COLOR, 1))
-            } else {
-                it
+        List<MobileSegment.Wireframe> {
+        return textWireframeMapper.map(view, mappingContext)
+            .map {
+                if (it is MobileSegment.Wireframe.TextWireframe && it.shapeStyle == null && it.border == null) {
+                    // we were not able to resolve the background for this button so just add a border
+                    it.copy(border = MobileSegment.ShapeBorder(BLACK_COLOR, 1))
+                } else {
+                    it
+                }
             }
-        }
     }
 
     companion object {

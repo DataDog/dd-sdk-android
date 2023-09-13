@@ -18,7 +18,6 @@ import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import java.lang.ref.WeakReference
 
 internal class WindowsOnDrawListener(
-    private val appContext: Context,
     zOrderedDecorViews: List<View>,
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val snapshotProducer: SnapshotProducer,
@@ -45,15 +44,21 @@ internal class WindowsOnDrawListener(
             return@Runnable
         }
 
+        val views = weakReferencedDecorViews
+            .mapNotNull { it.get() }
+        if (views.isEmpty()) {
+            return@Runnable
+        }
+
         // is is very important to have the windows sorted by their z-order
-        val systemInformation = miscUtils.resolveSystemInformation(appContext)
+        val context = resolveContext(views) ?: return@Runnable
+        val systemInformation = miscUtils.resolveSystemInformation(context)
         val item = recordedDataQueueHandler.addSnapshotItem(systemInformation)
             ?: return@Runnable
 
         recordedDataQueueRefs.recordedDataQueueItem = item
 
-        val nodes = weakReferencedDecorViews
-            .mapNotNull { it.get() }
+        val nodes = views
             .mapNotNull {
                 snapshotProducer.produce(it, systemInformation, recordedDataQueueRefs)
             }
@@ -64,5 +69,9 @@ internal class WindowsOnDrawListener(
                 recordedDataQueueHandler.tryToConsumeItems()
             }
         }
+    }
+
+    private fun resolveContext(views: List<View>): Context? {
+        return views.firstOrNull()?.context
     }
 }

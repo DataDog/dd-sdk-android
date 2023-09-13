@@ -6,6 +6,9 @@
 
 package com.datadog.android.api.storage
 
+import com.datadog.android.core.configuration.BatchSize
+import com.datadog.android.core.configuration.UploadFrequency
+
 /**
  * Contains the storage configuration for an [FeatureScope] instance.
  * @property maxItemSize the maximum size (in bytes) for a single item in a batch
@@ -13,12 +16,18 @@ package com.datadog.android.api.storage
  * @property maxBatchSize the maximum size (in bytes) of a complete batch
  * @property oldBatchThreshold the duration (in milliseconds) after which a batch is considered too
  * old to be uploaded (usually because it'll be discarded at ingestion by the backend)
+ * @property uploadFrequency the desired upload frequency policy. If not explicitly provided this
+ * value will be taken from core configuration.
+ * @property batchSize the desired batch size policy.If not explicitly provided this
+ * value will be taken from core configuration.
  */
 data class FeatureStorageConfiguration(
     val maxItemSize: Long,
     val maxItemsPerBatch: Int,
     val maxBatchSize: Long,
-    val oldBatchThreshold: Long
+    val oldBatchThreshold: Long,
+    val uploadFrequency: UploadFrequency?,
+    val batchSize: BatchSize?
 ) {
     companion object {
 
@@ -36,7 +45,9 @@ data class FeatureStorageConfiguration(
             // 4 MB
             maxBatchSize = 4L * 1024 * 1024,
             // 18 hours
-            oldBatchThreshold = 18L * 60L * 60L * 1000L
+            oldBatchThreshold = 18L * 60L * 60L * 1000L,
+            uploadFrequency = null,
+            batchSize = null
         )
     }
 }

@@ -19,12 +19,11 @@ class ApiSurfacePlugin : Plugin<Project> {
         val genDir = File(File(target.buildDir, "generated"), "json2kotlin")
         val apiDir = File(target.projectDir, "api")
         val surfaceFile = File(apiDir, FILE_NAME)
-        genDir.mkdirs()
 
         target.tasks
             .register(TASK_GEN_KOTLIN_API_SURFACE, GenerateApiSurfaceTask::class.java) {
-                this.srcDir = srcDir
-                this.genDir = genDir
+                this.srcDirPath = srcDir.absolutePath
+                this.genDirPath = genDir.absolutePath
                 this.surfaceFile = surfaceFile
             }
         target.tasks

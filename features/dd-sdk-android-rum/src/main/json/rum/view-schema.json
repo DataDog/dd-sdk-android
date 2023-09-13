@@ -73,6 +73,12 @@
               "minimum": 0,
               "readOnly": true
             },
+            "interaction_to_next_paint": {
+              "type": "integer",
+              "description": "Longest duration in ns between an interaction and the next paint",
+              "minimum": 0,
+              "readOnly": true
+            },
             "cumulative_layout_shift": {
               "type": "number",
               "description": "Total layout shift score that occurred on the view",
@@ -328,6 +334,20 @@
           "additionalProperties": true,
           "readOnly": true
         },
+        "privacy": {
+          "type": "object",
+          "description": "Privacy properties",
+          "required": ["replay_level"],
+          "properties": {
+            "replay_level": {
+              "type": "string",
+              "description": "The replay privacy level",
+              "enum": ["allow", "mask", "mask-user-input"],
+              "readOnly": true
+            }
+          },
+          "readOnly": true
+        },
         "_dd": {
           "type": "object",
           "description": "Internal properties",
@@ -355,7 +375,6 @@
                   "start": {
                     "type": "integer",
                     "description": "Duration in ns between start of the view and start of the page state",
-                    "minimum": 0,
                     "readOnly": true
                   }
                 },
@@ -389,6 +408,41 @@
             }
           },
           "readOnly": true
+        },
+        "display": {
+          "type": "object",
+          "description": "Display properties",
+          "readOnly": true,
+          "properties": {
+            "scroll": {
+              "type": "object",
+              "description": "Scroll properties",
+              "required": ["max_depth", "max_depth_scroll_height", "max_depth_scroll_top", "max_depth_time"],
+              "properties": {
+                "max_depth": {
+                  "type": "number",
+                  "description": "Distance between the top and the lowest point reached on this view (in pixels)",
+                  "readOnly": true
+                },
+                "max_depth_scroll_height": {
+                  "type": "number",
+                  "description": "Page scroll height (total height) when the maximum scroll depth was reached for this view (in pixels)",
+                  "readOnly": true
+                },
+                "max_depth_scroll_top": {
+                  "type": "number",
+                  "description": "Page scroll top (scrolled distance) when the maximum scroll depth was reached for this view (in pixels)",
+                  "readOnly": true
+                },
+                "max_depth_time": {
+                  "type": "number",
+                  "description": "Duration between the view start and the scroll event that reached the maximum scroll depth for this view (in nanoseconds)",
+                  "readOnly": true
+                }
+              },
+              "readOnly": true
+            }
+          }
         }
       }
     }
