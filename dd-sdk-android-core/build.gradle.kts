@@ -169,10 +169,6 @@ dependencies {
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)
-
-    // Static Analysis
-    // TODO MTG-12 detekt(project(":tools:detekt"))
-    // TODO MTG-12 detekt(libs.detektCli)
 }
 
 unMock {

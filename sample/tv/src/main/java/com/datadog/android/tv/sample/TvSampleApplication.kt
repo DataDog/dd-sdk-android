@@ -10,7 +10,9 @@ import android.app.Application
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
@@ -34,10 +36,13 @@ import timber.log.Timber
  */
 class TvSampleApplication : Application() {
 
+    private lateinit var okHttpClient: OkHttpClient
+
     override fun onCreate() {
         super.onCreate()
         initializeDatadog()
         initializeTimber()
+        initializeOkHttp()
         initializeNewPipe()
     }
 
@@ -74,7 +79,10 @@ class TvSampleApplication : Application() {
             env = "test",
             variant = ""
         )
-            .useSite(DatadogSite.US1).build()
+            .useSite(DatadogSite.US1)
+            .setBatchSize(BatchSize.SMALL)
+            .setUploadFrequency(UploadFrequency.FREQUENT)
+            .build()
     }
 
     @Suppress("TooGenericExceptionCaught", "CheckInternal")
@@ -88,8 +96,8 @@ class TvSampleApplication : Application() {
         Timber.plant(DatadogTree(logger))
     }
 
-    private fun initializeNewPipe() {
-        val okHttpClient = OkHttpClient.Builder()
+    private fun initializeOkHttp() {
+        okHttpClient = OkHttpClient.Builder()
             .addInterceptor(DatadogInterceptor(traceSampler = RateBasedSampler(FULL_SAMPLING_RATE)))
             .addNetworkInterceptor(
                 TracingInterceptor(
@@ -100,6 +108,9 @@ class TvSampleApplication : Application() {
             )
             .eventListenerFactory(DatadogEventListener.Factory())
             .build()
+    }
+
+    private fun initializeNewPipe() {
         NewPipe.init(OkHttpDownloader(okHttpClient))
     }
 

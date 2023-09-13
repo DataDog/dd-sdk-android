@@ -113,6 +113,7 @@ datadog:
       - "androidx.collection.LruCache.put(java.io.File, kotlin.Unit):java.lang.NullPointerException"
       - "androidx.collection.LruCache.remove(java.io.File):java.lang.NullPointerException"
       - "androidx.metrics.performance.JankStats.createAndTrack(android.view.Window, androidx.metrics.performance.JankStats.OnFrameListener):java.lang.IllegalStateException"
+      - "androidx.navigation.Navigation.findNavController(android.app.Activity, kotlin.Int):"
       # endregion
       # region Java File
       - "java.io.ByteArrayOutputStream.write(kotlin.ByteArray, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
@@ -365,12 +366,16 @@ datadog:
       - "android.widget.TextView.constructor(android.content.Context)"
       - "android.widget.TextView.setBackgroundColor(kotlin.Int)"
       - "android.widget.TextView.setPadding(kotlin.Int)"
+      - "android.widget.TextView.setPadding(kotlin.Int, kotlin.Int, kotlin.Int, kotlin.Int)"
       - "android.widget.TextView.setTextColor(kotlin.Int)"
       # endregion
       # region Android Graphics
       - "android.graphics.Bitmap.recycle()"
       - "android.graphics.Color.argb(kotlin.Int, kotlin.Int, kotlin.Int, kotlin.Int)"
       - "android.graphics.Color.rgb(kotlin.Int, kotlin.Int, kotlin.Int)"
+      - "android.graphics.Color.red(kotlin.Int)"
+      - "android.graphics.Color.green(kotlin.Int)"
+      - "android.graphics.Color.blue(kotlin.Int)"
       - "android.graphics.drawable.Drawable.draw(android.graphics.Canvas)"
       - "android.graphics.drawable.Drawable.getDrawable(kotlin.Int)"
       - "android.graphics.drawable.Drawable.getPadding(android.graphics.Rect)"

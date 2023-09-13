@@ -104,9 +104,6 @@ dependencies {
     }
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
-
-    // TODO MTG-12 detekt(project(":tools:detekt"))
-    // TODO MTG-12 detekt(libs.detektCli)
 }
 
 apply(from = "clone_session_replay_schema.gradle.kts")

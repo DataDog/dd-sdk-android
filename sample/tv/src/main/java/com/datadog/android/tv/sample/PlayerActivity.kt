@@ -13,10 +13,13 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.ext.okhttp.OkHttpDataSource
+import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import org.schabi.newpipe.extractor.services.youtube.YoutubeService
 import org.schabi.newpipe.extractor.stream.StreamExtractor
 import timber.log.Timber
+import kotlin.random.Random
 
 /**
  * An activity playing a video stream from a Youtube URL.
@@ -32,8 +35,11 @@ class PlayerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
 
+        val okHttpClient = (applicationContext as TvSampleApplication).okHttpClient
         videoPlayerView = findViewById(R.id.video_player_view)
-        videoPlayer = ExoPlayer.Builder(this).build()
+        videoPlayer = ExoPlayer.Builder(this)
+            .setMediaSourceFactory(ProgressiveMediaSource.Factory(OkHttpDataSource.Factory(okHttpClient)))
+            .build()
     }
 
     override fun onResume() {
@@ -58,7 +64,12 @@ class PlayerActivity : AppCompatActivity() {
         try {
             val extractor = extractStreamingInformation(intentUri)
             val videoStreams = extractor.videoStreams
-            val mediaItem = MediaItem.fromUri(videoStreams.first().getUrl())
+            val streamIdx = Random.Default.nextInt(videoStreams.size)
+            val videoStream = videoStreams[streamIdx]
+            val mediaItem = MediaItem.Builder()
+                .setUri(videoStream.getUrl())
+                .setMediaId(intentUri)
+                .build()
             runOnUiThread {
                 videoPlayer.setMediaItem(mediaItem)
                 videoPlayer.playWhenReady = true
@@ -84,6 +95,7 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        videoPlayer.stop()
         videoPlayer.release()
     }
 }

@@ -118,8 +118,9 @@ dependencies {
     implementation(libs.timber)
 
     // Video
-    implementation("com.google.android.exoplayer:exoplayer:2.19.0")
+    implementation(libs.bundles.exoplayer)
     implementation("com.github.TeamNewPipe.NewPipeExtractor:extractor:v0.21.0")
+    implementation("com.google.android.exoplayer:extension-okhttp:2.19.1")
 }
 
 kotlinConfig(evaluateWarningsAsErrors = false)
