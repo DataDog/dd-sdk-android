@@ -540,10 +540,10 @@ internal class RecordedDataQueueHandlerTest {
     fun `M handle concurrency W clearAndStopProcessing() { pending items }`() {
         // Given
         List(2) {
-            val itemRumContextData = fakeRumContextData.copy(timestamp = 1)
+            val itemRumContextData = fakeRecordedQueuedItemContext.copy(timestamp = 1)
             spy(
                 SnapshotRecordedDataQueueItem(
-                    rumContextData = itemRumContextData,
+                    recordedQueuedItemContext = itemRumContextData,
                     systemInformation = mockSystemInformation
                 )
             ).apply {
