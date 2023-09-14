@@ -11,7 +11,6 @@ import com.datadog.android.sdk.integration.R
 
 internal open class SessionReplayPlaygroundActivity : BaseSessionReplayActivity() {
 
-    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.session_replay_layout)

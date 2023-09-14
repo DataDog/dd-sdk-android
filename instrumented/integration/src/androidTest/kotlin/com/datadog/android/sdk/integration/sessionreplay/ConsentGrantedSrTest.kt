@@ -11,7 +11,7 @@ import com.datadog.android.sdk.rules.SessionReplayTestRule
 import org.junit.Rule
 import org.junit.Test
 
-internal class ConsentGrantedSrTest : SrTest<SessionReplayPlaygroundActivity>() {
+internal class ConsentGrantedSrTest : BaseSessionReplayTest<SessionReplayPlaygroundActivity>() {
 
     @get:Rule
     val rule = SessionReplayTestRule(

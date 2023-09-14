@@ -1,0 +1,237 @@
+[{
+  "type": 4,
+  "data": {
+    "width": 411,
+    "height": 914
+  }
+}, {
+  "type": 6,
+  "data": {
+    "has_focus": true
+  }
+}, {
+  "type": 10,
+  "data": {
+    "wireframes": [
+      {
+        "width": 411,
+        "height": 914,
+        "shapeStyle": {
+          "backgroundColor": "#303030ff",
+          "opacity": 1.0
+        },
+        "type": "shape"
+      },
+      {
+        "width": 395,
+        "height": 32,
+        "type": "text",
+        "text": "Default CheckBox",
+        "textStyle": {
+          "family": "roboto, sans-serif",
+          "size": 14,
+          "color": "#a538afff"
+        },
+        "textPosition": {
+          "padding": {
+            "top": 6,
+            "bottom": 6,
+            "left": 32,
+            "right": 0
+          },
+          "alignment": {
+            "horizontal": "left",
+            "vertical": "center"
+          }
+        }
+      },
+      {
+        "width": 16,
+        "height": 16,
+        "border": {
+          "color": "#a538afff",
+          "width": 1
+        },
+        "type": "shape"
+      },
+      {
+        "width": 395,
+        "height": 32,
+        "type": "text",
+        "text": "App Compat CheckBox",
+        "textStyle": {
+          "family": "roboto, sans-serif",
+          "size": 14,
+          "color": "#cc0000ff"
+        },
+        "textPosition": {
+          "padding": {
+            "top": 6,
+            "bottom": 6,
+            "left": 32,
+            "right": 0
+          },
+          "alignment": {
+            "horizontal": "left",
+            "vertical": "center"
+          }
+        }
+      },
+      {
+        "width": 16,
+        "height": 16,
+        "border": {
+          "color": "#cc0000ff",
+          "width": 1
+        },
+        "type": "shape"
+      },
+      {
+        "width": 395,
+        "height": 32,
+        "type": "text",
+        "text": "Material CheckBox",
+        "textStyle": {
+          "family": "roboto, sans-serif",
+          "size": 14,
+          "color": "#ffbb33ff"
+        },
+        "textPosition": {
+          "padding": {
+            "top": 6,
+            "bottom": 6,
+            "left": 32,
+            "right": 0
+          },
+          "alignment": {
+            "horizontal": "left",
+            "vertical": "center"
+          }
+        }
+      },
+      {
+        "width": 16,
+        "height": 16,
+        "border": {
+          "color": "#ffbb33ff",
+          "width": 1
+        },
+        "type": "shape"
+      },
+      {
+        "width": 395,
+        "height": 32,
+        "type": "text",
+        "text": "Default Radio",
+        "textStyle": {
+          "family": "roboto, sans-serif",
+          "size": 14,
+          "color": "#a538afff"
+        },
+        "textPosition": {
+          "padding": {
+            "top": 6,
+            "bottom": 6,
+            "left": 32,
+            "right": 0
+          },
+          "alignment": {
+            "horizontal": "left",
+            "vertical": "center"
+          }
+        }
+      },
+      {
+        "width": 16,
+        "height": 16,
+        "shapeStyle": {
+          "opacity": 1.0,
+          "cornerRadius": 10
+        },
+        "border": {
+          "color": "#a538afff",
+          "width": 1
+        },
+        "type": "shape"
+      },
+      {
+        "width": 395,
+        "height": 32,
+        "type": "text",
+        "text": "App Compat Radio",
+        "textStyle": {
+          "family": "roboto, sans-serif",
+          "size": 14,
+          "color": "#cc0000ff"
+        },
+        "textPosition": {
+          "padding": {
+            "top": 6,
+            "bottom": 6,
+            "left": 32,
+            "right": 0
+          },
+          "alignment": {
+            "horizontal": "left",
+            "vertical": "center"
+          }
+        }
+      },
+      {
+        "width": 16,
+        "height": 16,
+        "shapeStyle": {
+          "opacity": 1.0,
+          "cornerRadius": 10
+        },
+        "border": {
+          "color": "#cc0000ff",
+          "width": 1
+        },
+        "type": "shape"
+      },
+      {
+        "width": 395,
+        "height": 32,
+        "type": "text",
+        "text": "Material Radio",
+        "textStyle": {
+          "family": "roboto, sans-serif",
+          "size": 14,
+          "color": "#ffbb33ff"
+        },
+        "textPosition": {
+          "padding": {
+            "top": 6,
+            "bottom": 6,
+            "left": 32,
+            "right": 0
+          },
+          "alignment": {
+            "horizontal": "left",
+            "vertical": "center"
+          }
+        }
+      },
+      {
+        "width": 16,
+        "height": 16,
+        "shapeStyle": {
+          "opacity": 1.0,
+          "cornerRadius": 10
+        },
+        "border": {
+          "color": "#ffbb33ff",
+          "width": 1
+        },
+        "type": "shape"
+      },
+      {
+        "width": 411,
+        "height": 56,
+        "type": "placeholder",
+        "label": "Toolbar"
+      }
+    ]
+  }
+}]
