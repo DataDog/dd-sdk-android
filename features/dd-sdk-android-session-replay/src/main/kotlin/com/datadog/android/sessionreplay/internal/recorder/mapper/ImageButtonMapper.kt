@@ -54,7 +54,8 @@ internal class ImageButtonMapper(
             height = scaledDrawableHeight,
             drawable = drawable.constantState?.newDrawable(resources),
             shapeStyle = null,
-            border = null
+            border = null,
+            asyncImageProcessingCallback = asyncImageProcessingCallback
         )?.let {
             wireframes.add(it)
         }

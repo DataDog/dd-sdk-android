@@ -24,28 +24,28 @@ internal class RecordedDataProcessor(
     private val mutationResolver: MutationResolver,
     private val nodeFlattener: NodeFlattener = NodeFlattener()
 ) : Processor {
-
     private var prevSnapshot: List<MobileSegment.Wireframe> = emptyList()
     private var lastSnapshotTimestamp = 0L
     private var previousOrientation = Configuration.ORIENTATION_UNDEFINED
+    private var prevRumContext: SessionReplayRumContext = SessionReplayRumContext()
 
     @WorkerThread
     override fun processScreenSnapshots(
         item: SnapshotRecordedDataQueueItem
     ) {
         handleSnapshots(
-            newRumContext = item.rumContextData.newRumContext,
-            prevRumContext = item.rumContextData.prevRumContext,
-            timestamp = item.rumContextData.timestamp,
+            newRumContext = item.recordedQueuedItemContext.newRumContext,
+            timestamp = item.recordedQueuedItemContext.timestamp,
             snapshots = item.nodes,
             systemInformation = item.systemInformation
         )
+        prevRumContext = item.recordedQueuedItemContext.newRumContext
     }
 
     @WorkerThread
     override fun processTouchEventsRecords(item: TouchEventRecordedDataQueueItem) {
         handleTouchRecords(
-            rumContext = item.rumContextData.newRumContext,
+            rumContext = item.recordedQueuedItemContext.newRumContext,
             touchData = item.touchData
         )
     }
@@ -64,7 +64,6 @@ internal class RecordedDataProcessor(
     @WorkerThread
     private fun handleSnapshots(
         newRumContext: SessionReplayRumContext,
-        prevRumContext: SessionReplayRumContext,
         timestamp: Long,
         snapshots: List<Node>,
         systemInformation: SystemInformation
@@ -76,13 +75,13 @@ internal class RecordedDataProcessor(
         }
 
         val records: MutableList<MobileSegment.MobileRecord> = LinkedList()
-        val isNewView = isNewView(prevRumContext, newRumContext)
+        val isNewView = isNewView(newRumContext)
         val isTimeForFullSnapshot = isTimeForFullSnapshot()
         val screenOrientationChanged = systemInformation.screenOrientation != previousOrientation
         val fullSnapshotRequired = isNewView || isTimeForFullSnapshot || screenOrientationChanged
 
         if (isNewView) {
-            handleViewEndRecord(prevRumContext, timestamp)
+            handleViewEndRecord(timestamp)
             val screenBounds = systemInformation.screenBounds
             val metaRecord = MobileSegment.MobileRecord.MetaRecord(
                 timestamp,
@@ -142,7 +141,7 @@ internal class RecordedDataProcessor(
         }
     }
 
-    private fun handleViewEndRecord(prevRumContext: SessionReplayRumContext, timestamp: Long) {
+    private fun handleViewEndRecord(timestamp: Long) {
         if (prevRumContext.isValid()) {
             // send first the ViewEndRecord for the previous RUM context (View)
             val viewEndRecord = MobileSegment.MobileRecord.ViewEndRecord(timestamp)
@@ -164,12 +163,11 @@ internal class RecordedDataProcessor(
     }
 
     private fun isNewView(
-        newContext: SessionReplayRumContext,
-        currentContext: SessionReplayRumContext
+        newContext: SessionReplayRumContext
     ): Boolean {
-        return newContext.applicationId != currentContext.applicationId ||
-            newContext.sessionId != currentContext.sessionId ||
-            newContext.viewId != currentContext.viewId
+        return newContext.applicationId != prevRumContext.applicationId ||
+            newContext.sessionId != prevRumContext.sessionId ||
+            newContext.viewId != prevRumContext.viewId
     }
 
     // endregion

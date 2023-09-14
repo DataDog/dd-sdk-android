@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay.internal.processor
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
-import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import java.util.Locale
 
@@ -18,10 +17,9 @@ internal class RumContextDataHandler(
     private val timeProvider: TimeProvider,
     private val internalLogger: InternalLogger
 ) {
-    private var prevRumContext = SessionReplayRumContext()
 
     @MainThread
-    internal fun createRumContextData(): RumContextData? {
+    internal fun createRumContextData(): RecordedQueuedItemContext? {
         // we will make sure we get the timestamp on the UI thread to avoid time skewing
         val timestamp = timeProvider.getDeviceTimestamp()
 
@@ -42,11 +40,7 @@ internal class RumContextDataHandler(
             return null
         }
 
-        val rumContextData = RumContextData(timestamp, newRumContext.copy(), prevRumContext.copy())
-
-        prevRumContext = newRumContext
-
-        return rumContextData
+        return RecordedQueuedItemContext(timestamp, newRumContext.copy())
     }
 
     companion object {

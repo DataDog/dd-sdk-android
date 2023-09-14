@@ -6,15 +6,14 @@
 
 package com.datadog.android.sessionreplay.forge
 
-import com.datadog.android.sessionreplay.internal.processor.RumContextData
+import com.datadog.android.sessionreplay.internal.processor.RecordedQueuedItemContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class RumContextDataForgeryFactory : ForgeryFactory<RumContextData> {
-    override fun getForgery(forge: Forge): RumContextData {
-        return RumContextData(
+internal class RumContextDataForgeryFactory : ForgeryFactory<RecordedQueuedItemContext> {
+    override fun getForgery(forge: Forge): RecordedQueuedItemContext {
+        return RecordedQueuedItemContext(
             forge.aLong(),
-            forge.getForgery(),
             forge.getForgery()
         )
     }

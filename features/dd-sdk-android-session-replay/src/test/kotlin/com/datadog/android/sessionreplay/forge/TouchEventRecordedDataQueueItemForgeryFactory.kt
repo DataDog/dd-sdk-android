@@ -13,7 +13,7 @@ import fr.xgouchet.elmyr.ForgeryFactory
 internal class TouchEventRecordedDataQueueItemForgeryFactory : ForgeryFactory<TouchEventRecordedDataQueueItem> {
     override fun getForgery(forge: Forge): TouchEventRecordedDataQueueItem {
         return TouchEventRecordedDataQueueItem(
-            rumContextData = forge.getForgery(),
+            recordedQueuedItemContext = forge.getForgery(),
             touchData = listOf(forge.getForgery())
         )
     }

@@ -16,6 +16,7 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.widget.TextView
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
@@ -38,6 +39,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -60,6 +62,9 @@ internal class ImageWireframeHelperTest {
 
     @Mock
     lateinit var mockImageCompression: ImageCompression
+
+    @Mock
+    lateinit var mockAsyncImageProcessingCallback: AsyncImageProcessingCallback
 
     @Mock
     lateinit var mockView: View
@@ -167,7 +172,8 @@ internal class ImageWireframeHelperTest {
             x = 0,
             y = 0,
             width = 0,
-            height = 0
+            height = 0,
+            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
         )
 
         // Then
@@ -190,7 +196,8 @@ internal class ImageWireframeHelperTest {
             height = 0,
             drawable = mockDrawable,
             shapeStyle = null,
-            border = null
+            border = null,
+            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
         )
 
         // Then
@@ -212,7 +219,8 @@ internal class ImageWireframeHelperTest {
             height = 0,
             drawable = mockDrawable,
             shapeStyle = null,
-            border = null
+            border = null,
+            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
         )
 
         // Then
@@ -234,7 +242,8 @@ internal class ImageWireframeHelperTest {
             height = 0,
             drawable = mockDrawable,
             shapeStyle = null,
-            border = null
+            border = null,
+            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
         )
 
         // Then
@@ -276,8 +285,8 @@ internal class ImageWireframeHelperTest {
             height = fakeDrawableHeight,
             drawable = mockDrawable,
             shapeStyle = mockShapeStyle,
-            border = mockBorder
-
+            border = mockBorder,
+            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
         )
 
         // Then
@@ -298,7 +307,8 @@ internal class ImageWireframeHelperTest {
         val wireframes = testedHelper.createCompoundDrawableWireframes(
             mockTextView,
             mockMappingContext,
-            0
+            0,
+            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
         )
 
         // Then
@@ -324,7 +334,8 @@ internal class ImageWireframeHelperTest {
         val wireframes = testedHelper.createCompoundDrawableWireframes(
             mockTextView,
             mockMappingContext,
-            0
+            0,
+            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
         )
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
@@ -351,7 +362,8 @@ internal class ImageWireframeHelperTest {
         val wireframes = testedHelper.createCompoundDrawableWireframes(
             mockTextView,
             mockMappingContext,
-            0
+            0,
+            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
         )
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
@@ -369,7 +381,8 @@ internal class ImageWireframeHelperTest {
         val wireframes = testedHelper.createCompoundDrawableWireframes(
             mockTextView,
             mockMappingContext,
-            0
+            0,
+            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
         )
 
         // Then
@@ -401,7 +414,8 @@ internal class ImageWireframeHelperTest {
             height = 0,
             drawable = mockDrawable,
             shapeStyle = null,
-            border = null
+            border = null,
+            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
         )
 
         // Then
@@ -412,7 +426,8 @@ internal class ImageWireframeHelperTest {
             drawable = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
-            imageWireframe = any()
+            imageWireframe = any(),
+            asyncImageProcessingCallback = anyOrNull()
         )
         assertThat(captor.allValues).containsExactly(fakeViewWidth, fakeViewHeight)
     }
@@ -429,7 +444,8 @@ internal class ImageWireframeHelperTest {
             height = 0,
             drawable = mockDrawable,
             shapeStyle = null,
-            border = null
+            border = null,
+            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
         )
 
         // Then
@@ -440,7 +456,8 @@ internal class ImageWireframeHelperTest {
             drawable = any(),
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
-            imageWireframe = any()
+            imageWireframe = any(),
+            asyncImageProcessingCallback = anyOrNull()
         )
         assertThat(captor.allValues).containsExactly(fakeDrawableWidth.toInt(), fakeDrawableHeight.toInt())
     }

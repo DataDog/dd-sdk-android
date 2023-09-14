@@ -8,8 +8,7 @@ package com.datadog.android.sessionreplay.internal.processor
 
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 
-internal data class RumContextData(
+internal data class RecordedQueuedItemContext(
     internal val timestamp: Long,
-    internal val newRumContext: SessionReplayRumContext,
-    internal val prevRumContext: SessionReplayRumContext
+    internal val newRumContext: SessionReplayRumContext
 )
