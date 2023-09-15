@@ -1,0 +1,51 @@
+[{
+  "type": 4,
+  "data": {
+    "width": 411,
+    "height": 914
+  }
+}, {
+  "type": 6,
+  "data": {
+    "has_focus": true
+  }
+}, {
+  "type": 10,
+  "data": {
+    "wireframes": [
+      {
+        "width": 411,
+        "height": 914,
+        "shapeStyle": {
+          "backgroundColor": "#303030ff",
+          "opacity": 1.0
+        },
+        "type": "shape"
+      },
+      {
+        "width": 80,
+        "height": 80,
+        "border": {
+          "color": "#000000ff",
+          "width": 1
+        },
+        "type": "shape"
+      },
+      {
+        "width": 80,
+        "height": 80,
+        "border": {
+          "color": "#000000ff",
+          "width": 1
+        },
+        "type": "shape"
+      },
+      {
+        "width": 411,
+        "height": 56,
+        "type": "placeholder",
+        "label": "Toolbar"
+      }
+    ]
+  }
+}]

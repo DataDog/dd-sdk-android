@@ -245,10 +245,8 @@ internal abstract class BaseSessionReplayTest<R : Activity> {
         // will be executed in Bitrise and currently Bitrise does not own a specific model for the
         // API 33. They only have a standard emulator for this API with the required screen size and
         // X,Y positions are different from the ones we have in our local emulator.
-
-        // TODO: RUM-0000 The image wireframes where removed from the payload assertion because
-        // of a bug in the base64 logic making the snapshot inconsistent. We need to add this back
-        // and fix the base64 logic.
+        // Also the base64 encoded images values are inconsistent from one run to another so will
+        // be removed from the payload.
 
         return this.asJsonObject.apply {
             remove("timestamp")
@@ -256,16 +254,12 @@ internal abstract class BaseSessionReplayTest<R : Activity> {
                 dataObject.get("wireframes")?.asJsonArray
                     ?.mapNotNull { wireframe ->
                         val wireframeJson = wireframe.asJsonObject
-                        if (wireframeJson.get("type").asString == "image") {
-                            null
-                        } else {
-                            wireframeJson.remove("id")
-                            wireframeJson.remove("x")
-                            wireframeJson.remove("y")
-                            wireframeJson
-                        }
-                    }
-                    ?.fold(JsonArray()) { acc, jsonObject ->
+                        wireframeJson.remove("id")
+                        wireframeJson.remove("x")
+                        wireframeJson.remove("y")
+                        wireframeJson.remove("base64")
+                        wireframeJson
+                    }?.fold(JsonArray()) { acc, jsonObject ->
                         acc.add(jsonObject)
                         acc
                     }?.let { sanitizedWireframes ->

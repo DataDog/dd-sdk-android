@@ -94,6 +94,13 @@
       {
         "width": 395,
         "height": 44,
+        "type": "image",
+        "mimeType": "image/webp",
+        "isEmpty": false
+      },
+      {
+        "width": 395,
+        "height": 44,
         "type": "text",
         "text": "Edit Text View",
         "textStyle": {
@@ -122,6 +129,13 @@
           "opacity": 1.0
         },
         "type": "shape"
+      },
+      {
+        "width": 395,
+        "height": 44,
+        "type": "image",
+        "mimeType": "image/webp",
+        "isEmpty": false
       },
       {
         "width": 395,
@@ -158,6 +172,13 @@
       {
         "width": 395,
         "height": 44,
+        "type": "image",
+        "mimeType": "image/webp",
+        "isEmpty": false
+      },
+      {
+        "width": 395,
+        "height": 44,
         "type": "text",
         "text": "App Compat Edit Text View",
         "textStyle": {
@@ -190,6 +211,13 @@
       {
         "width": 395,
         "height": 44,
+        "type": "image",
+        "mimeType": "image/webp",
+        "isEmpty": false
+      },
+      {
+        "width": 395,
+        "height": 44,
         "type": "text",
         "text": "App Compat Auto Complete Text View",
         "textStyle": {
@@ -218,6 +246,13 @@
           "opacity": 1.0
         },
         "type": "shape"
+      },
+      {
+        "width": 395,
+        "height": 44,
+        "type": "image",
+        "mimeType": "image/webp",
+        "isEmpty": false
       },
       {
         "width": 395,
