@@ -21,6 +21,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 
 internal abstract class BaseEditTextViewMapperTest : BaseWireframeMapperTest() {
@@ -71,7 +73,7 @@ internal abstract class BaseEditTextViewMapperTest : BaseWireframeMapperTest() {
             )
         ).thenReturn(fakeGeneratedIdentifier)
         whenever(mockEditText.backgroundTintList).thenReturn(mockBackgroundTintList)
-        whenever(mockTextWireframeMapper.map(mockEditText, fakeMappingContext))
+        whenever(mockTextWireframeMapper.map(eq(mockEditText), eq(fakeMappingContext), any()))
             .thenReturn(fakeTextWireframes)
         whenever(
             mockViewUtils.resolveViewGlobalBounds(

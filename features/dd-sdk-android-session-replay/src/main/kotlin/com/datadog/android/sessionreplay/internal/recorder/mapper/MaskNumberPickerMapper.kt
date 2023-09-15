@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.os.Build
 import android.widget.NumberPicker
 import androidx.annotation.RequiresApi
+import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -23,7 +24,11 @@ internal open class MaskNumberPickerMapper(
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator
 ) : BasePickerMapper(stringUtils, viewUtils) {
 
-    override fun map(view: NumberPicker, mappingContext: MappingContext):
+    override fun map(
+        view: NumberPicker,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ):
         List<MobileSegment.Wireframe> {
         val selectedIndexLabelId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
             view,

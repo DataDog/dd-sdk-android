@@ -18,7 +18,7 @@ internal class SnapshotRecordedDataQueueItemForgeryFactory : ForgeryFactory<Snap
             systemInformation = forge.getForgery()
         )
 
-        item.pendingImages = AtomicInteger(forge.anInt())
+        item.pendingJobs = AtomicInteger(forge.anInt())
         item.nodes = listOf(forge.getForgery())
         return item
     }

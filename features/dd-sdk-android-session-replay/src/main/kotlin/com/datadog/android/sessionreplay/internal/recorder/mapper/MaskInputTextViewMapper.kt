@@ -8,7 +8,6 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.TextView
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
 import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.MaskInputObfuscationRule
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
@@ -21,11 +20,9 @@ class MaskInputTextViewMapper : TextViewMapper {
     constructor() : super(textValueObfuscationRule = MaskInputObfuscationRule())
 
     internal constructor(
-        base64Serializer: Base64Serializer,
         imageWireframeHelper: ImageWireframeHelper,
         uniqueIdentifierGenerator: UniqueIdentifierGenerator
     ) : super(
-        base64Serializer = base64Serializer,
         imageWireframeHelper = imageWireframeHelper,
         uniqueIdentifierGenerator = uniqueIdentifierGenerator,
         textValueObfuscationRule = MaskInputObfuscationRule()

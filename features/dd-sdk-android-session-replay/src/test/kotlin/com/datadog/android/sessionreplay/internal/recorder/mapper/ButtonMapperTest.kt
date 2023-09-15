@@ -21,6 +21,8 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -45,8 +47,13 @@ internal class ButtonMapperTest : BaseWireframeMapperTest() {
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockTextWireframeMapper.map(mockButton, fakeMappingContext))
-            .thenReturn(fakeTextWireframes)
+        whenever(
+            mockTextWireframeMapper.map(
+                eq(mockButton),
+                eq(fakeMappingContext),
+                any()
+            )
+        ).thenReturn(fakeTextWireframes)
         testedButtonMapper = ButtonMapper(mockTextWireframeMapper)
     }
 
@@ -56,8 +63,13 @@ internal class ButtonMapperTest : BaseWireframeMapperTest() {
     ) {
         // Given
         fakeTextWireframes = fakeTextWireframes.map { it.copy(border = forge.getForgery()) }
-        whenever(mockTextWireframeMapper.map(mockButton, fakeMappingContext))
-            .thenReturn(fakeTextWireframes)
+        whenever(
+            mockTextWireframeMapper.map(
+                eq(mockButton),
+                eq(fakeMappingContext),
+                any()
+            )
+        ).thenReturn(fakeTextWireframes)
 
         // When
         val buttonWireframes = testedButtonMapper.map(mockButton, fakeMappingContext)
@@ -72,8 +84,13 @@ internal class ButtonMapperTest : BaseWireframeMapperTest() {
     ) {
         // Given
         fakeTextWireframes = fakeTextWireframes.map { it.copy(shapeStyle = forge.getForgery()) }
-        whenever(mockTextWireframeMapper.map(mockButton, fakeMappingContext))
-            .thenReturn(fakeTextWireframes)
+        whenever(
+            mockTextWireframeMapper.map(
+                eq(mockButton),
+                eq(fakeMappingContext),
+                any()
+            )
+        ).thenReturn(fakeTextWireframes)
 
         // When
         val buttonWireframes = testedButtonMapper.map(mockButton, fakeMappingContext)
@@ -86,8 +103,13 @@ internal class ButtonMapperTest : BaseWireframeMapperTest() {
     fun `M add a default border W map(){textMapper returns wireframes with no border, shapeStyle}`() {
         // Given
         fakeTextWireframes = fakeTextWireframes.map { it.copy(shapeStyle = null, border = null) }
-        whenever(mockTextWireframeMapper.map(mockButton, fakeMappingContext))
-            .thenReturn(fakeTextWireframes)
+        whenever(
+            mockTextWireframeMapper.map(
+                eq(mockButton),
+                eq(fakeMappingContext),
+                any()
+            )
+        ).thenReturn(fakeTextWireframes)
 
         val expectedWireframes = fakeTextWireframes.map {
             it.copy(border = MobileSegment.ShapeBorder(ButtonMapper.BLACK_COLOR, 1))

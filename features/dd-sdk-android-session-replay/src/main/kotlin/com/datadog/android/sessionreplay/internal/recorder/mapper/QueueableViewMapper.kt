@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
-import com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
+import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -15,17 +15,18 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 internal class QueueableViewMapper(
     private val mapper: WireframeMapper<View, *>,
     private val recordedDataQueueRefs: RecordedDataQueueRefs
-) : BaseWireframeMapper<View, MobileSegment.Wireframe>(), AsyncImageProcessingCallback {
-    override fun map(view: View, mappingContext: MappingContext):
+) : AsyncJobStatusCallback {
+    fun map(view: View, mappingContext: MappingContext):
         List<MobileSegment.Wireframe> {
-        (mapper as? BaseWireframeMapper<View, *>)?.registerAsyncImageProcessingCallback(this)
-        return mapper.map(view, mappingContext)
+        return mapper.map(view, mappingContext, this)
     }
 
-    override fun startProcessingImage() = recordedDataQueueRefs.incrementPendingImages()
+    override fun jobStarted() {
+        recordedDataQueueRefs.incrementPendingJobs()
+    }
 
-    override fun finishProcessingImage() {
-        recordedDataQueueRefs.decrementPendingImages()
+    override fun jobFinished() {
+        recordedDataQueueRefs.decrementPendingJobs()
         recordedDataQueueRefs.tryToConsumeItem()
     }
 }

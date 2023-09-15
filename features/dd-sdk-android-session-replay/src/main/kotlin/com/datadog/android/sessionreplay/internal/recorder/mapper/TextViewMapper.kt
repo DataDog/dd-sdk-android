@@ -9,10 +9,11 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.Typeface
 import android.view.Gravity
 import android.widget.TextView
+import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
 import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
+import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelperCallback
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.AllowObfuscationRule
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.TextValueObfuscationRule
@@ -27,22 +28,19 @@ import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
  */
 @Suppress("TooManyFunctions")
 open class TextViewMapper :
-    BaseWireframeMapper<TextView, MobileSegment.Wireframe> {
+    BaseAsyncBackgroundWireframeMapper<TextView> {
 
     internal var textValueObfuscationRule: TextValueObfuscationRule = AllowObfuscationRule()
-    private var base64Serializer: Base64Serializer? = null
     private var imageWireframeHelper: ImageWireframeHelper? = null
     private var uniqueIdentifierGenerator: UniqueIdentifierGenerator? = null
 
     constructor()
 
     internal constructor(
-        base64Serializer: Base64Serializer,
         imageWireframeHelper: ImageWireframeHelper,
         uniqueIdentifierGenerator: UniqueIdentifierGenerator,
         textValueObfuscationRule: TextValueObfuscationRule? = null
-    ) : super(base64Serializer, imageWireframeHelper, uniqueIdentifierGenerator) {
-        this.base64Serializer = base64Serializer
+    ) : super(imageWireframeHelper, uniqueIdentifierGenerator) {
         this.imageWireframeHelper = imageWireframeHelper
         this.uniqueIdentifierGenerator = uniqueIdentifierGenerator
         textValueObfuscationRule?.let {
@@ -56,11 +54,15 @@ open class TextViewMapper :
         this.textValueObfuscationRule = textValueObfuscationRule
     }
 
-    override fun map(view: TextView, mappingContext: MappingContext):
+    override fun map(
+        view: TextView,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ):
         List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
 
-        wireframes.addAll(super.map(view, mappingContext))
+        wireframes.addAll(super.map(view, mappingContext, asyncJobStatusCallback))
 
         val density = mappingContext.systemInformation.screenDensity
         val viewGlobalBounds = resolveViewGlobalBounds(
@@ -77,7 +79,8 @@ open class TextViewMapper :
         resolveImages(
             view,
             mappingContext,
-            wireframes.size
+            wireframes.size,
+            asyncJobStatusCallback
         ).let(wireframes::addAll)
 
         return wireframes
@@ -88,21 +91,30 @@ open class TextViewMapper :
     private fun resolveImages(
         view: TextView,
         mappingContext: MappingContext,
-        currentIndex: Int
+        currentIndex: Int,
+        asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
+        imageWireframeHelper?.let {
+            val results = it.createCompoundDrawableWireframes(
+                view,
+                mappingContext,
+                currentIndex,
+                object : ImageWireframeHelperCallback {
+                    override fun onFinished() {
+                        asyncJobStatusCallback.jobFinished()
+                    }
 
-        imageWireframeHelper?.createCompoundDrawableWireframes(
-            view,
-            mappingContext,
-            currentIndex,
-            asyncImageProcessingCallback = asyncImageProcessingCallback
-        )?.let { result ->
-            wireframes.addAll(result)
+                    override fun onStart() {
+                        asyncJobStatusCallback.jobStarted()
+                    }
+                }
+            )
+            wireframes.addAll(results)
         }
-
         return wireframes
     }
+
     private fun resolveTextElements(
         view: TextView,
         mappingContext: MappingContext,
@@ -185,16 +197,19 @@ open class TextViewMapper :
                 horizontal = MobileSegment.Horizontal.CENTER,
                 vertical = MobileSegment.Vertical.CENTER
             )
+
             TextView.TEXT_ALIGNMENT_TEXT_END,
             TextView.TEXT_ALIGNMENT_VIEW_END -> MobileSegment.Alignment(
                 horizontal = MobileSegment.Horizontal.RIGHT,
                 vertical = MobileSegment.Vertical.CENTER
             )
+
             TextView.TEXT_ALIGNMENT_TEXT_START,
             TextView.TEXT_ALIGNMENT_VIEW_START -> MobileSegment.Alignment(
                 horizontal = MobileSegment.Horizontal.LEFT,
                 vertical = MobileSegment.Vertical.CENTER
             )
+
             TextView.TEXT_ALIGNMENT_GRAVITY -> resolveAlignmentFromGravity(textView)
             else -> MobileSegment.Alignment(
                 horizontal = MobileSegment.Horizontal.LEFT,
@@ -207,8 +222,10 @@ open class TextViewMapper :
         val horizontalAlignment = when (textView.gravity.and(Gravity.HORIZONTAL_GRAVITY_MASK)) {
             Gravity.START,
             Gravity.LEFT -> MobileSegment.Horizontal.LEFT
+
             Gravity.END,
             Gravity.RIGHT -> MobileSegment.Horizontal.RIGHT
+
             Gravity.CENTER -> MobileSegment.Horizontal.CENTER
             Gravity.CENTER_HORIZONTAL -> MobileSegment.Horizontal.CENTER
             else -> MobileSegment.Horizontal.LEFT

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -79,7 +80,7 @@ internal abstract class BaseTabWireframeMapperTest {
             )
         )
             .thenReturn(fakeTabIndicatorUniqueId)
-        whenever(mockTextWireframeMapper.map(mockTabLabelView, fakeMappingContext))
+        whenever(mockTextWireframeMapper.map(eq(mockTabLabelView), eq(fakeMappingContext), any()))
             .thenReturn(fakeTextWireframes)
         testedTabWireframeMapper = provideTestInstance()
     }

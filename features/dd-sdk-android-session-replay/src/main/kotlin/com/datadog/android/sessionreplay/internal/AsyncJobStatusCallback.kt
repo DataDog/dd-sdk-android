@@ -6,7 +6,18 @@
 
 package com.datadog.android.sessionreplay.internal
 
-internal interface AsyncImageProcessingCallback {
-    fun startProcessingImage()
-    fun finishProcessingImage()
+/**
+ * A callback to be notified when an async job starts or finishes.
+ */
+interface AsyncJobStatusCallback {
+
+    /**
+     * Notifies that an async job has started.
+     */
+    fun jobStarted()
+
+    /**
+     * Notifies that an async job has finished.
+     */
+    fun jobFinished()
 }

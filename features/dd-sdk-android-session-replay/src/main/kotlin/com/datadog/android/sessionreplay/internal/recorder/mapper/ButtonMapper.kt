@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.Button
+import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 
@@ -14,17 +15,22 @@ internal class ButtonMapper(
     private val textWireframeMapper: TextViewMapper = TextViewMapper()
 ) :
     WireframeMapper<Button, MobileSegment.Wireframe> {
-    override fun map(view: Button, mappingContext: MappingContext):
+    override fun map(
+        view: Button,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ):
         List<MobileSegment.Wireframe> {
-        return textWireframeMapper.map(view, mappingContext)
-            .map {
-                if (it is MobileSegment.Wireframe.TextWireframe && it.shapeStyle == null && it.border == null) {
-                    // we were not able to resolve the background for this button so just add a border
-                    it.copy(border = MobileSegment.ShapeBorder(BLACK_COLOR, 1))
-                } else {
-                    it
-                }
+        return textWireframeMapper.map(view, mappingContext, asyncJobStatusCallback).map {
+            if (it is MobileSegment.Wireframe.TextWireframe &&
+                it.shapeStyle == null && it.border == null
+            ) {
+                // we were not able to resolve the background for this button so just add a border
+                it.copy(border = MobileSegment.ShapeBorder(BLACK_COLOR, 1))
+            } else {
+                it
             }
+        }
     }
 
     companion object {
