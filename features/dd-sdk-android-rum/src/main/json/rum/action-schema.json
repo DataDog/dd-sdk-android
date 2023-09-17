@@ -25,7 +25,7 @@
             "type": {
               "type": "string",
               "description": "Type of the action",
-              "enum": ["custom", "click", "tap", "scroll", "swipe", "application_start", "back"],
+              "enum": ["custom", "click", "tap", "scroll", "swipe", "application_start", "back", "play", "pause", "seek", "media"],
               "readOnly": true
             },
             "id": {

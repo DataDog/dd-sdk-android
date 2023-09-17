@@ -1,0 +1,21 @@
+data class com.datadog.android.exoplayer.MediaContent
+  constructor(String, String, String?)
+class com.datadog.android.exoplayer.RumPlayerListener : com.google.android.exoplayer2.Player.Listener
+  constructor(com.datadog.android.api.feature.FeatureSdkCore)
+  override fun onMediaItemTransition(com.google.android.exoplayer2.MediaItem?, Int)
+  override fun onPlaybackStateChanged(Int)
+  override fun onEvents(com.google.android.exoplayer2.Player, com.google.android.exoplayer2.Player.Events)
+class com.datadog.android.exoplayer.RumPlayerListenerFull : com.google.android.exoplayer2.Player.Listener
+  override fun onEvents(com.google.android.exoplayer2.Player, com.google.android.exoplayer2.Player.Events)
+  override fun onMediaItemTransition(com.google.android.exoplayer2.MediaItem?, Int)
+  override fun onPlayWhenReadyChanged(Boolean, Int)
+  override fun onIsLoadingChanged(Boolean)
+  override fun onRenderedFirstFrame()
+  override fun onSurfaceSizeChanged(Int, Int)
+  override fun onVideoSizeChanged(com.google.android.exoplayer2.video.VideoSize)
+  override fun onPlaybackStateChanged(Int)
+  override fun onMetadata(com.google.android.exoplayer2.metadata.Metadata)
+  override fun onMediaMetadataChanged(com.google.android.exoplayer2.MediaMetadata)
+  override fun onIsPlayingChanged(Boolean)
+  override fun onPlayerError(com.google.android.exoplayer2.PlaybackException)
+  override fun onPositionDiscontinuity(com.google.android.exoplayer2.Player.PositionInfo, com.google.android.exoplayer2.Player.PositionInfo, Int)

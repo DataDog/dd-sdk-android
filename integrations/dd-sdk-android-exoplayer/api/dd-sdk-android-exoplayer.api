@@ -1,0 +1,39 @@
+public final class com/datadog/android/exoplayer/MediaContent {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/exoplayer/MediaContent;
+	public static synthetic fun copy$default (Lcom/datadog/android/exoplayer/MediaContent;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/exoplayer/MediaContent;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getId ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public final fun getUrl ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/exoplayer/RumPlayerListener : com/google/android/exoplayer2/Player$Listener {
+	public fun <init> (Lcom/datadog/android/api/feature/FeatureSdkCore;)V
+	public fun onEvents (Lcom/google/android/exoplayer2/Player;Lcom/google/android/exoplayer2/Player$Events;)V
+	public fun onMediaItemTransition (Lcom/google/android/exoplayer2/MediaItem;I)V
+	public fun onPlaybackStateChanged (I)V
+}
+
+public final class com/datadog/android/exoplayer/RumPlayerListenerFull : com/google/android/exoplayer2/Player$Listener {
+	public fun <init> ()V
+	public fun onEvents (Lcom/google/android/exoplayer2/Player;Lcom/google/android/exoplayer2/Player$Events;)V
+	public fun onIsLoadingChanged (Z)V
+	public fun onIsPlayingChanged (Z)V
+	public fun onMediaItemTransition (Lcom/google/android/exoplayer2/MediaItem;I)V
+	public fun onMediaMetadataChanged (Lcom/google/android/exoplayer2/MediaMetadata;)V
+	public fun onMetadata (Lcom/google/android/exoplayer2/metadata/Metadata;)V
+	public fun onPlayWhenReadyChanged (ZI)V
+	public fun onPlaybackStateChanged (I)V
+	public fun onPlayerError (Lcom/google/android/exoplayer2/PlaybackException;)V
+	public fun onPositionDiscontinuity (Lcom/google/android/exoplayer2/Player$PositionInfo;Lcom/google/android/exoplayer2/Player$PositionInfo;I)V
+	public fun onRenderedFirstFrame ()V
+	public fun onSurfaceSizeChanged (II)V
+	public fun onVideoSizeChanged (Lcom/google/android/exoplayer2/video/VideoSize;)V
+}
+

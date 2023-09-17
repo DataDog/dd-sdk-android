@@ -194,6 +194,7 @@ internal class RumActionScope(
         val actualType = type
         attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
         val rumContext = getRumContext()
+        val loadingTimeOverrideNs = attributes.remove(LOADING_TIME_OVERRIDE) as? Long
 
         // make a copy so that closure captures at the state as of now
         // normally not needed, because it should be only single event for this scope, but
@@ -226,7 +227,7 @@ internal class RumActionScope(
                         crash = ActionEvent.Crash(eventCrashCount),
                         longTask = ActionEvent.LongTask(eventLongTaskCount),
                         resource = ActionEvent.Resource(eventResourceCount),
-                        loadingTime = max(endNanos - startedNanos, 1L),
+                        loadingTime = loadingTimeOverrideNs ?: max(endNanos - startedNanos, 1L),
                         frustration = if (frustrations.isNotEmpty()) {
                             ActionEvent.Frustration(frustrations)
                         } else {
@@ -292,6 +293,8 @@ internal class RumActionScope(
     companion object {
         internal const val ACTION_INACTIVITY_MS = 100L
         internal const val ACTION_MAX_DURATION_MS = 5000L
+
+        internal const val LOADING_TIME_OVERRIDE = "_dd.loading_time"
 
         @Suppress("LongParameterList")
         fun fromEvent(

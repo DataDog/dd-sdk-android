@@ -27,5 +27,17 @@ enum class RumActionType {
     BACK,
 
     /** A custom action. */
-    CUSTOM
+    CUSTOM,
+
+    /** A Media Action */
+    MEDIA,
+
+    /** A Play Action */
+    PLAY,
+
+    /** A Pause Action */
+    PAUSE,
+
+    /** A Seek Action */
+    SEEK
 }

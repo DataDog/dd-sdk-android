@@ -92,6 +92,7 @@ dependencies {
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-session-replay"))
     implementation(project(":features:dd-sdk-android-session-replay-material"))
+    implementation(project(":integrations:dd-sdk-android-exoplayer"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":integrations:dd-sdk-android-timber"))
     implementation(project(":integrations:dd-sdk-android-tv"))

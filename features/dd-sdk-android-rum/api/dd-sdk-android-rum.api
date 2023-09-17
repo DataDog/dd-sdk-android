@@ -34,7 +34,11 @@ public final class com/datadog/android/rum/RumActionType : java/lang/Enum {
 	public static final field BACK Lcom/datadog/android/rum/RumActionType;
 	public static final field CLICK Lcom/datadog/android/rum/RumActionType;
 	public static final field CUSTOM Lcom/datadog/android/rum/RumActionType;
+	public static final field MEDIA Lcom/datadog/android/rum/RumActionType;
+	public static final field PAUSE Lcom/datadog/android/rum/RumActionType;
+	public static final field PLAY Lcom/datadog/android/rum/RumActionType;
 	public static final field SCROLL Lcom/datadog/android/rum/RumActionType;
+	public static final field SEEK Lcom/datadog/android/rum/RumActionType;
 	public static final field SWIPE Lcom/datadog/android/rum/RumActionType;
 	public static final field TAP Lcom/datadog/android/rum/RumActionType;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/RumActionType;
@@ -413,7 +417,11 @@ public final class com/datadog/android/rum/model/ActionEvent$ActionEventActionTy
 	public static final field CLICK Lcom/datadog/android/rum/model/ActionEvent$ActionEventActionType;
 	public static final field CUSTOM Lcom/datadog/android/rum/model/ActionEvent$ActionEventActionType;
 	public static final field Companion Lcom/datadog/android/rum/model/ActionEvent$ActionEventActionType$Companion;
+	public static final field MEDIA Lcom/datadog/android/rum/model/ActionEvent$ActionEventActionType;
+	public static final field PAUSE Lcom/datadog/android/rum/model/ActionEvent$ActionEventActionType;
+	public static final field PLAY Lcom/datadog/android/rum/model/ActionEvent$ActionEventActionType;
 	public static final field SCROLL Lcom/datadog/android/rum/model/ActionEvent$ActionEventActionType;
+	public static final field SEEK Lcom/datadog/android/rum/model/ActionEvent$ActionEventActionType;
 	public static final field SWIPE Lcom/datadog/android/rum/model/ActionEvent$ActionEventActionType;
 	public static final field TAP Lcom/datadog/android/rum/model/ActionEvent$ActionEventActionType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$ActionEventActionType;
