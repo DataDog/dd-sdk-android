@@ -298,7 +298,7 @@ internal constructor(
         GlobalRumMonitor.get(sdkCore).stopResource(
             requestId,
             statusCode,
-            getBodyLength(response, sdkCore.internalLogger),
+            0, //getBodyLength(response, sdkCore.internalLogger),
             kind,
             attributes + rumResourceAttributesProvider.onProvideAttributes(request, response, null)
         )

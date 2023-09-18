@@ -19,6 +19,7 @@ import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSValueParameter
+import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.BOOLEAN
 import com.squareup.kotlinpoet.ClassName
@@ -37,9 +38,11 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.SET
 import com.squareup.kotlinpoet.STRING
+import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.UNIT
+import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.ksp.KotlinPoetKspPreview
 import com.squareup.kotlinpoet.ksp.TypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toTypeName
@@ -308,7 +311,11 @@ class NoOpFactorySymbolProcessor(
             val paramType = param.type.resolve()
             funSpecBuilder.addParameter(
                 param.name?.asString() ?: "p$i",
-                paramType.toTypeName(typeParamResolver)
+                try {
+                    paramType.toTypeName(typeParamResolver)
+                } catch (e: IllegalArgumentException){
+                    ANY
+                }
             )
         }
 

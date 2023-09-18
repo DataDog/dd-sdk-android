@@ -9,6 +9,7 @@ package com.datadog.android.tv.sample
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.datadog.android.exoplayer.RumPlayerListener
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.google.android.exoplayer2.ExoPlayer
@@ -40,6 +41,7 @@ class PlayerActivity : AppCompatActivity() {
         videoPlayer = ExoPlayer.Builder(this)
             .setMediaSourceFactory(ProgressiveMediaSource.Factory(OkHttpDataSource.Factory(okHttpClient)))
             .build()
+        videoPlayer.addListener(RumPlayerListener())
     }
 
     override fun onResume() {

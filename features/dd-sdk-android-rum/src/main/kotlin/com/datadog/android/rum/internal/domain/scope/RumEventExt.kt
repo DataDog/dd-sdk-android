@@ -135,6 +135,10 @@ internal fun RumActionType.toSchemaType(): ActionEvent.ActionEventActionType {
         RumActionType.CLICK -> ActionEvent.ActionEventActionType.CLICK
         RumActionType.BACK -> ActionEvent.ActionEventActionType.BACK
         RumActionType.CUSTOM -> ActionEvent.ActionEventActionType.CUSTOM
+        RumActionType.SEEK -> ActionEvent.ActionEventActionType.SEEK
+        RumActionType.PLAY -> ActionEvent.ActionEventActionType.PLAY
+        RumActionType.PAUSE -> ActionEvent.ActionEventActionType.PAUSE
+        RumActionType.MEDIA -> ActionEvent.ActionEventActionType.MEDIA
     }
 }
 

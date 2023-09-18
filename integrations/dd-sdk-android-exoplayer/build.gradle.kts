@@ -92,7 +92,7 @@ dependencies {
     testImplementation(libs.bundles.testTools)
 }
 
-kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+kotlinConfig(false, jvmBytecodeTarget = JvmTarget.JVM_11)
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()

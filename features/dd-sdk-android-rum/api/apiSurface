@@ -19,6 +19,10 @@ enum com.datadog.android.rum.RumActionType
   - CLICK
   - BACK
   - CUSTOM
+  - MEDIA
+  - PLAY
+  - PAUSE
+  - SEEK
 object com.datadog.android.rum.RumAttributes
   const val APPLICATION_VERSION: String
   const val ENV: String
@@ -479,6 +483,10 @@ data class com.datadog.android.rum.model.ActionEvent
     - SWIPE
     - APPLICATION_START
     - BACK
+    - PLAY
+    - PAUSE
+    - SEEK
+    - MEDIA
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ActionEventActionType
