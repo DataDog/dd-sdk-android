@@ -25,6 +25,7 @@ import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -96,6 +97,26 @@ class SampleApplication : Application() {
         initializeImageLoaders()
 
         localServer.init(this)
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        GlobalRumMonitor.get().addError(
+            "Low Memory warning",
+            RumErrorSource.SOURCE,
+            null,
+            emptyMap()
+        )
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        GlobalRumMonitor.get().addError(
+            "Low Memory warning",
+            RumErrorSource.SOURCE,
+            null,
+            mapOf("trim.level" to level)
+        )
     }
 
     private fun initializeImageLoaders() {
