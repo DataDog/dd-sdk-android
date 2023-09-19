@@ -1014,11 +1014,17 @@ internal open class RumViewScope(
         return stopped && activeResourceScopes.isEmpty() && (pending <= 0L)
     }
 
-    enum class RumViewType {
-        NONE,
-        FOREGROUND,
-        BACKGROUND,
-        APPLICATION_LAUNCH
+    enum class RumViewType(val asString: String) {
+        NONE("NONE"),
+        FOREGROUND("FOREGROUND"),
+        BACKGROUND("BACKGROUND"),
+        APPLICATION_LAUNCH("APPLICATION_LAUNCH");
+
+        companion object {
+            fun fromString(string: String?): RumViewType? {
+                return values().firstOrNull { it.asString == string }
+            }
+        }
     }
 
     // endregion

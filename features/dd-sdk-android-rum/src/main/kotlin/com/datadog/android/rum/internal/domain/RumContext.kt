@@ -26,11 +26,11 @@ internal data class RumContext(
         return mapOf(
             APPLICATION_ID to applicationId,
             SESSION_ID to sessionId,
-            SESSION_STATE to sessionState,
+            SESSION_STATE to sessionState.asString,
             VIEW_ID to viewId,
             VIEW_NAME to viewName,
             VIEW_URL to viewUrl,
-            VIEW_TYPE to viewType,
+            VIEW_TYPE to viewType.asString,
             ACTION_ID to actionId
         )
     }
@@ -52,23 +52,21 @@ internal data class RumContext(
         fun fromFeatureContext(featureContext: Map<String, Any?>): RumContext {
             val applicationId = featureContext[APPLICATION_ID] as? String
             val sessionId = featureContext[SESSION_ID] as? String
-            val sessionState = featureContext[SESSION_STATE] as? RumSessionScope.State
-                ?: RumSessionScope.State.NOT_TRACKED
+            val sessionState = RumSessionScope.State.fromString(featureContext[SESSION_STATE] as? String)
             val viewId = featureContext[VIEW_ID] as? String
             val viewName = featureContext[VIEW_NAME] as? String
             val viewUrl = featureContext[VIEW_URL] as? String
-            val viewType = featureContext[VIEW_TYPE] as? RumViewScope.RumViewType
-                ?: RumViewScope.RumViewType.NONE
+            val viewType = RumViewScope.RumViewType.fromString(featureContext[VIEW_TYPE] as? String)
             val actionId = featureContext[ACTION_ID] as? String
 
             return RumContext(
                 applicationId = applicationId ?: NULL_UUID,
                 sessionId = sessionId ?: NULL_UUID,
-                sessionState = sessionState,
+                sessionState = sessionState ?: RumSessionScope.State.NOT_TRACKED,
                 viewId = viewId,
                 viewName = viewName,
                 viewUrl = viewUrl,
-                viewType = viewType,
+                viewType = viewType ?: RumViewScope.RumViewType.NONE,
                 actionId = actionId
             )
         }

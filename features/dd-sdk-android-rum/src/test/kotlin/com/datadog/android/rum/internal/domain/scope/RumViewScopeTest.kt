@@ -388,7 +388,7 @@ internal class RumViewScopeTest {
                 function.invoke(acc)
                 acc
             }
-            assertThat(rumContext["view_type"]).isEqualTo(fakeViewEventType)
+            assertThat(rumContext["view_type"]).isEqualTo(fakeViewEventType.asString)
         }
     }
 
@@ -432,8 +432,7 @@ internal class RumViewScopeTest {
                 function.invoke(acc)
                 acc
             }
-            assertThat(rumContext["view_type"])
-                .isEqualTo(RumViewScope.RumViewType.NONE)
+            assertThat(rumContext["view_type"]).isEqualTo(RumViewScope.RumViewType.NONE.asString)
         }
     }
 
@@ -458,8 +457,7 @@ internal class RumViewScopeTest {
             )
             val rumContext = mutableMapOf<String, Any?>()
             lastValue.invoke(rumContext)
-            assertThat(rumContext["view_type"])
-                .isEqualTo(RumViewScope.RumViewType.FOREGROUND)
+            assertThat(rumContext["view_type"]).isEqualTo(RumViewScope.RumViewType.FOREGROUND.asString)
         }
     }
 
@@ -511,16 +509,11 @@ internal class RumViewScopeTest {
                 acc
             }
 
-            assertThat(rumContext["view_type"])
-                .isEqualTo(expectedViewType)
-            assertThat(rumContext["view_name"])
-                .isEqualTo(anotherScope.getRumContext().viewName)
-            assertThat(rumContext["view_id"])
-                .isEqualTo(anotherScope.getRumContext().viewId)
-            assertThat(rumContext["view_url"])
-                .isEqualTo(anotherScope.getRumContext().viewUrl)
-            assertThat(rumContext["action_id"])
-                .isEqualTo(anotherScope.getRumContext().actionId)
+            assertThat(rumContext["view_type"]).isEqualTo(expectedViewType.asString)
+            assertThat(rumContext["view_name"]).isEqualTo(anotherScope.getRumContext().viewName)
+            assertThat(rumContext["view_id"]).isEqualTo(anotherScope.getRumContext().viewId)
+            assertThat(rumContext["view_url"]).isEqualTo(anotherScope.getRumContext().viewUrl)
+            assertThat(rumContext["action_id"]).isEqualTo(anotherScope.getRumContext().actionId)
         }
         mockInternalLogger.verifyLog(
             InternalLogger.Level.DEBUG,
@@ -560,8 +553,7 @@ internal class RumViewScopeTest {
                 acc
             }
 
-            assertThat(rumContext["view_type"])
-                .isEqualTo(RumViewScope.RumViewType.NONE)
+            assertThat(rumContext["view_type"]).isEqualTo(RumViewScope.RumViewType.NONE.asString)
             assertThat(rumContext["view_name"]).isNull()
             assertThat(rumContext["view_id"]).isNull()
             assertThat(rumContext["view_url"]).isNull()
@@ -603,16 +595,11 @@ internal class RumViewScopeTest {
                 acc
             }
 
-            assertThat(rumContext["view_type"])
-                .isEqualTo(RumViewScope.RumViewType.NONE)
-            assertThat(rumContext["view_name"])
-                .isNull()
-            assertThat(rumContext["view_id"])
-                .isNull()
-            assertThat(rumContext["view_url"])
-                .isNull()
-            assertThat(rumContext["action_id"])
-                .isNull()
+            assertThat(rumContext["view_type"]).isEqualTo(RumViewScope.RumViewType.NONE.asString)
+            assertThat(rumContext["view_name"]).isNull()
+            assertThat(rumContext["view_id"]).isNull()
+            assertThat(rumContext["view_url"]).isNull()
+            assertThat(rumContext["action_id"]).isNull()
         }
 
         mockInternalLogger.verifyLog(
@@ -707,7 +694,7 @@ internal class RumViewScopeTest {
                 function.invoke(acc)
                 acc
             }
-            assertThat(rumContext["view_type"]).isEqualTo(viewType)
+            assertThat(rumContext["view_type"]).isEqualTo(viewType.asString)
         }
     }
 
@@ -764,7 +751,7 @@ internal class RumViewScopeTest {
                 function.invoke(acc)
                 acc
             }
-            assertThat(rumContext["view_type"]).isEqualTo(viewType)
+            assertThat(rumContext["view_type"]).isEqualTo(viewType.asString)
         }
     }
 
