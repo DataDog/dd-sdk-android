@@ -15,7 +15,8 @@ internal class RumContextForgeryFactory : ForgeryFactory<RumContext> {
     override fun getForgery(forge: Forge): RumContext {
         return RumContext(
             applicationId = forge.getForgery<UUID>().toString(),
-            sessionId = forge.getForgery<UUID>().toString()
+            sessionId = forge.getForgery<UUID>().toString(),
+            sessionState = forge.anElementFrom("TRACKED", "NOT_TRACKED", "EXPIRED")
         )
     }
 }
