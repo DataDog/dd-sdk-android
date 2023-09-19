@@ -135,7 +135,7 @@ internal class GesturesListener(
             val downTarget = findTargetForTap(decorView, onTouchDownXPos, onTouchDownYPos)
             val upTarget = findTargetForTap(decorView, onUpEvent.x, onUpEvent.y)
 
-            if (downTarget == upTarget && downTarget != null) {
+            if (downTarget === upTarget && downTarget != null) {
                 sendTapEventWithTarget(downTarget)
             }
         }

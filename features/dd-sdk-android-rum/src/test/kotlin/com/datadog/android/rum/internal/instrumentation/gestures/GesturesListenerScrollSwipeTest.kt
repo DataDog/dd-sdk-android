@@ -187,7 +187,6 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
-
         inOrder(rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance)
                 .startAction(RumActionType.SCROLL, "", expectedStartAttributes)
@@ -266,7 +265,6 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
-
         inOrder(rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance)
                 .startAction(RumActionType.SCROLL, "", expectedStartAttributes1)
@@ -289,7 +287,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             GesturesListener.SCROLL_DIRECTION_RIGHT
         ]
     )
-    fun `M send a tap rum event if target is a non scrollabld`(
+    fun `M send a tap rum event if target is a non scrollable`(
         expectedDirection: String,
         forge: Forge
     ) {
