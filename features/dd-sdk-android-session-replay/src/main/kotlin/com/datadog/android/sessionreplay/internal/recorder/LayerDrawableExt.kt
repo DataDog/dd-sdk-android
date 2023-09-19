@@ -10,7 +10,6 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.LayerDrawable
 import com.datadog.android.api.InternalLogger
 
-@Suppress("TooGenericExceptionCaught")
 internal fun LayerDrawable.safeGetDrawable(index: Int, logger: InternalLogger = InternalLogger.UNBOUND): Drawable? {
     return if (index < 0 || index >= this.numberOfLayers) {
         logger.log(
@@ -20,6 +19,7 @@ internal fun LayerDrawable.safeGetDrawable(index: Int, logger: InternalLogger = 
         )
         null
     } else {
+        @Suppress("UnsafeThirdPartyFunctionCall") // Can't be out of bounds
         this.getDrawable(index)
     }
 }

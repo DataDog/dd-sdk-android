@@ -10,6 +10,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AbsListView
+import android.widget.Button
 import android.widget.ListAdapter
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.view.ScrollingView
@@ -63,7 +64,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             GesturesListener.SCROLL_DIRECTION_RIGHT
         ]
     )
-    fun `it will send an scroll rum event if fling not detected`(
+    fun `M send an scroll rum event if fling not detected`(
         expectedDirection: String,
         forge: Forge
     ) {
@@ -134,7 +135,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             GesturesListener.SCROLL_DIRECTION_RIGHT
         ]
     )
-    fun `it will send a scroll rum event if target is a ListView`(
+    fun `M send a scroll rum event if target is a ListView`(
         expectedDirection: String,
         forge: Forge
     ) {
@@ -186,7 +187,6 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
-
         inOrder(rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance)
                 .startAction(RumActionType.SCROLL, "", expectedStartAttributes)
@@ -198,7 +198,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
     @ParameterizedTest
     @MethodSource("twoDirections")
-    fun `it will reset the scroll data between 2 consecutive gestures`(
+    fun `M reset the scroll data between 2 consecutive gestures`(
         expectedDirection1: String,
         expectedDirection2: String,
         forge: Forge
@@ -265,7 +265,6 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
-
         inOrder(rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance)
                 .startAction(RumActionType.SCROLL, "", expectedStartAttributes1)
@@ -276,6 +275,73 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             verify(rumMonitor.mockInstance)
                 .stopAction(RumActionType.SCROLL, "", expectedStopAttributes2)
         }
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            GesturesListener.SCROLL_DIRECTION_DOWN,
+            GesturesListener.SCROLL_DIRECTION_UP,
+            GesturesListener.SCROLL_DIRECTION_LEFT,
+            GesturesListener.SCROLL_DIRECTION_RIGHT
+        ]
+    )
+    fun `M send a tap rum event if target is a non scrollable`(
+        expectedDirection: String,
+        forge: Forge
+    ) {
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val listSize = forge.anInt(1, 20)
+        val intermediaryEvents = forge.aList(size = listSize) {
+            forge.getForgery(MotionEvent::class.java)
+        }
+        val distancesX = forge.aList(listSize) { forge.aFloat() }
+        val distancesY = forge.aList(listSize) { forge.aFloat() }
+        val targetId = forge.anInt()
+        // ensure the last event is within the bounds of the target
+        val endUpEvent = startDownEvent
+        stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
+
+        val nonScrollingTarget: Button = mockView(
+            id = targetId,
+            forEvent = startDownEvent,
+            hitTest = true,
+            clickable = true,
+            forge = forge
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(nonScrollingTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(nonScrollingTarget, expectedResourceName)
+        val expectedStartAttributes = mutableMapOf(
+            RumAttributes.ACTION_TARGET_CLASS_NAME to nonScrollingTarget.javaClass.canonicalName,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+        )
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        intermediaryEvents.forEachIndexed { index, event ->
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+        }
+        testedListener.onUp(endUpEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance)
+            .addAction(RumActionType.TAP, "", expectedStartAttributes)
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
@@ -324,8 +390,11 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            GesturesListener.MSG_NO_TARGET_SCROLL_SWIPE,
-            mode = times(intermediaryEvents.size)
+            {
+                it == GesturesListener.MSG_NO_TARGET_SCROLL_SWIPE ||
+                    it == GesturesListener.MSG_NO_TARGET_TAP
+            },
+            mode = times(intermediaryEvents.size + 2)
         )
         verifyNoInteractions(rumMonitor.mockInstance)
     }
@@ -339,7 +408,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val distancesX = forge.aList(listSize) { forge.aFloat() }
         val distancesY = forge.aList(listSize) { forge.aFloat() }
         val targetId = forge.anInt()
-        val endUpEvent = intermediaryEvents[intermediaryEvents.size - 1]
+        // ensure the last event is within the bounds of the target
+        val endUpEvent = startDownEvent
         val composeView: ComposeView = mockView(
             id = targetId,
             forEvent = startDownEvent,
@@ -383,7 +453,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             GesturesListener.SCROLL_DIRECTION_RIGHT
         ]
     )
-    fun `it will send a swipe rum event if detected`(expectedDirection: String, forge: Forge) {
+    fun `M send a swipe rum event if detected`(expectedDirection: String, forge: Forge) {
         val listSize = forge.anInt(1, 20)
         val startDownEvent: MotionEvent = forge.getForgery()
         val intermediaryEvents =
@@ -714,7 +784,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
     @ParameterizedTest
     @MethodSource("twoDirections")
-    fun `it will reset the swipe data between 2 consecutive gestures`(
+    fun `M reset the swipe data between 2 consecutive gestures`(
         expectedDirection1: String,
         expectedDirection2: String,
         forge: Forge
