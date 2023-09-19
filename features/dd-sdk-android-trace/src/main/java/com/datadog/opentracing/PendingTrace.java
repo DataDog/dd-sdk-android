@@ -180,27 +180,25 @@ public class PendingTrace extends LinkedList<DDSpan> {
   }
 
   private void expireReference() {
-    synchronized(this) {
-      final int count = pendingReferenceCount.decrementAndGet();
-      if (count == 0) {
-        write();
-      } else {
-        if (tracer.getPartialFlushMinSpans() > 0 && size() > tracer.getPartialFlushMinSpans()) {
-          synchronized (this) {
-            if (size() > tracer.getPartialFlushMinSpans()) {
-              final DDSpan rootSpan = getRootSpan();
-              final List<DDSpan> partialTrace = new ArrayList(size());
-              final Iterator<DDSpan> it = iterator();
-              while (it.hasNext()) {
-                final DDSpan span = it.next();
-                if (span != rootSpan) {
-                  partialTrace.add(span);
-                  completedSpanCount.decrementAndGet();
-                  it.remove();
-                }
+    final int count = pendingReferenceCount.decrementAndGet();
+    if (count == 0) {
+      write();
+    } else {
+      if (tracer.getPartialFlushMinSpans() > 0 && size() > tracer.getPartialFlushMinSpans()) {
+        synchronized (this) {
+          if (size() > tracer.getPartialFlushMinSpans()) {
+            final DDSpan rootSpan = getRootSpan();
+            final List<DDSpan> partialTrace = new ArrayList(size());
+            final Iterator<DDSpan> it = iterator();
+            while (it.hasNext()) {
+              final DDSpan span = it.next();
+              if (span != rootSpan) {
+                partialTrace.add(span);
+                completedSpanCount.decrementAndGet();
+                it.remove();
               }
-              tracer.write(partialTrace);
             }
+            tracer.write(partialTrace);
           }
         }
       }
@@ -238,17 +236,15 @@ public class PendingTrace extends LinkedList<DDSpan> {
 
   @Override
   public void addFirst(final DDSpan span) {
-    synchronized(this) {
+    synchronized (this) {
       super.addFirst(span);
-      completedSpanCount.incrementAndGet();
     }
+    completedSpanCount.incrementAndGet();
   }
 
   @Override
   public int size() {
-    synchronized(this) {
-      return completedSpanCount.get();
-    }
+    return completedSpanCount.get();
   }
 
   private void addPendingTrace() {

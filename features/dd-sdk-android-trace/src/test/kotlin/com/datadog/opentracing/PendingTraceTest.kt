@@ -15,10 +15,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.math.BigInteger
@@ -34,25 +34,24 @@ import java.util.concurrent.TimeUnit
 @ForgeConfiguration(value = Configurator::class)
 class PendingTraceTest {
 
-    @Mock
-    lateinit var mockTracer: DDTracer
-
-    lateinit var fakeTraceId: BigInteger
-
     @Test
     fun `PendingTrace is thread safe`(forge: Forge) {
+        // Given
+        val mockTracer: DDTracer = mock()
         whenever(mockTracer.partialFlushMinSpans) doReturn 1
-        fakeTraceId = BigInteger.valueOf(forge.aLong())
+        val fakeTraceId = BigInteger.valueOf(forge.aLong())
         val pendingTrace = PendingTrace(mockTracer, fakeTraceId)
         val rootSpan = forge.fakeSpan(pendingTrace, mockTracer, fakeTraceId, BigInteger.ZERO, "rootSpan")
-        val countDownLatch = CountDownLatch(2)
+        val countDownLatch = CountDownLatch(CONCURRENT_THREAD)
 
-        val runnables = Array(4) {
+        // When
+        val runnables = Array(CONCURRENT_THREAD) {
             StressTestRunnable(pendingTrace, mockTracer, rootSpan, forge, countDownLatch)
         }
         runnables.forEach { Thread(it).start() }
+        countDownLatch.await(20, TimeUnit.SECONDS)
 
-        countDownLatch.await(10, TimeUnit.SECONDS)
+        // Then
         assertThat(countDownLatch.count).isZero()
         runnables.forEach {
             assertThat(it.cme).isNull()
@@ -72,11 +71,13 @@ class PendingTraceTest {
         override fun run() {
             try {
                 for (i in 0..10000) {
-                    val span = forge.fakeSpan(pendingTrace,
+                    val span = forge.fakeSpan(
+                        pendingTrace,
                         tracer,
                         parentSpan.traceId,
                         parentSpan.spanId,
-                        "childSpan_$i")
+                        "childSpan_$i"
+                    )
                     pendingTrace.registerSpan(span)
                     span.finish()
                 }
@@ -85,6 +86,10 @@ class PendingTraceTest {
             }
             countDownLatch.countDown()
         }
+    }
+
+    companion object {
+        const val CONCURRENT_THREAD = 4
     }
 }
 
