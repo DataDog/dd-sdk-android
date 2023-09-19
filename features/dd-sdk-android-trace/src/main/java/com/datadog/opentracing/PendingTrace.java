@@ -127,21 +127,23 @@ public class PendingTrace extends LinkedList<DDSpan> {
   }
 
   public void addSpan(final DDSpan span) {
-    if (span.getDurationNano() == 0) {
-      return;
-    }
-    if (traceId == null || span.context() == null) {
-      return;
-    }
-    if (!traceId.equals(span.getTraceId())) {
-      return;
-    }
+    synchronized(this) {
+      if (span.getDurationNano() == 0) {
+        return;
+      }
+      if (traceId == null || span.context() == null) {
+        return;
+      }
+      if (!traceId.equals(span.getTraceId())) {
+        return;
+      }
 
-    if (!isWritten.get()) {
-      addFirst(span);
-    } else {
+      if (!isWritten.get()) {
+        addFirst(span);
+      } else {
+      }
+      expireSpan(span, true);
     }
-    expireSpan(span, true);
   }
 
   public DDSpan getRootSpan() {
@@ -234,7 +236,9 @@ public class PendingTrace extends LinkedList<DDSpan> {
 
   @Override
   public void addFirst(final DDSpan span) {
-    super.addFirst(span);
+    synchronized (this) {
+      super.addFirst(span);
+    }
     completedSpanCount.incrementAndGet();
   }
 
