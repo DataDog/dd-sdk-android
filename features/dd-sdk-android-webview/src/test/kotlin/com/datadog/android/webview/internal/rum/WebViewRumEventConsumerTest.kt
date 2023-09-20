@@ -44,6 +44,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -108,6 +109,7 @@ internal class WebViewRumEventConsumerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeRumContext = fakeRumContext.copy(sessionState = "TRACKED")
         fakeTags = if (forge.aBool()) {
             forge.aMap {
                 forge.anAlphabeticalString() to forge.anAlphaNumericalString()
@@ -201,7 +203,7 @@ internal class WebViewRumEventConsumerTest {
     }
 
     @Test
-    fun `M write the mapped event W consume(){ no RUM context, view event }`(forge: Forge) {
+    fun `M not write the mapped event W consume(){ no RUM context, view event }`(forge: Forge) {
         // Given
         whenever(mockRumContextProvider.getRumContext(fakeDatadogContext)) doReturn null
         val fakeViewEvent: ViewEvent = forge.getForgery()
@@ -218,7 +220,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeViewEventAsJson)
 
         // Then
-        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedViewEvent)
+        verify(mockDataWriter, never()).write(any(), any())
     }
 
     // endregion
@@ -274,7 +276,7 @@ internal class WebViewRumEventConsumerTest {
     }
 
     @Test
-    fun `M write the mapped event W consume(){ no RUM context, action event }`(forge: Forge) {
+    fun `M not write the mapped event W consume(){ no RUM context, action event }`(forge: Forge) {
         // Given
         whenever(mockRumContextProvider.getRumContext(fakeDatadogContext)) doReturn null
         val fakeActionEvent: ActionEvent = forge.getForgery()
@@ -291,7 +293,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeActionEventAsJson)
 
         // Then
-        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedActionEvent)
+        verify(mockDataWriter, never()).write(any(), any())
     }
 
     // endregion
@@ -347,7 +349,7 @@ internal class WebViewRumEventConsumerTest {
     }
 
     @Test
-    fun `M write the mapped event W consume(){ no RUM context, resource event }`(forge: Forge) {
+    fun `M not write the mapped event W consume(){ no RUM context, resource event }`(forge: Forge) {
         // Given
         whenever(mockRumContextProvider.getRumContext(fakeDatadogContext)) doReturn null
         val fakeResourceEvent: ResourceEvent = forge.getForgery()
@@ -364,7 +366,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeResourceEventAsJson)
 
         // Then
-        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedResourceEvent)
+        verify(mockDataWriter, never()).write(any(), any())
     }
 
     // endregion
@@ -420,7 +422,7 @@ internal class WebViewRumEventConsumerTest {
     }
 
     @Test
-    fun `M write the mapped event W consume(){ no RUM context, error event}`(forge: Forge) {
+    fun `M not write the mapped event W consume(){ no RUM context, error event}`(forge: Forge) {
         // Given
         whenever(mockRumContextProvider.getRumContext(fakeDatadogContext)) doReturn null
         val fakeErrorEvent: ErrorEvent = forge.getForgery()
@@ -437,7 +439,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeErrorEventAsJson)
 
         // Then
-        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedErrorEvent)
+        verify(mockDataWriter, never()).write(any(), any())
     }
 
     // endregion
@@ -494,7 +496,7 @@ internal class WebViewRumEventConsumerTest {
     }
 
     @Test
-    fun `M write the mapped event W consume(){ no RUM context, longtask event }`(forge: Forge) {
+    fun `M not write the mapped event W consume(){ no RUM context, longtask event }`(forge: Forge) {
         // Given
         whenever(mockRumContextProvider.getRumContext(fakeDatadogContext)) doReturn null
         val fakeLongTaskEvent: LongTaskEvent = forge.getForgery()
@@ -511,7 +513,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeLongTaskEventAsJson)
 
         // Then
-        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedLongTaskEvent)
+        verify(mockDataWriter, never()).write(any(), any())
     }
 
     // endregion
@@ -832,12 +834,10 @@ internal class WebViewRumEventConsumerTest {
         }
 
         val expectedOffsets = LinkedHashMap<String, Long>()
-        val expectedOffsetsKeys =
-            fakeViewEvents
-                .takeLast(WebViewRumEventConsumer.MAX_VIEW_TIME_OFFSETS_RETAIN)
-                .map { it.view.id }
-        val expectedOffsetsValues =
-            fakeServerOffsets.takeLast(WebViewRumEventConsumer.MAX_VIEW_TIME_OFFSETS_RETAIN)
+        val expectedOffsetsKeys = fakeViewEvents
+            .takeLast(WebViewRumEventConsumer.MAX_VIEW_TIME_OFFSETS_RETAIN)
+            .map { it.view.id }
+        val expectedOffsetsValues = fakeServerOffsets.takeLast(WebViewRumEventConsumer.MAX_VIEW_TIME_OFFSETS_RETAIN)
         expectedOffsetsKeys.forEachIndexed { index, key ->
             expectedOffsets[key] = expectedOffsetsValues[index]
         }

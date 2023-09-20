@@ -8,9 +8,10 @@ package com.datadog.android.webview.internal.rum.domain
 
 import java.util.UUID
 
-internal class RumContext(
-    val applicationId: String = NULL_UUID,
-    val sessionId: String = NULL_UUID
+internal data class RumContext(
+    val applicationId: String,
+    val sessionId: String,
+    val sessionState: String
 ) {
 
     companion object {
