@@ -2,7 +2,8 @@ public final class com/datadog/android/webview/WebViewTracking {
 	public static final field INSTANCE Lcom/datadog/android/webview/WebViewTracking;
 	public static final fun enable (Landroid/webkit/WebView;Ljava/util/List;)V
 	public static final fun enable (Landroid/webkit/WebView;Ljava/util/List;Lcom/datadog/android/api/SdkCore;)V
-	public static synthetic fun enable$default (Landroid/webkit/WebView;Ljava/util/List;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
+	public static final fun enable (Landroid/webkit/WebView;Ljava/util/List;Lcom/datadog/android/api/SdkCore;F)V
+	public static synthetic fun enable$default (Landroid/webkit/WebView;Ljava/util/List;Lcom/datadog/android/api/SdkCore;FILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/webview/WebViewTracking$_InternalWebViewProxy {

@@ -7,6 +7,7 @@
 package com.datadog.android.webview
 
 import android.webkit.WebView
+import androidx.annotation.FloatRange
 import androidx.annotation.MainThread
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
@@ -51,6 +52,8 @@ object WebViewTracking {
      * @param allowedHosts a list of all the hosts that you want to track when loaded in the
      * WebView (e.g.: `listOf("example.com", "example.net")`).
      * @param sdkCore SDK instance on which to attach the bridge.
+     * @param logsSampleRate the sample rate for logs coming from the WebView, in percent. A value of `30` means we'll
+     * send 30% of the logs. If value is `0`, no logs will be sent to Datadog. Default is 100.0 (ie: all logs are sent).
      * [More here](https://developer.android.com/guide/webapps/webview#HandlingNavigation).
      */
     @MainThread
@@ -59,7 +62,8 @@ object WebViewTracking {
     fun enable(
         webView: WebView,
         allowedHosts: List<String>,
-        sdkCore: SdkCore = Datadog.getInstance()
+        sdkCore: SdkCore = Datadog.getInstance(),
+        @FloatRange(from = 0.0, to = 100.0) logsSampleRate: Float = 100f
     ) {
         if (!webView.settings.javaScriptEnabled) {
             (sdkCore as FeatureSdkCore).internalLogger.log(
@@ -68,14 +72,16 @@ object WebViewTracking {
                 { JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE }
             )
         }
+        val webViewEventConsumer = buildWebViewEventConsumer(sdkCore as FeatureSdkCore, logsSampleRate)
         webView.addJavascriptInterface(
-            DatadogEventBridge(buildWebViewEventConsumer(sdkCore as FeatureSdkCore), allowedHosts),
+            DatadogEventBridge(webViewEventConsumer, allowedHosts),
             DATADOG_EVENT_BRIDGE_NAME
         )
     }
 
     private fun buildWebViewEventConsumer(
-        sdkCore: FeatureSdkCore
+        sdkCore: FeatureSdkCore,
+        logsSampleRate: Float
     ): WebViewEventConsumer<String> {
         val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.unwrap<StorageBackedFeature>()
@@ -120,7 +126,8 @@ object WebViewTracking {
                 WebViewLogEventConsumer(
                     sdkCore = sdkCore,
                     userLogsWriter = webViewLogsFeature?.dataWriter ?: NoOpDataWriter(),
-                    rumContextProvider = contextProvider
+                    rumContextProvider = contextProvider,
+                    sampleRate = logsSampleRate
                 ),
                 sdkCore.internalLogger
             )
@@ -135,7 +142,10 @@ object WebViewTracking {
         "ClassNaming"
     )
     class _InternalWebViewProxy(sdkCore: SdkCore) {
-        private val consumer = buildWebViewEventConsumer(sdkCore as FeatureSdkCore)
+        private val consumer = buildWebViewEventConsumer(
+            sdkCore as FeatureSdkCore,
+            WebViewLogEventConsumer.DEFAULT_SAMPLE_RATE
+        )
 
         fun consumeWebviewEvent(event: String) {
             consumer.consume(event)

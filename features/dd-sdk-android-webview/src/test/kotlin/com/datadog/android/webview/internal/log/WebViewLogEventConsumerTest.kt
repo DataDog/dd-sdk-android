@@ -40,6 +40,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -106,7 +107,8 @@ internal class WebViewLogEventConsumerTest {
         testedConsumer = WebViewLogEventConsumer(
             mockSdkCore,
             mockUserLogsWriter,
-            mockRumContextProvider
+            mockRumContextProvider,
+            sampleRate = 100f
         )
     }
 
@@ -149,6 +151,25 @@ internal class WebViewLogEventConsumerTest {
 
         // Then
         verifyNoInteractions(mockUserLogsWriter)
+    }
+
+    @Test
+    fun `M not write the user event W consume { zero sampling rate }`() {
+        // Given
+        testedConsumer = WebViewLogEventConsumer(
+            mockSdkCore,
+            mockUserLogsWriter,
+            mockRumContextProvider,
+            0f
+        )
+
+        // When
+        testedConsumer.consume(
+            fakeWebLogEvent to WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
+        )
+
+        // Then
+        verify(mockWebViewLogsFeatureScope, never()).withWriteContext(any(), any())
     }
 
     @Test
