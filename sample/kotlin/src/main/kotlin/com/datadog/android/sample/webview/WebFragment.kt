@@ -15,6 +15,7 @@ import android.webkit.WebViewClient
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
+import com.datadog.android.sample.SampleApplication
 import com.datadog.android.webview.WebViewTracking
 
 internal class WebFragment : Fragment() {
@@ -44,7 +45,8 @@ internal class WebFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewModel = ViewModelProviders.of(this).get(WebViewModel::class.java)
+        val factory = SampleApplication.getViewModelFactory(requireContext())
+        viewModel = ViewModelProviders.of(this, factory).get(WebViewModel::class.java)
     }
 
     override fun onResume() {
