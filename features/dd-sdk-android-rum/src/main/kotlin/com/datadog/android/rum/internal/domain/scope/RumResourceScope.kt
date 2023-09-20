@@ -29,7 +29,7 @@ import java.net.URL
 import java.util.Locale
 import java.util.UUID
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class RumResourceScope(
     internal val parentScope: RumScope,
     internal val sdkCore: InternalSdkCore,
@@ -180,6 +180,12 @@ internal class RumResourceScope(
         val finalTiming = timing ?: extractResourceTiming(
             attributes.remove(RumAttributes.RESOURCE_TIMINGS) as? Map<String, Any?>
         )
+        val graphql = resolveGraphQLAttributes(
+            attributes.remove(RumAttributes.GRAPHQL_OPERATION_TYPE) as? String?,
+            attributes.remove(RumAttributes.GRAPHQL_OPERATION_NAME) as? String?,
+            attributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String?,
+            attributes.remove(RumAttributes.GRAPHQL_VARIABLES) as? String?
+        )
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val user = datadogContext.userInfo
@@ -203,7 +209,8 @@ internal class RumResourceScope(
                         ssl = finalTiming?.ssl(),
                         firstByte = finalTiming?.firstByte(),
                         download = finalTiming?.download(),
-                        provider = resolveResourceProvider()
+                        provider = resolveResourceProvider(),
+                        graphql = graphql
                     ),
                     action = rumContext.actionId?.let { ResourceEvent.Action(listOf(it)) },
                     view = ResourceEvent.View(
@@ -395,6 +402,24 @@ internal class RumResourceScope(
         } catch (e: MalformedURLException) {
             url
         }
+    }
+
+    private fun resolveGraphQLAttributes(
+        operationType: String?,
+        operationName: String?,
+        payload: String?,
+        variables: String?
+    ): ResourceEvent.Graphql? {
+        operationType?.toOperationType(sdkCore.internalLogger)?.let {
+            return ResourceEvent.Graphql(
+                it,
+                operationName,
+                payload,
+                variables
+            )
+        }
+
+        return null
     }
 
     // endregion

@@ -58,6 +58,10 @@ public final class com/datadog/android/rum/RumAttributes {
 	public static final field ERROR_RESOURCE_METHOD Ljava/lang/String;
 	public static final field ERROR_RESOURCE_STATUS_CODE Ljava/lang/String;
 	public static final field ERROR_RESOURCE_URL Ljava/lang/String;
+	public static final field GRAPHQL_OPERATION_NAME Ljava/lang/String;
+	public static final field GRAPHQL_OPERATION_TYPE Ljava/lang/String;
+	public static final field GRAPHQL_PAYLOAD Ljava/lang/String;
+	public static final field GRAPHQL_VARIABLES Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/rum/RumAttributes;
 	public static final field INTERNAL_ERROR_IS_CRASH Ljava/lang/String;
 	public static final field INTERNAL_ERROR_SOURCE_TYPE Ljava/lang/String;
