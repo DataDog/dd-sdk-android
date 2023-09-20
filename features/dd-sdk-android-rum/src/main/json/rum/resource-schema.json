@@ -223,6 +223,35 @@
                 }
               },
               "readOnly": true
+            },
+            "graphql": {
+              "type": "object",
+              "description": "GraphQL requests parameters",
+              "required": ["operationType"],
+              "properties": {
+                "operationType": {
+                  "type": "string",
+                  "description": "Type of the GraphQL operation",
+                  "enum": ["query", "mutation", "subscription"],
+                  "readOnly": true
+                },
+                "operationName": {
+                  "type": "string",
+                  "description": "Name of the GraphQL operation",
+                  "readOnly": true
+                },
+                "payload": {
+                  "type": "string",
+                  "description": "Content of the GraphQL operation",
+                  "readOnly": false
+                },
+                "variables": {
+                  "type": "string",
+                  "description": "String representation of the operation variables",
+                  "readOnly": false
+                }
+              },
+              "readOnly": true
             }
           },
           "readOnly": true

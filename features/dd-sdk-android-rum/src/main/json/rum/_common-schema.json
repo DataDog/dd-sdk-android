@@ -36,6 +36,11 @@
       "description": "The version for this application",
       "readOnly": true
     },
+    "build_version": {
+      "type": "string",
+      "description": "The build version for this application",
+      "readOnly": true
+    },
     "session": {
       "type": "object",
       "description": "Session properties",
