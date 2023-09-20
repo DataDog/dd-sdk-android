@@ -70,10 +70,16 @@ internal class RumSessionScope(
         }
     }
 
-    enum class State {
-        NOT_TRACKED,
-        TRACKED,
-        EXPIRED
+    enum class State(val asString: String) {
+        NOT_TRACKED("NOT_TRACKED"),
+        TRACKED("TRACKED"),
+        EXPIRED("EXPIRED");
+
+        companion object {
+            fun fromString(string: String?): State? {
+                return values().firstOrNull { it.asString == string }
+            }
+        }
     }
 
     // region RumScope
