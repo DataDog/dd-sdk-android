@@ -10,11 +10,13 @@ import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
 import android.widget.TextView
+import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.aMockTextView
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
 import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
+import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelperCallback
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.TextValueObfuscationRule
 import com.datadog.android.sessionreplay.internal.utils.shapeStyle
@@ -31,7 +33,10 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 
 internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTest() {
@@ -48,9 +53,6 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
     lateinit var mockImageWireframeHelper: ImageWireframeHelper
 
     @Mock
-    lateinit var mockBase64Serializer: Base64Serializer
-
-    @Mock
     lateinit var mockUniqueIdentifierGenerator: UniqueIdentifierGenerator
 
     @Mock
@@ -61,6 +63,9 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
 
     @StringForgery
     lateinit var fakeDefaultObfuscatedText: String
+
+    @Mock
+    lateinit var mockJobStatusCallback: AsyncJobStatusCallback
 
     @BeforeEach
     fun `set up`() {
@@ -75,7 +80,6 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         return TextViewMapper(
             imageWireframeHelper = mockImageWireframeHelper,
             uniqueIdentifierGenerator = mockUniqueIdentifierGenerator,
-            base64Serializer = mockBase64Serializer,
             textValueObfuscationRule = mockObfuscationRule
         )
     }
@@ -237,7 +241,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
     }
 
     @Test
-    fun `M resolve a TextWireframe with background ShapeWireframe W map { TextView with ColorDrawable }`(
+    fun `M resolve a ShapeWireframe background W map {ColorDrawable background}`(
         forge: Forge
     ) {
         // Given
@@ -277,8 +281,12 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             id = System.identityHashCode(this).toLong(),
             x = textWireframes[0].x,
             y = textWireframes[0].y,
-            width = mockTextView.width.densityNormalized(fakeMappingContext.systemInformation.screenDensity).toLong(),
-            height = mockTextView.height.densityNormalized(fakeMappingContext.systemInformation.screenDensity).toLong(),
+            width = mockTextView.width.densityNormalized(
+                fakeMappingContext.systemInformation.screenDensity
+            ).toLong(),
+            height = mockTextView.height.densityNormalized(
+                fakeMappingContext.systemInformation.screenDensity
+            ).toLong(),
             shapeStyle = MobileSegment.ShapeStyle(
                 backgroundColor = fakeStyleColor,
                 opacity = fakeViewAlpha,
@@ -303,6 +311,92 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         assertThat(actualWireframes[1].shapeStyle()).isNull()
         assertThat((actualWireframes[1] as MobileSegment.Wireframe.TextWireframe).text)
             .isEqualTo((expectedWireframes[1] as MobileSegment.Wireframe.TextWireframe).text)
+    }
+
+    @Test
+    fun `M resolve an ImageWireframe background W map {no ColorDrawable background}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewAlpha = forge.aFloat(min = 0f, max = 1f)
+        val mockDrawable = mock<Drawable>()
+        val mockDrawableCopy = mock<Drawable>()
+        val mockConstantState = mock<Drawable.ConstantState>() {
+            whenever(it.newDrawable(any())).thenReturn(mockDrawableCopy)
+        }
+        whenever(mockDrawable.constantState).thenReturn(mockConstantState)
+
+        val mockTextView = forge.aMockTextView().apply {
+            whenever(this.background).thenReturn(mockDrawable)
+            whenever(this.text).thenReturn(fakeText)
+            whenever(this.typeface).thenReturn(mock())
+            whenever(this.alpha).thenReturn(fakeViewAlpha)
+            whenever(this.resources).thenReturn(mockResources)
+        }
+        val fakeBackgroundWireframe: MobileSegment.Wireframe.ImageWireframe = forge.getForgery()
+        whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))
+            .thenReturn(fakeDefaultObfuscatedText)
+        whenever(
+            mockImageWireframeHelper.createImageWireframe(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                anyOrNull(),
+                anyOrNull(),
+                any(),
+                any()
+            )
+        ).thenReturn(fakeBackgroundWireframe)
+
+        // When
+        val actualWireframes = testedTextWireframeMapper.map(
+            mockTextView,
+            fakeMappingContext,
+            mockJobStatusCallback
+        )
+
+        // Then
+        val expectedWireframes = mutableListOf<MobileSegment.Wireframe>()
+        expectedWireframes.add(fakeBackgroundWireframe)
+
+        expectedWireframes.addAll(
+            mockTextView.toTextWireframes().map {
+                it.copy(
+                    text = fakeDefaultObfuscatedText
+                )
+            }
+        )
+
+        assertThat(actualWireframes.size).isEqualTo(2)
+        assertThat(actualWireframes[0]).isEqualTo(fakeBackgroundWireframe)
+        assertThat((actualWireframes[1] as MobileSegment.Wireframe.TextWireframe).text)
+            .isEqualTo((expectedWireframes[1] as MobileSegment.Wireframe.TextWireframe).text)
+        argumentCaptor<ImageWireframeHelperCallback>() {
+            verify(mockImageWireframeHelper).createImageWireframe(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                anyOrNull(),
+                anyOrNull(),
+                any(),
+                capture()
+            )
+            allValues.forEach() {
+                it.onStart()
+                it.onFinished()
+            }
+            verify(mockJobStatusCallback).jobStarted()
+            verify(mockJobStatusCallback).jobFinished()
+            verifyNoMoreInteractions(mockJobStatusCallback)
+        }
     }
 
     @Test
@@ -396,6 +490,12 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         val fakeDefaultObfuscatedText = forge.aString()
         val fakeHintText = forge.aString()
         val fakeTextColor = forge.anInt(min = 0, max = 0xffffff)
+        val fakeDrawables = arrayOf<Drawable>(
+            mock(),
+            mock(),
+            mock(),
+            mock()
+        )
         val mockTextView: TextView = forge.aMockTextView().apply {
             whenever(this.text).thenReturn("")
             whenever(this.hint).thenReturn(fakeHintText)
@@ -404,27 +504,47 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             whenever(this.currentTextColor).thenReturn(fakeTextColor)
             whenever(this.resources).thenReturn(mockResources)
             whenever(this.compoundDrawables).thenReturn(
-                arrayOf(
-                    mock(),
-                    mock(),
-                    mock(),
-                    mock()
-                )
+                fakeDrawables
             )
         }
         val mockImageWireframe: MobileSegment.Wireframe.ImageWireframe = mock()
-
-        whenever(mockImageWireframeHelper.createCompoundDrawableWireframes(any(), any(), any(), anyOrNull()))
-            .thenReturn(mutableListOf(mockImageWireframe))
+        whenever(
+            mockImageWireframeHelper.createCompoundDrawableWireframes(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ).thenReturn(mutableListOf(mockImageWireframe))
 
         whenever(mockObfuscationRule.resolveObfuscatedValue(mockTextView, fakeMappingContext))
             .thenReturn(fakeDefaultObfuscatedText)
 
         // When
-        val wireframes = testedTextWireframeMapper.map(mockTextView, fakeMappingContext)
+        val wireframes = testedTextWireframeMapper.map(
+            mockTextView,
+            fakeMappingContext,
+            mockJobStatusCallback
+        )
         val imageWireframes = wireframes.filter { it is MobileSegment.Wireframe.ImageWireframe }
 
         // Then
+        argumentCaptor<ImageWireframeHelperCallback>() {
+            verify(mockImageWireframeHelper)
+                .createCompoundDrawableWireframes(
+                    any(),
+                    any(),
+                    any(),
+                    capture()
+                )
+            allValues.forEach {
+                it.onStart()
+                it.onFinished()
+            }
+            verify(mockJobStatusCallback).jobStarted()
+            verify(mockJobStatusCallback).jobFinished()
+            verifyNoMoreInteractions(mockJobStatusCallback)
+        }
         assertThat(imageWireframes).isEqualTo(listOf(mockImageWireframe))
     }
 }

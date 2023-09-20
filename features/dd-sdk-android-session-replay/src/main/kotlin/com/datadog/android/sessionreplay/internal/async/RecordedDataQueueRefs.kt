@@ -19,12 +19,12 @@ internal data class RecordedDataQueueRefs(
     // this can only be populated after the snapshot has been created
     internal var recordedDataQueueItem: SnapshotRecordedDataQueueItem? = null
 
-    internal fun incrementPendingImages() {
-        recordedDataQueueItem?.incrementPendingImages()
+    internal fun incrementPendingJobs() {
+        recordedDataQueueItem?.incrementPendingJobs()
     }
 
-    internal fun decrementPendingImages() {
-        recordedDataQueueItem?.decrementPendingImages()
+    internal fun decrementPendingJobs() {
+        recordedDataQueueItem?.decrementPendingJobs()
     }
 
     internal fun tryToConsumeItem() {

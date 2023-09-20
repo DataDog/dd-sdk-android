@@ -7,9 +7,11 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.ImageButton
+import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
 import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
+import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelperCallback
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
@@ -17,26 +19,29 @@ import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 internal class ImageButtonMapper(
     private val base64Serializer: Base64Serializer,
     private val imageWireframeHelper: ImageWireframeHelper,
-    private val uniqueIdentifierGenerator: UniqueIdentifierGenerator
-) : BaseWireframeMapper<ImageButton, MobileSegment.Wireframe>(
-    base64Serializer = base64Serializer,
+    uniqueIdentifierGenerator: UniqueIdentifierGenerator
+) : BaseAsyncBackgroundWireframeMapper<ImageButton>(
     imageWireframeHelper = imageWireframeHelper,
     uniqueIdentifierGenerator = uniqueIdentifierGenerator
 ) {
     override fun map(
         view: ImageButton,
-        mappingContext: MappingContext
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
 
         // add background wireframes if any
-        wireframes.addAll(super.map(view, mappingContext))
+        wireframes.addAll(super.map(view, mappingContext, asyncJobStatusCallback))
 
         val drawable = view.drawable?.current ?: return wireframes
         val resources = view.resources
         val density = resources.displayMetrics.density
         val bounds = resolveViewGlobalBounds(view, density)
 
+        // This method should not be part of the serializer
+        // TODO: RUM-0000 remove this method from the serializer and remove
+        // the serializer dependency from this class
         val (scaledDrawableWidth, scaledDrawableHeight) =
             base64Serializer.getDrawableScaledDimensions(view, drawable, density)
 
@@ -55,7 +60,15 @@ internal class ImageButtonMapper(
             drawable = drawable.constantState?.newDrawable(resources),
             shapeStyle = null,
             border = null,
-            asyncImageProcessingCallback = asyncImageProcessingCallback
+            callback = object : ImageWireframeHelperCallback {
+                override fun onFinished() {
+                    asyncJobStatusCallback.jobFinished()
+                }
+
+                override fun onStart() {
+                    asyncJobStatusCallback.jobStarted()
+                }
+            }
         )?.let {
             wireframes.add(it)
         }

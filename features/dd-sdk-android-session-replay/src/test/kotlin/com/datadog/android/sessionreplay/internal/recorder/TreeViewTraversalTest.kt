@@ -33,6 +33,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -95,7 +96,13 @@ internal class TreeViewTraversalTest {
             MapperTypeWrapper(it, mapper)
         }
         val mockView = forge.anElementFrom(mockViews)
-        whenever(fakeTypeToMapperMap[mockView::class.java]!!.map(mockView, fakeMappingContext))
+        whenever(
+            fakeTypeToMapperMap[mockView::class.java]!!.map(
+                eq(mockView),
+                eq(fakeMappingContext),
+                any()
+            )
+        )
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
             fakeTypeMapperWrappers,
@@ -135,7 +142,7 @@ internal class TreeViewTraversalTest {
             whenever(this.parent)
                 .thenReturn(mock<ViewGroup>())
         }
-        whenever(mockViewMapper.map(mockView, fakeMappingContext))
+        whenever(mockViewMapper.map(eq(mockView), eq(fakeMappingContext), any()))
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
             emptyList(),
@@ -167,7 +174,7 @@ internal class TreeViewTraversalTest {
         val mockView = forge.aMockView<View>().apply {
             whenever(this.parent).thenReturn(mock())
         }
-        whenever(mockDecorViewMapper.map(mockView, fakeMappingContext))
+        whenever(mockDecorViewMapper.map(eq(mockView), eq(fakeMappingContext), any()))
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
             emptyList(),
@@ -200,7 +207,7 @@ internal class TreeViewTraversalTest {
             whenever(this.parent).thenReturn(null)
         }
 
-        whenever(mockDecorViewMapper.map(mockView, fakeMappingContext))
+        whenever(mockDecorViewMapper.map(eq(mockView), eq(fakeMappingContext), any()))
             .thenReturn(fakeViewMappedWireframes)
         testedTreeViewTraversal = TreeViewTraversal(
             emptyList(),

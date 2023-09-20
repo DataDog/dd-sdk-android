@@ -17,7 +17,6 @@ import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
 import com.datadog.android.sessionreplay.internal.recorder.base64.Cache.Companion.DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS
 import com.datadog.android.sessionreplay.internal.utils.Base64Utils
 import com.datadog.android.sessionreplay.internal.utils.DrawableDimensions
@@ -52,23 +51,21 @@ internal class Base64Serializer private constructor(
         drawableWidth: Int,
         drawableHeight: Int,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
-        asyncImageProcessingCallback: AsyncImageProcessingCallback?
+        callback: Base64SerializerCallback? = null
     ) {
         registerCallbacks(applicationContext)
 
-        asyncImageProcessingCallback?.startProcessingImage()
-
-        tryToGetBase64FromCache(drawable, imageWireframe, asyncImageProcessingCallback)
-            ?: tryToGetBitmapFromBitmapDrawable(drawable, imageWireframe, asyncImageProcessingCallback)
+        tryToGetBase64FromCache(drawable, imageWireframe, callback)
+            ?: tryToGetBitmapFromBitmapDrawable(drawable, imageWireframe, callback)
             ?: tryToDrawNewBitmap(
                 drawable,
                 drawableWidth,
                 drawableHeight,
                 displayMetrics,
                 imageWireframe,
-                asyncImageProcessingCallback
+                callback
             )
-            ?: asyncImageProcessingCallback?.finishProcessingImage()
+            ?: callback?.onReady()
     }
 
     internal fun getDrawableScaledDimensions(
@@ -94,10 +91,10 @@ internal class Base64Serializer private constructor(
         bitmap: Bitmap,
         shouldCacheBitmap: Boolean,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
-        asyncImageProcessingCallback: AsyncImageProcessingCallback?
+        base64SerializerCallback: Base64SerializerCallback?
     ) {
         val base64String = convertBmpToBase64(drawable, bitmap, shouldCacheBitmap)
-        finalizeRecordedDataItem(base64String, imageWireframe, asyncImageProcessingCallback)
+        finalizeRecordedDataItem(base64String, imageWireframe, base64SerializerCallback)
     }
 
     @MainThread
@@ -153,7 +150,7 @@ internal class Base64Serializer private constructor(
         drawableHeight: Int,
         displayMetrics: DisplayMetrics,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
-        asyncImageProcessingCallback: AsyncImageProcessingCallback?
+        base64SerializerCallback: Base64SerializerCallback?
     ): Bitmap? {
         drawableUtils.createBitmapOfApproxSizeFromDrawable(
             drawable,
@@ -166,7 +163,7 @@ internal class Base64Serializer private constructor(
                 bitmap = resizedBitmap,
                 shouldCacheBitmap = true,
                 imageWireframe,
-                asyncImageProcessingCallback
+                base64SerializerCallback
             )
             return resizedBitmap
         }
@@ -178,7 +175,7 @@ internal class Base64Serializer private constructor(
     private fun tryToGetBitmapFromBitmapDrawable(
         drawable: Drawable,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
-        asyncImageProcessingCallback: AsyncImageProcessingCallback?
+        base64SerializerCallback: Base64SerializerCallback?
     ): Bitmap? {
         var result: Bitmap? = null
         if (shouldUseDrawableBitmap(drawable)) {
@@ -192,7 +189,7 @@ internal class Base64Serializer private constructor(
                     scaledBitmap,
                     shouldCacheBitmap,
                     imageWireframe,
-                    asyncImageProcessingCallback
+                    base64SerializerCallback
                 )
 
                 result = scaledBitmap
@@ -204,10 +201,10 @@ internal class Base64Serializer private constructor(
     private fun tryToGetBase64FromCache(
         drawable: Drawable,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
-        asyncImageProcessingCallback: AsyncImageProcessingCallback?
+        base64SerializerCallback: Base64SerializerCallback?
     ): String? {
         return base64LRUCache?.get(drawable)?.let { base64String ->
-            finalizeRecordedDataItem(base64String, imageWireframe, asyncImageProcessingCallback)
+            finalizeRecordedDataItem(base64String, imageWireframe, base64SerializerCallback)
             base64String
         }
     }
@@ -217,7 +214,7 @@ internal class Base64Serializer private constructor(
         bitmap: Bitmap,
         shouldCacheBitmap: Boolean,
         imageWireframe: MobileSegment.Wireframe.ImageWireframe,
-        asyncImageProcessingCallback: AsyncImageProcessingCallback?
+        base64SerializerCallback: Base64SerializerCallback?
     ) {
         Runnable {
             @Suppress("ThreadSafety") // this runs inside an executor
@@ -226,7 +223,7 @@ internal class Base64Serializer private constructor(
                 bitmap,
                 shouldCacheBitmap,
                 imageWireframe,
-                asyncImageProcessingCallback
+                base64SerializerCallback
             )
         }.let { executeRunnable(it) }
     }
@@ -234,14 +231,14 @@ internal class Base64Serializer private constructor(
     private fun finalizeRecordedDataItem(
         base64String: String,
         wireframe: MobileSegment.Wireframe.ImageWireframe,
-        asyncImageProcessingCallback: AsyncImageProcessingCallback?
+        base64SerializerCallback: Base64SerializerCallback?
     ) {
         if (base64String.isNotEmpty()) {
             wireframe.base64 = base64String
             wireframe.isEmpty = false
         }
 
-        asyncImageProcessingCallback?.finishProcessingImage()
+        base64SerializerCallback?.onReady()
     }
 
     private fun executeRunnable(runnable: Runnable) {

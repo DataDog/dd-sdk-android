@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.widget.TextView
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
 import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.MaskObfuscationRule
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.TextValueObfuscationRule
@@ -23,11 +22,9 @@ class MaskTextViewMapper : TextViewMapper {
     constructor() : super(textValueObfuscationRule = MaskObfuscationRule())
 
     internal constructor(
-        base64Serializer: Base64Serializer,
         imageWireframeHelper: ImageWireframeHelper,
         uniqueIdentifierGenerator: UniqueIdentifierGenerator
     ) : super(
-        base64Serializer = base64Serializer,
         imageWireframeHelper = imageWireframeHelper,
         uniqueIdentifierGenerator = uniqueIdentifierGenerator,
         textValueObfuscationRule = MaskObfuscationRule()
@@ -35,9 +32,8 @@ class MaskTextViewMapper : TextViewMapper {
 
     @VisibleForTesting
     internal constructor(
-        base64Serializer: Base64Serializer,
         imageWireframeHelper: ImageWireframeHelper,
         uniqueIdentifierGenerator: UniqueIdentifierGenerator,
         textValueObfuscationRule: TextValueObfuscationRule
-    ) : super(base64Serializer, imageWireframeHelper, uniqueIdentifierGenerator, textValueObfuscationRule)
+    ) : super(imageWireframeHelper, uniqueIdentifierGenerator, textValueObfuscationRule)
 }

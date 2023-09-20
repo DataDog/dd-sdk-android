@@ -30,7 +30,6 @@ internal class MaskTextViewMapperTest : BaseTextViewWireframeMapperTest() {
 
     override fun initTestedMapper(): TextViewMapper {
         return MaskTextViewMapper(
-            base64Serializer = mockBase64Serializer,
             imageWireframeHelper = mockImageWireframeHelper,
             uniqueIdentifierGenerator = mockUniqueIdentifierGenerator,
             textValueObfuscationRule = mockObfuscationRule

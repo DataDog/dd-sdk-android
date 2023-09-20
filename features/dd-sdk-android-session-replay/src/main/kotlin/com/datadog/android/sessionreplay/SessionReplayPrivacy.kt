@@ -107,7 +107,6 @@ enum class SessionReplayPrivacy {
             ALLOW -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
                 textMapper = TextViewMapper(
-                    base64Serializer = base64Serializer,
                     imageWireframeHelper = imageWireframeHelper,
                     uniqueIdentifierGenerator = uniqueIdentifierGenerator
                 )
@@ -123,7 +122,6 @@ enum class SessionReplayPrivacy {
             MASK -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
                 textMapper = MaskTextViewMapper(
-                    base64Serializer = base64Serializer,
                     imageWireframeHelper = imageWireframeHelper,
                     uniqueIdentifierGenerator = uniqueIdentifierGenerator
                 )
@@ -139,7 +137,6 @@ enum class SessionReplayPrivacy {
             MASK_USER_INPUT -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
                 textMapper = MaskInputTextViewMapper(
-                    base64Serializer = base64Serializer,
                     imageWireframeHelper = imageWireframeHelper,
                     uniqueIdentifierGenerator = uniqueIdentifierGenerator
                 )

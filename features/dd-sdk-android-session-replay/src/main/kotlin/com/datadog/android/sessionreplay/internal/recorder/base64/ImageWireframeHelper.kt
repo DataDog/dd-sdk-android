@@ -14,7 +14,6 @@ import android.view.View
 import android.widget.TextView
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
-import com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
@@ -22,12 +21,18 @@ import com.datadog.android.sessionreplay.internal.recorder.safeGetDrawable
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 
+// This should not have a callback but it should just create a placeholder for base64Serializer
+// The base64Serializer dependency should be removed from here
+// TODO: RUM-0000 Remove the base64Serializer dependency from here
 internal class ImageWireframeHelper(
     private val imageCompression: ImageCompression = WebPImageCompression(),
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
     private val base64Serializer: Base64Serializer,
     private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal()
 ) {
+
+    // Why is this function accepting an optional drawable ???
+    // TODO: RUM-0000 Make the drawable non optional for this function
     @MainThread
     internal fun createImageWireframe(
         view: View,
@@ -40,7 +45,7 @@ internal class ImageWireframeHelper(
         shapeStyle: MobileSegment.ShapeStyle? = null,
         border: MobileSegment.ShapeBorder? = null,
         prefix: String = DRAWABLE_CHILD_NAME,
-        asyncImageProcessingCallback: AsyncImageProcessingCallback?
+        callback: ImageWireframeHelperCallback? = null
     ): MobileSegment.Wireframe.ImageWireframe? {
         val id = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, prefix + currentWireframeIndex)
         val drawableProperties = resolveDrawableProperties(view, drawable)
@@ -65,6 +70,7 @@ internal class ImageWireframeHelper(
                 isEmpty = true
             )
 
+        callback?.onStart()
         @Suppress("UnsafeCallOnNullableType") // drawable already checked for null in isValid
         base64Serializer.handleBitmap(
             applicationContext = applicationContext,
@@ -73,7 +79,11 @@ internal class ImageWireframeHelper(
             drawableWidth = drawableProperties.drawableWidth,
             drawableHeight = drawableProperties.drawableHeight,
             imageWireframe = imageWireframe,
-            asyncImageProcessingCallback = asyncImageProcessingCallback
+            object : Base64SerializerCallback {
+                override fun onReady() {
+                    callback?.onFinished()
+                }
+            }
         )
 
         return imageWireframe
@@ -84,7 +94,7 @@ internal class ImageWireframeHelper(
         view: TextView,
         mappingContext: MappingContext,
         prevWireframeIndex: Int,
-        asyncImageProcessingCallback: AsyncImageProcessingCallback?
+        callback: ImageWireframeHelperCallback?
     ): MutableList<MobileSegment.Wireframe> {
         val result = mutableListOf<MobileSegment.Wireframe>()
         var wireframeIndex = prevWireframeIndex
@@ -110,7 +120,6 @@ internal class ImageWireframeHelper(
                     pixelsDensity = density,
                     position = compoundDrawablePosition
                 )
-
                 @Suppress("ThreadSafety") // TODO REPLAY-1861 caller thread of .map is unknown?
                 createImageWireframe(
                     view = view,
@@ -124,7 +133,7 @@ internal class ImageWireframeHelper(
                     drawable = drawable,
                     shapeStyle = null,
                     border = null,
-                    asyncImageProcessingCallback = asyncImageProcessingCallback
+                    callback = callback
                 )?.let { resultWireframe ->
                     result.add(resultWireframe)
                 }

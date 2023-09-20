@@ -16,7 +16,6 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.widget.TextView
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.AsyncImageProcessingCallback
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
@@ -39,9 +38,11 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -64,7 +65,7 @@ internal class ImageWireframeHelperTest {
     lateinit var mockImageCompression: ImageCompression
 
     @Mock
-    lateinit var mockAsyncImageProcessingCallback: AsyncImageProcessingCallback
+    lateinit var mockCallback: ImageWireframeHelperCallback
 
     @Mock
     lateinit var mockView: View
@@ -173,11 +174,12 @@ internal class ImageWireframeHelperTest {
             y = 0,
             width = 0,
             height = 0,
-            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
+            callback = mockCallback
         )
 
         // Then
         assertThat(wireframe).isNull()
+        verifyNoInteractions(mockCallback)
     }
 
     @Test
@@ -197,11 +199,12 @@ internal class ImageWireframeHelperTest {
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
-            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
+            callback = mockCallback
         )
 
         // Then
         assertThat(wireframe).isNull()
+        verifyNoInteractions(mockCallback)
     }
 
     @Test
@@ -220,7 +223,7 @@ internal class ImageWireframeHelperTest {
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
-            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
+            callback = mockCallback
         )
 
         // Then
@@ -243,7 +246,7 @@ internal class ImageWireframeHelperTest {
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
-            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
+            callback = mockCallback
         )
 
         // Then
@@ -286,10 +289,26 @@ internal class ImageWireframeHelperTest {
             drawable = mockDrawable,
             shapeStyle = mockShapeStyle,
             border = mockBorder,
-            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
+            callback = mockCallback
         )
 
         // Then
+        val argumentCaptor = argumentCaptor<Base64SerializerCallback>()
+        verify(mockBase64Serializer).handleBitmap(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            argumentCaptor.capture()
+        )
+        argumentCaptor.allValues.forEach {
+            it.onReady()
+        }
+        verify(mockCallback).onStart()
+        verify(mockCallback).onFinished()
+        verifyNoMoreInteractions(mockCallback)
         assertThat(wireframe).isEqualTo(expectedWireframe)
     }
 
@@ -308,10 +327,11 @@ internal class ImageWireframeHelperTest {
             mockTextView,
             mockMappingContext,
             0,
-            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
+            callback = mockCallback
         )
 
         // Then
+        verifyNoInteractions(mockCallback)
         assertThat(wireframes).isEmpty()
     }
 
@@ -325,21 +345,36 @@ internal class ImageWireframeHelperTest {
                 any(),
                 any()
             )
-        )
-            .thenReturn(mockBounds)
+        ).thenReturn(mockBounds)
+        val fakeDrawables = arrayOf(null, mockDrawable, null, null)
         whenever(mockTextView.compoundDrawables)
-            .thenReturn(arrayOf(null, mockDrawable, null, null))
+            .thenReturn(fakeDrawables)
 
         // When
         val wireframes = testedHelper.createCompoundDrawableWireframes(
             mockTextView,
             mockMappingContext,
             0,
-            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
+            callback = mockCallback
         )
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
         // Then
+        val argumentCaptor = argumentCaptor<Base64SerializerCallback>()
+        verify(mockBase64Serializer).handleBitmap(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            argumentCaptor.capture()
+        )
+        argumentCaptor.allValues.forEach {
+            it.onReady()
+        }
+        verify(mockCallback).onStart()
+        verify(mockCallback).onFinished()
         assertThat(wireframes.size).isEqualTo(1)
     }
 
@@ -355,19 +390,35 @@ internal class ImageWireframeHelperTest {
             )
         )
             .thenReturn(mockBounds)
+        val fakeDrawables = arrayOf(null, mockDrawable, null, mockDrawable)
         whenever(mockTextView.compoundDrawables)
-            .thenReturn(arrayOf(null, mockDrawable, null, mockDrawable))
+            .thenReturn(fakeDrawables)
 
         // When
         val wireframes = testedHelper.createCompoundDrawableWireframes(
             mockTextView,
             mockMappingContext,
             0,
-            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
+            callback = mockCallback
         )
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
         // Then
+        val argumentCaptor = argumentCaptor<Base64SerializerCallback>()
+        verify(mockBase64Serializer, times(2)).handleBitmap(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            argumentCaptor.capture()
+        )
+        argumentCaptor.allValues.forEach {
+            it.onReady()
+        }
+        verify(mockCallback, times(2)).onStart()
+        verify(mockCallback, times(2)).onFinished()
         assertThat(wireframes.size).isEqualTo(2)
     }
 
@@ -382,10 +433,11 @@ internal class ImageWireframeHelperTest {
             mockTextView,
             mockMappingContext,
             0,
-            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
+            callback = mockCallback
         )
 
         // Then
+        verifyNoInteractions(mockCallback)
         assertThat(wireframes).isEmpty()
     }
 
@@ -414,8 +466,7 @@ internal class ImageWireframeHelperTest {
             height = 0,
             drawable = mockDrawable,
             shapeStyle = null,
-            border = null,
-            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
+            border = null
         )
 
         // Then
@@ -427,7 +478,7 @@ internal class ImageWireframeHelperTest {
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
             imageWireframe = any(),
-            asyncImageProcessingCallback = anyOrNull()
+            callback = any()
         )
         assertThat(captor.allValues).containsExactly(fakeViewWidth, fakeViewHeight)
     }
@@ -444,8 +495,7 @@ internal class ImageWireframeHelperTest {
             height = 0,
             drawable = mockDrawable,
             shapeStyle = null,
-            border = null,
-            asyncImageProcessingCallback = mockAsyncImageProcessingCallback
+            border = null
         )
 
         // Then
@@ -457,7 +507,8 @@ internal class ImageWireframeHelperTest {
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
             imageWireframe = any(),
-            asyncImageProcessingCallback = anyOrNull()
+            callback = any()
+
         )
         assertThat(captor.allValues).containsExactly(fakeDrawableWidth.toInt(), fakeDrawableHeight.toInt())
     }

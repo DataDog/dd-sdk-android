@@ -19,7 +19,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
@@ -52,37 +51,28 @@ internal class QueueableViewMapperTest {
     @Test
     fun `M increment images W startProcessingImage()`() {
         // When
-        testedMapper.startProcessingImage()
+        testedMapper.jobStarted()
 
         // Then
-        verify(mockRecordedDataQueueRefs).incrementPendingImages()
+        verify(mockRecordedDataQueueRefs).incrementPendingJobs()
     }
 
     @Test
     fun `M decrement images W finishProcessingImage()`() {
         // When
-        testedMapper.finishProcessingImage()
+        testedMapper.jobFinished()
 
         // Then
-        verify(mockRecordedDataQueueRefs).decrementPendingImages()
+        verify(mockRecordedDataQueueRefs).decrementPendingJobs()
     }
 
     @Test
     fun `M try to consume queue W finishLoadingImage()`() {
         // When
-        testedMapper.finishProcessingImage()
+        testedMapper.jobFinished()
 
         // Then
         verify(mockRecordedDataQueueRefs).tryToConsumeItem()
-    }
-
-    @Test
-    fun `M register callback W map()`() {
-        // When
-        testedMapper.map(mockView, mockMappingContext)
-
-        // Then
-        verify(mockMapper).registerAsyncImageProcessingCallback(any())
     }
 
     @Test
@@ -91,6 +81,6 @@ internal class QueueableViewMapperTest {
         testedMapper.map(mockView, mockMappingContext)
 
         // Then
-        verify(mockMapper).map(mockView, mockMappingContext)
+        verify(mockMapper).map(mockView, mockMappingContext, testedMapper)
     }
 }

@@ -34,6 +34,11 @@ public final class com/datadog/android/sessionreplay/SessionReplayPrivacy : java
 	public static fun values ()[Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
 }
 
+public abstract interface class com/datadog/android/sessionreplay/internal/AsyncJobStatusCallback {
+	public abstract fun jobFinished ()V
+	public abstract fun jobStarted ()V
+}
+
 public final class com/datadog/android/sessionreplay/internal/recorder/GlobalBounds {
 	public fun <init> (JJJJ)V
 	public final fun component1 ()J
@@ -87,18 +92,26 @@ public final class com/datadog/android/sessionreplay/internal/recorder/SystemInf
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract class com/datadog/android/sessionreplay/internal/recorder/mapper/BaseWireframeMapper : com/datadog/android/sessionreplay/internal/AsyncImageProcessingCallback, com/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper {
+public abstract class com/datadog/android/sessionreplay/internal/recorder/mapper/BaseAsyncBackgroundWireframeMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/BaseWireframeMapper {
+	public static final field Companion Lcom/datadog/android/sessionreplay/internal/recorder/mapper/BaseAsyncBackgroundWireframeMapper$Companion;
+	public fun <init> ()V
+	public fun <init> (Lcom/datadog/android/sessionreplay/utils/StringUtils;Lcom/datadog/android/sessionreplay/utils/ViewUtils;)V
+	public synthetic fun <init> (Lcom/datadog/android/sessionreplay/utils/StringUtils;Lcom/datadog/android/sessionreplay/utils/ViewUtils;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;Lcom/datadog/android/sessionreplay/internal/AsyncJobStatusCallback;)Ljava/util/List;
+}
+
+public final class com/datadog/android/sessionreplay/internal/recorder/mapper/BaseAsyncBackgroundWireframeMapper$Companion {
+}
+
+public abstract class com/datadog/android/sessionreplay/internal/recorder/mapper/BaseWireframeMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper {
 	public static final field Companion Lcom/datadog/android/sessionreplay/internal/recorder/mapper/BaseWireframeMapper$Companion;
 	public fun <init> ()V
 	public fun <init> (Lcom/datadog/android/sessionreplay/utils/StringUtils;Lcom/datadog/android/sessionreplay/utils/ViewUtils;)V
 	public synthetic fun <init> (Lcom/datadog/android/sessionreplay/utils/StringUtils;Lcom/datadog/android/sessionreplay/utils/ViewUtils;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	protected final fun colorAndAlphaAsStringHexa (II)Ljava/lang/String;
-	public fun finishProcessingImage ()V
-	public fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;)Ljava/util/List;
 	protected final fun resolveShapeStyleAndBorder (Landroid/graphics/drawable/Drawable;F)Lkotlin/Pair;
 	protected final fun resolveViewGlobalBounds (Landroid/view/View;F)Lcom/datadog/android/sessionreplay/internal/recorder/GlobalBounds;
 	protected final fun resolveViewId (Landroid/view/View;)J
-	public fun startProcessingImage ()V
 }
 
 public final class com/datadog/android/sessionreplay/internal/recorder/mapper/BaseWireframeMapper$Companion {
@@ -112,14 +125,18 @@ public final class com/datadog/android/sessionreplay/internal/recorder/mapper/Ma
 	public fun <init> ()V
 }
 
-public class com/datadog/android/sessionreplay/internal/recorder/mapper/TextViewMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/BaseWireframeMapper {
+public class com/datadog/android/sessionreplay/internal/recorder/mapper/TextViewMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/BaseAsyncBackgroundWireframeMapper {
 	public fun <init> ()V
-	public synthetic fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;)Ljava/util/List;
-	public fun map (Landroid/widget/TextView;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;)Ljava/util/List;
+	public synthetic fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;Lcom/datadog/android/sessionreplay/internal/AsyncJobStatusCallback;)Ljava/util/List;
+	public fun map (Landroid/widget/TextView;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;Lcom/datadog/android/sessionreplay/internal/AsyncJobStatusCallback;)Ljava/util/List;
 }
 
 public abstract interface class com/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper {
-	public abstract fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;)Ljava/util/List;
+	public abstract fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;Lcom/datadog/android/sessionreplay/internal/AsyncJobStatusCallback;)Ljava/util/List;
+}
+
+public final class com/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper$DefaultImpls {
+	public static synthetic fun map$default (Lcom/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper;Landroid/view/View;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;Lcom/datadog/android/sessionreplay/internal/AsyncJobStatusCallback;ILjava/lang/Object;)Ljava/util/List;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment {

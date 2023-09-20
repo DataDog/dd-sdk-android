@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
 import android.widget.Checkable
+import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.ViewUtils
@@ -16,8 +17,12 @@ internal abstract class CheckableWireframeMapper<T>(viewUtils: ViewUtils) :
     BaseWireframeMapper<T, MobileSegment.Wireframe>(viewUtils = viewUtils)
         where T : View, T : Checkable {
 
-    override fun map(view: T, mappingContext: MappingContext): List<MobileSegment.Wireframe> {
-        val mainWireframes = resolveMainWireframes(view, mappingContext)
+    override fun map(
+        view: T,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ): List<MobileSegment.Wireframe> {
+        val mainWireframes = resolveMainWireframes(view, mappingContext, asyncJobStatusCallback)
         val checkableWireframes = if (view.isChecked) {
             resolveCheckedCheckable(view, mappingContext)
         } else {
@@ -29,11 +34,22 @@ internal abstract class CheckableWireframeMapper<T>(viewUtils: ViewUtils) :
         return mainWireframes
     }
 
-    abstract fun resolveMainWireframes(view: T, mappingContext: MappingContext):
+    abstract fun resolveMainWireframes(
+        view: T,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ):
         List<MobileSegment.Wireframe>
 
-    abstract fun resolveNotCheckedCheckable(view: T, mappingContext: MappingContext):
+    abstract fun resolveNotCheckedCheckable(
+        view: T,
+        mappingContext: MappingContext
+    ):
         List<MobileSegment.Wireframe>?
-    abstract fun resolveCheckedCheckable(view: T, mappingContext: MappingContext):
+
+    abstract fun resolveCheckedCheckable(
+        view: T,
+        mappingContext: MappingContext
+    ):
         List<MobileSegment.Wireframe>?
 }

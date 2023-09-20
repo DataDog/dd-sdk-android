@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.material
 
 import android.widget.TextView
+import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
@@ -27,9 +28,14 @@ internal open class TabWireframeMapper(
 
     override fun map(
         view: TabView,
-        mappingContext: MappingContext
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<MobileSegment.Wireframe> {
-        val labelWireframes = findAndResolveLabelWireframes(view, mappingContext)
+        val labelWireframes = findAndResolveLabelWireframes(
+            view,
+            mappingContext,
+            asyncJobStatusCallback
+        )
         if (view.isSelected) {
             val selectedTabIndicatorWireframe = resolveTabIndicatorWireframe(
                 view,
@@ -80,12 +86,20 @@ internal open class TabWireframeMapper(
         )
     }
 
-    private fun findAndResolveLabelWireframes(view: TabView, mappingContext: MappingContext):
+    private fun findAndResolveLabelWireframes(
+        view: TabView,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ):
         List<MobileSegment.Wireframe> {
         for (i in 0 until view.childCount) {
             val viewChild = view.getChildAt(i) ?: continue
             if (TextView::class.java.isAssignableFrom(viewChild::class.java)) {
-                return textViewMapper.map(viewChild as TextView, mappingContext)
+                return textViewMapper.map(
+                    viewChild as TextView,
+                    mappingContext,
+                    asyncJobStatusCallback
+                )
             }
         }
         return emptyList()

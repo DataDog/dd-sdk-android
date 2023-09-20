@@ -11,6 +11,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.widget.SeekBar
 import androidx.annotation.RequiresApi
+import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -27,7 +28,7 @@ internal open class SeekBarWireframeMapper(
 ) : BaseWireframeMapper<SeekBar, MobileSegment.Wireframe>(stringUtils, viewUtils) {
 
     @Suppress("LongMethod")
-    override fun map(view: SeekBar, mappingContext: MappingContext):
+    override fun map(view: SeekBar, mappingContext: MappingContext, asyncJobStatusCallback: AsyncJobStatusCallback):
         List<MobileSegment.Wireframe> {
         val activeTrackId = uniqueIdentifierGenerator
             .resolveChildUniqueIdentifier(view, TRACK_ACTIVE_KEY_NAME)
