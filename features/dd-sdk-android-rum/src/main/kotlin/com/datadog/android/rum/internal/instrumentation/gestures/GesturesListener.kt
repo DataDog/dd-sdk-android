@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.content.Context
-import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -36,7 +35,7 @@ internal class GesturesListener(
     private val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate(),
     private val contextRef: Reference<Context>,
     private val internalLogger: InternalLogger
-) : GestureDetector.OnGestureListener {
+) : GestureListenerCompat() {
 
     private val coordinatesContainer = IntArray(2)
     private var scrollEventType: RumActionType? = null
@@ -71,7 +70,7 @@ internal class GesturesListener(
     }
 
     override fun onFling(
-        startDownEvent: MotionEvent,
+        startDownEvent: MotionEvent?,
         endUpEvent: MotionEvent,
         velocityX: Float,
         velocityY: Float
@@ -82,7 +81,7 @@ internal class GesturesListener(
 
     @Suppress("ReturnCount")
     override fun onScroll(
-        startDownEvent: MotionEvent,
+        startDownEvent: MotionEvent?,
         currentMoveEvent: MotionEvent,
         distanceX: Float,
         distanceY: Float
@@ -93,7 +92,7 @@ internal class GesturesListener(
         // we only start the user action once
         if (scrollEventType == null) {
             // check if we find a valid target
-            val scrollTarget = findTargetForScroll(decorView, startDownEvent.x, startDownEvent.y)
+            val scrollTarget = startDownEvent?.let { findTargetForScroll(decorView, it.x, startDownEvent.y) }
             if (scrollTarget != null) {
                 scrollTargetReference = WeakReference(scrollTarget)
                 val targetId: String = contextRef.get().resourceIdName(scrollTarget.id)
