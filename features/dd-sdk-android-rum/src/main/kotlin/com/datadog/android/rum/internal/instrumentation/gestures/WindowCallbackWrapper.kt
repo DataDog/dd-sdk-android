@@ -26,7 +26,7 @@ internal class WindowCallbackWrapper(
     window: Window,
     val sdkCore: SdkCore,
     val wrappedCallback: Window.Callback,
-    val gesturesDetector: GesturesDetectorWrapper,
+    private val gesturesDetector: GesturesDetectorWrapper,
     val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate(),
     val copyEvent: (MotionEvent) -> MotionEvent = {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
@@ -67,13 +67,8 @@ internal class WindowCallbackWrapper(
 
         return try {
             wrappedCallback.dispatchTouchEvent(event)
-        } catch (e: Exception) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { "Wrapped callback failed processing MotionEvent" },
-                e
-            )
+        } catch (e: NullPointerException) {
+            logOrRethrowWrappedCallbackException(e)
             EVENT_CONSUMED
         }
     }
@@ -92,13 +87,8 @@ internal class WindowCallbackWrapper(
         )
         return try {
             wrappedCallback.onMenuItemSelected(featureId, item)
-        } catch (e: Exception) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { "Wrapped callback failed processing MenuItem selection" },
-                e
-            )
+        } catch (e: NullPointerException) {
+            logOrRethrowWrappedCallbackException(e)
             EVENT_CONSUMED
         }
     }
@@ -121,13 +111,8 @@ internal class WindowCallbackWrapper(
         }
         return try {
             wrappedCallback.dispatchKeyEvent(event)
-        } catch (e: Exception) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { "Wrapped callback failed processing KeyEvent" },
-                e
-            )
+        } catch (e: NullPointerException) {
+            logOrRethrowWrappedCallbackException(e)
             EVENT_CONSUMED
         }
     }
@@ -163,6 +148,25 @@ internal class WindowCallbackWrapper(
             customTargetName
         }
         GlobalRumMonitor.get(sdkCore).addAction(RumActionType.BACK, targetName, emptyMap())
+    }
+
+    private fun logOrRethrowWrappedCallbackException(e: NullPointerException) {
+        // When calling delegate callback, we may have something like
+        // java.lang.NullPointerException: Parameter specified as non-null is null:
+        // method xxx, parameter xxx
+        // This happens because Kotlin delegate expects non-null value incorrectly inferring
+        // non-null type from Java interface definition (seems to be solved in Kotlin 1.8 though)
+        if (e.message?.contains("Parameter specified as non-null is null") == true) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { "Wrapped Window.Callback failed processing event" },
+                e
+            )
+        } else {
+            @Suppress("ThrowingInternalException") // we need to let client exception to propagate
+            throw e
+        }
     }
 
     // endregion
