@@ -125,7 +125,7 @@ internal class WebViewTrackingTest {
         }
 
         // When
-        WebViewTracking.enable(mockWebView, fakeHosts, mockCore)
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
 
         // Then
         verify(mockWebView).addJavascriptInterface(
@@ -148,7 +148,7 @@ internal class WebViewTrackingTest {
         }
 
         // When
-        WebViewTracking.enable(mockWebView, fakeHosts, mockCore)
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
 
         // Then
         verify(mockWebView).addJavascriptInterface(
@@ -174,7 +174,7 @@ internal class WebViewTrackingTest {
         }
 
         // When
-        WebViewTracking.enable(mockWebView, fakeHosts, mockCore)
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
 
         // Then
         argumentCaptor<DatadogEventBridge> {
@@ -217,7 +217,7 @@ internal class WebViewTrackingTest {
         }
 
         // When
-        WebViewTracking.enable(mockWebView, fakeHosts, mockCore)
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
 
         // Then
         argumentCaptor<DatadogEventBridge> {
@@ -267,7 +267,7 @@ internal class WebViewTrackingTest {
         }
 
         // When
-        WebViewTracking.enable(mockWebView, fakeHosts, mockCore)
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
 
         // Then
         argumentCaptor<DatadogEventBridge> {
