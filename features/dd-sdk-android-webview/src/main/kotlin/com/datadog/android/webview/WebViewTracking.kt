@@ -51,9 +51,9 @@ object WebViewTracking {
      * @param webView the webView on which to attach the bridge.
      * @param allowedHosts a list of all the hosts that you want to track when loaded in the
      * WebView (e.g.: `listOf("example.com", "example.net")`).
-     * @param sdkCore SDK instance on which to attach the bridge.
      * @param logsSampleRate the sample rate for logs coming from the WebView, in percent. A value of `30` means we'll
      * send 30% of the logs. If value is `0`, no logs will be sent to Datadog. Default is 100.0 (ie: all logs are sent).
+     * @param sdkCore SDK instance on which to attach the bridge.
      * [More here](https://developer.android.com/guide/webapps/webview#HandlingNavigation).
      */
     @MainThread
@@ -62,8 +62,8 @@ object WebViewTracking {
     fun enable(
         webView: WebView,
         allowedHosts: List<String>,
-        sdkCore: SdkCore = Datadog.getInstance(),
-        @FloatRange(from = 0.0, to = 100.0) logsSampleRate: Float = 100f
+        @FloatRange(from = 0.0, to = 100.0) logsSampleRate: Float = 100f,
+        sdkCore: SdkCore = Datadog.getInstance()
     ) {
         if (!webView.settings.javaScriptEnabled) {
             (sdkCore as FeatureSdkCore).internalLogger.log(

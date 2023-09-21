@@ -283,7 +283,7 @@ tasks.register("buildNdkIntegrationTestsArtifacts") {
     dependsOn(":instrumented:integration:assembleDebug")
 }
 
-nightlyTestsCoverageConfig(threshold = 0.85f)
+nightlyTestsCoverageConfig(threshold = 0.86f)
 
 tasks.register("printSdkDebugRuntimeClasspath") {
     val fileTreeClassPathCollector = UnionFileTree(
