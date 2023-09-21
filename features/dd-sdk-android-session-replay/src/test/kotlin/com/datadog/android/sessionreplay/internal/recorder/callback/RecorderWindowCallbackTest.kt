@@ -32,6 +32,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -47,6 +48,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
+import kotlin.jvm.internal.Intrinsics
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -101,7 +103,7 @@ internal class RecorderWindowCallbackTest {
             val displayMetrics = DisplayMetrics().apply { density = fakeDensity.toFloat() }
             whenever(it.displayMetrics).thenReturn(displayMetrics)
         }
-        whenever(mockRecordedDataQueueHandler.addTouchEventItem(any<List<MobileRecord>>()))
+        whenever(mockRecordedDataQueueHandler.addTouchEventItem(any()))
             .thenReturn(fakeTouchEventRecordedDataQueueItem)
         whenever(mockContext.resources).thenReturn(mockResources)
         whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTimestamp)
@@ -153,10 +155,15 @@ internal class RecorderWindowCallbackTest {
     }
 
     @Test
-    fun `M log the exception W wrappedCallback throws`(@Forgery fakeException: Exception) {
+    fun `M log the exception W wrappedCallback throws { null parameter }`() {
         // Given
         val mockEvent: MotionEvent = mock()
-        whenever(mockWrappedCallback.dispatchTouchEvent(mockEvent)).thenThrow(fakeException)
+        whenever(mockWrappedCallback.dispatchTouchEvent(mockEvent)).thenAnswer {
+            Intrinsics.checkNotNullParameter(
+                null,
+                "event"
+            )
+        }
 
         // When
         testedWindowCallback.dispatchTouchEvent(mockEvent)
@@ -165,10 +172,22 @@ internal class RecorderWindowCallbackTest {
         verify(mockWrappedCallback).dispatchTouchEvent(mockEvent)
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
+            InternalLogger.Target.MAINTAINER,
             RecorderWindowCallback.FAIL_TO_PROCESS_MOTION_EVENT_ERROR_MESSAGE,
-            fakeException
+            throwableClass = NullPointerException::class.java
         )
+    }
+
+    @Test
+    fun `M propagate the exception W wrappedCallback throws`(@Forgery fakeException: Exception) {
+        // Given
+        val mockEvent: MotionEvent = mock()
+        whenever(mockWrappedCallback.dispatchTouchEvent(mockEvent)).thenThrow(fakeException)
+
+        // When + Then
+        val exceptionCaught =
+            assertThrows<Exception> { testedWindowCallback.dispatchTouchEvent(mockEvent) }
+        assertThat(exceptionCaught).isSameAs(fakeException)
     }
 
     @Test
