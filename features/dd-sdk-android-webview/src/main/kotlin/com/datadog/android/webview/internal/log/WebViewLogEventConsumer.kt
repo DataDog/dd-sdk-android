@@ -21,7 +21,7 @@ internal class WebViewLogEventConsumer(
     private val sdkCore: FeatureSdkCore,
     internal val userLogsWriter: DataWriter<JsonObject>,
     private val rumContextProvider: WebViewRumEventContextProvider,
-    private val sampleRate: Float
+    sampleRate: Float
 ) : WebViewEventConsumer<Pair<JsonObject, String>> {
 
     val sampler = RateBasedSampler(sampleRate)
