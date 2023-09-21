@@ -224,7 +224,7 @@ internal class BatchMetricsDispatcherTest {
                     BatchMetricsDispatcher.WRONG_FILE_NAME_MESSAGE_FORMAT
                         .format(Locale.ENGLISH, fakeFile.name)
             },
-            argThat { this is NumberFormatException },
+            eq(null),
             eq(false),
             eq(null)
         )
@@ -289,14 +289,14 @@ internal class BatchMetricsDispatcherTest {
         forge: Forge
     ) {
         // Given
-        val fakeFile: File = forge.forgeValidFile()
+        val fakeFile: File = forge.forgeValidClosedFile()
         val expectedAdditionalProperties = mapOf(
             BatchMetricsDispatcher.TYPE_KEY to
                 BatchMetricsDispatcher.BATCH_CLOSED_TYPE_VALUE,
             BatchMetricsDispatcher.TRACK_KEY to
                 trackNameResolver(fakeFeatureName),
             BatchMetricsDispatcher.BATCH_DURATION_KEY to
-                (currentTimeInMillis - fakeMetadata.lastTimeWasUsedInMs),
+                (fakeMetadata.lastTimeWasUsedInMs - fakeFile.name.toLong()),
             BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
                 fakeFilePersistenceConfig.recentDelayMs,
             BatchMetricsDispatcher.BATCH_SIZE_KEY to fakeFile.length(),
@@ -325,6 +325,8 @@ internal class BatchMetricsDispatcherTest {
         // Given
         val fakeFile: File = mock {
             whenever(it.length()).thenThrow(fakeException)
+            whenever(it.name).thenReturn(System.currentTimeMillis().toString())
+            whenever(it.exists()).thenReturn(true)
         }
         val expectedAdditionalProperties = mapOf(
             BatchMetricsDispatcher.TYPE_KEY to
@@ -332,7 +334,7 @@ internal class BatchMetricsDispatcherTest {
             BatchMetricsDispatcher.TRACK_KEY to
                 trackNameResolver(fakeFeatureName),
             BatchMetricsDispatcher.BATCH_DURATION_KEY to
-                (currentTimeInMillis - fakeMetadata.lastTimeWasUsedInMs),
+                (fakeMetadata.lastTimeWasUsedInMs - fakeFile.name.toLong()),
             BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
                 fakeFilePersistenceConfig.recentDelayMs,
             BatchMetricsDispatcher.BATCH_SIZE_KEY to 0L,
@@ -354,6 +356,52 @@ internal class BatchMetricsDispatcherTest {
     }
 
     @Test
+    fun `M do nothing W sendBatchClosedMetric { file name is broken }`(
+        forge: Forge,
+        @Forgery fakeMetadata: BatchClosedMetadata
+    ) {
+        // Given
+        val fakeFile: File = forge.forgeValidClosedFile().apply {
+            whenever(this.name).thenReturn(forge.anAlphabeticalString())
+        }
+
+        // When
+        testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
+
+        // Then
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.MAINTAINER),
+            argThat {
+                this.invoke() ==
+                    BatchMetricsDispatcher.WRONG_FILE_NAME_MESSAGE_FORMAT
+                        .format(Locale.ENGLISH, fakeFile.name)
+            },
+            eq(null),
+            eq(false),
+            eq(null)
+        )
+        verifyNoMoreInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M do nothing W sendBatchClosedMetric { file does not exist }`(
+        forge: Forge,
+        @Forgery fakeMetadata: BatchClosedMetadata
+    ) {
+        // Given
+        val fakeFile: File = forge.forgeValidClosedFile().apply {
+            whenever(this.exists()).thenReturn(false)
+        }
+
+        // When
+        testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
+
+        // Then
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
     fun `M do nothing W sendBatchClosedMetric { feature unknown }`(
         @Forgery fakeMetadata: BatchClosedMetadata,
         forge: Forge
@@ -368,7 +416,7 @@ internal class BatchMetricsDispatcherTest {
             mockDateTimeProvider,
             mockSampler
         )
-        val fakeFile: File = forge.forgeValidFile()
+        val fakeFile: File = forge.forgeValidClosedFile()
 
         // When
         testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
@@ -385,7 +433,7 @@ internal class BatchMetricsDispatcherTest {
         // Given
         reset(mockSampler)
         whenever(mockSampler.sample()).doReturn(false)
-        val fakeFile: File = forge.forgeValidFile()
+        val fakeFile: File = forge.forgeValidClosedFile()
 
         // When
         testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
@@ -402,6 +450,9 @@ internal class BatchMetricsDispatcherTest {
             whenever(it.length()).thenReturn(fileLength)
         }
         return fakeFile
+    }
+    private fun Forge.forgeValidClosedFile(): File {
+        return forgeValidFile().apply { whenever(this.exists()).thenReturn(true) }
     }
 
     private fun trackNameResolver(featureName: String): String? {
