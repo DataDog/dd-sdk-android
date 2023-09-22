@@ -51,6 +51,14 @@ internal class ResourceEventForgeryFactory :
                         name = aNullable { anAlphabeticalString() },
                         type = aNullable()
                     )
+                },
+                graphql = forge.aNullable {
+                    ResourceEvent.Graphql(
+                        operationType = aValueFrom(ResourceEvent.OperationType::class.java),
+                        operationName = aNullable { aString() },
+                        payload = aNullable { aString() },
+                        variables = aNullable { aString() }
+                    )
                 }
             ),
             view = ResourceEvent.View(

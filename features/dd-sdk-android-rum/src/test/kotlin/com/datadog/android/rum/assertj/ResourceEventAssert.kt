@@ -578,6 +578,43 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
+    fun hasGraphql(
+        operationType: ResourceEvent.OperationType,
+        operationName: String?,
+        payload: String?,
+        variables: String?
+    ): ResourceEventAssert {
+        assertThat(actual.resource.graphql?.operationType)
+            .overridingErrorMessage(
+                "Expected event data to have resource.graphql.operationType $operationType " +
+                    "but was ${actual.resource.graphql?.operationType}"
+            )
+            .isEqualTo(operationType)
+
+        assertThat(actual.resource.graphql?.operationName)
+            .overridingErrorMessage(
+                "Expected event data to have resource.graphql.operationName $operationName " +
+                    "but was ${actual.resource.graphql?.operationName}"
+            )
+            .isEqualTo(operationName)
+
+        assertThat(actual.resource.graphql?.payload)
+            .overridingErrorMessage(
+                "Expected event data to have resource.graphql.payload $payload " +
+                    "but was ${actual.resource.graphql?.payload}"
+            )
+            .isEqualTo(payload)
+
+        assertThat(actual.resource.graphql?.variables)
+            .overridingErrorMessage(
+                "Expected event data to have resource.graphql.variables $variables " +
+                    "but was ${actual.resource.graphql?.variables}"
+            )
+            .isEqualTo(variables)
+
+        return this
+    }
+
     companion object {
 
         internal const val TIMESTAMP_THRESHOLD_MS = 50L

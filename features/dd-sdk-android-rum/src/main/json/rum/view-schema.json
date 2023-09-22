@@ -61,6 +61,11 @@
               "minimum": 0,
               "readOnly": true
             },
+            "largest_contentful_paint_target_selector": {
+              "type": "string",
+              "description": "CSS selector path of the largest contentful paint element",
+              "readOnly": true
+            },
             "first_input_delay": {
               "type": "integer",
               "description": "Duration in ns of the first input event delay",
@@ -73,16 +78,31 @@
               "minimum": 0,
               "readOnly": true
             },
+            "first_input_target_selector": {
+              "type": "string",
+              "description": "CSS selector path of the first input target element",
+              "readOnly": true
+            },
             "interaction_to_next_paint": {
               "type": "integer",
               "description": "Longest duration in ns between an interaction and the next paint",
               "minimum": 0,
               "readOnly": true
             },
+            "interaction_to_next_paint_target_selector": {
+              "type": "string",
+              "description": "CSS selector path of the interacted element corresponding to INP",
+              "readOnly": true
+            },
             "cumulative_layout_shift": {
               "type": "number",
               "description": "Total layout shift score that occurred on the view",
               "minimum": 0,
+              "readOnly": true
+            },
+            "cumulative_layout_shift_target_selector": {
+              "type": "string",
+              "description": "CSS selector path of the first element (in document order) of the largest layout shift contributing to CLS",
               "readOnly": true
             },
             "dom_complete": {

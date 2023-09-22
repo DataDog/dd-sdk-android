@@ -50,6 +50,20 @@ internal fun String.toErrorMethod(internalLogger: InternalLogger): ErrorEvent.Me
     }
 }
 
+internal fun String.toOperationType(internalLogger: InternalLogger): ResourceEvent.OperationType? {
+    return try {
+        ResourceEvent.OperationType.valueOf(this.uppercase(Locale.US))
+    } catch (e: IllegalArgumentException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            { "Unable to convert [$this] to a valid graphql operation type" },
+            e
+        )
+        null
+    }
+}
+
 internal fun RumResourceKind.toSchemaType(): ResourceEvent.ResourceType {
     return when (this) {
         RumResourceKind.BEACON -> ResourceEvent.ResourceType.BEACON

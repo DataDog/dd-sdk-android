@@ -2267,6 +2267,38 @@ internal class RumResourceScopeTest {
         assertThat(result).isEqualTo(null)
     }
 
+    @Test
+    fun `𝕄 use graphql attributes 𝕎 handleEvent`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val payload = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys) +
+            mapOf(
+                "_dd.graphql.operation_type" to operationType.toString(),
+                "_dd.graphql.operation_name" to operationName,
+                "_dd.graphql.payload" to payload,
+                "_dd.graphql.variables" to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(firstValue).hasGraphql(operationType, operationName, payload, variables)
+        }
+    }
+
     // region Internal
 
     private fun mockEvent(): RumRawEvent {
