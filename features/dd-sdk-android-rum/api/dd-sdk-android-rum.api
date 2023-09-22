@@ -252,6 +252,12 @@ public final class com/datadog/android/rum/internal/domain/event/ResourceTiming 
 	public fun toString ()Ljava/lang/String;
 }
 
+public abstract class com/datadog/android/rum/internal/instrumentation/gestures/GestureListenerCompat : android/view/GestureDetector$OnGestureListener {
+	public fun <init> ()V
+	public fun onFling (Landroid/view/MotionEvent;Landroid/view/MotionEvent;FF)Z
+	public fun onScroll (Landroid/view/MotionEvent;Landroid/view/MotionEvent;FF)Z
+}
+
 public abstract interface class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor {
 	public abstract fun addResourceTiming (Ljava/lang/String;Lcom/datadog/android/rum/internal/domain/event/ResourceTiming;)V
 	public abstract fun notifyInterceptorInstantiated ()V
