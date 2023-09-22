@@ -48,6 +48,13 @@
       {
         "width": 88,
         "height": 48,
+        "type": "image",
+        "mimeType": "image/webp",
+        "isEmpty": false
+      },
+      {
+        "width": 88,
+        "height": 48,
         "border": {
           "color": "#000000ff",
           "width": 1

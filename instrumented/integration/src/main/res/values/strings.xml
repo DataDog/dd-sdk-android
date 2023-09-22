@@ -65,6 +65,13 @@
     <string name="app_compat_spinner">App Compat Spinner</string>
     <string name="app_compat_switch">App Compat Switch</string>
     <string name="material_switch">Material Switch</string>
+    <string name="default_image_button_bundled">default image button bundled</string>
+    <string name="default_image_button">default image button</string>
+    <string name="app_compat_image_button">app compat image button</string>
+    <string name="session_replay_image_buttons_end_to_end">Session Replay Image Buttons (End to End)</string>
+    <string name="session_replay_images_end_to_end">Session Replay Images (End to End)</string>
+    <string name="image_view">image view</string>
+    <string name="app_compat_image_view">app compat image view</string>
 
 
 </resources>
