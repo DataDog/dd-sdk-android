@@ -13,6 +13,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.setFieldValue
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -39,9 +40,12 @@ internal class DdSpanToSpanEventMapperTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
+    @BoolForgery
+    var fakeNetworkInfoEnabled: Boolean = false
+
     @BeforeEach
     fun `set up`() {
-        testedMapper = DdSpanToSpanEventMapper()
+        testedMapper = DdSpanToSpanEventMapper(fakeNetworkInfoEnabled)
     }
 
     @RepeatedTest(4)
@@ -66,7 +70,13 @@ internal class DdSpanToSpanEventMapperTest {
             .hasSpanDuration(fakeSpan.durationNano)
             .hasTracerVersion(fakeDatadogContext.sdkVersion)
             .hasClientPackageVersion(fakeDatadogContext.version)
-            .hasNetworkInfo(fakeDatadogContext.networkInfo)
+            .apply {
+                if (fakeNetworkInfoEnabled) {
+                    hasNetworkInfo(fakeDatadogContext.networkInfo)
+                } else {
+                    doesntHaveNetworkInfo()
+                }
+            }
             .hasUserInfo(fakeDatadogContext.userInfo)
             .hasMeta(fakeSpan.meta)
             .hasMetrics(fakeSpan.metrics)

@@ -28,7 +28,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal class TracingFeature constructor(
     private val sdkCore: FeatureSdkCore,
     customEndpointUrl: String?,
-    internal val spanEventMapper: SpanEventMapper
+    internal val spanEventMapper: SpanEventMapper,
+    internal val networkInfoEnabled: Boolean
 ) : StorageBackedFeature {
 
     internal var dataWriter: Writer = NoOpWriter()
@@ -66,7 +67,7 @@ internal class TracingFeature constructor(
         val internalLogger = sdkCore.internalLogger
         return TraceWriter(
             sdkCore,
-            legacyMapper = DdSpanToSpanEventMapper(),
+            legacyMapper = DdSpanToSpanEventMapper(networkInfoEnabled),
             eventMapper = SpanEventMapperWrapper(spanEventMapper, internalLogger),
             serializer = SpanEventSerializer(internalLogger),
             internalLogger = internalLogger

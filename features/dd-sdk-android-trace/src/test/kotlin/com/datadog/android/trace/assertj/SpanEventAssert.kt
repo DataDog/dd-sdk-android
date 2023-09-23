@@ -231,6 +231,16 @@ internal class SpanEventAssert(actual: SpanEvent) :
         return this
     }
 
+    fun doesntHaveNetworkInfo(): SpanEventAssert {
+        assertThat(actual.meta.network)
+            .overridingErrorMessage(
+                "Expected SpanEvent to not have network info but was: " +
+                    "${actual.meta.network}"
+            )
+            .isNull()
+        return this
+    }
+
     fun hasUserInfo(userInfo: UserInfo): SpanEventAssert {
         assertThat(actual.meta.usr.name)
             .overridingErrorMessage(
