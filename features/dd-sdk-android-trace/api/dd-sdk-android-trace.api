@@ -41,8 +41,8 @@ public final class com/datadog/android/trace/Trace {
 }
 
 public final class com/datadog/android/trace/TraceConfiguration {
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/trace/event/SpanEventMapper;)Lcom/datadog/android/trace/TraceConfiguration;
-	public static synthetic fun copy$default (Lcom/datadog/android/trace/TraceConfiguration;Ljava/lang/String;Lcom/datadog/android/trace/event/SpanEventMapper;ILjava/lang/Object;)Lcom/datadog/android/trace/TraceConfiguration;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/trace/event/SpanEventMapper;Z)Lcom/datadog/android/trace/TraceConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/trace/TraceConfiguration;Ljava/lang/String;Lcom/datadog/android/trace/event/SpanEventMapper;ZILjava/lang/Object;)Lcom/datadog/android/trace/TraceConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -52,6 +52,7 @@ public final class com/datadog/android/trace/TraceConfiguration$Builder {
 	public fun <init> ()V
 	public final fun build ()Lcom/datadog/android/trace/TraceConfiguration;
 	public final fun setEventMapper (Lcom/datadog/android/trace/event/SpanEventMapper;)Lcom/datadog/android/trace/TraceConfiguration$Builder;
+	public final fun setNetworkInfoEnabled (Z)Lcom/datadog/android/trace/TraceConfiguration$Builder;
 	public final fun useCustomEndpoint (Ljava/lang/String;)Lcom/datadog/android/trace/TraceConfiguration$Builder;
 }
 

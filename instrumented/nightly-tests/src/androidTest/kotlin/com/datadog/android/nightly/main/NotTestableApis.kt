@@ -43,6 +43,7 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#fun stopTracking()
  * apiMethodSignature: com.datadog.android.trace.Trace#fun enable(TraceConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
  * apiMethodSignature: com.datadog.android.trace.TraceConfiguration$Builder#fun useCustomEndpoint(String): Builder
+ * apiMethodSignature: com.datadog.android.trace.TraceConfiguration$Builder#fun setNetworkInfoEnabled(Boolean): Builder
  * apiMethodSignature: com.datadog.android.core.SdkReference#constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
  * apiMethodSignature: com.datadog.android.core.SdkReference#fun get(): com.datadog.android.api.SdkCore?
  * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplay#fun enable(SessionReplayConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
