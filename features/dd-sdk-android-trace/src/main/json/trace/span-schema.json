@@ -195,16 +195,10 @@
                   "readOnly": true
                 }
               },
-              "readOnly": true,
-              "required": [
-                "connectivity"
-              ]
+              "readOnly": true
             }
           },
-          "readOnly": true,
-          "required": [
-            "client"
-          ]
+          "readOnly": true
         }
       },
       "required": [
@@ -212,8 +206,7 @@
         "_dd",
         "span",
         "tracer",
-        "usr",
-        "network"
+        "usr"
       ],
       "additionalProperties": {
         "type": "string",

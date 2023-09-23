@@ -100,6 +100,7 @@ public final class com/datadog/android/trace/model/SpanEvent {
 
 public final class com/datadog/android/trace/model/SpanEvent$Client {
 	public static final field Companion Lcom/datadog/android/trace/model/SpanEvent$Client$Companion;
+	public fun <init> ()V
 	public fun <init> (Lcom/datadog/android/trace/model/SpanEvent$SimCarrier;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public synthetic fun <init> (Lcom/datadog/android/trace/model/SpanEvent$SimCarrier;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/trace/model/SpanEvent$SimCarrier;
@@ -213,7 +214,9 @@ public final class com/datadog/android/trace/model/SpanEvent$Metrics$Companion {
 
 public final class com/datadog/android/trace/model/SpanEvent$Network {
 	public static final field Companion Lcom/datadog/android/trace/model/SpanEvent$Network$Companion;
+	public fun <init> ()V
 	public fun <init> (Lcom/datadog/android/trace/model/SpanEvent$Client;)V
+	public synthetic fun <init> (Lcom/datadog/android/trace/model/SpanEvent$Client;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/trace/model/SpanEvent$Client;
 	public final fun copy (Lcom/datadog/android/trace/model/SpanEvent$Client;)Lcom/datadog/android/trace/model/SpanEvent$Network;
 	public static synthetic fun copy$default (Lcom/datadog/android/trace/model/SpanEvent$Network;Lcom/datadog/android/trace/model/SpanEvent$Client;ILjava/lang/Object;)Lcom/datadog/android/trace/model/SpanEvent$Network;
