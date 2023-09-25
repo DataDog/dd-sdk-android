@@ -4591,12 +4591,6 @@ public final class com/datadog/android/rum/tracking/MixedViewTrackingStrategy : 
 	public synthetic fun <init> (ZLcom/datadog/android/rum/tracking/ComponentPredicate;Lcom/datadog/android/rum/tracking/ComponentPredicate;Lcom/datadog/android/rum/tracking/ComponentPredicate;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
-	public fun onActivityCreated (Landroid/app/Activity;Landroid/os/Bundle;)V
-	public fun onActivityDestroyed (Landroid/app/Activity;)V
-	public fun onActivityPaused (Landroid/app/Activity;)V
-	public fun onActivityResumed (Landroid/app/Activity;)V
-	public fun onActivityStarted (Landroid/app/Activity;)V
-	public fun onActivityStopped (Landroid/app/Activity;)V
 	public fun register (Lcom/datadog/android/api/SdkCore;Landroid/content/Context;)V
 	public fun unregister (Landroid/content/Context;)V
 }
