@@ -152,6 +152,19 @@ test:kover:
     - python3 ddcoverage.py --prefix dd-sdk-android
     - bash <(cat ./codecov.sh) -t $CODECOV_TOKEN
 
+test:emulator:
+  tags: [ "runner:main" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test
+  timeout: 1h
+  script:
+    - adb start-server
+    - emulator -avd "android_emulator" -no-audio -no-window -qemu -machine virt &
+    - ./gradlew :instrumented:integration:assembleDebug :instrumented:integration:assembleDebugAndroidTest --stacktrace --no-daemon
+    - adb install -t -d -g -r instrumented/integration/build/outputs/apk/androidTest/debug/integration-debug-androidTest.apk
+    - adb install -t -d -g -r instrumented/integration/build/outputs/apk/debug/integration-debug.apk
+    - adb shell am instrument -w com.datadog.android.sdk.integration.test/androidx.test.runner.AndroidJUnitRunner
+
 # PUBLISH ARTIFACTS ON MAVEN
 
 publish:release-core:
