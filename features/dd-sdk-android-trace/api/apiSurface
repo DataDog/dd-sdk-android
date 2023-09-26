@@ -23,6 +23,7 @@ data class com.datadog.android.trace.TraceConfiguration
   class Builder
     fun useCustomEndpoint(String): Builder
     fun setEventMapper(com.datadog.android.trace.event.SpanEventMapper): Builder
+    fun setNetworkInfoEnabled(Boolean): Builder
     fun build(): TraceConfiguration
 interface com.datadog.android.trace.event.SpanEventMapper : com.datadog.android.event.EventMapper<com.datadog.android.trace.model.SpanEvent>
   override fun map(com.datadog.android.trace.model.SpanEvent): com.datadog.android.trace.model.SpanEvent

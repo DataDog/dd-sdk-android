@@ -15,7 +15,8 @@ class TraceConfigurationForgeryFactory : ForgeryFactory<TraceConfiguration> {
     override fun getForgery(forge: Forge): TraceConfiguration {
         return TraceConfiguration(
             customEndpointUrl = forge.aNullable { aStringMatching("https://[a-z]+\\.com") },
-            eventMapper = mock()
+            eventMapper = mock(),
+            networkInfoEnabled = forge.aBool()
         )
     }
 }
