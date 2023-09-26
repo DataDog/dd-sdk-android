@@ -8,8 +8,10 @@ package com.datadog.gradle.config
 
 import com.android.build.api.dsl.CompileOptions
 import com.android.build.api.dsl.LibraryDefaultConfig
+import com.android.build.gradle.LibraryExtension
 import com.datadog.gradle.utils.Version
 import org.gradle.api.JavaVersion
+import org.gradle.api.Project
 
 object AndroidConfig {
 
@@ -39,4 +41,63 @@ fun LibraryDefaultConfig.setLibraryVersion(
 ) {
     buildConfigField("int", "SDK_VERSION_CODE", "$versionCode")
     buildConfigField("String", "SDK_VERSION_NAME", "\"$versionName\"")
+}
+
+fun Project.androidLibraryConfig() {
+    extensionConfig<LibraryExtension> {
+        compileSdk = AndroidConfig.TARGET_SDK
+        buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
+
+        defaultConfig {
+            minSdk = AndroidConfig.MIN_SDK
+            buildFeatures {
+                buildConfig = true
+            }
+        }
+
+        compileOptions {
+            java11()
+        }
+
+        sourceSets.all {
+            java.srcDir("src/$name/kotlin")
+        }
+        sourceSets.named("main") {
+            java.srcDir("build/generated/json2kotlin/main/kotlin")
+        }
+        libraryVariants.configureEach {
+            addJavaSourceFoldersToModel(
+                layout.buildDirectory
+                    .dir("generated/ksp/$name/kotlin").get().asFile
+            )
+        }
+
+        @Suppress("UnstableApiUsage")
+        testOptions {
+            unitTests.isReturnDefaultValues = true
+        }
+
+        @Suppress("UnstableApiUsage")
+        testFixtures {
+            enable = true
+        }
+
+        lint {
+            warningsAsErrors = true
+            abortOnError = true
+            checkReleaseBuilds = false
+            checkGeneratedSources = true
+            ignoreTestSources = true
+        }
+
+        packaging {
+            resources {
+                excludes += listOf(
+                    "META-INF/jvm.kotlin_module",
+                    "META-INF/LICENSE.md",
+                    "META-INF/LICENSE-notice.md"
+                )
+            }
+        }
+    }
 }

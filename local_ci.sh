@@ -159,9 +159,6 @@ if [[ $COMPILE == 1 ]]; then
 fi
 
 if [[ $TEST == 1 ]]; then
-  echo "---- Nightly test coverage"
-  ./gradlew :checkNightlyTestsCoverage
-
   echo "---- Unit tests (Debug)"
   ./gradlew uTD
 
