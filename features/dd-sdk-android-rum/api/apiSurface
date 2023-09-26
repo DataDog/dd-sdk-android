@@ -220,12 +220,6 @@ class com.datadog.android.rum.tracking.MixedViewTrackingStrategy : ActivityLifec
   constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities(), ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
   override fun register(com.datadog.android.api.SdkCore, android.content.Context)
   override fun unregister(android.content.Context?)
-  override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
-  override fun onActivityStarted(android.app.Activity)
-  override fun onActivityResumed(android.app.Activity)
-  override fun onActivityPaused(android.app.Activity)
-  override fun onActivityStopped(android.app.Activity)
-  override fun onActivityDestroyed(android.app.Activity)
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
 class com.datadog.android.rum.tracking.NavigationViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy, androidx.navigation.NavController.OnDestinationChangedListener
