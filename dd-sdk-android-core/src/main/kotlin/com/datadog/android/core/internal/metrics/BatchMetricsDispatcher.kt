@@ -11,6 +11,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
+import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.sampling.RateBasedSampler
@@ -47,7 +48,7 @@ internal class BatchMetricsDispatcher(
     }
 
     override fun sendBatchClosedMetric(batchFile: File, batchMetadata: BatchClosedMetadata) {
-        if (trackName == null || !sampler.sample()) {
+        if (trackName == null || !sampler.sample() || !batchFile.existsSafe(internalLogger)) {
             return
         }
         resolveBatchClosedMetricAttributes(batchFile, batchMetadata)?.let {
@@ -85,10 +86,8 @@ internal class BatchMetricsDispatcher(
         file: File,
         deletionReason: RemovalReason
     ): Map<String, Any?>? {
-        val fileAgeInMillis = resolveFileAge(file)
-        if (fileAgeInMillis < 0) {
-            return null
-        }
+        val fileCreationTimestamp = file.nameAsTimestampSafe(internalLogger) ?: return null
+        val fileAgeInMillis = dateTimeProvider.getDeviceTimestamp() - fileCreationTimestamp
         return mapOf(
             TRACK_KEY to trackName,
             TYPE_KEY to BATCH_DELETED_TYPE_VALUE,
@@ -108,8 +107,8 @@ internal class BatchMetricsDispatcher(
         file: File,
         batchMetadata: BatchClosedMetadata
     ): Map<String, Any?>? {
-        val batchDurationInMs = dateTimeProvider.getDeviceTimestamp() -
-            batchMetadata.lastTimeWasUsedInMs
+        val fileCreationTimestamp = file.nameAsTimestampSafe(internalLogger) ?: return null
+        val batchDurationInMs = batchMetadata.lastTimeWasUsedInMs - fileCreationTimestamp
         return mapOf(
             TRACK_KEY to trackName,
             TYPE_KEY to BATCH_CLOSED_TYPE_VALUE,
@@ -123,18 +122,16 @@ internal class BatchMetricsDispatcher(
         )
     }
 
-    private fun resolveFileAge(file: File): Long {
-        return try {
-            dateTimeProvider.getDeviceTimestamp() - file.name.toLong()
-        } catch (e: NumberFormatException) {
-            internalLogger.log(
+    private fun File.nameAsTimestampSafe(logger: InternalLogger): Long? {
+        val timestamp = this.name.toLongOrNull()
+        if (timestamp == null) {
+            logger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                { WRONG_FILE_NAME_MESSAGE_FORMAT.format(Locale.ENGLISH, file.name) },
-                e
+                { WRONG_FILE_NAME_MESSAGE_FORMAT.format(Locale.ENGLISH, this.name) }
             )
-            -1L
         }
+        return timestamp
     }
 
     private fun resolveTrackName(featureName: String): String? {

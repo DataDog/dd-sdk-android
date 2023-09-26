@@ -201,11 +201,12 @@ internal class BatchFileOrchestrator(
         val newFileName = System.currentTimeMillis().toString()
         val newFile = File(rootDir, newFileName)
         val closedFile = previousFile
+        val closedFileLastAccessTimestamp = lastFileAccessTimestamp
         if (closedFile != null) {
             metricsDispatcher.sendBatchClosedMetric(
                 closedFile,
                 BatchClosedMetadata(
-                    lastTimeWasUsedInMs = lastFileAccessTimestamp,
+                    lastTimeWasUsedInMs = closedFileLastAccessTimestamp,
                     eventsCount = previousFileItemCount,
                     forcedNew = wasForced
                 )
