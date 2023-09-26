@@ -22,7 +22,7 @@ import java.util.Locale
 
 internal class TraceWriter(
     private val sdkCore: FeatureSdkCore,
-    private val legacyMapper: ContextAwareMapper<DDSpan, SpanEvent>,
+    internal val legacyMapper: ContextAwareMapper<DDSpan, SpanEvent>,
     internal val eventMapper: EventMapper<SpanEvent>,
     private val serializer: ContextAwareSerializer<SpanEvent>,
     private val internalLogger: InternalLogger

@@ -29,7 +29,8 @@ object Trace {
         val tracingFeature = TracingFeature(
             sdkCore = sdkCore as FeatureSdkCore,
             customEndpointUrl = traceConfiguration.customEndpointUrl,
-            spanEventMapper = traceConfiguration.eventMapper
+            spanEventMapper = traceConfiguration.eventMapper,
+            networkInfoEnabled = traceConfiguration.networkInfoEnabled
         )
 
         sdkCore.registerFeature(tracingFeature)
