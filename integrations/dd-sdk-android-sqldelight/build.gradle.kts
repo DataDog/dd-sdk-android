@@ -4,9 +4,8 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.java11
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -37,40 +36,7 @@ plugins {
 }
 
 android {
-    compileSdk = AndroidConfig.TARGET_SDK
-    buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
-
-    defaultConfig {
-        minSdk = AndroidConfig.MIN_SDK
-        targetSdk = AndroidConfig.TARGET_SDK
-    }
-
     namespace = "com.datadog.android.sqldelight"
-
-    sourceSets.named("main") {
-        java.srcDir("src/main/kotlin")
-    }
-    sourceSets.named("test") {
-        java.srcDir("src/test/kotlin")
-    }
-    sourceSets.named("androidTest") {
-        java.srcDir("src/androidTest/kotlin")
-    }
-
-    compileOptions {
-        java11()
-    }
-
-    testOptions {
-        unitTests.isReturnDefaultValues = true
-    }
-
-    lint {
-        warningsAsErrors = true
-        abortOnError = true
-        checkReleaseBuilds = false
-        checkGeneratedSources = true
-    }
 }
 
 dependencies {
@@ -96,6 +62,7 @@ dependencies {
     // TODO MTG-12 detekt(libs.detektCli)
 }
 
+androidLibraryConfig()
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 junitConfig()
 javadocConfig()

@@ -1,3 +1,10 @@
+public final class com/datadog/android/glide/BuildConfig {
+	public static final field BUILD_TYPE Ljava/lang/String;
+	public static final field DEBUG Z
+	public static final field LIBRARY_PACKAGE_NAME Ljava/lang/String;
+	public fun <init> ()V
+}
+
 public class com/datadog/android/glide/DatadogGlideModule : com/bumptech/glide/module/AppGlideModule {
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;)V

@@ -4,9 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.java11
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -38,14 +37,6 @@ plugins {
 }
 
 android {
-    compileSdk = AndroidConfig.TARGET_SDK
-    buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
-
-    defaultConfig {
-        minSdk = AndroidConfig.MIN_SDK
-        targetSdk = AndroidConfig.TARGET_SDK
-    }
-
     namespace = "com.datadog.android.compose"
 
     buildFeatures {
@@ -54,31 +45,6 @@ android {
 
     composeOptions {
         kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
-    }
-
-    sourceSets.named("main") {
-        java.srcDir("src/main/kotlin")
-    }
-    sourceSets.named("test") {
-        java.srcDir("src/test/kotlin")
-    }
-    sourceSets.named("androidTest") {
-        java.srcDir("src/androidTest/kotlin")
-    }
-
-    compileOptions {
-        java11()
-    }
-
-    testOptions {
-        unitTests.isReturnDefaultValues = true
-    }
-
-    lint {
-        warningsAsErrors = true
-        abortOnError = true
-        checkReleaseBuilds = false
-        checkGeneratedSources = true
     }
 }
 
@@ -112,6 +78,7 @@ unMock {
     keepStartingWith("com.android.internal.util")
 }
 
+androidLibraryConfig()
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     compilerOptions {

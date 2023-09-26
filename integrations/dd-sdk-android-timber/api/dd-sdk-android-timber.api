@@ -1,3 +1,10 @@
+public final class com/datadog/android/timber/BuildConfig {
+	public static final field BUILD_TYPE Ljava/lang/String;
+	public static final field DEBUG Z
+	public static final field LIBRARY_PACKAGE_NAME Ljava/lang/String;
+	public fun <init> ()V
+}
+
 public final class com/datadog/android/timber/DatadogTree : timber/log/Timber$Tree {
 	public fun <init> (I)V
 	public fun <init> (ILcom/datadog/android/api/SdkCore;)V
