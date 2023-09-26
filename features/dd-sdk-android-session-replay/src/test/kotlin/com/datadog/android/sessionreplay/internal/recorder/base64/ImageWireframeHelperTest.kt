@@ -39,6 +39,8 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -66,6 +68,9 @@ internal class ImageWireframeHelperTest {
 
     @Mock
     lateinit var mockCallback: ImageWireframeHelperCallback
+
+    @Mock
+    lateinit var mockImageTypeResolver: ImageTypeResolver
 
     @Mock
     lateinit var mockView: View
@@ -158,7 +163,8 @@ internal class ImageWireframeHelperTest {
             imageCompression = mockImageCompression,
             uniqueIdentifierGenerator = mockUniqueIdentifierGenerator,
             base64Serializer = mockBase64Serializer,
-            viewUtilsInternal = mockViewUtilsInternal
+            viewUtilsInternal = mockViewUtilsInternal,
+            imageTypeResolver = mockImageTypeResolver
         )
     }
 
@@ -511,6 +517,90 @@ internal class ImageWireframeHelperTest {
 
         )
         assertThat(captor.allValues).containsExactly(fakeDrawableWidth.toInt(), fakeDrawableHeight.toInt())
+    }
+
+    @Test
+    fun `M not try to resolve bitmap W createImageWireframe() { PII image }`() {
+        // Given
+        whenever(mockImageTypeResolver.isDrawablePII(any(), any(), any())).thenReturn(true)
+
+        // When
+        testedHelper.createImageWireframe(
+            view = mockView,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 0,
+            height = 0,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null
+        )
+
+        // Then
+        verify(mockBase64Serializer, never()).handleBitmap(
+            applicationContext = any(),
+            displayMetrics = any(),
+            drawable = any(),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            imageWireframe = any(),
+            callback = any()
+        )
+    }
+
+    @Test
+    fun `M try to resolve bitmap W createImageWireframe() { non-PII image }`() {
+        // Given
+        whenever(mockImageTypeResolver.isDrawablePII(any(), any(), any())).thenReturn(false)
+
+        // When
+        testedHelper.createImageWireframe(
+            view = mockView,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 0,
+            height = 0,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null
+        )
+
+        // Then
+        verify(mockBase64Serializer, atLeastOnce()).handleBitmap(
+            applicationContext = any(),
+            displayMetrics = any(),
+            drawable = any(),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            imageWireframe = any(),
+            callback = any()
+        )
+    }
+
+    @Test
+    fun `M return content placeholder W createImageWireframe() { PII image }`() {
+        // Given
+        whenever(mockImageTypeResolver.isDrawablePII(any(), any(), any())).thenReturn(true)
+
+        // When
+        val actualWireframe = testedHelper.createImageWireframe(
+            view = mockView,
+            currentWireframeIndex = 0,
+            x = 0,
+            y = 0,
+            width = 0,
+            height = 0,
+            drawable = mockDrawable,
+            shapeStyle = null,
+            border = null
+        )
+
+        // Then
+        assertThat(actualWireframe).isInstanceOf(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
+        assertThat((actualWireframe as MobileSegment.Wireframe.PlaceholderWireframe).label)
+            .isEqualTo(ImageWireframeHelper.PLACEHOLDER_CONTENT_LABEL)
     }
 
     // endregion
