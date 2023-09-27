@@ -17,7 +17,6 @@ import androidx.annotation.VisibleForTesting
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
-import com.datadog.android.sessionreplay.internal.recorder.safeGetDrawable
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 
@@ -28,11 +27,13 @@ internal class ImageWireframeHelper(
     private val imageCompression: ImageCompression = WebPImageCompression(),
     private val uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator,
     private val base64Serializer: Base64Serializer,
-    private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal()
+    private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
+    private val imageTypeResolver: ImageTypeResolver = ImageTypeResolver()
 ) {
 
     // Why is this function accepting an optional drawable ???
     // TODO: RUM-0000 Make the drawable non optional for this function
+    @Suppress("ReturnCount")
     @MainThread
     internal fun createImageWireframe(
         view: View,
@@ -46,7 +47,8 @@ internal class ImageWireframeHelper(
         border: MobileSegment.ShapeBorder? = null,
         prefix: String = DRAWABLE_CHILD_NAME,
         callback: ImageWireframeHelperCallback? = null
-    ): MobileSegment.Wireframe.ImageWireframe? {
+    ): MobileSegment.Wireframe? {
+        if (drawable == null) return null
         val id = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, prefix + currentWireframeIndex)
         val drawableProperties = resolveDrawableProperties(view, drawable)
 
@@ -55,6 +57,25 @@ internal class ImageWireframeHelper(
         val displayMetrics = view.resources.displayMetrics
         val applicationContext = view.context.applicationContext
         val mimeType = imageCompression.getMimeType()
+        val density = displayMetrics.density
+
+        // in case we suspect the image is PII, return a placeholder
+        @Suppress("UnsafeCallOnNullableType") // drawable already checked for null in isValid
+        if (imageTypeResolver.isDrawablePII(
+                drawableProperties.drawable,
+                drawableProperties.drawableWidth.densityNormalized(density),
+                drawableProperties.drawableHeight.densityNormalized(density)
+            )
+        ) {
+            return MobileSegment.Wireframe.PlaceholderWireframe(
+                id,
+                x,
+                y,
+                width,
+                height,
+                label = PLACEHOLDER_CONTENT_LABEL
+            )
+        }
 
         val imageWireframe =
             MobileSegment.Wireframe.ImageWireframe(
@@ -71,11 +92,11 @@ internal class ImageWireframeHelper(
             )
 
         callback?.onStart()
-        @Suppress("UnsafeCallOnNullableType") // drawable already checked for null in isValid
+
         base64Serializer.handleBitmap(
             applicationContext = applicationContext,
             displayMetrics = displayMetrics,
-            drawable = drawableProperties.drawable!!,
+            drawable = drawableProperties.drawable,
             drawableWidth = drawableProperties.drawableWidth,
             drawableHeight = drawableProperties.drawableHeight,
             imageWireframe = imageWireframe,
@@ -143,18 +164,24 @@ internal class ImageWireframeHelper(
         return result
     }
 
-    private fun resolveDrawableProperties(view: View, drawable: Drawable?): DrawableProperties {
-        if (drawable == null) return DrawableProperties(null, 0, 0)
-
+    private fun resolveDrawableProperties(view: View, drawable: Drawable): DrawableProperties {
         return when (drawable) {
             is LayerDrawable -> {
                 if (drawable.numberOfLayers > 0) {
-                    resolveDrawableProperties(view, drawable.safeGetDrawable(0))
+                    @Suppress("UnsafeThirdPartyFunctionCall") // Can't be out of bounds
+                    resolveDrawableProperties(view, drawable.getDrawable(0))
                 } else {
                     DrawableProperties(drawable, drawable.intrinsicWidth, drawable.intrinsicHeight)
                 }
             }
-            is InsetDrawable -> resolveDrawableProperties(view, drawable.drawable)
+            is InsetDrawable -> {
+                val internalDrawable = drawable.drawable
+                if (internalDrawable != null) {
+                    resolveDrawableProperties(view, internalDrawable)
+                } else {
+                    DrawableProperties(drawable, drawable.intrinsicWidth, drawable.intrinsicHeight)
+                }
+            }
             is GradientDrawable -> DrawableProperties(drawable, view.width, view.height)
             else -> DrawableProperties(drawable, drawable.intrinsicWidth, drawable.intrinsicHeight)
         }
@@ -179,16 +206,18 @@ internal class ImageWireframeHelper(
     }
 
     private data class DrawableProperties(
-        val drawable: Drawable?,
+        val drawable: Drawable,
         val drawableWidth: Int,
         val drawableHeight: Int
     ) {
         fun isValid(): Boolean {
-            return drawable != null && drawableWidth > 0 && drawableHeight > 0
+            return drawableWidth > 0 && drawableHeight > 0
         }
     }
 
     internal companion object {
         @VisibleForTesting internal const val DRAWABLE_CHILD_NAME = "drawable"
+
+        @VisibleForTesting internal const val PLACEHOLDER_CONTENT_LABEL = "Content Image"
     }
 }
