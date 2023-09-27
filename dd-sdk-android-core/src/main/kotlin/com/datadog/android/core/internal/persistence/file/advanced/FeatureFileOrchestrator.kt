@@ -65,7 +65,7 @@ internal class FeatureFileOrchestrator(
     )
 
     companion object {
-        private const val BASE_DIR_NAME_REG_EX = "([a-z]+[-|_])+"
+        private const val BASE_DIR_NAME_REG_EX = "([a-z]+-)+"
         internal val IS_GRANTED_DIR_REG_EX = Regex("${BASE_DIR_NAME_REG_EX}v[0-9]+")
         internal val IS_PENDING_DIR_REG_EX = Regex("${BASE_DIR_NAME_REG_EX}pending-v[0-9]+")
 
