@@ -26,8 +26,8 @@ import java.util.concurrent.ExecutorService
 
 internal class ConsentAwareStorage(
     private val executorService: ExecutorService,
-    private val grantedOrchestrator: FileOrchestrator,
-    private val pendingOrchestrator: FileOrchestrator,
+    internal val grantedOrchestrator: FileOrchestrator,
+    internal val pendingOrchestrator: FileOrchestrator,
     private val batchEventsReaderWriter: BatchFileReaderWriter,
     private val batchMetadataReaderWriter: FileReaderWriter,
     private val fileMover: FileMover,
