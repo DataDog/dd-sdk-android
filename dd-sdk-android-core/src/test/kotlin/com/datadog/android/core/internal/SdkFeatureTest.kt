@@ -31,6 +31,7 @@ import com.datadog.android.core.internal.persistence.NoOpStorage
 import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -220,6 +221,20 @@ internal class SdkFeatureTest {
         val consentAwareStorage = testedFeature.storage as ConsentAwareStorage
         assertThat(consentAwareStorage.filePersistenceConfig.recentDelayMs)
             .isEqualTo(fakeCoreBatchSize.windowDurationMs)
+        val pendingFileOrchestrator =
+            consentAwareStorage.pendingOrchestrator as BatchFileOrchestrator
+        val grantedFileOrchestrator =
+            consentAwareStorage.grantedOrchestrator as BatchFileOrchestrator
+        val expectedFilePersistenceConfig = fakeCorePersistenceConfig.copy(
+            maxBatchSize = fakeStorageConfiguration.maxBatchSize,
+            maxItemSize = fakeStorageConfiguration.maxItemSize,
+            maxItemsPerBatch = fakeStorageConfiguration.maxItemsPerBatch,
+            oldFileThreshold = fakeStorageConfiguration.oldBatchThreshold,
+            recentDelayMs = fakeStorageConfiguration.batchSize?.windowDurationMs
+                ?: fakeCoreBatchSize.windowDurationMs
+        )
+        assertThat(pendingFileOrchestrator.config).isEqualTo(expectedFilePersistenceConfig)
+        assertThat(grantedFileOrchestrator.config).isEqualTo(expectedFilePersistenceConfig)
     }
 
     @Test

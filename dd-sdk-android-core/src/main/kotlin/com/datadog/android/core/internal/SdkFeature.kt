@@ -238,6 +238,7 @@ internal class SdkFeature(
             storageDir = coreFeature.storageDir,
             featureName = featureName,
             executorService = coreFeature.persistenceExecutorService,
+            filePersistenceConfig = filePersistenceConfig,
             internalLogger = internalLogger,
             metricsDispatcher = metricsDispatcher
         )
