@@ -12,7 +12,7 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.Drawable.ConstantState
 import android.util.DisplayMetrics
-import android.widget.ImageButton
+import android.widget.ImageView
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
@@ -56,12 +56,12 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class ImageButtonMapperTest {
+internal class ImageViewMapperTest {
 
-    private lateinit var testedMapper: ImageButtonMapper
+    private lateinit var testedMapper: ImageViewMapper
 
     @Mock
-    lateinit var mockImageButton: ImageButton
+    lateinit var mockImageView: ImageView
 
     @Mock
     lateinit var mockImageWireframeHelper: ImageWireframeHelper
@@ -116,15 +116,15 @@ internal class ImageButtonMapperTest {
 
     @BeforeEach
     fun setup(forge: Forge) {
-        whenever(mockImageButton.background).thenReturn(null)
+        whenever(mockImageView.background).thenReturn(null)
 
         whenever(mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(any(), any()))
             .thenReturn(fakeId)
 
         whenever(mockConstantState.newDrawable(any())).thenReturn(mockDrawable)
         whenever(mockDrawable.constantState).thenReturn(mockConstantState)
-        whenever(mockImageButton.drawable).thenReturn(mockDrawable)
-        whenever(mockImageButton.drawable.current).thenReturn(mockDrawable)
+        whenever(mockImageView.drawable).thenReturn(mockDrawable)
+        whenever(mockImageView.drawable.current).thenReturn(mockDrawable)
 
         whenever(mockDrawable.intrinsicWidth).thenReturn(forge.aPositiveInt())
         whenever(mockDrawable.intrinsicHeight).thenReturn(forge.aPositiveInt())
@@ -135,10 +135,10 @@ internal class ImageButtonMapperTest {
         whenever(mockMappingContext.systemInformation).thenReturn(mockSystemInformation)
 
         whenever(mockResources.displayMetrics).thenReturn(mockDisplayMetrics)
-        whenever(mockImageButton.resources).thenReturn(mockResources)
+        whenever(mockImageView.resources).thenReturn(mockResources)
 
         whenever(mockContext.applicationContext).thenReturn(mockContext)
-        whenever(mockImageButton.context).thenReturn(mockContext)
+        whenever(mockImageView.context).thenReturn(mockContext)
         whenever(mockBackground.current).thenReturn(mockBackground)
 
         whenever(mockViewUtils.resolveViewGlobalBounds(any(), any())).thenReturn(mockGlobalBounds)
@@ -147,8 +147,8 @@ internal class ImageButtonMapperTest {
             id = fakeId,
             x = mockGlobalBounds.x,
             y = mockGlobalBounds.y,
-            width = mockImageButton.width.toLong(),
-            height = mockImageButton.height.toLong(),
+            width = mockImageView.width.toLong(),
+            height = mockImageView.height.toLong(),
             shapeStyle = null,
             border = null,
             base64 = "",
@@ -159,7 +159,7 @@ internal class ImageButtonMapperTest {
         whenever(mockBase64Serializer.getDrawableScaledDimensions(any(), any(), any()))
             .thenReturn(DrawableDimensions(0, 0))
 
-        testedMapper = ImageButtonMapper(
+        testedMapper = ImageViewMapper(
             base64Serializer = mockBase64Serializer,
             imageWireframeHelper = mockImageWireframeHelper,
             uniqueIdentifierGenerator = mockUniqueIdentifierGenerator
@@ -169,11 +169,11 @@ internal class ImageButtonMapperTest {
     @Test
     fun `M return foreground wireframe W map() { no background }`() {
         // Given
-        whenever(mockImageButton.background).thenReturn(null)
+        whenever(mockImageView.background).thenReturn(null)
         val fakeViewDrawable = mockDrawable.constantState?.newDrawable(mockResources)
         whenever(
             mockImageWireframeHelper.createImageWireframe(
-                eq(mockImageButton),
+                eq(mockImageView),
                 any(),
                 any(),
                 any(),
@@ -188,7 +188,7 @@ internal class ImageButtonMapperTest {
         ).thenReturn(expectedWireframe)
 
         // When
-        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
+        val wireframes = testedMapper.map(mockImageView, mockMappingContext)
 
         // Then
         assertThat(wireframes.size).isEqualTo(1)
@@ -204,8 +204,8 @@ internal class ImageButtonMapperTest {
             id = id,
             x = mockGlobalBounds.x,
             y = mockGlobalBounds.y,
-            width = mockImageButton.width.toLong(),
-            height = mockImageButton.height.toLong(),
+            width = mockImageView.width.toLong(),
+            height = mockImageView.height.toLong(),
             shapeStyle = null,
             border = null,
             base64 = "",
@@ -213,14 +213,14 @@ internal class ImageButtonMapperTest {
             isEmpty = true
         )
 
-        whenever(mockImageButton.background).thenReturn(mockBackground)
+        whenever(mockImageView.background).thenReturn(mockBackground)
         mockCreateImageWireframe(
             expectedBackgroundWireframe,
             expectedWireframe
         )
 
         // When
-        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
+        val wireframes = testedMapper.map(mockImageView, mockMappingContext)
 
         // Then
         assertThat(wireframes.size).isEqualTo(2)
@@ -231,7 +231,7 @@ internal class ImageButtonMapperTest {
     @Test
     fun `M call async callback W map() { }`() {
         // Given
-        whenever(mockImageButton.background).thenReturn(mockBackground)
+        whenever(mockImageView.background).thenReturn(mockBackground)
 
         val argumentCaptor = argumentCaptor<ImageWireframeHelperCallback>()
         whenever(
@@ -251,7 +251,7 @@ internal class ImageButtonMapperTest {
         ).thenReturn(expectedWireframe)
 
         // When
-        val wireframes = testedMapper.map(mockImageButton, mockMappingContext, mockCallback)
+        val wireframes = testedMapper.map(mockImageView, mockMappingContext, mockCallback)
 
         // Then
         assertThat(wireframes.size).isEqualTo(2)
@@ -287,15 +287,15 @@ internal class ImageButtonMapperTest {
             id = id,
             x = mockGlobalBounds.x,
             y = mockGlobalBounds.y,
-            width = mockImageButton.width.toLong(),
-            height = mockImageButton.height.toLong(),
+            width = mockImageView.width.toLong(),
+            height = mockImageView.height.toLong(),
             shapeStyle = null,
             border = null,
             base64 = "",
             mimeType = fakeMimeType,
             isEmpty = true
         )
-        whenever(mockImageButton.background).thenReturn(mockBackground)
+        whenever(mockImageView.background).thenReturn(mockBackground)
 
         mockCreateImageWireframe(
             expectedBackgroundWireframe,
@@ -303,7 +303,7 @@ internal class ImageButtonMapperTest {
         )
 
         // When
-        testedMapper.map(mockImageButton, mockMappingContext)
+        testedMapper.map(mockImageView, mockMappingContext)
 
         // Then
         val captor = argumentCaptor<Int>()
@@ -328,7 +328,7 @@ internal class ImageButtonMapperTest {
     @Test
     fun `M set index to 0 W map() { no background wireframe }`() {
         // Given
-        whenever(mockImageButton.background).thenReturn(mockBackground)
+        whenever(mockImageView.background).thenReturn(mockBackground)
 
         mockCreateImageWireframe(
             null,
@@ -336,7 +336,7 @@ internal class ImageButtonMapperTest {
         )
 
         // When
-        testedMapper.map(mockImageButton, mockMappingContext)
+        testedMapper.map(mockImageView, mockMappingContext)
 
         // Then
         val captor = argumentCaptor<Int>()
@@ -363,14 +363,14 @@ internal class ImageButtonMapperTest {
         @LongForgery id: Long
     ) {
         // Given
-        whenever(mockImageButton.background).thenReturn(mockBackground)
+        whenever(mockImageView.background).thenReturn(mockBackground)
 
         val expectedBackgroundWireframe = MobileSegment.Wireframe.ImageWireframe(
             id = id,
             x = mockGlobalBounds.x,
             y = mockGlobalBounds.y,
-            width = mockImageButton.width.toLong(),
-            height = mockImageButton.height.toLong(),
+            width = mockImageView.width.toLong(),
+            height = mockImageView.height.toLong(),
             shapeStyle = null,
             border = null,
             base64 = "",
@@ -384,7 +384,7 @@ internal class ImageButtonMapperTest {
         )
 
         // When
-        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
+        val wireframes = testedMapper.map(mockImageView, mockMappingContext)
 
         // Then
         assertThat(wireframes[0]::class.java).isEqualTo(MobileSegment.Wireframe.ImageWireframe::class.java)
@@ -395,10 +395,10 @@ internal class ImageButtonMapperTest {
         @Mock mockColorDrawable: ColorDrawable
     ) {
         // Given
-        whenever(mockImageButton.background).thenReturn(mockColorDrawable)
+        whenever(mockImageView.background).thenReturn(mockColorDrawable)
 
         // When
-        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
+        val wireframes = testedMapper.map(mockImageView, mockMappingContext)
 
         // Then
         assertThat(wireframes[0]::class.java).isEqualTo(MobileSegment.Wireframe.ShapeWireframe::class.java)
@@ -409,7 +409,7 @@ internal class ImageButtonMapperTest {
         @Mock mockColorDrawable: ColorDrawable
     ) {
         // Given
-        whenever(mockImageButton.background).thenReturn(mockColorDrawable)
+        whenever(mockImageView.background).thenReturn(mockColorDrawable)
 
         whenever(mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(any(), any()))
             .thenReturn(null)
@@ -420,7 +420,7 @@ internal class ImageButtonMapperTest {
         )
 
         // When
-        val wireframes = testedMapper.map(mockImageButton, mockMappingContext)
+        val wireframes = testedMapper.map(mockImageView, mockMappingContext)
 
         // Then
         assertThat(wireframes.size).isEqualTo(1)
