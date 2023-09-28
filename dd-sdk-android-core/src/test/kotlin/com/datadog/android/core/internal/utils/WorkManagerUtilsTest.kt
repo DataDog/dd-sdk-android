@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.utils
 
 import android.app.Application
 import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
 import com.datadog.android.api.InternalLogger
@@ -109,7 +110,8 @@ internal class WorkManagerUtilsTest {
             eq(ExistingWorkPolicy.REPLACE),
             argThat<OneTimeWorkRequest> {
                 this.workSpec.workerClassName == UploadWorker::class.java.canonicalName &&
-                    this.tags.contains(TAG_DATADOG_UPLOAD)
+                    this.tags.contains(TAG_DATADOG_UPLOAD) &&
+                    this.workSpec.constraints.requiredNetworkType == NetworkType.NOT_ROAMING
             }
         )
     }

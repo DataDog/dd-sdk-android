@@ -44,7 +44,7 @@ internal fun triggerUploadWorker(context: Context, internalLogger: InternalLogge
     try {
         val workManager = WorkManager.getInstance(context)
         val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiredNetworkType(NetworkType.NOT_ROAMING)
             .build()
         val uploadWorkRequest = OneTimeWorkRequest.Builder(UploadWorker::class.java)
             .setConstraints(constraints)

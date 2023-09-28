@@ -144,6 +144,7 @@ internal class BatchMetricsDispatcherTest {
         val fakeFile: File = forge.forgeValidFile()
         val expectedAdditionalProperties = resolveDefaultDeleteExtraProperties(fakeFile).apply {
             put(BatchMetricsDispatcher.BATCH_REMOVAL_KEY, fakeReason.toString())
+            put(BatchMetricsDispatcher.IN_BACKGROUND_KEY, false)
         }
         // When
         testedBatchMetricsDispatcher.onResumed()
@@ -173,7 +174,6 @@ internal class BatchMetricsDispatcherTest {
             put(BatchMetricsDispatcher.TRACKING_CONSENT_KEY, "pending")
         }
         // When
-        testedBatchMetricsDispatcher.onResumed()
         testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
 
         // Then
@@ -199,7 +199,6 @@ internal class BatchMetricsDispatcherTest {
             put(BatchMetricsDispatcher.TRACKING_CONSENT_KEY, null)
         }
         // When
-        testedBatchMetricsDispatcher.onResumed()
         testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
 
         // Then
@@ -225,7 +224,6 @@ internal class BatchMetricsDispatcherTest {
             put(BatchMetricsDispatcher.TRACKING_CONSENT_KEY, null)
         }
         // When
-        testedBatchMetricsDispatcher.onResumed()
         testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
 
         // Then
@@ -564,7 +562,7 @@ internal class BatchMetricsDispatcherTest {
             BatchMetricsDispatcher.FILE_NAME to file.name,
             BatchMetricsDispatcher.THREAD_NAME to Thread.currentThread().name,
             BatchMetricsDispatcher.TRACKING_CONSENT_KEY to "granted",
-            BatchMetricsDispatcher.IN_BACKGROUND_KEY to false
+            BatchMetricsDispatcher.IN_BACKGROUND_KEY to true
         )
     }
 
