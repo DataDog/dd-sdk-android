@@ -4,7 +4,7 @@ include:
 # SETUP
 
 variables:
-  CURRENT_CI_IMAGE: "4"
+  CURRENT_CI_IMAGE: "5"
   CI_IMAGE_DOCKER: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/dd-sdk-android:$CURRENT_CI_IMAGE
   GIT_DEPTH: 5
 
@@ -158,8 +158,8 @@ test:emulator:
   stage: test
   timeout: 1h
   script:
+    - emulator -avd "android_emulator" -grpc-use-jwt -no-snapstorage -no-audio -no-window -qemu -machine virt &
     - adb start-server
-    - emulator -avd "android_emulator" -no-audio -no-window -qemu -machine virt &
     - ./gradlew :instrumented:integration:assembleDebug :instrumented:integration:assembleDebugAndroidTest --stacktrace --no-daemon
     - adb install -t -d -g -r instrumented/integration/build/outputs/apk/androidTest/debug/integration-debug-androidTest.apk
     - adb install -t -d -g -r instrumented/integration/build/outputs/apk/debug/integration-debug.apk
