@@ -608,13 +608,13 @@ internal class BatchMetricsDispatcherTest {
     }
 
     private fun Forge.forgeAGrantedDirName(): String {
-        val separator = if (aBool()) "_" else "-"
+        val separator = "-"
         return aList(anInt(min = 1, max = 10)) { anAlphabeticalString() }
             .joinToString(separator) + "-v" + aNumericalString()
     }
 
     private fun Forge.forgeAPendingDirName(): String {
-        val separator = if (aBool()) "_" else "-"
+        val separator = "-"
         return aList(anInt(min = 1, max = 10)) { anAlphabeticalString() }
             .joinToString(separator) + "-pending-v" + aNumericalString()
     }
