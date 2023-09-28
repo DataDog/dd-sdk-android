@@ -92,9 +92,6 @@ dependencies {
         // this is needed to make AssertJ working on APIs <24
         androidTestImplementation(project(":tools:javabackport"))
     }
-
-    // TODO MTG-12 detekt(project(":tools:detekt"))
-    // TODO MTG-12 detekt(libs.detektCli)
 }
 
 androidLibraryConfig()
