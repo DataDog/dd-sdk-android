@@ -26,6 +26,7 @@ class com.datadog.android.log.Logger
   fun removeTagsWithKey(String)
 object com.datadog.android.log.Logs
   fun enable(LogsConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun isEnabled(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
 data class com.datadog.android.log.LogsConfiguration
   class Builder
     fun useCustomEndpoint(String): Builder

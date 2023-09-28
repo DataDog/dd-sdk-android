@@ -8,6 +8,7 @@ package com.datadog.android.log
 
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.log.internal.LogsFeature
 
@@ -33,5 +34,21 @@ object Logs {
         )
 
         sdkCore.registerFeature(logsFeature)
+    }
+
+    /**
+     * Identify whether a [Logs] has been enabled for the given SDK instance.
+     *
+     * This check is useful in scenarios where more than one component may be responsible
+     * for enabling the feature
+     *
+     * @param sdkCore the [SdkCore] instance to check against. If not provided, default instance
+     * will be checked.
+     * @return whether Logs has been enabled
+     */
+    @JvmOverloads
+    @JvmStatic
+    fun isEnabled(sdkCore: SdkCore = Datadog.getInstance()): Boolean {
+        return (sdkCore as FeatureSdkCore).getFeature(Feature.LOGS_FEATURE_NAME) != null
     }
 }

@@ -6,6 +6,7 @@
 
 package com.datadog.android.log
 
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.net.LogsRequestFactory
@@ -64,5 +65,29 @@ internal class LogsTest {
             assertThat((lastValue.requestFactory as LogsRequestFactory).customEndpointUrl)
                 .isEqualTo(fakeLogsConfiguration.customEndpointUrl)
         }
+    }
+
+    @Test
+    fun `M return true W isEnabled() { core returns feature }`() {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn mock()
+
+        // When
+        val result = Logs.isEnabled(mockSdkCore)
+
+        // Then
+        assertThat(result).isTrue
+    }
+
+    @Test
+    fun `M return false W isEnabled() { core returns null }`() {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
+
+        // When
+        val result = Logs.isEnabled(mockSdkCore)
+
+        // Then
+        assertThat(result).isFalse
     }
 }
