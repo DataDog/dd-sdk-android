@@ -132,7 +132,7 @@ internal class RecordedDataQueueHandlerTest {
     )
     fun `M log exception W executor service throws`(exceptionType: Class<Throwable>) {
         // Given
-        val fakeThrowable = exceptionType.newInstance()
+        val fakeThrowable = exceptionType.getDeclaredConstructor().newInstance()
         val mockExecutorService = mock<ExecutorService>()
         testedHandler = RecordedDataQueueHandler(
             processor = mockProcessor,
@@ -166,7 +166,7 @@ internal class RecordedDataQueueHandlerTest {
     )
     fun `M log exception W addSnapshotItem { queue throws }`(exceptionType: Class<Throwable>) {
         // Given
-        val fakeThrowable = exceptionType.newInstance()
+        val fakeThrowable = exceptionType.getDeclaredConstructor().newInstance()
         val mockQueue: Queue<RecordedDataQueueItem> = mock()
         whenever(mockQueue.offer(any())).thenThrow(fakeThrowable)
         testedHandler = RecordedDataQueueHandler(
