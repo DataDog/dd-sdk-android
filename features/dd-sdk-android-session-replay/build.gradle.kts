@@ -28,6 +28,7 @@ plugins {
 
     // Tests
     id("org.jetbrains.kotlinx.kover")
+    id("de.mobilej.unmock")
 
     // Internal Generation
     id("thirdPartyLicences")
@@ -103,9 +104,14 @@ dependencies {
     }
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
+    unmock(libs.robolectric)
 
     // TODO MTG-12 detekt(project(":tools:detekt"))
     // TODO MTG-12 detekt(libs.detektCli)
+}
+
+unMock {
+    keep("android.widget.ImageView\$ScaleType")
 }
 
 apply(from = "clone_session_replay_schema.gradle.kts")
