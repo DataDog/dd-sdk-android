@@ -33,7 +33,7 @@ internal class BatchMetricsDispatcher(
 ) : MetricsDispatcher, ProcessLifecycleMonitor.Callback {
 
     private val trackName: String? = resolveTrackName(featureName)
-    private val isInBackground = AtomicBoolean(false)
+    private val isInBackground = AtomicBoolean(true)
 
     // region MetricsDispatcher
 

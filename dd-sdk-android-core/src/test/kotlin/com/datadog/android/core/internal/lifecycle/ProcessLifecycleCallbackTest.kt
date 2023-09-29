@@ -11,9 +11,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.core.internal.data.upload.UploadWorker
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -55,14 +53,11 @@ internal class ProcessLifecycleCallbackTest {
     lateinit var mockWorkManager: WorkManagerImpl
 
     @Mock
-    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
-
-    @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`() {
-        testedCallback = ProcessLifecycleCallback(mockNetworkInfoProvider, appContext.mockInstance, mockInternalLogger)
+        testedCallback = ProcessLifecycleCallback(appContext.mockInstance, mockInternalLogger)
     }
 
     @AfterEach
@@ -71,16 +66,9 @@ internal class ProcessLifecycleCallbackTest {
     }
 
     @Test
-    fun `when process stopped and network is disconnected will schedule an upload worker`() {
+    fun `when process stopped will schedule an upload worker`() {
         // Given
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
-        whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
-            .thenReturn(
-                NetworkInfo(
-                    NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
-                )
-            )
-
         whenever(
             mockWorkManager.enqueueUniqueWork(
                 ArgumentMatchers.anyString(),
@@ -105,32 +93,6 @@ internal class ProcessLifecycleCallbackTest {
 
     @Test
     fun `when process stopped and work manager is not present will not throw exception`() {
-        // Given
-        whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
-            .thenReturn(
-                NetworkInfo(
-                    NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
-                )
-            )
-
-        // When
-        testedCallback.onStopped()
-
-        // Then
-        verifyNoInteractions(mockWorkManager)
-    }
-
-    @Test
-    fun `when process stopped and network is connected will do nothing`() {
-        // Given
-        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
-        whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
-            .thenReturn(
-                NetworkInfo(
-                    NetworkInfo.Connectivity.NETWORK_WIFI
-                )
-            )
-
         // When
         testedCallback.onStopped()
 
@@ -142,12 +104,6 @@ internal class ProcessLifecycleCallbackTest {
     fun `when process stopped and context ref is null will do nothing`() {
         testedCallback.contextWeakRef.clear()
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
-        whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
-            .thenReturn(
-                NetworkInfo(
-                    NetworkInfo.Connectivity.NETWORK_WIFI
-                )
-            )
 
         // When
         testedCallback.onStopped()

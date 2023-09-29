@@ -362,7 +362,6 @@ internal class DatadogCore(
         if (appContext is Application) {
             processLifecycleMonitor = ProcessLifecycleMonitor(
                 ProcessLifecycleCallback(
-                    coreFeature.networkInfoProvider,
                     appContext,
                     internalLogger
                 )
