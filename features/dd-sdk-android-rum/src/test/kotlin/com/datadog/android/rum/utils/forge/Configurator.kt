@@ -6,6 +6,12 @@
 
 package com.datadog.android.rum.utils.forge
 
+import com.datadog.android.test.forge.DatadogContextForgeryFactory
+import com.datadog.android.test.forge.DeviceInfoForgeryFactory
+import com.datadog.android.test.forge.NetworkInfoForgeryFactory
+import com.datadog.android.test.forge.ProcessInfoForgeryFactory
+import com.datadog.android.test.forge.TimeInfoForgeryFactory
+import com.datadog.android.test.forge.UserInfoForgeryFactory
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.jvm.useJvmFactories

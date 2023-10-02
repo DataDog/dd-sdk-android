@@ -41,6 +41,11 @@ plugins {
 android {
     namespace = "com.datadog.android.rum"
 
+    sourceSets.named("test") {
+        // Required because AGP doesn't support kotlin test fixtures :/
+        java.srcDir("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
+    }
+
     defaultConfig {
         consumerProguardFiles(Paths.get(rootDir.path, "consumer-rules.pro").toString())
     }
@@ -69,6 +74,7 @@ dependencies {
             )
         }
     }
+    testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)

@@ -6,6 +6,12 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.test.forge.DatadogContextForgeryFactory
+import com.datadog.android.test.forge.DeviceInfoForgeryFactory
+import com.datadog.android.test.forge.NetworkInfoForgeryFactory
+import com.datadog.android.test.forge.ProcessInfoForgeryFactory
+import com.datadog.android.test.forge.TimeInfoForgeryFactory
+import com.datadog.android.test.forge.UserInfoForgeryFactory
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
 
@@ -16,8 +22,11 @@ internal class Configurator : BaseConfigurator() {
 
         // Core
         forge.addFactory(DatadogContextForgeryFactory())
-        forge.addFactory(UserInfoForgeryFactory())
+        forge.addFactory(DeviceInfoForgeryFactory())
         forge.addFactory(NetworkInfoForgeryFactory())
+        forge.addFactory(ProcessInfoForgeryFactory())
+        forge.addFactory(TimeInfoForgeryFactory())
+        forge.addFactory(UserInfoForgeryFactory())
 
         // APM
         forge.addFactory(SpanForgeryFactory())
