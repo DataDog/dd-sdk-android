@@ -11,6 +11,7 @@ import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.QueueableViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.TraverseAllChildrenMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -38,11 +39,16 @@ internal class TreeViewTraversal(
         val resolvedWireframes: List<MobileSegment.Wireframe>
 
         // try to resolve from the exhaustive type mappers
-        val exhaustiveTypeMapper = mappers.findFirstForType(view::class.java)
+        val mapper = mappers.findFirstForType(view::class.java)
 
-        if (exhaustiveTypeMapper != null) {
-            val queueableViewMapper = QueueableViewMapper(exhaustiveTypeMapper, recordedDataQueueRefs)
-            traversalStrategy = TraversalStrategy.STOP_AND_RETURN_NODE
+        if (mapper != null) {
+            val queueableViewMapper =
+                QueueableViewMapper(mapper, recordedDataQueueRefs)
+            traversalStrategy = if (mapper is TraverseAllChildrenMapper) {
+                TraversalStrategy.TRAVERSE_ALL_CHILDREN
+            } else {
+                TraversalStrategy.STOP_AND_RETURN_NODE
+            }
             resolvedWireframes = queueableViewMapper.map(view, mappingContext)
         } else if (isDecorView(view)) {
             traversalStrategy = TraversalStrategy.TRAVERSE_ALL_CHILDREN
@@ -71,10 +77,10 @@ internal class TreeViewTraversal(
         val mappedWireframes: List<MobileSegment.Wireframe>,
         val nextActionStrategy: TraversalStrategy
     )
+}
 
-    enum class TraversalStrategy {
-        TRAVERSE_ALL_CHILDREN,
-        STOP_AND_RETURN_NODE,
-        STOP_AND_DROP_NODE
-    }
+internal enum class TraversalStrategy {
+    TRAVERSE_ALL_CHILDREN,
+    STOP_AND_RETURN_NODE,
+    STOP_AND_DROP_NODE
 }

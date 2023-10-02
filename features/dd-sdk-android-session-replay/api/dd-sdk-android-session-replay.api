@@ -131,6 +131,9 @@ public class com/datadog/android/sessionreplay/internal/recorder/mapper/TextView
 	public fun map (Landroid/widget/TextView;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;Lcom/datadog/android/sessionreplay/internal/AsyncJobStatusCallback;)Ljava/util/List;
 }
 
+public abstract interface class com/datadog/android/sessionreplay/internal/recorder/mapper/TraverseAllChildrenMapper : com/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper {
+}
+
 public abstract interface class com/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper {
 	public abstract fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;Lcom/datadog/android/sessionreplay/internal/AsyncJobStatusCallback;)Ljava/util/List;
 }
