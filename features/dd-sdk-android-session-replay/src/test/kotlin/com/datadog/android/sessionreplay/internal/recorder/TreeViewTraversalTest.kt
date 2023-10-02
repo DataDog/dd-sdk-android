@@ -121,7 +121,7 @@ internal class TreeViewTraversalTest {
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
         assertThat(traversedTreeView.nextActionStrategy)
-            .isEqualTo(TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE)
+            .isEqualTo(TraversalStrategy.STOP_AND_RETURN_NODE)
     }
 
     @Test
@@ -161,7 +161,7 @@ internal class TreeViewTraversalTest {
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
         assertThat(traversedTreeView.nextActionStrategy)
-            .isEqualTo(TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN)
+            .isEqualTo(TraversalStrategy.TRAVERSE_ALL_CHILDREN)
     }
 
     @Test
@@ -193,7 +193,7 @@ internal class TreeViewTraversalTest {
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
         assertThat(traversedTreeView.nextActionStrategy)
-            .isEqualTo(TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN)
+            .isEqualTo(TraversalStrategy.TRAVERSE_ALL_CHILDREN)
     }
 
     @Test
@@ -226,7 +226,7 @@ internal class TreeViewTraversalTest {
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
         assertThat(traversedTreeView.nextActionStrategy)
-            .isEqualTo(TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN)
+            .isEqualTo(TraversalStrategy.TRAVERSE_ALL_CHILDREN)
     }
 
     // endregion
@@ -250,7 +250,7 @@ internal class TreeViewTraversalTest {
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEmpty()
         assertThat(traversedTreeView.nextActionStrategy)
-            .isEqualTo(TreeViewTraversal.TraversalStrategy.STOP_AND_DROP_NODE)
+            .isEqualTo(TraversalStrategy.STOP_AND_DROP_NODE)
     }
 
     // endregion
@@ -274,7 +274,7 @@ internal class TreeViewTraversalTest {
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEmpty()
         assertThat(traversedTreeView.nextActionStrategy)
-            .isEqualTo(TreeViewTraversal.TraversalStrategy.STOP_AND_DROP_NODE)
+            .isEqualTo(TraversalStrategy.STOP_AND_DROP_NODE)
     }
 
     // endregion

@@ -41,17 +41,17 @@ internal class SnapshotProducer(
         val traversedTreeView = treeViewTraversal.traverse(view, mappingContext, recordedDataQueueRefs)
         val nextTraversalStrategy = traversedTreeView.nextActionStrategy
         val resolvedWireframes = traversedTreeView.mappedWireframes
-        if (nextTraversalStrategy == TreeViewTraversal.TraversalStrategy.STOP_AND_DROP_NODE) {
+        if (nextTraversalStrategy == TraversalStrategy.STOP_AND_DROP_NODE) {
             return null
         }
-        if (nextTraversalStrategy == TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE) {
+        if (nextTraversalStrategy == TraversalStrategy.STOP_AND_RETURN_NODE) {
             return Node(wireframes = resolvedWireframes, parents = parents)
         }
 
         val childNodes = LinkedList<Node>()
         if (view is ViewGroup &&
             view.childCount > 0 &&
-            nextTraversalStrategy == TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
+            nextTraversalStrategy == TraversalStrategy.TRAVERSE_ALL_CHILDREN
         ) {
             val childMappingContext = resolveChildMappingContext(view, mappingContext)
             val parentsCopy = LinkedList(parents).apply { addAll(resolvedWireframes) }

@@ -11,6 +11,7 @@ import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.NoOpAsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
+import com.datadog.android.sessionreplay.internal.recorder.TraversalStrategy
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 /**
@@ -19,6 +20,8 @@ import com.datadog.android.sessionreplay.model.MobileSegment
  * Session Replay representation for a specific View type you can implement this on your end.
  */
 interface WireframeMapper<in T : View, out S : MobileSegment.Wireframe> {
+    val traversalStrategy: TraversalStrategy
+        get() = TraversalStrategy.STOP_AND_RETURN_NODE
 
     /**
      * Maps a [View] to a [List<Wireframe>] in order to be rendered in the Session Replay player.

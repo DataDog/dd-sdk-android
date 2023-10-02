@@ -42,7 +42,7 @@ internal class TreeViewTraversal(
 
         if (exhaustiveTypeMapper != null) {
             val queueableViewMapper = QueueableViewMapper(exhaustiveTypeMapper, recordedDataQueueRefs)
-            traversalStrategy = TraversalStrategy.STOP_AND_RETURN_NODE
+            traversalStrategy = exhaustiveTypeMapper.traversalStrategy
             resolvedWireframes = queueableViewMapper.map(view, mappingContext)
         } else if (isDecorView(view)) {
             traversalStrategy = TraversalStrategy.TRAVERSE_ALL_CHILDREN
@@ -71,10 +71,10 @@ internal class TreeViewTraversal(
         val mappedWireframes: List<MobileSegment.Wireframe>,
         val nextActionStrategy: TraversalStrategy
     )
+}
 
-    enum class TraversalStrategy {
-        TRAVERSE_ALL_CHILDREN,
-        STOP_AND_RETURN_NODE,
-        STOP_AND_DROP_NODE
-    }
+enum class TraversalStrategy {
+    TRAVERSE_ALL_CHILDREN,
+    STOP_AND_RETURN_NODE,
+    STOP_AND_DROP_NODE
 }

@@ -25,6 +25,10 @@ interface com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDete
   fun isOptionSelector(android.view.ViewGroup): Boolean
 data class com.datadog.android.sessionreplay.internal.recorder.SystemInformation
   constructor(GlobalBounds, Int = Configuration.ORIENTATION_UNDEFINED, Float, String? = null)
+enum com.datadog.android.sessionreplay.internal.recorder.TraversalStrategy
+  - TRAVERSE_ALL_CHILDREN
+  - STOP_AND_RETURN_NODE
+  - STOP_AND_DROP_NODE
 abstract class com.datadog.android.sessionreplay.internal.recorder.mapper.BaseAsyncBackgroundWireframeMapper<T: android.view.View> : BaseWireframeMapper<T, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
   constructor(com.datadog.android.sessionreplay.utils.StringUtils = StringUtils, com.datadog.android.sessionreplay.utils.ViewUtils = ViewUtils)
   override fun map(T, com.datadog.android.sessionreplay.internal.recorder.MappingContext, com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
@@ -44,6 +48,7 @@ open class com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMa
   constructor()
   override fun map(android.widget.TextView, com.datadog.android.sessionreplay.internal.recorder.MappingContext, com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
 interface com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper<T: android.view.View, S: com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
+  val traversalStrategy: com.datadog.android.sessionreplay.internal.recorder.TraversalStrategy
   fun map(T, com.datadog.android.sessionreplay.internal.recorder.MappingContext, com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback = NoOpAsyncJobStatusCallback()): List<S>
 object com.datadog.android.sessionreplay.utils.StringUtils
   fun formatColorAndAlphaAsHexa(Int, Int): String

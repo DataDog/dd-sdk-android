@@ -100,6 +100,18 @@ public abstract class com/datadog/android/sessionreplay/internal/recorder/mapper
 	public fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;Lcom/datadog/android/sessionreplay/internal/AsyncJobStatusCallback;)Ljava/util/List;
 }
 
+public final class com/datadog/android/sessionreplay/internal/recorder/TraversalStrategy : java/lang/Enum {
+	public static final field STOP_AND_DROP_NODE Lcom/datadog/android/sessionreplay/internal/recorder/TraversalStrategy;
+	public static final field STOP_AND_RETURN_NODE Lcom/datadog/android/sessionreplay/internal/recorder/TraversalStrategy;
+	public static final field TRAVERSE_ALL_CHILDREN Lcom/datadog/android/sessionreplay/internal/recorder/TraversalStrategy;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/internal/recorder/TraversalStrategy;
+	public static fun values ()[Lcom/datadog/android/sessionreplay/internal/recorder/TraversalStrategy;
+}
+
+public final class com/datadog/android/sessionreplay/internal/recorder/base64/Base64Serializer {
+	public synthetic fun <init> (Ljava/util/concurrent/ExecutorService;Lcom/datadog/android/sessionreplay/internal/utils/DrawableUtils;Lcom/datadog/android/sessionreplay/internal/utils/Base64Utils;Lcom/datadog/android/sessionreplay/internal/recorder/base64/ImageCompression;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
 public final class com/datadog/android/sessionreplay/internal/recorder/mapper/BaseAsyncBackgroundWireframeMapper$Companion {
 }
 
@@ -109,6 +121,11 @@ public abstract class com/datadog/android/sessionreplay/internal/recorder/mapper
 	public fun <init> (Lcom/datadog/android/sessionreplay/utils/StringUtils;Lcom/datadog/android/sessionreplay/utils/ViewUtils;)V
 	public synthetic fun <init> (Lcom/datadog/android/sessionreplay/utils/StringUtils;Lcom/datadog/android/sessionreplay/utils/ViewUtils;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	protected final fun colorAndAlphaAsStringHexa (II)Ljava/lang/String;
+	public fun finishProcessingImage ()V
+	public fun getTraversalStrategy ()Lcom/datadog/android/sessionreplay/internal/recorder/TraversalStrategy;
+	protected final fun getWebPMimeType ()Ljava/lang/String;
+	protected final fun handleBitmap (Landroid/util/DisplayMetrics;Landroid/graphics/drawable/Drawable;Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe;)V
+	protected final fun resolveChildDrawableUniqueIdentifier (Landroid/view/View;)Ljava/lang/Long;
 	protected final fun resolveShapeStyleAndBorder (Landroid/graphics/drawable/Drawable;F)Lkotlin/Pair;
 	protected final fun resolveViewGlobalBounds (Landroid/view/View;F)Lcom/datadog/android/sessionreplay/internal/recorder/GlobalBounds;
 	protected final fun resolveViewId (Landroid/view/View;)J
@@ -132,11 +149,16 @@ public class com/datadog/android/sessionreplay/internal/recorder/mapper/TextView
 }
 
 public abstract interface class com/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper {
+	public abstract fun getTraversalStrategy ()Lcom/datadog/android/sessionreplay/internal/recorder/TraversalStrategy;
 	public abstract fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;Lcom/datadog/android/sessionreplay/internal/AsyncJobStatusCallback;)Ljava/util/List;
 }
 
 public final class com/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper$DefaultImpls {
-	public static synthetic fun map$default (Lcom/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper;Landroid/view/View;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;Lcom/datadog/android/sessionreplay/internal/AsyncJobStatusCallback;ILjava/lang/Object;)Ljava/util/List;
+	public abstract fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/internal/recorder/MappingContext;)Ljava/util/List;
+}
+
+public final class com/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper$DefaultImpls {
+	public static fun getTraversalStrategy (Lcom/datadog/android/sessionreplay/internal/recorder/mapper/WireframeMapper;)Lcom/datadog/android/sessionreplay/internal/recorder/TraversalStrategy;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment {
