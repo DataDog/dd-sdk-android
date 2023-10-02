@@ -108,6 +108,20 @@ dependencies {
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)
+
+    // Test Fixtures
+//    testFixturesImplementation(project(":tools:unit")) {
+//        attributes {
+//            attribute(
+//                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
+//                objects.named("jvm")
+//            )
+//        }
+//    }
+    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.bundles.jUnit5)
+    testFixturesImplementation(libs.okHttp)
+    testFixturesImplementation(libs.bundles.testTools)
 }
 
 unMock {
