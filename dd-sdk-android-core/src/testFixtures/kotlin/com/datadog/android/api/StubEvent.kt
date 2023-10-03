@@ -1,0 +1,17 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.api
+
+/**
+ * Holds the data and metadata of an event written to the SDK Core.
+ * @param eventData the event data
+ * @param eventMetadata the (optional) event metadata
+ */
+data class StubEvent(
+    val eventData: String,
+    val eventMetadata: String?
+)
