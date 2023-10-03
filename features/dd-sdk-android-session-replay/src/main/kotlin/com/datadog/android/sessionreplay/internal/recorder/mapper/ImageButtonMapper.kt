@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.widget.ImageView
+import android.widget.ImageButton
 import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
@@ -16,16 +16,16 @@ import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 
-internal class ImageViewMapper(
+internal class ImageButtonMapper(
     private val base64Serializer: Base64Serializer,
     private val imageWireframeHelper: ImageWireframeHelper,
     uniqueIdentifierGenerator: UniqueIdentifierGenerator
-) : BaseAsyncBackgroundWireframeMapper<ImageView>(
+) : BaseAsyncBackgroundWireframeMapper<ImageButton>(
     imageWireframeHelper = imageWireframeHelper,
     uniqueIdentifierGenerator = uniqueIdentifierGenerator
 ) {
     override fun map(
-        view: ImageView,
+        view: ImageButton,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<MobileSegment.Wireframe> {

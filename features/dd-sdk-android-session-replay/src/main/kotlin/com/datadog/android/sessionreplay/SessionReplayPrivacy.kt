@@ -11,6 +11,8 @@ import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.CheckedTextView
+import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.NumberPicker
 import android.widget.RadioButton
@@ -26,7 +28,8 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.BasePickerMapp
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckedTextViewMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.ImageViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.EditTextViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.ImageButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskCheckBoxMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MaskCheckedTextViewMapper
@@ -42,6 +45,8 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWirefra
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.UnsupportedViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewScreenshotWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import androidx.appcompat.widget.Toolbar as AppCompatToolbar
@@ -81,14 +86,17 @@ enum class SessionReplayPrivacy {
         val imageWireframeHelper = ImageWireframeHelper(base64Serializer = base64Serializer)
         val uniqueIdentifierGenerator = UniqueIdentifierGenerator
 
+        val viewWireframeMapper = ViewWireframeMapper()
         val unsupportedViewMapper = UnsupportedViewMapper()
-        val imageViewMapper = ImageViewMapper(
+        val imageButtonMapper = ImageButtonMapper(
             base64Serializer = base64Serializer,
             imageWireframeHelper = imageWireframeHelper,
             uniqueIdentifierGenerator = uniqueIdentifierGenerator
         )
+        val imageMapper: ViewScreenshotWireframeMapper
         val textMapper: TextViewMapper
         val buttonMapper: ButtonMapper
+        val editTextViewMapper: EditTextViewMapper
         val checkedTextViewMapper: CheckedTextViewMapper
         val checkBoxMapper: CheckBoxMapper
         val radioButtonMapper: RadioButtonMapper
@@ -97,11 +105,13 @@ enum class SessionReplayPrivacy {
         val numberPickerMapper: BasePickerMapper?
         when (this) {
             ALLOW -> {
+                imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
                 textMapper = TextViewMapper(
                     imageWireframeHelper = imageWireframeHelper,
                     uniqueIdentifierGenerator = uniqueIdentifierGenerator
                 )
                 buttonMapper = ButtonMapper(textMapper)
+                editTextViewMapper = EditTextViewMapper(textMapper)
                 checkedTextViewMapper = CheckedTextViewMapper(textMapper)
                 checkBoxMapper = CheckBoxMapper(textMapper)
                 radioButtonMapper = RadioButtonMapper(textMapper)
@@ -110,11 +120,13 @@ enum class SessionReplayPrivacy {
                 numberPickerMapper = getNumberPickerMapper()
             }
             MASK -> {
+                imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
                 textMapper = MaskTextViewMapper(
                     imageWireframeHelper = imageWireframeHelper,
                     uniqueIdentifierGenerator = uniqueIdentifierGenerator
                 )
                 buttonMapper = ButtonMapper(textMapper)
+                editTextViewMapper = EditTextViewMapper(textMapper)
                 checkedTextViewMapper = MaskCheckedTextViewMapper(textMapper)
                 checkBoxMapper = MaskCheckBoxMapper(textMapper)
                 radioButtonMapper = MaskRadioButtonMapper(textMapper)
@@ -123,11 +135,13 @@ enum class SessionReplayPrivacy {
                 numberPickerMapper = getMaskNumberPickerMapper()
             }
             MASK_USER_INPUT -> {
+                imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
                 textMapper = MaskInputTextViewMapper(
                     imageWireframeHelper = imageWireframeHelper,
                     uniqueIdentifierGenerator = uniqueIdentifierGenerator
                 )
                 buttonMapper = ButtonMapper(textMapper)
+                editTextViewMapper = EditTextViewMapper(textMapper)
                 checkedTextViewMapper = MaskCheckedTextViewMapper(textMapper)
                 checkBoxMapper = MaskCheckBoxMapper(textMapper)
                 radioButtonMapper = MaskRadioButtonMapper(textMapper)
@@ -142,8 +156,10 @@ enum class SessionReplayPrivacy {
             MapperTypeWrapper(CheckBox::class.java, checkBoxMapper.toGenericMapper()),
             MapperTypeWrapper(CheckedTextView::class.java, checkedTextViewMapper.toGenericMapper()),
             MapperTypeWrapper(Button::class.java, buttonMapper.toGenericMapper()),
+            MapperTypeWrapper(ImageButton::class.java, imageButtonMapper.toGenericMapper()),
+            MapperTypeWrapper(EditText::class.java, editTextViewMapper.toGenericMapper()),
             MapperTypeWrapper(TextView::class.java, textMapper.toGenericMapper()),
-            MapperTypeWrapper(ImageView::class.java, imageViewMapper.toGenericMapper()),
+            MapperTypeWrapper(ImageView::class.java, imageMapper.toGenericMapper()),
             MapperTypeWrapper(AppCompatToolbar::class.java, unsupportedViewMapper.toGenericMapper())
         )
 
