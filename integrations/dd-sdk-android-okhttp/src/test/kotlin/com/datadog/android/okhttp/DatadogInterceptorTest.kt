@@ -6,6 +6,7 @@
 
 package com.datadog.android.okhttp
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.sampling.RateBasedSampler
@@ -14,10 +15,12 @@ import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorNotSendingSpanTest
 import com.datadog.android.okhttp.utils.identifyRequest
+import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
@@ -57,6 +60,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.IOException
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -202,6 +206,57 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 expectedStopAttrs
             )
         }
+    }
+
+    @Test
+    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {successful request, unknown method}`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        @StringForgery fakeMethod: String,
+        forge: Forge
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) {
+            it.method(fakeMethod, null)
+        }
+        stubChain(mockChain, statusCode)
+        val expectedStartAttrs = emptyMap<String, Any?>()
+        val expectedStopAttrs = mapOf(
+            RumAttributes.TRACE_ID to fakeTraceId,
+            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.RULE_PSR to fakeTracingSampleRate
+        ) + fakeAttributes
+        val requestId = identifyRequest(fakeRequest)
+        val mimeType = fakeMediaType?.type
+        val kind = when {
+            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
+            else -> RumResourceKind.NATIVE
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
+                requestId,
+                RumResourceMethod.GET,
+                fakeUrl,
+                expectedStartAttrs
+            )
+            verify(rumMonitor.mockInstance).stopResource(
+                requestId,
+                statusCode,
+                fakeResponseBody.toByteArray().size.toLong(),
+                kind,
+                expectedStopAttrs
+            )
+        }
+
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            DatadogInterceptor.UNSUPPORTED_HTTP_METHOD.format(Locale.US, fakeMethod)
+        )
     }
 
     @Test

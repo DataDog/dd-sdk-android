@@ -16,9 +16,11 @@ import com.datadog.android.okhttp.trace.TracingInterceptorTest
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.identifyRequest
+import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
@@ -113,7 +115,7 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     // region Fakes
 
-    lateinit var fakeMethod: String
+    lateinit var fakeMethod: RumResourceMethod
     var fakeBody: String? = null
     var fakeMediaType: MediaType? = null
 
@@ -207,6 +209,53 @@ internal class DatadogInterceptorWithoutTracesTest {
                 expectedStopAttrs
             )
         }
+    }
+
+    @Test
+    fun `𝕄 start and stop RUM Resource 𝕎 intercept() for successful request { unknown method }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        @StringForgery fakeMethod: String,
+        forge: Forge
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) {
+            it.method(fakeMethod, null)
+        }
+        stubChain(mockChain, statusCode)
+        val expectedStartAttrs = emptyMap<String, Any?>()
+        val expectedStopAttrs = fakeResourceAttributes
+        val requestId = identifyRequest(fakeRequest)
+        val mimeType = fakeMediaType?.type
+        val kind = when {
+            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
+            else -> RumResourceKind.NATIVE
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
+                requestId,
+                RumResourceMethod.GET,
+                fakeUrl.lowercase(Locale.US),
+                expectedStartAttrs
+            )
+            verify(rumMonitor.mockInstance).stopResource(
+                requestId,
+                statusCode,
+                fakeResponseBody.toByteArray().size.toLong(),
+                kind,
+                expectedStopAttrs
+            )
+        }
+
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            DatadogInterceptor.UNSUPPORTED_HTTP_METHOD.format(Locale.US, fakeMethod)
+        )
     }
 
     @Test
@@ -329,13 +378,21 @@ internal class DatadogInterceptorWithoutTracesTest {
         fakeUrl = "$protocol://$host/$path"
         val builder = Request.Builder().url(fakeUrl)
         if (forge.aBool()) {
-            fakeMethod = "POST"
+            fakeMethod = forge.anElementFrom(
+                RumResourceMethod.POST,
+                RumResourceMethod.PATCH,
+                RumResourceMethod.PUT
+            )
             fakeBody = forge.anAlphabeticalString()
-            builder.post(fakeBody!!.toByteArray().toRequestBody(null))
+            builder.method(fakeMethod.name, fakeBody!!.toByteArray().toRequestBody(null))
         } else {
-            fakeMethod = forge.anElementFrom("GET", "HEAD", "DELETE")
+            fakeMethod = forge.anElementFrom(
+                RumResourceMethod.GET,
+                RumResourceMethod.HEAD,
+                RumResourceMethod.DELETE
+            )
             fakeBody = null
-            builder.method(fakeMethod, null)
+            builder.method(fakeMethod.name, null)
         }
 
         configure(builder)

@@ -11,6 +11,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -20,7 +21,6 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -29,7 +29,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
-import org.mockito.kotlin.mock
 
 @Extensions(
     ExtendWith(ForgeExtension::class)
@@ -38,55 +37,27 @@ import org.mockito.kotlin.mock
 internal class RumEventExtTest {
 
     @ParameterizedTest
-    @EnumSource(ResourceEvent.Method::class)
-    fun `𝕄 return method 𝕎 toMethod() {valid name}`(
-        method: ResourceEvent.Method
-    ) {
-        // Given
-        val name = method.name
-
-        // When
-        val result = name.toMethod(internalLogger = mock())
-
-        // Then
-        assertThat(result).isEqualTo(method)
-    }
-
-    @Test
-    fun `𝕄 return GET 𝕎 toMethod() {invalid name}`(
-        @StringForgery(type = StringForgeryType.NUMERICAL) name: String
+    @EnumSource(RumResourceMethod::class)
+    fun `𝕄 return method 𝕎 toMethod()`(
+        method: RumResourceMethod
     ) {
         // When
-        val result = name.toMethod(internalLogger = mock())
+        val result = method.toResourceMethod()
 
         // Then
-        assertThat(result).isEqualTo(ResourceEvent.Method.GET)
+        assertThat(result.name).isEqualTo(method.name)
     }
 
     @ParameterizedTest
-    @EnumSource(ErrorEvent.Method::class)
-    fun `𝕄 return method 𝕎 toErrorMethod() {valid name}`(
-        method: ErrorEvent.Method
-    ) {
-        // Given
-        val name = method.name
-
-        // When
-        val result = name.toErrorMethod(internalLogger = mock())
-
-        // Then
-        assertThat(result).isEqualTo(method)
-    }
-
-    @Test
-    fun `𝕄 return GET 𝕎 toErrorMethod() {invalid name}`(
-        @StringForgery(type = StringForgeryType.NUMERICAL) name: String
+    @EnumSource(RumResourceMethod::class)
+    fun `𝕄 return method 𝕎 toErrorMethod()`(
+        method: RumResourceMethod
     ) {
         // When
-        val result = name.toErrorMethod(internalLogger = mock())
+        val result = method.toErrorMethod()
 
         // Then
-        assertThat(result).isEqualTo(ErrorEvent.Method.GET)
+        assertThat(result.name).isEqualTo(method.name)
     }
 
     @ParameterizedTest

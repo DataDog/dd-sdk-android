@@ -144,6 +144,7 @@ public abstract interface class com/datadog/android/rum/RumMonitor {
 	public abstract fun removeAttribute (Ljava/lang/String;)V
 	public abstract fun setDebug (Z)V
 	public abstract fun startAction (Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;)V
+	public abstract fun startResource (Ljava/lang/String;Lcom/datadog/android/rum/RumResourceMethod;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun startResource (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun startView (Ljava/lang/Object;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun stopAction (Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;)V
@@ -155,6 +156,7 @@ public abstract interface class com/datadog/android/rum/RumMonitor {
 }
 
 public final class com/datadog/android/rum/RumMonitor$DefaultImpls {
+	public static synthetic fun startResource$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Lcom/datadog/android/rum/RumResourceMethod;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun startResource$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun startView$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/Object;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun stopAction$default (Lcom/datadog/android/rum/RumMonitor;Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
@@ -195,6 +197,17 @@ public final class com/datadog/android/rum/RumResourceKind : java/lang/Enum {
 
 public final class com/datadog/android/rum/RumResourceKind$Companion {
 	public final fun fromMimeType (Ljava/lang/String;)Lcom/datadog/android/rum/RumResourceKind;
+}
+
+public final class com/datadog/android/rum/RumResourceMethod : java/lang/Enum {
+	public static final field DELETE Lcom/datadog/android/rum/RumResourceMethod;
+	public static final field GET Lcom/datadog/android/rum/RumResourceMethod;
+	public static final field HEAD Lcom/datadog/android/rum/RumResourceMethod;
+	public static final field PATCH Lcom/datadog/android/rum/RumResourceMethod;
+	public static final field POST Lcom/datadog/android/rum/RumResourceMethod;
+	public static final field PUT Lcom/datadog/android/rum/RumResourceMethod;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/RumResourceMethod;
+	public static fun values ()[Lcom/datadog/android/rum/RumResourceMethod;
 }
 
 public abstract interface class com/datadog/android/rum/RumSessionListener {

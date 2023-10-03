@@ -18,6 +18,7 @@ import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ResourceEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
@@ -104,7 +105,9 @@ internal class RumResourceScopeTest {
     @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+")
     lateinit var fakeUrl: String
     lateinit var fakeKey: String
-    lateinit var fakeMethod: String
+
+    @Forgery
+    lateinit var fakeMethod: RumResourceMethod
     lateinit var fakeAttributes: Map<String, Any?>
 
     @Forgery
@@ -164,7 +167,6 @@ internal class RumResourceScopeTest {
             forge.aLong(min = minLimit, max = maxLimit)
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString()
-        fakeMethod = forge.anElementFrom("PUT", "POST", "GET", "DELETE")
         mockEvent = mockEvent()
         fakeSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 
