@@ -9,8 +9,10 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.isConnected
+import com.datadog.android.rum.internal.domain.scope.toErrorMethod
 import com.datadog.android.rum.internal.domain.scope.toSchemaSource
 import com.datadog.android.rum.model.ErrorEvent
 import org.assertj.core.api.AbstractObjectAssert
@@ -76,7 +78,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
 
     fun hasResource(
         expectedUrl: String,
-        expectedMethod: String,
+        expectedMethod: RumResourceMethod,
         expectedStatusCode: Long
     ): ErrorEventAssert {
         assertThat(actual.error.resource?.url)
@@ -90,7 +92,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
                 "Expected event data to have error.resource.method $expectedMethod " +
                     "but was ${actual.error.resource?.method}"
             )
-            .isEqualTo(ErrorEvent.Method.valueOf(expectedMethod))
+            .isEqualTo(expectedMethod.toErrorMethod())
         assertThat(actual.error.resource?.statusCode)
             .overridingErrorMessage(
                 "Expected event data to have error.resource.statusCode $expectedStatusCode " +

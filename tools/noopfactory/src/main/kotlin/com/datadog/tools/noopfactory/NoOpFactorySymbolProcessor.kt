@@ -7,6 +7,8 @@
 package com.datadog.tools.noopfactory
 
 import com.datadog.tools.annotation.NoOpImplementation
+import com.google.devtools.ksp.KspExperimental
+import com.google.devtools.ksp.getAnnotationsByType
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.Dependencies
 import com.google.devtools.ksp.processing.KSPLogger
@@ -225,11 +227,11 @@ class NoOpFactorySymbolProcessor(
         val interfaces = mutableListOf(declaration)
         val functions: MutableMap<String, KSFunctionDeclaration> = mutableMapOf()
         val properties = mutableMapOf<String, KSPropertyDeclaration>()
+        val typeParamResolver = declaration.typeParameters.toTypeParameterResolver()
         while (interfaces.isNotEmpty()) {
-            generateFirstInterfaceImplementation(interfaces, functions, properties)
+            generateFirstInterfaceImplementation(interfaces, functions, properties, typeParamResolver)
         }
 
-        val typeParamResolver = declaration.typeParameters.toTypeParameterResolver()
         functions.values.forEach {
             typeSpecBuilder.addFunction(generateFunctionImplementation(it, typeParamResolver))
         }
@@ -242,11 +244,12 @@ class NoOpFactorySymbolProcessor(
     private fun generateFirstInterfaceImplementation(
         interfaces: MutableList<KSClassDeclaration>,
         functions: MutableMap<String, KSFunctionDeclaration>,
-        properties: MutableMap<String, KSPropertyDeclaration>
+        properties: MutableMap<String, KSPropertyDeclaration>,
+        typeParamResolver: TypeParameterResolver
     ) {
         val interfaceType = interfaces.removeAt(0)
         if (interfaceType.classKind == ClassKind.INTERFACE) {
-            fetchInterfaceFunctions(interfaceType, functions)
+            fetchInterfaceFunctions(interfaceType, functions, typeParamResolver)
             fetchInterfaceProperties(interfaceType, properties)
 
             interfaceType.superTypes.forEach {
@@ -266,10 +269,18 @@ class NoOpFactorySymbolProcessor(
      */
     private fun fetchInterfaceFunctions(
         declaration: KSClassDeclaration,
-        executableElements: MutableMap<String, KSFunctionDeclaration>
+        executableElements: MutableMap<String, KSFunctionDeclaration>,
+        typeParamResolver: TypeParameterResolver
     ) {
         declaration.getAllFunctions().forEach {
-            val id = it.identifier()
+            // hack for the case when we process a function from super definition, which was already
+            // seen and which has a generic parameters - it will need a typeResolver from super
+            // and will have a different ID, but essentially we already saw everything
+            // needed to implement this function
+            if (executableElements.values.any { seen -> seen.findOverridee() == it }) {
+                return@forEach
+            }
+            val id = it.identifier(typeParamResolver)
             if ((id !in ignoredFunctions) && !executableElements.containsKey(id)) {
                 executableElements[id] = it
             }
@@ -295,6 +306,7 @@ class NoOpFactorySymbolProcessor(
     /**
      * Generates the implementation for a given method.
      */
+    @OptIn(KspExperimental::class)
     private fun generateFunctionImplementation(
         functionDeclaration: KSFunctionDeclaration,
         typeParamResolver: TypeParameterResolver = TypeParameterResolver.EMPTY
@@ -309,6 +321,18 @@ class NoOpFactorySymbolProcessor(
             funSpecBuilder.addParameter(
                 param.name?.asString() ?: "p$i",
                 paramType.toTypeName(typeParamResolver)
+            )
+        }
+
+        // add Deprecated annotation, which has a special handling during compile-time
+        val deprecatedAnnotation = functionDeclaration
+            .getAnnotationsByType(Deprecated::class)
+            .firstOrNull()
+        if (deprecatedAnnotation != null) {
+            funSpecBuilder.addAnnotation(
+                AnnotationSpec.builder(Deprecated::class)
+                    .addMember("%S", deprecatedAnnotation.message)
+                    .build()
             )
         }
 
@@ -536,9 +560,11 @@ class NoOpFactorySymbolProcessor(
     /**
      * @return the identifier name of the [KSFunctionDeclaration]
      */
-    private fun KSFunctionDeclaration.identifier(): String {
+    private fun KSFunctionDeclaration.identifier(typeParamResolver: TypeParameterResolver): String {
         return simpleName.asString() + parameters.joinToString(",", "(", ")") {
-            it.name?.asString() ?: "?"
+            val name = it.name?.asString() ?: "?"
+            val type = it.type.resolve().toTypeName(typeParamResolver)
+            "$name:$type"
         }
     }
 
@@ -550,7 +576,7 @@ class NoOpFactorySymbolProcessor(
     // endregion
 
     companion object {
-        private val ignoredFunctions = arrayOf("equals(other)", "hashCode()", "toString()")
+        private val ignoredFunctions = arrayOf("equals(other:kotlin.Any?)", "hashCode()", "toString()")
         private const val KOTLIN_COLLECTIONS_PACKAGE = "kotlin.collections"
     }
 }

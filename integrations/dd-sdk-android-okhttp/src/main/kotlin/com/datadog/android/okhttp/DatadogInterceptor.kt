@@ -25,6 +25,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.trace.AndroidTracer
@@ -211,7 +212,7 @@ internal constructor(
         if (rumFeature != null) {
             val request = chain.request()
             val url = request.url.toString()
-            val method = request.method
+            val method = toHttpMethod(request.method, sdkCore.internalLogger)
             val requestId = identifyRequest(request)
 
             GlobalRumMonitor.get(sdkCore).startResource(requestId, method, url)
@@ -354,6 +355,25 @@ internal constructor(
         }
     }
 
+    private fun toHttpMethod(method: String, internalLogger: InternalLogger): RumResourceMethod {
+        return when (method.uppercase(Locale.US)) {
+            "GET" -> RumResourceMethod.GET
+            "PUT" -> RumResourceMethod.PUT
+            "PATCH" -> RumResourceMethod.PATCH
+            "HEAD" -> RumResourceMethod.HEAD
+            "DELETE" -> RumResourceMethod.DELETE
+            "POST" -> RumResourceMethod.POST
+            else -> {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                    { UNSUPPORTED_HTTP_METHOD.format(Locale.US, method) }
+                )
+                RumResourceMethod.GET
+            }
+        }
+    }
+
     // endregion
 
     internal companion object {
@@ -369,6 +389,9 @@ internal constructor(
         internal const val ERROR_PEEK_BODY = "Unable to peek response body."
 
         internal const val ERROR_MSG_FORMAT = "OkHttp request error %s %s"
+
+        internal const val UNSUPPORTED_HTTP_METHOD =
+            "Unsupported HTTP method %s reported by OkHttp instrumentation, using GET instead"
 
         internal const val ORIGIN_RUM = "rum"
 
