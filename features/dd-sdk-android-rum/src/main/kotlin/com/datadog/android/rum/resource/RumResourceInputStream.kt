@@ -11,6 +11,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import java.io.InputStream
@@ -176,7 +177,7 @@ class RumResourceInputStream @JvmOverloads constructor(
     // endregion
 
     internal companion object {
-        internal const val METHOD: String = "GET"
+        internal val METHOD: RumResourceMethod = RumResourceMethod.GET
 
         internal const val ERROR_CLOSE = "Error closing input stream"
         internal const val ERROR_MARK = "Error marking input stream"

@@ -286,6 +286,7 @@ datadog:
       - "android.content.Context.getSystemService(kotlin.String)"
       - "android.content.Context.registerComponentCallbacks(android.content.ComponentCallbacks)"
       - "android.content.Context.registerReceiver(android.content.BroadcastReceiver?, android.content.IntentFilter)"
+      - "android.content.Context.registerReceiver(android.content.BroadcastReceiver?, android.content.IntentFilter, kotlin.Int)"
       - "android.content.Context.unregisterReceiver(android.content.BroadcastReceiver)"
       - "android.content.Intent.getBooleanExtra(kotlin.String, kotlin.Boolean)"
       - "android.content.Intent.getIntExtra(kotlin.String, kotlin.Int)"

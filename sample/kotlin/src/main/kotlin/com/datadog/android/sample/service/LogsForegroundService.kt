@@ -18,6 +18,7 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.sample.R
 import java.io.IOException
 import java.lang.IllegalStateException
@@ -56,7 +57,7 @@ class LogsForegroundService : Service() {
             START_RUM_RESOURCE -> {
                 rumMonitor.startResource(
                     BACKGROUND_RESOURCE_URL,
-                    "GET",
+                    RumResourceMethod.GET,
                     BACKGROUND_RESOURCE_URL,
                     emptyMap()
                 )

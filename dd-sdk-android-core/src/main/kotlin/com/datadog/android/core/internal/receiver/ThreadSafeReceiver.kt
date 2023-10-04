@@ -6,21 +6,28 @@
 
 package com.datadog.android.core.internal.receiver
 
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal abstract class ThreadSafeReceiver : BroadcastReceiver() {
 
     val isRegistered = AtomicBoolean(false)
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     fun registerReceiver(
         context: Context,
         filter: IntentFilter
     ): Intent? {
-        val intent = context.registerReceiver(this, filter)
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(this, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            context.registerReceiver(this, filter)
+        }
         isRegistered.set(true)
         return intent
     }

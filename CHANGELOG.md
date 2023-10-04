@@ -1,4 +1,4 @@
-# 2.2.0 / 2023-10-02
+# 2.2.0 / 2023-10-04
 
 * [FEATURE] Session Replay: Serialize TextViews/Buttons to base64. See [#1592](https://github.com/DataDog/dd-sdk-android/pull/1592)
 * [FEATURE] WebView Tracking: Add sampler to `WebViewLogEventConsumer`. See [#1629](https://github.com/DataDog/dd-sdk-android/pull/1629)
@@ -32,8 +32,8 @@
 * [IMPROVEMENT] Trace: Use `networkInfoEnabled` to serialize or not network info in spans. See [#1637](https://github.com/DataDog/dd-sdk-android/pull/1637)
 * [IMPROVEMENT] Telemetry: Add more information into the batch telemetry. See [#1641](https://github.com/DataDog/dd-sdk-android/pull/1641)
 * [IMPROVEMENT] Session Replay: Implement heuristic image classification. See [#1640](https://github.com/DataDog/dd-sdk-android/pull/1640)
-* [IMPROVEMENT] Session Replay: Implement Base64 for `ImageViews`. See [#1644](https://github.com/DataDog/dd-sdk-android/pull/1644)
 * [IMPROVEMENT] Global: `DataUploadWorker` is scheduled every time and on non-roaming network. See [#1647](https://github.com/DataDog/dd-sdk-android/pull/1647)
+* [IMPROVEMENT] RUM: Use enum for HTTP method parameter of `RumMonitor#startResource API`. See [#1653](https://github.com/DataDog/dd-sdk-android/pull/1653)
 * [MAINTENANCE] Align the Base64 feature branch with develop. See [#1594](https://github.com/DataDog/dd-sdk-android/pull/1594)
 * [MAINTENANCE] Integrate latest changes from develop into base64 feature. See [#1599](https://github.com/DataDog/dd-sdk-android/pull/1599)
 * [MAINTENANCE] Base64 feature branch integration. See [#1597](https://github.com/DataDog/dd-sdk-android/pull/1597)

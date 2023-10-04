@@ -9,16 +9,16 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.isConnected
-import com.datadog.android.rum.internal.domain.scope.toMethod
+import com.datadog.android.rum.internal.domain.scope.toResourceMethod
 import com.datadog.android.rum.internal.domain.scope.toSchemaType
 import com.datadog.android.rum.model.ResourceEvent
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
-import org.mockito.kotlin.mock
 
 internal class ResourceEventAssert(actual: ResourceEvent) :
     AbstractObjectAssert<ResourceEventAssert, ResourceEvent>(
@@ -68,13 +68,13 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
-    fun hasMethod(expected: String): ResourceEventAssert {
+    fun hasMethod(expected: RumResourceMethod): ResourceEventAssert {
         assertThat(actual.resource.method)
             .overridingErrorMessage(
                 "Expected event data to have resource.method $expected " +
                     "but was ${actual.resource.method}"
             )
-            .isEqualTo(expected.toMethod(mock()))
+            .isEqualTo(expected.toResourceMethod())
         return this
     }
 
