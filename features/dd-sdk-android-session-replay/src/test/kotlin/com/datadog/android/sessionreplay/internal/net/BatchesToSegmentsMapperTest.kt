@@ -17,6 +17,7 @@ import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import fr.xgouchet.elmyr.jvm.ext.aTimestamp
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -34,7 +35,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class BatchesToSegmentMapperTest {
+internal class BatchesToSegmentsMapperTest {
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -74,6 +75,48 @@ internal class BatchesToSegmentMapperTest {
 
         val expectedEmptySegment = fakeExpectedRecord.toSegment().copy(records = emptyList())
         val expectedSerializedSegment = fakeExpectedRecord.toSegment()
+            .toJson().asJsonObject.toString()
+        val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
+
+        // When
+        val mappedSegment = testedMapper.map(fakeBatchData)
+
+        // Then
+        val segment = mappedSegment?.first
+        val serializedSegment = mappedSegment?.second.toString()
+        assertThat(segment).isEqualTo(expectedEmptySegment)
+        assertThat(serializedSegment).isEqualTo(expectedSerializedSegment)
+    }
+
+    @Test
+    fun `M keep the same order W map { records have same timestamps }`(forge: Forge) {
+        // Given
+        val rumContext: SessionReplayRumContext = forge.getForgery()
+        val fakeRecordsSize = forge.anInt(min = 10, max = 20)
+        val fakeTimestamp = forge.aTimestamp()
+        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
+            forge.getForgery<MobileSegment.MobileRecord>().copy(fakeTimestamp)
+        }
+        val fakeEnrichedRecords = fakeRecords
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
+            .map {
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
+            }
+        val fakeExpectedEnrichedRecord = EnrichedRecord(
+            rumContext.applicationId,
+            rumContext.sessionId,
+            rumContext.sessionId,
+            fakeRecords
+        )
+
+        val expectedEmptySegment =
+            fakeExpectedEnrichedRecord.toSegment().copy(records = emptyList())
+        val expectedSerializedSegment = fakeExpectedEnrichedRecord.toSegment()
             .toJson().asJsonObject.toString()
         val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
 
@@ -654,6 +697,19 @@ internal class BatchesToSegmentMapperTest {
             is MobileSegment.MobileRecord.MobileFullSnapshotRecord -> this.timestamp
             is MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord -> this.timestamp
             is MobileSegment.MobileRecord.VisualViewportRecord -> this.timestamp
+        }
+    }
+
+    private fun MobileSegment.MobileRecord.copy(timestamp: Long): MobileSegment.MobileRecord {
+        return when (this) {
+            is MobileSegment.MobileRecord.MetaRecord -> this.copy(timestamp = timestamp)
+            is MobileSegment.MobileRecord.FocusRecord -> this.copy(timestamp = timestamp)
+            is MobileSegment.MobileRecord.ViewEndRecord -> this.copy(timestamp = timestamp)
+            is MobileSegment.MobileRecord.MobileFullSnapshotRecord ->
+                this.copy(timestamp = timestamp)
+            is MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord ->
+                this.copy(timestamp = timestamp)
+            is MobileSegment.MobileRecord.VisualViewportRecord -> this.copy(timestamp = timestamp)
         }
     }
 
