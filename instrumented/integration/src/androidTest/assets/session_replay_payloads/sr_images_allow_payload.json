@@ -23,18 +23,22 @@
         "type": "shape"
       },
       {
-        "width": 75,
+        "width": 80,
         "height": 80,
-        "type": "image",
-        "mimeType": "image/webp",
-        "isEmpty": false
+        "border": {
+          "color": "#000000ff",
+          "width": 1
+        },
+        "type": "shape"
       },
       {
-        "width": 75,
+        "width": 80,
         "height": 80,
-        "type": "image",
-        "mimeType": "image/webp",
-        "isEmpty": false
+        "border": {
+          "color": "#000000ff",
+          "width": 1
+        },
+        "type": "shape"
       },
       {
         "width": 411,
