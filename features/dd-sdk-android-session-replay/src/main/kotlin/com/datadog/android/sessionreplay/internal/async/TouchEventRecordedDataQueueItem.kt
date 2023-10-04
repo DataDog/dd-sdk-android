@@ -6,13 +6,13 @@
 
 package com.datadog.android.sessionreplay.internal.async
 
-import com.datadog.android.sessionreplay.internal.processor.RumContextData
+import com.datadog.android.sessionreplay.internal.processor.RecordedQueuedItemContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal class TouchEventRecordedDataQueueItem(
-    rumContextData: RumContextData,
+    recordedQueuedItemContext: RecordedQueuedItemContext,
     internal val touchData: List<MobileSegment.MobileRecord> = emptyList()
-) : RecordedDataQueueItem(rumContextData) {
+) : RecordedDataQueueItem(recordedQueuedItemContext) {
 
     override fun isValid(): Boolean {
         return touchData.isNotEmpty()

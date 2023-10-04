@@ -7,60 +7,72 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.ImageButton
+import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
-import com.datadog.android.sessionreplay.internal.recorder.base64.ImageCompression
-import com.datadog.android.sessionreplay.internal.recorder.base64.WebPImageCompression
+import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
+import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelperCallback
+import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 
 internal class ImageButtonMapper(
-    webPImageCompression: ImageCompression = WebPImageCompression(),
-    base64Serializer: Base64Serializer = Base64Serializer.Builder().build(),
-    uniqueIdentifierGenerator: UniqueIdentifierGenerator = UniqueIdentifierGenerator
-) : BaseWireframeMapper<ImageButton, MobileSegment.Wireframe.ImageWireframe>(
-    webPImageCompression = webPImageCompression,
-    base64Serializer = base64Serializer,
+    private val base64Serializer: Base64Serializer,
+    private val imageWireframeHelper: ImageWireframeHelper,
+    uniqueIdentifierGenerator: UniqueIdentifierGenerator
+) : BaseAsyncBackgroundWireframeMapper<ImageButton>(
+    imageWireframeHelper = imageWireframeHelper,
     uniqueIdentifierGenerator = uniqueIdentifierGenerator
 ) {
     override fun map(
         view: ImageButton,
-        mappingContext: MappingContext
-    ): List<MobileSegment.Wireframe.ImageWireframe> {
-        val drawable = view.drawable
-        val id = resolveChildDrawableUniqueIdentifier(view)
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ): List<MobileSegment.Wireframe> {
+        val wireframes = mutableListOf<MobileSegment.Wireframe>()
 
-        if (drawable == null || id == null) return emptyList()
+        // add background wireframes if any
+        wireframes.addAll(super.map(view, mappingContext, asyncJobStatusCallback))
 
-        val screenDensity = mappingContext.systemInformation.screenDensity
-        val bounds = resolveViewGlobalBounds(view, screenDensity)
+        val drawable = view.drawable?.current ?: return wireframes
+        val resources = view.resources
+        val density = resources.displayMetrics.density
+        val bounds = resolveViewGlobalBounds(view, density)
 
-        val (shapeStyle, border) = view.background?.resolveShapeStyleAndBorder(view.alpha)
-            ?: (null to null)
+        // This method should not be part of the serializer
+        // TODO: RUM-0000 remove this method from the serializer and remove
+        // the serializer dependency from this class
+        val (scaledDrawableWidth, scaledDrawableHeight) =
+            base64Serializer.getDrawableScaledDimensions(view, drawable, density)
 
-        val mimeType = getWebPMimeType()
-        val displayMetrics = view.resources.displayMetrics
+        val centerX = (bounds.x + view.width.densityNormalized(density) / 2) - (scaledDrawableWidth / 2)
+        val centerY = (bounds.y + view.height.densityNormalized(density) / 2) - (scaledDrawableHeight / 2)
 
-        val imageWireframe = MobileSegment.Wireframe.ImageWireframe(
-            id = id,
-            x = bounds.x,
-            y = bounds.y,
-            width = bounds.width,
-            height = bounds.height,
-            shapeStyle = shapeStyle,
-            border = border,
-            base64 = "",
-            mimeType = mimeType,
-            isEmpty = true
-        )
-
+        // resolve foreground
         @Suppress("ThreadSafety") // TODO REPLAY-1861 caller thread of .map is unknown?
-        handleBitmap(
-            displayMetrics = displayMetrics,
-            drawable = drawable,
-            imageWireframe = imageWireframe
-        )
+        imageWireframeHelper.createImageWireframe(
+            view = view,
+            currentWireframeIndex = wireframes.size,
+            x = centerX,
+            y = centerY,
+            width = scaledDrawableWidth,
+            height = scaledDrawableHeight,
+            drawable = drawable.constantState?.newDrawable(resources),
+            shapeStyle = null,
+            border = null,
+            callback = object : ImageWireframeHelperCallback {
+                override fun onFinished() {
+                    asyncJobStatusCallback.jobFinished()
+                }
 
-        return listOf(imageWireframe)
+                override fun onStart() {
+                    asyncJobStatusCallback.jobStarted()
+                }
+            }
+        )?.let {
+            wireframes.add(it)
+        }
+
+        return wireframes
     }
 }

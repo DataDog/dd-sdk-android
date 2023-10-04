@@ -30,7 +30,7 @@ import kotlin.math.roundToLong
 //  system in order to reduce the number of syscalls (which are expensive) for files already seen
 internal class BatchFileOrchestrator(
     private val rootDir: File,
-    private val config: FilePersistenceConfig,
+    internal val config: FilePersistenceConfig,
     private val internalLogger: InternalLogger,
     private val metricsDispatcher: MetricsDispatcher
 ) : FileOrchestrator {
@@ -201,11 +201,12 @@ internal class BatchFileOrchestrator(
         val newFileName = System.currentTimeMillis().toString()
         val newFile = File(rootDir, newFileName)
         val closedFile = previousFile
+        val closedFileLastAccessTimestamp = lastFileAccessTimestamp
         if (closedFile != null) {
             metricsDispatcher.sendBatchClosedMetric(
                 closedFile,
                 BatchClosedMetadata(
-                    lastTimeWasUsedInMs = lastFileAccessTimestamp,
+                    lastTimeWasUsedInMs = closedFileLastAccessTimestamp,
                     eventsCount = previousFileItemCount,
                     forcedNew = wasForced
                 )

@@ -527,7 +527,7 @@ internal class DatadogExceptionHandlerTest {
         )
 
         return if (aBool()) {
-            exceptionClass.newInstance()
+            exceptionClass.getDeclaredConstructor().newInstance()
         } else {
             exceptionClass.constructors
                 .first {

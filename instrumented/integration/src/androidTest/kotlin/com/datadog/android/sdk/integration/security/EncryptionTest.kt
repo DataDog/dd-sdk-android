@@ -21,6 +21,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.security.Encryption
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
@@ -170,7 +171,7 @@ internal class EncryptionTest {
 
         rumMonitor.startResource(
             resourceName,
-            "GET",
+            RumResourceMethod.GET,
             "https://${forge.anAlphaNumericalString()}.com"
         )
 

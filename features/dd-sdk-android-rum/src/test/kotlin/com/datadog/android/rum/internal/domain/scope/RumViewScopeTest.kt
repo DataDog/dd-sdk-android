@@ -20,6 +20,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumPerformanceMetric
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
@@ -388,7 +389,7 @@ internal class RumViewScopeTest {
                 function.invoke(acc)
                 acc
             }
-            assertThat(rumContext["view_type"]).isEqualTo(fakeViewEventType)
+            assertThat(rumContext["view_type"]).isEqualTo(fakeViewEventType.asString)
         }
     }
 
@@ -432,8 +433,7 @@ internal class RumViewScopeTest {
                 function.invoke(acc)
                 acc
             }
-            assertThat(rumContext["view_type"])
-                .isEqualTo(RumViewScope.RumViewType.NONE)
+            assertThat(rumContext["view_type"]).isEqualTo(RumViewScope.RumViewType.NONE.asString)
         }
     }
 
@@ -458,8 +458,7 @@ internal class RumViewScopeTest {
             )
             val rumContext = mutableMapOf<String, Any?>()
             lastValue.invoke(rumContext)
-            assertThat(rumContext["view_type"])
-                .isEqualTo(RumViewScope.RumViewType.FOREGROUND)
+            assertThat(rumContext["view_type"]).isEqualTo(RumViewScope.RumViewType.FOREGROUND.asString)
         }
     }
 
@@ -511,16 +510,11 @@ internal class RumViewScopeTest {
                 acc
             }
 
-            assertThat(rumContext["view_type"])
-                .isEqualTo(expectedViewType)
-            assertThat(rumContext["view_name"])
-                .isEqualTo(anotherScope.getRumContext().viewName)
-            assertThat(rumContext["view_id"])
-                .isEqualTo(anotherScope.getRumContext().viewId)
-            assertThat(rumContext["view_url"])
-                .isEqualTo(anotherScope.getRumContext().viewUrl)
-            assertThat(rumContext["action_id"])
-                .isEqualTo(anotherScope.getRumContext().actionId)
+            assertThat(rumContext["view_type"]).isEqualTo(expectedViewType.asString)
+            assertThat(rumContext["view_name"]).isEqualTo(anotherScope.getRumContext().viewName)
+            assertThat(rumContext["view_id"]).isEqualTo(anotherScope.getRumContext().viewId)
+            assertThat(rumContext["view_url"]).isEqualTo(anotherScope.getRumContext().viewUrl)
+            assertThat(rumContext["action_id"]).isEqualTo(anotherScope.getRumContext().actionId)
         }
         mockInternalLogger.verifyLog(
             InternalLogger.Level.DEBUG,
@@ -560,8 +554,7 @@ internal class RumViewScopeTest {
                 acc
             }
 
-            assertThat(rumContext["view_type"])
-                .isEqualTo(RumViewScope.RumViewType.NONE)
+            assertThat(rumContext["view_type"]).isEqualTo(RumViewScope.RumViewType.NONE.asString)
             assertThat(rumContext["view_name"]).isNull()
             assertThat(rumContext["view_id"]).isNull()
             assertThat(rumContext["view_url"]).isNull()
@@ -603,16 +596,11 @@ internal class RumViewScopeTest {
                 acc
             }
 
-            assertThat(rumContext["view_type"])
-                .isEqualTo(RumViewScope.RumViewType.NONE)
-            assertThat(rumContext["view_name"])
-                .isNull()
-            assertThat(rumContext["view_id"])
-                .isNull()
-            assertThat(rumContext["view_url"])
-                .isNull()
-            assertThat(rumContext["action_id"])
-                .isNull()
+            assertThat(rumContext["view_type"]).isEqualTo(RumViewScope.RumViewType.NONE.asString)
+            assertThat(rumContext["view_name"]).isNull()
+            assertThat(rumContext["view_id"]).isNull()
+            assertThat(rumContext["view_url"]).isNull()
+            assertThat(rumContext["action_id"]).isNull()
         }
 
         mockInternalLogger.verifyLog(
@@ -707,7 +695,7 @@ internal class RumViewScopeTest {
                 function.invoke(acc)
                 acc
             }
-            assertThat(rumContext["view_type"]).isEqualTo(viewType)
+            assertThat(rumContext["view_type"]).isEqualTo(viewType.asString)
         }
     }
 
@@ -764,7 +752,7 @@ internal class RumViewScopeTest {
                 function.invoke(acc)
                 acc
             }
-            assertThat(rumContext["view_type"]).isEqualTo(viewType)
+            assertThat(rumContext["view_type"]).isEqualTo(viewType.asString)
         }
     }
 
@@ -3821,7 +3809,7 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 create ResourceScope 𝕎 handleEvent(StartResource)`(
         @StringForgery key: String,
-        @StringForgery method: String,
+        @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
         forge: Forge
     ) {
@@ -3857,7 +3845,7 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 create ResourceScope with active actionId 𝕎 handleEvent(StartResource)`(
         @StringForgery key: String,
-        @StringForgery method: String,
+        @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
         forge: Forge
     ) {
@@ -3944,7 +3932,7 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 wait for pending Resource 𝕎 handleEvent(StartResource) on active view`(
         @StringForgery key: String,
-        @StringForgery method: String,
+        @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // Given
@@ -6483,7 +6471,7 @@ internal class RumViewScopeTest {
             RumRawEvent.StartResource(
                 forge.anAlphabeticalString(),
                 forge.anAlphabeticalString(),
-                forge.anAlphabeticalString(),
+                forge.aValueFrom(RumResourceMethod::class.java),
                 emptyMap()
             ),
             RumRawEvent.ResourceSent(

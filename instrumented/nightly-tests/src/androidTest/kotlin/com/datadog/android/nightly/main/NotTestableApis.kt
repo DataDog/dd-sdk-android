@@ -17,6 +17,7 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.Datadog#fun setVerbosity(Int)
  * apiMethodSignature: com.datadog.android.Datadog#fun stopInstance(String? = null)
  * apiMethodSignature: com.datadog.android.Datadog#fun stopSession()
+ * apiMethodSignature: com.datadog.android.Datadog#fun _internalProxy(String? = null): _InternalProxy
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setAdditionalConfiguration(Map<String, Any>): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
  * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setUploadFrequency(UploadFrequency): Builder
@@ -28,6 +29,7 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.core.sampling.RateBasedSampler#constructor(Float)
  * apiMethodSignature: com.datadog.android.event.MapperSerializer<T#constructor(EventMapper<T>, com.datadog.android.core.persistence.Serializer<T>)
  * apiMethodSignature: com.datadog.android.log.Logs#fun enable(LogsConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
+ * apiMethodSignature: com.datadog.android.log.Logs#fun isEnabled(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
  * apiMethodSignature: com.datadog.android.log.Logger#fun log(Int, String, Throwable? = null, Map<String, Any?> = emptyMap())
  * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setLogcatLogsEnabled(Boolean): Builder
  * apiMethodSignature: com.datadog.android.log.LogsConfiguration$Builder#fun useCustomEndpoint(String): Builder
@@ -43,6 +45,7 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.rum.tracking.NavigationViewTrackingStrategy#fun stopTracking()
  * apiMethodSignature: com.datadog.android.trace.Trace#fun enable(TraceConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
  * apiMethodSignature: com.datadog.android.trace.TraceConfiguration$Builder#fun useCustomEndpoint(String): Builder
+ * apiMethodSignature: com.datadog.android.trace.TraceConfiguration$Builder#fun setNetworkInfoEnabled(Boolean): Builder
  * apiMethodSignature: com.datadog.android.core.SdkReference#constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
  * apiMethodSignature: com.datadog.android.core.SdkReference#fun get(): com.datadog.android.api.SdkCore?
  * apiMethodSignature: com.datadog.android.sessionreplay.SessionReplay#fun enable(SessionReplayConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())

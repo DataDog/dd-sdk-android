@@ -13,12 +13,12 @@ import org.gradle.api.JavaVersion
 
 object AndroidConfig {
 
-    const val TARGET_SDK = 33
+    const val TARGET_SDK = 34
     const val MIN_SDK = 21
     const val MIN_SDK_FOR_WEAR = 23
-    const val BUILD_TOOLS_VERSION = "33.0.2"
+    const val BUILD_TOOLS_VERSION = "34.0.0"
 
-    val VERSION = Version(2, 1, 0, Version.Type.Release)
+    val VERSION = Version(2, 2, 0, Version.Type.Release)
 }
 
 // TODO RUMM-3263 Switch to Java 17 bytecode

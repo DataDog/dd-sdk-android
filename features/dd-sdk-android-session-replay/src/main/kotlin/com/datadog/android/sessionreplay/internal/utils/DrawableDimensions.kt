@@ -4,9 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal
+package com.datadog.android.sessionreplay.internal.utils
 
-internal interface AsyncImageProcessingCallback {
-    fun startProcessingImage()
-    fun finishProcessingImage()
-}
+internal data class DrawableDimensions(
+    val width: Long,
+    val height: Long
+)

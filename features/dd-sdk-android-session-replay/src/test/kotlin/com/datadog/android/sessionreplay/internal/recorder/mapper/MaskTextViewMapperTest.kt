@@ -29,7 +29,11 @@ import org.mockito.quality.Strictness
 internal class MaskTextViewMapperTest : BaseTextViewWireframeMapperTest() {
 
     override fun initTestedMapper(): TextViewMapper {
-        return MaskTextViewMapper(mockObfuscationRule)
+        return MaskTextViewMapper(
+            imageWireframeHelper = mockImageWireframeHelper,
+            uniqueIdentifierGenerator = mockUniqueIdentifierGenerator,
+            textValueObfuscationRule = mockObfuscationRule
+        )
     }
 
     @Test

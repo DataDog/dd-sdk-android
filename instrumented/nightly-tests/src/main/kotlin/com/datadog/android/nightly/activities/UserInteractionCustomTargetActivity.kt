@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.nightly.R
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import java.net.HttpURLConnection
 
 internal class UserInteractionCustomTargetActivity : AppCompatActivity() {
@@ -23,7 +24,7 @@ internal class UserInteractionCustomTargetActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.user_interaction_strategy_button).setOnClickListener {
             val rumMonitor = GlobalRumMonitor.get()
-            rumMonitor.startResource(key, "get", key)
+            rumMonitor.startResource(key, RumResourceMethod.GET, key)
             rumMonitor.stopResource(
                 key,
                 HttpURLConnection.HTTP_OK,

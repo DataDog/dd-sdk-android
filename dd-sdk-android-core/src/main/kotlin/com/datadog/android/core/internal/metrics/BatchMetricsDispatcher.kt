@@ -11,10 +11,13 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
+import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
+import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.privacy.TrackingConsent
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
@@ -30,7 +33,7 @@ internal class BatchMetricsDispatcher(
 ) : MetricsDispatcher, ProcessLifecycleMonitor.Callback {
 
     private val trackName: String? = resolveTrackName(featureName)
-    private val isInBackground = AtomicBoolean(false)
+    private val isInBackground = AtomicBoolean(true)
 
     // region MetricsDispatcher
 
@@ -47,7 +50,7 @@ internal class BatchMetricsDispatcher(
     }
 
     override fun sendBatchClosedMetric(batchFile: File, batchMetadata: BatchClosedMetadata) {
-        if (trackName == null || !sampler.sample()) {
+        if (trackName == null || !sampler.sample() || !batchFile.existsSafe(internalLogger)) {
             return
         }
         resolveBatchClosedMetricAttributes(batchFile, batchMetadata)?.let {
@@ -85,10 +88,8 @@ internal class BatchMetricsDispatcher(
         file: File,
         deletionReason: RemovalReason
     ): Map<String, Any?>? {
-        val fileAgeInMillis = resolveFileAge(file)
-        if (fileAgeInMillis < 0) {
-            return null
-        }
+        val fileCreationTimestamp = file.nameAsTimestampSafe(internalLogger) ?: return null
+        val fileAgeInMillis = dateTimeProvider.getDeviceTimestamp() - fileCreationTimestamp
         return mapOf(
             TRACK_KEY to trackName,
             TYPE_KEY to BATCH_DELETED_TYPE_VALUE,
@@ -100,7 +101,10 @@ internal class BatchMetricsDispatcher(
             UPLOADER_WINDOW_KEY to filePersistenceConfig.recentDelayMs,
 
             BATCH_REMOVAL_KEY to deletionReason.toString(),
-            IN_BACKGROUND_KEY to isInBackground.get()
+            IN_BACKGROUND_KEY to isInBackground.get(),
+            TRACKING_CONSENT_KEY to file.resolveFileOriginAsConsent(),
+            FILE_NAME to file.name,
+            THREAD_NAME to Thread.currentThread().name
         )
     }
 
@@ -108,8 +112,8 @@ internal class BatchMetricsDispatcher(
         file: File,
         batchMetadata: BatchClosedMetadata
     ): Map<String, Any?>? {
-        val batchDurationInMs = dateTimeProvider.getDeviceTimestamp() -
-            batchMetadata.lastTimeWasUsedInMs
+        val fileCreationTimestamp = file.nameAsTimestampSafe(internalLogger) ?: return null
+        val batchDurationInMs = batchMetadata.lastTimeWasUsedInMs - fileCreationTimestamp
         return mapOf(
             TRACK_KEY to trackName,
             TYPE_KEY to BATCH_CLOSED_TYPE_VALUE,
@@ -119,22 +123,23 @@ internal class BatchMetricsDispatcher(
             // be sent as a batch_delete telemetry later
             BATCH_SIZE_KEY to file.lengthSafe(internalLogger),
             BATCH_EVENTS_COUNT_KEY to batchMetadata.eventsCount,
-            FORCE_NEW_KEY to batchMetadata.forcedNew
+            FORCE_NEW_KEY to batchMetadata.forcedNew,
+            TRACKING_CONSENT_KEY to file.resolveFileOriginAsConsent(),
+            FILE_NAME to file.name,
+            THREAD_NAME to Thread.currentThread().name
         )
     }
 
-    private fun resolveFileAge(file: File): Long {
-        return try {
-            dateTimeProvider.getDeviceTimestamp() - file.name.toLong()
-        } catch (e: NumberFormatException) {
-            internalLogger.log(
+    private fun File.nameAsTimestampSafe(logger: InternalLogger): Long? {
+        val timestamp = this.name.toLongOrNull()
+        if (timestamp == null) {
+            logger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                { WRONG_FILE_NAME_MESSAGE_FORMAT.format(Locale.ENGLISH, file.name) },
-                e
+                { WRONG_FILE_NAME_MESSAGE_FORMAT.format(Locale.ENGLISH, this.name) }
             )
-            -1L
         }
+        return timestamp
     }
 
     private fun resolveTrackName(featureName: String): String? {
@@ -144,6 +149,17 @@ internal class BatchMetricsDispatcher(
             Feature.TRACING_FEATURE_NAME -> TRACE_TRACK_NAME
             Feature.SESSION_REPLAY_FEATURE_NAME -> SR_TRACK_NAME
             else -> null
+        }
+    }
+
+    private fun File.resolveFileOriginAsConsent(): String? {
+        val fileDirectory = this.parentFile?.name ?: return null
+        return if (fileDirectory.matches(FeatureFileOrchestrator.IS_PENDING_DIR_REG_EX)) {
+            TrackingConsent.PENDING.toString().lowercase(Locale.US)
+        } else if (fileDirectory.matches(FeatureFileOrchestrator.IS_GRANTED_DIR_REG_EX)) {
+            TrackingConsent.GRANTED.toString().lowercase(Locale.US)
+        } else {
+            null
         }
     }
 
@@ -220,6 +236,15 @@ internal class BatchMetricsDispatcher(
 
         /* The value for the type of the metric.*/
         internal const val BATCH_CLOSED_TYPE_VALUE = "batch closed"
+
+        /* The value of the tracking consent according with this file origin.*/
+        internal const val TRACKING_CONSENT_KEY = "consent"
+
+        /* The file name.*/
+        internal const val FILE_NAME = "filename"
+
+        /* The thread name from which the current metric was sent.*/
+        internal const val THREAD_NAME = "thread"
 
         // endregion
     }

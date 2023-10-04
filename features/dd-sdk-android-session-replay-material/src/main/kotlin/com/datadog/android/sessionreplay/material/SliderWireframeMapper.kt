@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.material
 
 import android.content.res.ColorStateList
+import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.material.internal.densityNormalized
@@ -25,7 +26,7 @@ internal open class SliderWireframeMapper(
     WireframeMapper<Slider, MobileSegment.Wireframe> {
 
     @Suppress("LongMethod")
-    override fun map(view: Slider, mappingContext: MappingContext):
+    override fun map(view: Slider, mappingContext: MappingContext, asyncJobStatusCallback: AsyncJobStatusCallback):
         List<MobileSegment.Wireframe> {
         val activeTrackId = uniqueIdentifierGenerator
             .resolveChildUniqueIdentifier(view, TRACK_ACTIVE_KEY_NAME)

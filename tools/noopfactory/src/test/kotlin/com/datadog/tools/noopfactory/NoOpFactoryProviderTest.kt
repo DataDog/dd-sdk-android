@@ -24,7 +24,8 @@ internal class NoOpFactoryProviderTest {
             "GenericInterface.kt:NoOpGenericInterface.kt",
             "InheritedInterface.kt:NoOpInheritedInterface.kt",
             "AnyGenericInterface.kt:NoOpAnyGenericInterface.kt",
-            "EnumInterface.kt:NoOpEnumInterface.kt"
+            "EnumInterface.kt:NoOpEnumInterface.kt",
+            "OverloadedInterface.kt:NoOpOverloadedInterface.kt"
         ]
     )
     fun `implement a NoOp class from interface`(srcFileName: String, genFileName: String) {

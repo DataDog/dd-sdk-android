@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
+import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -15,7 +16,7 @@ import com.datadog.android.sessionreplay.utils.ViewUtils
 internal class UnsupportedViewMapper(viewUtils: ViewUtils = ViewUtils) :
     BaseWireframeMapper<View, MobileSegment.Wireframe.PlaceholderWireframe>(viewUtils = viewUtils) {
 
-    override fun map(view: View, mappingContext: MappingContext):
+    override fun map(view: View, mappingContext: MappingContext, asyncJobStatusCallback: AsyncJobStatusCallback):
         List<MobileSegment.Wireframe.PlaceholderWireframe> {
         val viewGlobalBounds = resolveViewGlobalBounds(
             view,

@@ -55,7 +55,7 @@ internal class SnapshotRecordedDataQueueItemTest {
     @Test
     fun `M return true W isReady() { Snapshot with no pending images }`() {
         // Given
-        testedItem.pendingImages.set(0)
+        testedItem.pendingJobs.set(0)
 
         // Then
         assertThat(testedItem.isReady()).isTrue()
@@ -64,7 +64,7 @@ internal class SnapshotRecordedDataQueueItemTest {
     @Test
     fun `M return false W isReady() { Snapshot with pending images greater than 0 }`() {
         // Given
-        testedItem.incrementPendingImages()
+        testedItem.incrementPendingJobs()
 
         // Then
         assertThat(testedItem.isReady()).isFalse()
@@ -73,24 +73,24 @@ internal class SnapshotRecordedDataQueueItemTest {
     @Test
     fun `M increment pending images W incrementPendingImages()`() {
         // Given
-        val initial = testedItem.pendingImages.get()
+        val initial = testedItem.pendingJobs.get()
 
         // When
-        testedItem.incrementPendingImages()
+        testedItem.incrementPendingJobs()
 
         // Then
-        assertThat(testedItem.pendingImages.get()).isEqualTo(initial + 1)
+        assertThat(testedItem.pendingJobs.get()).isEqualTo(initial + 1)
     }
 
     @Test
     fun `M decrement pending images W decrementPendingImages()`() {
         // Given
-        val initial = testedItem.pendingImages.get()
+        val initial = testedItem.pendingJobs.get()
 
         // When
-        testedItem.decrementPendingImages()
+        testedItem.decrementPendingJobs()
 
         // Then
-        assertThat(testedItem.pendingImages.get()).isEqualTo(initial - 1)
+        assertThat(testedItem.pendingJobs.get()).isEqualTo(initial - 1)
     }
 }

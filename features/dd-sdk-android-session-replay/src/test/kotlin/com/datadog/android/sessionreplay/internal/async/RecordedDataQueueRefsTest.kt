@@ -53,21 +53,21 @@ internal class RecordedDataQueueRefsTest {
     }
 
     @Test
-    fun `M increment images W incrementPendingImages()`() {
+    fun `M increment images W incrementPendingJobs()`() {
         // When
-        testedDataQueueRefs.incrementPendingImages()
+        testedDataQueueRefs.incrementPendingJobs()
 
         // Then
-        verify(mockRecordedDataQueueItem).incrementPendingImages()
+        verify(mockRecordedDataQueueItem).incrementPendingJobs()
     }
 
     @Test
-    fun `M decrement images W decrementPendingImages()`() {
+    fun `M decrement images W decrementPendingJobs()`() {
         // When
-        testedDataQueueRefs.decrementPendingImages()
+        testedDataQueueRefs.decrementPendingJobs()
 
         // Then
-        verify(mockRecordedDataQueueItem).decrementPendingImages()
+        verify(mockRecordedDataQueueItem).decrementPendingJobs()
     }
 
     @Test

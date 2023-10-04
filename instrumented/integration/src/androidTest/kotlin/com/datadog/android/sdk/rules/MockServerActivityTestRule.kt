@@ -62,9 +62,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
         InstrumentationRegistry
             .getInstrumentation()
             .targetContext
-            .cacheDir.deleteRecursively {
-                Log.i("MockServerActivityTestRule", "Before activity launched, deleting file $it")
-            }
+            .cacheDir.deleteRecursively()
         requests.clear()
         mockWebServer.start()
         mockWebServer.dispatcher =
@@ -104,10 +102,8 @@ internal open class MockServerActivityTestRule<T : Activity>(
         InstrumentationRegistry
             .getInstrumentation()
             .targetContext
-            .cacheDir.deleteRecursively {
-                Log.i("MockServerActivityTestRule", "After activity finished, deleting file $it")
-            }
-
+            .cacheDir.deleteRecursively()
+        GlobalRumMonitor.get().stopSession()
         Datadog.stopInstance()
         GlobalRumMonitor::class.java.getDeclaredMethod("reset").apply {
             isAccessible = true
@@ -218,6 +214,8 @@ internal open class MockServerActivityTestRule<T : Activity>(
     // endregion
 
     companion object {
+        const val UI_THREAD_DELAY_IN_MS = 1000L
+        const val PAYLOAD_UPDATE_REQUEST = "updateSrPayloads"
         private const val TAG = "MockServerActivityTestRule"
 
         const val HEADER_CONTENT_TYPE = "Content-Type"

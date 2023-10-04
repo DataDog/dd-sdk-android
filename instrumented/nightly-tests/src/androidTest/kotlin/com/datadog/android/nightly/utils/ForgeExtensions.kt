@@ -13,6 +13,7 @@ import com.datadog.android.nightly.rum.RUM_RESOURCE_URL_PREFIX
 import com.datadog.android.nightly.rum.RUM_VIEW_PREFIX
 import com.datadog.android.nightly.rum.RUM_VIEW_URL_PREFIX
 import com.datadog.android.nightly.rum.TAG_VALUE_PREFIX
+import com.datadog.android.rum.RumResourceMethod
 import fr.xgouchet.elmyr.Forge
 
 fun Forge.exhaustiveAttributes(): Map<String, Any?> {
@@ -52,8 +53,8 @@ fun Forge.anErrorMessage(prefix: String = RUM_ERROR_MESSAGE_PREFIX): String {
     return prefix + this.aStringMatching("[a-zA-z](.+)")
 }
 
-fun Forge.aResourceMethod(): String {
-    return this.anElementFrom(listOf("GET", "POST"))
+fun Forge.aResourceMethod(): RumResourceMethod {
+    return this.aValueFrom(RumResourceMethod::class.java)
 }
 
 fun Forge.aTagValue(prefix: String = TAG_VALUE_PREFIX): String {

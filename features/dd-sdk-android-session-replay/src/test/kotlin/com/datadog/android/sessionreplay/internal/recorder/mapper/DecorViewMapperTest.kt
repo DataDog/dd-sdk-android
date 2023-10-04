@@ -24,6 +24,8 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -63,7 +65,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         mockViewWireframes = forge.aList(forge.anInt(min = 1, max = 10)) {
             getForgery()
         }
-        whenever(mockViewWireframeMapper.map(mockDecorView, fakeMappingContext))
+        whenever(mockViewWireframeMapper.map(eq(mockDecorView), eq(fakeMappingContext), any()))
             .thenReturn(mockViewWireframes)
         testedDecorViewMapper = DecorViewMapper(
             mockViewWireframeMapper,
@@ -90,7 +92,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         mockViewWireframes = mockViewWireframes.map {
             it.copy(shapeStyle = null)
         }
-        whenever(mockViewWireframeMapper.map(mockDecorView, fakeMappingContext))
+        whenever(mockViewWireframeMapper.map(eq(mockDecorView), eq(fakeMappingContext), any()))
             .thenReturn(mockViewWireframes)
         val viewWireframesIds = mockViewWireframes.map { it.id }.toSet()
         val expectedDecorViewWireframes = mockViewWireframes.map {
@@ -124,7 +126,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
                 wireframe.copy(shapeStyle = null)
             }
         }
-        whenever(mockViewWireframeMapper.map(mockDecorView, fakeMappingContext))
+        whenever(mockViewWireframeMapper.map(eq(mockDecorView), eq(fakeMappingContext), any()))
             .thenReturn(mockViewWireframes)
         val viewWireframesIds = mockViewWireframes.map { it.id }.toSet()
         val expectedDecorViewWireframes = mockViewWireframes
@@ -148,7 +150,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
         mockViewWireframes = mockViewWireframes.map {
             it.copy(shapeStyle = null)
         }
-        whenever(mockViewWireframeMapper.map(mockDecorView, fakeMappingContext))
+        whenever(mockViewWireframeMapper.map(eq(mockDecorView), eq(fakeMappingContext), any()))
             .thenReturn(mockViewWireframes)
         val viewWireframesIds = mockViewWireframes.map { it.id }.toSet()
         val expectedDecorViewWireframes = mockViewWireframes
@@ -228,7 +230,7 @@ internal class DecorViewMapperTest : BaseWireframeMapperTest() {
                 DecorViewMapper.WINDOW_KEY_NAME
             )
         ).thenReturn(fakeUniqueIdentifier)
-        whenever(mockViewWireframeMapper.map(mockPopUpDecorView, fakeMappingContext))
+        whenever(mockViewWireframeMapper.map(eq(mockPopUpDecorView), eq(fakeMappingContext), any()))
             .thenReturn(mockViewWireframes)
         val expectedWindowWireframe = MobileSegment.Wireframe.ShapeWireframe(
             id = fakeUniqueIdentifier,

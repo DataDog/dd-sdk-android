@@ -32,6 +32,8 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -88,7 +90,7 @@ internal abstract class BaseCheckBoxMapperTest : BaseWireframeMapperTest() {
                 CheckableTextViewMapper.CHECKABLE_KEY_NAME
             )
         ).thenReturn(fakeGeneratedIdentifier)
-        whenever(mockTextWireframeMapper.map(mockCheckBox, fakeMappingContext))
+        whenever(mockTextWireframeMapper.map(eq(mockCheckBox), eq(fakeMappingContext), any()))
             .thenReturn(fakeTextWireframes)
         whenever(
             mockViewUtils.resolveViewGlobalBounds(

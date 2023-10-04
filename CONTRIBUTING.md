@@ -65,6 +65,9 @@ The whole project is covered by a set of static analysis tools, linters and test
 
 # Runs the unit tests
 ./local_ci.sh --test
+
+# Update session replay payloads
+./local_ci.sh --update-session-replay-payloads
 ```
 
 ## Submitting Issues
@@ -290,6 +293,16 @@ Because we sometimes need to reuse some setup or assertions in our tests, we ten
 - `fun setupSomething()`: method to setup a complex test (should only be used in the Given part of a test).
 
 ### Nightly Tests
+
+### Update Session Replay functional tests payloads
+
+Session Replay has a suite of functional tests which can be found in the `instrumentation:integration` module.
+Those tests are assessing the recorded payload for a specific scenario against a given payload from `assets/session_replay_payloads` in the `androidTest` source set.
+In case you need to update these payloads after a change in the SDK, you can run the following command:
+    
+```shell
+ ./local_ci.sh --update-session-replay-payloads
+```
 
 #### Implementation
 

@@ -17,6 +17,7 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -29,12 +30,12 @@ import java.net.URL
 import java.util.Locale
 import java.util.UUID
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class RumResourceScope(
     internal val parentScope: RumScope,
     internal val sdkCore: InternalSdkCore,
     internal val url: String,
-    internal val method: String,
+    internal val method: RumResourceMethod,
     internal val key: String,
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
@@ -180,6 +181,12 @@ internal class RumResourceScope(
         val finalTiming = timing ?: extractResourceTiming(
             attributes.remove(RumAttributes.RESOURCE_TIMINGS) as? Map<String, Any?>
         )
+        val graphql = resolveGraphQLAttributes(
+            attributes.remove(RumAttributes.GRAPHQL_OPERATION_TYPE) as? String?,
+            attributes.remove(RumAttributes.GRAPHQL_OPERATION_NAME) as? String?,
+            attributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String?,
+            attributes.remove(RumAttributes.GRAPHQL_VARIABLES) as? String?
+        )
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val user = datadogContext.userInfo
@@ -195,7 +202,7 @@ internal class RumResourceScope(
                         type = kind.toSchemaType(),
                         url = url,
                         duration = duration,
-                        method = method.toMethod(sdkCore.internalLogger),
+                        method = method.toResourceMethod(),
                         statusCode = statusCode,
                         size = size,
                         dns = finalTiming?.dns(),
@@ -203,7 +210,8 @@ internal class RumResourceScope(
                         ssl = finalTiming?.ssl(),
                         firstByte = finalTiming?.firstByte(),
                         download = finalTiming?.download(),
-                        provider = resolveResourceProvider()
+                        provider = resolveResourceProvider(),
+                        graphql = graphql
                     ),
                     action = rumContext.actionId?.let { ResourceEvent.Action(listOf(it)) },
                     view = ResourceEvent.View(
@@ -316,7 +324,7 @@ internal class RumResourceScope(
                         isCrash = false,
                         resource = ErrorEvent.Resource(
                             url = url,
-                            method = method.toErrorMethod(sdkCore.internalLogger),
+                            method = method.toErrorMethod(),
                             statusCode = statusCode ?: 0,
                             provider = resolveErrorProvider()
                         ),
@@ -395,6 +403,24 @@ internal class RumResourceScope(
         } catch (e: MalformedURLException) {
             url
         }
+    }
+
+    private fun resolveGraphQLAttributes(
+        operationType: String?,
+        operationName: String?,
+        payload: String?,
+        variables: String?
+    ): ResourceEvent.Graphql? {
+        operationType?.toOperationType(sdkCore.internalLogger)?.let {
+            return ResourceEvent.Graphql(
+                it,
+                operationName,
+                payload,
+                variables
+            )
+        }
+
+        return null
     }
 
     // endregion

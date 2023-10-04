@@ -10,6 +10,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -51,7 +52,7 @@ internal sealed class RumRawEvent {
     internal data class StartResource(
         val key: String,
         val url: String,
-        val method: String,
+        val method: RumResourceMethod,
         val attributes: Map<String, Any?>,
         override val eventTime: Time = Time()
     ) : RumRawEvent()

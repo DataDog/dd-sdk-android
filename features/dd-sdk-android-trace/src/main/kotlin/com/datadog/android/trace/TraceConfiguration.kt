@@ -14,7 +14,8 @@ import com.datadog.android.trace.event.SpanEventMapper
  */
 data class TraceConfiguration internal constructor(
     internal val customEndpointUrl: String?,
-    internal val eventMapper: SpanEventMapper
+    internal val eventMapper: SpanEventMapper,
+    internal val networkInfoEnabled: Boolean
 ) {
 
     /**
@@ -23,6 +24,7 @@ data class TraceConfiguration internal constructor(
     class Builder {
         private var customEndpointUrl: String? = null
         private var spanEventMapper: SpanEventMapper = NoOpSpanEventMapper()
+        private var networkInfoEnabled: Boolean = true
 
         /**
          * Let the Tracing feature target a custom server.
@@ -45,12 +47,22 @@ data class TraceConfiguration internal constructor(
         }
 
         /**
+         * Enables network information to be automatically added in your logs.
+         * @param enabled true by default
+         */
+        fun setNetworkInfoEnabled(enabled: Boolean): Builder {
+            networkInfoEnabled = enabled
+            return this
+        }
+
+        /**
          * Builds a [TraceConfiguration] based on the current state of this Builder.
          */
         fun build(): TraceConfiguration {
             return TraceConfiguration(
                 customEndpointUrl = customEndpointUrl,
-                eventMapper = spanEventMapper
+                eventMapper = spanEventMapper,
+                networkInfoEnabled = networkInfoEnabled
             )
         }
     }

@@ -58,6 +58,9 @@ public final class com/datadog/android/log/Logs {
 	public static final fun enable (Lcom/datadog/android/log/LogsConfiguration;)V
 	public static final fun enable (Lcom/datadog/android/log/LogsConfiguration;Lcom/datadog/android/api/SdkCore;)V
 	public static synthetic fun enable$default (Lcom/datadog/android/log/LogsConfiguration;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
+	public static final fun isEnabled ()Z
+	public static final fun isEnabled (Lcom/datadog/android/api/SdkCore;)Z
+	public static synthetic fun isEnabled$default (Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Z
 }
 
 public final class com/datadog/android/log/LogsConfiguration {

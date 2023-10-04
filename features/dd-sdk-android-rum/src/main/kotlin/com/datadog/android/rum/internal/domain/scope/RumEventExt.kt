@@ -13,6 +13,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.model.ActionEvent
@@ -22,31 +23,39 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import java.util.Locale
 
-internal fun String.toMethod(internalLogger: InternalLogger): ResourceEvent.Method {
-    return try {
-        ResourceEvent.Method.valueOf(this.uppercase(Locale.US))
-    } catch (e: IllegalArgumentException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            { "Unable to convert [$this] to a valid http method" },
-            e
-        )
-        ResourceEvent.Method.GET
+internal fun RumResourceMethod.toResourceMethod(): ResourceEvent.Method {
+    return when (this) {
+        RumResourceMethod.GET -> ResourceEvent.Method.GET
+        RumResourceMethod.POST -> ResourceEvent.Method.POST
+        RumResourceMethod.HEAD -> ResourceEvent.Method.HEAD
+        RumResourceMethod.PUT -> ResourceEvent.Method.PUT
+        RumResourceMethod.DELETE -> ResourceEvent.Method.DELETE
+        RumResourceMethod.PATCH -> ResourceEvent.Method.PATCH
     }
 }
 
-internal fun String.toErrorMethod(internalLogger: InternalLogger): ErrorEvent.Method {
+internal fun RumResourceMethod.toErrorMethod(): ErrorEvent.Method {
+    return when (this) {
+        RumResourceMethod.GET -> ErrorEvent.Method.GET
+        RumResourceMethod.POST -> ErrorEvent.Method.POST
+        RumResourceMethod.HEAD -> ErrorEvent.Method.HEAD
+        RumResourceMethod.PUT -> ErrorEvent.Method.PUT
+        RumResourceMethod.DELETE -> ErrorEvent.Method.DELETE
+        RumResourceMethod.PATCH -> ErrorEvent.Method.PATCH
+    }
+}
+
+internal fun String.toOperationType(internalLogger: InternalLogger): ResourceEvent.OperationType? {
     return try {
-        ErrorEvent.Method.valueOf(this.uppercase(Locale.US))
+        ResourceEvent.OperationType.valueOf(this.uppercase(Locale.US))
     } catch (e: IllegalArgumentException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            { "Unable to convert [$this] to a valid http method" },
+            { "Unable to convert [$this] to a valid graphql operation type" },
             e
         )
-        ErrorEvent.Method.GET
+        null
     }
 }
 

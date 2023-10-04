@@ -40,9 +40,11 @@ internal class WebViewRumEventConsumer(
         sdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val rumContext = contextProvider.getRumContext(datadogContext)
-                val mappedEvent = map(event, datadogContext, rumContext)
-                @Suppress("ThreadSafety") // inside worker thread context
-                dataWriter.write(eventBatchWriter, mappedEvent)
+                if (rumContext != null && rumContext.sessionState == "TRACKED") {
+                    val mappedEvent = map(event, datadogContext, rumContext)
+                    @Suppress("ThreadSafety") // inside worker thread context
+                    dataWriter.write(eventBatchWriter, mappedEvent)
+                }
             }
     }
 

@@ -17,6 +17,8 @@
     <string name="activity_telemetry_end_to_end">Telemetry (End to End)</string>
     <string name="session_replay_end_to_end">Session Replay (End to End)</string>
     <string name="session_replay_text_fields_end_to_end">Session Replay Text Fields (End to End)</string>
+    <string name="session_replay_sensitive_fields_end_to_end">Session Replay Sensitive Fields (End to End)</string>
+    <string name="session_replay_radio_checkbox_fields_end_to_end">Session Replay Radio and Checkbox Fields (End to End)</string>
     <string name="fragment_a">Fragment A</string>
     <string name="fragment_b">Fragment B</string>
     <string name="fragment_c">Fragment C</string>
@@ -41,5 +43,35 @@
     <string name="text_view_components">Text View Components</string>
     <string name="checked_text_view">Checked Text View</string>
     <string name="app_compat_checked_text_view">App Compat Checked Text View</string>
+    <string name="password_input_components">Password input components</string>
+    <string name="postal_address_label">Postal Address</string>
+    <string name="web_email_label">Web Email</string>
+    <string name="email_label">Email</string>
+    <string name="web_password_label">Web Password</string>
+    <string name="number_password_label">Number Password</string>
+    <string name="visible_password_label">Visible Password</string>
+    <string name="default_password_label">Default password</string>
+    <string name="a_password">apassword</string>
+    <string name="a_number_password">1213213</string>
+    <string name="an_email">noreply@datadoghq.com</string>
+    <string name="an_address">5th Madison Avenue, New York, NY 10001</string>
+    <string name="default_checkbox">Default CheckBox</string>
+    <string name="app_compat_checkbox">App Compat CheckBox</string>
+    <string name="material_checkbox">Material CheckBox</string>
+    <string name="default_radio">Default Radio</string>
+    <string name="app_compat_radio">App Compat Radio</string>
+    <string name="material_radio">Material Radio</string>
+    <string name="default_spinner">Default spinner</string>
+    <string name="app_compat_spinner">App Compat Spinner</string>
+    <string name="app_compat_switch">App Compat Switch</string>
+    <string name="material_switch">Material Switch</string>
+    <string name="default_image_button_bundled">default image button bundled</string>
+    <string name="default_image_button">default image button</string>
+    <string name="app_compat_image_button">app compat image button</string>
+    <string name="session_replay_image_buttons_end_to_end">Session Replay Image Buttons (End to End)</string>
+    <string name="session_replay_images_end_to_end">Session Replay Images (End to End)</string>
+    <string name="image_view">image view</string>
+    <string name="app_compat_image_view">app compat image view</string>
+
 
 </resources>

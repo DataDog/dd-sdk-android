@@ -9,11 +9,16 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.Typeface
 import android.view.Gravity
 import android.widget.TextView
+import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
+import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
+import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelperCallback
 import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.AllowObfuscationRule
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.TextValueObfuscationRule
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 
 /**
  * A [WireframeMapper] implementation to map a [TextView] component.
@@ -23,26 +28,98 @@ import com.datadog.android.sessionreplay.model.MobileSegment
  */
 @Suppress("TooManyFunctions")
 open class TextViewMapper :
-    BaseWireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe> {
+    BaseAsyncBackgroundWireframeMapper<TextView> {
 
-    internal val textValueObfuscationRule: TextValueObfuscationRule
+    internal var textValueObfuscationRule: TextValueObfuscationRule = AllowObfuscationRule()
+    private var imageWireframeHelper: ImageWireframeHelper? = null
+    private var uniqueIdentifierGenerator: UniqueIdentifierGenerator? = null
 
-    constructor() {
-        textValueObfuscationRule = AllowObfuscationRule()
+    constructor()
+
+    internal constructor(
+        imageWireframeHelper: ImageWireframeHelper,
+        uniqueIdentifierGenerator: UniqueIdentifierGenerator,
+        textValueObfuscationRule: TextValueObfuscationRule? = null
+    ) : super(imageWireframeHelper, uniqueIdentifierGenerator) {
+        this.imageWireframeHelper = imageWireframeHelper
+        this.uniqueIdentifierGenerator = uniqueIdentifierGenerator
+        textValueObfuscationRule?.let {
+            this.textValueObfuscationRule = it
+        }
     }
 
-    internal constructor(textValueObfuscationRule: TextValueObfuscationRule) {
+    internal constructor(
+        textValueObfuscationRule: TextValueObfuscationRule
+    ) {
         this.textValueObfuscationRule = textValueObfuscationRule
     }
 
-    override fun map(view: TextView, mappingContext: MappingContext):
-        List<MobileSegment.Wireframe.TextWireframe> {
+    override fun map(
+        view: TextView,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ):
+        List<MobileSegment.Wireframe> {
+        val wireframes = mutableListOf<MobileSegment.Wireframe>()
+
+        wireframes.addAll(super.map(view, mappingContext, asyncJobStatusCallback))
+
+        val density = mappingContext.systemInformation.screenDensity
         val viewGlobalBounds = resolveViewGlobalBounds(
             view,
-            mappingContext.systemInformation.screenDensity
+            density
         )
-        val (shapeStyle, border) = view.background?.resolveShapeStyleAndBorder(view.alpha)
-            ?: (null to null)
+
+        resolveTextElements(
+            view,
+            mappingContext,
+            viewGlobalBounds
+        ).let(wireframes::addAll)
+
+        resolveImages(
+            view,
+            mappingContext,
+            wireframes.size,
+            asyncJobStatusCallback
+        ).let(wireframes::addAll)
+
+        return wireframes
+    }
+
+    // region Internal
+
+    private fun resolveImages(
+        view: TextView,
+        mappingContext: MappingContext,
+        currentIndex: Int,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ): List<MobileSegment.Wireframe> {
+        val wireframes = mutableListOf<MobileSegment.Wireframe>()
+        imageWireframeHelper?.let {
+            val results = it.createCompoundDrawableWireframes(
+                view,
+                mappingContext,
+                currentIndex,
+                object : ImageWireframeHelperCallback {
+                    override fun onFinished() {
+                        asyncJobStatusCallback.jobFinished()
+                    }
+
+                    override fun onStart() {
+                        asyncJobStatusCallback.jobStarted()
+                    }
+                }
+            )
+            wireframes.addAll(results)
+        }
+        return wireframes
+    }
+
+    private fun resolveTextElements(
+        view: TextView,
+        mappingContext: MappingContext,
+        viewGlobalBounds: GlobalBounds
+    ): List<MobileSegment.Wireframe> {
         return listOf(
             MobileSegment.Wireframe.TextWireframe(
                 id = resolveViewId(view),
@@ -50,8 +127,8 @@ open class TextViewMapper :
                 y = viewGlobalBounds.y,
                 width = viewGlobalBounds.width,
                 height = viewGlobalBounds.height,
-                shapeStyle = shapeStyle,
-                border = border,
+                shapeStyle = null,
+                border = null,
                 text = textValueObfuscationRule.resolveObfuscatedValue(view, mappingContext),
                 textStyle = resolveTextStyle(view, mappingContext.systemInformation.screenDensity),
                 textPosition = resolveTextPosition(
@@ -61,8 +138,6 @@ open class TextViewMapper :
             )
         )
     }
-
-    // region Internal
 
     private fun resolveTextStyle(textView: TextView, pixelsDensity: Float):
         MobileSegment.TextStyle {
@@ -122,16 +197,19 @@ open class TextViewMapper :
                 horizontal = MobileSegment.Horizontal.CENTER,
                 vertical = MobileSegment.Vertical.CENTER
             )
+
             TextView.TEXT_ALIGNMENT_TEXT_END,
             TextView.TEXT_ALIGNMENT_VIEW_END -> MobileSegment.Alignment(
                 horizontal = MobileSegment.Horizontal.RIGHT,
                 vertical = MobileSegment.Vertical.CENTER
             )
+
             TextView.TEXT_ALIGNMENT_TEXT_START,
             TextView.TEXT_ALIGNMENT_VIEW_START -> MobileSegment.Alignment(
                 horizontal = MobileSegment.Horizontal.LEFT,
                 vertical = MobileSegment.Vertical.CENTER
             )
+
             TextView.TEXT_ALIGNMENT_GRAVITY -> resolveAlignmentFromGravity(textView)
             else -> MobileSegment.Alignment(
                 horizontal = MobileSegment.Horizontal.LEFT,
@@ -144,8 +222,10 @@ open class TextViewMapper :
         val horizontalAlignment = when (textView.gravity.and(Gravity.HORIZONTAL_GRAVITY_MASK)) {
             Gravity.START,
             Gravity.LEFT -> MobileSegment.Horizontal.LEFT
+
             Gravity.END,
             Gravity.RIGHT -> MobileSegment.Horizontal.RIGHT
+
             Gravity.CENTER -> MobileSegment.Horizontal.CENTER
             Gravity.CENTER_HORIZONTAL -> MobileSegment.Horizontal.CENTER
             else -> MobileSegment.Horizontal.LEFT

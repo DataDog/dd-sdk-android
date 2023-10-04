@@ -58,8 +58,24 @@
             android:label="@string/session_replay_text_fields_end_to_end"
             android:windowSoftInputMode="adjustResize"/>
         <activity
+            android:name=".sessionreplay.SessionReplaySensitiveFieldsActivity"
+            android:label="@string/session_replay_sensitive_fields_end_to_end"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
+            android:name=".sessionreplay.SessionReplayRadioCheckboxFieldsActivity"
+            android:label="@string/session_replay_sensitive_fields_end_to_end"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
             android:name=".sessionreplay.SessionReplayTextFieldsWithInputActivity"
             android:label="@string/session_replay_text_fields_end_to_end"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
+            android:name=".sessionreplay.SessionReplayImageButtonsActivity"
+            android:label="@string/session_replay_image_buttons_end_to_end"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
+            android:name=".sessionreplay.SessionReplayImagesActivity"
+            android:label="@string/session_replay_images_end_to_end"
             android:windowSoftInputMode="adjustResize"/>
         <activity
             android:exported="true"

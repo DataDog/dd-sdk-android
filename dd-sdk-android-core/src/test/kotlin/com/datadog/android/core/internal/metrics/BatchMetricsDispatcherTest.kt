@@ -95,24 +95,9 @@ internal class BatchMetricsDispatcherTest {
         // Given
         val fakeReason = forge.forgeIncludeInMetricReason()
         val fakeFile: File = forge.forgeValidFile()
-        val expectedAdditionalProperties = mapOf(
-            BatchMetricsDispatcher.TYPE_KEY to
-                BatchMetricsDispatcher.BATCH_DELETED_TYPE_VALUE,
-            BatchMetricsDispatcher.TRACK_KEY to
-                trackNameResolver(fakeFeatureName),
-            BatchMetricsDispatcher.BATCH_AGE_KEY to
-                (currentTimeInMillis - fakeFile.name.toLong()),
-            BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
-                fakeFilePersistenceConfig.recentDelayMs,
-            BatchMetricsDispatcher.UPLOADER_DELAY_KEY to mapOf(
-                BatchMetricsDispatcher.UPLOADER_DELAY_MIN_KEY to
-                    fakeUploadConfiguration.minDelayMs,
-                BatchMetricsDispatcher.UPLOADER_DELAY_MAX_KEY to
-                    fakeUploadConfiguration.maxDelayMs
-            ),
-            BatchMetricsDispatcher.BATCH_REMOVAL_KEY to fakeReason.toString(),
-            BatchMetricsDispatcher.IN_BACKGROUND_KEY to false
-        )
+        val expectedAdditionalProperties = resolveDefaultDeleteExtraProperties(fakeFile).apply {
+            put(BatchMetricsDispatcher.BATCH_REMOVAL_KEY, fakeReason.toString())
+        }
 
         // When
         testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
@@ -132,24 +117,10 @@ internal class BatchMetricsDispatcherTest {
         // Given
         val fakeReason = forge.forgeIncludeInMetricReason()
         val fakeFile: File = forge.forgeValidFile()
-        val expectedAdditionalProperties = mapOf(
-            BatchMetricsDispatcher.TYPE_KEY to
-                BatchMetricsDispatcher.BATCH_DELETED_TYPE_VALUE,
-            BatchMetricsDispatcher.TRACK_KEY to
-                trackNameResolver(fakeFeatureName),
-            BatchMetricsDispatcher.BATCH_AGE_KEY to
-                (currentTimeInMillis - fakeFile.name.toLong()),
-            BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
-                fakeFilePersistenceConfig.recentDelayMs,
-            BatchMetricsDispatcher.UPLOADER_DELAY_KEY to mapOf(
-                BatchMetricsDispatcher.UPLOADER_DELAY_MIN_KEY to
-                    fakeUploadConfiguration.minDelayMs,
-                BatchMetricsDispatcher.UPLOADER_DELAY_MAX_KEY to
-                    fakeUploadConfiguration.maxDelayMs
-            ),
-            BatchMetricsDispatcher.BATCH_REMOVAL_KEY to fakeReason.toString(),
-            BatchMetricsDispatcher.IN_BACKGROUND_KEY to true
-        )
+        val expectedAdditionalProperties = resolveDefaultDeleteExtraProperties(fakeFile).apply {
+            put(BatchMetricsDispatcher.BATCH_REMOVAL_KEY, fakeReason.toString())
+            put(BatchMetricsDispatcher.IN_BACKGROUND_KEY, true)
+        }
         testedBatchMetricsDispatcher.onPaused()
 
         // When
@@ -171,27 +142,88 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.onPaused()
         val fakeReason = forge.forgeIncludeInMetricReason()
         val fakeFile: File = forge.forgeValidFile()
-        val expectedAdditionalProperties = mapOf(
-            BatchMetricsDispatcher.TYPE_KEY to
-                BatchMetricsDispatcher.BATCH_DELETED_TYPE_VALUE,
-            BatchMetricsDispatcher.TRACK_KEY to
-                trackNameResolver(fakeFeatureName),
-            BatchMetricsDispatcher.BATCH_AGE_KEY to
-                (currentTimeInMillis - fakeFile.name.toLong()),
-            BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
-                fakeFilePersistenceConfig.recentDelayMs,
-            BatchMetricsDispatcher.UPLOADER_DELAY_KEY to mapOf(
-                BatchMetricsDispatcher.UPLOADER_DELAY_MIN_KEY to
-                    fakeUploadConfiguration.minDelayMs,
-                BatchMetricsDispatcher.UPLOADER_DELAY_MAX_KEY to
-                    fakeUploadConfiguration.maxDelayMs
-            ),
-            BatchMetricsDispatcher.BATCH_REMOVAL_KEY to fakeReason.toString(),
-            BatchMetricsDispatcher.IN_BACKGROUND_KEY to false
-        )
-
+        val expectedAdditionalProperties = resolveDefaultDeleteExtraProperties(fakeFile).apply {
+            put(BatchMetricsDispatcher.BATCH_REMOVAL_KEY, fakeReason.toString())
+            put(BatchMetricsDispatcher.IN_BACKGROUND_KEY, false)
+        }
         // When
         testedBatchMetricsDispatcher.onResumed()
+        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
+
+        // Then
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockInternalLogger).logMetric(
+                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
+                capture()
+            )
+            assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
+        }
+    }
+
+    @Test
+    fun `M send metric W sendBatchDeletedMetric { file is in pending folder }`(forge: Forge) {
+        // Given
+        testedBatchMetricsDispatcher.onPaused()
+        val fakeReason = forge.forgeIncludeInMetricReason()
+        val fakeFile: File = forge.forgeValidFile().apply {
+            val forgeAPendingDirName = forge.forgeAPendingDirName()
+            whenever(this.parentFile?.name).thenReturn(forgeAPendingDirName)
+        }
+        val expectedAdditionalProperties = resolveDefaultDeleteExtraProperties(fakeFile).apply {
+            put(BatchMetricsDispatcher.BATCH_REMOVAL_KEY, fakeReason.toString())
+            put(BatchMetricsDispatcher.TRACKING_CONSENT_KEY, "pending")
+        }
+        // When
+        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
+
+        // Then
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockInternalLogger).logMetric(
+                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
+                capture()
+            )
+            assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
+        }
+    }
+
+    @Test
+    fun `M send metric W sendBatchDeletedMetric { file parent dir is unknown  }`(forge: Forge) {
+        // Given
+        testedBatchMetricsDispatcher.onPaused()
+        val fakeReason = forge.forgeIncludeInMetricReason()
+        val fakeFile: File = forge.forgeValidFile().apply {
+            whenever(this.parentFile?.name).thenReturn(forge.anAlphabeticalString())
+        }
+        val expectedAdditionalProperties = resolveDefaultDeleteExtraProperties(fakeFile).apply {
+            put(BatchMetricsDispatcher.BATCH_REMOVAL_KEY, fakeReason.toString())
+            put(BatchMetricsDispatcher.TRACKING_CONSENT_KEY, null)
+        }
+        // When
+        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
+
+        // Then
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockInternalLogger).logMetric(
+                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
+                capture()
+            )
+            assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
+        }
+    }
+
+    @Test
+    fun `M send metric W sendBatchDeletedMetric { file parent dir is null  }`(forge: Forge) {
+        // Given
+        testedBatchMetricsDispatcher.onPaused()
+        val fakeReason = forge.forgeIncludeInMetricReason()
+        val fakeFile: File = forge.forgeValidFile().apply {
+            whenever(this.parentFile).thenReturn(null)
+        }
+        val expectedAdditionalProperties = resolveDefaultDeleteExtraProperties(fakeFile).apply {
+            put(BatchMetricsDispatcher.BATCH_REMOVAL_KEY, fakeReason.toString())
+            put(BatchMetricsDispatcher.TRACKING_CONSENT_KEY, null)
+        }
+        // When
         testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
 
         // Then
@@ -224,7 +256,7 @@ internal class BatchMetricsDispatcherTest {
                     BatchMetricsDispatcher.WRONG_FILE_NAME_MESSAGE_FORMAT
                         .format(Locale.ENGLISH, fakeFile.name)
             },
-            argThat { this is NumberFormatException },
+            eq(null),
             eq(false),
             eq(null)
         )
@@ -289,20 +321,11 @@ internal class BatchMetricsDispatcherTest {
         forge: Forge
     ) {
         // Given
-        val fakeFile: File = forge.forgeValidFile()
-        val expectedAdditionalProperties = mapOf(
-            BatchMetricsDispatcher.TYPE_KEY to
-                BatchMetricsDispatcher.BATCH_CLOSED_TYPE_VALUE,
-            BatchMetricsDispatcher.TRACK_KEY to
-                trackNameResolver(fakeFeatureName),
-            BatchMetricsDispatcher.BATCH_DURATION_KEY to
-                (currentTimeInMillis - fakeMetadata.lastTimeWasUsedInMs),
-            BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
-                fakeFilePersistenceConfig.recentDelayMs,
-            BatchMetricsDispatcher.BATCH_SIZE_KEY to fakeFile.length(),
-            BatchMetricsDispatcher.FORCE_NEW_KEY to fakeMetadata.forcedNew,
-            BatchMetricsDispatcher.BATCH_EVENTS_COUNT_KEY to fakeMetadata.eventsCount
-        )
+        val fakeFile: File = forge.forgeValidClosedFile()
+        val expectedAdditionalProperties =
+            resolveDefaultCloseExtraProperties(fakeFile, fakeMetadata).apply {
+                put(BatchMetricsDispatcher.BATCH_SIZE_KEY, fakeFile.length())
+            }
 
         // When
         testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
@@ -319,26 +342,18 @@ internal class BatchMetricsDispatcherTest {
 
     @Test
     fun `M send metric W sendBatchClosedMetric{ file is broken }`(
+        forge: Forge,
         @Forgery fakeMetadata: BatchClosedMetadata,
         @Forgery fakeException: Exception
     ) {
         // Given
-        val fakeFile: File = mock {
-            whenever(it.length()).thenThrow(fakeException)
+        val fakeFile: File = forge.forgeValidClosedFile().apply {
+            whenever(this.length()).thenThrow(fakeException)
         }
-        val expectedAdditionalProperties = mapOf(
-            BatchMetricsDispatcher.TYPE_KEY to
-                BatchMetricsDispatcher.BATCH_CLOSED_TYPE_VALUE,
-            BatchMetricsDispatcher.TRACK_KEY to
-                trackNameResolver(fakeFeatureName),
-            BatchMetricsDispatcher.BATCH_DURATION_KEY to
-                (currentTimeInMillis - fakeMetadata.lastTimeWasUsedInMs),
-            BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
-                fakeFilePersistenceConfig.recentDelayMs,
-            BatchMetricsDispatcher.BATCH_SIZE_KEY to 0L,
-            BatchMetricsDispatcher.FORCE_NEW_KEY to fakeMetadata.forcedNew,
-            BatchMetricsDispatcher.BATCH_EVENTS_COUNT_KEY to fakeMetadata.eventsCount
-        )
+        val expectedAdditionalProperties =
+            resolveDefaultCloseExtraProperties(fakeFile, fakeMetadata).apply {
+                put(BatchMetricsDispatcher.BATCH_SIZE_KEY, 0L)
+            }
 
         // When
         testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
@@ -351,6 +366,142 @@ internal class BatchMetricsDispatcherTest {
             )
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
+    }
+
+    @Test
+    fun `M send metric W sendBatchClosedMetric{ file is in pending folder }`(
+        forge: Forge,
+        @Forgery fakeMetadata: BatchClosedMetadata,
+        @Forgery fakeException: Exception
+    ) {
+        // Given
+        val fakeFile: File = forge.forgeValidClosedFile().apply {
+            whenever(this.length()).thenThrow(fakeException)
+            whenever(this.parentFile?.name).thenReturn(forge.forgeAPendingDirName())
+        }
+        val expectedAdditionalProperties =
+            resolveDefaultCloseExtraProperties(fakeFile, fakeMetadata).apply {
+                put(BatchMetricsDispatcher.BATCH_SIZE_KEY, 0L)
+                put(BatchMetricsDispatcher.TRACKING_CONSENT_KEY, "pending")
+            }
+
+        // When
+        testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
+
+        // Then
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockInternalLogger).logMetric(
+                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE },
+                capture()
+            )
+            assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
+        }
+    }
+
+    @Test
+    fun `M send metric W sendBatchClosedMetric{ file parent dir is null }`(
+        forge: Forge,
+        @Forgery fakeMetadata: BatchClosedMetadata,
+        @Forgery fakeException: Exception
+    ) {
+        // Given
+        val fakeFile: File = forge.forgeValidClosedFile().apply {
+            whenever(this.length()).thenThrow(fakeException)
+            whenever(this.parentFile).thenReturn(null)
+        }
+        val expectedAdditionalProperties =
+            resolveDefaultCloseExtraProperties(fakeFile, fakeMetadata).apply {
+                put(BatchMetricsDispatcher.BATCH_SIZE_KEY, 0L)
+                put(BatchMetricsDispatcher.TRACKING_CONSENT_KEY, null)
+            }
+
+        // When
+        testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
+
+        // Then
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockInternalLogger).logMetric(
+                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE },
+                capture()
+            )
+            assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
+        }
+    }
+
+    @Test
+    fun `M send metric W sendBatchClosedMetric{ file parent dir is unknown }`(
+        forge: Forge,
+        @Forgery fakeMetadata: BatchClosedMetadata,
+        @Forgery fakeException: Exception
+    ) {
+        // Given
+        val fakeFile: File = forge.forgeValidClosedFile().apply {
+            whenever(this.length()).thenThrow(fakeException)
+            whenever(this.parentFile?.name).thenReturn(forge.anAlphabeticalString())
+        }
+        val expectedAdditionalProperties =
+            resolveDefaultCloseExtraProperties(fakeFile, fakeMetadata).apply {
+                put(BatchMetricsDispatcher.BATCH_SIZE_KEY, 0L)
+                put(BatchMetricsDispatcher.TRACKING_CONSENT_KEY, null)
+            }
+
+        // When
+        testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
+
+        // Then
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockInternalLogger).logMetric(
+                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE },
+                capture()
+            )
+            assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
+        }
+    }
+
+    @Test
+    fun `M do nothing W sendBatchClosedMetric { file name is broken }`(
+        forge: Forge,
+        @Forgery fakeMetadata: BatchClosedMetadata
+    ) {
+        // Given
+        val fakeFile: File = forge.forgeValidClosedFile().apply {
+            whenever(this.name).thenReturn(forge.anAlphabeticalString())
+        }
+
+        // When
+        testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
+
+        // Then
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.MAINTAINER),
+            argThat {
+                this.invoke() ==
+                    BatchMetricsDispatcher.WRONG_FILE_NAME_MESSAGE_FORMAT
+                        .format(Locale.ENGLISH, fakeFile.name)
+            },
+            eq(null),
+            eq(false),
+            eq(null)
+        )
+        verifyNoMoreInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M do nothing W sendBatchClosedMetric { file does not exist }`(
+        forge: Forge,
+        @Forgery fakeMetadata: BatchClosedMetadata
+    ) {
+        // Given
+        val fakeFile: File = forge.forgeValidClosedFile().apply {
+            whenever(this.exists()).thenReturn(false)
+        }
+
+        // When
+        testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
+
+        // Then
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -368,7 +519,7 @@ internal class BatchMetricsDispatcherTest {
             mockDateTimeProvider,
             mockSampler
         )
-        val fakeFile: File = forge.forgeValidFile()
+        val fakeFile: File = forge.forgeValidClosedFile()
 
         // When
         testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
@@ -385,7 +536,7 @@ internal class BatchMetricsDispatcherTest {
         // Given
         reset(mockSampler)
         whenever(mockSampler.sample()).doReturn(false)
-        val fakeFile: File = forge.forgeValidFile()
+        val fakeFile: File = forge.forgeValidClosedFile()
 
         // When
         testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
@@ -394,17 +545,79 @@ internal class BatchMetricsDispatcherTest {
         verifyNoInteractions(mockInternalLogger)
     }
 
+    private fun resolveDefaultDeleteExtraProperties(file: File): MutableMap<String, Any?> {
+        return mutableMapOf(
+            BatchMetricsDispatcher.TYPE_KEY to BatchMetricsDispatcher.BATCH_DELETED_TYPE_VALUE,
+            BatchMetricsDispatcher.TRACK_KEY to resolveTrackName(fakeFeatureName),
+            BatchMetricsDispatcher.BATCH_AGE_KEY to
+                (currentTimeInMillis - file.name.toLong()),
+            BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
+                fakeFilePersistenceConfig.recentDelayMs,
+            BatchMetricsDispatcher.UPLOADER_DELAY_KEY to mapOf(
+                BatchMetricsDispatcher.UPLOADER_DELAY_MIN_KEY to
+                    fakeUploadConfiguration.minDelayMs,
+                BatchMetricsDispatcher.UPLOADER_DELAY_MAX_KEY to
+                    fakeUploadConfiguration.maxDelayMs
+            ),
+            BatchMetricsDispatcher.FILE_NAME to file.name,
+            BatchMetricsDispatcher.THREAD_NAME to Thread.currentThread().name,
+            BatchMetricsDispatcher.TRACKING_CONSENT_KEY to "granted",
+            BatchMetricsDispatcher.IN_BACKGROUND_KEY to true
+        )
+    }
+
+    private fun resolveDefaultCloseExtraProperties(
+        file: File,
+        batchClosedMetadata: BatchClosedMetadata
+    ): MutableMap<String, Any?> {
+        return mutableMapOf(
+            BatchMetricsDispatcher.TYPE_KEY to BatchMetricsDispatcher.BATCH_CLOSED_TYPE_VALUE,
+            BatchMetricsDispatcher.TRACK_KEY to resolveTrackName(fakeFeatureName),
+            BatchMetricsDispatcher.BATCH_DURATION_KEY to
+                (batchClosedMetadata.lastTimeWasUsedInMs - file.name.toLong()),
+            BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
+                fakeFilePersistenceConfig.recentDelayMs,
+            BatchMetricsDispatcher.FORCE_NEW_KEY to batchClosedMetadata.forcedNew,
+            BatchMetricsDispatcher.BATCH_EVENTS_COUNT_KEY to batchClosedMetadata.eventsCount,
+            BatchMetricsDispatcher.FILE_NAME to file.name,
+            BatchMetricsDispatcher.THREAD_NAME to Thread.currentThread().name,
+            BatchMetricsDispatcher.TRACKING_CONSENT_KEY to "granted"
+        )
+    }
+
     private fun Forge.forgeValidFile(): File {
         val fileNameAsLong = currentTimeInMillis - aLong(min = 1000, max = 100000)
         val fileLength = aPositiveLong()
+        val dirName = forgeAGrantedDirName()
+        val parentDirectory: File = mock() {
+            whenever(it.isDirectory).thenReturn(true)
+            whenever(it.name).thenReturn(dirName)
+        }
         val fakeFile: File = mock {
+            whenever(it.parentFile).thenReturn(parentDirectory)
             whenever(it.name).thenReturn(fileNameAsLong.toString())
             whenever(it.length()).thenReturn(fileLength)
         }
         return fakeFile
     }
 
-    private fun trackNameResolver(featureName: String): String? {
+    private fun Forge.forgeValidClosedFile(): File {
+        return forgeValidFile().apply { whenever(this.exists()).thenReturn(true) }
+    }
+
+    private fun Forge.forgeAGrantedDirName(): String {
+        val separator = "-"
+        return aList(anInt(min = 1, max = 10)) { anAlphabeticalString() }
+            .joinToString(separator) + "-v" + aNumericalString()
+    }
+
+    private fun Forge.forgeAPendingDirName(): String {
+        val separator = "-"
+        return aList(anInt(min = 1, max = 10)) { anAlphabeticalString() }
+            .joinToString(separator) + "-pending-v" + aNumericalString()
+    }
+
+    private fun resolveTrackName(featureName: String): String? {
         return when (featureName) {
             Feature.RUM_FEATURE_NAME -> BatchMetricsDispatcher.RUM_TRACK_NAME
             Feature.LOGS_FEATURE_NAME -> BatchMetricsDispatcher.LOGS_TRACK_NAME

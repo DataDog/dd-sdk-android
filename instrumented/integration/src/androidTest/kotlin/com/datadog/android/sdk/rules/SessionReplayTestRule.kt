@@ -21,6 +21,12 @@ internal open class SessionReplayTestRule<T : Activity>(
     // region ActivityTestRule
 
     override fun beforeActivityLaunched() {
+        // give time to remove the previous activity. Espresso seems to have moments
+        // when it tries to launch the new activity while the previous one is still somehow
+        // in the process of being removed. This creates an issue with our SR recorder which
+        // calls the WindowInspector.getGlobalWindowViews() which can return the previous window +
+        // the current window and alters the tests.
+        Thread.sleep(2000)
         removeCallbacks(listOf(Class.forName(SESSION_REPLAY_LIFECYCLE_CALLBACK_CLASS_NAME)))
         super.beforeActivityLaunched()
     }

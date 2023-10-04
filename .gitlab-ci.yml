@@ -4,7 +4,7 @@ include:
 # SETUP
 
 variables:
-  CURRENT_CI_IMAGE: "3"
+  CURRENT_CI_IMAGE: "4"
   CI_IMAGE_DOCKER: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/dd-sdk-android:$CURRENT_CI_IMAGE
   GIT_DEPTH: 5
 
@@ -64,17 +64,10 @@ static-analysis:
     DETEKT_CUSTOM_RULES_YML_PATH: "detekt_custom.yml"
     DETEKT_GENERATE_CLASSPATH_BUILD_TASK: "printSdkDebugRuntimeClasspath"
     DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
+    FLAVORED_ANDROID_LINT: ":tools:lint:lint :sample:kotlin:lintUs1Release :sample:wear:lintUs1Release"
   trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v16647802-df6f90e7/static-analysis.yml"
+    include: "https://gitlab-templates.ddbuild.io/mobile/v20132793-918be90a/static-analysis.yml"
     strategy: depend
-
-analysis:android-lint:
-  tags: [ "runner:main" ]
-  image: $CI_IMAGE_DOCKER
-  stage: analysis
-  timeout: 30m
-  script:
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :lintCheckAll --stacktrace --no-daemon
 
 analysis:licenses:
   tags: [ "runner:main" ]

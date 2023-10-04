@@ -51,6 +51,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.net.URL
+import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -124,7 +125,7 @@ internal class WebViewTrackingTest {
         }
 
         // When
-        WebViewTracking.enable(mockWebView, fakeHosts, mockCore)
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
 
         // Then
         verify(mockWebView).addJavascriptInterface(
@@ -147,7 +148,7 @@ internal class WebViewTrackingTest {
         }
 
         // When
-        WebViewTracking.enable(mockWebView, fakeHosts, mockCore)
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
 
         // Then
         verify(mockWebView).addJavascriptInterface(
@@ -173,7 +174,7 @@ internal class WebViewTrackingTest {
         }
 
         // When
-        WebViewTracking.enable(mockWebView, fakeHosts, mockCore)
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
 
         // Then
         argumentCaptor<DatadogEventBridge> {
@@ -216,7 +217,7 @@ internal class WebViewTrackingTest {
         }
 
         // When
-        WebViewTracking.enable(mockWebView, fakeHosts, mockCore)
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
 
         // Then
         argumentCaptor<DatadogEventBridge> {
@@ -266,7 +267,7 @@ internal class WebViewTrackingTest {
         }
 
         // When
-        WebViewTracking.enable(mockWebView, fakeHosts, mockCore)
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
 
         // Then
         argumentCaptor<DatadogEventBridge> {
@@ -311,8 +312,14 @@ internal class WebViewTrackingTest {
         val fakeBundledEvent = forge.getForgery<JsonObject>()
         val fakeRumEventType = forge.anElementFrom(WebViewRumEventConsumer.RUM_EVENT_TYPES)
         val fakeWebEvent = bundleWebEvent(fakeBundledEvent, fakeRumEventType)
+        val fakeApplicationId = forge.getForgery<UUID>().toString()
+        val fakeSessionId = forge.getForgery<UUID>().toString()
         val mockWebViewRumFeature = mock<FeatureScope>()
         val mockWebViewLogsFeature = mock<FeatureScope>()
+        val expectedEvent = fakeBundledEvent.deepCopy().apply {
+            add("application", JsonObject().apply { addProperty("id", fakeApplicationId) })
+            add("session", JsonObject().apply { addProperty("id", fakeSessionId) })
+        }
 
         whenever(
             mockCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
@@ -325,8 +332,15 @@ internal class WebViewTrackingTest {
             val feature = it.getArgument<Feature>(0)
             feature.onInitialize(mock())
         }
-
+        val fakeFeaturesContext = mapOf<String, Map<String, Any?>>(
+            "rum" to mapOf<String, Any?>(
+                "application_id" to fakeApplicationId,
+                "session_id" to fakeSessionId,
+                "session_state" to "TRACKED"
+            )
+        )
         val mockDatadogContext = mock<DatadogContext>()
+        whenever(mockDatadogContext.featuresContext) doReturn fakeFeaturesContext
         val mockEventBatchWriter = mock<EventBatchWriter>()
         val proxy = WebViewTracking._InternalWebViewProxy(mockCore)
 
@@ -341,7 +355,7 @@ internal class WebViewTrackingTest {
         argumentCaptor<ByteArray> {
             verify(mockEventBatchWriter).write(capture(), isNull())
             val capturedJson = String(firstValue, Charsets.UTF_8)
-            assertThat(capturedJson).isEqualTo(fakeBundledEvent.toString())
+            assertThat(capturedJson).isEqualTo(expectedEvent.toString())
         }
     }
 

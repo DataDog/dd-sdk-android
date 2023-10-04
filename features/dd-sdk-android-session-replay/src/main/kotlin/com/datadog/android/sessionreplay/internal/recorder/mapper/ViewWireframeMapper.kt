@@ -7,14 +7,18 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.view.View
+import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal class ViewWireframeMapper :
     BaseWireframeMapper<View, MobileSegment.Wireframe.ShapeWireframe>() {
 
-    override fun map(view: View, mappingContext: MappingContext):
-        List<MobileSegment.Wireframe.ShapeWireframe> {
+    override fun map(
+        view: View,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ): List<MobileSegment.Wireframe.ShapeWireframe> {
         val viewGlobalBounds = resolveViewGlobalBounds(
             view,
             mappingContext.systemInformation.screenDensity

@@ -7,12 +7,12 @@
 package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.content.Context
-import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.widget.AbsListView
+import android.widget.ScrollView
 import androidx.core.view.ScrollingView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
@@ -35,7 +35,7 @@ internal class GesturesListener(
     private val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate(),
     private val contextRef: Reference<Context>,
     private val internalLogger: InternalLogger
-) : GestureDetector.OnGestureListener {
+) : GestureListenerCompat() {
 
     private val coordinatesContainer = IntArray(2)
     private var scrollEventType: RumActionType? = null
@@ -70,7 +70,7 @@ internal class GesturesListener(
     }
 
     override fun onFling(
-        startDownEvent: MotionEvent,
+        startDownEvent: MotionEvent?,
         endUpEvent: MotionEvent,
         velocityX: Float,
         velocityY: Float
@@ -81,7 +81,7 @@ internal class GesturesListener(
 
     @Suppress("ReturnCount")
     override fun onScroll(
-        startDownEvent: MotionEvent,
+        startDownEvent: MotionEvent?,
         currentMoveEvent: MotionEvent,
         distanceX: Float,
         distanceY: Float
@@ -92,7 +92,7 @@ internal class GesturesListener(
         // we only start the user action once
         if (scrollEventType == null) {
             // check if we find a valid target
-            val scrollTarget = findTargetForScroll(decorView, startDownEvent.x, startDownEvent.y)
+            val scrollTarget = startDownEvent?.let { findTargetForScroll(decorView, it.x, startDownEvent.y) }
             if (scrollTarget != null) {
                 scrollTargetReference = WeakReference(scrollTarget)
                 val targetId: String = contextRef.get().resourceIdName(scrollTarget.id)
@@ -104,12 +104,11 @@ internal class GesturesListener(
                     resolveTargetName(interactionPredicate, scrollTarget),
                     attributes
                 )
+                scrollEventType = RumActionType.SCROLL
             } else {
                 return false
             }
-            scrollEventType = RumActionType.SCROLL
         }
-
         return false
     }
 
@@ -122,13 +121,29 @@ internal class GesturesListener(
     // region Internal
 
     private fun closeScrollOrSwipeEventIfAny(decorView: View?, onUpEvent: MotionEvent) {
-        val type = scrollEventType ?: return
+        val type = scrollEventType
+        if (type == null) {
+            closeScrollAsTap(decorView, onUpEvent)
+        } else {
+            closeScrollOrSwipeEvent(type, decorView, onUpEvent)
+        }
+    }
 
+    private fun closeScrollAsTap(decorView: View?, onUpEvent: MotionEvent) {
+        if (decorView != null) {
+            val downTarget = findTargetForTap(decorView, onTouchDownXPos, onTouchDownYPos)
+            val upTarget = findTargetForTap(decorView, onUpEvent.x, onUpEvent.y)
+
+            if (downTarget === upTarget && downTarget != null) {
+                sendTapEventWithTarget(downTarget)
+            }
+        }
+    }
+
+    private fun closeScrollOrSwipeEvent(type: RumActionType, decorView: View?, onUpEvent: MotionEvent) {
         val registeredRumMonitor = GlobalRumMonitor.get(sdkCore)
         val scrollTarget = scrollTargetReference.get()
-        if (decorView == null ||
-            scrollTarget == null
-        ) {
+        if (decorView == null || scrollTarget == null) {
             return
         }
 
@@ -172,21 +187,25 @@ internal class GesturesListener(
     private fun handleTapUp(decorView: View?, e: MotionEvent) {
         if (decorView != null) {
             findTargetForTap(decorView, e.x, e.y)?.let { target ->
-                val targetId: String = contextRef.get().resourceIdName(target.id)
-                val attributes = mutableMapOf<String, Any?>(
-                    RumAttributes.ACTION_TARGET_CLASS_NAME to target.targetClassName(),
-                    RumAttributes.ACTION_TARGET_RESOURCE_ID to targetId
-                )
-                attributesProviders.forEach {
-                    it.extractAttributes(target, attributes)
-                }
-                GlobalRumMonitor.get(sdkCore).addAction(
-                    RumActionType.TAP,
-                    resolveTargetName(interactionPredicate, target),
-                    attributes
-                )
+                sendTapEventWithTarget(target)
             }
         }
+    }
+
+    private fun sendTapEventWithTarget(target: View) {
+        val targetId: String = contextRef.get().resourceIdName(target.id)
+        val attributes = mutableMapOf<String, Any?>(
+            RumAttributes.ACTION_TARGET_CLASS_NAME to target.targetClassName(),
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to targetId
+        )
+        attributesProviders.forEach {
+            it.extractAttributes(target, attributes)
+        }
+        GlobalRumMonitor.get(sdkCore).addAction(
+            RumActionType.TAP,
+            resolveTargetName(interactionPredicate, target),
+            attributes
+        )
     }
 
     private fun findTargetForTap(decorView: View, x: Float, y: Float): View? {
@@ -280,7 +299,8 @@ internal class GesturesListener(
 
     private fun isScrollableView(view: View): Boolean {
         return ScrollingView::class.java.isAssignableFrom(view.javaClass) ||
-            AbsListView::class.java.isAssignableFrom(view.javaClass)
+            AbsListView::class.java.isAssignableFrom(view.javaClass) ||
+            ScrollView::class.java.isAssignableFrom(view.javaClass)
     }
 
     private fun hitTest(
@@ -334,7 +354,7 @@ internal class GesturesListener(
         internal const val SCROLL_DIRECTION_DOWN = "down"
 
         internal val MSG_NO_TARGET_TAP = "We could not find a valid target for " +
-            "the ${RumActionType.TAP.name} event." +
+            "the ${RumActionType.TAP.name} event. " +
             "The DecorView was empty and either transparent " +
             "or not clickable for this Activity."
         internal val MSG_NO_TARGET_SCROLL_SWIPE = "We could not find a valid target for " +

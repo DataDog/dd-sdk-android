@@ -39,19 +39,20 @@ internal class FeatureFileOrchestrator(
         storageDir: File,
         featureName: String,
         executorService: ExecutorService,
+        filePersistenceConfig: FilePersistenceConfig,
         internalLogger: InternalLogger,
         metricsDispatcher: MetricsDispatcher
     ) : this(
         consentProvider,
         BatchFileOrchestrator(
             File(storageDir, PENDING_DIR.format(Locale.US, featureName)),
-            PERSISTENCE_CONFIG,
+            filePersistenceConfig,
             internalLogger,
             metricsDispatcher
         ),
         BatchFileOrchestrator(
             File(storageDir, GRANTED_DIR.format(Locale.US, featureName)),
-            PERSISTENCE_CONFIG,
+            filePersistenceConfig,
             internalLogger,
             metricsDispatcher
         ),
@@ -64,10 +65,12 @@ internal class FeatureFileOrchestrator(
     )
 
     companion object {
+        private const val BASE_DIR_NAME_REG_EX = "([a-z]+-)+"
+        internal val IS_GRANTED_DIR_REG_EX = Regex("${BASE_DIR_NAME_REG_EX}v[0-9]+")
+        internal val IS_PENDING_DIR_REG_EX = Regex("${BASE_DIR_NAME_REG_EX}pending-v[0-9]+")
+
         internal const val VERSION = 2
         internal const val PENDING_DIR = "%s-pending-v$VERSION"
         internal const val GRANTED_DIR = "%s-v$VERSION"
-
-        private val PERSISTENCE_CONFIG = FilePersistenceConfig()
     }
 }

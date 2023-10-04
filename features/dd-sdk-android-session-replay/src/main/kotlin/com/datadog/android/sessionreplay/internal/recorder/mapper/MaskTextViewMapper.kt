@@ -9,8 +9,10 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.widget.TextView
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.MaskObfuscationRule
 import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.TextValueObfuscationRule
+import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 
 /**
  * A [WireframeMapper] implementation to map a [TextView] component and apply the
@@ -19,8 +21,19 @@ import com.datadog.android.sessionreplay.internal.recorder.obfuscator.rules.Text
 class MaskTextViewMapper : TextViewMapper {
     constructor() : super(textValueObfuscationRule = MaskObfuscationRule())
 
+    internal constructor(
+        imageWireframeHelper: ImageWireframeHelper,
+        uniqueIdentifierGenerator: UniqueIdentifierGenerator
+    ) : super(
+        imageWireframeHelper = imageWireframeHelper,
+        uniqueIdentifierGenerator = uniqueIdentifierGenerator,
+        textValueObfuscationRule = MaskObfuscationRule()
+    )
+
     @VisibleForTesting
     internal constructor(
+        imageWireframeHelper: ImageWireframeHelper,
+        uniqueIdentifierGenerator: UniqueIdentifierGenerator,
         textValueObfuscationRule: TextValueObfuscationRule
-    ) : super(textValueObfuscationRule)
+    ) : super(imageWireframeHelper, uniqueIdentifierGenerator, textValueObfuscationRule)
 }

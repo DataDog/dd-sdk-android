@@ -83,6 +83,12 @@ internal class RecordedDataQueueHandler {
         this.recordedDataQueue = recordedQueue
     }
 
+    @Synchronized
+    internal fun clearAndStopProcessingQueue() {
+        recordedDataQueue.clear()
+        executorService.shutdown()
+    }
+
     @MainThread
     internal fun addTouchEventItem(
         pointerInteractions: List<MobileSegment.MobileRecord>
@@ -91,7 +97,7 @@ internal class RecordedDataQueueHandler {
             ?: return null
 
         val item = TouchEventRecordedDataQueueItem(
-            rumContextData = rumContextData,
+            recordedQueuedItemContext = rumContextData,
             touchData = pointerInteractions
         )
 
@@ -108,7 +114,7 @@ internal class RecordedDataQueueHandler {
             ?: return null
 
         val item = SnapshotRecordedDataQueueItem(
-            rumContextData = rumContextData,
+            recordedQueuedItemContext = rumContextData,
             systemInformation = systemInformation
         )
 
@@ -198,7 +204,7 @@ internal class RecordedDataQueueHandler {
         !recordedDataQueueItem.isValid() || isTooOld(currentTime, recordedDataQueueItem)
 
     private fun isTooOld(currentTime: Long, recordedDataQueueItem: RecordedDataQueueItem): Boolean =
-        (currentTime - recordedDataQueueItem.rumContextData.timestamp) > MAX_DELAY_MS
+        (currentTime - recordedDataQueueItem.recordedQueuedItemContext.timestamp) > MAX_DELAY_MS
 
     private fun insertIntoRecordedDataQueue(recordedDataQueueItem: RecordedDataQueueItem) {
         @Suppress("SwallowedException", "TooGenericExceptionCaught")

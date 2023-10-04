@@ -12,7 +12,9 @@ import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.opentracing.DDSpan
 
-internal class DdSpanToSpanEventMapper : ContextAwareMapper<DDSpan, SpanEvent> {
+internal class DdSpanToSpanEventMapper(
+    internal val networkInfoEnabled: Boolean
+) : ContextAwareMapper<DDSpan, SpanEvent> {
 
     // region Mapper
 
@@ -45,16 +47,20 @@ internal class DdSpanToSpanEventMapper : ContextAwareMapper<DDSpan, SpanEvent> {
     )
 
     private fun resolveMeta(datadogContext: DatadogContext, event: DDSpan): SpanEvent.Meta {
-        val networkInfo = datadogContext.networkInfo
-        val simCarrier = resolveSimCarrier(networkInfo)
-        val networkInfoClient = SpanEvent.Client(
-            simCarrier = simCarrier,
-            signalStrength = networkInfo.strength?.toString(),
-            downlinkKbps = networkInfo.downKbps?.toString(),
-            uplinkKbps = networkInfo.upKbps?.toString(),
-            connectivity = networkInfo.connectivity.toString()
-        )
-        val networkInfoMeta = SpanEvent.Network(networkInfoClient)
+        val networkInfoMeta = if (networkInfoEnabled) {
+            val networkInfo = datadogContext.networkInfo
+            val simCarrier = resolveSimCarrier(networkInfo)
+            val networkInfoClient = SpanEvent.Client(
+                simCarrier = simCarrier,
+                signalStrength = networkInfo.strength?.toString(),
+                downlinkKbps = networkInfo.downKbps?.toString(),
+                uplinkKbps = networkInfo.upKbps?.toString(),
+                connectivity = networkInfo.connectivity.toString()
+            )
+            SpanEvent.Network(networkInfoClient)
+        } else {
+            null
+        }
         val userInfo = datadogContext.userInfo
         val usrMeta = SpanEvent.Usr(
             id = userInfo.id,

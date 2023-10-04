@@ -11,7 +11,6 @@ import com.datadog.android.sdk.integration.R
 
 internal open class SessionReplayTextFieldsWithInputActivity : BaseSessionReplayActivity() {
 
-    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.sr_text_fields_with_input_layout)

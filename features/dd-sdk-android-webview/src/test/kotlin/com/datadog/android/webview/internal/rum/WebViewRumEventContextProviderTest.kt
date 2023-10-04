@@ -14,6 +14,7 @@ import com.datadog.android.utils.verifyLog
 import com.datadog.android.webview.internal.rum.domain.RumContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -51,6 +52,9 @@ internal class WebViewRumEventContextProviderTest {
     @Forgery
     lateinit var fakeSessionId: UUID
 
+    @StringForgery()
+    lateinit var fakeSessionState: String
+
     @BeforeEach
     fun `set up`() {
         fakeDatadogContext = fakeDatadogContext.copy(
@@ -59,7 +63,8 @@ internal class WebViewRumEventContextProviderTest {
                     Feature.RUM_FEATURE_NAME,
                     mapOf(
                         "application_id" to fakeApplicationId.toString(),
-                        "session_id" to fakeSessionId.toString()
+                        "session_id" to fakeSessionId.toString(),
+                        "session_state" to fakeSessionState
                     )
                 )
             }
@@ -90,8 +95,7 @@ internal class WebViewRumEventContextProviderTest {
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["application_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["application_id"] =
-                RumContext.NULL_UUID
+            RumContextValueMissingType.NULL_UUID -> rumContext["application_id"] = RumContext.NULL_UUID
             RumContextValueMissingType.NOT_REGISTERED -> {
                 // no-op
             }
@@ -117,8 +121,7 @@ internal class WebViewRumEventContextProviderTest {
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["session_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["session_id"] =
-                RumContext.NULL_UUID
+            RumContextValueMissingType.NULL_UUID -> rumContext["session_id"] = RumContext.NULL_UUID
             RumContextValueMissingType.NOT_REGISTERED -> {
                 // no-op
             }
@@ -144,8 +147,7 @@ internal class WebViewRumEventContextProviderTest {
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["application_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["application_id"] =
-                RumContext.NULL_UUID
+            RumContextValueMissingType.NULL_UUID -> rumContext["application_id"] = RumContext.NULL_UUID
             RumContextValueMissingType.NOT_REGISTERED -> {
                 // no-op
             }
@@ -178,8 +180,7 @@ internal class WebViewRumEventContextProviderTest {
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["application_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["application_id"] =
-                RumContext.NULL_UUID
+            RumContextValueMissingType.NULL_UUID -> rumContext["application_id"] = RumContext.NULL_UUID
             RumContextValueMissingType.NOT_REGISTERED -> {
                 // no-op
             }
@@ -212,8 +213,7 @@ internal class WebViewRumEventContextProviderTest {
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["session_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["session_id"] =
-                RumContext.NULL_UUID
+            RumContextValueMissingType.NULL_UUID -> rumContext["session_id"] = RumContext.NULL_UUID
             RumContextValueMissingType.NOT_REGISTERED -> {
                 // no-op
             }
@@ -246,8 +246,7 @@ internal class WebViewRumEventContextProviderTest {
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["session_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["session_id"] =
-                RumContext.NULL_UUID
+            RumContextValueMissingType.NULL_UUID -> rumContext["session_id"] = RumContext.NULL_UUID
             RumContextValueMissingType.NOT_REGISTERED -> {
                 // no-op
             }
@@ -281,8 +280,7 @@ internal class WebViewRumEventContextProviderTest {
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["session_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["session_id"] =
-                RumContext.NULL_UUID
+            RumContextValueMissingType.NULL_UUID -> rumContext["session_id"] = RumContext.NULL_UUID
             RumContextValueMissingType.NOT_REGISTERED -> {
                 // no-op
             }
@@ -318,8 +316,7 @@ internal class WebViewRumEventContextProviderTest {
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["application_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["application_id"] =
-                RumContext.NULL_UUID
+            RumContextValueMissingType.NULL_UUID -> rumContext["application_id"] = RumContext.NULL_UUID
             RumContextValueMissingType.NOT_REGISTERED -> {
                 // no-op
             }
@@ -355,8 +352,7 @@ internal class WebViewRumEventContextProviderTest {
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["session_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["session_id"] =
-                RumContext.NULL_UUID
+            RumContextValueMissingType.NULL_UUID -> rumContext["session_id"] = RumContext.NULL_UUID
             RumContextValueMissingType.NOT_REGISTERED -> {
                 // no-op
             }
@@ -392,8 +388,7 @@ internal class WebViewRumEventContextProviderTest {
         )
         when (missingType) {
             RumContextValueMissingType.NULL -> rumContext["application_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["application_id"] =
-                RumContext.NULL_UUID
+            RumContextValueMissingType.NULL_UUID -> rumContext["application_id"] = RumContext.NULL_UUID
             RumContextValueMissingType.NOT_REGISTERED -> {
                 // no-op
             }

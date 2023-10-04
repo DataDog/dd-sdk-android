@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -128,7 +129,7 @@ internal abstract class BaseSwitchCompatMapperTest : BaseWireframeMapperTest() {
                 SwitchCompatMapper.THUMB_KEY_NAME
             )
         ).thenReturn(fakeThumbIdentifier)
-        whenever(mockTextWireframeMapper.map(mockSwitch, fakeMappingContext))
+        whenever(mockTextWireframeMapper.map(eq(mockSwitch), eq(fakeMappingContext), any()))
             .thenReturn(fakeTextWireframes)
         whenever(
             mockViewUtils.resolveViewGlobalBounds(

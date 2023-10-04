@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <ImageButton
+        android:id="@+id/defaultImageButtonBundled"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:contentDescription="@string/default_image_button_bundled"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_dd_icon_rgb" />
+
+    <ImageButton
+        android:id="@+id/defaultImageButton"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:contentDescription="@string/default_image_button"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_dd_statelist" />
+
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/appCompatImageButtonBundled"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:contentDescription="@string/app_compat_image_button"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_dd_icon_rgb" />
+
+</LinearLayout>

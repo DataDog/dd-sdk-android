@@ -31,6 +31,8 @@ internal abstract class BaseSessionReplayActivity : AppCompatActivity() {
         val sessionReplayPrivacy = intent.getSessionReplayPrivacy()
         val sessionReplaySampleRate = intent.getSrSampleRate()
         Datadog.setVerbosity(Log.VERBOSE)
+        // make sure the previous instance is stopped
+        Datadog.stopInstance()
         val sdkCore = Datadog.initialize(this, config, trackingConsent)
         checkNotNull(sdkCore)
         val featureActivations = mutableListOf(

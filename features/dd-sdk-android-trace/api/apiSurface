@@ -23,6 +23,7 @@ data class com.datadog.android.trace.TraceConfiguration
   class Builder
     fun useCustomEndpoint(String): Builder
     fun setEventMapper(com.datadog.android.trace.event.SpanEventMapper): Builder
+    fun setNetworkInfoEnabled(Boolean): Builder
     fun build(): TraceConfiguration
 interface com.datadog.android.trace.event.SpanEventMapper : com.datadog.android.event.EventMapper<com.datadog.android.trace.model.SpanEvent>
   override fun map(com.datadog.android.trace.model.SpanEvent): com.datadog.android.trace.model.SpanEvent
@@ -41,7 +42,7 @@ data class com.datadog.android.trace.model.SpanEvent
       fun fromJson(kotlin.String): Metrics
       fun fromJsonObject(com.google.gson.JsonObject): Metrics
   data class Meta
-    constructor(kotlin.String, Dd, Span, Tracer, Usr, Network, kotlin.collections.MutableMap<kotlin.String, kotlin.String> = mutableMapOf())
+    constructor(kotlin.String, Dd, Span, Tracer, Usr, Network? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.String> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Meta
@@ -68,13 +69,13 @@ data class com.datadog.android.trace.model.SpanEvent
       fun fromJson(kotlin.String): Usr
       fun fromJsonObject(com.google.gson.JsonObject): Usr
   data class Network
-    constructor(Client)
+    constructor(Client? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Network
       fun fromJsonObject(com.google.gson.JsonObject): Network
   data class Client
-    constructor(SimCarrier? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String)
+    constructor(SimCarrier? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Client

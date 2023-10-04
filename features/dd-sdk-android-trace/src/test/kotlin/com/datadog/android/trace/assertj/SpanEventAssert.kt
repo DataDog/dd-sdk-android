@@ -186,48 +186,58 @@ internal class SpanEventAssert(actual: SpanEvent) :
     }
 
     fun hasNetworkInfo(networkInfo: NetworkInfo): SpanEventAssert {
-        assertThat(actual.meta.network.client.connectivity)
+        assertThat(actual.meta.network?.client?.connectivity)
             .overridingErrorMessage(
                 "Expected SpanEvent to have connectivity: " +
                     "${networkInfo.connectivity} but " +
-                    "instead was: ${actual.meta.network.client.connectivity}"
+                    "instead was: ${actual.meta.network?.client?.connectivity}"
             )
             .isEqualTo(networkInfo.connectivity.toString())
-        assertThat(actual.meta.network.client.downlinkKbps)
+        assertThat(actual.meta.network?.client?.downlinkKbps)
             .overridingErrorMessage(
                 "Expected SpanEvent to have downlinkKbps: " +
                     "${networkInfo.downKbps?.toString()} but " +
-                    "instead was: ${actual.meta.network.client.downlinkKbps}"
+                    "instead was: ${actual.meta.network?.client?.downlinkKbps}"
             )
             .isEqualTo(networkInfo.downKbps?.toString())
-        assertThat(actual.meta.network.client.uplinkKbps)
+        assertThat(actual.meta.network?.client?.uplinkKbps)
             .overridingErrorMessage(
                 "Expected SpanEvent to have uplinkKbps: " +
                     "${networkInfo.upKbps?.toString()} but " +
-                    "instead was: ${actual.meta.network.client.uplinkKbps}"
+                    "instead was: ${actual.meta.network?.client?.uplinkKbps}"
             )
             .isEqualTo(networkInfo.upKbps?.toString())
-        assertThat(actual.meta.network.client.signalStrength)
+        assertThat(actual.meta.network?.client?.signalStrength)
             .overridingErrorMessage(
                 "Expected SpanEvent to have signal strength: " +
                     "${networkInfo.strength?.toString()} but " +
-                    "instead was: ${actual.meta.network.client.signalStrength}"
+                    "instead was: ${actual.meta.network?.client?.signalStrength}"
             )
             .isEqualTo(networkInfo.strength?.toString())
-        assertThat(actual.meta.network.client.simCarrier?.id)
+        assertThat(actual.meta.network?.client?.simCarrier?.id)
             .overridingErrorMessage(
                 "Expected SpanEvent to have carrier id: " +
                     "${networkInfo.carrierId?.toString()} but " +
-                    "instead was: ${actual.meta.network.client.simCarrier?.id}"
+                    "instead was: ${actual.meta.network?.client?.simCarrier?.id}"
             )
             .isEqualTo(networkInfo.carrierId?.toString())
-        assertThat(actual.meta.network.client.simCarrier?.name)
+        assertThat(actual.meta.network?.client?.simCarrier?.name)
             .overridingErrorMessage(
                 "Expected SpanEvent to have carrier name: " +
                     "${networkInfo.carrierName} but " +
-                    "instead was: ${actual.meta.network.client.simCarrier?.name}"
+                    "instead was: ${actual.meta.network?.client?.simCarrier?.name}"
             )
             .isEqualTo(networkInfo.carrierName)
+        return this
+    }
+
+    fun doesntHaveNetworkInfo(): SpanEventAssert {
+        assertThat(actual.meta.network)
+            .overridingErrorMessage(
+                "Expected SpanEvent to not have network info but was: " +
+                    "${actual.meta.network}"
+            )
+            .isNull()
         return this
     }
 

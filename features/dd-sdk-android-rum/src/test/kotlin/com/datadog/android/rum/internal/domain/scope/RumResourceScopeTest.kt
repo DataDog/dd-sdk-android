@@ -18,6 +18,7 @@ import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ResourceEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
@@ -104,7 +105,9 @@ internal class RumResourceScopeTest {
     @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+")
     lateinit var fakeUrl: String
     lateinit var fakeKey: String
-    lateinit var fakeMethod: String
+
+    @Forgery
+    lateinit var fakeMethod: RumResourceMethod
     lateinit var fakeAttributes: Map<String, Any?>
 
     @Forgery
@@ -164,7 +167,6 @@ internal class RumResourceScopeTest {
             forge.aLong(min = minLimit, max = maxLimit)
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString()
-        fakeMethod = forge.anElementFrom("PUT", "POST", "GET", "DELETE")
         mockEvent = mockEvent()
         fakeSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 
@@ -2265,6 +2267,38 @@ internal class RumResourceScopeTest {
         )
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
+    }
+
+    @Test
+    fun `𝕄 use graphql attributes 𝕎 handleEvent`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val payload = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys) +
+            mapOf(
+                "_dd.graphql.operation_type" to operationType.toString(),
+                "_dd.graphql.operation_name" to operationName,
+                "_dd.graphql.payload" to payload,
+                "_dd.graphql.variables" to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(firstValue).hasGraphql(operationType, operationName, payload, variables)
+        }
     }
 
     // region Internal

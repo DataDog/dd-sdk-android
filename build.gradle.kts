@@ -286,8 +286,9 @@ tasks.register("buildNdkIntegrationTestsArtifacts") {
 nightlyTestsCoverageConfig(threshold = 0.86f)
 
 tasks.register("printSdkDebugRuntimeClasspath") {
-    val fileTreeClassPathCollector =
-        UnionFileTree(DefaultTaskDependencyFactory.withNoAssociatedProject())
+    val fileTreeClassPathCollector = UnionFileTree(
+        DefaultTaskDependencyFactory.withNoAssociatedProject()
+    )
     val nonFileTreeClassPathCollector = mutableListOf<FileCollection>()
 
     allprojects.minus(project).forEach { subproject ->
@@ -329,6 +330,17 @@ tasks.register("printSdkDebugRuntimeClasspath") {
             val sdkDirPath = localProperties["sdk.dir"]
             val androidJarFilePath = listOf(
                 sdkDirPath,
+                "platforms",
+                "android-${AndroidConfig.TARGET_SDK}",
+                "android.jar"
+            )
+            result += File(androidJarFilePath.joinToString(File.separator))
+        }
+
+        val envSdkHome = System.getenv("ANDROID_SDK_ROOT")
+        if (!envSdkHome.isNullOrBlank()) {
+            val androidJarFilePath = listOf(
+                envSdkHome,
                 "platforms",
                 "android-${AndroidConfig.TARGET_SDK}",
                 "android.jar"

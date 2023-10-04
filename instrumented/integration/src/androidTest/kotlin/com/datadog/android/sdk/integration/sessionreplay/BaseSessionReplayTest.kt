@@ -7,9 +7,18 @@
 package com.datadog.android.sdk.integration.sessionreplay
 
 import android.app.Activity
+import androidx.test.espresso.Espresso
+import androidx.test.espresso.matcher.ViewMatchers
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.Datadog
+import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.HandledRequest
-import com.datadog.android.sdk.rules.MockServerActivityTestRule
+import com.datadog.android.sdk.rules.SessionReplayTestRule
+import com.datadog.android.sdk.utils.waitFor
+import com.datadog.tools.unit.ConditionWatcher
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -18,16 +27,57 @@ import com.google.gson.internal.LazilyParsedNumber
 import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration
+import org.junit.After
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.zip.Inflater
 
-internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> {
+internal abstract class BaseSessionReplayTest<R : Activity> {
 
-    protected abstract fun runInstrumentationScenario(mockServerRule: T)
+    @After
+    fun tearDown() {
+        GlobalRumMonitor.get().stopSession()
+        Datadog.stopInstance()
+        GlobalRumMonitor::class.java.getDeclaredMethod("reset").apply {
+            isAccessible = true
+            invoke(null)
+        }
+    }
 
-    protected fun verifyExpectedSrData(
+    protected fun assessSrPayload(payloadFileName: String, rule: SessionReplayTestRule<R>) {
+        if (isPayloadUpdateRequest()) {
+            ConditionWatcher {
+                updateExpectedDataInPayload(
+                    rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl),
+                    payloadFileName
+                )
+                true
+            }.doWait(timeoutMs = INITIAL_WAIT_MS)
+        } else {
+            ConditionWatcher {
+                // verify the captured log events into the MockedWebServer
+                verifyExpectedSrData(
+                    rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl),
+                    payloadFileName,
+                    MatchingStrategy.CONTAINS
+                )
+                true
+            }.doWait(timeoutMs = INITIAL_WAIT_MS)
+        }
+    }
+
+    protected fun runInstrumentationScenario() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.waitForIdleSync()
+        // we need this to avoid the Bitrise flakiness by requiring waiting for
+        // SurfaceFlinger to call the onDraw method which will trigger the screen snapshot.
+        Espresso.onView(ViewMatchers.isRoot()).perform(waitFor(UI_THREAD_DELAY_IN_MS))
+        instrumentation.waitForIdleSync()
+    }
+
+    private fun verifyExpectedSrData(
         handledRequests: List<HandledRequest>,
         expectedPayloadFileName: String,
         matchingStrategy: MatchingStrategy = MatchingStrategy.EXACT
@@ -54,11 +104,59 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
         }
     }
 
+    private fun updateExpectedDataInPayload(
+        handledRequests: List<HandledRequest>,
+        expectedPayloadFileName: String
+    ) {
+        val records = handledRequests
+            .mapNotNull { it.extractSrSegmentAsJson()?.asJsonObject }
+            .flatMap { it.getAsJsonArray("records") }
+            // we are dropping the incremental records as they are producing noise and
+            // flakiness. In the end we are only interested in full snapshot records.
+            .filter {
+                it.asJsonObject.get("type").asString != "11"
+            }
+            .map { it.dropInconsistentProperties() }
+        // we make sure the payload is valid before updating it
+        validatePayload(records)
+        val payloadUpdateFile = resolvePayloadUpdateFile(expectedPayloadFileName)
+        if (!payloadUpdateFile.exists()) {
+            payloadUpdateFile.createNewFile()
+        }
+        // we only take the first 3 records which will contain the:
+        // 1. Meta Record
+        // 2. Focus Record
+        // 3. Full Snapshot Record
+        val payloadUpdateData = records.take(3).toPrettyString()
+        payloadUpdateFile.writeText(payloadUpdateData)
+    }
+
+    private fun validatePayload(records: List<JsonObject>) {
+        // the payload should contain at least 3 record
+        // first record should always be a MetaRecord
+        // second record should always be the FocusRecord
+        assertThat(records.size).isGreaterThan(2)
+        assertThat(records[0].asJsonObject.get("type").asString).isEqualTo("4")
+        assertThat(records[1].asJsonObject.get("type").asString).isEqualTo("6")
+    }
+
+    private fun isPayloadUpdateRequest(): Boolean {
+        return InstrumentationRegistry.getArguments().getString(PAYLOAD_UPDATE_REQUEST)
+            ?.toBoolean() ?: false
+    }
+
     private fun resolveTestExpectedPayload(fileName: String): JsonElement {
         return InstrumentationRegistry
-            .getInstrumentation().context.assets.open(fileName).use {
+            .getInstrumentation()
+            .context
+            .assets
+            .open("$PAYLOADS_FOLDER/$fileName").use {
                 JsonParser.parseString(it.readBytes().toString(Charsets.UTF_8))
             }
+    }
+
+    private fun resolvePayloadUpdateFile(payloadFileName: String): File {
+        return File(resolvePayloadsDirectory(), payloadFileName)
     }
 
     private fun HandledRequest.extractSrSegmentAsJson(): JsonElement? {
@@ -147,17 +245,45 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
         // will be executed in Bitrise and currently Bitrise does not own a specific model for the
         // API 33. They only have a standard emulator for this API with the required screen size and
         // X,Y positions are different from the ones we have in our local emulator.
+        // Also the base64 encoded images values are inconsistent from one run to another so will
+        // be removed from the payload.
+
         return this.asJsonObject.apply {
             remove("timestamp")
-            get("data")?.asJsonObject?.let {
-                it.get("wireframes")?.asJsonArray?.forEach { dataElement ->
-                    val asJsonObject = dataElement.asJsonObject
-                    asJsonObject.remove("id")
-                    asJsonObject.remove("x")
-                    asJsonObject.remove("y")
-                }
+            get("data")?.asJsonObject?.let { dataObject ->
+                dataObject.get("wireframes")?.asJsonArray
+                    ?.mapNotNull { wireframe ->
+                        val wireframeJson = wireframe.asJsonObject
+                        wireframeJson.remove("id")
+                        wireframeJson.remove("x")
+                        wireframeJson.remove("y")
+                        wireframeJson.remove("base64")
+                        wireframeJson
+                    }?.fold(JsonArray()) { acc, jsonObject ->
+                        acc.add(jsonObject)
+                        acc
+                    }?.let { sanitizedWireframes ->
+                        dataObject.add("wireframes", sanitizedWireframes)
+                    }
             }
         }
+    }
+
+    private fun List<JsonObject>.toPrettyString(): String {
+        val gson = GsonBuilder().setPrettyPrinting().create()
+        return this.map { gson.toJson(it) }.toString()
+    }
+
+    @Suppress("UseCheckOrError")
+    private fun resolvePayloadsDirectory(): File {
+        return InstrumentationRegistry.getInstrumentation().targetContext.externalCacheDir?.let {
+            val payloadsDir = File(it, PAYLOADS_FOLDER).apply {
+                if (!this.exists()) {
+                    this.mkdirs()
+                }
+            }
+            return payloadsDir
+        } ?: throw IllegalStateException("Could not resolve the payloads directory")
     }
 
     /**
@@ -172,9 +298,12 @@ internal abstract class SrTest<R : Activity, T : MockServerActivityTestRule<R>> 
 
     companion object {
         internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
+        private const val UI_THREAD_DELAY_IN_MS = 1000L
+        private const val PAYLOAD_UPDATE_REQUEST = "updateSrPayloads"
         private val SEGMENT_FORM_DATA_REGEX =
             Regex("content-disposition: form-data; name=\"segment\"; filename=\"(.+)\"")
         private val CONTENT_LENGTH_REGEX =
             Regex("content-length: (\\d+)")
+        private const val PAYLOADS_FOLDER = "session_replay_payloads"
     }
 }

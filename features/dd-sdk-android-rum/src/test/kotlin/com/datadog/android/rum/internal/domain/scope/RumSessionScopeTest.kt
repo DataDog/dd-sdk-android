@@ -130,7 +130,7 @@ internal class RumSessionScopeTest {
 
             assertThat(rumContext["application_id"]).isEqualTo(expectedContext.applicationId)
             assertThat(rumContext["session_id"]).isEqualTo(expectedContext.sessionId)
-            assertThat(rumContext["session_state"]).isEqualTo(expectedContext.sessionState)
+            assertThat(rumContext["session_state"]).isEqualTo(expectedContext.sessionState.asString)
         }
     }
 

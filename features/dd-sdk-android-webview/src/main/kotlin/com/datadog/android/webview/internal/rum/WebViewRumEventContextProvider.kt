@@ -20,13 +20,17 @@ internal class WebViewRumEventContextProvider(private val internalLogger: Intern
         if (rumFeatureDisabled) {
             return null
         }
+
         val rumContext = datadogContext.featuresContext[Feature.RUM_FEATURE_NAME]
         val rumApplicationId = rumContext?.get("application_id") as? String
         val rumSessionId = rumContext?.get("session_id") as? String
+        val rumSessionState = rumContext?.get("session_state") as? String
+
         return if (rumApplicationId == null ||
             rumApplicationId == RumContext.NULL_UUID ||
             rumSessionId == null ||
-            rumSessionId == RumContext.NULL_UUID
+            rumSessionId == RumContext.NULL_UUID ||
+            rumSessionState.isNullOrBlank()
         ) {
             rumFeatureDisabled = true
             internalLogger.log(
@@ -36,7 +40,7 @@ internal class WebViewRumEventContextProvider(private val internalLogger: Intern
             )
             null
         } else {
-            RumContext(applicationId = rumApplicationId, sessionId = rumSessionId)
+            RumContext(rumApplicationId, rumSessionId, rumSessionState)
         }
     }
 

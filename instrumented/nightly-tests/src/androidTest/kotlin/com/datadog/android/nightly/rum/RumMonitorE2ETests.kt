@@ -639,7 +639,7 @@ class RumMonitorE2ETests {
     // region Resource
 
     /**
-     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun startResource(String, String, String, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun startResource(String, HttpMethod, String, Map<String, Any?> = emptyMap())
      */
     @Test
     fun rum_rummonitor_start_resource() {

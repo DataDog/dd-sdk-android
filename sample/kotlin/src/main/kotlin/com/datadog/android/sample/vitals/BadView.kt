@@ -60,16 +60,16 @@ internal class BadView(context: Context, attrs: AttributeSet) : View(context, at
     }
 
     @Suppress("MagicNumber")
-    override fun onDraw(canvas: Canvas?) {
+    override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
         if (slowFrameRate) {
-            canvas?.drawColor(Color.RED)
+            canvas.drawColor(Color.RED)
             repeat(200_000) {
                 val i = random.nextInt(pixelWidth)
                 val j = random.nextInt(pixelHeight)
                 paint.color = Color.rgb(i, j, random.nextInt(256))
-                canvas?.drawRect(
+                canvas.drawRect(
                     i.toFloat(),
                     j.toFloat(),
                     (i + 1).toFloat(),
@@ -79,7 +79,7 @@ internal class BadView(context: Context, attrs: AttributeSet) : View(context, at
             }
             invalidate()
         } else {
-            canvas?.drawColor(Color.BLUE)
+            canvas.drawColor(Color.BLUE)
         }
     }
 

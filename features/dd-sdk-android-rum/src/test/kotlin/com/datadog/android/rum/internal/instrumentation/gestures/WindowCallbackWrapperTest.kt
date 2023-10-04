@@ -34,6 +34,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -48,6 +49,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import kotlin.jvm.internal.Intrinsics
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -136,11 +138,11 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 prevent crash 𝕎 dispatchTouchEvent() {wrapped callback throws exception}`(
-        @Forgery exception: Exception
-    ) {
+    fun `𝕄 prevent crash 𝕎 dispatchTouchEvent() {wrapped callback throws null parameter exception}`() {
         // Given
-        whenever(mockCallback.dispatchTouchEvent(mockMotionEvent)).thenThrow(exception)
+        whenever(mockCallback.dispatchTouchEvent(mockMotionEvent)).thenAnswer {
+            Intrinsics.checkNotNullParameter(null, "event")
+        }
 
         // When
         val returnedValue = testedWrapper.dispatchTouchEvent(mockMotionEvent)
@@ -148,6 +150,19 @@ internal class WindowCallbackWrapperTest {
         // Then
         assertThat(returnedValue).isTrue()
         verify(mockCallback).dispatchTouchEvent(mockMotionEvent)
+    }
+
+    @Test
+    fun `𝕄 propagate exception 𝕎 dispatchTouchEvent() {wrapped callback throws exception}`(
+        @Forgery exception: Exception
+    ) {
+        // Given
+        whenever(mockCallback.dispatchTouchEvent(mockMotionEvent)).thenThrow(exception)
+
+        // When + Then
+        val exceptionCaught =
+            assertThrows<Exception> { testedWrapper.dispatchTouchEvent(mockMotionEvent) }
+        assertThat(exceptionCaught).isSameAs(exception)
     }
 
     // endregion
@@ -310,7 +325,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 prevent crash 𝕎 dispatchTouchEvent() {wrapped callback throws exception}`(
+    fun `𝕄 propagate exception 𝕎 onMenuItemSelected() {wrapped callback throws exception}`(
         @StringForgery itemTitle: String,
         @IntForgery itemId: Int,
         @IntForgery featureId: Int,
@@ -322,6 +337,30 @@ internal class WindowCallbackWrapperTest {
             whenever(it.title).thenReturn(itemTitle)
         }
         whenever(mockCallback.onMenuItemSelected(featureId, menuItem)).thenThrow(exception)
+
+        // When + Then
+        val exceptionCaught =
+            assertThrows<Exception> { testedWrapper.onMenuItemSelected(featureId, menuItem) }
+        assertThat(exceptionCaught).isSameAs(exception)
+    }
+
+    @Test
+    fun `𝕄 prevent crash 𝕎 onMenuItemSelected() {wrapped callback throws null parameter exception}`(
+        @StringForgery itemTitle: String,
+        @IntForgery itemId: Int,
+        @IntForgery featureId: Int
+    ) {
+        // Given
+        val menuItem: MenuItem = mock {
+            whenever(it.itemId).thenReturn(itemId)
+            whenever(it.title).thenReturn(itemTitle)
+        }
+        whenever(
+            mockCallback.onMenuItemSelected(
+                featureId,
+                menuItem
+            )
+        ).thenAnswer { Intrinsics.checkNotNullParameter(null, "event") }
 
         // When
         val returnedValue = testedWrapper.onMenuItemSelected(featureId, menuItem)
@@ -512,7 +551,26 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 prevent crash 𝕎 dispatchKeyEvent() {wrapped callback throws exception}`(
+    fun `𝕄 prevent crash 𝕎 dispatchKeyEvent() {wrapped callback throws null parameter exception}`(
+        @IntForgery action: Int,
+        @IntForgery keyCode: Int
+    ) {
+        // Given
+        val keyEvent = mockKeyEvent(action, keyCode)
+        whenever(mockCallback.dispatchKeyEvent(keyEvent)).thenAnswer {
+            Intrinsics.checkNotNullParameter(null, "event")
+        }
+
+        // When
+        val returnedValue = testedWrapper.dispatchKeyEvent(keyEvent)
+
+        // Then
+        assertThat(returnedValue).isTrue()
+        verify(mockCallback).dispatchKeyEvent(keyEvent)
+    }
+
+    @Test
+    fun `𝕄 propagate exception 𝕎 dispatchKeyEvent() {wrapped callback throws exception}`(
         @IntForgery action: Int,
         @IntForgery keyCode: Int,
         @Forgery exception: Exception
@@ -521,12 +579,9 @@ internal class WindowCallbackWrapperTest {
         val keyEvent = mockKeyEvent(action, keyCode)
         whenever(mockCallback.dispatchKeyEvent(keyEvent)).thenThrow(exception)
 
-        // When
-        val returnedValue = testedWrapper.dispatchKeyEvent(keyEvent)
-
-        // Then
-        assertThat(returnedValue).isTrue()
-        verify(mockCallback).dispatchKeyEvent(keyEvent)
+        // When + Then
+        val exceptionCaught = assertThrows<Exception> { testedWrapper.dispatchKeyEvent(keyEvent) }
+        assertThat(exceptionCaught).isSameAs(exception)
     }
 
     @Test

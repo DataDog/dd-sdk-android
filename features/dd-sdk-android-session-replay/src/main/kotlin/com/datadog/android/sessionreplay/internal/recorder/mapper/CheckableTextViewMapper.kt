@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.Checkable
 import android.widget.TextView
+import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -24,12 +25,19 @@ internal abstract class CheckableTextViewMapper<T>(
 
     // region CheckableWireframeMapper
 
-    override fun resolveMainWireframes(view: T, mappingContext: MappingContext):
+    override fun resolveMainWireframes(
+        view: T,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ):
         List<MobileSegment.Wireframe> {
-        return textWireframeMapper.map(view, mappingContext)
+        return textWireframeMapper.map(view, mappingContext, asyncJobStatusCallback)
     }
 
-    override fun resolveCheckedCheckable(view: T, mappingContext: MappingContext):
+    override fun resolveCheckedCheckable(
+        view: T,
+        mappingContext: MappingContext
+    ):
         List<MobileSegment.Wireframe>? {
         val checkableId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
             view,
@@ -55,7 +63,10 @@ internal abstract class CheckableTextViewMapper<T>(
         )
     }
 
-    override fun resolveNotCheckedCheckable(view: T, mappingContext: MappingContext):
+    override fun resolveNotCheckedCheckable(
+        view: T,
+        mappingContext: MappingContext
+    ):
         List<MobileSegment.Wireframe>? {
         val checkableId = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
             view,

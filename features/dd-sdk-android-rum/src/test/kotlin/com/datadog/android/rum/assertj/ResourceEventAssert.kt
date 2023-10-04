@@ -9,16 +9,16 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.isConnected
-import com.datadog.android.rum.internal.domain.scope.toMethod
+import com.datadog.android.rum.internal.domain.scope.toResourceMethod
 import com.datadog.android.rum.internal.domain.scope.toSchemaType
 import com.datadog.android.rum.model.ResourceEvent
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
-import org.mockito.kotlin.mock
 
 internal class ResourceEventAssert(actual: ResourceEvent) :
     AbstractObjectAssert<ResourceEventAssert, ResourceEvent>(
@@ -68,13 +68,13 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
-    fun hasMethod(expected: String): ResourceEventAssert {
+    fun hasMethod(expected: RumResourceMethod): ResourceEventAssert {
         assertThat(actual.resource.method)
             .overridingErrorMessage(
                 "Expected event data to have resource.method $expected " +
                     "but was ${actual.resource.method}"
             )
-            .isEqualTo(expected.toMethod(mock()))
+            .isEqualTo(expected.toResourceMethod())
         return this
     }
 
@@ -575,6 +575,43 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
                     " but instead was: ${actual.dd.configuration?.sessionSampleRate}"
             )
             .isEqualTo(sampleRate)
+        return this
+    }
+
+    fun hasGraphql(
+        operationType: ResourceEvent.OperationType,
+        operationName: String?,
+        payload: String?,
+        variables: String?
+    ): ResourceEventAssert {
+        assertThat(actual.resource.graphql?.operationType)
+            .overridingErrorMessage(
+                "Expected event data to have resource.graphql.operationType $operationType " +
+                    "but was ${actual.resource.graphql?.operationType}"
+            )
+            .isEqualTo(operationType)
+
+        assertThat(actual.resource.graphql?.operationName)
+            .overridingErrorMessage(
+                "Expected event data to have resource.graphql.operationName $operationName " +
+                    "but was ${actual.resource.graphql?.operationName}"
+            )
+            .isEqualTo(operationName)
+
+        assertThat(actual.resource.graphql?.payload)
+            .overridingErrorMessage(
+                "Expected event data to have resource.graphql.payload $payload " +
+                    "but was ${actual.resource.graphql?.payload}"
+            )
+            .isEqualTo(payload)
+
+        assertThat(actual.resource.graphql?.variables)
+            .overridingErrorMessage(
+                "Expected event data to have resource.graphql.variables $variables " +
+                    "but was ${actual.resource.graphql?.variables}"
+            )
+            .isEqualTo(variables)
+
         return this
     }
 

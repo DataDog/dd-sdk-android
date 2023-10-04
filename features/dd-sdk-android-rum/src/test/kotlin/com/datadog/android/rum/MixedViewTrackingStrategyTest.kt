@@ -23,8 +23,8 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -81,75 +81,57 @@ internal class MixedViewTrackingStrategyTest :
     }
 
     @Test
-    fun `when activity created will delegate to the bundled strategies`() {
+    fun `when activity created will not delegate to the bundled strategies`() {
         // Whenever
         testedStrategy.onActivityCreated(mockActivity, mockBundle)
 
         // Then
-        inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
-            verify(mockActivityViewTrackingStrategy).onActivityCreated(mockActivity, mockBundle)
-            verify(mockFragmentViewTrackingStrategy).onActivityCreated(mockActivity, mockBundle)
-        }
+        verifyNoInteractions(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy)
     }
 
     @Test
-    fun `when activity destroyed will delegate to the bundled strategies`() {
+    fun `when activity destroyed will not delegate to the bundled strategies`() {
         // Whenever
         testedStrategy.onActivityDestroyed(mockActivity)
 
         // Then
-        inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
-            verify(mockActivityViewTrackingStrategy).onActivityDestroyed(mockActivity)
-            verify(mockFragmentViewTrackingStrategy).onActivityDestroyed(mockActivity)
-        }
+        verifyNoInteractions(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy)
     }
 
     @Test
-    fun `when activity started will delegate to the bundled strategies`() {
+    fun `when activity started will not delegate to the bundled strategies`() {
         // Whenever
         testedStrategy.onActivityStarted(mockActivity)
 
         // Then
-        inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
-            verify(mockActivityViewTrackingStrategy).onActivityStarted(mockActivity)
-            verify(mockFragmentViewTrackingStrategy).onActivityStarted(mockActivity)
-        }
+        verifyNoInteractions(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy)
     }
 
     @Test
-    fun `when activity stopped will delegate to the bundled strategies`() {
+    fun `when activity stopped will not delegate to the bundled strategies`() {
         // Whenever
         testedStrategy.onActivityStopped(mockActivity)
 
         // Then
-        inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
-            verify(mockActivityViewTrackingStrategy).onActivityStopped(mockActivity)
-            verify(mockFragmentViewTrackingStrategy).onActivityStopped(mockActivity)
-        }
+        verifyNoInteractions(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy)
     }
 
     @Test
-    fun `when activity resumed will delegate to the bundled strategies`() {
+    fun `when activity resumed will not delegate to the bundled strategies`() {
         // Whenever
         testedStrategy.onActivityResumed(mockActivity)
 
         // Then
-        inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
-            verify(mockActivityViewTrackingStrategy).onActivityResumed(mockActivity)
-            verify(mockFragmentViewTrackingStrategy).onActivityResumed(mockActivity)
-        }
+        verifyNoInteractions(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy)
     }
 
     @Test
-    fun `when activity paused will delegate to the bundled strategies`() {
+    fun `when activity paused will not delegate to the bundled strategies`() {
         // Whenever
         testedStrategy.onActivityPaused(mockActivity)
 
         // Then
-        inOrder(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy) {
-            verify(mockActivityViewTrackingStrategy).onActivityPaused(mockActivity)
-            verify(mockFragmentViewTrackingStrategy).onActivityPaused(mockActivity)
-        }
+        verifyNoInteractions(mockActivityViewTrackingStrategy, mockFragmentViewTrackingStrategy)
     }
 
     // endregion

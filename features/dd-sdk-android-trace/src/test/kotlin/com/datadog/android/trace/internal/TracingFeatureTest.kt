@@ -12,9 +12,11 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.trace.internal.data.TraceWriter
+import com.datadog.android.trace.internal.domain.event.DdSpanToSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.net.TracesRequestFactory
 import com.datadog.android.utils.forge.Configurator
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -53,11 +55,19 @@ internal class TracingFeatureTest {
     @StringForgery(regex = "https://[a-z]+\\.com")
     lateinit var fakeEndpointUrl: String
 
+    @BoolForgery
+    var fakeNetworkInfoEnabled: Boolean = false
+
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
-        testedFeature = TracingFeature(mockSdkCore, fakeEndpointUrl, mockSpanEventMapper)
+        testedFeature = TracingFeature(
+            mockSdkCore,
+            fakeEndpointUrl,
+            mockSpanEventMapper,
+            fakeNetworkInfoEnabled
+        )
     }
 
     @Test
@@ -68,6 +78,10 @@ internal class TracingFeatureTest {
         // Then
         assertThat(testedFeature.dataWriter)
             .isInstanceOf(TraceWriter::class.java)
+        val traceWriter = testedFeature.dataWriter as TraceWriter
+        val legacyMapper = traceWriter.legacyMapper
+        assertThat(legacyMapper).isInstanceOf(DdSpanToSpanEventMapper::class.java)
+        assertThat((legacyMapper as DdSpanToSpanEventMapper).networkInfoEnabled).isEqualTo(fakeNetworkInfoEnabled)
     }
 
     @Test

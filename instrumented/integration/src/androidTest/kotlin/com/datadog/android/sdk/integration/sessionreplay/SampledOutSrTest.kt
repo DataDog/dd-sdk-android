@@ -6,7 +6,6 @@
 
 package com.datadog.android.sdk.integration.sessionreplay
 
-import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.SessionReplayTestRule
@@ -16,7 +15,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 
-internal class SampledOutSrTest : SrSnapshotTest<SessionReplayPlaygroundActivity>() {
+internal class SampledOutSrTest : BaseSessionReplayTest<SessionReplayPlaygroundActivity>() {
 
     @get:Rule
     val rule = SessionReplayTestRule(
@@ -30,8 +29,7 @@ internal class SampledOutSrTest : SrSnapshotTest<SessionReplayPlaygroundActivity
 
     @Test
     fun verifySessionFirstSnapshot() {
-        // Wait to make sure all batches are consumed
-        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        runInstrumentationScenario()
         ConditionWatcher {
             assertThat(rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)).isEmpty()
             true

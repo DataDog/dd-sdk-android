@@ -67,13 +67,8 @@ internal class RecorderWindowCallback(
         @Suppress("SwallowedException")
         return try {
             wrappedCallback.dispatchTouchEvent(event)
-        } catch (e: Exception) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { FAIL_TO_PROCESS_MOTION_EVENT_ERROR_MESSAGE },
-                e
-            )
+        } catch (e: NullPointerException) {
+            logOrRethrowWrappedCallbackException(e)
             EVENT_CONSUMED
         }
     }
@@ -150,6 +145,25 @@ internal class RecorderWindowCallback(
 
         pointerInteractions.clear()
         lastPerformedFlushTimeInNs = System.nanoTime()
+    }
+
+    private fun logOrRethrowWrappedCallbackException(e: NullPointerException) {
+        // When calling delegate callback, we may have something like
+        // java.lang.NullPointerException: Parameter specified as non-null is null:
+        // method xxx, parameter xxx
+        // This happens because Kotlin delegate expects non-null value incorrectly inferring
+        // non-null type from Java interface definition (seems to be solved in Kotlin 1.8 though)
+        if (e.message?.contains("Parameter specified as non-null is null") == true) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { FAIL_TO_PROCESS_MOTION_EVENT_ERROR_MESSAGE },
+                e
+            )
+        } else {
+            @Suppress("ThrowingInternalException") // we need to let client exception to propagate
+            throw e
+        }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

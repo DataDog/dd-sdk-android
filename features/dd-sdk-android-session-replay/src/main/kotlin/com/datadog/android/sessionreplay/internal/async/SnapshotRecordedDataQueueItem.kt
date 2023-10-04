@@ -6,26 +6,26 @@
 
 package com.datadog.android.sessionreplay.internal.async
 
-import com.datadog.android.sessionreplay.internal.processor.RumContextData
+import com.datadog.android.sessionreplay.internal.processor.RecordedQueuedItemContext
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import java.util.concurrent.atomic.AtomicInteger
 
 internal class SnapshotRecordedDataQueueItem(
-    rumContextData: RumContextData,
+    recordedQueuedItemContext: RecordedQueuedItemContext,
     internal val systemInformation: SystemInformation
-) : RecordedDataQueueItem(rumContextData) {
+) : RecordedDataQueueItem(recordedQueuedItemContext) {
     internal var nodes = emptyList<Node>()
-    internal var pendingImages = AtomicInteger(0)
+    internal var pendingJobs = AtomicInteger(0)
 
     override fun isValid(): Boolean {
         return nodes.isNotEmpty()
     }
 
     override fun isReady(): Boolean {
-        return pendingImages.get() == 0
+        return pendingJobs.get() == 0
     }
 
-    internal fun incrementPendingImages() = pendingImages.incrementAndGet()
-    internal fun decrementPendingImages() = pendingImages.decrementAndGet()
+    internal fun incrementPendingJobs() = pendingJobs.incrementAndGet()
+    internal fun decrementPendingJobs() = pendingJobs.decrementAndGet()
 }
