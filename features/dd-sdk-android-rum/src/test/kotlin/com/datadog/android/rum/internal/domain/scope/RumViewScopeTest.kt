@@ -20,6 +20,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumPerformanceMetric
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
@@ -3808,7 +3809,7 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 create ResourceScope 𝕎 handleEvent(StartResource)`(
         @StringForgery key: String,
-        @StringForgery method: String,
+        @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
         forge: Forge
     ) {
@@ -3844,7 +3845,7 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 create ResourceScope with active actionId 𝕎 handleEvent(StartResource)`(
         @StringForgery key: String,
-        @StringForgery method: String,
+        @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
         forge: Forge
     ) {
@@ -3931,7 +3932,7 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 wait for pending Resource 𝕎 handleEvent(StartResource) on active view`(
         @StringForgery key: String,
-        @StringForgery method: String,
+        @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // Given
@@ -6470,7 +6471,7 @@ internal class RumViewScopeTest {
             RumRawEvent.StartResource(
                 forge.anAlphabeticalString(),
                 forge.anAlphabeticalString(),
-                forge.anAlphabeticalString(),
+                forge.aValueFrom(RumResourceMethod::class.java),
                 emptyMap()
             ),
             RumRawEvent.ResourceSent(

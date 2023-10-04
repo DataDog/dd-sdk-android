@@ -17,6 +17,7 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -34,7 +35,7 @@ internal class RumResourceScope(
     internal val parentScope: RumScope,
     internal val sdkCore: InternalSdkCore,
     internal val url: String,
-    internal val method: String,
+    internal val method: RumResourceMethod,
     internal val key: String,
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
@@ -201,7 +202,7 @@ internal class RumResourceScope(
                         type = kind.toSchemaType(),
                         url = url,
                         duration = duration,
-                        method = method.toMethod(sdkCore.internalLogger),
+                        method = method.toResourceMethod(),
                         statusCode = statusCode,
                         size = size,
                         dns = finalTiming?.dns(),
@@ -323,7 +324,7 @@ internal class RumResourceScope(
                         isCrash = false,
                         resource = ErrorEvent.Resource(
                             url = url,
-                            method = method.toErrorMethod(sdkCore.internalLogger),
+                            method = method.toErrorMethod(),
                             statusCode = statusCode ?: 0,
                             provider = resolveErrorProvider()
                         ),

@@ -15,6 +15,7 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.verifyLog
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
@@ -128,7 +129,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
     @StringForgery(regex = IPV4_PATTERN)
     lateinit var fakeHostIp: String
 
-    lateinit var fakeMethod: String
+    lateinit var fakeMethod: RumResourceMethod
     var fakeBody: String? = null
     var fakeMediaType: MediaType? = null
 
@@ -909,7 +910,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
-        verify(mockSpan).setTag("http.method", fakeMethod)
+        verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan, never()).finish()
         verify(mockSpan as MutableSpan).drop()
@@ -928,7 +929,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan as MutableSpan).setResourceName(fakeUrl)
         verify(mockSpan).setTag("http.url", fakeUrl)
-        verify(mockSpan).setTag("http.method", fakeMethod)
+        verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan as MutableSpan).setError(true)
         verify(mockSpan, never()).finish()
@@ -948,7 +949,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan as MutableSpan).setResourceName(fakeUrl)
         verify(mockSpan).setTag("http.url", fakeUrl)
-        verify(mockSpan).setTag("http.method", fakeMethod)
+        verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan as MutableSpan, never()).setError(true)
         verify(mockSpan, never()).finish()
@@ -965,7 +966,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
-        verify(mockSpan).setTag("http.method", fakeMethod)
+        verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", 404)
         verify(mockSpan as MutableSpan).setError(true)
         verify(mockSpan as MutableSpan).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
@@ -988,7 +989,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
-        verify(mockSpan).setTag("http.method", fakeMethod)
+        verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("error.type", throwable.javaClass.canonicalName)
         verify(mockSpan).setTag("error.msg", throwable.message)
         verify(mockSpan).setTag("error.stack", throwable.loggableStackTrace())
@@ -1037,7 +1038,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
         verify(localSpanBuilder).withOrigin(getExpectedOrigin())
         verify(localSpan).setTag("http.url", fakeUrl)
-        verify(localSpan).setTag("http.method", fakeMethod)
+        verify(localSpan).setTag("http.method", fakeMethod.name)
         verify(localSpan).setTag("http.status_code", statusCode)
         verify(localSpan, never()).finish()
         verify(localSpan as MutableSpan).drop()
@@ -1074,13 +1075,13 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
         verify(localSpanBuilder).withOrigin(getExpectedOrigin())
         verify(localSpan).setTag("http.url", fakeUrl)
-        verify(localSpan).setTag("http.method", fakeMethod)
+        verify(localSpan).setTag("http.method", fakeMethod.name)
         verify(localSpan).setTag("http.status_code", statusCode)
         verify(localSpan, never()).finish()
         verify(localSpan as MutableSpan).drop()
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
-        verify(mockSpan).setTag("http.method", fakeMethod)
+        verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan, never()).finish()
         verify(mockSpan as MutableSpan).drop()
@@ -1113,7 +1114,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
-        verify(mockSpan).setTag("http.method", fakeMethod)
+        verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(tagKey, tagValue)
         verify(mockSpan, never()).finish()
@@ -1141,7 +1142,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
-        verify(mockSpan).setTag("http.method", fakeMethod)
+        verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(tagKey, tagValue)
         verify(mockSpan, never()).finish()
@@ -1189,7 +1190,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
-        verify(mockSpan).setTag("http.method", fakeMethod)
+        verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("error.type", throwable.javaClass.canonicalName)
         verify(mockSpan).setTag("error.msg", throwable.message)
         verify(mockSpan).setTag("error.stack", throwable.loggableStackTrace())
@@ -1324,19 +1325,27 @@ internal open class TracingInterceptorNotSendingSpanTest {
         return "$protocol://${host.lowercase(Locale.US)}/$path"
     }
 
-    private fun forgeRequest(
+    protected fun forgeRequest(
         forge: Forge,
         configure: (Request.Builder) -> Unit = {}
     ): Request {
         val builder = Request.Builder().url(fakeUrl)
         if (forge.aBool()) {
-            fakeMethod = "POST"
+            fakeMethod = forge.anElementFrom(
+                RumResourceMethod.POST,
+                RumResourceMethod.PATCH,
+                RumResourceMethod.PUT
+            )
             fakeBody = forge.anAlphabeticalString()
-            builder.post(fakeBody!!.toByteArray().toRequestBody(null))
+            builder.method(fakeMethod.name, fakeBody!!.toByteArray().toRequestBody(null))
         } else {
-            fakeMethod = forge.anElementFrom("GET", "HEAD", "DELETE")
+            fakeMethod = forge.anElementFrom(
+                RumResourceMethod.GET,
+                RumResourceMethod.HEAD,
+                RumResourceMethod.DELETE
+            )
             fakeBody = null
-            builder.method(fakeMethod, null)
+            builder.method(fakeMethod.name, null)
         }
 
         configure(builder)

@@ -16,6 +16,7 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
@@ -203,7 +204,7 @@ internal class RumActionScopeTest {
     @Test
     fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+StopResource+any)`(
         @StringForgery key: String,
-        @StringForgery method: String,
+        @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -270,7 +271,7 @@ internal class RumActionScopeTest {
     fun `𝕄 do nothing 𝕎 handleEvent(StartResource+StopResource+any) {unknown key}`(
         @StringForgery key: String,
         @StringForgery key2: String,
-        @StringForgery method: String,
+        @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -296,7 +297,7 @@ internal class RumActionScopeTest {
     @Test
     fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+StopResourceWithError+any)`(
         @StringForgery key: String,
-        @StringForgery method: String,
+        @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
         @LongForgery(200, 600) statusCode: Long,
         @StringForgery message: String,
@@ -374,7 +375,7 @@ internal class RumActionScopeTest {
     @Test
     fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+StopResourceWithStackTrace)`(
         @StringForgery key: String,
-        @StringForgery method: String,
+        @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
         @LongForgery(200, 600) statusCode: Long,
         @StringForgery message: String,
@@ -457,7 +458,7 @@ internal class RumActionScopeTest {
     fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopResourceWithError+any) {unknown key}`(
         @StringForgery key: String,
         @StringForgery key2: String,
-        @StringForgery method: String,
+        @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
         @LongForgery(200, 600) statusCode: Long,
         @StringForgery message: String,
@@ -491,7 +492,7 @@ internal class RumActionScopeTest {
     fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopResourceWithStackTrace+any) {unknown key}`(
         @StringForgery key: String,
         @StringForgery key2: String,
-        @StringForgery method: String,
+        @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
         @LongForgery(200, 600) statusCode: Long,
         @StringForgery message: String,
@@ -528,7 +529,7 @@ internal class RumActionScopeTest {
 
     @Test
     fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+any) missing resource key`(
-        @StringForgery method: String,
+        @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // Given
@@ -2053,7 +2054,7 @@ internal class RumActionScopeTest {
     @Test
     fun `𝕄 doNothing 𝕎 handleEvent(StartResource+any)`(
         @StringForgery key: String,
-        @StringForgery method: String,
+        @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // When
@@ -2071,7 +2072,7 @@ internal class RumActionScopeTest {
     @Test
     fun `𝕄 send Action after timeout 𝕎 handleEvent(StartResource+any)`(
         @StringForgery key: String,
-        @StringForgery method: String,
+        @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // When

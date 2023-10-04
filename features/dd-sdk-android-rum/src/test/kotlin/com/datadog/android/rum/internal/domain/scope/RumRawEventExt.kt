@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
@@ -60,7 +61,7 @@ internal fun Forge.startResourceEvent(): RumRawEvent.StartResource {
     return RumRawEvent.StartResource(
         key = anAlphabeticalString(),
         url = getForgery<URL>().toString(),
-        method = anElementFrom("POST", "GET", "PUT", "DELETE", "HEAD"),
+        method = aValueFrom(RumResourceMethod::class.java),
         attributes = exhaustiveAttributes()
     )
 }
