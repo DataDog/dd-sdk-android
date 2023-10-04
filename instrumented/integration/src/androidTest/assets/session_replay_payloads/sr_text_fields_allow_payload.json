@@ -123,6 +123,15 @@
       },
       {
         "width": 395,
+        "height": 1,
+        "shapeStyle": {
+          "backgroundColor": "#a538afff",
+          "opacity": 1.0
+        },
+        "type": "shape"
+      },
+      {
+        "width": 395,
         "height": 44,
         "type": "image",
         "mimeType": "image/webp",
@@ -150,6 +159,15 @@
             "vertical": "center"
           }
         }
+      },
+      {
+        "width": 395,
+        "height": 1,
+        "shapeStyle": {
+          "backgroundColor": "#ffbb33ff",
+          "opacity": 1.0
+        },
+        "type": "shape"
       },
       {
         "width": 395,
@@ -183,6 +201,15 @@
       },
       {
         "width": 395,
+        "height": 1,
+        "shapeStyle": {
+          "backgroundColor": "#ffbb33ff",
+          "opacity": 1.0
+        },
+        "type": "shape"
+      },
+      {
+        "width": 395,
         "height": 44,
         "type": "image",
         "mimeType": "image/webp",
@@ -213,6 +240,15 @@
       },
       {
         "width": 395,
+        "height": 1,
+        "shapeStyle": {
+          "backgroundColor": "#a538afff",
+          "opacity": 1.0
+        },
+        "type": "shape"
+      },
+      {
+        "width": 395,
         "height": 44,
         "type": "image",
         "mimeType": "image/webp",
@@ -240,6 +276,15 @@
             "vertical": "center"
           }
         }
+      },
+      {
+        "width": 395,
+        "height": 1,
+        "shapeStyle": {
+          "backgroundColor": "#a538afff",
+          "opacity": 1.0
+        },
+        "type": "shape"
       },
       {
         "width": 395,
