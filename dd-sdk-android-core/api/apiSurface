@@ -148,6 +148,7 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
 class com.datadog.android.core.SdkReference
   constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
   fun get(): com.datadog.android.api.SdkCore?
+fun <T> allowThreadDiskReads(() -> T): T
 enum com.datadog.android.core.configuration.BatchSize
   constructor(Long)
   - SMALL
