@@ -22,24 +22,37 @@ In addition, to be able to run the static analysis tools locally, you should run
 This project hosts the following modules:
 
   - `dd-sdk-android-core`: the main library implementing the core functionality of SDK (storage and upload of data, core APIs);
-  - `features/***`: a set of libraries implementing Datadog products: Logs, RUM, Traces, etc.
-  - `integrations/dd-sdk-android-coil`: a lightweight library providing a bridge integration between Datadog SDK and [Coil](https://coil-kt.github.io/coil/);
-  - `integrations/dd-sdk-android-compose`: a lightweight library providing a bridge integration between Datadog SDK and [Jetpack Compose](https://developer.android.com/jetpack/compose);
-  - `integrations/dd-sdk-android-fresco`: a lightweight library providing a bridge integration between Datadog SDK and [Fresco](https://frescolib.org/);
-  - `integrations/dd-sdk-android-okhttp`: a lightweight library providing an instrumentation for [OkHttp](https://square.github.io/okhttp/);
-  - `integrations/dd-sdk-android-rx`: a lightweight library providing a bridge integration between Datadog SDK and [RxJava](https://github.com/ReactiveX/RxJava);
-  - `integrations/dd-sdk-android-sqldelight`: a lightweight library providing a bridge integration between Datadog SDK and [SQLDelight](https://cashapp.github.io/sqldelight/);
-  - `integrations/dd-sdk-android-tv`: a lightweight library providing extensions for [Android TV](https://www.android.com/tv/)
-  - `integrations/dd-sdk-android-ktx`: a set of Kotlin extensions to make the Datadog SDK more Kotlin friendly;
-  - `integrations/dd-sdk-android-glide`: a lightweight library providing a bridge integration between Datadog SDK and [Glide](https://bumptech.github.io/glide/);
-  - `integrations/dd-sdk-android-timber`: a lightweight library providing a bridge integration between Datadog SDK and [Timber](https://github.com/JakeWharton/timber);
-  - `instrumented/integration`: a test module with integration tests using Espresso;
-  - `instrumented/nightly-tests`: a test module with E2E tests using Espresso;
-  - `tools/detekt`: a few custom [Detekt](https://github.com/arturbosch/detekt) static analysis rules;
-  - `tools/lint`: a custom [Lint](https://developer.android.com/studio/write/lint) static analysis rule;
-  - `tools/noopfactory`: an annotation processor generating no-op implementation of interfaces;
-  - `tools/unit`: a utility library with code to help writing unit tests;
+  - `features/***`: a set of libraries implementing Datadog products: 
+    - `features/dd-sdk-android-logs`: a library to send logs to Datadog;
+    - `features/dd-sdk-android-rum`: a library to track user navigation and interaction;
+    - `features/dd-sdk-android-ndk`: a lightweight library to track crashes from NDK libraries;
+    - `features/dd-sdk-android-session-replay`: a library to capture the window content;
+    - `features/dd-sdk-android-session-replay-material`: an extension for Session Replay to integrate with the Material Design library;
+    - `features/dd-sdk-android-session-trace`: a library to measure performance of operations locally;
+    - `features/dd-sdk-android-session-webview`: a library to forward logs and RUM events captured in a webview to be linked with the mobile session;
+  - `integrations/***`: a set of libraries integrating Datadog products in third party libraries:
+    - `integrations/dd-sdk-android-coil`: a lightweight library providing a bridge integration between Datadog SDK and [Coil](https://coil-kt.github.io/coil/);
+    - `integrations/dd-sdk-android-compose`: a lightweight library providing a bridge integration between Datadog SDK and [Jetpack Compose](https://developer.android.com/jetpack/compose);
+    - `integrations/dd-sdk-android-fresco`: a lightweight library providing a bridge integration between Datadog SDK and [Fresco](https://frescolib.org/);
+    - `integrations/dd-sdk-android-okhttp`: a lightweight library providing an instrumentation for [OkHttp](https://square.github.io/okhttp/);
+    - `integrations/dd-sdk-android-rx`: a lightweight library providing a bridge integration between Datadog SDK and [RxJava](https://github.com/ReactiveX/RxJava);
+    - `integrations/dd-sdk-android-sqldelight`: a lightweight library providing a bridge integration between Datadog SDK and [SQLDelight](https://cashapp.github.io/sqldelight/);
+    - `integrations/dd-sdk-android-tv`: a lightweight library providing extensions for [Android TV](https://www.android.com/tv/)
+    - `integrations/dd-sdk-android-ktx`: a set of Kotlin extensions to make the Datadog SDK more Kotlin friendly;
+    - `integrations/dd-sdk-android-glide`: a lightweight library providing a bridge integration between Datadog SDK and [Glide](https://bumptech.github.io/glide/);
+    - `integrations/dd-sdk-android-timber`: a lightweight library providing a bridge integration between Datadog SDK and [Timber](https://github.com/JakeWharton/timber);
+  - `instrumented/***`: a set of modules used to run instrumented tests:
+    - `instrumented/integration`: a test module with integration tests using Espresso;
+    - `instrumented/nightly-tests`: a test module with E2E tests using Espresso;
+  - `tools/*`: a set of modules used to extend the tools we use in our workflow:
+    - `tools/detekt`: a few custom [Detekt](https://github.com/arturbosch/detekt) static analysis rules;
+    - `tools/lint`: a custom [Lint](https://developer.android.com/studio/write/lint) static analysis rule;
+    - `tools/noopfactory`: an annotation processor generating no-op implementation of interfaces;
+    - `tools/unit`: a utility library with code to help writing unit tests;
   - `sample/***`: a few sample applications showcasing how to use the library features in production code;
+    - `sample/kotlin`: a sample mobile application;
+    - `sample/vendor-lib`: a sample android library, to showcase vendors using Datadog in a host app also using Datadog;
+    - `sample/wear`: a sample watch application;
 
 ### Building the SDK
 
@@ -176,6 +189,12 @@ following regions.
 
 class Foo : Observable(), Runnable {
     
+    // region Foo
+    
+    fun fooSpecificMethod(){}
+    
+    // endregion
+    
     // region Observable
 
     override fun addObserver(o: Observer?) {
@@ -223,7 +242,7 @@ We use a variety of tools to help us write tests easy to read and maintain:
      assertions;
  - [Elmyr](https://github.com/xgouchet/Elmyr): a framework to generate fake data
      in the Unit Tests.
-     
+
 ### Test Conventions
 
 In order to make the test classes more readable, here are a set of naming conventions and coding style.
@@ -233,17 +252,33 @@ In order to make the test classes more readable, here are a set of naming conven
 The accepted convention is to use the name of the class under test, with the suffix Test.
 E.g.: the test class corresponding to the class `Foo` must be named `FooTest`.
 
-### Fields
+Some classes need to be created in the `test` sourceSets to integrate with our testing tools 
+(AssertJ, Elmyr, …). Those classes must be placed in a package named 
+`{module_package}.tests.{test_library}`, and be named by combining the base class name and 
+the new class purpose. 
+
+E.g.:
+ - A custom assertion class for class `Foo` in module `com.datadog.module` will be 
+    `com.datadog.module.tests.assertj.FooAssert`
+- A custom forgery factory class for class `Foo` in module `com.datadog.module` will be
+    `com.datadog.module.tests.elmyr.FooForgeryFactory`
+
+#### Fields & Test Method parameters
 
 Fields should appear in the following order, and be named as explained by these rules:
 
-- The object(s) under test must be named from their class, and prefixed by `tested`. E.g.: `testedListener: Listener`, `testedVisitor: KotlinFileVisitor`.
-- Mocked objects must be named from their class (with an optional qualifier), and prefixed by `mock`. E.g.: `mockListener: Listener`, `mockService: ExecutorService`).
-- Fake data must be named from their class (with an optional qualifier), and prefixed by `fake`. E.g.: `fakeContext: Context`, `fakeApplicationId: UUID`, `fakeRequest: NetworkRequest`.
+- The object(s) under test must be named from their class, and prefixed by `tested`. 
+    E.g.: `testedListener: Listener`, `testedHandler: Handler`.
+- Stubbed objects (mocks with predefined behavior) must be named from their class (with an optional qualifier), and prefixed by `stub`.
+    E.g.: `stubDataProvider: DataProvider`, `stubReader: Reader`.
+- Mocked objects (mocks being verified) must be named from their class (with an optional qualifier), and prefixed by `mock`. 
+    E.g.: `mockListener: Listener`, `mockLogger: Logger`.
+- Fixtures (data classes or primitives with no behavior) must be named from their class (with an optional qualifier), and prefixed by `fake`.
+    E.g.: `fakeContext: Context`, `fakeApplicationId: UUID`, `fakeRequest: NetworkRequest`.
 - Other fields can be named on case by case basis, but a few rules can still apply:
     - If the field is annotated by a JUnit 5 extension (e.g.: `@TempDir`), then it should be named after the extension (e.g.: `tempOutputDir`).
     
-### Test Methods
+#### Test Methods
 
 Test methods must follow the Given-When-Then principle, that is they must all consist of three steps: 
 
@@ -251,20 +286,27 @@ Test methods must follow the Given-When-Then principle, that is they must all co
 - When (optional): performs an action — directly or indirectly — on the instance under test;
 - Then (mandatory): performs any number of assertions on the instance under test’s state, the mocks or output values. It must perform at least one assertion. 
 
-If present, these steps will always be intruded by one line comments, e.g.: `// Given`.
+If present, these steps will always be intruded by one line comments, i.e.: `// Given`, `// When`, `// Then`.
 
-Based on this principle, the test name should reflect the intent, and use the following pattern: `MUST expected behavior WHEN method() withContext`. To avoid being too verbose, `MUST` will be written `𝕄`, and `WHEN` will be written `𝕎`. The `withContext` part should be concise, and can have a trailing curly braces context section to avoid duplicate names (e.g.: `𝕄 create a span with info 𝕎 intercept() for failing request {5xx}`)
+Based on this principle, the test name should reflect the intent, and use the following pattern: `MUST expected behavior WHEN method() GIVEN context`. 
+To avoid being too verbose, `MUST` will be written `M`, and `WHEN` will be written `W`. The `context` part should be concise, and wrapped in curly braces to avoid duplicate names 
+(e.g.: `M create a span with info W intercept() {statusCode=5xx}`)
 
-Parameters shall have simple local names reflecting their intent, whether they use an `@Forgery` or `@Mock` annotation (or none).
+Parameters shall have simple local names reflecting their intent (see above), whether they use an `@Forgery` or `@Mock` annotation (or none).
 
 Here's a test method following those conventions: 
 
 ```kotlin
     @Test
-    fun `𝕄 forward boolean attribute to handler 𝕎 addAttribute()`(
-        @StringForgery(StringForgeryType.ALPHABETICAL) key : String,
-        @BoolForgery value : Boolean
+    fun `M forward boolean attribute to handler W addAttribute()`(
+        @StringForgery(StringForgeryType.ALPHABETICAL) fakeMessage : String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) fakeKey : String,
+        @BoolForgery value : Boolean,
+        @Mock mockLogHandler: InternalLogger
     ) {
+        // Given
+        testedLogger = Logger(mockLogHandler)
+    
         // When
         testedLogger.addAttribute(key, value)
         testedLogger.v(fakeMessage)
@@ -281,20 +323,43 @@ Here's a test method following those conventions:
     }
 ```
 
-### Test Utility Methods
+#### Test Utility Methods
 
-Because we sometimes need to reuse some setup or assertions in our tests, we tend to write utility methods. Those methods should be private (or internal in a dedicated class/file if they need to be shared across tests).
+Because we sometimes need to reuse some setup or assertions in our tests, we tend to write utility methods. 
+Those methods should be private (or internal in a dedicated class/file if they need to be shared across tests).
 
-- `fun mockSomething([args]): T`: methods setting up a mock. These methods must return the mocked instance;
 - `fun stubSomething(mock, [args])`: methods setting up a mock (or rarely a fake). These methods must be of Unit type, and only stub responses for the given mock;
 - `fun forgeSomething([args]): T`: methods setting up a forgery or an instance of a concrete class. These methods must return the forged instance;
 - `fun assertObjectMatchesCondition(object, [args])`: methods verifying that a given object matches a given condition. These methods must be of Unit type, and only call assertions with the AssertJ framework (or native assertions);
 - `fun verifyMockMatchesState(mock, [args])`: methods verifying that a mock’s interaction. These methods must be of Unit type, and only call verifications with the Mockito framework.
 - `fun setupSomething()`: method to setup a complex test (should only be used in the Given part of a test).
 
+#### Clear vs Closed Box testing
+
+Clear Box testing is an approach to testing where the test knows 
+the implementation details of the production code. It usually involves making a class property visible
+in the test (via the `internal` keyword instead of `private`).
+
+Closed Box testing on the contrary will only use `public` fields and 
+functions without checking the internal state of the object under test.
+
+While both can be useful, relying too much on Clear Box testing will make maintenance more complex: 
+
+ - the tiniest change in the production code will make the test break;
+ - Clear Box testing often leads to higher coupling and repeating the tested logic in the test class;
+ - it focuses more on the way the object under test works, and less on the behavior and usage.
+ 
+It is recommended to use Closed Box testing as much as possible.
+
+#### Property Based Testing
+
+To ensure that our tests cover the widest range of possible states and inputs, we use property based 
+testing thanks to the Elmyr library. Given a unit under test, we must make sure that the whole range 
+of possible input is covered for all tests.
+
 ### Nightly Tests
 
-### Update Session Replay functional tests payloads
+#### Update Session Replay functional tests payloads
 
 Session Replay has a suite of functional tests which can be found in the `instrumentation:integration` module.
 Those tests are assessing the recorded payload for a specific scenario against a given payload from `assets/session_replay_payloads` in the `androidTest` source set.
