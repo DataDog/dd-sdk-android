@@ -9,6 +9,7 @@ ANALYSIS=0
 COMPILE=0
 TEST=0
 UPDATE_SESSION_REPLAY_PAYLOAD=0
+export CI=true
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -187,4 +188,5 @@ if [[ $UPDATE_SESSION_REPLAY_PAYLOAD == 1 ]]; then
   adb pull $PAYLOAD_INPUT_DIRECTORY_PATH $PAYLOAD_OUTPUT_DIRECTORY_PATH
 fi
 
+unset CI
 echo "-- Done ✔︎"
