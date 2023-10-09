@@ -6,6 +6,8 @@
 
 package com.datadog.opentracing;
 
+import android.os.StrictMode;
+
 import com.datadog.opentracing.decorators.AbstractDecorator;
 import com.datadog.opentracing.decorators.DDDecoratorsFactory;
 import com.datadog.opentracing.jfr.DDNoopScopeEventFactory;
@@ -240,10 +242,12 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
      */
     public void registerClassLoader(final ClassLoader classLoader) {
         try {
-            for (final TraceInterceptor interceptor :
-                    ServiceLoader.load(TraceInterceptor.class, classLoader)) {
+            StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskReads();
+            ServiceLoader<TraceInterceptor> serviceLoader = ServiceLoader.load(TraceInterceptor.class, classLoader);
+            for (final TraceInterceptor interceptor : serviceLoader) {
                 addTraceInterceptor(interceptor);
             }
+            StrictMode.setThreadPolicy(oldPolicy);
         } catch (final ServiceConfigurationError e) {
         }
     }

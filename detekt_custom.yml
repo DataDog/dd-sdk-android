@@ -316,6 +316,8 @@ datadog:
       - "android.os.Process.getStartElapsedRealtime()"
       - "android.os.Process.myPid()"
       - "android.os.SystemClock.elapsedRealtime()"
+      - "android.os.StrictMode.allowThreadDiskReads()"
+      - "android.os.StrictMode.setThreadPolicy(android.os.StrictMode.ThreadPolicy)"
       - "android.util.Log.i(kotlin.String?, kotlin.String)"
       - "android.util.Log.e(kotlin.String?, kotlin.String)"
       - "android.util.Log.e(kotlin.String?, kotlin.String?, kotlin.Throwable?)"

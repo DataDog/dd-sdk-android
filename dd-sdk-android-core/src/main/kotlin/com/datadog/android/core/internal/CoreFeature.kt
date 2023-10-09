@@ -17,6 +17,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.BuildConfig
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.allowThreadDiskReads
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
@@ -161,10 +162,14 @@ internal class CoreFeature(
         firstPartyHostHeaderTypeResolver
             .addKnownHostsWithHeaderTypes(configuration.coreConfig.firstPartyHostsWithHeaderTypes)
         androidInfoProvider = DefaultAndroidInfoProvider(appContext)
-        storageDir = File(
-            appContext.cacheDir,
-            DATADOG_STORAGE_DIR_NAME.format(Locale.US, sdkInstanceId)
-        )
+
+        storageDir = allowThreadDiskReads {
+            File(
+                appContext.cacheDir,
+                DATADOG_STORAGE_DIR_NAME.format(Locale.US, sdkInstanceId)
+            )
+        }
+
         // BIG NOTE !!
         // Please do not move the block bellow.
         // The NDK crash handler `prepareData` function needs to be called exactly at this moment

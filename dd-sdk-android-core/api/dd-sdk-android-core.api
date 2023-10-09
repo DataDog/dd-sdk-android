@@ -439,6 +439,10 @@ public final class com/datadog/android/core/SdkReference {
 	public final fun get ()Lcom/datadog/android/api/SdkCore;
 }
 
+public final class com/datadog/android/core/StrictModeExtKt {
+	public static final fun allowThreadDiskReads (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+}
+
 public final class com/datadog/android/core/configuration/BatchSize : java/lang/Enum {
 	public static final field LARGE Lcom/datadog/android/core/configuration/BatchSize;
 	public static final field MEDIUM Lcom/datadog/android/core/configuration/BatchSize;
