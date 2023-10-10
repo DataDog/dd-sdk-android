@@ -53,10 +53,8 @@ class NdkTests {
 
     @Test
     fun mustWriteAnErrorLog_whenHandlingSignal_whenConsentUpdatedToGranted() {
-        val fakeSignal = forge.anInt(min = 1, max = 32)
-        // we need to keep this this size because we are using a buffer of [30] size in c++ for
-        // the error.signal attribute
-        val fakeSignalName = forge.anAlphabeticalString(size = 20)
+        val fakeSignal = forge.aPositiveInt(true)
+        val fakeSignalName = forge.anAlphabeticalString()
         val fakeErrorMessage = forge.anAlphabeticalString()
         val fakeErrorStack = forge.anAlphabeticalString()
         initNdkErrorHandler(temporaryFolder.root.absolutePath)
@@ -95,25 +93,23 @@ class NdkTests {
 
     @Test
     fun mustNotWriteAnyLog_whenHandlingSignal_whenConsentUpdatedToPending() {
-        val signal = forge.anInt(min = 1, max = 32)
-        // we need to keep this this size because we are using a buffer of [30] size in c++ for
-        // the error.signal attribute
-        val signalName = forge.anAlphabeticalString(size = 20)
-        val errorMessage = forge.anAlphabeticalString()
-        val errorStack = forge.anAlphabeticalString()
+        val fakeSignal = forge.aPositiveInt(true)
+        val fakeSignalName = forge.anAlphabeticalString()
+        val fakeErrorMessage = forge.anAlphabeticalString()
+        val fakeErrorStack = forge.anAlphabeticalString()
         initNdkErrorHandler(temporaryFolder.root.absolutePath)
         updateTrackingConsent(0)
         simulateSignalInterception(
-            signal,
-            signalName,
-            errorMessage,
-            errorStack
+            fakeSignal,
+            fakeSignalName,
+            fakeErrorMessage,
+            fakeErrorStack
         )
 
         // we need to give time to native part to write the file
         // otherwise we will get into race condition issues
         ConditionWatcher {
-            // assert the log file
+            // assert the log file is not written
             Assertions.assertThat(temporaryFolder.root.listFiles()).isEmpty()
             true
         }.doWait(timeoutMs = 5000)
@@ -121,19 +117,41 @@ class NdkTests {
 
     @Test
     fun mustNotWriteAnyLog_whenHandlingSignal_whenConsentUpdatedToNotGranted() {
-        val signal = forge.anInt(min = 1, max = 32)
-        // we need to keep this this size because we are using a buffer of [30] size in c++ for
-        // the error.signal attribute
-        val signalName = forge.anAlphabeticalString(size = 20)
-        val errorMessage = forge.anAlphabeticalString()
-        val errorStack = forge.anAlphabeticalString()
+        val fakeSignal = forge.aPositiveInt(true)
+        val fakeSignalName = forge.anAlphabeticalString()
+        val fakeErrorMessage = forge.anAlphabeticalString()
+        val fakeErrorStack = forge.anAlphabeticalString()
         initNdkErrorHandler(temporaryFolder.root.absolutePath)
         updateTrackingConsent(2)
         simulateSignalInterception(
-            signal,
-            signalName,
-            errorMessage,
-            errorStack
+            fakeSignal,
+            fakeSignalName,
+            fakeErrorMessage,
+            fakeErrorStack
+        )
+
+        // we need to give time to native part to write the file
+        // otherwise we will get into race condition issues
+        ConditionWatcher {
+            // assert the log file is not written
+            Assertions.assertThat(temporaryFolder.root.listFiles()).isEmpty()
+            true
+        }.doWait(timeoutMs = 5000)
+    }
+
+    @Test
+    fun mustNotWriteAnyLog_whenHandlingSignal_mutexInDatadogNativeLibCannotBeAcquired() {
+        val fakeSignal = forge.aPositiveInt(true)
+        val fakeSignalName = forge.anAlphabeticalString()
+        val fakeErrorMessage = forge.anAlphabeticalString()
+        val fakeErrorStack = forge.anAlphabeticalString()
+        initNdkErrorHandler(temporaryFolder.root.absolutePath)
+        updateTrackingConsent(2)
+        simulateFailedSignalInterception(
+            fakeSignal,
+            fakeSignalName,
+            fakeErrorMessage,
+            fakeErrorStack
         )
 
         // we need to give time to native part to write the file
@@ -169,12 +187,27 @@ class NdkTests {
 
     /**
      * Simulate a signal interception into the NDK crash reporter.
-     * @param signal the signal id (between 1 and 32)
+     * @param signal the signal id (a positive int)
      * @param signalName the signal name (e.g. SIGHUP, SIGINT, SIGILL, etc.)
      * @param errorMessage the error message
      * @param errorStack the error stack
      */
     private external fun simulateSignalInterception(
+        signal: Int,
+        signalName: String,
+        errorMessage: String,
+        errorStack: String
+    )
+
+    /**
+     * Simulate a failed signal interception into the NDK crash reporter because mutex lock
+     * was already acquired by other thread.
+     * @param signal the signal id (a positive int)
+     * @param signalName the signal name (e.g. SIGHUP, SIGINT, SIGILL, etc.)
+     * @param errorMessage the error message
+     * @param errorStack the error stack
+     */
+    private external fun simulateFailedSignalInterception(
         signal: Int,
         signalName: String,
         errorMessage: String,
