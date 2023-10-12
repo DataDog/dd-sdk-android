@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.content.Context
 import android.content.res.Resources
+import android.graphics.Rect
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.Drawable.ConstantState
@@ -18,11 +19,10 @@ import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
 import com.datadog.android.sessionreplay.internal.recorder.base64.ImageCompression
 import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelperCallback
-import com.datadog.android.sessionreplay.internal.utils.DrawableDimensions
+import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import com.datadog.android.sessionreplay.utils.ViewUtils
@@ -41,9 +41,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isA
-import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -57,11 +54,13 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class ImageViewMapperTest {
-
     private lateinit var testedMapper: ImageViewMapper
 
     @Mock
     lateinit var mockImageView: ImageView
+
+    @Mock
+    lateinit var stubImageViewUtils: ImageViewUtils
 
     @Mock
     lateinit var mockImageWireframeHelper: ImageWireframeHelper
@@ -88,9 +87,6 @@ internal class ImageViewMapperTest {
     lateinit var mockDisplayMetrics: DisplayMetrics
 
     @Mock
-    lateinit var mockBase64Serializer: Base64Serializer
-
-    @Mock
     lateinit var mockCallback: AsyncJobStatusCallback
 
     @Mock
@@ -106,13 +102,22 @@ internal class ImageViewMapperTest {
     lateinit var mockConstantState: ConstantState
 
     @Mock
+    lateinit var stubClipping: MobileSegment.WireframeClip
+
+    @Mock
+    lateinit var stubParentRect: Rect
+
+    @Mock
+    lateinit var stubContentRect: Rect
+
+    @Mock
     lateinit var mockContext: Context
 
     private val fakeId = Forge().aLong()
 
     private val fakeMimeType = Forge().aString()
 
-    lateinit var expectedWireframe: MobileSegment.Wireframe.ImageWireframe
+    private lateinit var expectedWireframe: MobileSegment.Wireframe.ImageWireframe
 
     @BeforeEach
     fun setup(forge: Forge) {
@@ -136,10 +141,19 @@ internal class ImageViewMapperTest {
 
         whenever(mockResources.displayMetrics).thenReturn(mockDisplayMetrics)
         whenever(mockImageView.resources).thenReturn(mockResources)
+        mockDisplayMetrics.density = 1f
 
         whenever(mockContext.applicationContext).thenReturn(mockContext)
         whenever(mockImageView.context).thenReturn(mockContext)
         whenever(mockBackground.current).thenReturn(mockBackground)
+
+        whenever(stubImageViewUtils.resolveParentRectAbsPosition(any())).thenReturn(stubParentRect)
+        whenever(stubImageViewUtils.resolveContentRectWithScaling(any(), any())).thenReturn(stubContentRect)
+        whenever(stubImageViewUtils.calculateClipping(any(), any(), any())).thenReturn(stubClipping)
+        stubContentRect.left = forge.aPositiveInt()
+        stubContentRect.top = forge.aPositiveInt()
+        whenever(stubContentRect.width()).thenReturn(forge.aPositiveInt())
+        whenever(stubContentRect.height()).thenReturn(forge.aPositiveInt())
 
         whenever(mockViewUtils.resolveViewGlobalBounds(any(), any())).thenReturn(mockGlobalBounds)
 
@@ -156,13 +170,10 @@ internal class ImageViewMapperTest {
             isEmpty = true
         )
 
-        whenever(mockBase64Serializer.getDrawableScaledDimensions(any(), any(), any()))
-            .thenReturn(DrawableDimensions(0, 0))
-
         testedMapper = ImageViewMapper(
-            base64Serializer = mockBase64Serializer,
             imageWireframeHelper = mockImageWireframeHelper,
-            uniqueIdentifierGenerator = mockUniqueIdentifierGenerator
+            uniqueIdentifierGenerator = mockUniqueIdentifierGenerator,
+            imageViewUtils = stubImageViewUtils
         )
     }
 
@@ -170,22 +181,7 @@ internal class ImageViewMapperTest {
     fun `M return foreground wireframe W map() { no background }`() {
         // Given
         whenever(mockImageView.background).thenReturn(null)
-        val fakeViewDrawable = mockDrawable.constantState?.newDrawable(mockResources)
-        whenever(
-            mockImageWireframeHelper.createImageWireframe(
-                eq(mockImageView),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                eq(fakeViewDrawable),
-                isNull(),
-                isNull(),
-                eq(ImageWireframeHelper.DRAWABLE_CHILD_NAME),
-                isA()
-            )
-        ).thenReturn(expectedWireframe)
+        mockCreateImageWireframe(null, expectedWireframe)
 
         // When
         val wireframes = testedMapper.map(mockImageView, mockMappingContext)
@@ -214,10 +210,7 @@ internal class ImageViewMapperTest {
         )
 
         whenever(mockImageView.background).thenReturn(mockBackground)
-        mockCreateImageWireframe(
-            expectedBackgroundWireframe,
-            expectedWireframe
-        )
+        mockCreateImageWireframe(expectedBackgroundWireframe, expectedWireframe)
 
         // When
         val wireframes = testedMapper.map(mockImageView, mockMappingContext)
@@ -231,22 +224,21 @@ internal class ImageViewMapperTest {
     @Test
     fun `M call async callback W map() { }`() {
         // Given
-        whenever(mockImageView.background).thenReturn(mockBackground)
-
-        val argumentCaptor = argumentCaptor<ImageWireframeHelperCallback>()
         whenever(
             mockImageWireframeHelper.createImageWireframe(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                anyOrNull(),
-                anyOrNull(),
-                anyOrNull(),
-                anyOrNull(),
-                any()
+                view = any(),
+                currentWireframeIndex = any(),
+                x = any(),
+                y = any(),
+                width = any(),
+                height = any(),
+                usePIIPlaceholder = any(),
+                drawable = anyOrNull(),
+                shapeStyle = anyOrNull(),
+                border = anyOrNull(),
+                clipping = anyOrNull(),
+                prefix = anyOrNull(),
+                callback = anyOrNull()
             )
         ).thenReturn(expectedWireframe)
 
@@ -256,19 +248,25 @@ internal class ImageViewMapperTest {
         // Then
         assertThat(wireframes.size).isEqualTo(2)
         assertThat(wireframes[0]).isEqualTo(expectedWireframe)
-        verify(mockImageWireframeHelper, times(2)).createImageWireframe(
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            anyOrNull(),
-            anyOrNull(),
-            anyOrNull(),
-            anyOrNull(),
-            argumentCaptor.capture()
-        )
+
+        val argumentCaptor = argumentCaptor<ImageWireframeHelperCallback>()
+        verify(mockImageWireframeHelper, times(2))
+            .createImageWireframe(
+                view = any(),
+                currentWireframeIndex = any(),
+                x = any(),
+                y = any(),
+                width = any(),
+                height = any(),
+                usePIIPlaceholder = any(),
+                drawable = anyOrNull(),
+                shapeStyle = anyOrNull(),
+                border = anyOrNull(),
+                clipping = anyOrNull(),
+                callback = argumentCaptor.capture(),
+                prefix = anyOrNull()
+            )
+
         argumentCaptor.allValues.forEach {
             it.onStart()
             it.onFinished()
@@ -308,17 +306,19 @@ internal class ImageViewMapperTest {
         // Then
         val captor = argumentCaptor<Int>()
         verify(mockImageWireframeHelper, times(2)).createImageWireframe(
-            any(),
-            captor.capture(),
-            any(),
-            any(),
-            any(),
-            any(),
-            anyOrNull(),
-            anyOrNull(),
-            anyOrNull(),
-            anyOrNull(),
-            anyOrNull()
+            view = any(),
+            currentWireframeIndex = captor.capture(),
+            x = any(),
+            y = any(),
+            width = any(),
+            height = any(),
+            usePIIPlaceholder = any(),
+            drawable = anyOrNull(),
+            shapeStyle = anyOrNull(),
+            border = anyOrNull(),
+            clipping = anyOrNull(),
+            prefix = anyOrNull(),
+            callback = anyOrNull()
         )
         val allValues = captor.allValues
         assertThat(allValues[0]).isEqualTo(0)
@@ -341,17 +341,19 @@ internal class ImageViewMapperTest {
         // Then
         val captor = argumentCaptor<Int>()
         verify(mockImageWireframeHelper, times(2)).createImageWireframe(
-            any(),
-            captor.capture(),
-            any(),
-            any(),
-            any(),
-            any(),
-            anyOrNull(),
-            anyOrNull(),
-            anyOrNull(),
-            anyOrNull(),
-            anyOrNull()
+            view = any(),
+            currentWireframeIndex = captor.capture(),
+            x = any(),
+            y = any(),
+            width = any(),
+            height = any(),
+            usePIIPlaceholder = any(),
+            drawable = anyOrNull(),
+            shapeStyle = anyOrNull(),
+            border = anyOrNull(),
+            clipping = anyOrNull(),
+            prefix = anyOrNull(),
+            callback = anyOrNull()
         )
         val allValues = captor.allValues
         assertThat(allValues[0]).isEqualTo(0)
@@ -432,17 +434,19 @@ internal class ImageViewMapperTest {
     ) {
         whenever(
             mockImageWireframeHelper.createImageWireframe(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                anyOrNull(),
-                anyOrNull(),
-                anyOrNull(),
-                anyOrNull(),
-                anyOrNull()
+                view = any(),
+                currentWireframeIndex = any(),
+                x = any(),
+                y = any(),
+                width = any(),
+                height = any(),
+                usePIIPlaceholder = any(),
+                drawable = anyOrNull(),
+                shapeStyle = anyOrNull(),
+                border = anyOrNull(),
+                clipping = anyOrNull(),
+                prefix = anyOrNull(),
+                callback = anyOrNull()
             )
         )
             .thenReturn(expectedFirstWireframe)

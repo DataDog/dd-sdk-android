@@ -12,14 +12,12 @@ import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
-import android.widget.ImageView
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.base64.Cache.Companion.DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS
 import com.datadog.android.sessionreplay.internal.utils.Base64Utils
-import com.datadog.android.sessionreplay.internal.utils.DrawableDimensions
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.concurrent.ExecutorService
@@ -67,12 +65,6 @@ internal class Base64Serializer private constructor(
             )
             ?: callback?.onReady()
     }
-
-    internal fun getDrawableScaledDimensions(
-        view: ImageView,
-        drawable: Drawable,
-        density: Float
-    ): DrawableDimensions = drawableUtils.getDrawableScaledDimensions(view, drawable, density)
 
     // endregion
 

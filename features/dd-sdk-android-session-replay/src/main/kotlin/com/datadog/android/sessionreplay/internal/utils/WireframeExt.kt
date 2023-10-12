@@ -10,7 +10,9 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal fun MobileSegment.Wireframe.hasOpaqueBackground(): Boolean {
     return when (this) {
-        is MobileSegment.Wireframe.ImageWireframe -> this.hasOpaqueBackground()
+        // we return false from ImageWireframe because we don't know if the image is opaque or not
+        // and ImageWireframe ShapeStyle is always null
+        is MobileSegment.Wireframe.ImageWireframe -> false
         is MobileSegment.Wireframe.ShapeWireframe -> this.hasOpaqueBackground()
         is MobileSegment.Wireframe.TextWireframe -> this.hasOpaqueBackground()
         is MobileSegment.Wireframe.PlaceholderWireframe -> true
@@ -23,9 +25,6 @@ private fun MobileSegment.Wireframe.ShapeWireframe.hasOpaqueBackground(): Boolea
 
 private fun MobileSegment.Wireframe.TextWireframe.hasOpaqueBackground(): Boolean {
     return shapeStyle.isOpaque()
-}
-private fun MobileSegment.Wireframe.ImageWireframe.hasOpaqueBackground(): Boolean {
-    return !(base64.isNullOrEmpty()) || shapeStyle.isOpaque()
 }
 
 private fun MobileSegment.ShapeStyle?.isOpaque(): Boolean {

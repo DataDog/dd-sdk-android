@@ -395,7 +395,10 @@ datadog:
       - "android.graphics.drawable.Drawable.getPadding(android.graphics.Rect)"
       - "android.graphics.drawable.Drawable.setBounds(kotlin.Int, kotlin.Int, kotlin.Int, kotlin.Int)"
       - "android.graphics.Point.constructor()"
+      - "android.graphics.Rect.centerX()"
+      - "android.graphics.Rect.centerY()"
       - "android.graphics.Rect.constructor()"
+      - "android.graphics.Rect.constructor(kotlin.Int, kotlin.Int, kotlin.Int, kotlin.Int)"
       - "android.graphics.Rect.height()"
       - "android.graphics.Rect.width()"
       # endregion

@@ -83,7 +83,6 @@ enum class SessionReplayPrivacy {
 
         val unsupportedViewMapper = UnsupportedViewMapper()
         val imageViewMapper = ImageViewMapper(
-            base64Serializer = base64Serializer,
             imageWireframeHelper = imageWireframeHelper,
             uniqueIdentifierGenerator = uniqueIdentifierGenerator
         )

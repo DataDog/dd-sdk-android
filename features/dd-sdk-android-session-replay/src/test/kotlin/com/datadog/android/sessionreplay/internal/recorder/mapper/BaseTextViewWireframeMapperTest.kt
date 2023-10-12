@@ -338,17 +338,19 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             .thenReturn(fakeDefaultObfuscatedText)
         whenever(
             mockImageWireframeHelper.createImageWireframe(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                anyOrNull(),
-                anyOrNull(),
-                any(),
-                any()
+                view = any(),
+                currentWireframeIndex = any(),
+                x = any(),
+                y = any(),
+                width = any(),
+                height = any(),
+                usePIIPlaceholder = any(),
+                drawable = anyOrNull(),
+                shapeStyle = anyOrNull(),
+                border = anyOrNull(),
+                clipping = anyOrNull(),
+                prefix = anyOrNull(),
+                callback = anyOrNull()
             )
         ).thenReturn(fakeBackgroundWireframe)
 
@@ -377,17 +379,19 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             .isEqualTo((expectedWireframes[1] as MobileSegment.Wireframe.TextWireframe).text)
         argumentCaptor<ImageWireframeHelperCallback>() {
             verify(mockImageWireframeHelper).createImageWireframe(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                anyOrNull(),
-                anyOrNull(),
-                any(),
-                capture()
+                view = any(),
+                currentWireframeIndex = any(),
+                x = any(),
+                y = any(),
+                width = any(),
+                height = any(),
+                usePIIPlaceholder = any(),
+                drawable = anyOrNull(),
+                shapeStyle = anyOrNull(),
+                border = anyOrNull(),
+                clipping = anyOrNull(),
+                callback = capture(),
+                prefix = anyOrNull()
             )
             allValues.forEach() {
                 it.onStart()

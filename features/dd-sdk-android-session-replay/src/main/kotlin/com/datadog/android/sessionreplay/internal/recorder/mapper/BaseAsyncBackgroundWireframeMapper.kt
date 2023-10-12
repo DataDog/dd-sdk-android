@@ -64,8 +64,8 @@ abstract class BaseAsyncBackgroundWireframeMapper<T : View>(
         val resources = view.resources
         val density = resources.displayMetrics.density
         val bounds = resolveViewGlobalBounds(view, density)
-        val width = view.width.densityNormalized(density).toLong()
-        val height = view.height.densityNormalized(density).toLong()
+        val width = view.width
+        val height = view.height
 
         return if (border == null && shapeStyle == null) {
             resolveBackgroundAsImageWireframe(
@@ -90,8 +90,8 @@ abstract class BaseAsyncBackgroundWireframeMapper<T : View>(
     private fun resolveBackgroundAsShapeWireframe(
         view: View,
         bounds: GlobalBounds,
-        width: Long,
-        height: Long,
+        width: Int,
+        height: Int,
         shapeStyle: MobileSegment.ShapeStyle?,
         border: MobileSegment.ShapeBorder?
     ): MobileSegment.Wireframe.ShapeWireframe? {
@@ -99,13 +99,15 @@ abstract class BaseAsyncBackgroundWireframeMapper<T : View>(
             view,
             PREFIX_BACKGROUND_DRAWABLE
         ) ?: return null
+        val resources = view.resources
+        val density = resources.displayMetrics.density
 
         return MobileSegment.Wireframe.ShapeWireframe(
             id,
             x = bounds.x,
             y = bounds.y,
-            width = width,
-            height = height,
+            width = width.densityNormalized(density).toLong(),
+            height = height.densityNormalized(density).toLong(),
             shapeStyle = shapeStyle,
             border = border
         )
@@ -114,8 +116,8 @@ abstract class BaseAsyncBackgroundWireframeMapper<T : View>(
     private fun resolveBackgroundAsImageWireframe(
         view: View,
         bounds: GlobalBounds,
-        width: Long,
-        height: Long,
+        width: Int,
+        height: Int,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): MobileSegment.Wireframe? {
         val resources = view.resources
@@ -129,10 +131,12 @@ abstract class BaseAsyncBackgroundWireframeMapper<T : View>(
             y = bounds.y,
             width,
             height,
-            drawableCopy,
+            clipping = MobileSegment.WireframeClip(),
+            drawable = drawableCopy,
             shapeStyle = null,
             border = null,
             prefix = PREFIX_BACKGROUND_DRAWABLE,
+            usePIIPlaceholder = false,
             callback = object : ImageWireframeHelperCallback {
                 override fun onFinished() {
                     asyncJobStatusCallback.jobFinished()

@@ -611,23 +611,6 @@ internal class Base64SerializerTest {
     }
 
     @Test
-    fun `M call drawableUtils W getDrawableScaledDimensions()`() {
-        // When
-        testedBase64Serializer.getDrawableScaledDimensions(
-            view = mockImageView,
-            drawable = mockDrawable,
-            density = mockDensity
-        )
-
-        // Then
-        verify(mockDrawableUtils).getDrawableScaledDimensions(
-            view = mockImageView,
-            drawable = mockDrawable,
-            density = mockDensity
-        )
-    }
-
-    @Test
     fun `M return correct callback W handleBitmap() { multiple threads, first takes longer }`(
         @Mock mockFirstCallback: Base64SerializerCallback,
         @Mock mockSecondCallback: Base64SerializerCallback
