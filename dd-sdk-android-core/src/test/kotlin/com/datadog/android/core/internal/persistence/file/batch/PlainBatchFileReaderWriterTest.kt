@@ -7,12 +7,12 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.persistence.file.EventMeta
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
-import com.google.gson.JsonParseException
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -69,86 +69,81 @@ internal class PlainBatchFileReaderWriterTest {
     @Test
     fun `𝕄 write data in empty file 𝕎 writeData() {append=false}`(
         @StringForgery fileName: String,
-        @StringForgery content: String
+        @Forgery event: RawBatchEvent
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
         file.createNewFile()
-        val contentBytes = content.toByteArray()
 
         // When
         val result = testedReaderWriter.writeData(
             file,
-            contentBytes,
+            event,
             append = false
         )
 
         // Then
         assertThat(result).isTrue()
-        assertThat(file).exists().hasBinaryContent(encode(contentBytes))
+        assertThat(file).exists().hasBinaryContent(encode(event))
     }
 
     @Test
     fun `𝕄 write data in empty file  𝕎 writeData() {append=true}`(
         @StringForgery fileName: String,
-        @StringForgery content: String
+        @Forgery event: RawBatchEvent
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
         file.createNewFile()
-        val contentBytes = content.toByteArray()
 
         // When
         val result = testedReaderWriter.writeData(
             file,
-            contentBytes,
+            event,
             append = false
         )
 
         // Then
         assertThat(result).isTrue()
-        assertThat(file).exists().hasBinaryContent(encode(contentBytes))
+        assertThat(file).exists().hasBinaryContent(encode(event))
     }
 
     @Test
     fun `𝕄 overwrite data in non empty file 𝕎 writeData() {append=false}`(
         @StringForgery fileName: String,
         @StringForgery previousContent: String,
-        @StringForgery content: String
+        @Forgery event: RawBatchEvent
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
         file.writeText(previousContent)
-        val contentBytes = content.toByteArray()
 
         // When
         val result = testedReaderWriter.writeData(
             file,
-            contentBytes,
+            event,
             append = false
         )
 
         // Then
         assertThat(result).isTrue()
-        assertThat(file).exists().hasBinaryContent(encode(contentBytes))
+        assertThat(file).exists().hasBinaryContent(encode(event))
     }
 
     @Test
     fun `𝕄 append data in non empty file 𝕎 writeData() {append=true}`(
         @StringForgery fileName: String,
-        @StringForgery previousContent: String,
-        @StringForgery content: String
+        @Forgery previousEvent: RawBatchEvent,
+        @Forgery event: RawBatchEvent
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
-        val previousData = previousContent.toByteArray()
-        file.writeBytes(encode(previousData))
-        val contentBytes = content.toByteArray()
+        file.writeBytes(encode(previousEvent))
 
         // When
         val result = testedReaderWriter.writeData(
             file,
-            contentBytes,
+            event,
             append = true
         )
 
@@ -156,14 +151,14 @@ internal class PlainBatchFileReaderWriterTest {
         assertThat(result).isTrue()
         assertThat(file).exists()
             .hasBinaryContent(
-                encode(previousData) + encode(contentBytes)
+                encode(previousEvent) + encode(event)
             )
     }
 
     @Test
     fun `𝕄 return false and warn 𝕎 writeData() {parent dir does not exist}`(
         @StringForgery fileName: String,
-        @StringForgery content: String,
+        @Forgery event: RawBatchEvent,
         @BoolForgery append: Boolean
     ) {
         // Given
@@ -173,7 +168,7 @@ internal class PlainBatchFileReaderWriterTest {
         // When
         val result = testedReaderWriter.writeData(
             file,
-            content.toByteArray(),
+            event,
             append = append
         )
 
@@ -191,7 +186,7 @@ internal class PlainBatchFileReaderWriterTest {
     @Test
     fun `𝕄 return false and warn 𝕎 writeData() {file is not file}`(
         @StringForgery fileName: String,
-        @StringForgery content: String,
+        @Forgery event: RawBatchEvent,
         @BoolForgery append: Boolean
     ) {
         // Given
@@ -201,7 +196,7 @@ internal class PlainBatchFileReaderWriterTest {
         // When
         val result = testedReaderWriter.writeData(
             file,
-            content.toByteArray(),
+            event,
             append = append
         )
 
@@ -291,17 +286,17 @@ internal class PlainBatchFileReaderWriterTest {
         // Given
         val file = File(fakeRootDirectory, fileName)
         val events = forge.aList {
-            aString().toByteArray()
+            RawBatchEvent(aString().toByteArray())
         }
 
         file.writeBytes(
-            events.mapIndexed { index, bytes ->
+            events.mapIndexed { index, event ->
                 if (index == events.lastIndex) {
-                    encode(bytes)
+                    encode(event)
                         .let { it.take(forge.anInt(min = 1, max = it.size - 1)) }
                         .toByteArray()
                 } else {
-                    encode(bytes)
+                    encode(event)
                 }
             }.reduce { acc, bytes -> acc + bytes }
         )
@@ -314,70 +309,19 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `𝕄 return valid events read and warn 𝕎 readData() { malformed meta }`(
-        @StringForgery fileName: String,
-        forge: Forge
-    ) {
-        // Given
-        val file = File(fakeRootDirectory, fileName)
-        val events = forge.aList {
-            aString().toByteArray()
-        }
-
-        file.writeBytes(
-            events.map {
-                encode(it)
-            }.reduce { acc, bytes -> acc + bytes }
-        )
-
-        val malformedMetaIndex = forge.anInt(min = 0, max = events.size)
-        testedReaderWriter = PlainBatchFileReaderWriter(
-            mockInternalLogger,
-            metaParser = object : (ByteArray) -> EventMeta {
-                // in case of malformed meta we should drop corresponding event and continue reading
-                var invocations = 0
-
-                override fun invoke(metaBytes: ByteArray): EventMeta {
-                    return if (invocations == malformedMetaIndex) {
-                        invocations++
-                        throw JsonParseException(forge.aString())
-                    } else {
-                        invocations++
-                        EventMeta.fromBytes(metaBytes)
-                    }
-                }
-            }
-        )
-
-        // When
-        val result = testedReaderWriter.readData(file)
-
-        // Then
-        assertThat(result).containsExactlyElementsOf(events.minus(events[malformedMetaIndex]))
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            PlainBatchFileReaderWriter.ERROR_FAILED_META_PARSE,
-            JsonParseException::class.java
-        )
-    }
-
-    @Test
     fun `𝕄 return valid events read so far and warn 𝕎 readData() { unexpected block type }`(
         @StringForgery fileName: String,
+        @Forgery events: List<RawBatchEvent>,
         forge: Forge
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
-        val events = forge.aList {
-            aString().toByteArray()
-        }
 
         val badEventIndex = forge.anInt(min = 0, max = events.size)
         file.writeBytes(
             events.mapIndexed { index, item ->
-                val metaBytes = metaBytesAsTlv()
-                val eventBytes = dataBytesAsTlv(item)
+                val metaBytes = metaBytesAsTlv(item.metadata)
+                val eventBytes = dataBytesAsTlv(item.data)
                 if (index == badEventIndex) {
                     val isBadBlockTypeInMeta = forge.aBool()
                     if (isBadBlockTypeInMeta) {
@@ -421,30 +365,26 @@ internal class PlainBatchFileReaderWriterTest {
     @Test
     fun `𝕄 return file content 𝕎 readData() { single event }`(
         @StringForgery fileName: String,
-        @StringForgery event: String
+        @Forgery event: RawBatchEvent
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
-        val eventBytes = event.toByteArray()
-        file.writeBytes(encode(eventBytes))
+        file.writeBytes(encode(event))
 
         // When
         val result = testedReaderWriter.readData(file)
 
         // Then
-        assertThat(result).containsExactlyElementsOf(listOf(eventBytes))
+        assertThat(result).containsExactlyElementsOf(listOf(event))
     }
 
     @Test
     fun `𝕄 return file content 𝕎 readData() { multiple events }`(
         @StringForgery fileName: String,
-        forge: Forge
+        @Forgery events: List<RawBatchEvent>
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
-        val events = forge.aList {
-            aString().toByteArray()
-        }
         file.writeBytes(events.map { encode(it) }.reduce { acc, bytes -> acc + bytes })
 
         // When
@@ -461,35 +401,31 @@ internal class PlainBatchFileReaderWriterTest {
     @Test
     fun `𝕄 return file content 𝕎 writeData + readData() { append = false }`(
         @StringForgery fileName: String,
-        @StringForgery content: String
+        @Forgery event: RawBatchEvent
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
 
         // When
-        val writeResult = testedReaderWriter.writeData(file, content.toByteArray(), false)
+        val writeResult = testedReaderWriter.writeData(file, event, false)
         val readResult = testedReaderWriter.readData(file)
 
         // Then
         assertThat(writeResult).isTrue()
-        assertThat(readResult).containsExactlyElementsOf(listOf(content.toByteArray()))
+        assertThat(readResult).containsExactlyElementsOf(listOf(event))
     }
 
     @Test
     fun `𝕄 return file content 𝕎 writeData + readData() { append = true }`(
         @StringForgery fileName: String,
-        forge: Forge
+        @Forgery events: List<RawBatchEvent>
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
 
-        val data = forge.aList {
-            aString().toByteArray()
-        }
-
         // When
         var writeResult = true
-        data.forEach {
+        events.forEach {
             writeResult = writeResult && testedReaderWriter.writeData(
                 file,
                 it,
@@ -500,7 +436,32 @@ internal class PlainBatchFileReaderWriterTest {
 
         // Then
         assertThat(writeResult).isTrue()
-        assertThat(readResult).containsExactlyElementsOf(data)
+        assertThat(readResult).containsExactlyElementsOf(events)
+    }
+
+    // endregion
+
+    // region Reading older formats
+
+    @Test
+    fun `𝕄 return file content 𝕎 readData() { 2-2-0 and earlier }`() {
+        // 2.3.0 release is changing the way we are handling metadata, so we need to make sure
+        // that we are backward compatible with data written earlier
+
+        // Given
+        val file = File(
+            checkNotNull(javaClass.classLoader)
+                .getResource("logs-batch-2.2.0-and-earlier")
+                .file
+        )
+
+        // When
+        val readResult = testedReaderWriter.readData(file)
+
+        // Then
+        assertThat(readResult).hasSize(2)
+        assertThat(readResult).satisfies { it.all { it.data.isNotEmpty() } }
+        assertThat(readResult).satisfies { it.all { it.metadata.isEmpty() } }
     }
 
     // endregion
@@ -512,17 +473,15 @@ internal class PlainBatchFileReaderWriterTest {
     // | block type | data size (n) |    data   |
     // +------------+---------------+-----------+
     // where block type is 0x00 for event, 0x01 for data
-    private fun encode(data: ByteArray): ByteArray {
-        return metaBytesAsTlv() + dataBytesAsTlv(data)
+    private fun encode(event: RawBatchEvent): ByteArray {
+        return metaBytesAsTlv(event.metadata) + dataBytesAsTlv(event.data)
     }
 
-    private fun metaBytesAsTlv(): ByteArray {
-        val metaBytes = EventMeta().asBytes
-
-        return ByteBuffer.allocate(6 + metaBytes.size)
+    private fun metaBytesAsTlv(meta: ByteArray): ByteArray {
+        return ByteBuffer.allocate(6 + meta.size)
             .putShort(0x01)
-            .putInt(metaBytes.size)
-            .put(metaBytes)
+            .putInt(meta.size)
+            .put(meta)
             .array()
     }
 

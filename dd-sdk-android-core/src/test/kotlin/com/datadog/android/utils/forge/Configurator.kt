@@ -44,6 +44,7 @@ internal class Configurator :
         forge.addFactory(DeviceInfoForgeryFactory())
         forge.addFactory(DatadogContextForgeryFactory())
         forge.addFactory(DataUploadConfigurationForgeryFactory())
+        forge.addFactory(RawBatchEventForgeryFactory())
 
         // UploadStatus
         forge.addFactory(HttpRedirectStatusForgeryFactory())

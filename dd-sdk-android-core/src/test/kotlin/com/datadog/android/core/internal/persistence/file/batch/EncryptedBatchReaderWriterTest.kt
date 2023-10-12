@@ -7,12 +7,12 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
-import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -41,7 +41,7 @@ import kotlin.experimental.inv
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class EncryptedBatchFileReaderWriterTest {
+internal class EncryptedBatchReaderWriterTest {
 
     @Mock
     lateinit var mockEncryption: Encryption
@@ -82,23 +82,24 @@ internal class EncryptedBatchFileReaderWriterTest {
 
     @Test
     fun `𝕄 encrypt data and return true 𝕎 writeData()`(
-        @StringForgery data: String,
+        @Forgery batchEvent: RawBatchEvent,
         @BoolForgery append: Boolean
     ) {
         // When
         val result = testedReaderWriter.writeData(
             mockFile,
-            data.toByteArray(),
+            batchEvent,
             append = append
         )
-        val encryptedData = encrypt(data.toByteArray())
+        val encryptedData = encrypt(batchEvent.data)
+        val encryptedMetadata = encrypt(batchEvent.metadata)
 
         // Then
         assertThat(result).isTrue()
         verify(mockBatchFileReaderWriter)
             .writeData(
                 mockFile,
-                encryptedData,
+                RawBatchEvent(data = encryptedData, metadata = encryptedMetadata),
                 append
             )
 
@@ -107,16 +108,16 @@ internal class EncryptedBatchFileReaderWriterTest {
 
     @Test
     fun `𝕄 log internal error and return false 𝕎 writeData() { bad encryption result }`(
-        @StringForgery data: String,
+        @Forgery batchEvent: RawBatchEvent,
         @BoolForgery append: Boolean
     ) {
         // Given
-        whenever(mockEncryption.encrypt(data.toByteArray())) doReturn ByteArray(0)
+        whenever(mockEncryption.encrypt(batchEvent.data)) doReturn ByteArray(0)
 
         // When
         val result = testedReaderWriter.writeData(
             mockFile,
-            data.toByteArray(),
+            batchEvent,
             append = append
         )
 
@@ -137,16 +138,12 @@ internal class EncryptedBatchFileReaderWriterTest {
 
     @Test
     fun `𝕄 decrypt data 𝕎 readData()`(
-        forge: Forge
+        @Forgery events: List<RawBatchEvent>
     ) {
         // Given
-        val events = forge.aList {
-            forge.aString().toByteArray()
-        }
-
         whenever(
             mockBatchFileReaderWriter.readData(mockFile)
-        ) doReturn events.map { encrypt(it) }
+        ) doReturn events.map { RawBatchEvent(encrypt(it.data), encrypt(it.metadata)) }
 
         // When
         val result = testedReaderWriter.readData(mockFile)
@@ -161,12 +158,10 @@ internal class EncryptedBatchFileReaderWriterTest {
 
     @Test
     fun `𝕄 return valid data 𝕎 writeData() + readData()`(
-        forge: Forge
+        @Forgery events: List<RawBatchEvent>
     ) {
         // Given
-        val events = forge.aList { forge.aString().toByteArray() }
-
-        val storage = mutableListOf<ByteArray>()
+        val storage = mutableListOf<RawBatchEvent>()
 
         whenever(
             mockBatchFileReaderWriter.writeData(

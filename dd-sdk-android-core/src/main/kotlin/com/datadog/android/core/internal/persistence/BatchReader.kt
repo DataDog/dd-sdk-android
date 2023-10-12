@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.persistence
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.storage.RawBatchEvent
 
 internal interface BatchReader {
 
@@ -17,5 +18,5 @@ internal interface BatchReader {
     fun currentMetadata(): ByteArray?
 
     @WorkerThread
-    fun read(): List<ByteArray>
+    fun read(): List<RawBatchEvent>
 }

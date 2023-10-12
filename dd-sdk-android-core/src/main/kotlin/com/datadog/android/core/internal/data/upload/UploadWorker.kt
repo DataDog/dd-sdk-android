@@ -13,6 +13,7 @@ import androidx.work.WorkerParameters
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.NoOpInternalSdkCore
 import com.datadog.android.core.internal.SdkFeature
@@ -116,7 +117,7 @@ internal class UploadWorker(
 
         private fun consumeBatch(
             context: DatadogContext,
-            batch: List<ByteArray>,
+            batch: List<RawBatchEvent>,
             batchMeta: ByteArray?,
             uploader: DataUploader
         ): UploadStatus {

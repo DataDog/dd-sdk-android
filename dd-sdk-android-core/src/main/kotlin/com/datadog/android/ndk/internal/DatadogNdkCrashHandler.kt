@@ -36,7 +36,7 @@ internal class DatadogNdkCrashHandler(
     private val userInfoDeserializer: Deserializer<String, UserInfo>,
     private val internalLogger: InternalLogger,
     private val rumFileReader: BatchFileReader,
-    private val envFileReader: FileReader
+    private val envFileReader: FileReader<ByteArray>
 ) : NdkCrashHandler {
 
     internal val ndkCrashDataDirectory: File = getNdkGrantedDir(storageDir)
@@ -123,7 +123,7 @@ internal class DatadogNdkCrashHandler(
     }
 
     @WorkerThread
-    private fun readFileContent(file: File, fileReader: FileReader): String? {
+    private fun readFileContent(file: File, fileReader: FileReader<ByteArray>): String? {
         val content = fileReader.readData(file)
         return if (content.isEmpty()) {
             null
@@ -138,7 +138,7 @@ internal class DatadogNdkCrashHandler(
         return if (content.isEmpty()) {
             null
         } else {
-            String(content.join(ByteArray(0), internalLogger = internalLogger))
+            String(content.map { it.data }.join(ByteArray(0), internalLogger = internalLogger))
         }
     }
 

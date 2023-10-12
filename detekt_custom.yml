@@ -670,6 +670,8 @@ datadog:
       - "kotlin.Array.sorted()"
       - "kotlin.Array.toList()"
       - "kotlin.ByteArray.any(kotlin.Function1)"
+      - "kotlin.ByteArray.contentEquals(kotlin.ByteArray?)"
+      - "kotlin.ByteArray.contentHashCode()"
       - "kotlin.ByteArray.joinToString(kotlin.CharSequence, kotlin.Function1?, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence)"
       - "kotlin.ByteArray.isEmpty()"
       - "kotlin.ByteArray.isNotEmpty()"

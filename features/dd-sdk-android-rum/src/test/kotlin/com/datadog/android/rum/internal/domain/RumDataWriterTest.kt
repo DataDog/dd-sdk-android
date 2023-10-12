@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
@@ -73,7 +74,7 @@ internal class RumDataWriterTest {
     fun `set up`() {
         fakeSerializedData = fakeSerializedEvent.toByteArray(Charsets.UTF_8)
 
-        whenever(mockEventBatchWriter.write(fakeSerializedData, null)) doReturn true
+        whenever(mockEventBatchWriter.write(RawBatchEvent(data = fakeSerializedData), null)) doReturn true
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
 
         testedWriter = RumDataWriter(
@@ -104,7 +105,7 @@ internal class RumDataWriterTest {
         assertThat(result).isTrue
 
         verify(mockEventBatchWriter).write(
-            fakeSerializedData,
+            RawBatchEvent(data = fakeSerializedData),
             null
         )
     }
@@ -146,7 +147,7 @@ internal class RumDataWriterTest {
             forge.getForgery(ErrorEvent::class.java)
         )
 
-        whenever(mockEventBatchWriter.write(fakeSerializedData, null)) doReturn false
+        whenever(mockEventBatchWriter.write(RawBatchEvent(fakeSerializedData), null)) doReturn false
 
         // When
         val result = testedWriter.write(mockEventBatchWriter, fakeEvent)

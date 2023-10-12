@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.domain
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.RequestFactory
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
@@ -58,7 +59,7 @@ internal class SessionReplayRequestFactoryTest {
 
     lateinit var fakeCompressedSegment: ByteArray
 
-    lateinit var fakeBatchData: List<ByteArray>
+    lateinit var fakeBatchData: List<RawBatchEvent>
 
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
@@ -83,10 +84,10 @@ internal class SessionReplayRequestFactoryTest {
         whenever(mockRequestBody.contentType()).thenReturn(fakeMediaType)
         fakeCompressedSegment = forge.aString().toByteArray()
         fakeBatchMetadata = forge.aNullable { forge.aString().toByteArray() }
-        fakeBatchData = forge.aList { forge.aString().toByteArray() }
+        fakeBatchData = forge.aList { RawBatchEvent(aString().toByteArray()) }
         whenever(mockRequestBodyFactory.create(fakeSegment, fakeSerializedSegment))
             .thenReturn(mockRequestBody)
-        whenever(mockBatchesToSegmentsMapper.map(fakeBatchData))
+        whenever(mockBatchesToSegmentsMapper.map(fakeBatchData.map { it.data }))
             .thenReturn(Pair(fakeSegment, fakeSerializedSegment))
         testedRequestFactory = SessionReplayRequestFactory(
             customEndpointUrl = null,
@@ -157,7 +158,7 @@ internal class SessionReplayRequestFactoryTest {
     @Test
     fun `M throw exception W create(){ payload is broken }`() {
         // Given
-        whenever(mockBatchesToSegmentsMapper.map(fakeBatchData))
+        whenever(mockBatchesToSegmentsMapper.map(fakeBatchData.map { it.data }))
             .thenReturn(null)
 
         // When

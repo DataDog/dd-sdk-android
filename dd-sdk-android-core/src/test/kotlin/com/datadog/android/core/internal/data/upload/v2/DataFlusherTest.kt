@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.data.upload.v2
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
@@ -52,7 +53,7 @@ internal class DataFlusherTest {
     lateinit var mockFileReader: BatchFileReader
 
     @Mock
-    lateinit var mockMetaFileReader: FileReader
+    lateinit var mockMetaFileReader: FileReader<ByteArray>
 
     @Mock
     lateinit var mockFileMover: FileMover
@@ -96,7 +97,7 @@ internal class DataFlusherTest {
                     .aList {
                         forge.aString()
                     }
-                    .map { it.toByteArray() }
+                    .map { RawBatchEvent(it.toByteArray()) }
             }
         val fakeMeta = fakeMetaFiles.map { if (it != null) forge.aString().toByteArray() else null }
         whenever(mockFileOrchestrator.getFlushableFiles()).thenReturn(fakeFiles)
@@ -137,7 +138,7 @@ internal class DataFlusherTest {
                     .aList {
                         forge.aString()
                     }
-                    .map { it.toByteArray() }
+                    .map { RawBatchEvent(it.toByteArray()) }
             }
         whenever(mockFileOrchestrator.getFlushableFiles()).thenReturn(fakeFiles)
         fakeFiles.forEachIndexed { index, file ->
@@ -173,7 +174,7 @@ internal class DataFlusherTest {
                     .aList {
                         forge.aString()
                     }
-                    .map { it.toByteArray() }
+                    .map { RawBatchEvent(it.toByteArray()) }
             }
         whenever(mockFileOrchestrator.getFlushableFiles()).thenReturn(fakeFiles)
         fakeFiles.forEachIndexed { index, file ->

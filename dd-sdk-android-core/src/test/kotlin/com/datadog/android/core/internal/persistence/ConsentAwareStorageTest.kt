@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.persistence
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.persistence.file.FileMover
@@ -321,8 +322,8 @@ internal class ConsentAwareStorageTest {
         val callback: (EventBatchWriter) -> Unit = {
             val value = it.currentMetadata()?.first() ?: 0
             it.write(
-                event = event,
-                newMetadata = byteArrayOf((value + 1).toByte())
+                event = RawBatchEvent(data = event),
+                batchMetadata = byteArrayOf((value + 1).toByte())
             )
         }
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
@@ -359,14 +360,13 @@ internal class ConsentAwareStorageTest {
 
     @Test
     fun `𝕄 provide reader 𝕎 readNextBatch()`(
-        @StringForgery data: List<String>,
+        @Forgery fakeData: List<RawBatchEvent>,
         @StringForgery metadata: String,
         @Forgery batchFile: File
     ) {
         // Given
-        val mockData = data.map { it.toByteArray() }
         whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturn batchFile
-        whenever(mockBatchReaderWriter.readData(batchFile)) doReturn mockData
+        whenever(mockBatchReaderWriter.readData(batchFile)) doReturn fakeData
 
         val mockMetaFile = mock<File>().apply {
             whenever(exists()) doReturn true
@@ -377,7 +377,7 @@ internal class ConsentAwareStorageTest {
         whenever(mockMetaReaderWriter.readData(mockMetaFile)) doReturn mockMetadata
 
         // Whenever
-        var readData: List<ByteArray>? = null
+        var readData: List<RawBatchEvent>? = null
         var readMetadata: ByteArray? = null
         testedStorage.readNextBatch { _, reader ->
             readMetadata = reader.currentMetadata()
@@ -385,22 +385,21 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        assertThat(readData).isEqualTo(mockData)
+        assertThat(readData).isEqualTo(fakeData)
         assertThat(readMetadata).isEqualTo(mockMetadata)
     }
 
     @Test
     fun `𝕄 provide reader 𝕎 readNextBatch() { no metadata file provided }`(
-        @StringForgery data: List<String>,
+        @Forgery fakeData: List<RawBatchEvent>,
         @Forgery batchFile: File
     ) {
         // Given
-        val mockData = data.map { it.toByteArray() }
         whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturn batchFile
-        whenever(mockBatchReaderWriter.readData(batchFile)) doReturn mockData
+        whenever(mockBatchReaderWriter.readData(batchFile)) doReturn fakeData
 
         // Whenever
-        var readData: List<ByteArray>? = null
+        var readData: List<RawBatchEvent>? = null
         var readMetadata: ByteArray? = null
         testedStorage.readNextBatch { _, reader ->
             readMetadata = reader.currentMetadata()
@@ -408,19 +407,18 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        assertThat(readData).isEqualTo(mockData)
+        assertThat(readData).isEqualTo(fakeData)
         assertThat(readMetadata).isNull()
     }
 
     @Test
     fun `𝕄 provide reader 𝕎 readNextBatch() { metadata file doesn't exist }`(
-        @StringForgery data: List<String>,
+        @Forgery fakeData: List<RawBatchEvent>,
         @Forgery batchFile: File
     ) {
         // Given
-        val mockData = data.map { it.toByteArray() }
         whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturn batchFile
-        whenever(mockBatchReaderWriter.readData(batchFile)) doReturn mockData
+        whenever(mockBatchReaderWriter.readData(batchFile)) doReturn fakeData
 
         val mockMetaFile = mock<File>().apply {
             whenever(exists()) doReturn false
@@ -429,7 +427,7 @@ internal class ConsentAwareStorageTest {
         whenever(mockGrantedOrchestrator.getMetadataFile(batchFile)) doReturn mockMetaFile
 
         // Whenever
-        var readData: List<ByteArray>? = null
+        var readData: List<RawBatchEvent>? = null
         var readMetadata: ByteArray? = null
         testedStorage.readNextBatch { _, reader ->
             readMetadata = reader.currentMetadata()
@@ -437,23 +435,22 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        assertThat(readData).isEqualTo(mockData)
+        assertThat(readData).isEqualTo(fakeData)
         assertThat(readMetadata).isNull()
     }
 
     @Test
     fun `𝕄 provide reader only once 𝕎 readNextBatch()`(
-        @StringForgery data: List<String>,
+        @Forgery fakeData: List<RawBatchEvent>,
         @Forgery file: File
     ) {
         // Given
-        val mockData = data.map { it.toByteArray() }
         whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
         whenever(mockGrantedOrchestrator.getReadableFile(setOf(file))) doReturn null
-        whenever(mockBatchReaderWriter.readData(file)) doReturn mockData
+        whenever(mockBatchReaderWriter.readData(file)) doReturn fakeData
 
         // When
-        var readData: List<ByteArray>? = null
+        var readData: List<RawBatchEvent>? = null
         testedStorage.readNextBatch { _, reader ->
             readData = reader.read()
         }
@@ -462,7 +459,7 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        assertThat(readData).isEqualTo(mockData)
+        assertThat(readData).isEqualTo(fakeData)
     }
 
     @Test
