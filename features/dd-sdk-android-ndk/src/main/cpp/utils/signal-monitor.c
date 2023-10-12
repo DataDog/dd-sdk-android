@@ -93,7 +93,12 @@ void free_up_memory() {
 void invoke_previous_handler(int signum, siginfo_t *info, void *user_context) {
     // It may happen that the process is killed during this function execution.
     // Therefore this function may never return.
-    pthread_mutex_lock(&mutex);
+
+    if(pthread_mutex_trylock(&mutex) != 0){
+        // There is no action to take if the mutex cannot be acquired.
+        // In this case will just return here in order not to block the process.
+        return;
+    }
 
     const size_t signals_array_size = handled_signals_size();
     for (int i = 0; i < signals_array_size; ++i) {

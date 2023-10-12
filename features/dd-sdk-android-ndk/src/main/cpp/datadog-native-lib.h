@@ -24,6 +24,11 @@ void write_crash_report(int signum,
                         const char *error_message,
                         const char *error_stacktrace);
 
+#ifndef NDEBUG
+void lockMutex();
+void unlockMutex();
+#endif
+
 #ifdef __cplusplus
 }
 #endif

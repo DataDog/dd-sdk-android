@@ -29,11 +29,23 @@ static struct Context {
 
 
 static const char *LOG_TAG = "DatadogNdkCrashReporter";
+
 static pthread_mutex_t handler_mutex = PTHREAD_MUTEX_INITIALIZER;
 static const uint8_t tracking_consent_pending = 0;
 static const uint8_t tracking_consent_granted = 1;
 static uint8_t tracking_consent = tracking_consent_pending; // 0 - PENDING, 1 - GRANTED, 2 - NOT-GRANTED
 
+#ifndef NDEBUG
+
+void lockMutex() {
+    pthread_mutex_lock(&handler_mutex);
+}
+
+void unlockMutex() {
+    pthread_mutex_unlock(&handler_mutex);
+}
+
+#endif
 
 void write_crash_report(int signum,
                         const char *signal_name,
@@ -43,11 +55,17 @@ void write_crash_report(int signum,
     static const std::string crash_log_filename = "crash_log";
 
     // sync everything
-    pthread_mutex_lock(&handler_mutex);
     if (tracking_consent != tracking_consent_granted) {
-        pthread_mutex_unlock(&handler_mutex);
         return;
     }
+
+    if(pthread_mutex_trylock(&handler_mutex) != 0){
+        // There is no action to take if the mutex cannot be acquired.
+        // In this case will fail to write the crash log and return here in order not
+        // to block the process and create possible ANRs.
+        return;
+    }
+
     if (main_context.storage_dir.empty()) {
         __android_log_write(ANDROID_LOG_ERROR, LOG_TAG,
                             "The crash reports storage directory file path was null");
@@ -87,7 +105,13 @@ void write_crash_report(int signum,
 void update_main_context(JNIEnv *env,
                          jstring storage_path) {
     using namespace stringutils;
-    pthread_mutex_lock(&handler_mutex);
+    if(pthread_mutex_trylock(&handler_mutex) != 0){
+        // There is no action to take if the mutex cannot be acquired. Probably int this case
+        // there is already a log writing due to a crash in progress.
+        // In this case updating the context will not make sense anymore and we do not want to
+        // stale the process here.
+        return;
+    }
     main_context.storage_dir = copy_to_string(env, storage_path);
     pthread_mutex_unlock(&handler_mutex);
 }
