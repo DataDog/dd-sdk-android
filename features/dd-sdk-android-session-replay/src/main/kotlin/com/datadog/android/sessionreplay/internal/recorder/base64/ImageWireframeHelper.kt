@@ -40,13 +40,15 @@ internal class ImageWireframeHelper(
         currentWireframeIndex: Int,
         x: Long,
         y: Long,
-        width: Long,
-        height: Long,
+        width: Int,
+        height: Int,
+        usePIIPlaceholder: Boolean,
+        clipping: MobileSegment.WireframeClip? = null,
         drawable: Drawable? = null,
         shapeStyle: MobileSegment.ShapeStyle? = null,
         border: MobileSegment.ShapeBorder? = null,
-        prefix: String = DRAWABLE_CHILD_NAME,
-        callback: ImageWireframeHelperCallback? = null
+        imageWireframeHelperCallback: ImageWireframeHelperCallback,
+        prefix: String? = DRAWABLE_CHILD_NAME
     ): MobileSegment.Wireframe? {
         if (drawable == null) return null
         val id = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(view, prefix + currentWireframeIndex)
@@ -60,49 +62,40 @@ internal class ImageWireframeHelper(
         val density = displayMetrics.density
 
         // in case we suspect the image is PII, return a placeholder
-        @Suppress("UnsafeCallOnNullableType") // drawable already checked for null in isValid
-        if (imageTypeResolver.isDrawablePII(
-                drawableProperties.drawable,
-                drawableProperties.drawableWidth.densityNormalized(density),
-                drawableProperties.drawableHeight.densityNormalized(density)
-            )
-        ) {
-            return MobileSegment.Wireframe.PlaceholderWireframe(
-                id,
-                x,
-                y,
-                width,
-                height,
-                label = PLACEHOLDER_CONTENT_LABEL
-            )
+        if (usePIIPlaceholder && imageTypeResolver.isDrawablePII(drawable, density)) {
+            return createContentPlaceholderWireframe(view, id, density)
         }
+
+        val drawableWidthDp = width.densityNormalized(density).toLong()
+        val drawableHeightDp = height.densityNormalized(density).toLong()
 
         val imageWireframe =
             MobileSegment.Wireframe.ImageWireframe(
                 id = id,
-                x = x,
-                y = y,
-                width = width,
-                height = height,
+                x,
+                y,
+                width = drawableWidthDp,
+                height = drawableHeightDp,
                 shapeStyle = shapeStyle,
                 border = border,
                 base64 = "",
+                clip = clipping,
                 mimeType = mimeType,
                 isEmpty = true
             )
 
-        callback?.onStart()
+        imageWireframeHelperCallback.onStart()
 
         base64Serializer.handleBitmap(
             applicationContext = applicationContext,
             displayMetrics = displayMetrics,
             drawable = drawableProperties.drawable,
-            drawableWidth = drawableProperties.drawableWidth,
-            drawableHeight = drawableProperties.drawableHeight,
+            drawableWidth = width,
+            drawableHeight = height,
             imageWireframe = imageWireframe,
-            object : Base64SerializerCallback {
+            base64SerializerCallback = object : Base64SerializerCallback {
                 override fun onReady() {
-                    callback?.onFinished()
+                    imageWireframeHelperCallback.onFinished()
                 }
             }
         )
@@ -115,7 +108,7 @@ internal class ImageWireframeHelper(
         view: TextView,
         mappingContext: MappingContext,
         prevWireframeIndex: Int,
-        callback: ImageWireframeHelperCallback?
+        imageWireframeHelperCallback: ImageWireframeHelperCallback
     ): MutableList<MobileSegment.Wireframe> {
         val result = mutableListOf<MobileSegment.Wireframe>()
         var wireframeIndex = prevWireframeIndex
@@ -147,14 +140,14 @@ internal class ImageWireframeHelper(
                     currentWireframeIndex = ++wireframeIndex,
                     x = drawableCoordinates.x,
                     y = drawableCoordinates.y,
-                    width = drawable.intrinsicWidth
-                        .densityNormalized(density).toLong(),
-                    height = drawable.intrinsicHeight
-                        .densityNormalized(density).toLong(),
+                    width = drawable.intrinsicWidth,
+                    height = drawable.intrinsicHeight,
                     drawable = drawable,
                     shapeStyle = null,
                     border = null,
-                    callback = callback
+                    usePIIPlaceholder = true,
+                    clipping = MobileSegment.WireframeClip(),
+                    imageWireframeHelperCallback = imageWireframeHelperCallback
                 )?.let { resultWireframe ->
                     result.add(resultWireframe)
                 }
@@ -187,6 +180,25 @@ internal class ImageWireframeHelper(
         }
     }
 
+    private fun createContentPlaceholderWireframe(view: View, id: Long, density: Float):
+        MobileSegment.Wireframe.PlaceholderWireframe {
+        val coordinates = IntArray(2)
+        // this will always have size >= 2
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        view.getLocationOnScreen(coordinates)
+        val viewX = coordinates[0].densityNormalized(density).toLong()
+        val viewY = coordinates[1].densityNormalized(density).toLong()
+
+        return MobileSegment.Wireframe.PlaceholderWireframe(
+            id,
+            viewX,
+            viewY,
+            view.width.densityNormalized(density).toLong(),
+            view.height.densityNormalized(density).toLong(),
+            label = PLACEHOLDER_CONTENT_LABEL
+        )
+    }
+
     @Suppress("MagicNumber")
     private fun convertIndexToCompoundDrawablePosition(compoundDrawableIndex: Int): CompoundDrawablePositions? {
         return when (compoundDrawableIndex) {
@@ -216,7 +228,7 @@ internal class ImageWireframeHelper(
     }
 
     internal companion object {
-        @VisibleForTesting internal const val DRAWABLE_CHILD_NAME = "drawable"
+        internal const val DRAWABLE_CHILD_NAME = "drawable"
 
         @VisibleForTesting internal const val PLACEHOLDER_CONTENT_LABEL = "Content Image"
     }

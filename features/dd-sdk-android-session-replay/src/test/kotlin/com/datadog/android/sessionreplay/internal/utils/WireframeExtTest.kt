@@ -45,7 +45,11 @@ internal class WireframeExtTest {
         val fakeTestWireframe = fakeWireframe.testCopy(shapeStyle = fakeShapeStyle)
 
         // Then
-        assertThat(fakeTestWireframe.hasOpaqueBackground()).isTrue
+        if (fakeTestWireframe is MobileSegment.Wireframe.ImageWireframe) {
+            assertThat(fakeTestWireframe.hasOpaqueBackground()).isFalse
+        } else {
+            assertThat(fakeTestWireframe.hasOpaqueBackground()).isTrue
+        }
     }
 
     @ParameterizedTest
@@ -102,7 +106,7 @@ internal class WireframeExtTest {
     }
 
     @Test
-    fun `M return true W hasOpaqueBackground { ImageWireframe, base64, noShapeStyle }`(
+    fun `M return false W hasOpaqueBackground { ImageWireframe, base64, noShapeStyle }`(
         @Forgery fakeWireframe: MobileSegment.Wireframe.ImageWireframe,
         @StringForgery fakeBase64: String
     ) {
@@ -110,7 +114,7 @@ internal class WireframeExtTest {
         val fakeTestWireframe = fakeWireframe.copy(shapeStyle = null, base64 = fakeBase64)
 
         // Then
-        assertThat(fakeTestWireframe.hasOpaqueBackground()).isTrue
+        assertThat(fakeTestWireframe.hasOpaqueBackground()).isFalse
     }
 
     @Test

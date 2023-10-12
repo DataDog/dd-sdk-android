@@ -73,6 +73,7 @@ dependencies {
 
 unMock {
     keep("android.widget.ImageView\$ScaleType")
+    keep("android.graphics.Rect")
 }
 
 apply(from = "clone_session_replay_schema.gradle.kts")

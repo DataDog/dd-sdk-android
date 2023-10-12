@@ -25,8 +25,17 @@ internal class WebPImageCompression : ImageCompression {
         // preallocate stream size
         val byteArrayOutputStream = ByteArrayOutputStream(bitmap.allocationByteCount)
         val imageFormat = getImageCompressionFormat()
-        @Suppress("UnsafeThirdPartyFunctionCall") // stream is not null and image quality is between 0 and 100
-        bitmap.compress(imageFormat, IMAGE_QUALITY, byteArrayOutputStream)
+
+        @Suppress("SwallowedException")
+        try {
+            // stream is not null and image quality is between 0 and 100
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            bitmap.compress(imageFormat, IMAGE_QUALITY, byteArrayOutputStream)
+        } catch (e: IllegalStateException) {
+            // if the bitmap was recycled while we were working on it
+            return EMPTY_BYTEARRAY
+        }
+
         return byteArrayOutputStream.toByteArray()
     }
 
@@ -39,6 +48,7 @@ internal class WebPImageCompression : ImageCompression {
         }
 
     companion object {
+        private val EMPTY_BYTEARRAY = ByteArray(0)
         private const val WEBP_EXTENSION = "webp"
 
         // This is the default compression for webp when writing to the output stream -

@@ -21,6 +21,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -48,8 +49,12 @@ internal class ImageTypeResolverTest {
         @IntForgery(min = IMAGE_DIMEN_CONSIDERED_PII_IN_DP) fakeWidth: Int,
         @IntForgery(min = 0, max = IMAGE_DIMEN_CONSIDERED_PII_IN_DP) fakeHeight: Int
     ) {
+        // Given
+        whenever(mockBitmapDrawable.intrinsicWidth).thenReturn(fakeWidth)
+        whenever(mockBitmapDrawable.intrinsicHeight).thenReturn(fakeHeight)
+
         // When
-        val result = testedTypeResolver.isDrawablePII(mockBitmapDrawable, fakeWidth, fakeHeight)
+        val result = testedTypeResolver.isDrawablePII(mockBitmapDrawable, density = 1f)
 
         // Then
         assertThat(result).isTrue
@@ -60,8 +65,12 @@ internal class ImageTypeResolverTest {
         @IntForgery(min = 0, max = IMAGE_DIMEN_CONSIDERED_PII_IN_DP) fakeWidth: Int,
         @IntForgery(min = IMAGE_DIMEN_CONSIDERED_PII_IN_DP) fakeHeight: Int
     ) {
+        // Given
+        whenever(mockBitmapDrawable.intrinsicWidth).thenReturn(fakeWidth)
+        whenever(mockBitmapDrawable.intrinsicHeight).thenReturn(fakeHeight)
+
         // When
-        val result = testedTypeResolver.isDrawablePII(mockBitmapDrawable, fakeWidth, fakeHeight)
+        val result = testedTypeResolver.isDrawablePII(mockBitmapDrawable, density = 1f)
 
         // Then
         assertThat(result).isTrue
@@ -72,8 +81,12 @@ internal class ImageTypeResolverTest {
         @IntForgery(min = IMAGE_DIMEN_CONSIDERED_PII_IN_DP) fakeWidth: Int,
         @IntForgery(min = IMAGE_DIMEN_CONSIDERED_PII_IN_DP) fakeHeight: Int
     ) {
+        // Given
+        whenever(mockBitmapDrawable.intrinsicWidth).thenReturn(fakeWidth)
+        whenever(mockBitmapDrawable.intrinsicHeight).thenReturn(fakeHeight)
+
         // When
-        val result = testedTypeResolver.isDrawablePII(mockGradientDrawable, fakeWidth, fakeHeight)
+        val result = testedTypeResolver.isDrawablePII(mockGradientDrawable, density = 1f)
 
         // Then
         assertThat(result).isFalse
@@ -84,8 +97,12 @@ internal class ImageTypeResolverTest {
         @IntForgery(min = 0, max = IMAGE_DIMEN_CONSIDERED_PII_IN_DP) fakeWidth: Int,
         @IntForgery(min = 0, max = IMAGE_DIMEN_CONSIDERED_PII_IN_DP) fakeHeight: Int
     ) {
+        // Given
+        whenever(mockBitmapDrawable.intrinsicWidth).thenReturn(fakeWidth)
+        whenever(mockBitmapDrawable.intrinsicHeight).thenReturn(fakeHeight)
+
         // When
-        val result = testedTypeResolver.isDrawablePII(mockBitmapDrawable, fakeWidth, fakeHeight)
+        val result = testedTypeResolver.isDrawablePII(mockBitmapDrawable, density = 1f)
 
         // Then
         assertThat(result).isFalse

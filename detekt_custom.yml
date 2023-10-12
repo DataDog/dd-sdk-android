@@ -419,7 +419,10 @@ datadog:
       - "android.graphics.drawable.LayerDrawable.safeGetDrawable(kotlin.Int, com.datadog.android.api.InternalLogger)"
       - "android.graphics.drawable.RippleDrawable.safeGetDrawable(kotlin.Int, com.datadog.android.api.InternalLogger)"
       - "android.graphics.Point.constructor()"
+      - "android.graphics.Rect.centerX()"
+      - "android.graphics.Rect.centerY()"
       - "android.graphics.Rect.constructor()"
+      - "android.graphics.Rect.constructor(kotlin.Int, kotlin.Int, kotlin.Int, kotlin.Int)"
       - "android.graphics.Rect.height()"
       - "android.graphics.Rect.width()"
       # endregion
@@ -1084,6 +1087,8 @@ datadog:
       # endregion
       # region Kotlin Misc
       - "kotlin.Any.resolveViewUrl()"
+      - "kotlin.comparisons.maxOf(kotlin.Float, kotlin.Float)"
+      - "kotlin.comparisons.minOf(kotlin.Float, kotlin.Float)"
       - "kotlin.IllegalArgumentException(kotlin.String?)"
       - "kotlin.IllegalStateException(kotlin.String?)"
       - "kotlin.Throwable.constructor()"

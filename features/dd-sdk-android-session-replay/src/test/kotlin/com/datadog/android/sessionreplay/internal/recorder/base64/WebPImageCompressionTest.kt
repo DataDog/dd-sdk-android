@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -83,6 +84,18 @@ internal class WebPImageCompressionTest {
         // Then
         @Suppress("DEPRECATION")
         assertThat(captor.firstValue).isEqualTo(Bitmap.CompressFormat.WEBP)
+    }
+
+    @Test
+    fun `M return empty bytearray W compressBitmap { bitmap was already recycled }`() {
+        // Given
+        whenever(mockBitmap.isRecycled).thenReturn(true)
+
+        // When
+        val result = testedImageCompression.compressBitmap(mockBitmap)
+
+        // Then
+        assertThat(result).isEmpty()
     }
 
     // endregion
