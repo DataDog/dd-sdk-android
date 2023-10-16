@@ -59,7 +59,7 @@ This project hosts the following modules:
 You can build the SDK using the following Gradle command:
 
 ```shell script
-./gradlew assembleAll
+./gradlew assembleLibraries
 ```
 
 ### Running the tests

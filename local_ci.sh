@@ -126,8 +126,8 @@ if [[ $ANALYSIS == 1 ]]; then
 
   if [[ $COMPILE == 1 ]]; then
     # Assemble is required to get generated classes type resolution
-    echo "------ Assemble Library"
-    ./gradlew assembleAll
+    echo "------ Assemble Libraries"
+    ./gradlew assembleLibraries
 
     echo "------ Detekt custom rules"
     ./gradlew :tools:detekt:jar
@@ -149,8 +149,8 @@ fi
 if [[ $COMPILE == 1 ]]; then
   echo "-- COMPILATION"
 
-  echo "---- Assemble Library"
-  ./gradlew assembleAll
+  echo "---- Assemble Libraries"
+  ./gradlew assembleLibraries
 
   echo "---- Assemble Unit Tests"
   ./gradlew assembleDebugUnitTest
