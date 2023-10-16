@@ -12,6 +12,7 @@ import fr.xgouchet.elmyr.ForgeryFactory
 
 class NetworkInfoForgeryFactory : ForgeryFactory<NetworkInfo> {
 
+    @Suppress("MagicNumber")
     override fun getForgery(forge: Forge): NetworkInfo {
         return NetworkInfo(
             connectivity = forge.aValueFrom(NetworkInfo.Connectivity::class.java),

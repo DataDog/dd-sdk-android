@@ -6,6 +6,7 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.jvm.useJvmFactories
@@ -14,14 +15,13 @@ internal class Configurator :
     BaseConfigurator() {
     override fun configure(forge: Forge) {
         super.configure(forge)
+        forge.useCoreFactories()
 
         // Datadog Core
         forge.addFactory(CustomAttributesForgeryFactory())
         forge.addFactory(ConfigurationForgeryFactory())
         forge.addFactory(ConfigurationCoreForgeryFactory())
         forge.addFactory(ConfigurationForgeryFactory())
-        forge.addFactory(NetworkInfoForgeryFactory())
-        forge.addFactory(UserInfoForgeryFactory())
         forge.addFactory(FilePersistenceConfigForgeryFactory())
         forge.addFactory(AndroidInfoProviderForgeryFactory())
         forge.addFactory(FeatureStorageConfigurationForgeryFactory())
@@ -39,10 +39,6 @@ internal class Configurator :
         forge.addFactory(CharsetForgeryFactory())
 
         // Datadog SDK v2
-        forge.addFactory(TimeInfoForgeryFactory())
-        forge.addFactory(ProcessInfoForgeryFactory())
-        forge.addFactory(DeviceInfoForgeryFactory())
-        forge.addFactory(DatadogContextForgeryFactory())
         forge.addFactory(DataUploadConfigurationForgeryFactory())
 
         // UploadStatus

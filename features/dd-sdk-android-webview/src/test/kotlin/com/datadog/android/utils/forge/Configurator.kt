@@ -6,6 +6,7 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
 
@@ -14,9 +15,7 @@ internal class Configurator : BaseConfigurator() {
         super.configure(forge)
 
         // Core
-        forge.addFactory(DatadogContextForgeryFactory())
-        forge.addFactory(NetworkInfoForgeryFactory())
-        forge.addFactory(UserInfoForgeryFactory())
+        forge.useCoreFactories()
 
         // RUM
         forge.addFactory(RumContextForgeryFactory())
