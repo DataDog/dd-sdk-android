@@ -7,6 +7,7 @@
 package com.datadog.android.api.net
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.storage.RawBatchEvent
 
 /**
  * Factory used to build requests from the batches stored.
@@ -22,7 +23,7 @@ fun interface RequestFactory {
      */
     fun create(
         context: DatadogContext,
-        batchData: List<ByteArray>,
+        batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
     ): Request
 

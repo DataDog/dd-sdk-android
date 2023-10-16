@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestFactory
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.rum.RumAttributes
 import java.util.Locale
@@ -22,7 +23,7 @@ internal class RumRequestFactory(
 
     override fun create(
         context: DatadogContext,
-        batchData: List<ByteArray>,
+        batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
     ): Request {
         val requestId = UUID.randomUUID().toString()
@@ -37,10 +38,11 @@ internal class RumRequestFactory(
                 context.source,
                 context.sdkVersion
             ),
-            body = batchData.join(
-                separator = PAYLOAD_SEPARATOR,
-                internalLogger = internalLogger
-            ),
+            body = batchData.map { it.data }
+                .join(
+                    separator = PAYLOAD_SEPARATOR,
+                    internalLogger = internalLogger
+                ),
             contentType = RequestFactory.CONTENT_TYPE_TEXT_UTF8
         )
     }

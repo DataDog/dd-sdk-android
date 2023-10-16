@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
@@ -90,7 +91,7 @@ internal class DataFlusherTest {
                     .aList {
                         forge.aString()
                     }
-                    .map { it.toByteArray() }
+                    .map { RawBatchEvent(it.toByteArray()) }
             }
         whenever(mockFileOrchestrator.getFlushableFiles()).thenReturn(fakeFiles)
         fakeFiles.forEachIndexed { index, file ->
@@ -105,7 +106,7 @@ internal class DataFlusherTest {
         // Then
         fakeBatches.forEach {
             val expectedPayload =
-                payloadDecoration.prefixBytes + it.reduce { acc, bytes ->
+                payloadDecoration.prefixBytes + it.map { it.data }.reduce { acc, bytes ->
                     acc + payloadDecoration.separatorBytes + bytes
                 } + payloadDecoration.suffixBytes
 
@@ -128,7 +129,7 @@ internal class DataFlusherTest {
                     .aList {
                         forge.aString()
                     }
-                    .map { it.toByteArray() }
+                    .map { RawBatchEvent(it.toByteArray()) }
             }
         whenever(mockFileOrchestrator.getFlushableFiles()).thenReturn(fakeFiles)
         fakeFiles.forEachIndexed { index, file ->

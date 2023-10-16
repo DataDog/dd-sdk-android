@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.serializeToByteArray
@@ -36,7 +37,7 @@ internal class RumDataWriter(
         ) ?: return false
 
         synchronized(this) {
-            val result = writer.write(byteArray, null)
+            val result = writer.write(RawBatchEvent(data = byteArray), null)
             if (result) {
                 onDataWritten(element, byteArray)
             }

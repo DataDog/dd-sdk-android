@@ -10,6 +10,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.RecordCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
@@ -83,7 +84,7 @@ internal class SessionReplayRecordWriterTest {
         testedWriter.write(fakeRecord)
 
         // Then
-        verify(mockEventBatchWriter).write(fakeRecord.toJson().toByteArray(), null)
+        verify(mockEventBatchWriter).write(RawBatchEvent(data = fakeRecord.toJson().toByteArray()), null)
         verifyNoMoreInteractions(mockEventBatchWriter)
 
         verify(mockRecordCallback).onRecordForViewSent(fakeRecord)
@@ -124,8 +125,8 @@ internal class SessionReplayRecordWriterTest {
         testedWriter.write(fakeRecord2)
 
         // Then
-        verify(mockEventBatchWriter).write(fakeRecord1.toJson().toByteArray(), null)
-        verify(mockEventBatchWriter).write(fakeRecord2.toJson().toByteArray(), null)
+        verify(mockEventBatchWriter).write(RawBatchEvent(data = fakeRecord1.toJson().toByteArray()), null)
+        verify(mockEventBatchWriter).write(RawBatchEvent(data = fakeRecord2.toJson().toByteArray()), null)
         verifyNoMoreInteractions(mockEventBatchWriter)
 
         verify(mockRecordCallback).onRecordForViewSent(fakeRecord1)
@@ -164,7 +165,7 @@ internal class SessionReplayRecordWriterTest {
         testedWriter.write(fakeRecord)
 
         // Then
-        verify(mockEventBatchWriter).write(fakeRecord.toJson().toByteArray(), null)
+        verify(mockEventBatchWriter).write(RawBatchEvent(data = fakeRecord.toJson().toByteArray()), null)
         verifyNoMoreInteractions(mockEventBatchWriter)
 
         verifyNoMoreInteractions(mockRecordCallback)

@@ -19,7 +19,7 @@ import java.util.Locale
 internal open class SingleItemDataWriter<T : Any>(
     internal val fileOrchestrator: FileOrchestrator,
     internal val serializer: Serializer<T>,
-    internal val fileWriter: FileWriter,
+    internal val fileWriter: FileWriter<ByteArray>,
     internal val internalLogger: InternalLogger,
     internal val filePersistenceConfig: FilePersistenceConfig
 ) : DataWriter<T> {

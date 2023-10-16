@@ -40,6 +40,7 @@ internal class Configurator :
 
         // Datadog SDK v2
         forge.addFactory(DataUploadConfigurationForgeryFactory())
+        forge.addFactory(RawBatchEventForgeryFactory())
 
         // UploadStatus
         forge.addFactory(HttpRedirectStatusForgeryFactory())

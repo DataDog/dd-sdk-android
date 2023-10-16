@@ -10,6 +10,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
@@ -112,7 +113,7 @@ internal class DataUploadRunnable(
     private fun consumeBatch(
         context: DatadogContext,
         batchId: BatchId,
-        batch: List<ByteArray>,
+        batch: List<RawBatchEvent>,
         batchMeta: ByteArray?
     ) {
         val status = dataUploader.upload(context, batch, batchMeta)

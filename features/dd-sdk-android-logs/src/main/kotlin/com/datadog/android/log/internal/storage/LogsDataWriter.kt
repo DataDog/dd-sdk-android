@@ -10,6 +10,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.serializeToByteArray
 import com.datadog.android.log.model.LogEvent
@@ -22,6 +23,6 @@ internal class LogsDataWriter(
     @WorkerThread
     override fun write(writer: EventBatchWriter, element: LogEvent): Boolean {
         val serialized = serializer.serializeToByteArray(element, internalLogger) ?: return false
-        return synchronized(this) { writer.write(serialized, null) }
+        return synchronized(this) { writer.write(RawBatchEvent(data = serialized), batchMetadata = null) }
     }
 }

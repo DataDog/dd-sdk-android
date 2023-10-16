@@ -8,10 +8,9 @@ package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.persistence.file.EventMeta
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.utils.use
-import com.google.gson.JsonParseException
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -24,13 +23,7 @@ import kotlin.math.max
  * Stores data in the TLV format as meta+data, use only for RUM/Log/Trace events.
  */
 internal class PlainBatchFileReaderWriter(
-    private val internalLogger: InternalLogger,
-    private val metaGenerator: (data: ByteArray) -> ByteArray = {
-        EventMeta().asBytes
-    },
-    private val metaParser: (metaBytes: ByteArray) -> EventMeta = {
-        EventMeta.fromBytes(it)
-    }
+    private val internalLogger: InternalLogger
 ) : BatchFileReaderWriter {
 
     // region FileWriter+FileReader
@@ -38,7 +31,7 @@ internal class PlainBatchFileReaderWriter(
     @WorkerThread
     override fun writeData(
         file: File,
-        data: ByteArray,
+        data: RawBatchEvent,
         append: Boolean
     ): Boolean {
         return try {
@@ -66,7 +59,7 @@ internal class PlainBatchFileReaderWriter(
     @WorkerThread
     override fun readData(
         file: File
-    ): List<ByteArray> {
+    ): List<RawBatchEvent> {
         return try {
             readFileData(file)
         } catch (e: IOException) {
@@ -97,21 +90,21 @@ internal class PlainBatchFileReaderWriter(
     private fun lockFileAndWriteData(
         file: File,
         append: Boolean,
-        data: ByteArray
+        data: RawBatchEvent
     ) {
         FileOutputStream(file, append).use { outputStream ->
             outputStream.channel.lock().use {
-                val meta = metaGenerator(data)
+                val meta = data.metadata
 
                 val metaBlockSize = TYPE_SIZE_BYTES + LENGTH_SIZE_BYTES + meta.size
-                val dataBlockSize = TYPE_SIZE_BYTES + LENGTH_SIZE_BYTES + data.size
+                val dataBlockSize = TYPE_SIZE_BYTES + LENGTH_SIZE_BYTES + data.data.size
 
                 // ByteBuffer by default has BigEndian ordering, which matches to how Java
                 // reads data, so no need to define it explicitly
                 val buffer = ByteBuffer
                     .allocate(metaBlockSize + dataBlockSize)
                     .putAsTlv(BlockType.META, meta)
-                    .putAsTlv(BlockType.EVENT, data)
+                    .putAsTlv(BlockType.EVENT, data.data)
 
                 outputStream.write(buffer.array())
             }
@@ -123,10 +116,10 @@ internal class PlainBatchFileReaderWriter(
     // Called within a try/catch block
     private fun readFileData(
         file: File
-    ): List<ByteArray> {
+    ): List<RawBatchEvent> {
         val inputLength = file.lengthSafe(internalLogger).toInt()
 
-        val result = mutableListOf<ByteArray>()
+        val result = mutableListOf<RawBatchEvent>()
 
         // Read file iteratively
         var remaining = inputLength
@@ -143,21 +136,7 @@ internal class PlainBatchFileReaderWriter(
 
                 if (eventReadResult.data == null) break
 
-                // TODO RUMM-2172 bundle meta
-                @Suppress("UNUSED_VARIABLE")
-                val meta = try {
-                    metaParser(metaReadResult.data)
-                } catch (e: JsonParseException) {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.MAINTAINER,
-                        { ERROR_FAILED_META_PARSE },
-                        e
-                    )
-                    continue
-                }
-
-                result.add(eventReadResult.data)
+                result.add(RawBatchEvent(eventReadResult.data, metaReadResult.data))
             }
         }
 
@@ -284,8 +263,6 @@ internal class PlainBatchFileReaderWriter(
         internal const val ERROR_WRITE = "Unable to write data to file: %s"
         internal const val ERROR_READ = "Unable to read data from file: %s"
 
-        internal const val ERROR_FAILED_META_PARSE =
-            "Failed to parse meta bytes, stopping file read."
         internal const val WARNING_NOT_ALL_DATA_READ =
             "File %s is probably corrupted, not all content was read."
     }

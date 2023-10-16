@@ -15,6 +15,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.data.upload.v2.DataUploader
@@ -140,15 +141,13 @@ internal class UploadWorkerTest {
 
     @Test
     fun `𝕄 send batches 𝕎 doWork() {single batch per feature}`(
-        @StringForgery batchA: List<String>,
+        @Forgery batchA: List<RawBatchEvent>,
         @StringForgery batchAMeta: String,
-        @StringForgery batchB: List<String>,
+        @Forgery batchB: List<RawBatchEvent>,
         @StringForgery batchBMeta: String,
         forge: Forge
     ) {
         // Given
-        val batchAData = batchA.map { it.toByteArray() }
-        val batchBData = batchB.map { it.toByteArray() }
         val batchAMetadata = forge.aNullable { batchAMeta.toByteArray() }
         val batchBMetadata = forge.aNullable { batchBMeta.toByteArray() }
 
@@ -160,7 +159,7 @@ internal class UploadWorkerTest {
             mockBatchReaderA,
             batchId1,
             batchAConfirmation,
-            batchAData,
+            batchA,
             batchAMetadata
         )
 
@@ -170,7 +169,7 @@ internal class UploadWorkerTest {
             mockBatchReaderB,
             batchId2,
             batchBConfirmation,
-            batchBData,
+            batchB,
             batchBMetadata
         )
 
@@ -179,14 +178,14 @@ internal class UploadWorkerTest {
         whenever(
             mockUploaderA.upload(
                 fakeContext,
-                batchAData,
+                batchA,
                 batchAMetadata
             )
         ) doReturn uploadStatus1
         whenever(
             mockUploaderB.upload(
                 fakeContext,
-                batchBData,
+                batchB,
                 batchBMetadata
             )
         ) doReturn uploadStatus2
@@ -197,12 +196,12 @@ internal class UploadWorkerTest {
         // Then
         verify(mockUploaderA).upload(
             fakeContext,
-            batchAData,
+            batchA,
             batchAMetadata
         )
         verify(mockUploaderB).upload(
             fakeContext,
-            batchBData,
+            batchB,
             batchBMetadata
         )
 
@@ -227,15 +226,13 @@ internal class UploadWorkerTest {
     @MethodSource("errorStatusValues")
     fun `𝕄 send and keep batches 𝕎 doWork() {single batch per feature with error}`(
         status: UploadStatus,
-        @StringForgery batchA: List<String>,
+        @Forgery batchA: List<RawBatchEvent>,
         @StringForgery batchAMeta: String,
-        @StringForgery batchB: List<String>,
+        @Forgery batchB: List<RawBatchEvent>,
         @StringForgery batchBMeta: String,
         forge: Forge
     ) {
         // Given
-        val batchAData = batchA.map { it.toByteArray() }
-        val batchBData = batchB.map { it.toByteArray() }
         val batchAMetadata = forge.aNullable { batchAMeta.toByteArray() }
         val batchBMetadata = forge.aNullable { batchBMeta.toByteArray() }
 
@@ -246,7 +243,7 @@ internal class UploadWorkerTest {
             mockBatchReaderA,
             batchId1,
             batchAConfirmation,
-            batchAData,
+            batchA,
             batchAMetadata
         )
 
@@ -257,21 +254,21 @@ internal class UploadWorkerTest {
             mockBatchReaderB,
             batchId2,
             batchBConfirmation,
-            batchBData,
+            batchB,
             batchBMetadata
         )
 
         whenever(
             mockUploaderA.upload(
                 fakeContext,
-                batchAData,
+                batchA,
                 batchAMetadata
             )
         ) doReturn status
         whenever(
             mockUploaderB.upload(
                 fakeContext,
-                batchBData,
+                batchB,
                 batchBMetadata
             )
         ) doReturn status
@@ -282,12 +279,12 @@ internal class UploadWorkerTest {
         // Then
         verify(mockUploaderA).upload(
             fakeContext,
-            batchAData,
+            batchA,
             batchAMetadata
         )
         verify(mockUploaderB).upload(
             fakeContext,
-            batchBData,
+            batchB,
             batchBMetadata
         )
         verify(mockStorageA).confirmBatchRead(
@@ -311,7 +308,7 @@ internal class UploadWorkerTest {
     fun `𝕄 send batches 𝕎 doWork() {multiple batches, all Success}`(forge: Forge) {
         // Given
         val batchesA = forge.aList {
-            forge.aList { forge.aString().toByteArray() }
+            aList { RawBatchEvent(aString().toByteArray()) }
         }
         val batchesAMeta = forge.aList(batchesA.size) {
             forge.aNullable { forge.aString().toByteArray() }
@@ -320,7 +317,7 @@ internal class UploadWorkerTest {
         val aConfirmations = forge.aList(batchesA.size) { mock<BatchConfirmation>() }
         val aReaders = forge.aList(batchesA.size) { mock<BatchReader>() }
 
-        val batchB = forge.aList { forge.aString().toByteArray() }
+        val batchB = forge.aList { RawBatchEvent(aString().toByteArray()) }
         val batchBMeta = forge.aString().toByteArray()
 
         stubMultipleReadSequence(
@@ -402,16 +399,16 @@ internal class UploadWorkerTest {
     fun `𝕄 send batches 𝕎 doWork() {multiple batches, all Success, async storage}`(forge: Forge) {
         // Given
         val batchesA = forge.aList {
-            forge.aList { forge.aString().toByteArray() }
+            aList { RawBatchEvent(aString().toByteArray()) }
         }
         val batchesAMeta = forge.aList(batchesA.size) {
-            forge.aNullable { forge.aString().toByteArray() }
+            aNullable { aString().toByteArray() }
         }
         val aIds = forge.aList(batchesA.size) { mock<BatchId>() }
         val aConfirmations = forge.aList(batchesA.size) { mock<BatchConfirmation>() }
         val aReaders = forge.aList(batchesA.size) { mock<BatchReader>() }
 
-        val batchB = forge.aList { forge.aString().toByteArray() }
+        val batchB = forge.aList { RawBatchEvent(aString().toByteArray()) }
         val batchBMeta = forge.aString().toByteArray()
         val aStatuses = batchesA.map { forge.getForgery(UploadStatus.Success::class.java) }
 
@@ -502,16 +499,16 @@ internal class UploadWorkerTest {
     ) {
         // Given
         val batchesA = forge.aList {
-            forge.aList { forge.aString().toByteArray() }
+            aList { RawBatchEvent(aString().toByteArray()) }
         }
         val batchesAMeta = forge.aList(batchesA.size) {
-            forge.aNullable { forge.aString().toByteArray() }
+            aNullable { aString().toByteArray() }
         }
         val aIds = forge.aList(batchesA.size) { mock<BatchId>() }
         val aConfirmations = forge.aList(batchesA.size) { mock<BatchConfirmation>() }
         val aReaders = forge.aList(batchesA.size) { mock<BatchReader>() }
 
-        val batchB = forge.aList { forge.aString().toByteArray() }
+        val batchB = forge.aList { RawBatchEvent(aString().toByteArray()) }
         val batchBMeta = forge.aString().toByteArray()
 
         val failingBatchIndex = forge.anInt(min = 0, max = batchesA.size)
@@ -644,7 +641,7 @@ internal class UploadWorkerTest {
         batchReader: BatchReader,
         batchId: BatchId,
         batchConfirmation: BatchConfirmation,
-        batch: List<ByteArray>,
+        batch: List<RawBatchEvent>,
         batchMetadata: ByteArray?
     ) {
         stubMultipleReadSequence(
@@ -662,7 +659,7 @@ internal class UploadWorkerTest {
         batchReaders: List<BatchReader>,
         batchIds: List<BatchId>,
         batchConfirmations: List<BatchConfirmation>,
-        batches: List<List<ByteArray>>,
+        batches: List<List<RawBatchEvent>>,
         batchMetadata: List<ByteArray?>
     ) {
         whenever(storage.readNextBatch(any(), any()))

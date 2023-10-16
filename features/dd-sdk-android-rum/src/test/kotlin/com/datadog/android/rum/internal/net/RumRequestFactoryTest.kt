@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.RequestFactory
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.utils.forge.Configurator
@@ -55,7 +56,7 @@ internal class RumRequestFactoryTest {
         forge: Forge
     ) {
         // Given
-        val batchData = batchData.map { it.toByteArray() }
+        val batchData = batchData.map { RawBatchEvent(it.toByteArray()) }
         val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
 
         // When
@@ -75,7 +76,7 @@ internal class RumRequestFactoryTest {
         assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
         assertThat(request.description).isEqualTo("RUM Request")
         assertThat(request.body).isEqualTo(
-            batchData.join(
+            batchData.map { it.data }.join(
                 separator = "\n".toByteArray(),
                 internalLogger = InternalLogger.UNBOUND
             )
@@ -95,7 +96,7 @@ internal class RumRequestFactoryTest {
             customEndpointUrl = fakeEndpoint,
             internalLogger = InternalLogger.UNBOUND
         )
-        val batchData = batchData.map { it.toByteArray() }
+        val batchData = batchData.map { RawBatchEvent(it.toByteArray()) }
         val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
 
         // When
@@ -115,7 +116,7 @@ internal class RumRequestFactoryTest {
         assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
         assertThat(request.description).isEqualTo("RUM Request")
         assertThat(request.body).isEqualTo(
-            batchData.join(
+            batchData.map { it.data }.join(
                 separator = "\n".toByteArray(),
                 internalLogger = InternalLogger.UNBOUND
             )

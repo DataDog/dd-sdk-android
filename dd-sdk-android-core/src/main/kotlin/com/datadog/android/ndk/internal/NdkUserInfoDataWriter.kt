@@ -24,7 +24,7 @@ internal class NdkUserInfoDataWriter(
     storageDir: File,
     consentProvider: ConsentProvider,
     executorService: ExecutorService,
-    fileWriter: FileWriter,
+    fileWriter: FileWriter<ByteArray>,
     fileMover: FileMover,
     internalLogger: InternalLogger,
     filePersistenceConfig: FilePersistenceConfig

@@ -22,6 +22,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
@@ -80,7 +81,7 @@ internal class DatadogCore(
     internal val isActive: Boolean
         get() = coreFeature.initialized.get()
 
-    private val ndkLastViewEventFileWriter: FileWriter by lazy {
+    private val ndkLastViewEventFileWriter: FileWriter<RawBatchEvent> by lazy {
         BatchFileReaderWriter.create(
             internalLogger = internalLogger,
             encryption = coreFeature.localDataEncryption
@@ -251,7 +252,7 @@ internal class DatadogCore(
         // as well (and no need to write).
         val lastViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
         if (lastViewEventFile.parentFile?.existsSafe(internalLogger) == true) {
-            ndkLastViewEventFileWriter.writeData(lastViewEventFile, data, false)
+            ndkLastViewEventFileWriter.writeData(lastViewEventFile, RawBatchEvent(data), false)
         } else {
             internalLogger.log(
                 InternalLogger.Level.WARN,

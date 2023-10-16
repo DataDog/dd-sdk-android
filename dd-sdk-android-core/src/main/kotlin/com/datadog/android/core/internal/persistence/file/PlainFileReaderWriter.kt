@@ -17,7 +17,6 @@ import java.util.Locale
 /**
  * Stores data as-is. Use for any non-RUM/Trace/Logs data.
  */
-@Suppress("unused")
 internal class PlainFileReaderWriter(
     private val internalLogger: InternalLogger
 ) : FileReaderWriter {
@@ -110,11 +109,6 @@ internal class PlainFileReaderWriter(
                 outputStream.write(data)
             }
         }
-    }
-
-    private fun moveFile(file: File, destDir: File): Boolean {
-        val destFile = File(destDir, file.name)
-        return file.renameToSafe(destFile, internalLogger)
     }
 
     // endregion
