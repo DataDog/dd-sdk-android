@@ -15,5 +15,6 @@ internal fun MobileSegment.Wireframe.copy(clip: MobileSegment.WireframeClip?):
         is MobileSegment.Wireframe.TextWireframe -> this.copy(clip = clip)
         is MobileSegment.Wireframe.ImageWireframe -> this.copy(clip = clip)
         is MobileSegment.Wireframe.PlaceholderWireframe -> this.copy(clip = clip)
+        is MobileSegment.Wireframe.WebviewWireframe -> this.copy(clip = clip)
     }
 }

@@ -14,6 +14,7 @@ internal fun MobileSegment.Wireframe.hasOpaqueBackground(): Boolean {
         is MobileSegment.Wireframe.ShapeWireframe -> this.hasOpaqueBackground()
         is MobileSegment.Wireframe.TextWireframe -> this.hasOpaqueBackground()
         is MobileSegment.Wireframe.PlaceholderWireframe -> true
+        is MobileSegment.Wireframe.WebviewWireframe -> true
     }
 }
 
@@ -38,6 +39,7 @@ internal fun MobileSegment.Wireframe.shapeStyle(): MobileSegment.ShapeStyle? {
         is MobileSegment.Wireframe.ShapeWireframe -> this.shapeStyle
         is MobileSegment.Wireframe.ImageWireframe -> this.shapeStyle
         is MobileSegment.Wireframe.PlaceholderWireframe -> null
+        is MobileSegment.Wireframe.WebviewWireframe -> this.shapeStyle
     }
 }
 
@@ -48,5 +50,6 @@ internal fun MobileSegment.Wireframe.copy(shapeStyle: MobileSegment.ShapeStyle?)
         is MobileSegment.Wireframe.ShapeWireframe -> this.copy(shapeStyle = shapeStyle)
         is MobileSegment.Wireframe.ImageWireframe -> this.copy(shapeStyle = shapeStyle)
         is MobileSegment.Wireframe.PlaceholderWireframe -> this
+        is MobileSegment.Wireframe.WebviewWireframe -> this.copy(shapeStyle = shapeStyle)
     }
 }

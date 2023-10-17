@@ -17,10 +17,10 @@ internal class SessionReplayTimeProvider(
 ) : TimeProvider {
     override fun getDeviceTimestamp(): Long {
         return currentTimeProvider() +
-            resolveRumViewTimestampOffset()
+            getTimestampOffset()
     }
 
-    private fun resolveRumViewTimestampOffset(): Long {
+    override fun getTimestampOffset(): Long {
         val rumFeatureContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
         val timestampOffset = rumFeatureContext[RUM_VIEW_TIMESTAMP_OFFSET]
         return if (timestampOffset is Long) timestampOffset else 0L

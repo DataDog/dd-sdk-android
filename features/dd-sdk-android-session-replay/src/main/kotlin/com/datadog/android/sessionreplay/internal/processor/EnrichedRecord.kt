@@ -6,8 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal.processor
 
-import com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord
 import com.google.gson.JsonArray
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 
 /**
@@ -18,7 +18,7 @@ internal data class EnrichedRecord(
     val applicationId: String,
     val sessionId: String,
     val viewId: String,
-    val records: List<MobileRecord>
+    val records: List<JsonElement>
 ) {
 
     /**
@@ -30,7 +30,6 @@ internal data class EnrichedRecord(
         json.addProperty(SESSION_ID_KEY, sessionId)
         json.addProperty(VIEW_ID_KEY, viewId)
         val recordsJsonArray = records
-            .map { it.toJson() }
             .fold(JsonArray()) { acc, jsonElement ->
                 acc.add(jsonElement)
                 acc

@@ -6,7 +6,7 @@
   "description": "Schema of a Record which signifies that the viewport properties have changed.",
   "allOf": [
     {
-      "$ref": "_common-record-schema.json"
+      "$ref": "_webview-supported-common-record-schema.json"
     },
     {
       "required": ["data", "type"],

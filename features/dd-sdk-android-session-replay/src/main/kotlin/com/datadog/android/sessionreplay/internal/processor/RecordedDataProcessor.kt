@@ -7,14 +7,18 @@
 package com.datadog.android.sessionreplay.internal.processor
 
 import android.content.res.Configuration
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.sessionreplay.internal.RecordWriter
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
+import com.datadog.android.sessionreplay.internal.async.WebViewRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
+import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.google.gson.JsonParser
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
 
@@ -22,6 +26,7 @@ import java.util.concurrent.TimeUnit
 internal class RecordedDataProcessor(
     private val writer: RecordWriter,
     private val mutationResolver: MutationResolver,
+    private val timeProvider: TimeProvider,
     private val nodeFlattener: NodeFlattener = NodeFlattener()
 ) : Processor {
     private var prevSnapshot: List<MobileSegment.Wireframe> = emptyList()
@@ -33,6 +38,7 @@ internal class RecordedDataProcessor(
     override fun processScreenSnapshots(
         item: SnapshotRecordedDataQueueItem
     ) {
+        Log.v("NormalRecord", "Timestamp: ${item.recordedQueuedItemContext.timestamp}")
         handleSnapshots(
             newRumContext = item.recordedQueuedItemContext.newRumContext,
             timestamp = item.recordedQueuedItemContext.timestamp,
@@ -48,6 +54,30 @@ internal class RecordedDataProcessor(
             rumContext = item.recordedQueuedItemContext.newRumContext,
             touchData = item.touchData
         )
+    }
+
+    @WorkerThread
+    override fun processWebViewRecord(item: WebViewRecordedDataQueueItem) {
+        JsonParser.parseString(item.serializedRecord)?.asJsonObject?.let {
+            val timestampOffset = timeProvider.getTimestampOffset()
+
+            it.get("timestamp")?.let { timestamp ->
+                val difference = System.currentTimeMillis() - timestamp.asLong
+                if (difference < 0) {
+                    Log.v("WebViewRecord", "Timestamp difference: $difference")
+                }
+                val correctedTimestamp = timestamp.asLong + timestampOffset
+                it.addProperty("timestamp", correctedTimestamp)
+            }
+            val rumContext = item.recordedQueuedItemContext.newRumContext
+            val enrichedRecord = EnrichedRecord(
+                rumContext.applicationId,
+                rumContext.sessionId,
+                rumContext.viewId,
+                listOf(it)
+            )
+            writer.write(enrichedRecord)
+        }
     }
 
     // region Internal
@@ -84,12 +114,12 @@ internal class RecordedDataProcessor(
             handleViewEndRecord(timestamp)
             val screenBounds = systemInformation.screenBounds
             val metaRecord = MobileSegment.MobileRecord.MetaRecord(
-                timestamp,
-                MobileSegment.Data1(screenBounds.width, screenBounds.height)
+                timestamp = timestamp,
+                data = MobileSegment.Data1(screenBounds.width, screenBounds.height)
             )
             val focusRecord = MobileSegment.MobileRecord.FocusRecord(
-                timestamp,
-                MobileSegment.Data2(true)
+                timestamp = timestamp,
+                data = MobileSegment.Data2(true)
             )
             records.add(metaRecord)
             records.add(focusRecord)
@@ -158,7 +188,7 @@ internal class RecordedDataProcessor(
             rumContext.applicationId,
             rumContext.sessionId,
             rumContext.viewId,
-            records
+            records.map { it.toJson() }
         )
     }
 

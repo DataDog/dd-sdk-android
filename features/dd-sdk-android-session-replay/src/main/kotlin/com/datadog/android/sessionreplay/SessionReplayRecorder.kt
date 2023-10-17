@@ -71,7 +71,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
         val processor = RecordedDataProcessor(
             recordWriter,
-            MutationResolver(internalLogger)
+            MutationResolver(internalLogger),
+            timeProvider
         )
 
         this.appContext = appContext
@@ -187,6 +188,14 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
             windowCallbackInterceptor.stopIntercepting(windows)
             viewOnDrawInterceptor.intercept(decorViews)
+        }
+    }
+
+    override fun handeWebViewRecord(record: String) {
+        uiHandler.post {
+            if (shouldRecord) {
+                recordedDataQueueHandler.addWebViewItem(record)
+            }
         }
     }
 }

@@ -9,6 +9,7 @@ package com.datadog.android.webview.internal
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
+import com.datadog.android.webview.internal.replay.ReplayWebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
@@ -18,6 +19,7 @@ import java.util.Locale.US
 internal class MixedWebViewEventConsumer(
     internal val rumEventConsumer: WebViewEventConsumer<JsonObject>,
     internal val logsEventConsumer: WebViewEventConsumer<Pair<JsonObject, String>>,
+    internal val replayEventConsumer: WebViewEventConsumer<String>,
     private val internalLogger: InternalLogger
 ) : WebViewEventConsumer<String> {
 
@@ -56,6 +58,9 @@ internal class MixedWebViewEventConsumer(
                 in (WebViewRumEventConsumer.RUM_EVENT_TYPES) -> {
                     rumEventConsumer.consume(wrappedEvent)
                 }
+                in (ReplayWebViewEventConsumer.REPLAY_EVENT_TYPES) -> {
+                    replayEventConsumer.consume(wrappedEvent.toString())
+                }
                 else -> {
                     internalLogger.log(
                         InternalLogger.Level.ERROR,
@@ -78,6 +83,7 @@ internal class MixedWebViewEventConsumer(
         const val EVENT_TYPE_KEY = "eventType"
         const val EVENT_KEY = "event"
         const val LOG_EVENT_TYPE = "log"
+        const val RECORD_EVENT_TYPE = "record"
         const val WEB_EVENT_PARSING_ERROR_MESSAGE = "We could not deserialize the" +
             " delegated browser event: %s."
         const val WEB_EVENT_MISSING_TYPE_ERROR_MESSAGE = "The web event: %s is missing" +

@@ -145,4 +145,5 @@
     <string name="number_password_label">Number Password</string>
     <string name="visible_password_label">Visible Password</string>
     <string name="default_password_label">Default password</string>
+    <string name="title_webview_session_replay">WebView Session Replay</string>
 </resources>

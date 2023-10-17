@@ -13,4 +13,6 @@ package com.datadog.android.sessionreplay.internal.utils
 internal interface TimeProvider {
 
     fun getDeviceTimestamp(): Long
+
+    fun getTimestampOffset(): Long
 }

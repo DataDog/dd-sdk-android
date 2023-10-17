@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "session-replay/common/_webview-supported-common-record-schema.json",
+  "title": "WebviewSupportedCommonRecordSchema",
+  "type": "object",
+  "description": "Schema of common properties for a Record event type that is supported by webviews.",
+  "allOf": [
+    {
+      "$ref": "_common-record-schema.json"
+    },
+    {
+      "properties": {
+        "nestedEnvId": {
+          "type": "integer",
+          "description": "Defines the unique ID of the nested replay environment that generated this record.",
+          "readOnly": true
+        }
+      }
+    }
+  ]
+}

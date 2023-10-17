@@ -113,4 +113,8 @@
         android:name="com.datadog.android.sample.sessionreplay.ImageComponentsFragment"
         android:label="@string/title_image_components"/>
 
+    <fragment android:id="@+id/fragment_webview_session_replay"
+        android:name="com.datadog.android.sample.webview.WebSessionReplayFragment"
+        android:label="@string/title_webview_session_replay"/>
+
 </navigation>
