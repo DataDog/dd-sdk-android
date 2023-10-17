@@ -8,10 +8,12 @@ package com.datadog.android.sessionreplay.internal.processor
 
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
+import com.datadog.android.sessionreplay.internal.async.WebViewRecordedDataQueueItem
 
 internal interface Processor {
 
     fun processScreenSnapshots(item: SnapshotRecordedDataQueueItem)
 
     fun processTouchEventsRecords(item: TouchEventRecordedDataQueueItem)
+    fun processWebViewRecord(item: WebViewRecordedDataQueueItem)
 }

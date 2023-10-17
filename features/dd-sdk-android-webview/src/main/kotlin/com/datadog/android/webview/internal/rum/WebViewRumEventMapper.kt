@@ -44,6 +44,10 @@ internal class WebViewRumEventMapper {
             session.addProperty(ID_KEY_NAME, rumContext.sessionId)
             event.add(APPLICATION_KEY_NAME, application)
             event.add(SESSION_KEY_NAME, session)
+            JsonObject().apply {
+                addProperty("id", rumContext.viewId)
+                addProperty("source", "android")
+            }.let { event.add("parent_view", it) }
         }
         return event
     }

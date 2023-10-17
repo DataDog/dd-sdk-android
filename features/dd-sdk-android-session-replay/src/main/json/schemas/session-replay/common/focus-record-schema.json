@@ -6,7 +6,7 @@
   "description": "Schema of a Record type which contains focus information.",
   "allOf": [
     {
-      "$ref": "_common-record-schema.json"
+      "$ref": "_webview-supported-common-record-schema.json"
     },
     {
       "required": ["type", "data"],

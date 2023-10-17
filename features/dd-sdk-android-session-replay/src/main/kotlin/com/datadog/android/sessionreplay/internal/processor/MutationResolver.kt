@@ -303,6 +303,38 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
 
         return mutation
     }
+    private fun resolveWebViewWireframeMutation(
+        prevWireframe: MobileSegment.Wireframe.WebviewWireframe,
+        currentWireframe: MobileSegment.Wireframe.WebviewWireframe
+    ): MobileSegment.WireframeUpdateMutation {
+        var mutation = MobileSegment.WireframeUpdateMutation
+            .WebviewWireframeUpdate(currentWireframe.id, nestedEnvId = currentWireframe.nestedEnvId)
+        if (prevWireframe.x != currentWireframe.x) {
+            mutation = mutation.copy(x = currentWireframe.x)
+        }
+        if (prevWireframe.y != currentWireframe.y) {
+            mutation = mutation.copy(y = currentWireframe.y)
+        }
+        if (prevWireframe.width != currentWireframe.width) {
+            mutation = mutation.copy(width = currentWireframe.width)
+        }
+        if (prevWireframe.height != currentWireframe.height) {
+            mutation = mutation.copy(height = currentWireframe.height)
+        }
+        if (prevWireframe.border != currentWireframe.border) {
+            mutation = mutation.copy(border = currentWireframe.border)
+        }
+        if (prevWireframe.shapeStyle != currentWireframe.shapeStyle) {
+            mutation = mutation.copy(shapeStyle = currentWireframe.shapeStyle)
+        }
+        if (prevWireframe.clip != currentWireframe.clip) {
+            mutation = mutation.copy(
+                clip = currentWireframe.clip
+                    ?: MobileSegment.WireframeClip(0, 0, 0, 0)
+            )
+        }
+        return mutation
+    }
 
     private fun resolveUpdateMutation(
         currentWireframe: MobileSegment.Wireframe,
@@ -344,6 +376,10 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
                     is MobileSegment.Wireframe.PlaceholderWireframe -> resolvePlaceholderMutation(
                         prevWireframe,
                         currentWireframe as MobileSegment.Wireframe.PlaceholderWireframe
+                    )
+                    is MobileSegment.Wireframe.WebviewWireframe -> resolveWebViewWireframeMutation(
+                        prevWireframe,
+                        currentWireframe as MobileSegment.Wireframe.WebviewWireframe
                     )
                 }
             }
@@ -402,6 +438,7 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
             is MobileSegment.Wireframe.TextWireframe -> this.id
             is MobileSegment.Wireframe.ImageWireframe -> this.id
             is MobileSegment.Wireframe.PlaceholderWireframe -> this.id
+            is MobileSegment.Wireframe.WebviewWireframe -> this.id
         }
     }
 

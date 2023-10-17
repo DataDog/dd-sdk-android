@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("TooGenericExceptionCaught")
 internal class RecorderWindowCallback(
-    appContext: Context,
+    private val appContext: Context,
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     internal val wrappedCallback: Window.Callback,
     private val timeProvider: TimeProvider,
@@ -35,13 +35,14 @@ internal class RecorderWindowCallback(
     private val motionEventUtils: MotionEventUtils = MotionEventUtils,
     private val motionUpdateThresholdInNs: Long = MOTION_UPDATE_DELAY_THRESHOLD_NS,
     private val flushPositionBufferThresholdInNs: Long = FLUSH_BUFFER_THRESHOLD_NS,
-    private val windowInspector: WindowInspector = WindowInspector
+    private val windowInspector: WindowInspector = WindowInspector,
+    window: Window
 ) : Window.Callback by wrappedCallback {
     private val pixelsDensity = appContext.resources.displayMetrics.density
     internal var pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
     private var lastOnMoveUpdateTimeInNs: Long = 0L
     private var lastPerformedFlushTimeInNs: Long = System.nanoTime()
-
+    private val showTouchRecordsHelper = ShowTouchRecordsHelper(window)
     // region Window.Callback
 
     @MainThread
@@ -114,9 +115,10 @@ internal class RecorderWindowCallback(
             val pointerId = event.getPointerId(pointerIndex).toLong()
             val pointerAbsoluteX = motionEventUtils.getPointerAbsoluteX(event, pointerIndex)
             val pointerAbsoluteY = motionEventUtils.getPointerAbsoluteY(event, pointerIndex)
+            val timestamp = timeProvider.getDeviceTimestamp()
             pointerInteractions.add(
                 MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
-                    timestamp = timeProvider.getDeviceTimestamp(),
+                    timestamp = timestamp,
                     data = MobileSegment.MobileIncrementalData.PointerInteractionData(
                         pointerEventType = eventType,
                         pointerType = MobileSegment.PointerType.TOUCH,
@@ -126,6 +128,10 @@ internal class RecorderWindowCallback(
                     )
                 )
             )
+            if (eventType == MobileSegment.PointerEventType.UP) {
+                // Uncomment this line if you want to display the touch record UP timestamps
+                // showTouchRecordsHelper.displayTouchRecord(timestamp, appContext)
+            }
         }
     }
 

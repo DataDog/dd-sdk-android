@@ -52,7 +52,8 @@ internal class WindowCallbackInterceptor(
             toWrap,
             timeProvider,
             viewOnDrawInterceptor,
-            internalLogger
+            internalLogger,
+            window = window
         )
     }
 

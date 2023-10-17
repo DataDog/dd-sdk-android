@@ -1,0 +1,18 @@
+flowchart TD
+    recorder["Recorder"]
+    writer["Writer"]
+    file_orchestrator["File Orchestrator"]
+    check_recent_file{"Can reuse current file"}
+    write_in_current_batch["Write in current batch"]
+    write_in_new_batch["Write in new batch"]
+    uploader["Uploader"]
+    batch["Batch"]
+    recorder --> record
+    record--> writer
+    writer --> file_orchestrator
+    file_orchestrator --> check_recent_file
+    check_recent_file -- yes --> write_in_current_batch
+    check_recent_file -- no --> write_in_new_batch
+    uploader -- Read From --> batch
+    uploader -- Group Batch --> Segment
+    Segment --> Cloud

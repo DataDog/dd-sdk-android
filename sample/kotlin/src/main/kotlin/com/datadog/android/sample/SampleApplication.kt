@@ -9,6 +9,7 @@ import android.app.Application
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import android.webkit.WebView
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
@@ -41,6 +42,7 @@ import com.datadog.android.sample.picture.PicassoImageLoader
 import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.AndroidTracer
@@ -89,6 +91,7 @@ class SampleApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        WebView.setWebContentsDebuggingEnabled(true)
         Stetho.initializeWithDefaults(this)
         initializeDatadog()
 
@@ -144,6 +147,7 @@ class SampleApplication : Application() {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
                 }
             }
+            .setPrivacy(SessionReplayPrivacy.ALLOW)
             .addExtensionSupport(MaterialExtensionSupport())
             .build()
         SessionReplay.enable(sessionReplayConfig)

@@ -81,10 +81,21 @@ internal class WireframeUtils {
             is MobileSegment.Wireframe.TextWireframe -> this.bounds()
             is MobileSegment.Wireframe.ImageWireframe -> this.bounds()
             is MobileSegment.Wireframe.PlaceholderWireframe -> this.bounds()
+            is MobileSegment.Wireframe.WebviewWireframe -> this.bounds()
         }
     }
 
     private fun MobileSegment.Wireframe.ShapeWireframe.bounds(): Bounds {
+        return Bounds(
+            left = x + (clip?.left ?: 0),
+            right = x + width - (clip?.right ?: 0),
+            top = y + (clip?.top ?: 0),
+            bottom = y + height - (clip?.bottom ?: 0),
+            width = width,
+            height = height
+        )
+    }
+    private fun MobileSegment.Wireframe.WebviewWireframe.bounds(): Bounds {
         return Bounds(
             left = x + (clip?.left ?: 0),
             right = x + width - (clip?.right ?: 0),

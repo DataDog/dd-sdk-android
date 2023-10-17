@@ -1,0 +1,18 @@
+flowchart TD
+    webview
+    browser_sdk
+    mobile_sdk
+    js_bridge
+    browser_record
+    native_application
+    native_sdk_recorder
+    writer
+    native_sdk_recorder -- records --> native_application
+    webview -- installs --> browser_sdk
+    browser_sdk -- records --> webview
+    browser_sdk -- sends records through --> js_bridge
+    js_bridge --> mobile_sdk
+    mobile_sdk --> browser_record
+    browser_record --> writer
+    native_sdk_recorder --> native_record
+    native_record --> writer

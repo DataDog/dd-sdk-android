@@ -27,4 +27,8 @@ internal class NoOpRecorder : Recorder {
     override fun stopProcessingRecords() {
         // No Op
     }
+
+    override fun handeWebViewRecord(record: String) {
+        // No Op
+    }
 }

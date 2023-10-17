@@ -11,10 +11,12 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.sessionreplay.internal.RecordWriter
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
+import com.datadog.android.sessionreplay.internal.async.WebViewRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SystemInformation
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.google.gson.JsonParser
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
 
@@ -28,6 +30,7 @@ internal class RecordedDataProcessor(
     private var lastSnapshotTimestamp = 0L
     private var previousOrientation = Configuration.ORIENTATION_UNDEFINED
     private var prevRumContext: SessionReplayRumContext = SessionReplayRumContext()
+    private var recordsCounter = 0
 
     @WorkerThread
     override fun processScreenSnapshots(
@@ -48,6 +51,26 @@ internal class RecordedDataProcessor(
             rumContext = item.recordedQueuedItemContext.newRumContext,
             touchData = item.touchData
         )
+    }
+
+    @WorkerThread
+    override fun processWebViewRecord(item: WebViewRecordedDataQueueItem) {
+        JsonParser.parseString(item.serializedRecord)?.asJsonObject?.let {
+            val event = it.get("event").asJsonObject
+            val viewId = it.get("viewId")?.asString
+            val sessionId = it.get("sessionId")?.asString
+            val applicationId = it.get("applicationId")?.asString
+            if (viewId != null && sessionId != null && applicationId != null) {
+                val enrichedRecord = EnrichedRecord(
+                    applicationId,
+                    sessionId,
+                    viewId,
+                    listOf(event)
+                )
+                writer.write(enrichedRecord)
+                recordsCounter++
+            }
+        }
     }
 
     // region Internal
@@ -84,12 +107,12 @@ internal class RecordedDataProcessor(
             handleViewEndRecord(timestamp)
             val screenBounds = systemInformation.screenBounds
             val metaRecord = MobileSegment.MobileRecord.MetaRecord(
-                timestamp,
-                MobileSegment.Data1(screenBounds.width, screenBounds.height)
+                timestamp = timestamp,
+                data = MobileSegment.Data1(screenBounds.width, screenBounds.height)
             )
             val focusRecord = MobileSegment.MobileRecord.FocusRecord(
-                timestamp,
-                MobileSegment.Data2(true)
+                timestamp = timestamp,
+                data = MobileSegment.Data2(true)
             )
             records.add(metaRecord)
             records.add(focusRecord)
@@ -158,7 +181,7 @@ internal class RecordedDataProcessor(
             rumContext.applicationId,
             rumContext.sessionId,
             rumContext.viewId,
-            records
+            records.map { it.toJson() }
         )
     }
 

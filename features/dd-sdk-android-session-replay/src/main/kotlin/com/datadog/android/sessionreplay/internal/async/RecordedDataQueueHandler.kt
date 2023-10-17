@@ -123,6 +123,20 @@ internal class RecordedDataQueueHandler {
         return item
     }
 
+    @MainThread
+    internal fun addWebViewItem(
+        recordedDataQueueItem: String
+    ) {
+        val rumContextData = rumContextDataHandler.createRumContextData()
+            ?: return
+
+        val item = WebViewRecordedDataQueueItem(
+            recordedQueuedItemContext = rumContextData,
+            serializedRecord = recordedDataQueueItem
+        )
+        insertIntoRecordedDataQueue(item)
+    }
+
     /**
      * Goes through the queue one item at a time for as long as there are items in the queue.
      * If an item is ready to be consumed, it is processed.
@@ -187,6 +201,9 @@ internal class RecordedDataQueueHandler {
 
             is TouchEventRecordedDataQueueItem ->
                 processTouchEvent(nextItem)
+
+            is WebViewRecordedDataQueueItem ->
+                processor.processWebViewRecord(nextItem)
         }
     }
 

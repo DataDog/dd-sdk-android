@@ -189,4 +189,12 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             viewOnDrawInterceptor.intercept(decorViews)
         }
     }
+
+    override fun handeWebViewRecord(record: String) {
+        uiHandler.post {
+            if (shouldRecord) {
+                recordedDataQueueHandler.addWebViewItem(record)
+            }
+        }
+    }
 }

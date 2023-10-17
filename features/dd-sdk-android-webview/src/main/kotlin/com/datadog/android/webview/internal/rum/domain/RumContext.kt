@@ -11,7 +11,8 @@ import java.util.UUID
 internal data class RumContext(
     val applicationId: String,
     val sessionId: String,
-    val sessionState: String
+    val sessionState: String,
+    val viewId: String
 ) {
 
     companion object {
