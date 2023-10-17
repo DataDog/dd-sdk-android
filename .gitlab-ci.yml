@@ -19,7 +19,8 @@ stages:
   - ci-image
   - security
   - analysis
-  - test
+  - test # TODO RUM-1622 cleanup eventually
+  - test-pyramid
   - publish
   - notify
 
@@ -59,7 +60,7 @@ static-analysis:
   stage: analysis
   variables:
     DETEKT_PUBLIC_API: "true"
-    DETEKT_CUSTOM_RULES_BUILD_TASK: "assembleAll :tools:detekt:jar"
+    DETEKT_CUSTOM_RULES_BUILD_TASK: "assembleLibraries :tools:detekt:jar"
     DETEKT_CUSTOM_RULES_JAR_PATH: "tools/detekt/build/libs/detekt.jar"
     DETEKT_CUSTOM_RULES_YML_PATH: "detekt_custom.yml"
     DETEKT_GENERATE_CLASSPATH_BUILD_TASK: "printSdkDebugRuntimeClasspath"
@@ -85,6 +86,7 @@ analysis:nightly-tests-coverage:
   script:
     - GRADLE_OPTS="-Xmx3072m" ./gradlew checkNightlyTestsCoverage --stacktrace --no-daemon
 
+# TODO RUM-1622 cleanup this section
 # TESTS
 
 test:debug:
@@ -151,6 +153,55 @@ test:kover:
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :koverReportAll --stacktrace --no-daemon --build-cache --gradle-user-home cache/
     - python3 ddcoverage.py --prefix dd-sdk-android
     - bash <(cat ./codecov.sh) -t $CODECOV_TOKEN
+
+
+# TEST PYRAMID
+# the steps in this section should reflect our test pyramid strategy
+
+test-pyramid:single-fit-logs:
+  tags: [ "runner:main" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/notifications/
+    policy: pull
+  script:
+    - rm -rf ~/.gradle/daemon/
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :reliability:single-fit:logs:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+
+test-pyramid:single-fit-rum:
+  tags: [ "runner:main" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/notifications/
+    policy: pull
+  script:
+    - rm -rf ~/.gradle/daemon/
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :reliability:single-fit:rum:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+
+test-pyramid:single-fit-trace:
+  tags: [ "runner:main" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/notifications/
+    policy: pull
+  script:
+    - rm -rf ~/.gradle/daemon/
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :reliability:single-fit:trace:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/
 
 # PUBLISH ARTIFACTS ON MAVEN
 
