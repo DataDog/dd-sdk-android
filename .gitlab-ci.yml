@@ -161,7 +161,7 @@ test:kover:
 test-pyramid:single-fit-logs:
   tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
-  stage: test
+  stage: test-pyramid
   timeout: 1h
   cache:
     key: $CI_COMMIT_REF_SLUG
@@ -176,7 +176,7 @@ test-pyramid:single-fit-logs:
 test-pyramid:single-fit-rum:
   tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
-  stage: test
+  stage: test-pyramid
   timeout: 1h
   cache:
     key: $CI_COMMIT_REF_SLUG
@@ -191,7 +191,7 @@ test-pyramid:single-fit-rum:
 test-pyramid:single-fit-trace:
   tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
-  stage: test
+  stage: test-pyramid
   timeout: 1h
   cache:
     key: $CI_COMMIT_REF_SLUG

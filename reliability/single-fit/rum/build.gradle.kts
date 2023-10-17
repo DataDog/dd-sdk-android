@@ -35,8 +35,8 @@ android {
 }
 
 dependencies {
-    api(project(":dd-sdk-android-core"))
-    api(project(":features:dd-sdk-android-rum"))
+    implementation(project(":dd-sdk-android-core"))
+    implementation(project(":features:dd-sdk-android-rum"))
     implementation(libs.kotlin)
 
     // Testing

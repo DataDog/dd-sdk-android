@@ -35,8 +35,8 @@ android {
 }
 
 dependencies {
-    api(project(":dd-sdk-android-core"))
-    api(project(":features:dd-sdk-android-trace"))
+    implementation(project(":dd-sdk-android-core"))
+    implementation(project(":features:dd-sdk-android-trace"))
     implementation(libs.kotlin)
 
     // Testing
