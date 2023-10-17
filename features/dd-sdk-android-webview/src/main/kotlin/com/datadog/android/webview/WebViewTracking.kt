@@ -22,6 +22,7 @@ import com.datadog.android.webview.internal.NoOpWebViewEventConsumer
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
+import com.datadog.android.webview.internal.replay.ReplayWebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
@@ -73,8 +74,15 @@ object WebViewTracking {
             )
         }
         val webViewEventConsumer = buildWebViewEventConsumer(sdkCore as FeatureSdkCore, logsSampleRate)
+        val featureContext = sdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)
+        val privacy = featureContext[SESSION_REPLAY_PRIVACY_KEY] as? String ?: "mask"
         webView.addJavascriptInterface(
-            DatadogEventBridge(webViewEventConsumer, allowedHosts),
+            DatadogEventBridge(
+                webViewEventConsumer,
+                allowedHosts,
+                System.identityHashCode(webView).toLong().toString(),
+                privacy
+            ),
             DATADOG_EVENT_BRIDGE_NAME
         )
     }
@@ -129,6 +137,7 @@ object WebViewTracking {
                     rumContextProvider = contextProvider,
                     sampleRate = logsSampleRate
                 ),
+                ReplayWebViewEventConsumer(sdkCore),
                 sdkCore.internalLogger
             )
         }
@@ -151,6 +160,8 @@ object WebViewTracking {
             consumer.consume(event)
         }
     }
+
+    internal const val SESSION_REPLAY_PRIVACY_KEY = "session_replay_privacy"
 
     internal const val JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE =
         "You are trying to enable the WebView" +

@@ -16,6 +16,8 @@ internal interface Recorder {
 
     fun stopProcessingRecords()
 
+    fun handeWebViewRecord(record: String)
+
     fun resumeRecorders()
 
     fun stopRecorders()

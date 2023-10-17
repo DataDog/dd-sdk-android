@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay
 
 import android.os.Build
 import android.view.View
+import android.webkit.WebView
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.CheckedTextView
@@ -47,6 +48,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.UnsupportedViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewScreenshotWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
 import androidx.appcompat.widget.Toolbar as AppCompatToolbar
@@ -103,6 +105,7 @@ enum class SessionReplayPrivacy {
         val switchCompatMapper: SwitchCompatMapper
         val seekBarMapper: SeekBarWireframeMapper?
         val numberPickerMapper: BasePickerMapper?
+        val webViewWireframeMapper = WebViewWireframeMapper()
         when (this) {
             ALLOW -> {
                 imageMapper = ViewScreenshotWireframeMapper(viewWireframeMapper)
@@ -160,6 +163,7 @@ enum class SessionReplayPrivacy {
             MapperTypeWrapper(EditText::class.java, editTextViewMapper.toGenericMapper()),
             MapperTypeWrapper(TextView::class.java, textMapper.toGenericMapper()),
             MapperTypeWrapper(ImageView::class.java, imageMapper.toGenericMapper()),
+            MapperTypeWrapper(WebView::class.java, webViewWireframeMapper.toGenericMapper()),
             MapperTypeWrapper(AppCompatToolbar::class.java, unsupportedViewMapper.toGenericMapper())
         )
 

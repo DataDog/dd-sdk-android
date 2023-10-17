@@ -6,7 +6,7 @@
   "description": "Schema of a Record which contains the screen properties.",
   "allOf": [
     {
-      "$ref": "_common-record-schema.json"
+      "$ref": "_webview-supported-common-record-schema.json"
     },
     {
       "required": ["type", "data"],

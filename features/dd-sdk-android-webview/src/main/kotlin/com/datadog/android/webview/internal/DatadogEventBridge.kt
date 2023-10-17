@@ -19,7 +19,9 @@ import com.google.gson.JsonArray
  */
 internal class DatadogEventBridge(
     internal val webViewEventConsumer: WebViewEventConsumer<String>,
-    private val allowedHosts: List<String>
+    private val allowedHosts: List<String>,
+    private val webViewId: String = "",
+    private val sessionReplayPrivacy: String
 ) {
 
     // region Bridge
@@ -49,6 +51,16 @@ internal class DatadogEventBridge(
                 origins.add(it)
             }
         return origins.toString()
+    }
+
+    @JavascriptInterface
+    fun getWebViewId(): String {
+        return webViewId
+    }
+
+    @JavascriptInterface
+    fun getParentRecordPrivacyLevel(): String {
+        return sessionReplayPrivacy
     }
 
     // endregion

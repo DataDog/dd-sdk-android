@@ -143,7 +143,17 @@ internal class SessionReplayFeature(
             return
         }
 
-        handleRumSession(event)
+        when (event["type"]) {
+            WEB_VIEW_SESSION_REPLAY_RECORD -> handleWebViewRecord(event)
+            RUM_SESSION_RENEWED_BUS_MESSAGE -> handleRumSession(event)
+        }
+    }
+
+    private fun handleWebViewRecord(event: Map<*, *>) {
+        val record = event["record"] as? String
+        if (record != null) {
+            sessionReplayRecorder.handeWebViewRecord(record)
+        }
     }
 
     // endregion
@@ -266,6 +276,7 @@ internal class SessionReplayFeature(
             " are either missing or have wrong type."
         internal const val CANNOT_START_RECORDING_NOT_INITIALIZED =
             "Cannot start session recording, because Session Replay feature is not initialized."
+        internal const val WEB_VIEW_SESSION_REPLAY_RECORD = "web_view_session_replay_record"
         const val SESSION_REPLAY_FEATURE_NAME = "session-replay"
         const val SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY = "type"
         const val RUM_SESSION_RENEWED_BUS_MESSAGE = "rum_session_renewed"
