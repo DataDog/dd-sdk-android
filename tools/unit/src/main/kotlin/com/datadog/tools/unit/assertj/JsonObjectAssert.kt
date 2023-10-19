@@ -572,6 +572,16 @@ class JsonObjectAssert(actual: JsonObject) :
         }
     }
 
+    /**
+     * Verifies that the actual jsonObject doesn't contain any members.
+     */
+    fun isEmpty(): JsonObjectAssert {
+        assertThat(actual.keySet().isEmpty())
+            .overridingErrorMessage("Expected json to not have any members, but it has them.")
+            .isTrue()
+        return this
+    }
+
     // endregion
 
     // region Internal

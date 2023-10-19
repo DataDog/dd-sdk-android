@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.persistence.Serializer
+import com.datadog.android.rum.internal.domain.event.RumEventMeta
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
@@ -55,10 +56,13 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class RumDataWriterTest {
 
-    lateinit var testedWriter: RumDataWriter
+    private lateinit var testedWriter: RumDataWriter
 
     @Mock
     lateinit var mockSerializer: Serializer<Any>
+
+    @Mock
+    lateinit var mockEventMetaSerializer: Serializer<Any>
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -79,6 +83,7 @@ internal class RumDataWriterTest {
 
         testedWriter = RumDataWriter(
             mockSerializer,
+            mockEventMetaSerializer,
             rumMonitor.mockSdkCore
         )
     }
@@ -104,6 +109,55 @@ internal class RumDataWriterTest {
         // Then
         assertThat(result).isTrue
 
+        verify(mockEventBatchWriter).write(
+            RawBatchEvent(data = fakeSerializedData),
+            null
+        )
+    }
+
+    @Test
+    fun `𝕄 write data with event meta 𝕎 write() {View Event}`(
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeSerializedViewEventMeta: String
+    ) {
+        // Given
+        whenever(mockSerializer.serialize(fakeViewEvent)) doReturn fakeSerializedEvent
+        val eventMeta = RumEventMeta.View(
+            viewId = fakeViewEvent.view.id,
+            documentVersion = fakeViewEvent.dd.documentVersion
+        )
+        whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedViewEventMeta
+
+        // When
+        testedWriter.write(mockEventBatchWriter, fakeViewEvent)
+
+        // Then
+        verify(mockEventBatchWriter).write(
+            RawBatchEvent(
+                data = fakeSerializedData,
+                metadata = fakeSerializedViewEventMeta.toByteArray()
+            ),
+            null
+        )
+    }
+
+    @Test
+    fun `𝕄 write data with empty event meta 𝕎 write() {View Event, meta serialization fails}`(
+        @Forgery fakeViewEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockSerializer.serialize(fakeViewEvent)) doReturn fakeSerializedEvent
+        val eventMeta = RumEventMeta.View(
+            viewId = fakeViewEvent.view.id,
+            documentVersion = fakeViewEvent.dd.documentVersion
+        )
+        whenever(mockEventMetaSerializer.serialize(eventMeta)) doThrow forge.aThrowable()
+
+        // When
+        testedWriter.write(mockEventBatchWriter, fakeViewEvent)
+
+        // Then
         verify(mockEventBatchWriter).write(
             RawBatchEvent(data = fakeSerializedData),
             null

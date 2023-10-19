@@ -792,6 +792,7 @@ datadog:
       - "kotlin.collections.MutableMap.clear()"
       - "kotlin.collections.MutableMap.containsKey(android.view.Window)"
       - "kotlin.collections.MutableMap.containsKey(com.datadog.android.api.SdkCore)"
+      - "kotlin.collections.MutableMap.containsKey(com.datadog.android.api.storage.RawBatchEvent)"
       - "kotlin.collections.MutableMap.containsKey(kotlin.Long)"
       - "kotlin.collections.MutableMap.containsKey(kotlin.String)"
       - "kotlin.collections.MutableMap.filterKeys(kotlin.Function1)"

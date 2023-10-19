@@ -434,7 +434,7 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.dataWriter).isInstanceOf(RumDataWriter::class.java)
-        val serializer = (testedFeature.dataWriter as RumDataWriter).serializer
+        val serializer = (testedFeature.dataWriter as RumDataWriter).eventSerializer
         assertThat(serializer).isInstanceOf(MapperSerializer::class.java)
         val eventMapper = (serializer as MapperSerializer)
             .getFieldValue<EventMapper<*>, MapperSerializer<*>>("eventMapper")
