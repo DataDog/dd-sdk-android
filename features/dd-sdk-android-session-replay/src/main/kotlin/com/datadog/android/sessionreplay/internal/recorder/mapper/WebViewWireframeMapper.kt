@@ -6,16 +6,16 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
-import android.view.View
+import android.webkit.WebView
 import com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.MappingContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal class WebViewWireframeMapper :
-    BaseWireframeMapper<View, MobileSegment.Wireframe.WebviewWireframe>() {
+    BaseWireframeMapper<WebView, MobileSegment.Wireframe.WebviewWireframe>() {
 
     override fun map(
-        view: View,
+        view: WebView,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): List<MobileSegment.Wireframe.WebviewWireframe> {

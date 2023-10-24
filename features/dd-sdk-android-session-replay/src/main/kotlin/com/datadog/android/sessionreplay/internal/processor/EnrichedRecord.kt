@@ -18,7 +18,9 @@ internal data class EnrichedRecord(
     val applicationId: String,
     val sessionId: String,
     val viewId: String,
-    val records: List<JsonElement>
+    val records: List<JsonElement>,
+    val parentViewId: String = "",
+    val isBrowser: Boolean = false
 ) {
 
     /**
@@ -29,6 +31,8 @@ internal data class EnrichedRecord(
         json.addProperty(APPLICATION_ID_KEY, applicationId)
         json.addProperty(SESSION_ID_KEY, sessionId)
         json.addProperty(VIEW_ID_KEY, viewId)
+        json.addProperty(IS_BROWSER_KEY, isBrowser)
+        json.addProperty(PARENT_VIEW_ID_KEY, parentViewId)
         val recordsJsonArray = records
             .fold(JsonArray()) { acc, jsonElement ->
                 acc.add(jsonElement)
@@ -43,5 +47,7 @@ internal data class EnrichedRecord(
         const val SESSION_ID_KEY: String = "session_id"
         const val VIEW_ID_KEY: String = "view_id"
         const val RECORDS_KEY: String = "records"
+        const val IS_BROWSER_KEY: String = "is_browser"
+        const val PARENT_VIEW_ID_KEY: String = "parent_view_id"
     }
 }

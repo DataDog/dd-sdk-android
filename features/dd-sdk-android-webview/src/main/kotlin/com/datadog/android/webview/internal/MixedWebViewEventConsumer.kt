@@ -59,7 +59,7 @@ internal class MixedWebViewEventConsumer(
                     rumEventConsumer.consume(wrappedEvent)
                 }
                 in (ReplayWebViewEventConsumer.REPLAY_EVENT_TYPES) -> {
-                    replayEventConsumer.consume(wrappedEvent.toString())
+                    replayEventConsumer.consume(event)
                 }
                 else -> {
                     internalLogger.log(

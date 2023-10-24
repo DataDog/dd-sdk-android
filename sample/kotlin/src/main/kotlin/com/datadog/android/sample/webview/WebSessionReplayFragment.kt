@@ -19,7 +19,7 @@ import com.datadog.android.webview.WebViewTracking
 internal class WebSessionReplayFragment : Fragment() {
 
     private lateinit var webView1: WebView
-    private lateinit var webView2: WebView
+//    private lateinit var webView2: WebView
 
     private val webViewTrackingHosts = listOf(
         "datadoghq.dev"
@@ -38,17 +38,17 @@ internal class WebSessionReplayFragment : Fragment() {
         webView1.webViewClient = WebViewClient()
         webView1.settings.javaScriptEnabled = true
         WebViewTracking.enable(webView1, webViewTrackingHosts)
-        webView2 = rootView.findViewById(R.id.webview2)
-        webView2.webViewClient = WebViewClient()
-        webView2.settings.javaScriptEnabled = true
-        WebViewTracking.enable(webView2, webViewTrackingHosts)
+//        webView2 = rootView.findViewById(R.id.webview2)
+//        webView2.webViewClient = WebViewClient()
+//        webView2.settings.javaScriptEnabled = true
+//        WebViewTracking.enable(webView2, webViewTrackingHosts)
         return rootView
     }
 
     override fun onResume() {
         super.onResume()
         webView1.loadUrl("https://datadoghq.dev/browser-sdk-test-playground/webview-support/#basic-text")
-        webView2.loadUrl("https://datadoghq.dev/browser-sdk-test-playground/webview-support/#basic-text")
+//        webView2.loadUrl("https://datadoghq.dev/browser-sdk-test-playground/webview-support/#basic-text")
     }
 
     // endregion

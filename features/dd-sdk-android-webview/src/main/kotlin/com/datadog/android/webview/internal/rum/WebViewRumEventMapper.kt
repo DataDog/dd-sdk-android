@@ -11,6 +11,7 @@ import com.google.gson.JsonObject
 import java.lang.ClassCastException
 import java.lang.IllegalStateException
 import java.lang.NumberFormatException
+import java.util.Locale
 
 internal class WebViewRumEventMapper {
 
@@ -36,6 +37,7 @@ internal class WebViewRumEventMapper {
             ddSession.addProperty(SESSION_PLAN_KEY_NAME, SESSION_PLAN_VALUE)
             dd.add(DD_SESSION_KEY_NAME, ddSession)
         }
+        val type = event.get("type")?.asString?.lowercase(Locale.US)
         if (rumContext != null) {
             val application = event.getAsJsonObject(APPLICATION_KEY_NAME)?.asJsonObject
                 ?: JsonObject()
@@ -45,6 +47,14 @@ internal class WebViewRumEventMapper {
             event.add(APPLICATION_KEY_NAME, application)
             event.add(SESSION_KEY_NAME, session)
         }
+        if (type == "view") {
+            if (rumContext != null) {
+                event.addProperty("parentViewId", rumContext.viewId)
+            }
+        } else {
+            event.addProperty("isNested", true)
+        }
+
         return event
     }
 

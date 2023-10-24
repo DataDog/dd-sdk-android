@@ -11,7 +11,7 @@ import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
-import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
+import com.datadog.android.sessionreplay.net.BatchesToSegmentsMapper
 import okhttp3.RequestBody
 import okio.Buffer
 import java.io.File
@@ -21,7 +21,8 @@ import java.util.UUID
 internal class SessionReplayRequestFactory(
     internal val customEndpointUrl: String?,
     private val batchToSegmentsMapper: BatchesToSegmentsMapper,
-    private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory()
+    private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory(),
+    private val uploader: SessionReplayOkHttpUploader
 ) : RequestFactory {
 
     lateinit var storageFile: File
@@ -41,13 +42,37 @@ internal class SessionReplayRequestFactory(
         if (!storageFile.exists()) {
             storageFile.createNewFile()
         }
-        storageFile.appendText(serializedSegmentPair.second.toString())
-        storageFile.appendText("\n")
-        val body = requestBodyFactory.create(
-            serializedSegmentPair.first,
-            serializedSegmentPair.second
-        )
-        return resolveRequest(context, body)
+
+        if (serializedSegmentPair.size > 1) {
+            serializedSegmentPair.forEach {
+                val body = requestBodyFactory.create(
+                    it.first,
+                    it.second
+                )
+                storageFile.appendText(it.second.toString())
+                storageFile.appendText("\n")
+                val request = resolveRequest(context, body)
+                uploader.upload(context, request)
+            }
+            return Request(
+                UUID.randomUUID().toString(),
+                "",
+                buildUrl(context),
+                mapOf(
+                    RequestFactory.HEADER_API_KEY to context.clientToken
+                ),
+                ByteArray(0)
+            )
+        } else {
+            storageFile.appendText(serializedSegmentPair[0].second.toString())
+            storageFile.appendText("\n")
+
+            val body = requestBodyFactory.create(
+                serializedSegmentPair[0].first,
+                serializedSegmentPair[0].second
+            )
+            return resolveRequest(context, body)
+        }
     }
 
     private fun buildUrl(datadogContext: DatadogContext): String {

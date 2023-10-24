@@ -17,6 +17,7 @@ import java.util.WeakHashMap
 
 internal class SessionReplayLifecycleCallback(
     private val onWindowRefreshedCallback: OnWindowRefreshedCallback
+
 ) : LifecycleCallback, OnWindowRefreshedCallback {
 
     private val currentActiveWindows = WeakHashMap<Window, Any?>()

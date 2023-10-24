@@ -1354,6 +1354,15 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Wirefra
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$WebviewWireframeUpdate;
 }
 
+public final class com/datadog/android/sessionreplay/net/BatchesToSegmentsMapper {
+	public static final field Companion Lcom/datadog/android/sessionreplay/net/BatchesToSegmentsMapper$Companion;
+	public fun <init> ()V
+	public final fun map (Ljava/util/List;)Ljava/util/List;
+}
+
+public final class com/datadog/android/sessionreplay/net/BatchesToSegmentsMapper$Companion {
+}
+
 public final class com/datadog/android/sessionreplay/utils/StringUtils {
 	public static final field INSTANCE Lcom/datadog/android/sessionreplay/utils/StringUtils;
 	public final fun formatColorAndAlphaAsHexa (II)Ljava/lang/String;

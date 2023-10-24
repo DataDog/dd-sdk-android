@@ -15,6 +15,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.sampling.RateBasedSampler
@@ -23,13 +24,14 @@ import com.datadog.android.sessionreplay.NoOpRecorder
 import com.datadog.android.sessionreplay.Recorder
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.SessionReplayRecorder
+import com.datadog.android.sessionreplay.internal.domain.SessionReplayOkHttpUploader
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
-import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
+import com.datadog.android.sessionreplay.net.BatchesToSegmentsMapper
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
@@ -102,7 +104,9 @@ internal class SessionReplayFeature(
         @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
         sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
-        (requestFactory as SessionReplayRequestFactory).storageFile = File(appContext.externalCacheDir, "session_replay")
+        (requestFactory as SessionReplayRequestFactory).storageFile = File(appContext.externalCacheDir, "session_replay").apply {
+            this.delete()
+        }
         sdkCore.updateFeatureContext(SESSION_REPLAY_FEATURE_NAME) {
             it[SESSION_REPLAY_SAMPLE_RATE_KEY] = rateBasedSampler.getSampleRate()?.toLong()
             it[SESSION_REPLAY_PRIVACY_KEY] = privacy.toString().lowercase(Locale.US)
@@ -116,7 +120,8 @@ internal class SessionReplayFeature(
     override val requestFactory: RequestFactory =
         SessionReplayRequestFactory(
             customEndpointUrl,
-            BatchesToSegmentsMapper(sdkCore.internalLogger)
+            BatchesToSegmentsMapper(),
+            uploader = SessionReplayOkHttpUploader((sdkCore as InternalSdkCore).getOkHttpClient())
         )
 
     override val storageConfiguration: FeatureStorageConfiguration =

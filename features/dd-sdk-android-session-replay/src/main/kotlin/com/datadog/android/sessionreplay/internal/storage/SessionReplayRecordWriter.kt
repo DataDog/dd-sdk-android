@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.storage
 
+import android.util.Log
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.internal.RecordCallback
@@ -17,11 +18,35 @@ internal class SessionReplayRecordWriter(
     private val sdkCore: FeatureSdkCore,
     private val recordCallback: RecordCallback
 ) : RecordWriter {
-    private var lastRumContextId: String = ""
+    private val firstNativeRecordTimestamp = mutableMapOf<String, Long>()
+    private val firstWebViewRecordTimestamp = mutableMapOf<String, Long>()
+
+    //    private var lastRumContextId: String = ""
     override fun write(record: EnrichedRecord) {
-        val forceNewBatch = resolveForceNewBatch(record)
+//        val forceNewBatch = resolveForceNewBatch(record)
+        if (!record.isBrowser) {
+            val prevValue = firstNativeRecordTimestamp[record.viewId] ?: Long.MAX_VALUE
+            val currentValue = record.records[0].asJsonObject["timestamp"].asLong
+            val newValue = minOf(prevValue, currentValue)
+            firstNativeRecordTimestamp[record.viewId] = newValue
+        } else {
+            val prevValue = firstWebViewRecordTimestamp[record.parentViewId] ?: Long.MAX_VALUE
+            val currentValue = record.records[0].asJsonObject["timestamp"].asLong
+            val newValue = minOf(prevValue, currentValue)
+            firstWebViewRecordTimestamp[record.parentViewId] = newValue
+        }
+
+        val nativeViewId = if (record.isBrowser) record.parentViewId else record.viewId
+        val l = firstNativeRecordTimestamp[nativeViewId]
+        val l1 = firstWebViewRecordTimestamp[nativeViewId]
+        if (l != null && l1 != null) {
+            val difference = l - l1
+            if (difference > 0) {
+                Log.v("ReplayRecordWriter", "Difference for native view id: $nativeViewId is : $difference")
+            }
+        }
         sdkCore.getFeature(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME)
-            ?.withWriteContext(forceNewBatch) { _, eventBatchWriter ->
+            ?.withWriteContext() { _, eventBatchWriter ->
                 val serializedRecord = record.toJson().toByteArray(Charsets.UTF_8)
                 synchronized(this) {
                     @Suppress("ThreadSafety") // called from the worker thread
@@ -42,14 +67,14 @@ internal class SessionReplayRecordWriter(
         recordCallback.onRecordForViewSent(record)
     }
 
-    private fun resolveForceNewBatch(record: EnrichedRecord): Boolean {
-        val newRumContextId = resoleRumContextId(record)
-        val forceNewBatch = lastRumContextId != newRumContextId
-        lastRumContextId = newRumContextId
-        return forceNewBatch
-    }
+//    private fun resolveForceNewBatch(record: EnrichedRecord): Boolean {
+//        val newRumContextId = resoleRumContextId(record)
+//        val forceNewBatch = lastRumContextId != newRumContextId
+//        lastRumContextId = newRumContextId
+//        return forceNewBatch
+//    }
 
-    private fun resoleRumContextId(record: EnrichedRecord): String {
-        return "${record.applicationId}-${record.sessionId}-${record.viewId}"
-    }
+//    private fun resoleRumContextId(record: EnrichedRecord): String {
+//        return "${record.applicationId}-${record.sessionId}-${record.viewId}"
+//    }
 }

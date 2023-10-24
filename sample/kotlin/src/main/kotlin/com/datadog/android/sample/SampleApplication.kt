@@ -41,7 +41,6 @@ import com.datadog.android.sample.picture.PicassoImageLoader
 import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.AndroidTracer

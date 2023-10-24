@@ -17,7 +17,9 @@ import java.util.UUID
 internal data class SessionReplayRumContext(
     val applicationId: String = NULL_UUID,
     val sessionId: String = NULL_UUID,
-    val viewId: String = NULL_UUID
+    val viewId: String = NULL_UUID,
+    val isBrowser: Boolean = false,
+    val parentViewId: String = ""
 ) {
 
     internal fun isNotValid(): Boolean =

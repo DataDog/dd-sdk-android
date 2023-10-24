@@ -25,12 +25,13 @@ internal class WebViewRumEventContextProvider(private val internalLogger: Intern
         val rumApplicationId = rumContext?.get("application_id") as? String
         val rumSessionId = rumContext?.get("session_id") as? String
         val rumSessionState = rumContext?.get("session_state") as? String
-
+        val viewId = rumContext?.get("view_id") as? String
         return if (rumApplicationId == null ||
             rumApplicationId == RumContext.NULL_UUID ||
             rumSessionId == null ||
             rumSessionId == RumContext.NULL_UUID ||
-            rumSessionState.isNullOrBlank()
+            rumSessionState.isNullOrBlank() ||
+            viewId == null || viewId == RumContext.NULL_UUID
         ) {
             rumFeatureDisabled = true
             internalLogger.log(
@@ -40,7 +41,7 @@ internal class WebViewRumEventContextProvider(private val internalLogger: Intern
             )
             null
         } else {
-            RumContext(rumApplicationId, rumSessionId, rumSessionState)
+            RumContext(rumApplicationId, rumSessionId, rumSessionState, viewId)
         }
     }
 

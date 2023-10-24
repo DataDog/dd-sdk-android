@@ -17,6 +17,9 @@ enum com.datadog.android.sessionreplay.SessionReplayPrivacy
 interface com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback
   fun jobStarted()
   fun jobFinished()
+class com.datadog.android.sessionreplay.net.BatchesToSegmentsMapper
+  fun map(List<ByteArray>): List<Pair<com.datadog.android.sessionreplay.model.MobileSegment, com.google.gson.JsonObject>>
+  companion object 
 data class com.datadog.android.sessionreplay.internal.recorder.GlobalBounds
   constructor(Long, Long, Long, Long)
 data class com.datadog.android.sessionreplay.internal.recorder.MappingContext

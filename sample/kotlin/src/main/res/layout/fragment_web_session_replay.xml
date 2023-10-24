@@ -16,11 +16,11 @@
         android:id="@+id/webview1"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-       android:layout_weight="0.5"/>
-    <WebView
-        android:id="@+id/webview2"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-       android:layout_weight="0.5"/>
+       android:layout_weight="1"/>
+<!--    <WebView-->
+<!--        android:id="@+id/webview2"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="0dp"-->
+<!--       android:layout_weight="0.5"/>-->
 
 </androidx.appcompat.widget.LinearLayoutCompat>

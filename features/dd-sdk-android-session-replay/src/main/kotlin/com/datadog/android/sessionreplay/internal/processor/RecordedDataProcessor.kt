@@ -21,6 +21,7 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import com.google.gson.JsonParser
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
 @Suppress("TooManyFunctions")
 internal class RecordedDataProcessor(
@@ -33,12 +34,14 @@ internal class RecordedDataProcessor(
     private var lastSnapshotTimestamp = 0L
     private var previousOrientation = Configuration.ORIENTATION_UNDEFINED
     private var prevRumContext: SessionReplayRumContext = SessionReplayRumContext()
+    private var lastBrowserTimestamp: Long = 0L
+    private var lastMobileTimestamp: Long = 0L
+    private var lastBrowserEvent: String = ""
 
     @WorkerThread
     override fun processScreenSnapshots(
         item: SnapshotRecordedDataQueueItem
     ) {
-        Log.v("NormalRecord", "Timestamp: ${item.recordedQueuedItemContext.timestamp}")
         handleSnapshots(
             newRumContext = item.recordedQueuedItemContext.newRumContext,
             timestamp = item.recordedQueuedItemContext.timestamp,
@@ -46,6 +49,8 @@ internal class RecordedDataProcessor(
             systemInformation = item.systemInformation
         )
         prevRumContext = item.recordedQueuedItemContext.newRumContext
+//        lastMobileTimestamp = item.recordedQueuedItemContext.timestamp
+//        logTimestampDifference()
     }
 
     @WorkerThread
@@ -54,33 +59,57 @@ internal class RecordedDataProcessor(
             rumContext = item.recordedQueuedItemContext.newRumContext,
             touchData = item.touchData
         )
+        lastMobileTimestamp = item.recordedQueuedItemContext.timestamp
+        logTimestampDifference()
     }
 
     @WorkerThread
     override fun processWebViewRecord(item: WebViewRecordedDataQueueItem) {
         JsonParser.parseString(item.serializedRecord)?.asJsonObject?.let {
+            val event = it.get("event").asJsonObject
             val timestampOffset = timeProvider.getTimestampOffset()
-
-            it.get("timestamp")?.let { timestamp ->
-                val difference = System.currentTimeMillis() - timestamp.asLong
-                if (difference < 0) {
-                    Log.v("WebViewRecord", "Timestamp difference: $difference")
+            val viewId = event.get("viewId")?.asString
+            val recordType = event.get("data")?.asJsonObject?.get("type")?.asString
+            if (viewId != null) {
+                event.get("timestamp")?.let { timestamp ->
+                    val asLong = timestamp.asLong
+                    if (recordType == "7" || recordType == "9") {
+                        lastBrowserTimestamp = asLong
+                        lastBrowserEvent = item.serializedRecord
+                    }
+                    val difference = System.currentTimeMillis() - asLong
+//                    if (difference < 0) {
+//                        Log.v("WebViewRecord", "Timestamp difference: $difference")
+//                    }
+                    val correctedTimestamp = asLong + timestampOffset
+                    it.addProperty("timestamp", correctedTimestamp)
                 }
-                val correctedTimestamp = timestamp.asLong + timestampOffset
-                it.addProperty("timestamp", correctedTimestamp)
+                val rumContext = item.recordedQueuedItemContext.newRumContext
+                val enrichedRecord = EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    viewId,
+                    listOf(event),
+                    parentViewId = item.recordedQueuedItemContext.newRumContext.viewId,
+                    isBrowser = true
+                )
+                writer.write(enrichedRecord)
             }
-            val rumContext = item.recordedQueuedItemContext.newRumContext
-            val enrichedRecord = EnrichedRecord(
-                rumContext.applicationId,
-                rumContext.sessionId,
-                rumContext.viewId,
-                listOf(it)
-            )
-            writer.write(enrichedRecord)
+            if (recordType == "7" || recordType == "9") {
+                logTimestampDifference()
+            }
         }
     }
 
     // region Internal
+
+    private fun logTimestampDifference() {
+        val difference = lastMobileTimestamp - lastBrowserTimestamp
+        Log.v("WebViewRecord", "Timestamp difference: $difference")
+        if (abs(difference) > 3000) {
+            Log.v("WebViewRecord", "Diff was greater than 3 seconds for event:\n$lastBrowserEvent")
+        }
+    }
 
     @WorkerThread
     private fun handleTouchRecords(

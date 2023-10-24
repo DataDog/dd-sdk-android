@@ -149,6 +149,7 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   fun getPersistenceExecutorService(): java.util.concurrent.ExecutorService
   fun getAllFeatures(): List<com.datadog.android.api.feature.FeatureScope>
   fun getDatadogContext(): com.datadog.android.api.context.DatadogContext?
+  fun getOkHttpClient(): okhttp3.OkHttpClient
 class com.datadog.android.core.SdkReference
   constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
   fun get(): com.datadog.android.api.SdkCore?

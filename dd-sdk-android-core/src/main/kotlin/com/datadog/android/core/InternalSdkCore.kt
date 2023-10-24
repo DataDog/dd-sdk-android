@@ -15,6 +15,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.privacy.TrackingConsent
+import okhttp3.OkHttpClient
 import java.io.File
 import java.util.concurrent.ExecutorService
 
@@ -82,4 +83,6 @@ interface InternalSdkCore : FeatureSdkCore {
      */
     @InternalApi
     fun getDatadogContext(): DatadogContext?
+
+    fun getOkHttpClient(): OkHttpClient
 }

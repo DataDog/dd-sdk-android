@@ -4,12 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.net
+package com.datadog.android.sessionreplay.net
 
-import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.internal.gson.safeGetAsJsonArray
-import com.datadog.android.sessionreplay.internal.gson.safeGetAsJsonObject
-import com.datadog.android.sessionreplay.internal.gson.safeGetAsLong
+import android.util.Log
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -19,158 +16,131 @@ import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 
 /**
- *  Maps a batch to a Pair<MobileSegment, SerializedMobileSegment> for uploading.
+ *  Maps a batch to a List<Pair<MobileSegment, SerializedMobileSegment>> for uploading.
  *  This class is meant for internal usage.
  */
-internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogger) {
+class BatchesToSegmentsMapper {
 
-    fun map(batchData: List<ByteArray>): Pair<MobileSegment, JsonObject>? {
+    private val nativeTimestamps = mutableMapOf<String, Long>()
+    private val browserTimestamps = mutableMapOf<String, Long>()
+
+    @Suppress("UndocumentedPublicFunction")
+    fun map(batchData: List<ByteArray>): List<Pair<MobileSegment, JsonObject>> {
         return groupBatchDataIntoSegments(batchData)
     }
 
     // region Internal
 
     private fun groupBatchDataIntoSegments(batchData: List<ByteArray>):
-        Pair<MobileSegment, JsonObject>? {
-        val reducedEnrichedRecord = batchData
-            .asSequence()
+        List<Pair<MobileSegment, JsonObject>> {
+        return batchData
             .mapNotNull {
                 @Suppress("SwallowedException")
                 try {
-                    JsonParser.parseString(String(it)).safeGetAsJsonObject(internalLogger)
+                    JsonParser.parseString(String(it)).asJsonObject
                 } catch (e: JsonParseException) {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.TELEMETRY,
-                        { UNABLE_TO_DESERIALIZE_ENRICHED_RECORD_ERROR_MESSAGE },
-                        e
-                    )
+                    // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
                     null
                 } catch (e: IllegalStateException) {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.TELEMETRY,
-                        { UNABLE_TO_DESERIALIZE_ENRICHED_RECORD_ERROR_MESSAGE },
-                        e
-                    )
+                    // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
                     null
                 }
             }
-            .mapNotNull {
-                val records = it.records()
-                val rumContext = it.rumContext()
-                if (records == null || rumContext == null || records.isEmpty) {
-                    null
-                } else {
-                    Pair(rumContext, records)
+            .map {
+                val applicationId = it.get(EnrichedRecord.APPLICATION_ID_KEY).asString
+                val sessionId = it.get(EnrichedRecord.SESSION_ID_KEY).asString
+                val viewId = it.get(EnrichedRecord.VIEW_ID_KEY).asString
+                val isBrowser = it.get(EnrichedRecord.IS_BROWSER_KEY).asBoolean
+                val parentViewId = it.get(EnrichedRecord.PARENT_VIEW_ID_KEY).asString
+                val context = SessionReplayRumContext(applicationId, sessionId, viewId, isBrowser, parentViewId)
+                val records = it.get(EnrichedRecord.RECORDS_KEY).asJsonArray
+                Pair(context, records)
+            }
+            .groupBy { it.first }
+            .mapValues {
+                it.value.fold(JsonArray()) { acc, pair ->
+                    acc.addAll(pair.second)
+                    acc
                 }
             }
-            .reduceOrNull { accumulator, pair ->
-                val records = accumulator.second
-                val newRecords = pair.second
-                records.addAll(newRecords)
-                Pair(accumulator.first, records)
-            } ?: return null
-
-        return mapToSegment(reducedEnrichedRecord.first, reducedEnrichedRecord.second)
+            .filter { !it.value.isEmpty }
+            .mapNotNull { entry ->
+                @Suppress("SwallowedException")
+                try {
+                    groupToSegmentsPair(entry)
+                } catch (e: JsonParseException) {
+                    // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
+                    null
+                } catch (e: IllegalStateException) {
+                    // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
+                    null
+                }
+            }
     }
 
-    @Suppress("ReturnCount")
-    private fun mapToSegment(rumContext: SessionReplayRumContext, records: JsonArray):
-        Pair<MobileSegment, JsonObject>? {
-        val orderedRecords = records
-            .asSequence()
-            .mapNotNull {
-                it.safeGetAsJsonObject(internalLogger)
-            }
-            .mapNotNull {
-                val timestamp = it.timestamp()
-                if (timestamp == null) {
-                    null
-                } else {
-                    Pair(it, timestamp)
-                }
-            }
-            .sortedBy { it.second }
-            .map { it.first }
-            .fold(JsonArray()) { acc, jsonObject ->
-                acc.add(jsonObject)
-                acc
+    private fun groupToSegmentsPair(entry: Map.Entry<SessionReplayRumContext, JsonArray>):
+        Pair<MobileSegment, JsonObject> {
+        val records = entry.value
+            .map { it.asJsonObject }
+            .sortedBy {
+                it.getAsJsonPrimitive(TIMESTAMP_KEY).asLong
             }
 
-        if (orderedRecords.isEmpty) {
-            return null
-        }
+        // we are filtering out empty records so we are safe to call first/last functions
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        val startTimestamp = records.first().getAsJsonPrimitive(TIMESTAMP_KEY).asLong
 
-        val startTimestamp = orderedRecords
-            .firstOrNull()
-            ?.safeGetAsJsonObject(internalLogger)
-            ?.timestamp()
-        val stopTimestamp = orderedRecords
-            .lastOrNull()
-            ?.safeGetAsJsonObject(internalLogger)
-            ?.timestamp()
-
-        if (startTimestamp == null || stopTimestamp == null) {
-            // this is just to avoid having kotlin warnings but the elements
-            // without timestamp property were already removed in the logic above
-            return null
-        }
-
-        val hasFullSnapshotRecord = hasFullSnapshotRecord(orderedRecords)
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        val stopTimestamp = records.last().getAsJsonPrimitive(TIMESTAMP_KEY).asLong
+        val hasFullSnapshotRecord = hasFullSnapshotRecord(records)
         val segment = MobileSegment(
-            application = MobileSegment.Application(rumContext.applicationId),
-            session = MobileSegment.Session(rumContext.sessionId),
-            view = MobileSegment.View(rumContext.viewId),
+            application = MobileSegment.Application(entry.key.applicationId),
+            session = MobileSegment.Session(entry.key.sessionId),
+            view = MobileSegment.View(entry.key.viewId),
             start = startTimestamp,
             end = stopTimestamp,
-            recordsCount = orderedRecords.size().toLong(),
+            recordsCount = records.size.toLong(),
             // TODO: RUMM-2518 Find a way or alternative to provide a reliable indexInView
             indexInView = null,
             hasFullSnapshot = hasFullSnapshotRecord,
             source = MobileSegment.Source.ANDROID,
             records = emptyList()
         )
-        val segmentAsJsonObject = segment.toJson().safeGetAsJsonObject(internalLogger)
-            ?: return null
-        segmentAsJsonObject.add(RECORDS_KEY, orderedRecords)
+
+        if (entry.key.isBrowser) {
+            var currentBrowserTimestamp = browserTimestamps[entry.key.parentViewId] ?: Long.MAX_VALUE
+            currentBrowserTimestamp = minOf(currentBrowserTimestamp, startTimestamp)
+            browserTimestamps[entry.key.parentViewId] = currentBrowserTimestamp
+        } else {
+            var currentNativeTimestamp = nativeTimestamps[entry.key.viewId] ?: Long.MAX_VALUE
+            currentNativeTimestamp = minOf(currentNativeTimestamp, startTimestamp)
+            nativeTimestamps[entry.key.viewId] = currentNativeTimestamp
+        }
+
+        if (entry.key.isBrowser) {
+            val nativeTimestamp = nativeTimestamps[entry.key.parentViewId] ?: 0
+            val browserTimestamp = browserTimestamps[entry.key.parentViewId] ?: 0
+            val difference = nativeTimestamp - browserTimestamp
+            if (difference > 0) {
+                Log.v("BatchesToSegmentsMapper", "Difference for native view id: ${entry.key.viewId} and parentId: ${entry.key.parentViewId} is : $difference")
+            }
+        } else {
+            val nativeTimestamp = nativeTimestamps[entry.key.viewId] ?: 0
+            val browserTimestamp = browserTimestamps[entry.key.viewId] ?: Long.MAX_VALUE
+            val difference = nativeTimestamp - browserTimestamp
+            if (difference > 0) {
+                Log.v("BatchesToSegmentsMapper", "Difference for native view id: ${entry.key.viewId} and parentId: ${entry.key.parentViewId} is : $difference")
+            }
+        }
+        val segmentAsJsonObject = segment.toJson().asJsonObject
+        segmentAsJsonObject.add(RECORDS_KEY, entry.value)
         return Pair(segment, segmentAsJsonObject)
     }
 
-    private fun hasFullSnapshotRecord(records: JsonArray) =
+    private fun hasFullSnapshotRecord(records: List<JsonObject>) =
         records.firstOrNull {
-            it.asJsonObject.getAsJsonPrimitive(RECORD_TYPE_KEY)?.safeGetAsLong(internalLogger) ==
-                FULL_SNAPSHOT_RECORD_TYPE
+            it.getAsJsonPrimitive(RECORD_TYPE_KEY).asLong == FULL_SNAPSHOT_RECORD_TYPE
         } != null
-
-    private fun JsonObject.records(): JsonArray? {
-        return get(EnrichedRecord.RECORDS_KEY)?.safeGetAsJsonArray(internalLogger)
-    }
-
-    private fun JsonObject.timestamp(): Long? {
-        return getAsJsonPrimitive(TIMESTAMP_KEY)?.safeGetAsLong(internalLogger)
-    }
-
-    private fun JsonObject.rumContext(): SessionReplayRumContext? {
-        val applicationId = get(EnrichedRecord.APPLICATION_ID_KEY)?.asString
-        val sessionId = get(EnrichedRecord.SESSION_ID_KEY)?.asString
-        val viewId = get(EnrichedRecord.VIEW_ID_KEY)?.asString
-        if (applicationId == null || sessionId == null || viewId == null) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.TELEMETRY,
-                { ILLEGAL_STATE_ENRICHED_RECORD_ERROR_MESSAGE },
-                null,
-                true
-            )
-            return null
-        }
-        return SessionReplayRumContext(
-            applicationId = applicationId,
-            sessionId = sessionId,
-            viewId = viewId
-        )
-    }
 
     // endregion
 
@@ -179,9 +149,5 @@ internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogge
         internal const val RECORDS_KEY = "records"
         private const val RECORD_TYPE_KEY = "type"
         internal const val TIMESTAMP_KEY = "timestamp"
-        internal const val UNABLE_TO_DESERIALIZE_ENRICHED_RECORD_ERROR_MESSAGE =
-            "SR BatchesToSegmentMapper: unable to deserialize EnrichedRecord"
-        internal const val ILLEGAL_STATE_ENRICHED_RECORD_ERROR_MESSAGE =
-            "SR BatchesToSegmentMapper: Enriched record was missing the context information"
     }
 }

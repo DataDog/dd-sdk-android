@@ -17,6 +17,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.privacy.TrackingConsent
+import okhttp3.OkHttpClient
 import java.io.File
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
@@ -46,6 +47,10 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
         get() = SdkInternalLogger(this)
 
     // region InternalSdkCore
+
+    override fun getOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder().build()
+    }
 
     override val networkInfo: NetworkInfo
         get() = NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)

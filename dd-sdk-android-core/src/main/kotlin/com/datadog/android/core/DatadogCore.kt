@@ -40,6 +40,7 @@ import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
+import okhttp3.OkHttpClient
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService
@@ -260,6 +261,10 @@ internal class DatadogCore(
                 { LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(Locale.US, lastViewEventFile.parent) }
             )
         }
+    }
+
+    override fun getOkHttpClient(): OkHttpClient {
+        return coreFeature.okHttpClient
     }
 
     override fun getPersistenceExecutorService(): ExecutorService {
