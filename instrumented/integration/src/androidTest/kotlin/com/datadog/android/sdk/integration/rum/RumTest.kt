@@ -16,6 +16,7 @@ import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.utils.isRumUrl
 import com.google.gson.JsonObject
 import org.assertj.core.api.Assertions.assertThat
+import java.lang.Long.max
 import java.util.concurrent.TimeUnit
 
 internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>> {
@@ -37,18 +38,16 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
                     .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.CONTENT_TYPE_TEXT)
                 if (request.textBody != null) {
                     val rumPayload = rumPayloadToJsonList(request.textBody).filterNot {
-                        it.has("type") &&
-                            it.getAsJsonPrimitive("type").asString == "telemetry"
+                        it.isTelemetryEvent
                     }
-                    rumPayload.forEach {
-                        if (it.has("view") &&
-                            it.getAsJsonObject("view")["name"].asString == "ApplicationLaunch"
-                        ) {
-                            sentLaunchEvents += it
-                        } else {
-                            sentGestureEvents += it
+                    rumPayload
+                        .forEach {
+                            if (it.isEventRelatedToApplicationLaunch) {
+                                sentLaunchEvents += it
+                            } else {
+                                sentGestureEvents += it
+                            }
                         }
-                    }
                 }
             }
         // Because launch events can be weirdly order dependent, consider them separately
@@ -56,10 +55,14 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
             event is ExpectedApplicationLaunchViewEvent || event is ExpectedApplicationStartActionEvent
         }
         val expectedLaunchEvents = expectedEvents.filter(launchEventPredicate)
-        sentLaunchEvents.verifyEventMatches(expectedLaunchEvents)
+        sentLaunchEvents
+            .reduceViewEvents()
+            .verifyEventMatches(expectedLaunchEvents)
 
         val otherExpectedEvents = expectedEvents.filterNot(launchEventPredicate)
-        sentGestureEvents.verifyEventMatches(otherExpectedEvents)
+        sentGestureEvents
+            .reduceViewEvents()
+            .verifyEventMatches(otherExpectedEvents)
     }
 
     protected fun verifyNoRumPayloadSent(
@@ -76,6 +79,44 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
         val callMethod = rum.javaClass.declaredMethods.first { it.name.startsWith("waitForPendingEvents") }
         callMethod.isAccessible = true
         callMethod.invoke(rum)
+    }
+
+    private val JsonObject.isEventRelatedToApplicationLaunch
+        get() = has("view") &&
+            getAsJsonObject("view")["name"].asString == "ApplicationLaunch"
+
+    private val JsonObject.isViewEvent
+        get() = get("type")?.asString == "view"
+
+    private val JsonObject.isTelemetryEvent
+        get() = get("type")?.asString == "telemetry"
+
+    // two methods below are expected to be called only on view events
+    private val JsonObject.viewId
+        get() = get("view").asJsonObject.get("id").asString
+
+    private val JsonObject.documentVersion: Long
+        get() = get("_dd").asJsonObject.get("document_version").asLong
+
+    private fun List<JsonObject>.reduceViewEvents(): List<JsonObject> {
+        val maxDocVersionByViewId = mutableMapOf<String, Long>()
+
+        forEach {
+            if (it.isViewEvent) {
+                val viewId = it.viewId
+                val documentVersion = it.documentVersion
+                maxDocVersionByViewId[viewId] =
+                    max(maxDocVersionByViewId.getOrDefault(viewId, Long.MIN_VALUE), documentVersion)
+            }
+        }
+
+        return filter {
+            if (it.isViewEvent) {
+                maxDocVersionByViewId[it.viewId] == it.documentVersion
+            } else {
+                true
+            }
+        }
     }
 
     companion object {
