@@ -11,6 +11,7 @@ import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -74,7 +75,7 @@ internal class RumEventMetaDeserializerTest {
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             RumEventMetaDeserializer.DESERIALIZATION_ERROR,
-            IllegalStateException::class.java
+            JsonParseException::class.java
         )
     }
 
@@ -89,7 +90,7 @@ internal class RumEventMetaDeserializerTest {
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             RumEventMetaDeserializer.DESERIALIZATION_ERROR,
-            IllegalStateException::class.java
+            JsonParseException::class.java
         )
     }
 
@@ -114,7 +115,7 @@ internal class RumEventMetaDeserializerTest {
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             RumEventMetaDeserializer.DESERIALIZATION_ERROR,
-            NullPointerException::class.java
+            JsonParseException::class.java
         )
     }
 
@@ -136,6 +137,12 @@ internal class RumEventMetaDeserializerTest {
 
         // Then
         assertThat(result).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            RumEventMetaDeserializer.DESERIALIZATION_ERROR,
+            JsonParseException::class.java
+        )
     }
 
     // region private

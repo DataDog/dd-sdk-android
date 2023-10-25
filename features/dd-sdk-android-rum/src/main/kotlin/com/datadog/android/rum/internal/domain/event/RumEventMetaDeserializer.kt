@@ -8,50 +8,25 @@ package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
-import com.google.gson.JsonParser
 
 internal class RumEventMetaDeserializer(
     private val internalLogger: InternalLogger
-) : Deserializer<ByteArray, Any> {
-    override fun deserialize(model: ByteArray): Any? {
+) : Deserializer<ByteArray, RumEventMeta> {
+    override fun deserialize(model: ByteArray): RumEventMeta? {
         if (model.isEmpty()) return null
 
         return try {
-            RumEventMeta.fromJson(model.toJson())
-        } catch (@Suppress("TooGenericExceptionCaught") e: NullPointerException) {
-            logException(e)
-            null
-        } catch (e: IllegalStateException) {
-            logException(e)
-            null
-        } catch (e: ClassCastException) {
-            logException(e)
-            null
+            RumEventMeta.fromJson(String(model, Charsets.UTF_8), internalLogger)
         } catch (e: JsonParseException) {
-            logException(e)
-            null
-        } catch (e: NumberFormatException) {
-            logException(e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { DESERIALIZATION_ERROR },
+                e
+            )
             null
         }
-    }
-
-    private fun ByteArray.toJson(): JsonObject {
-        @Suppress("UnsafeThirdPartyFunctionCall") // JsonParseException is handled in the caller
-        return JsonParser.parseString(
-            String(this, Charsets.UTF_8)
-        ).asJsonObject
-    }
-
-    private fun logException(e: Exception) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            { DESERIALIZATION_ERROR },
-            e
-        )
     }
 
     companion object {

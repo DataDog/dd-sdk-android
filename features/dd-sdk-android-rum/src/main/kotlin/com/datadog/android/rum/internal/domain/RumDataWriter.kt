@@ -25,7 +25,7 @@ import com.datadog.android.rum.model.ViewEvent
 
 internal class RumDataWriter(
     internal val eventSerializer: Serializer<Any>,
-    private val eventMetaSerializer: Serializer<Any>,
+    private val eventMetaSerializer: Serializer<RumEventMeta>,
     private val sdkCore: InternalSdkCore
 ) : DataWriter<Any> {
 

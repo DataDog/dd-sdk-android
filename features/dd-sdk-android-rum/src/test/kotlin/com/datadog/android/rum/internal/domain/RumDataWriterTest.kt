@@ -62,7 +62,7 @@ internal class RumDataWriterTest {
     lateinit var mockSerializer: Serializer<Any>
 
     @Mock
-    lateinit var mockEventMetaSerializer: Serializer<Any>
+    lateinit var mockEventMetaSerializer: Serializer<RumEventMeta>
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger

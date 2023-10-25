@@ -11,7 +11,7 @@ import com.datadog.android.core.internal.persistence.Deserializer
 import kotlin.math.max
 
 internal class RumViewEventFilter(
-    private val eventMetaDeserializer: Deserializer<ByteArray, Any>
+    private val eventMetaDeserializer: Deserializer<ByteArray, RumEventMeta>
 ) {
 
     fun filterOutRedundantViewEvents(batch: List<RawBatchEvent>): List<RawBatchEvent> {
@@ -37,6 +37,8 @@ internal class RumViewEventFilter(
             if (viewMetaByEvent.containsKey(it)) {
                 @Suppress("UnsafeThirdPartyFunctionCall") // we checked the key before
                 val viewMeta = viewMetaByEvent.getValue(it)
+                // we need to leave only view event with a max doc version for a give viewId in the
+                // batch, because backend will do the same during the reduce process
                 @Suppress("UnsafeThirdPartyFunctionCall") // if there is a meta, there is a max doc version
                 viewMeta.documentVersion == maxDocVersionByViewId.getValue(viewMeta.viewId)
             } else {

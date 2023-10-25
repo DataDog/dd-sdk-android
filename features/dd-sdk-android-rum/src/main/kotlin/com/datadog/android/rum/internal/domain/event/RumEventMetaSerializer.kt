@@ -7,13 +7,11 @@
 package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.core.persistence.Serializer
-import com.google.gson.JsonObject
 
-internal class RumEventMetaSerializer : Serializer<Any> {
-    override fun serialize(model: Any): String {
+internal class RumEventMetaSerializer : Serializer<RumEventMeta> {
+    override fun serialize(model: RumEventMeta): String {
         return when (model) {
             is RumEventMeta.View -> model.toJson().toString()
-            else -> JsonObject().toString()
         }
     }
 }

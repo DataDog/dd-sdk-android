@@ -43,16 +43,4 @@ internal class RumEventMetaSerializerTest {
             .hasField("viewId", eventMeta.viewId)
             .hasField("type", RumEventMeta.VIEW_TYPE_VALUE)
     }
-
-    @Test
-    fun `𝕄 return empty object 𝕎 serialize() { unsupported type }`() {
-        // When
-        val serialized = testedSerializer.serialize(RandomType())
-
-        // Then
-        val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertThat(jsonObject).isEmpty()
-    }
-
-    data class RandomType(val foo: String = "", val bar: String = "")
 }
