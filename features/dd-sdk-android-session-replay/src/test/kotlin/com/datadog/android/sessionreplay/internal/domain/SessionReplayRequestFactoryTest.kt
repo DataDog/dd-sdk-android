@@ -59,6 +59,7 @@ internal class SessionReplayRequestFactoryTest {
 
     lateinit var fakeCompressedSegment: ByteArray
 
+    @Forgery
     lateinit var fakeBatchData: List<RawBatchEvent>
 
     @Forgery
@@ -84,7 +85,6 @@ internal class SessionReplayRequestFactoryTest {
         whenever(mockRequestBody.contentType()).thenReturn(fakeMediaType)
         fakeCompressedSegment = forge.aString().toByteArray()
         fakeBatchMetadata = forge.aNullable { forge.aString().toByteArray() }
-        fakeBatchData = forge.aList { RawBatchEvent(aString().toByteArray()) }
         whenever(mockRequestBodyFactory.create(fakeSegment, fakeSerializedSegment))
             .thenReturn(mockRequestBody)
         whenever(mockBatchesToSegmentsMapper.map(fakeBatchData.map { it.data }))
