@@ -12,6 +12,7 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.internal.domain.event.RumViewEventFilter
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -23,8 +24,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -37,13 +42,21 @@ internal class RumRequestFactoryTest {
 
     private lateinit var testedFactory: RumRequestFactory
 
+    @Mock
+    lateinit var mockViewEventFilter: RumViewEventFilter
+
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
     @BeforeEach
     fun `set up`() {
+        whenever(mockViewEventFilter.filterOutRedundantViewEvents(any())) doAnswer {
+            it.getArgument(0)
+        }
+
         testedFactory = RumRequestFactory(
             customEndpointUrl = null,
+            viewEventFilter = mockViewEventFilter,
             internalLogger = InternalLogger.UNBOUND
         )
     }
@@ -94,6 +107,7 @@ internal class RumRequestFactoryTest {
         // Given
         testedFactory = RumRequestFactory(
             customEndpointUrl = fakeEndpoint,
+            viewEventFilter = mockViewEventFilter,
             internalLogger = InternalLogger.UNBOUND
         )
         val batchData = batchData.map { RawBatchEvent(it.toByteArray()) }

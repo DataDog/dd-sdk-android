@@ -28,11 +28,7 @@ internal abstract class FragmentTrackingTest :
         val expectedEvents = mutableListOf<ExpectedEvent>()
 
         expectedEvents.add(ExpectedApplicationStartActionEvent())
-        expectedEvents.add(
-            ExpectedApplicationLaunchViewEvent(
-                docVersion = 2
-            )
-        )
+        // ignore first view event for application launch, it will be reduced
 
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
@@ -45,14 +41,7 @@ internal abstract class FragmentTrackingTest :
         waitForPendingRUMEvents()
 
         val fragmentAViewUrl = currentFragmentViewUrl(activity)
-        // one for view start
-        expectedEvents.add(
-            ExpectedViewEvent(
-                fragmentAViewUrl,
-                2,
-                currentFragmentExtras(activity)
-            )
-        )
+        // ignore view event for view start, it will be reduced
 
         // view stopped
         expectedEvents.add(
@@ -69,14 +58,7 @@ internal abstract class FragmentTrackingTest :
         Thread.sleep(200) // give time to the view id to update
         val fragmentBViewUrl = currentFragmentViewUrl(activity)
         mockServerRule.activity.supportFragmentManager.fragments
-        // for updating the time
-        expectedEvents.add(
-            ExpectedViewEvent(
-                fragmentBViewUrl,
-                2,
-                currentFragmentExtras(activity)
-            )
-        )
+        // ignore view event for updating the time, it will be reduced
         // view stopped
         expectedEvents.add(
             ExpectedViewEvent(

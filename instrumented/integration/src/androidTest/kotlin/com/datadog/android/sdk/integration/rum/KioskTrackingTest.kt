@@ -66,11 +66,7 @@ internal class KioskTrackingTest :
         waitForPendingRUMEvents()
 
         expectedEvents.add(ExpectedApplicationStartActionEvent())
-        expectedEvents.add(
-            ExpectedApplicationLaunchViewEvent(
-                docVersion = 2
-            )
-        )
+        // ignore first view event for application launch, it will be reduced
 
         // Stop launch view
         expectedEvents.add(
@@ -80,12 +76,7 @@ internal class KioskTrackingTest :
         )
 
         // No events on this view - one for view stop view / stop session
-        expectedEvents.add(
-            ExpectedViewEvent(
-                firstViewUrl,
-                docVersion = 2
-            )
-        )
+        // ignore first view event, it will be reduced
         expectedEvents.add(
             ExpectedViewEvent(
                 firstViewUrl,
@@ -104,14 +95,7 @@ internal class KioskTrackingTest :
         instrumentation.waitForIdleSync()
 
         // one for view start
-        expectedEvents.add(
-            ExpectedViewEvent(
-                secondViewUrl,
-                docVersion = 2,
-                viewArguments = mapOf(),
-                sessionIsActive = true
-            )
-        )
+        // ignore first view event, it will be reduced
 
         // one for view stop
         expectedEvents.add(
@@ -129,13 +113,7 @@ internal class KioskTrackingTest :
         instrumentation.waitForIdleSync()
 
         // No events on this view - one for view stop view / stop session
-        expectedEvents.add(
-            ExpectedViewEvent(
-                firstViewUrl,
-                docVersion = 2,
-                viewArguments = mapOf()
-            )
-        )
+        // ignore first view event, it will be reduced
 
         expectedEvents.add(
             ExpectedViewEvent(

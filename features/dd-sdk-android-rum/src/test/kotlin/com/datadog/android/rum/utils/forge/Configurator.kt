@@ -34,6 +34,8 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(ViewEventForgeryFactory())
         forge.addFactory(VitalInfoForgeryFactory())
         forge.addFactory(TelemetryCoreConfigurationForgeryFactory())
+        forge.addFactory(RumEventMetaForgeryFactory())
+        forge.addFactory(ViewEventMetaForgeryFactory())
 
         // Telemetry
         forge.addFactory(TelemetryDebugEventForgeryFactory())

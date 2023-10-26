@@ -45,7 +45,6 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aFilteredMap
-import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -165,9 +164,6 @@ internal class RumViewScopeTest {
     var fakeSourceActionEvent: ActionEvent.Source? = null
     var fakeSourceLongTaskEvent: LongTaskEvent.Source? = null
 
-    @Mock
-    lateinit var mockViewUpdatePredicate: ViewUpdatePredicate
-
     @BoolForgery
     var fakeHasReplay: Boolean = false
 
@@ -246,7 +242,6 @@ internal class RumViewScopeTest {
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         whenever(mockActionScope.handleEvent(any(), any())) doReturn mockActionScope
         whenever(mockActionScope.actionId) doReturn fakeActionId
-        whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(true)
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(rumMonitor.mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
         whenever(rumMonitor.mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
@@ -268,7 +263,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             trackFrustrations = true,
             sampleRate = fakeSampleRate
@@ -370,7 +364,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             type = fakeViewEventType,
             trackFrustrations = fakeTrackFrustrations,
@@ -482,7 +475,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             type = expectedViewType,
             trackFrustrations = fakeTrackFrustrations,
@@ -670,7 +662,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             type = viewType,
             trackFrustrations = fakeTrackFrustrations,
@@ -727,7 +718,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             type = viewType,
             trackFrustrations = fakeTrackFrustrations,
@@ -1299,7 +1289,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            viewUpdatePredicate = mockViewUpdatePredicate,
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate
@@ -1464,7 +1453,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            viewUpdatePredicate = mockViewUpdatePredicate,
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate
@@ -1560,7 +1548,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            viewUpdatePredicate = mockViewUpdatePredicate,
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate
@@ -6448,64 +6435,6 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
     }
 
-    @Test
-    fun `𝕄 not send event 𝕎 handleEvent { viewUpdatePredicate returns false }`(forge: Forge) {
-        // Given
-        val rawEvents = listOf(
-            RumRawEvent.StartView(
-                forge.anAlphabeticalString(),
-                forge.anAlphabeticalString(),
-                emptyMap()
-            ),
-            RumRawEvent.StopView(
-                forge.anAlphabeticalString(),
-                emptyMap()
-            ),
-            RumRawEvent.StartAction(
-                forge.aValueFrom(RumActionType::class.java),
-                forge.anAlphabeticalString(),
-                forge.aBool(),
-                emptyMap()
-            ),
-            RumRawEvent.ActionSent(forge.anAlphabeticalString(), forge.aPositiveInt()),
-            RumRawEvent.StartResource(
-                forge.anAlphabeticalString(),
-                forge.anAlphabeticalString(),
-                forge.aValueFrom(RumResourceMethod::class.java),
-                emptyMap()
-            ),
-            RumRawEvent.ResourceSent(
-                forge.anAlphabeticalString()
-            ),
-            RumRawEvent.AddError(
-                forge.anAlphabeticalString(),
-                forge.aValueFrom(RumErrorSource::class.java),
-                stacktrace = forge.aNullable { forge.aString() },
-                throwable = forge.aNullable { forge.aThrowable() },
-                isFatal = forge.aBool(),
-                attributes = emptyMap()
-            ),
-            RumRawEvent.ErrorSent(forge.anAlphabeticalString()),
-            RumRawEvent.AddLongTask(forge.aLong(), forge.anAlphabeticalString()),
-            RumRawEvent.LongTaskSent(forge.anAlphabeticalString()),
-            RumRawEvent.ResourceDropped(forge.anAlphabeticalString()),
-            RumRawEvent.LongTaskDropped(forge.anAlphabeticalString()),
-            RumRawEvent.ErrorDropped(forge.anAlphabeticalString()),
-            RumRawEvent.ActionDropped(forge.anAlphabeticalString()),
-            RumRawEvent.AddCustomTiming(forge.anAlphabeticalString()),
-            RumRawEvent.KeepAlive()
-        )
-        whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(false)
-
-        // When
-        rawEvents.forEach {
-            testedScope.handleEvent(it, mockWriter)
-        }
-
-        // Then
-        verifyNoInteractions(mockWriter)
-    }
-
     // endregion
 
     // region Cross-platform performance metrics
@@ -6808,190 +6737,6 @@ internal class RumViewScopeTest {
 
     // endregion
 
-    // region ViewUpdatePredicate
-
-    @Test
-    fun `𝕄 send event 𝕎 handleEvent { ApplicationStarted, viewUpdatePredicate returns false }`(
-        @LongForgery(0) duration: Long,
-        forge: Forge
-    ) {
-        // Given
-        val eventTime = Time()
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
-        val attributes = forgeGlobalAttributes(forge, fakeAttributes)
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn attributes
-        whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(false)
-
-        // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // Then
-        argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertThat(firstValue)
-                .apply {
-                    hasNonNullId()
-                    hasTimestamp(testedScope.eventTimestamp)
-                    hasType(ActionEvent.ActionEventActionType.APPLICATION_START)
-                    hasNoTarget()
-                    hasDuration(duration)
-                    hasResourceCount(0)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasLongTaskCount(0)
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasLiteSessionPlan()
-                    hasReplay(false)
-                    hasSource(fakeSourceActionEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                    containsExactlyContextAttributes(attributes)
-                    hasSampleRate(fakeSampleRate)
-                }
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isSameAs(testedScope)
-    }
-
-    @Test
-    fun `𝕄 send event 𝕎 handleEvent { LongTask, viewUpdatePredicate returns false }`(
-        @LongForgery(0L, 700_000_000L) durationNs: Long,
-        @StringForgery target: String
-    ) {
-        // Given
-        testedScope.activeActionScope = null
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
-        val durationMs = TimeUnit.NANOSECONDS.toMillis(durationNs)
-        whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(false)
-
-        // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
-
-        argumentCaptor<LongTaskEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-
-            assertThat(firstValue)
-                .apply {
-                    hasTimestamp(
-                        resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
-                    )
-                    hasDuration(durationNs)
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.url)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasLiteSessionPlan()
-                    hasReplay(fakeHasReplay)
-                    hasSource(fakeSourceLongTaskEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toLongTaskSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                    hasSampleRate(fakeSampleRate)
-                }
-        }
-
-        // Then
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isSameAs(testedScope)
-    }
-
-    @Test
-    fun `𝕄 send event 𝕎 handleEvent { Error, viewUpdatePredicate returns false }`(
-        @StringForgery message: String,
-        @Forgery source: RumErrorSource,
-        @Forgery sourceType: RumErrorSourceType,
-        @BoolForgery isFatal: Boolean,
-        forge: Forge
-    ) {
-        // Given
-        testedScope.activeActionScope = mockActionScope
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        fakeEvent = RumRawEvent.AddError(
-            message,
-            source,
-            forge.aNullable { forge.aThrowable() },
-            forge.aNullable { forge.anAlphabeticalString() },
-            isFatal,
-            attributes,
-            sourceType = sourceType
-        )
-        whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(false)
-
-        // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // Then
-        argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-
-            assertThat(firstValue)
-                .apply {
-                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-                    hasErrorSource(source)
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasActionId(fakeActionId)
-                    hasErrorSourceType(sourceType.toSchemaSourceType())
-                    hasLiteSessionPlan()
-                    hasReplay(fakeHasReplay)
-                    containsExactlyContextAttributes(attributes)
-                    hasSource(fakeSourceErrorEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                    hasSampleRate(fakeSampleRate)
-                }
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isSameAs(testedScope)
-    }
-
-    // endregion
-
     // region Stopping Sessions
 
     @Test
@@ -7040,7 +6785,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockViewUpdatePredicate,
             mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate

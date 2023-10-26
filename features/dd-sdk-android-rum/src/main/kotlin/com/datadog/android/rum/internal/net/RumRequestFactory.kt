@@ -13,11 +13,13 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.internal.domain.event.RumViewEventFilter
 import java.util.Locale
 import java.util.UUID
 
 internal class RumRequestFactory(
     internal val customEndpointUrl: String?,
+    private val viewEventFilter: RumViewEventFilter,
     private val internalLogger: InternalLogger
 ) : RequestFactory {
 
@@ -38,7 +40,8 @@ internal class RumRequestFactory(
                 context.source,
                 context.sdkVersion
             ),
-            body = batchData.map { it.data }
+            body = viewEventFilter.filterOutRedundantViewEvents(batchData)
+                .map { it.data }
                 .join(
                     separator = PAYLOAD_SEPARATOR,
                     internalLogger = internalLogger

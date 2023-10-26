@@ -35,7 +35,10 @@ import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
+import com.datadog.android.rum.internal.domain.event.RumEventMetaDeserializer
+import com.datadog.android.rum.internal.domain.event.RumEventMetaSerializer
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
+import com.datadog.android.rum.internal.domain.event.RumViewEventFilter
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
@@ -182,7 +185,13 @@ internal class RumFeature constructor(
     }
 
     override val requestFactory: RequestFactory by lazy {
-        RumRequestFactory(configuration.customEndpointUrl, sdkCore.internalLogger)
+        RumRequestFactory(
+            customEndpointUrl = configuration.customEndpointUrl,
+            viewEventFilter = RumViewEventFilter(
+                eventMetaDeserializer = RumEventMetaDeserializer(sdkCore.internalLogger)
+            ),
+            internalLogger = sdkCore.internalLogger
+        )
     }
 
     override val storageConfiguration: FeatureStorageConfiguration =
@@ -217,7 +226,7 @@ internal class RumFeature constructor(
         sdkCore: InternalSdkCore
     ): DataWriter<Any> {
         return RumDataWriter(
-            serializer = MapperSerializer(
+            eventSerializer = MapperSerializer(
                 RumEventMapper(
                     sdkCore,
                     viewEventMapper = configuration.viewEventMapper,
@@ -230,6 +239,7 @@ internal class RumFeature constructor(
                 ),
                 RumEventSerializer(sdkCore.internalLogger)
             ),
+            eventMetaSerializer = RumEventMetaSerializer(),
             sdkCore = sdkCore
         )
     }
