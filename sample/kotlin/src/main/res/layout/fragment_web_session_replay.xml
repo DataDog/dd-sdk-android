@@ -4,10 +4,23 @@
   ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
   ~ Copyright 2016-Present Datadog, Inc.
   -->
-<WebView
+<androidx.appcompat.widget.LinearLayoutCompat
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/webview"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".NavActivity"/>
+    android:orientation="vertical"
+    tools:context=".NavActivity"
+    >
+    <WebView
+        android:id="@+id/webview1"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+       android:layout_weight="0.5"/>
+    <WebView
+        android:id="@+id/webview2"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+       android:layout_weight="0.5"/>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

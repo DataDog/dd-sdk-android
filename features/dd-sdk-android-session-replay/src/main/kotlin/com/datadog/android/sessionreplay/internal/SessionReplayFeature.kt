@@ -30,6 +30,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrap
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
+import java.io.File
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -101,6 +102,7 @@ internal class SessionReplayFeature(
         @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
         sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
+        (requestFactory as SessionReplayRequestFactory).storageFile = File(appContext.externalCacheDir, "session_replay")
         sdkCore.updateFeatureContext(SESSION_REPLAY_FEATURE_NAME) {
             it[SESSION_REPLAY_SAMPLE_RATE_KEY] = rateBasedSampler.getSampleRate()?.toLong()
             it[SESSION_REPLAY_PRIVACY_KEY] = privacy.toString().lowercase(Locale.US)

@@ -13,15 +13,13 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
-import com.datadog.android.sample.SampleApplication
 import com.datadog.android.webview.WebViewTracking
 
 internal class WebSessionReplayFragment : Fragment() {
 
-    private lateinit var viewModel: WebViewModel
-    private lateinit var webView: WebView
+    private lateinit var webView1: WebView
+    private lateinit var webView2: WebView
 
     private val webViewTrackingHosts = listOf(
         "datadoghq.dev"
@@ -36,28 +34,21 @@ internal class WebSessionReplayFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_web_session_replay, container, false)
-        webView = rootView.findViewById(R.id.webview)
-        webView.webViewClient = WebViewClient()
-        webView.settings.javaScriptEnabled = true
-        WebViewTracking.enable(webView, webViewTrackingHosts)
+        webView1 = rootView.findViewById(R.id.webview1)
+        webView1.webViewClient = WebViewClient()
+        webView1.settings.javaScriptEnabled = true
+        WebViewTracking.enable(webView1, webViewTrackingHosts)
+        webView2 = rootView.findViewById(R.id.webview2)
+        webView2.webViewClient = WebViewClient()
+        webView2.settings.javaScriptEnabled = true
+        WebViewTracking.enable(webView2, webViewTrackingHosts)
         return rootView
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        val factory = SampleApplication.getViewModelFactory(requireContext())
-        viewModel = ViewModelProviders.of(this, factory).get(WebViewModel::class.java)
     }
 
     override fun onResume() {
         super.onResume()
-        viewModel.onResume()
-        webView.loadUrl("https://datadoghq.dev/browser-sdk-test-playground/webview-support/#basic-text")
-    }
-
-    override fun onPause() {
-        super.onPause()
-        viewModel.onPause()
+        webView1.loadUrl("https://datadoghq.dev/browser-sdk-test-playground/webview-support/#basic-text")
+        webView2.loadUrl("https://datadoghq.dev/browser-sdk-test-playground/webview-support/#basic-text")
     }
 
     // endregion

@@ -14,6 +14,7 @@ import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormat
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import okhttp3.RequestBody
 import okio.Buffer
+import java.io.File
 import java.util.Locale
 import java.util.UUID
 
@@ -23,6 +24,7 @@ internal class SessionReplayRequestFactory(
     private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory()
 ) : RequestFactory {
 
+    lateinit var storageFile: File
     override fun create(
         context: DatadogContext,
         batchData: List<RawBatchEvent>,
@@ -36,6 +38,11 @@ internal class SessionReplayRequestFactory(
                     " request could not be created"
             )
         }
+        if (!storageFile.exists()) {
+            storageFile.createNewFile()
+        }
+        storageFile.appendText(serializedSegmentPair.second.toString())
+        storageFile.appendText("\n")
         val body = requestBodyFactory.create(
             serializedSegmentPair.first,
             serializedSegmentPair.second

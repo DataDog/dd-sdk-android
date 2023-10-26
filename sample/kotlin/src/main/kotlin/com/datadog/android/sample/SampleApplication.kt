@@ -145,7 +145,7 @@ class SampleApplication : Application() {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
                 }
             }
-            .setPrivacy(SessionReplayPrivacy.ALLOW)
+//            .setPrivacy(SessionReplayPrivacy.ALLOW)
             .addExtensionSupport(MaterialExtensionSupport())
             .build()
         SessionReplay.enable(sessionReplayConfig)
