@@ -50,12 +50,11 @@ internal class TracesRequestFactoryTest {
     @Suppress("NAME_SHADOWING")
     @Test
     fun `𝕄 create a proper request 𝕎 create()`(
-        @StringForgery batchData: List<String>,
+        @Forgery batchData: List<RawBatchEvent>,
         @StringForgery batchMetadata: String,
         forge: Forge
     ) {
         // Given
-        val batchData = batchData.map { RawBatchEvent(it.toByteArray()) }
         val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
 
         // When
@@ -86,13 +85,12 @@ internal class TracesRequestFactoryTest {
     @Test
     fun `𝕄 create a proper request 𝕎 create() { custom endpoint }`(
         @StringForgery(regex = "https://[a-z]+\\.com") fakeEndpoint: String,
-        @StringForgery batchData: List<String>,
+        @Forgery batchData: List<RawBatchEvent>,
         @StringForgery batchMetadata: String,
         forge: Forge
     ) {
         // Given
         testedFactory = TracesRequestFactory(customEndpointUrl = fakeEndpoint, internalLogger = InternalLogger.UNBOUND)
-        val batchData = batchData.map { RawBatchEvent(it.toByteArray()) }
         val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
 
         // When
