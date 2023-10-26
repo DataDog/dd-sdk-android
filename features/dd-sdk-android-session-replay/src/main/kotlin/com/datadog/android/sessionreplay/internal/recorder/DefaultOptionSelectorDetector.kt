@@ -12,8 +12,11 @@ import androidx.appcompat.widget.AppCompatSpinner
 internal class DefaultOptionSelectorDetector : OptionSelectorDetector {
     override fun isOptionSelector(view: ViewGroup): Boolean {
         val viewClassName = view.javaClass.canonicalName ?: ""
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+        val isAppCompatSpinner = AppCompatSpinner::class.java.isAssignableFrom(view::class.java)
         return viewClassName in OPTION_SELECTORS_CLASS_NAMES_SET ||
-            AppCompatSpinner::class.java.isAssignableFrom(view::class.java)
+            isAppCompatSpinner
     }
 
     companion object {

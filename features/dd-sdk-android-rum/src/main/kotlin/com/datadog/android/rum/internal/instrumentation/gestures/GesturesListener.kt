@@ -297,6 +297,7 @@ internal class GesturesListener(
         return view.visibility == View.VISIBLE && isScrollableView(view)
     }
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
     private fun isScrollableView(view: View): Boolean {
         return ScrollingView::class.java.isAssignableFrom(view.javaClass) ||
             AbsListView::class.java.isAssignableFrom(view.javaClass) ||

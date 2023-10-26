@@ -140,7 +140,12 @@ internal open class SliderWireframeMapper(
     }
 
     private fun Slider.normalizedValue(): Float {
-        return (value - valueFrom) / (valueTo - valueFrom)
+        val range = valueTo - valueFrom
+        return if (range == 0f) {
+            0f
+        } else {
+            (value - valueFrom) / range
+        }
     }
 
     companion object {

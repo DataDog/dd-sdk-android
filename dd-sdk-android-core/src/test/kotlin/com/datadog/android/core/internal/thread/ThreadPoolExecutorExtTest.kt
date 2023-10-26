@@ -54,6 +54,7 @@ internal class ThreadPoolExecutorExtTest {
 
         // WHEN
         val isIdled = testedMockExecutor.waitToIdle(fakeTimeout, mockInternalLogger)
+        testedMockExecutor.isIdle()
 
         // THEN
         assertThat(isIdled).isFalse()

@@ -76,6 +76,7 @@ class LeanbackViewAttributesProvider :
     // region Internal
 
     private fun RecyclerView.ViewHolder.isBridgeAdapterViewHolder(): Boolean {
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         return ItemBridgeAdapter.ViewHolder::class.java.isAssignableFrom(this::class.java)
     }
 
@@ -92,6 +93,7 @@ class LeanbackViewAttributesProvider :
     }
 
     private fun ItemBridgeAdapter.ViewHolder.action(): Action? {
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         if (Action::class.java.isAssignableFrom(item::class.java)) {
             return item as Action
         }

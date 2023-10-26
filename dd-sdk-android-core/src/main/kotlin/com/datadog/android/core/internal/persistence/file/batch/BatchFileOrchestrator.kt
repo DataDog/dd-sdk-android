@@ -275,7 +275,7 @@ internal class BatchFileOrchestrator(
 
     private fun freeSpaceIfNeeded() {
         val files = listSortedBatchFiles()
-        val sizeOnDisk = files.sumOf { it.lengthSafe(internalLogger) }
+        val sizeOnDisk = files.sumOf { f: File -> f.lengthSafe(internalLogger) }
         val maxDiskSpace = config.maxDiskSpace
         val sizeToFree = sizeOnDisk - maxDiskSpace
         if (sizeToFree > 0) {

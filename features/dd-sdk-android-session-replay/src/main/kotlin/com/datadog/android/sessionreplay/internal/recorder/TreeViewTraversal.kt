@@ -56,13 +56,15 @@ internal class TreeViewTraversal(
     }
 
     private fun isDecorView(view: View): Boolean {
-        val viewParent = view.parent
-        return viewParent == null || !View::class.java.isAssignableFrom(viewParent::class.java)
+        val viewParent = view.parent ?: return true
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+        return !View::class.java.isAssignableFrom(viewParent.javaClass)
     }
 
     private fun List<MapperTypeWrapper>.findFirstForType(type: Class<*>):
         WireframeMapper<View, *>? {
         return firstOrNull {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             it.type.isAssignableFrom(type)
         }?.mapper
     }
