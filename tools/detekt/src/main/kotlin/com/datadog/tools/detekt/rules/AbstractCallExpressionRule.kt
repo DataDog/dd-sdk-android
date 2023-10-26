@@ -36,9 +36,9 @@ import org.jetbrains.kotlin.resolve.calls.util.getType
  */
 abstract class AbstractCallExpressionRule(
     ruleSetConfig: Config = Config.empty,
-    val simplifyLocalTypes: Boolean = false,
-    val treatGenericAsSuper: Boolean = true,
-    val includeTypeArguments: Boolean = true
+    private val simplifyLocalTypes: Boolean = false,
+    private val treatGenericAsSuper: Boolean = true,
+    private val includeTypeArguments: Boolean = true
 ) : AbstractTypedRule(ruleSetConfig) {
 
     /**
@@ -120,11 +120,26 @@ abstract class AbstractCallExpressionRule(
         } else {
             fullType to ""
         }
-        return if (simplifyLocalTypes && nonNullType.startsWith(containerFqName)) {
-            val simplifiedLocalType = nonNullType.substringAfterLast('.')
-            simplifiedLocalType + suffix
+        return if (simplifyLocalTypes) {
+            val containerMatch = containerFqNameRegex.matchEntire(containerFqName)
+            val typeMatch = containerFqNameRegex.matchEntire(nonNullType)
+            if (typeMatch != null && containerMatch != null) {
+                val typePackageName = typeMatch.groupValues[1]
+                val containerPackageName = containerMatch.groupValues[1]
+                if (nonNullType.startsWith(containerFqName)) {
+                    // type is a child of the container class, use the simple name
+                    nonNullType.substringAfterLast('.') + suffix
+                } else if (typePackageName == containerPackageName) {
+                    // type is in the same package, only use the full local name
+                    nonNullType.substring(typePackageName.length + 1) + suffix
+                } else {
+                    fullType
+                }
+            } else {
+                fullType
+            }
         } else {
-            nonNullType + suffix
+            fullType
         }
     }
 
@@ -144,4 +159,8 @@ abstract class AbstractCallExpressionRule(
     )
 
     // endregion
+
+    companion object {
+        private val containerFqNameRegex = Regex("^([a-z0-9-]+(\\.[a-z0-9-]+)*)((\\.[A-Z][a-zA-Z0-9-]+)*)$")
+    }
 }

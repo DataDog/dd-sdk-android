@@ -119,7 +119,6 @@ if [[ $ANALYSIS == 1 ]]; then
   fi
 
   echo "------ Detekt common rules"
-  echo "------ Detekt common rules"
   detekt --config "$DD_SOURCE/domains/mobile/config/android/gitlab/detekt/detekt-common.yml"
 
   echo "------ Detekt public API rules"
@@ -129,19 +128,35 @@ if [[ $ANALYSIS == 1 ]]; then
   if [[ $COMPILE == 1 ]]; then
     # Assemble is required to get generated classes type resolution
     echo "------ Assemble Libraries"
-    ./gradlew assembleLibraries 
+    ./gradlew assembleLibraries
     ./gradlew printSdkDebugRuntimeClasspath
     classpath=$(cat sdk_classpath)
 
     echo "------ Build Detekt custom rules"
-    ./gradlew :tools:detekt:jar 
+    ./gradlew :tools:detekt:jar
 
+    # TODO RUMM-3263 Switch to Java 17 bytecode
     echo "------ Detekt custom rules"
     detekt --config detekt_custom.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
 
     echo "------ Detekt test pyramid rules"
+    rm apiSurface.log apiUsage.log
     detekt --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
-    # TODO RUMM-3263 Switch to Java 17 bytecode
+
+    grep -v -f apiUsage.log apiSurface.log > apiCoverageMiss.log
+    grep -f apiUsage.log apiSurface.log > apiCoverageHit.log
+    if [ ! -s "${FILENAME}" ]; then
+      surfaceCount=`sed -n '$=' apiSurface.log`
+      coverageMissCount=`sed -n '$=' apiCoverageMiss.log`
+      coverageHitCount=`sed -n '$=' apiCoverageHit.log`
+      hitPercent=$(( (coverageHitCount * 100)/surfaceCount ))
+      missPercent=$(( (coverageMissCount * 100)/surfaceCount ))
+      echo "✘ Test Integration coverage missed ${coverageMissCount} apis ($hitPercent % coverage; $missPercent % miss)"
+      exit 1
+    else
+      echo "✔ Test Integration coverage 100%"
+    fi
+
   else
     echo "------ Detekt Custom Rules & API Coverage ignored, run again with --analysis --compile"
   fi
