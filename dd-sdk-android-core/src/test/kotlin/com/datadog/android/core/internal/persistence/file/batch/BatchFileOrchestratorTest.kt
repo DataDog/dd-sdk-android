@@ -1191,28 +1191,31 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return root dir { multithreaded }`() {
+    fun `𝕄 return root dir { multithreaded }`(
+        @IntForgery(4, 8) repeatCount: Int
+    ) {
         // since getRootDir involves the creation of the directory structure,
         // we need to make sure that other threads won't try to create it again when it is already
         // created by some thread
 
         // Given
         fakeRootDir.deleteRecursively()
-        val countDownLatch = CountDownLatch(4)
+        val countDownLatch = CountDownLatch(repeatCount)
         val results = mutableListOf<File?>()
 
         // When
-        repeat(4) {
+        repeat(repeatCount) {
             Thread {
                 val result = testedOrchestrator.getRootDir()
                 results.add(result)
                 countDownLatch.countDown()
             }.start()
         }
-        countDownLatch.await(2, TimeUnit.SECONDS)
+        countDownLatch.await(5, TimeUnit.SECONDS)
 
         // Then
-        assertThat(results).containsExactlyElementsOf(List(4) { fakeRootDir })
+        assertThat(countDownLatch.count).isZero()
+        assertThat(results).containsExactlyElementsOf(List(repeatCount) { fakeRootDir })
         verifyNoInteractions(mockLogger)
     }
 

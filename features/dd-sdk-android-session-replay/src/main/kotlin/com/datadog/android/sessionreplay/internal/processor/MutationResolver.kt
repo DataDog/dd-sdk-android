@@ -310,38 +310,42 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
     ): MobileSegment.WireframeUpdateMutation? {
         return if (prevWireframe == currentWireframe) {
             null
-        } else if (!prevWireframe.javaClass.isAssignableFrom(currentWireframe.javaClass)) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                {
-                    MISS_MATCHING_TYPES_IN_SNAPSHOTS_ERROR_MESSAGE_FORMAT
-                        .format(
-                            Locale.ENGLISH,
-                            prevWireframe.javaClass.name,
-                            currentWireframe.javaClass.name
-                        )
-                }
-            )
-            null
         } else {
-            when (prevWireframe) {
-                is MobileSegment.Wireframe.TextWireframe -> resolveTextMutation(
-                    prevWireframe,
-                    currentWireframe as MobileSegment.Wireframe.TextWireframe
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            val isSameClass = prevWireframe.javaClass.isAssignableFrom(currentWireframe.javaClass)
+            if (!isSameClass) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    {
+                        MISS_MATCHING_TYPES_IN_SNAPSHOTS_ERROR_MESSAGE_FORMAT
+                            .format(
+                                Locale.ENGLISH,
+                                prevWireframe.javaClass.name,
+                                currentWireframe.javaClass.name
+                            )
+                    }
                 )
-                is MobileSegment.Wireframe.ShapeWireframe -> resolveShapeMutation(
-                    prevWireframe,
-                    currentWireframe as MobileSegment.Wireframe.ShapeWireframe
-                )
-                is MobileSegment.Wireframe.ImageWireframe -> resolveImageMutation(
-                    prevWireframe,
-                    currentWireframe as MobileSegment.Wireframe.ImageWireframe
-                )
-                is MobileSegment.Wireframe.PlaceholderWireframe -> resolvePlaceholderMutation(
-                    prevWireframe,
-                    currentWireframe as MobileSegment.Wireframe.PlaceholderWireframe
-                )
+                null
+            } else {
+                when (prevWireframe) {
+                    is MobileSegment.Wireframe.TextWireframe -> resolveTextMutation(
+                        prevWireframe,
+                        currentWireframe as MobileSegment.Wireframe.TextWireframe
+                    )
+                    is MobileSegment.Wireframe.ShapeWireframe -> resolveShapeMutation(
+                        prevWireframe,
+                        currentWireframe as MobileSegment.Wireframe.ShapeWireframe
+                    )
+                    is MobileSegment.Wireframe.ImageWireframe -> resolveImageMutation(
+                        prevWireframe,
+                        currentWireframe as MobileSegment.Wireframe.ImageWireframe
+                    )
+                    is MobileSegment.Wireframe.PlaceholderWireframe -> resolvePlaceholderMutation(
+                        prevWireframe,
+                        currentWireframe as MobileSegment.Wireframe.PlaceholderWireframe
+                    )
+                }
             }
         }
     }

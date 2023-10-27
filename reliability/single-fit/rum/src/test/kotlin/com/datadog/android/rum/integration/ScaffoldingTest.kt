@@ -7,6 +7,8 @@
 package com.datadog.android.rum.integration
 
 import com.datadog.android.api.context.UserInfo
+import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -30,5 +32,6 @@ class ScaffoldingTest {
         @Forgery fakeUserInfo: UserInfo
     ) {
         println("Hello ${fakeUserInfo.name}…")
+        GlobalRumMonitor.get().addError("Oops", RumErrorSource.SOURCE, null, emptyMap())
     }
 }

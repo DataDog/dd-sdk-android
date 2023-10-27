@@ -5,3 +5,4 @@
 #
 
 com.datadog.tools.detekt.DatadogProvider
+com.datadog.tools.detekt.DatadogTestPyramidProvider

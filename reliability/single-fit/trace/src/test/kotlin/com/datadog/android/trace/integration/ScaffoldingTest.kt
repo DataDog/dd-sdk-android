@@ -8,6 +8,7 @@ package com.datadog.android.trace.integration
 
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeConfigurator
+import com.datadog.android.trace.withinSpan
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -29,6 +30,8 @@ class ScaffoldingTest {
     fun `scaffolding test`(
         @Forgery fakeUserInfo: UserInfo
     ) {
-        println("Hello ${fakeUserInfo.name}…")
+        withinSpan("operation") {
+            println("Hello ${fakeUserInfo.name}…")
+        }
     }
 }

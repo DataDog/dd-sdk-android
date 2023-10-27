@@ -7,6 +7,7 @@
 package com.datadog.android.logs.integration
 
 import com.datadog.android.api.context.UserInfo
+import com.datadog.android.log.Logger
 import com.datadog.android.logs.integration.tests.elmyr.LogsIntegrationForgeConfigurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -29,6 +30,7 @@ class ScaffoldingTest {
     fun `scaffolding test`(
         @Forgery fakeUserInfo: UserInfo
     ) {
-        println("Hello ${fakeUserInfo.name}…")
+        val logger = Logger.Builder().build()
+        logger.i("Hello ${fakeUserInfo.name}…")
     }
 }
