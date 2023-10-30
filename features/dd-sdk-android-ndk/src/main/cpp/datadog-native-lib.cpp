@@ -13,13 +13,11 @@
 #include <string>
 
 #include "android/log.h"
-#include "crash-log.h"
 #include "backtrace-handler.h"
 #include "datetime-utils.h"
 #include "file-utils.h"
 #include "signal-monitor.h"
 #include "string-utils.h"
-
 
 static struct Context {
     std::string storage_dir;
@@ -46,6 +44,18 @@ void unlockMutex() {
 }
 
 #endif
+
+std::string serialize_crash_report(int signum, uint64_t timestamp, const char* signal_name, const char* error_message, const char* error_stacktrace) {
+    static const char* json_formatter = R"({"signal":%s,"timestamp":%s,"signal_name":"%s","message":"%s","stacktrace":"%s"})";
+
+    std::string serialized_log = stringutils::format(json_formatter,
+                                                     std::to_string(signum).c_str(),
+                                                     std::to_string(timestamp).c_str(),
+                                                     signal_name,
+                                                     error_message,
+                                                     error_stacktrace);
+    return serialized_log;
+}
 
 void write_crash_report(int signum,
                         const char *signal_name,
@@ -83,14 +93,9 @@ void write_crash_report(int signum,
     }
 
     // serialize the log
-    string file_path = main_context.storage_dir.append("/").append(crash_log_filename);
-    long long timestamp = time_since_epoch();
-    std::unique_ptr<CrashLog> crash_log_ptr = std::make_unique<CrashLog>(signum,
-                                                                         timestamp,
-                                                                         signal_name,
-                                                                         error_message,
-                                                                         error_stacktrace);
-    string serialized_log = crash_log_ptr->serialise();
+    const string file_path = main_context.storage_dir.append("/").append(crash_log_filename);
+    const uint64_t timestamp = time_since_epoch();
+    const std::string serialized_log = serialize_crash_report(signum, timestamp, signal_name, error_message, error_stacktrace);
 
     // write the log in the crash log file
     ofstream logs_file_output_stream(file_path.c_str(),

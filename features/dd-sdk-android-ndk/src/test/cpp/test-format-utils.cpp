@@ -7,11 +7,11 @@
 #include <stdexcept>
 #include <string>
 #include "greatest/greatest.h"
-#include "utils/format-utils.cpp"
+#include "utils/string-utils.h"
 
 TEST test_generates_formatted_string(void) {
-    const std::string formatter = "Given %s will return %s from %s";
-    const std::string formatted_string = strformat::format(formatter, "A", "B", "C");
+    const char* formatter = "Given %s will return %s from %s";
+    const std::string formatted_string = stringutils::format(formatter, "A", "B", "C");
     const std::string expected_formatted_string = "Given A will return B from C";
             ASSERT_STR_EQ(formatted_string.c_str(), expected_formatted_string.c_str());
             PASS();
@@ -20,7 +20,7 @@ TEST test_generates_formatted_string(void) {
 TEST test_does_not_throw_exception_if_not_enough_arguments(void) {
     std::runtime_error *expected_error = nullptr;
     try {
-        const std::string formatted_string = strformat::format("%s %s %s %s", "A", "B", "C");
+        const std::string formatted_string = stringutils::format("%s %s %s %s", "A", "B", "C");
     }
     catch (std::runtime_error &error) {
         expected_error = &error;
@@ -32,7 +32,7 @@ TEST test_does_not_throw_exception_if_not_enough_arguments(void) {
 TEST test_does_not_throw_exception_if_not_enough_arguments_placeholders(void) {
     std::runtime_error *expected_error = nullptr;
     try {
-        const std::string formatted_string = strformat::format("%s", "A", "B", "C");
+        const std::string formatted_string = stringutils::format("%s", "A", "B", "C");
     }
     catch (std::runtime_error &error) {
         expected_error = &error;
