@@ -89,7 +89,7 @@ namespace {
 
                 if (info.dli_saddr) {
                     uintptr_t symbol_offset = address - (uintptr_t)info.dli_saddr;
-                    backtrace.append( "+");
+                    backtrace.append("+");
                     backtrace.append(std::to_string(symbol_offset));
                 }
                 backtrace.append(")");
