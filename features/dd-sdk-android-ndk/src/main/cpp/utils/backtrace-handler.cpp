@@ -45,17 +45,6 @@ namespace {
         return state.current - buffer;
     }
 
-    void append_hex_address(uintptr_t address, std::string& string) {
-        char address_as_hexa[20];
-        // The ARM_32 processors will use an unsigned long long to represent a pointer so we will choose the
-        // String format that fits both ARM_32 and ARM_64 (lx).
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wformat"
-        std::snprintf(address_as_hexa, sizeof(address_as_hexa), "0x%08lx", address);
-#pragma clang diagnostic pop
-        string.append(address_as_hexa);
-    }
-
     void append_hex_address_no_prefix(uintptr_t address, std::string& string) {
         char address_as_hexa[20];
         // The ARM_32 processors will use an unsigned long long to represent a pointer so we will choose the
