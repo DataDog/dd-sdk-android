@@ -238,7 +238,7 @@ internal class ImageViewMapperTest {
                 border = anyOrNull(),
                 clipping = anyOrNull(),
                 prefix = anyOrNull(),
-                callback = anyOrNull()
+                imageWireframeHelperCallback = anyOrNull()
             )
         ).thenReturn(expectedWireframe)
 
@@ -263,7 +263,7 @@ internal class ImageViewMapperTest {
                 shapeStyle = anyOrNull(),
                 border = anyOrNull(),
                 clipping = anyOrNull(),
-                callback = argumentCaptor.capture(),
+                imageWireframeHelperCallback = argumentCaptor.capture(),
                 prefix = anyOrNull()
             )
 
@@ -318,7 +318,7 @@ internal class ImageViewMapperTest {
             border = anyOrNull(),
             clipping = anyOrNull(),
             prefix = anyOrNull(),
-            callback = anyOrNull()
+            imageWireframeHelperCallback = anyOrNull()
         )
         val allValues = captor.allValues
         assertThat(allValues[0]).isEqualTo(0)
@@ -353,7 +353,7 @@ internal class ImageViewMapperTest {
             border = anyOrNull(),
             clipping = anyOrNull(),
             prefix = anyOrNull(),
-            callback = anyOrNull()
+            imageWireframeHelperCallback = anyOrNull()
         )
         val allValues = captor.allValues
         assertThat(allValues[0]).isEqualTo(0)
@@ -446,7 +446,7 @@ internal class ImageViewMapperTest {
                 border = anyOrNull(),
                 clipping = anyOrNull(),
                 prefix = anyOrNull(),
-                callback = anyOrNull()
+                imageWireframeHelperCallback = anyOrNull()
             )
         )
             .thenReturn(expectedFirstWireframe)

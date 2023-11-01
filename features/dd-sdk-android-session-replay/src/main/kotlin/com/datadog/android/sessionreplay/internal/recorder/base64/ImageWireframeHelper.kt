@@ -47,7 +47,7 @@ internal class ImageWireframeHelper(
         drawable: Drawable? = null,
         shapeStyle: MobileSegment.ShapeStyle? = null,
         border: MobileSegment.ShapeBorder? = null,
-        callback: ImageWireframeHelperCallback? = null,
+        imageWireframeHelperCallback: ImageWireframeHelperCallback,
         prefix: String? = DRAWABLE_CHILD_NAME
     ): MobileSegment.Wireframe? {
         if (drawable == null) return null
@@ -84,7 +84,7 @@ internal class ImageWireframeHelper(
                 isEmpty = true
             )
 
-        callback?.onStart()
+        imageWireframeHelperCallback.onStart()
 
         base64Serializer.handleBitmap(
             applicationContext = applicationContext,
@@ -93,9 +93,9 @@ internal class ImageWireframeHelper(
             drawableWidth = width,
             drawableHeight = height,
             imageWireframe = imageWireframe,
-            object : Base64SerializerCallback {
+            base64SerializerCallback = object : Base64SerializerCallback {
                 override fun onReady() {
-                    callback?.onFinished()
+                    imageWireframeHelperCallback.onFinished()
                 }
             }
         )
@@ -108,7 +108,7 @@ internal class ImageWireframeHelper(
         view: TextView,
         mappingContext: MappingContext,
         prevWireframeIndex: Int,
-        callback: ImageWireframeHelperCallback?
+        imageWireframeHelperCallback: ImageWireframeHelperCallback
     ): MutableList<MobileSegment.Wireframe> {
         val result = mutableListOf<MobileSegment.Wireframe>()
         var wireframeIndex = prevWireframeIndex
@@ -147,7 +147,7 @@ internal class ImageWireframeHelper(
                     border = null,
                     usePIIPlaceholder = true,
                     clipping = MobileSegment.WireframeClip(),
-                    callback = callback
+                    imageWireframeHelperCallback = imageWireframeHelperCallback
                 )?.let { resultWireframe ->
                     result.add(resultWireframe)
                 }

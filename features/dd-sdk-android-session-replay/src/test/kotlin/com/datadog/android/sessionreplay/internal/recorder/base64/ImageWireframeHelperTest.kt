@@ -69,7 +69,7 @@ internal class ImageWireframeHelperTest {
     lateinit var mockImageCompression: ImageCompression
 
     @Mock
-    lateinit var mockCallback: ImageWireframeHelperCallback
+    lateinit var mockImageWireframeHelperCallback: ImageWireframeHelperCallback
 
     @Mock
     lateinit var mockImageTypeResolver: ImageTypeResolver
@@ -183,12 +183,12 @@ internal class ImageWireframeHelperTest {
             width = 0,
             height = 0,
             usePIIPlaceholder = true,
-            callback = mockCallback
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
         assertThat(wireframe).isNull()
-        verifyNoInteractions(mockCallback)
+        verifyNoInteractions(mockImageWireframeHelperCallback)
     }
 
     @Test
@@ -209,12 +209,12 @@ internal class ImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            callback = mockCallback
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
         assertThat(wireframe).isNull()
-        verifyNoInteractions(mockCallback)
+        verifyNoInteractions(mockImageWireframeHelperCallback)
     }
 
     @Test
@@ -234,7 +234,7 @@ internal class ImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            callback = mockCallback
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
@@ -258,7 +258,7 @@ internal class ImageWireframeHelperTest {
             shapeStyle = null,
             border = null,
             usePIIPlaceholder = true,
-            callback = mockCallback
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
@@ -300,7 +300,7 @@ internal class ImageWireframeHelperTest {
             drawable = mockDrawable,
             shapeStyle = mockShapeStyle,
             border = mockBorder,
-            callback = mockCallback,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback,
             usePIIPlaceholder = true,
             clipping = stubWireframeClip
         )
@@ -319,9 +319,9 @@ internal class ImageWireframeHelperTest {
         argumentCaptor.allValues.forEach {
             it.onReady()
         }
-        verify(mockCallback).onStart()
-        verify(mockCallback).onFinished()
-        verifyNoMoreInteractions(mockCallback)
+        verify(mockImageWireframeHelperCallback).onStart()
+        verify(mockImageWireframeHelperCallback).onFinished()
+        verifyNoMoreInteractions(mockImageWireframeHelperCallback)
         assertThat(wireframe).isEqualTo(expectedWireframe)
     }
 
@@ -340,11 +340,11 @@ internal class ImageWireframeHelperTest {
             mockTextView,
             mockMappingContext,
             0,
-            callback = mockCallback
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
-        verifyNoInteractions(mockCallback)
+        verifyNoInteractions(mockImageWireframeHelperCallback)
         assertThat(wireframes).isEmpty()
     }
 
@@ -368,7 +368,7 @@ internal class ImageWireframeHelperTest {
             mockTextView,
             mockMappingContext,
             0,
-            callback = mockCallback
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
@@ -386,8 +386,8 @@ internal class ImageWireframeHelperTest {
         argumentCaptor.allValues.forEach {
             it.onReady()
         }
-        verify(mockCallback).onStart()
-        verify(mockCallback).onFinished()
+        verify(mockImageWireframeHelperCallback).onStart()
+        verify(mockImageWireframeHelperCallback).onFinished()
         assertThat(wireframes.size).isEqualTo(1)
     }
 
@@ -412,7 +412,7 @@ internal class ImageWireframeHelperTest {
             mockTextView,
             mockMappingContext,
             0,
-            callback = mockCallback
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
@@ -430,8 +430,8 @@ internal class ImageWireframeHelperTest {
         argumentCaptor.allValues.forEach {
             it.onReady()
         }
-        verify(mockCallback, times(2)).onStart()
-        verify(mockCallback, times(2)).onFinished()
+        verify(mockImageWireframeHelperCallback, times(2)).onStart()
+        verify(mockImageWireframeHelperCallback, times(2)).onFinished()
         assertThat(wireframes.size).isEqualTo(2)
     }
 
@@ -446,11 +446,11 @@ internal class ImageWireframeHelperTest {
             mockTextView,
             mockMappingContext,
             0,
-            callback = mockCallback
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
-        verifyNoInteractions(mockCallback)
+        verifyNoInteractions(mockImageWireframeHelperCallback)
         assertThat(wireframes).isEmpty()
     }
 
@@ -480,7 +480,8 @@ internal class ImageWireframeHelperTest {
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
-            usePIIPlaceholder = true
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
@@ -492,7 +493,7 @@ internal class ImageWireframeHelperTest {
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
             imageWireframe = any(),
-            callback = any()
+            base64SerializerCallback = any()
         )
         assertThat(captor.allValues).containsExactly(fakeViewWidth, fakeViewHeight)
     }
@@ -510,7 +511,8 @@ internal class ImageWireframeHelperTest {
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
-            usePIIPlaceholder = true
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
@@ -522,7 +524,7 @@ internal class ImageWireframeHelperTest {
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
             imageWireframe = any(),
-            callback = any()
+            base64SerializerCallback = any()
 
         )
         assertThat(captor.allValues).containsExactly(fakeDrawableWidth, fakeDrawableHeight)
@@ -566,7 +568,8 @@ internal class ImageWireframeHelperTest {
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
-            usePIIPlaceholder = true
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         ) as MobileSegment.Wireframe.PlaceholderWireframe
 
         // Then
@@ -577,7 +580,7 @@ internal class ImageWireframeHelperTest {
             drawableWidth = any(),
             drawableHeight = any(),
             imageWireframe = any(),
-            callback = any()
+            base64SerializerCallback = any()
         )
 
         assertThat(isCloseTo(result.x.toInt(), fakeGlobalX)).isTrue
@@ -600,7 +603,8 @@ internal class ImageWireframeHelperTest {
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
-            usePIIPlaceholder = true
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
@@ -611,7 +615,7 @@ internal class ImageWireframeHelperTest {
             drawableWidth = any(),
             drawableHeight = any(),
             imageWireframe = any(),
-            callback = any()
+            base64SerializerCallback = any()
         )
     }
 
@@ -631,7 +635,8 @@ internal class ImageWireframeHelperTest {
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
-            usePIIPlaceholder = true
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then

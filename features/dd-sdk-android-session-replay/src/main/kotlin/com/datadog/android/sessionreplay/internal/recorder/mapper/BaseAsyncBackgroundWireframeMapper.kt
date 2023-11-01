@@ -137,7 +137,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<T : View>(
             border = null,
             prefix = PREFIX_BACKGROUND_DRAWABLE,
             usePIIPlaceholder = false,
-            callback = object : ImageWireframeHelperCallback {
+            imageWireframeHelperCallback = object : ImageWireframeHelperCallback {
                 override fun onFinished() {
                     asyncJobStatusCallback.jobFinished()
                 }

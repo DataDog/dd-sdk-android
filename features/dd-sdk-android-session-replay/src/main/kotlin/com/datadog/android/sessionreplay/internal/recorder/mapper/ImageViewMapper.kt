@@ -63,7 +63,7 @@ internal class ImageViewMapper(
             border = null,
             clipping = clipping,
             prefix = ImageWireframeHelper.DRAWABLE_CHILD_NAME,
-            callback = object : ImageWireframeHelperCallback {
+            imageWireframeHelperCallback = object : ImageWireframeHelperCallback {
                 override fun onFinished() {
                     asyncJobStatusCallback.jobFinished()
                 }

@@ -350,7 +350,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
                 border = anyOrNull(),
                 clipping = anyOrNull(),
                 prefix = anyOrNull(),
-                callback = anyOrNull()
+                imageWireframeHelperCallback = anyOrNull()
             )
         ).thenReturn(fakeBackgroundWireframe)
 
@@ -390,7 +390,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
                 shapeStyle = anyOrNull(),
                 border = anyOrNull(),
                 clipping = anyOrNull(),
-                callback = capture(),
+                imageWireframeHelperCallback = capture(),
                 prefix = anyOrNull()
             )
             allValues.forEach() {

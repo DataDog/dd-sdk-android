@@ -13,15 +13,14 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.StateListDrawable
 import android.util.DisplayMetrics
-import android.widget.ImageView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.base64.Cache.Companion.DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS
 import com.datadog.android.sessionreplay.internal.utils.Base64Utils
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
+import com.datadog.android.sessionreplay.internal.utils.DrawableUtils.Companion.MAX_BITMAP_SIZE_IN_BYTES
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -89,9 +88,6 @@ internal class Base64SerializerTest {
     lateinit var mockDisplayMetrics: DisplayMetrics
 
     @Mock
-    lateinit var mockImageView: ImageView
-
-    @Mock
     lateinit var mockDrawable: Drawable
 
     @Mock
@@ -111,9 +107,6 @@ internal class Base64SerializerTest {
 
     @IntForgery(min = 1)
     var fakeBitmapHeight: Int = 0
-
-    @FloatForgery(min = 0f, max = 1f)
-    var mockDensity: Float = 0f
 
     @Forgery
     lateinit var fakeImageWireframe: MobileSegment.Wireframe.ImageWireframe
@@ -137,11 +130,15 @@ internal class Base64SerializerTest {
                 drawableHeight = any(),
                 displayMetrics = any(),
                 requestedSizeInBytes = anyOrNull(),
-                config = anyOrNull()
+                config = anyOrNull(),
+                base64SerializerCallback = any(),
+                bitmapCreationCallback = any()
             )
-        ).thenReturn(mockBitmap)
+        ).then {
+            (it.arguments[7] as Base64Serializer.BitmapCreationCallback).onReady(mockBitmap)
+        }
 
-        whenever(mockExecutorService.submit(any())).then {
+        whenever(mockExecutorService.execute(any())).then {
             (it.arguments[0] as Runnable).run()
             mock<Future<Boolean>>()
         }
@@ -164,9 +161,11 @@ internal class Base64SerializerTest {
                 drawableHeight = any(),
                 displayMetrics = any(),
                 requestedSizeInBytes = anyOrNull(),
-                config = anyOrNull()
+                config = anyOrNull(),
+                base64SerializerCallback = any(),
+                bitmapCreationCallback = any()
             )
-        ).thenReturn(null)
+        ).then { mockSerializerCallback.onReady() }
 
         // When
         testedBase64Serializer.handleBitmap(
@@ -176,7 +175,7 @@ internal class Base64SerializerTest {
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             imageWireframe = fakeImageWireframe,
-            callback = mockSerializerCallback
+            base64SerializerCallback = mockSerializerCallback
         )
 
         // Then
@@ -185,18 +184,6 @@ internal class Base64SerializerTest {
 
     @Test
     fun `M callback with finishProcessingImage W handleBitmap() { created bmp async }`() {
-        // Given
-        whenever(
-            mockDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-                drawable = any(),
-                drawableWidth = any(),
-                drawableHeight = any(),
-                displayMetrics = any(),
-                requestedSizeInBytes = anyOrNull(),
-                config = anyOrNull()
-            )
-        ).thenReturn(mockBitmap)
-
         // When
         testedBase64Serializer.handleBitmap(
             applicationContext = mockApplicationContext,
@@ -205,7 +192,7 @@ internal class Base64SerializerTest {
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             imageWireframe = fakeImageWireframe,
-            callback = mockSerializerCallback
+            base64SerializerCallback = mockSerializerCallback
 
         )
 
@@ -221,17 +208,6 @@ internal class Base64SerializerTest {
         val fakeBase64String = forge.anAsciiString()
         whenever(mockBase64LRUCache.get(mockDrawable)).thenReturn(fakeBase64String)
 
-        whenever(
-            mockDrawableUtils.createBitmapOfApproxSizeFromDrawable(
-                drawable = any(),
-                drawableWidth = any(),
-                drawableHeight = any(),
-                displayMetrics = any(),
-                requestedSizeInBytes = anyOrNull(),
-                config = anyOrNull()
-            )
-        )
-            .thenReturn(mockBitmap)
         whenever(mockWebPImageCompression.compressBitmap(any()))
             .thenReturn(fakeByteArray)
 
@@ -243,7 +219,7 @@ internal class Base64SerializerTest {
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             imageWireframe = fakeImageWireframe,
-            callback = mockSerializerCallback
+            base64SerializerCallback = mockSerializerCallback
         )
 
         // Then
@@ -261,7 +237,8 @@ internal class Base64SerializerTest {
                 drawable = mockDrawable,
                 drawableWidth = mockDrawable.intrinsicWidth,
                 drawableHeight = mockDrawable.intrinsicHeight,
-                imageWireframe = fakeImageWireframe
+                imageWireframe = fakeImageWireframe,
+                base64SerializerCallback = mockSerializerCallback
             )
         }
 
@@ -290,7 +267,8 @@ internal class Base64SerializerTest {
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
         )
 
         // Then
@@ -318,7 +296,8 @@ internal class Base64SerializerTest {
                 drawable = mockDrawable,
                 drawableWidth = mockDrawable.intrinsicWidth,
                 drawableHeight = mockDrawable.intrinsicHeight,
-                imageWireframe = fakeImageWireframe
+                imageWireframe = fakeImageWireframe,
+                base64SerializerCallback = mockSerializerCallback
             )
         }
 
@@ -338,7 +317,8 @@ internal class Base64SerializerTest {
             drawable = mockDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
         )
 
         // Then
@@ -348,7 +328,9 @@ internal class Base64SerializerTest {
             drawableHeight = any(),
             displayMetrics = any(),
             requestedSizeInBytes = anyOrNull(),
-            config = anyOrNull()
+            config = anyOrNull(),
+            base64SerializerCallback = any(),
+            bitmapCreationCallback = any()
         )
     }
 
@@ -373,7 +355,8 @@ internal class Base64SerializerTest {
             drawable = mockStateListDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
         )
 
         // Then
@@ -392,7 +375,8 @@ internal class Base64SerializerTest {
             drawable = mockStateListDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
         )
 
         // Then
@@ -411,7 +395,8 @@ internal class Base64SerializerTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
         )
 
         // Then
@@ -421,7 +406,9 @@ internal class Base64SerializerTest {
             drawableHeight = any(),
             displayMetrics = any(),
             requestedSizeInBytes = anyOrNull(),
-            config = anyOrNull()
+            config = anyOrNull(),
+            base64SerializerCallback = any(),
+            bitmapCreationCallback = any()
         )
     }
 
@@ -437,7 +424,8 @@ internal class Base64SerializerTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
         )
 
         // Then
@@ -447,7 +435,9 @@ internal class Base64SerializerTest {
             drawableHeight = any(),
             displayMetrics = any(),
             requestedSizeInBytes = anyOrNull(),
-            config = anyOrNull()
+            config = anyOrNull(),
+            base64SerializerCallback = any(),
+            bitmapCreationCallback = any()
         )
     }
 
@@ -460,7 +450,8 @@ internal class Base64SerializerTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
         )
 
         // Then
@@ -482,7 +473,8 @@ internal class Base64SerializerTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
         )
 
         // Then
@@ -496,7 +488,9 @@ internal class Base64SerializerTest {
             drawableHeight = any(),
             displayMetrics = any(),
             requestedSizeInBytes = anyOrNull(),
-            config = anyOrNull()
+            config = anyOrNull(),
+            base64SerializerCallback = any(),
+            bitmapCreationCallback = any()
         )
     }
 
@@ -512,7 +506,8 @@ internal class Base64SerializerTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
         )
 
         // Then
@@ -526,7 +521,9 @@ internal class Base64SerializerTest {
             drawableHeight = any(),
             displayMetrics = any(),
             requestedSizeInBytes = anyOrNull(),
-            config = anyOrNull()
+            config = anyOrNull(),
+            base64SerializerCallback = any(),
+            bitmapCreationCallback = any()
         )
     }
 
@@ -543,7 +540,8 @@ internal class Base64SerializerTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
         )
 
         // Then
@@ -565,7 +563,8 @@ internal class Base64SerializerTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
         )
 
         // Then
@@ -584,7 +583,8 @@ internal class Base64SerializerTest {
             drawable = mockBitmapDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
         )
 
         // Then
@@ -603,7 +603,8 @@ internal class Base64SerializerTest {
             drawable = mockLayerDrawable,
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
-            imageWireframe = fakeImageWireframe
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
         )
 
         // Then
@@ -625,7 +626,7 @@ internal class Base64SerializerTest {
                 drawableWidth = fakeBitmapWidth,
                 drawableHeight = fakeBitmapHeight,
                 imageWireframe = fakeImageWireframe,
-                callback = mockFirstCallback
+                base64SerializerCallback = mockFirstCallback
             )
             Thread.sleep(1500)
             countDownLatch.countDown()
@@ -638,7 +639,7 @@ internal class Base64SerializerTest {
                 drawableWidth = fakeBitmapWidth,
                 drawableHeight = fakeBitmapHeight,
                 imageWireframe = fakeImageWireframe,
-                callback = mockSecondCallback
+                base64SerializerCallback = mockSecondCallback
             )
             Thread.sleep(500)
             countDownLatch.countDown()
@@ -652,6 +653,72 @@ internal class Base64SerializerTest {
         countDownLatch.await()
         verify(mockFirstCallback).onReady()
         verify(mockSecondCallback).onReady()
+    }
+
+    @Test
+    fun `M failover to manual bitmap creation W handleBitmap { bitmapDrawable returned empty bytearray }`(
+        @Mock mockCreatedBitmap: Bitmap
+    ) {
+        // Given
+        whenever(mockBitmapDrawable.bitmap).thenReturn(mockBitmap)
+        whenever(mockBitmap.width).thenReturn(fakeBitmapWidth)
+        whenever(mockBitmap.height).thenReturn(fakeBitmapHeight)
+
+        whenever(mockBitmap.isRecycled)
+            .thenReturn(true)
+            .thenReturn(false)
+
+        val emptyByteArray = ByteArray(0)
+        whenever(mockWebPImageCompression.compressBitmap(mockBitmap))
+            .thenReturn(emptyByteArray)
+
+        whenever(mockWebPImageCompression.compressBitmap(mockCreatedBitmap))
+            .thenReturn(fakeByteArray)
+
+        whenever(mockDrawableUtils.createScaledBitmap(mockBitmap))
+            .thenReturn(mockBitmap)
+            .thenReturn(mockCreatedBitmap)
+
+        whenever(mockBase64Utils.serializeToBase64String(fakeByteArray))
+            .thenReturn(fakeBase64String)
+
+        // When
+        testedBase64Serializer.handleBitmap(
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            drawable = mockBitmapDrawable,
+            drawableWidth = fakeBitmapWidth,
+            drawableHeight = fakeBitmapHeight,
+            imageWireframe = fakeImageWireframe,
+            base64SerializerCallback = mockSerializerCallback
+        )
+
+        val drawableCaptor = argumentCaptor<Drawable>()
+        val intCaptor = argumentCaptor<Int>()
+        val displayMetricsCaptor = argumentCaptor<DisplayMetrics>()
+        val configCaptor = argumentCaptor<Bitmap.Config>()
+        val base64SerializerCallbackCaptor = argumentCaptor<Base64SerializerCallback>()
+        val bitmapCreationCallbackCaptor = argumentCaptor<Base64Serializer.BitmapCreationCallback>()
+
+        // Then
+        verify(mockDrawableUtils, times(1)).createBitmapOfApproxSizeFromDrawable(
+            drawable = drawableCaptor.capture(),
+            drawableWidth = intCaptor.capture(),
+            drawableHeight = intCaptor.capture(),
+            displayMetrics = displayMetricsCaptor.capture(),
+            requestedSizeInBytes = intCaptor.capture(),
+            config = configCaptor.capture(),
+            base64SerializerCallback = base64SerializerCallbackCaptor.capture(),
+            bitmapCreationCallback = bitmapCreationCallbackCaptor.capture()
+        )
+
+        assertThat(drawableCaptor.firstValue).isEqualTo(mockBitmapDrawable)
+        assertThat(intCaptor.firstValue).isEqualTo(fakeBitmapWidth)
+        assertThat(intCaptor.secondValue).isEqualTo(fakeBitmapHeight)
+        assertThat(displayMetricsCaptor.firstValue).isEqualTo(mockDisplayMetrics)
+        assertThat(intCaptor.thirdValue).isEqualTo(MAX_BITMAP_SIZE_IN_BYTES)
+        assertThat(configCaptor.firstValue).isEqualTo(Bitmap.Config.ARGB_8888)
+        assertThat(base64SerializerCallbackCaptor.firstValue).isEqualTo(mockSerializerCallback)
     }
 
     private fun createBase64Serializer(): Base64Serializer {
