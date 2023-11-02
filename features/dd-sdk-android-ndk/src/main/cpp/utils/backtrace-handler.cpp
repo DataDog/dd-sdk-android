@@ -45,53 +45,50 @@ namespace {
         return state.current - buffer;
     }
 
-    std::string address_to_hexa(uintptr_t address) {
+    void append_hex_address_no_prefix(uintptr_t address, std::string& string) {
         char address_as_hexa[20];
         // The ARM_32 processors will use an unsigned long long to represent a pointer so we will choose the
         // String format that fits both ARM_32 and ARM_64 (lx).
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wformat"
-        std::snprintf(address_as_hexa, sizeof(address_as_hexa), "0x%lx", address);
+        std::snprintf(address_as_hexa, sizeof(address_as_hexa), "%08lx", address);
 #pragma clang diagnostic pop
-        return std::string(address_as_hexa);
+        string.append(address_as_hexa);
     }
 
     void get_info_from_address(size_t index,
                                const uintptr_t address,
-                               std::string *backtrace) {
+                               std::string& backtrace) {
         Dl_info info;
         int fetch_info_success = dladdr(reinterpret_cast<void *>(address), &info);
-        backtrace->append(std::to_string(index));
-        if (fetch_info_success) {
+        backtrace.append(std::to_string(index));
+        backtrace.append("  pc ");
+        // No reason to output relative pointers if we don't have both the name
+        // and base address of the shared object
+        if (fetch_info_success && info.dli_fbase && info.dli_fname) {
+            uintptr_t offset = address - (uintptr_t)info.dli_fbase;
+            append_hex_address_no_prefix(offset, backtrace);
 
-            if (info.dli_fname) {
-                backtrace->append(" ");
-                backtrace->append(info.dli_fname);
-            }
-
-            backtrace->append(" ");
-            backtrace->append(address_to_hexa(address));
+            backtrace.append("  ");
+            backtrace.append(info.dli_fname);
 
             if (info.dli_sname) {
-                backtrace->append(" ");
-                backtrace->append(info.dli_sname);
-            }
+                backtrace.append(" (");
+                backtrace.append(info.dli_sname);
 
-            if (info.dli_fbase) {
-                backtrace->append(" ");
-                backtrace->append("+");
-                backtrace->append(" ");
-                auto address_offset = address - reinterpret_cast<uintptr_t>(info.dli_fbase);
-                backtrace->append(std::to_string(address_offset));
+                if (info.dli_saddr) {
+                    uintptr_t symbol_offset = address - (uintptr_t)info.dli_saddr;
+                    backtrace.append("+");
+                    backtrace.append(std::to_string(symbol_offset));
+                }
+                backtrace.append(")");
             }
         } else {
-            backtrace->append(" ");
-            backtrace->append(address_to_hexa(address));
+            append_hex_address_no_prefix(address, backtrace);
         }
 
-        backtrace->append("\\n");
+        backtrace.append("\\n");
     }
-
 }
 
 bool copyString(const std::string &str, char *ptr, size_t max_size) {
@@ -109,10 +106,16 @@ bool generate_backtrace(char *backtrace_ptr, size_t start_index, size_t max_size
     // the buffer
     const size_t number_of_captured_frames = capture_backtrace(buffer, max_stack_frames);
     std::string backtrace;
+    backtrace.reserve(max_size);
     for (size_t idx = start_index; idx < number_of_captured_frames; ++idx) {
         // we will iterate through all the stack addresses and translate each address in
         // readable information
-        get_info_from_address(idx - start_index, buffer[idx], &backtrace);
+        get_info_from_address(idx - start_index, buffer[idx], backtrace);
+        if (backtrace.length() > max_size) {
+            // No reason to continue, we're at the max size we're willing to dedicate to
+            // this string
+            break;
+        }
     }
     return copyString(backtrace, backtrace_ptr, max_size);
 }

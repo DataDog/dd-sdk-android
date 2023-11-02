@@ -9,7 +9,6 @@
 #ifndef DATADOG_NATIVE_LIB_H
 #define DATADOG_NATIVE_LIB_H
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,4 +31,5 @@ void unlockMutex();
 #ifdef __cplusplus
 }
 #endif
+
 #endif
