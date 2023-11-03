@@ -12,7 +12,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.Logger
@@ -240,6 +242,8 @@ class SampleApplication : Application() {
             variant = BuildConfig.FLAVOR
         )
             .setFirstPartyHosts(tracedHosts)
+            .setBatchSize(BatchSize.SMALL)
+            .setUploadFrequency(UploadFrequency.FREQUENT)
 
         try {
             configBuilder.useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
