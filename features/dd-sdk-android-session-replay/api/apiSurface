@@ -43,6 +43,7 @@ class com.datadog.android.sessionreplay.internal.recorder.mapper.MaskTextViewMap
 open class com.datadog.android.sessionreplay.internal.recorder.mapper.TextViewMapper : BaseAsyncBackgroundWireframeMapper<android.widget.TextView>
   constructor()
   override fun map(android.widget.TextView, com.datadog.android.sessionreplay.internal.recorder.MappingContext, com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
+interface com.datadog.android.sessionreplay.internal.recorder.mapper.TraverseAllChildrenMapper<T: android.view.View, S: com.datadog.android.sessionreplay.model.MobileSegment.Wireframe> : WireframeMapper<T, S>
 interface com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper<T: android.view.View, S: com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
   fun map(T, com.datadog.android.sessionreplay.internal.recorder.MappingContext, com.datadog.android.sessionreplay.internal.AsyncJobStatusCallback = NoOpAsyncJobStatusCallback()): List<S>
 object com.datadog.android.sessionreplay.utils.StringUtils

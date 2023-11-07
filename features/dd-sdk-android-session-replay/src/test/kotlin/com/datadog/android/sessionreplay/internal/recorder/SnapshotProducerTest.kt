@@ -69,7 +69,7 @@ internal class SnapshotProducerTest {
         val mockRoot: View = mock()
         val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
             fakeViewWireframes,
-            TreeViewTraversal.TraversalStrategy.STOP_AND_DROP_NODE
+            TraversalStrategy.STOP_AND_DROP_NODE
         )
         whenever(mockTreeViewTraversal.traverse(eq(mockRoot), any(), any()))
             .thenReturn(fakeTraversedTreeView)
@@ -93,7 +93,7 @@ internal class SnapshotProducerTest {
         val fakeRoot = forge.aMockView<View>()
         val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
             fakeViewWireframes,
-            TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE
+            TraversalStrategy.STOP_AND_RETURN_NODE
         )
         whenever(mockTreeViewTraversal.traverse(eq(fakeRoot), any(), any()))
             .thenReturn(fakeTraversedTreeView)
@@ -118,7 +118,7 @@ internal class SnapshotProducerTest {
         val fakeRoot = forge.aMockViewWithChildren(2, 0, 2)
         val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
             fakeViewWireframes,
-            TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE
+            TraversalStrategy.STOP_AND_RETURN_NODE
         )
         whenever(mockTreeViewTraversal.traverse(any(), any(), any()))
             .thenReturn(fakeTraversedTreeView)
@@ -143,7 +143,7 @@ internal class SnapshotProducerTest {
         val fakeRoot = forge.aMockViewWithChildren(2, 0, 2)
         val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
             fakeViewWireframes,
-            TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
+            TraversalStrategy.TRAVERSE_ALL_CHILDREN
         )
         whenever(mockTreeViewTraversal.traverse(any(), any(), any()))
             .thenReturn(fakeTraversedTreeView)
@@ -172,7 +172,7 @@ internal class SnapshotProducerTest {
         }
         val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
             fakeViewWireframes,
-            TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
+            TraversalStrategy.TRAVERSE_ALL_CHILDREN
         )
         whenever(mockTreeViewTraversal.traverse(any(), any(), any())).thenReturn(fakeTraversedTreeView)
 
@@ -204,7 +204,7 @@ internal class SnapshotProducerTest {
         }
         val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
             fakeViewWireframes,
-            TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
+            TraversalStrategy.TRAVERSE_ALL_CHILDREN
         )
         whenever(mockTreeViewTraversal.traverse(any(), any(), any())).thenReturn(fakeTraversedTreeView)
         whenever(mockOptionSelectorDetector.isOptionSelector(mockRoot)).thenReturn(true)
@@ -237,7 +237,7 @@ internal class SnapshotProducerTest {
         }
         val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
             fakeViewWireframes,
-            TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
+            TraversalStrategy.TRAVERSE_ALL_CHILDREN
         )
         whenever(mockTreeViewTraversal.traverse(any(), any(), any())).thenReturn(fakeTraversedTreeView)
         whenever(mockOptionSelectorDetector.isOptionSelector(mockRoot)).thenReturn(false)
@@ -267,14 +267,14 @@ internal class SnapshotProducerTest {
         val fakeRoot = forge.aMockViewWithChildren(2, 0, 2)
         val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
             fakeViewWireframes,
-            TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
+            TraversalStrategy.TRAVERSE_ALL_CHILDREN
         )
         whenever(mockTreeViewTraversal.traverse(any(), any(), any()))
             .thenReturn(fakeTraversedTreeView)
             .thenReturn(
                 fakeTraversedTreeView.copy(
                     nextActionStrategy =
-                    TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE
+                    TraversalStrategy.STOP_AND_RETURN_NODE
                 )
             )
         var expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
@@ -303,14 +303,14 @@ internal class SnapshotProducerTest {
         val fakeRoot = forge.aMockViewWithChildren(2, 0, 2)
         val fakeTraversedTreeView = TreeViewTraversal.TraversedTreeView(
             fakeViewWireframes,
-            TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN
+            TraversalStrategy.TRAVERSE_ALL_CHILDREN
         )
         whenever(mockTreeViewTraversal.traverse(any(), any(), any()))
             .thenReturn(fakeTraversedTreeView)
             .thenReturn(
                 fakeTraversedTreeView.copy(
                     nextActionStrategy =
-                    TreeViewTraversal.TraversalStrategy.STOP_AND_DROP_NODE
+                    TraversalStrategy.STOP_AND_DROP_NODE
                 )
             )
         val expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)

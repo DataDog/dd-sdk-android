@@ -17,6 +17,7 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.MapperTypeWrapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.TraverseAllChildrenMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -90,7 +91,9 @@ internal class TreeViewTraversalTest {
         )
         val fakeTypes: List<Class<*>> = mockViews.map { it::class.java }
         val fakeTypeToMapperMap: Map<Class<*>, WireframeMapper<View, *>> = fakeTypes
-            .associateWith { mock() }
+            .associateWith {
+                mock()
+            }
         val fakeTypeMapperWrappers = fakeTypes.map {
             val mapper = fakeTypeToMapperMap[it]!!
             MapperTypeWrapper(it, mapper)
@@ -121,7 +124,7 @@ internal class TreeViewTraversalTest {
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
         assertThat(traversedTreeView.nextActionStrategy)
-            .isEqualTo(TreeViewTraversal.TraversalStrategy.STOP_AND_RETURN_NODE)
+            .isEqualTo(TraversalStrategy.STOP_AND_RETURN_NODE)
     }
 
     @Test
@@ -161,7 +164,58 @@ internal class TreeViewTraversalTest {
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
         assertThat(traversedTreeView.nextActionStrategy)
-            .isEqualTo(TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN)
+            .isEqualTo(TraversalStrategy.TRAVERSE_ALL_CHILDREN)
+    }
+
+    @Test
+    fun `M use TRAVERSE_ALL_CHILDREN traversal strategy W traverse { TraverseAllChildrenMapper }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewMappedWireframes: List<MobileSegment.Wireframe> = forge.aList { getForgery() }
+        val mockViews: List<View> = listOf(
+            forge.aMockView<RadioButton>(),
+            forge.aMockView<CompoundButton>(),
+            forge.aMockView<CheckedTextView>(),
+            forge.aMockView<Button>(),
+            forge.aMockView<TextView>()
+        )
+        val fakeTypes: List<Class<*>> = mockViews.map { it::class.java }
+        val fakeTypeToMapperMap: Map<Class<*>, TraverseAllChildrenMapper<View, *>> = fakeTypes
+            .associateWith {
+                mock()
+            }
+        val fakeTypeMapperWrappers = fakeTypes.map {
+            val mapper = fakeTypeToMapperMap[it]!!
+            MapperTypeWrapper(it, mapper)
+        }
+        val mockView = forge.anElementFrom(mockViews)
+        whenever(
+            fakeTypeToMapperMap[mockView::class.java]!!.map(
+                eq(mockView),
+                eq(fakeMappingContext),
+                any()
+            )
+        )
+            .thenReturn(fakeViewMappedWireframes)
+        testedTreeViewTraversal = TreeViewTraversal(
+            fakeTypeMapperWrappers,
+            mockViewMapper,
+            mockDecorViewMapper,
+            mockViewUtilsInternal
+        )
+
+        // When
+        val traversedTreeView = testedTreeViewTraversal.traverse(
+            mockView,
+            fakeMappingContext,
+            mockRecordedDataQueueRefs
+        )
+
+        // Then
+        assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
+        assertThat(traversedTreeView.nextActionStrategy)
+            .isEqualTo(TraversalStrategy.TRAVERSE_ALL_CHILDREN)
     }
 
     @Test
@@ -193,7 +247,7 @@ internal class TreeViewTraversalTest {
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
         assertThat(traversedTreeView.nextActionStrategy)
-            .isEqualTo(TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN)
+            .isEqualTo(TraversalStrategy.TRAVERSE_ALL_CHILDREN)
     }
 
     @Test
@@ -226,7 +280,7 @@ internal class TreeViewTraversalTest {
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
         assertThat(traversedTreeView.nextActionStrategy)
-            .isEqualTo(TreeViewTraversal.TraversalStrategy.TRAVERSE_ALL_CHILDREN)
+            .isEqualTo(TraversalStrategy.TRAVERSE_ALL_CHILDREN)
     }
 
     // endregion
@@ -250,7 +304,7 @@ internal class TreeViewTraversalTest {
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEmpty()
         assertThat(traversedTreeView.nextActionStrategy)
-            .isEqualTo(TreeViewTraversal.TraversalStrategy.STOP_AND_DROP_NODE)
+            .isEqualTo(TraversalStrategy.STOP_AND_DROP_NODE)
     }
 
     // endregion
@@ -274,7 +328,7 @@ internal class TreeViewTraversalTest {
         // Then
         assertThat(traversedTreeView.mappedWireframes).isEmpty()
         assertThat(traversedTreeView.nextActionStrategy)
-            .isEqualTo(TreeViewTraversal.TraversalStrategy.STOP_AND_DROP_NODE)
+            .isEqualTo(TraversalStrategy.STOP_AND_DROP_NODE)
     }
 
     // endregion
