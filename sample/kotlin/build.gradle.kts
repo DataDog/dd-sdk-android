@@ -34,6 +34,7 @@ sqldelight {
     }
 }
 
+@Suppress("StringLiteralDuplication")
 android {
     compileSdk = AndroidConfig.TARGET_SDK
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
@@ -111,6 +112,31 @@ android {
         }
     }
     ndkVersion = Dependencies.Versions.Ndk
+
+    val e2ePassword = System.getenv("E2E_STORE_PASSWD")
+    signingConfigs {
+        if (e2ePassword != null) {
+            create("release") {
+                storeFile = File(project.rootDir, "sample-android.keystore")
+                storePassword = e2ePassword
+                keyAlias = "dd-sdk-android"
+                keyPassword = e2ePassword
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("debug") {
+            isMinifyEnabled = false
+        }
+
+        getByName("release") {
+            isMinifyEnabled = false
+            if (e2ePassword != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+    }
 }
 
 dependencies {
