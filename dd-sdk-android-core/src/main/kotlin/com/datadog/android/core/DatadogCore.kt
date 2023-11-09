@@ -427,7 +427,9 @@ internal class DatadogCore(
                 "batch_size" to configuration.coreConfig.batchSize.windowDurationMs,
                 "batch_upload_frequency" to configuration.coreConfig.uploadFrequency.baseStepMs,
                 "use_proxy" to (configuration.coreConfig.proxy != null),
-                "use_local_encryption" to (configuration.coreConfig.encryption != null)
+                "use_local_encryption" to (configuration.coreConfig.encryption != null),
+                "batch_processing_level" to
+                    configuration.coreConfig.batchProcessingLevel.maxBatchesPerUploadJob
             )
             rumFeature.sendEvent(coreConfigurationEvent)
         }

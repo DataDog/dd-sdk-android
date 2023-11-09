@@ -262,8 +262,8 @@ internal class TelemetryEventHandler(
                     trackNetworkRequests = trackNetworkRequests,
                     sessionReplaySampleRate = sessionReplaySampleRate,
                     defaultPrivacyLevel = sessionReplayPrivacy,
-                    startSessionReplayRecordingManually = startSessionReplayManually
-
+                    startSessionReplayRecordingManually = startSessionReplayManually,
+                    batchProcessingLevel = coreConfiguration.batchProcessingLevel
                 )
             )
         )

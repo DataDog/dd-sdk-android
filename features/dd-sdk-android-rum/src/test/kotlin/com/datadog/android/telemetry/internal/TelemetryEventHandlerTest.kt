@@ -349,6 +349,7 @@ internal class TelemetryEventHandlerTest {
                 .hasTrackErrors(fakeCoreConfiguration.trackErrors)
                 .hasBatchSize(fakeCoreConfiguration.batchSize)
                 .hasBatchUploadFrequency(fakeCoreConfiguration.batchUploadFrequency)
+                .hasBatchProcessingLevel(fakeCoreConfiguration.batchProcessingLevel)
         }
     }
 

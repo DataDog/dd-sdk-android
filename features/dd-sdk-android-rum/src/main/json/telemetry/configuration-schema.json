@@ -112,6 +112,10 @@
                   "type": "boolean",
                   "description": "Whether it is allowed to use LocalStorage when cookies are not available"
                 },
+                "store_contexts_across_pages": {
+                  "type": "boolean",
+                  "description": "Whether contexts are stored in local storage"
+                },
                 "allow_untrusted_events": {
                   "type": "boolean",
                   "description": "Whether untrusted events are allowed"
@@ -283,6 +287,14 @@
                 "batch_upload_frequency": {
                   "type": "integer",
                   "description": "The upload frequency of batches (in milliseconds)"
+                },
+                "batch_processing_level": {
+                  "type": "integer",
+                  "description": "Maximum number of batches processed sequencially without a delay"
+                },
+                "background_tasks_enabled": {
+                  "type": "boolean",
+                  "description": "Whether UIApplication background tasks are enabled"
                 },
                 "react_version": {
                   "type": "string",

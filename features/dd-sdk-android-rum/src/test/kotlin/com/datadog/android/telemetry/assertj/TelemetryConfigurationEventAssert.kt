@@ -249,6 +249,15 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
             .isEqualTo(expected)
         return this
     }
+    fun hasBatchProcessingLevel(expected: Long?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.batchProcessingLevel)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.batchProcessingLevel $expected " +
+                    "but was ${actual.telemetry.configuration.batchProcessingLevel}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
 
     // endregion
 
