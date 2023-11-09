@@ -72,7 +72,8 @@ internal class ConfigurationBuilderTest {
                 proxy = null,
                 proxyAuth = Authenticator.NONE,
                 encryption = null,
-                site = DatadogSite.US1
+                site = DatadogSite.US1,
+                batchProcessingLevel = BatchProcessingLevel.MEDIUM
             )
         )
         assertThat(config.crashReportsEnabled).isTrue

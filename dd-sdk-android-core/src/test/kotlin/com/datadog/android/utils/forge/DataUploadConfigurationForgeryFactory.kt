@@ -14,6 +14,7 @@ import fr.xgouchet.elmyr.ForgeryFactory
 internal class DataUploadConfigurationForgeryFactory : ForgeryFactory<DataUploadConfiguration> {
     override fun getForgery(forge: Forge): DataUploadConfiguration {
         val frequency: UploadFrequency = forge.getForgery()
-        return DataUploadConfiguration(frequency)
+        // we limit the size to avoid OOM errors inside our tests
+        return DataUploadConfiguration(frequency, forge.anInt(min = 1, max = 200))
     }
 }

@@ -18,6 +18,7 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.allowThreadDiskReads
+import com.datadog.android.core.configuration.BatchProcessingLevel
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
@@ -129,6 +130,7 @@ internal class CoreFeature(
     internal var variant: String = ""
     internal var batchSize: BatchSize = BatchSize.MEDIUM
     internal var uploadFrequency: UploadFrequency = UploadFrequency.AVERAGE
+    internal var batchProcessingLevel: BatchProcessingLevel = BatchProcessingLevel.MEDIUM
     internal var ndkCrashHandler: NdkCrashHandler = NoOpNdkCrashHandler()
     internal var site: DatadogSite = DatadogSite.US1
 

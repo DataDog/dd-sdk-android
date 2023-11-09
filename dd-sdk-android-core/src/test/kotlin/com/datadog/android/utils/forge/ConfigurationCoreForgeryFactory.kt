@@ -41,7 +41,8 @@ internal class ConfigurationCoreForgeryFactory :
             proxy = proxy,
             proxyAuth = auth,
             encryption = forge.aNullable { NoOpEncryption() },
-            site = forge.aValueFrom(DatadogSite::class.java)
+            site = forge.aValueFrom(DatadogSite::class.java),
+            batchProcessingLevel = forge.getForgery()
         )
     }
 }

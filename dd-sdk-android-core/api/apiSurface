@@ -132,7 +132,7 @@ interface com.datadog.android.api.storage.EventBatchWriter
   fun currentMetadata(): ByteArray?
   fun write(RawBatchEvent, ByteArray?): Boolean
 data class com.datadog.android.api.storage.FeatureStorageConfiguration
-  constructor(Long, Int, Long, Long, com.datadog.android.core.configuration.UploadFrequency?, com.datadog.android.core.configuration.BatchSize?)
+  constructor(Long, Int, Long, Long, com.datadog.android.core.configuration.UploadFrequency?, com.datadog.android.core.configuration.BatchSize?, com.datadog.android.core.configuration.BatchProcessingLevel?)
   companion object 
     val DEFAULT: FeatureStorageConfiguration
 data class com.datadog.android.api.storage.RawBatchEvent
@@ -153,6 +153,11 @@ class com.datadog.android.core.SdkReference
   constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
   fun get(): com.datadog.android.api.SdkCore?
 fun <T> allowThreadDiskReads(() -> T): T
+enum com.datadog.android.core.configuration.BatchProcessingLevel
+  constructor(Int)
+  - LOW
+  - MEDIUM
+  - HIGH
 enum com.datadog.android.core.configuration.BatchSize
   constructor(Long)
   - SMALL
@@ -168,6 +173,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun useSite(com.datadog.android.DatadogSite): Builder
     fun setBatchSize(BatchSize): Builder
     fun setUploadFrequency(UploadFrequency): Builder
+    fun setBatchProcessingLevel(BatchProcessingLevel): Builder
     fun setAdditionalConfiguration(Map<String, Any>): Builder
     fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
     fun setEncryption(com.datadog.android.security.Encryption): Builder
