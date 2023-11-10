@@ -15,7 +15,9 @@ internal data class TelemetryCoreConfiguration(
     // uploadFrequency.baseStepMs
     val batchUploadFrequency: Long,
     val useProxy: Boolean,
-    val useLocalEncryption: Boolean
+    val useLocalEncryption: Boolean,
+    // batchProcessingLevel.maxBatchesPerUploadJob
+    val batchProcessingLevel: Long
 ) {
     companion object {
         fun fromEvent(event: Map<*, *>, internalLogger: InternalLogger): TelemetryCoreConfiguration? {
@@ -24,10 +26,11 @@ internal data class TelemetryCoreConfiguration(
             val batchUploadFrequency = event["batch_upload_frequency"] as? Long
             val useProxy = event["use_proxy"] as? Boolean
             val useLocalEncryption = event["use_local_encryption"] as? Boolean
+            val batchProcessingLevel = event["batch_processing_level"] as? Long
 
             @Suppress("ComplexCondition")
             if (trackErrors == null || batchSize == null || batchUploadFrequency == null ||
-                useProxy == null || useLocalEncryption == null
+                useProxy == null || useLocalEncryption == null || batchProcessingLevel == null
             ) {
                 // TODO RUMM-3088 Do an intelligent reporting when message values are missing/have
                 //  wrong type, reporting the parameter name and what is exactly wrong
@@ -48,7 +51,8 @@ internal data class TelemetryCoreConfiguration(
                 batchSize = batchSize,
                 batchUploadFrequency = batchUploadFrequency,
                 useProxy = useProxy,
-                useLocalEncryption = useLocalEncryption
+                useLocalEncryption = useLocalEncryption,
+                batchProcessingLevel = batchProcessingLevel
             )
         }
     }

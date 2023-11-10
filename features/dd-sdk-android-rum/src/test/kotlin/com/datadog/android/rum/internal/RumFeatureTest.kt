@@ -1213,7 +1213,8 @@ internal class RumFeatureTest {
         @BoolForgery useProxy: Boolean,
         @BoolForgery useLocalEncryption: Boolean,
         @LongForgery(min = 0L) batchSize: Long,
-        @LongForgery(min = 0L) batchUploadFrequency: Long
+        @LongForgery(min = 0L) batchUploadFrequency: Long,
+        @LongForgery(min = 0L) batchProcessingLevel: Long
     ) {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
@@ -1223,7 +1224,8 @@ internal class RumFeatureTest {
             "batch_size" to batchSize,
             "batch_upload_frequency" to batchUploadFrequency,
             "use_proxy" to useProxy,
-            "use_local_encryption" to useLocalEncryption
+            "use_local_encryption" to useLocalEncryption,
+            "batch_processing_level" to batchProcessingLevel
         )
 
         // When
@@ -1237,7 +1239,8 @@ internal class RumFeatureTest {
                     batchSize = batchSize,
                     batchUploadFrequency = batchUploadFrequency,
                     useProxy = useProxy,
-                    useLocalEncryption = useLocalEncryption
+                    useLocalEncryption = useLocalEncryption,
+                    batchProcessingLevel = batchProcessingLevel
                 )
             )
 
