@@ -9,9 +9,11 @@ package com.datadog.android.rum.internal.vitals
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -46,7 +48,7 @@ import java.util.concurrent.TimeUnit
 @ForgeConfiguration(Configurator::class)
 internal class VitalReaderRunnableTest {
 
-    lateinit var testedRunnable: VitalReaderRunnable
+    private lateinit var testedRunnable: VitalReaderRunnable
 
     @Mock
     lateinit var mockReader: VitalReader
@@ -67,10 +69,9 @@ internal class VitalReaderRunnableTest {
     var fakeValue: Double = 0.0
 
     @BeforeEach
-    fun `set up`() {
-        val rumContext = mapOf<String, Any?>(
-            "view_type" to RumViewScope.RumViewType.FOREGROUND
-        )
+    fun `set up`(forge: Forge) {
+        val rumContext = forge.getForgery<RumContext>()
+            .copy(viewType = RumViewScope.RumViewType.FOREGROUND).toMap()
         whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn rumContext
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         testedRunnable = VitalReaderRunnable(
@@ -104,12 +105,12 @@ internal class VitalReaderRunnableTest {
         mode = EnumSource.Mode.EXCLUDE
     )
     fun `𝕄 not read data, not notify observer but schedule 𝕎 run { viewType != FOREGROUND }()`(
-        viewType: RumViewScope.RumViewType
+        viewType: RumViewScope.RumViewType,
+        forge: Forge
     ) {
         // Given
-        val rumContext = mapOf<String, Any?>(
-            "view_type" to viewType
-        )
+        val rumContext = forge.getForgery<RumContext>()
+            .copy(viewType = viewType).toMap()
         whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn rumContext
 
         // When
