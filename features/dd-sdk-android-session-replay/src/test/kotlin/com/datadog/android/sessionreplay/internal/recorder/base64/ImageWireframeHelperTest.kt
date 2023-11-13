@@ -23,6 +23,7 @@ import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.internal.recorder.base64.ImageWireframeHelper.Companion.DRAWABLE_CHILD_NAME
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
+import com.datadog.android.utils.isCloseTo
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -40,6 +41,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -67,7 +69,7 @@ internal class ImageWireframeHelperTest {
     lateinit var mockImageCompression: ImageCompression
 
     @Mock
-    lateinit var mockCallback: ImageWireframeHelperCallback
+    lateinit var mockImageWireframeHelperCallback: ImageWireframeHelperCallback
 
     @Mock
     lateinit var mockImageTypeResolver: ImageTypeResolver
@@ -105,11 +107,11 @@ internal class ImageWireframeHelperTest {
     @LongForgery(min = 1)
     var fakeGeneratedIdentifier: Long = 0L
 
-    @LongForgery(min = 1, max = 300)
-    var fakeDrawableWidth: Long = 0L
+    @IntForgery(min = 1, max = 300)
+    var fakeDrawableWidth: Int = 0
 
-    @LongForgery(min = 1, max = 300)
-    var fakeDrawableHeight: Long = 0L
+    @IntForgery(min = 1, max = 300)
+    var fakeDrawableHeight: Int = 0
 
     private lateinit var fakeDrawableXY: Pair<Long, Long>
 
@@ -124,8 +126,8 @@ internal class ImageWireframeHelperTest {
         val fakeScreenWidth = 1000
         val fakeScreenHeight = 1000
 
-        val randomXLocation = forge.aLong(min = 1, max = fakeScreenWidth - fakeDrawableWidth)
-        val randomYLocation = forge.aLong(min = 1, max = fakeScreenHeight - fakeDrawableHeight)
+        val randomXLocation = forge.aLong(min = 1, max = (fakeScreenWidth - fakeDrawableWidth).toLong())
+        val randomYLocation = forge.aLong(min = 1, max = (fakeScreenHeight - fakeDrawableHeight).toLong())
         fakeDrawableXY = Pair(randomXLocation, randomYLocation)
         whenever(mockMappingContext.systemInformation).thenReturn(mockSystemInformation)
         whenever(mockSystemInformation.screenDensity).thenReturn(0f)
@@ -154,8 +156,8 @@ internal class ImageWireframeHelperTest {
                 DRAWABLE_CHILD_NAME + 1
             )
         ).thenReturn(fakeGeneratedIdentifier)
-        whenever(mockBounds.width).thenReturn(fakeDrawableWidth)
-        whenever(mockBounds.height).thenReturn(fakeDrawableHeight)
+        whenever(mockBounds.width).thenReturn(fakeDrawableWidth.toLong())
+        whenever(mockBounds.height).thenReturn(fakeDrawableHeight.toLong())
         whenever(mockBounds.x).thenReturn(0L)
         whenever(mockBounds.y).thenReturn(0L)
 
@@ -180,12 +182,13 @@ internal class ImageWireframeHelperTest {
             y = 0,
             width = 0,
             height = 0,
-            callback = mockCallback
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
         assertThat(wireframe).isNull()
-        verifyNoInteractions(mockCallback)
+        verifyNoInteractions(mockImageWireframeHelperCallback)
     }
 
     @Test
@@ -205,12 +208,13 @@ internal class ImageWireframeHelperTest {
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
-            callback = mockCallback
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
         assertThat(wireframe).isNull()
-        verifyNoInteractions(mockCallback)
+        verifyNoInteractions(mockImageWireframeHelperCallback)
     }
 
     @Test
@@ -229,7 +233,8 @@ internal class ImageWireframeHelperTest {
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
-            callback = mockCallback
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
@@ -252,7 +257,8 @@ internal class ImageWireframeHelperTest {
             drawable = mockDrawable,
             shapeStyle = null,
             border = null,
-            callback = mockCallback
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
@@ -262,24 +268,23 @@ internal class ImageWireframeHelperTest {
     @Test
     fun `M return wireframe W createImageWireframe()`(
         @Mock mockShapeStyle: MobileSegment.ShapeStyle,
-        @Mock mockBorder: MobileSegment.ShapeBorder
+        @Mock mockBorder: MobileSegment.ShapeBorder,
+        @Mock stubWireframeClip: MobileSegment.WireframeClip
     ) {
         // Given
-        whenever(
-            mockUniqueIdentifierGenerator
-                .resolveChildUniqueIdentifier(any(), any())
-        )
+        whenever(mockUniqueIdentifierGenerator.resolveChildUniqueIdentifier(any(), any()))
             .thenReturn(fakeGeneratedIdentifier)
 
         val expectedWireframe = MobileSegment.Wireframe.ImageWireframe(
             id = fakeGeneratedIdentifier,
             x = fakeDrawableXY.first,
             y = fakeDrawableXY.second,
-            width = fakeDrawableWidth,
-            height = fakeDrawableHeight,
+            width = fakeDrawableWidth.toLong(),
+            height = fakeDrawableHeight.toLong(),
             shapeStyle = mockShapeStyle,
             border = mockBorder,
             base64 = "",
+            clip = stubWireframeClip,
             mimeType = fakeMimeType,
             isEmpty = true
         )
@@ -295,7 +300,9 @@ internal class ImageWireframeHelperTest {
             drawable = mockDrawable,
             shapeStyle = mockShapeStyle,
             border = mockBorder,
-            callback = mockCallback
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback,
+            usePIIPlaceholder = true,
+            clipping = stubWireframeClip
         )
 
         // Then
@@ -312,9 +319,9 @@ internal class ImageWireframeHelperTest {
         argumentCaptor.allValues.forEach {
             it.onReady()
         }
-        verify(mockCallback).onStart()
-        verify(mockCallback).onFinished()
-        verifyNoMoreInteractions(mockCallback)
+        verify(mockImageWireframeHelperCallback).onStart()
+        verify(mockImageWireframeHelperCallback).onFinished()
+        verifyNoMoreInteractions(mockImageWireframeHelperCallback)
         assertThat(wireframe).isEqualTo(expectedWireframe)
     }
 
@@ -333,11 +340,11 @@ internal class ImageWireframeHelperTest {
             mockTextView,
             mockMappingContext,
             0,
-            callback = mockCallback
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
-        verifyNoInteractions(mockCallback)
+        verifyNoInteractions(mockImageWireframeHelperCallback)
         assertThat(wireframes).isEmpty()
     }
 
@@ -361,7 +368,7 @@ internal class ImageWireframeHelperTest {
             mockTextView,
             mockMappingContext,
             0,
-            callback = mockCallback
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
@@ -379,8 +386,8 @@ internal class ImageWireframeHelperTest {
         argumentCaptor.allValues.forEach {
             it.onReady()
         }
-        verify(mockCallback).onStart()
-        verify(mockCallback).onFinished()
+        verify(mockImageWireframeHelperCallback).onStart()
+        verify(mockImageWireframeHelperCallback).onFinished()
         assertThat(wireframes.size).isEqualTo(1)
     }
 
@@ -405,7 +412,7 @@ internal class ImageWireframeHelperTest {
             mockTextView,
             mockMappingContext,
             0,
-            callback = mockCallback
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
         wireframes[0] as MobileSegment.Wireframe.ImageWireframe
 
@@ -423,8 +430,8 @@ internal class ImageWireframeHelperTest {
         argumentCaptor.allValues.forEach {
             it.onReady()
         }
-        verify(mockCallback, times(2)).onStart()
-        verify(mockCallback, times(2)).onFinished()
+        verify(mockImageWireframeHelperCallback, times(2)).onStart()
+        verify(mockImageWireframeHelperCallback, times(2)).onFinished()
         assertThat(wireframes.size).isEqualTo(2)
     }
 
@@ -439,11 +446,11 @@ internal class ImageWireframeHelperTest {
             mockTextView,
             mockMappingContext,
             0,
-            callback = mockCallback
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
-        verifyNoInteractions(mockCallback)
+        verifyNoInteractions(mockImageWireframeHelperCallback)
         assertThat(wireframes).isEmpty()
     }
 
@@ -468,11 +475,13 @@ internal class ImageWireframeHelperTest {
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
-            width = 0,
-            height = 0,
+            width = fakeViewWidth,
+            height = fakeViewHeight,
             drawable = mockDrawable,
             shapeStyle = null,
-            border = null
+            border = null,
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
@@ -484,7 +493,7 @@ internal class ImageWireframeHelperTest {
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
             imageWireframe = any(),
-            callback = any()
+            base64SerializerCallback = any()
         )
         assertThat(captor.allValues).containsExactly(fakeViewWidth, fakeViewHeight)
     }
@@ -497,11 +506,13 @@ internal class ImageWireframeHelperTest {
             currentWireframeIndex = 0,
             x = 0,
             y = 0,
-            width = 0,
-            height = 0,
+            width = fakeDrawableWidth,
+            height = fakeDrawableHeight,
             drawable = mockDrawable,
             shapeStyle = null,
-            border = null
+            border = null,
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
@@ -513,29 +524,53 @@ internal class ImageWireframeHelperTest {
             drawableWidth = captor.capture(),
             drawableHeight = captor.capture(),
             imageWireframe = any(),
-            callback = any()
+            base64SerializerCallback = any()
 
         )
-        assertThat(captor.allValues).containsExactly(fakeDrawableWidth.toInt(), fakeDrawableHeight.toInt())
+        assertThat(captor.allValues).containsExactly(fakeDrawableWidth, fakeDrawableHeight)
     }
 
     @Test
-    fun `M not try to resolve bitmap W createImageWireframe() { PII image }`() {
+    fun `M not try to resolve bitmap W createImageWireframe() { PII image }`(
+        forge: Forge,
+        @Mock mockResources: Resources,
+        @Mock mockDisplayMetrics: DisplayMetrics,
+        @Mock mockContext: Context
+    ) {
         // Given
-        whenever(mockImageTypeResolver.isDrawablePII(any(), any(), any())).thenReturn(true)
+        whenever(mockImageTypeResolver.isDrawablePII(any(), any())).thenReturn(true)
+
+        val fakeGlobalX = forge.aPositiveInt()
+        val fakeGlobalY = forge.aPositiveInt()
+        whenever(mockResources.displayMetrics).thenReturn(mockDisplayMetrics)
+        mockDisplayMetrics.density = 1f
+        whenever(mockContext.applicationContext).thenReturn(mockContext)
+        val mockView: View = mock {
+            whenever(it.getLocationOnScreen(any())).thenAnswer {
+                val coords = it.arguments[0] as IntArray
+                coords[0] = fakeGlobalX
+                coords[1] = fakeGlobalY
+                null
+            }
+
+            whenever(it.resources).thenReturn(mockResources)
+            whenever(it.context).thenReturn(mockContext)
+        }
 
         // When
-        testedHelper.createImageWireframe(
+        val result = testedHelper.createImageWireframe(
             view = mockView,
-            currentWireframeIndex = 0,
-            x = 0,
-            y = 0,
-            width = 0,
-            height = 0,
+            currentWireframeIndex = forge.aPositiveInt(),
+            x = forge.aPositiveLong(),
+            y = forge.aPositiveLong(),
+            width = forge.aPositiveInt(),
+            height = forge.aPositiveInt(),
             drawable = mockDrawable,
             shapeStyle = null,
-            border = null
-        )
+            border = null,
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
+        ) as MobileSegment.Wireframe.PlaceholderWireframe
 
         // Then
         verify(mockBase64Serializer, never()).handleBitmap(
@@ -545,14 +580,17 @@ internal class ImageWireframeHelperTest {
             drawableWidth = any(),
             drawableHeight = any(),
             imageWireframe = any(),
-            callback = any()
+            base64SerializerCallback = any()
         )
+
+        assertThat(isCloseTo(result.x.toInt(), fakeGlobalX)).isTrue
+        assertThat(isCloseTo(result.y.toInt(), fakeGlobalY)).isTrue
     }
 
     @Test
     fun `M try to resolve bitmap W createImageWireframe() { non-PII image }`() {
         // Given
-        whenever(mockImageTypeResolver.isDrawablePII(any(), any(), any())).thenReturn(false)
+        whenever(mockImageTypeResolver.isDrawablePII(any(), any())).thenReturn(false)
 
         // When
         testedHelper.createImageWireframe(
@@ -564,7 +602,9 @@ internal class ImageWireframeHelperTest {
             height = 0,
             drawable = mockDrawable,
             shapeStyle = null,
-            border = null
+            border = null,
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then
@@ -575,14 +615,14 @@ internal class ImageWireframeHelperTest {
             drawableWidth = any(),
             drawableHeight = any(),
             imageWireframe = any(),
-            callback = any()
+            base64SerializerCallback = any()
         )
     }
 
     @Test
     fun `M return content placeholder W createImageWireframe() { PII image }`() {
         // Given
-        whenever(mockImageTypeResolver.isDrawablePII(any(), any(), any())).thenReturn(true)
+        whenever(mockImageTypeResolver.isDrawablePII(any(), any())).thenReturn(true)
 
         // When
         val actualWireframe = testedHelper.createImageWireframe(
@@ -594,7 +634,9 @@ internal class ImageWireframeHelperTest {
             height = 0,
             drawable = mockDrawable,
             shapeStyle = null,
-            border = null
+            border = null,
+            usePIIPlaceholder = true,
+            imageWireframeHelperCallback = mockImageWireframeHelperCallback
         )
 
         // Then

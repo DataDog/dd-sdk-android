@@ -331,14 +331,15 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="160dp"
+                android:layout_height="wrap_content"
                 android:orientation="horizontal"
+                android:gravity="center"
                 >
 
                 <ImageView
                     android:id="@+id/imageView_remote"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
+                    android:layout_width="160dp"
+                    android:layout_height="wrap_content"
                     android:scaleType="fitCenter"
                     android:contentDescription="@null"
                     android:layout_marginEnd="8dp"
@@ -346,40 +347,10 @@
 
                 <ImageView
                     android:id="@+id/imageView_bundled"
-                    android:layout_width="200dp"
-                    android:layout_height="200dp"
+                    android:layout_width="160dp"
+                    android:layout_height="wrap_content"
                     android:src="@drawable/ic_dd_icon_rgb"
                     android:contentDescription="@null"
-                    />
-
-            </LinearLayout>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textStyle="bold"
-                android:textSize="20sp"
-                android:text="@string/title_views"
-                />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                >
-
-                <View
-                    android:id="@+id/viewRemote"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_marginEnd="8dp"
-                    />
-
-                <View
-                    android:id="@+id/viewBundled"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:background="@drawable/ic_dd_icon_rgb"
                     />
 
             </LinearLayout>

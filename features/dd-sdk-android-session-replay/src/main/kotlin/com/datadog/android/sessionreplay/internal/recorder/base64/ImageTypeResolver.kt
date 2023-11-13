@@ -9,17 +9,21 @@ package com.datadog.android.sessionreplay.internal.recorder.base64
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import androidx.annotation.VisibleForTesting
+import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 
 internal class ImageTypeResolver {
-    fun isDrawablePII(drawable: Drawable, widthInDp: Int, heightInDp: Int): Boolean =
-        drawable !is GradientDrawable &&
-            (
-                widthInDp >= IMAGE_DIMEN_CONSIDERED_PII_IN_DP ||
-                    heightInDp >= IMAGE_DIMEN_CONSIDERED_PII_IN_DP
-                )
+    fun isDrawablePII(drawable: Drawable, density: Float): Boolean {
+        val isNotGradient = drawable !is GradientDrawable
+        val widthAboveThreshold = drawable.intrinsicWidth.densityNormalized(density) >=
+            IMAGE_DIMEN_CONSIDERED_PII_IN_DP
+        val heightAboveThreshold = drawable.intrinsicHeight.densityNormalized(density) >=
+            IMAGE_DIMEN_CONSIDERED_PII_IN_DP
+
+        return isNotGradient && (widthAboveThreshold || heightAboveThreshold)
+    }
 
     internal companion object {
-        // material design icon size is up to 48x48
-        @VisibleForTesting internal const val IMAGE_DIMEN_CONSIDERED_PII_IN_DP = 49
+        // material design icon size is up to 48x48, but use 100 to match more images
+        @VisibleForTesting internal const val IMAGE_DIMEN_CONSIDERED_PII_IN_DP = 100
     }
 }

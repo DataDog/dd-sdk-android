@@ -18,6 +18,7 @@
     <string name="title_view_pager">View Pager</string>
     <string name="title_unsupported_views">Unsupported views</string>
     <string name="title_image_components">Image Components</string>
+    <string name="title_image_scaling">Image Scaling</string>
     <string name="title_snackbar">Snackbar</string>
     <string name="title_foreground_service">Foreground service</string>
     <string name="title_picture">Picture loading</string>

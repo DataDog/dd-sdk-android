@@ -24,21 +24,29 @@
       },
       {
         "width": 80,
-        "height": 80,
-        "border": {
-          "color": "#000000ff",
-          "width": 1
+        "height": 84,
+        "clip": {
+          "top": 2,
+          "bottom": 2,
+          "left": 0,
+          "right": 0
         },
-        "type": "shape"
+        "type": "image",
+        "mimeType": "image/webp",
+        "isEmpty": false
       },
       {
         "width": 80,
-        "height": 80,
-        "border": {
-          "color": "#000000ff",
-          "width": 1
+        "height": 84,
+        "clip": {
+          "top": 2,
+          "bottom": 2,
+          "left": 0,
+          "right": 0
         },
-        "type": "shape"
+        "type": "image",
+        "mimeType": "image/webp",
+        "isEmpty": false
       },
       {
         "width": 411,

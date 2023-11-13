@@ -28,7 +28,6 @@ internal class ImageComponentsFragment : Fragment() {
     private lateinit var viewModel: ImageComponentsViewModel
     private lateinit var textViewRemote: TextView
     private lateinit var buttonRemote: Button
-    private lateinit var viewRemote: View
     private lateinit var imageViewRemote: ImageView
     private lateinit var imageButtonRemote: ImageButton
     private lateinit var appCompatButtonRemote: AppCompatImageButton
@@ -41,7 +40,6 @@ internal class ImageComponentsFragment : Fragment() {
         val rootView = inflater.inflate(R.layout.fragment_image_components, container, false)
         textViewRemote = rootView.findViewById(R.id.textViewRemote)
         buttonRemote = rootView.findViewById(R.id.buttonRemote)
-        viewRemote = rootView.findViewById(R.id.viewRemote)
         imageViewRemote = rootView.findViewById(R.id.imageView_remote)
         imageButtonRemote = rootView.findViewById(R.id.imageButtonRemote)
         appCompatButtonRemote = rootView.findViewById(R.id.appCompatImageButtonRemote)
@@ -57,23 +55,10 @@ internal class ImageComponentsFragment : Fragment() {
     // internal region
 
     private fun loadRemoteViews() {
-        loadView()
         loadImageView()
         loadButton()
         loadTextView()
         loadImageButtonBackground()
-    }
-
-    private fun loadView() {
-        viewModel.fetchRemoteImage(
-            LARGE_IMAGE_URL,
-            viewRemote,
-            object : ImageLoadedCallback {
-                override fun onImageLoaded(resource: Drawable) {
-                    viewRemote.background = resource
-                }
-            }
-        )
     }
 
     private fun loadImageView() {
