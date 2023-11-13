@@ -114,7 +114,12 @@ internal constructor(
                 NETWORK_REQUESTS_TRACKING_FEATURE_NAME
             )
             coreConfig = coreConfig.copy(
-                firstPartyHostsWithHeaderTypes = sanitizedHosts.associateWith { setOf(TracingHeaderType.DATADOG) }
+                firstPartyHostsWithHeaderTypes = sanitizedHosts.associateWith {
+                    setOf(
+                        TracingHeaderType.DATADOG,
+                        TracingHeaderType.TRACECONTEXT
+                    )
+                }
             )
             return this
         }

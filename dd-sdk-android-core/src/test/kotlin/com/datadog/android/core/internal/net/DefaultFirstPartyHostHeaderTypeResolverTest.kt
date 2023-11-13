@@ -329,6 +329,27 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
         assertThat(testedDetector.getAllHeaderTypes()).isEqualTo(allUsedHeaderTraces)
     }
 
+    @Test
+    fun `𝕄 use datadog and tracecontext header types 𝕎 addKnownHosts(String)`(
+        @StringForgery(regex = "http(s?)") scheme: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeHosts = forge.aList { forge.aStringMatching(HOST_REGEX) }
+        val fakeUrls = fakeHosts.map { "$scheme://$it" }
+        testedDetector.addKnownHosts(fakeHosts)
+
+        // When + Then
+        val expectedHeaderTypes = setOf(
+            TracingHeaderType.DATADOG,
+            TracingHeaderType.TRACECONTEXT
+        )
+        fakeUrls.forEach {
+            val headerTypes = testedDetector.headerTypesForUrl(it)
+            assertThat(headerTypes).isEqualTo(expectedHeaderTypes)
+        }
+    }
+
     companion object {
         private const val HOST_REGEX = "([a-z][a-z0-9_~-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
     }
