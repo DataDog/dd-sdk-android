@@ -848,6 +848,22 @@ internal open class RumViewScope(
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val user = datadogContext.userInfo
+                val syntheticsAttribute = if (
+                    rumContext.syntheticsTestId.isNullOrBlank() ||
+                    rumContext.syntheticsResultId.isNullOrBlank()
+                ) {
+                    null
+                } else {
+                    ActionEvent.Synthetics(
+                        testId = rumContext.syntheticsTestId,
+                        resultId = rumContext.syntheticsResultId
+                    )
+                }
+                val sessionType = if (syntheticsAttribute == null) {
+                    ActionEvent.ActionEventSessionType.USER
+                } else {
+                    ActionEvent.ActionEventSessionType.SYNTHETICS
+                }
 
                 val actionEvent = ActionEvent(
                     date = eventTimestamp,
@@ -878,9 +894,10 @@ internal open class RumViewScope(
                     application = ActionEvent.Application(rumContext.applicationId),
                     session = ActionEvent.ActionEventSession(
                         id = rumContext.sessionId,
-                        type = ActionEvent.ActionEventSessionType.USER,
+                        type = sessionType,
                         hasReplay = false
                     ),
+                    synthetics = syntheticsAttribute,
                     source = ActionEvent.Source.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
