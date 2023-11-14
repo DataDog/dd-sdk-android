@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.okhttp.utils.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.verifyLog
@@ -143,8 +144,7 @@ internal open class TracingInterceptorTest {
     @StringForgery(type = StringForgeryType.HEXADECIMAL)
     lateinit var fakeTraceId: String
 
-    @StringForgery
-    lateinit var fakeOrigin: String
+    private var fakeOrigin: String? = null
 
     lateinit var fakeLocalHosts: Map<String, Set<TracingHeaderType>>
 
@@ -162,6 +162,7 @@ internal open class TracingInterceptorTest {
         whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
         whenever(mockTraceSampler.sample()) doReturn true
 
+        fakeOrigin = forge.aNullable { anAlphabeticalString() }
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()
         fakeLocalHosts =
@@ -193,7 +194,7 @@ internal open class TracingInterceptorTest {
         )
     }
 
-    open fun getExpectedOrigin(): String {
+    open fun getExpectedOrigin(): String? {
         return fakeOrigin
     }
 
@@ -392,12 +393,16 @@ internal open class TracingInterceptorTest {
         assertThat(response).isSameAs(fakeResponse)
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
-            assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
-                .isEqualTo(
-                    "00-%s-%s-00".format(
-                        mockSpan.context().toTraceId(),
-                        mockSpan.context().toSpanId()
-                    )
+            assertThat(lastValue.headers)
+                .hasTraceParentHeader(
+                    mockSpan.context().toTraceId(),
+                    mockSpan.context().toSpanId(),
+                    isSampled = false
+                )
+                .hasTraceStateHeaderWithOnlyDatadogVendorValues(
+                    mockSpan.context().toSpanId(),
+                    isSampled = false,
+                    getExpectedOrigin()
                 )
         }
     }
@@ -437,12 +442,16 @@ internal open class TracingInterceptorTest {
             assertThat(lastValue.header(TracingInterceptor.B3M_TRACE_ID_KEY)).isNull()
             assertThat(lastValue.header(TracingInterceptor.B3_HEADER_KEY))
                 .isEqualTo("0")
-            assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
-                .isEqualTo(
-                    "00-%s-%s-00".format(
-                        mockSpan.context().toTraceId(),
-                        mockSpan.context().toSpanId()
-                    )
+            assertThat(lastValue.headers)
+                .hasTraceParentHeader(
+                    mockSpan.context().toTraceId(),
+                    mockSpan.context().toSpanId(),
+                    isSampled = false
+                )
+                .hasTraceStateHeaderWithOnlyDatadogVendorValues(
+                    mockSpan.context().toSpanId(),
+                    isSampled = false,
+                    getExpectedOrigin()
                 )
         }
     }
@@ -580,12 +589,16 @@ internal open class TracingInterceptorTest {
         assertThat(response).isSameAs(fakeResponse)
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
-            assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
-                .isEqualTo(
-                    "00-%s-%s-00".format(
-                        mockSpan.context().toTraceId(),
-                        mockSpan.context().toSpanId()
-                    )
+            assertThat(lastValue.headers)
+                .hasTraceParentHeader(
+                    mockSpan.context().toTraceId(),
+                    mockSpan.context().toSpanId(),
+                    isSampled = false
+                )
+                .hasTraceStateHeaderWithOnlyDatadogVendorValues(
+                    mockSpan.context().toSpanId(),
+                    isSampled = false,
+                    getExpectedOrigin()
                 )
         }
     }
@@ -631,12 +644,16 @@ internal open class TracingInterceptorTest {
             assertThat(lastValue.header(TracingInterceptor.B3M_TRACE_ID_KEY)).isNull()
             assertThat(lastValue.header(TracingInterceptor.B3_HEADER_KEY))
                 .isEqualTo("0")
-            assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
-                .isEqualTo(
-                    "00-%s-%s-00".format(
-                        mockSpan.context().toTraceId(),
-                        mockSpan.context().toSpanId()
-                    )
+            assertThat(lastValue.headers)
+                .hasTraceParentHeader(
+                    mockSpan.context().toTraceId(),
+                    mockSpan.context().toSpanId(),
+                    isSampled = false
+                )
+                .hasTraceStateHeaderWithOnlyDatadogVendorValues(
+                    mockSpan.context().toSpanId(),
+                    isSampled = false,
+                    getExpectedOrigin()
                 )
         }
     }
@@ -1044,12 +1061,16 @@ internal open class TracingInterceptorTest {
         assertThat(response).isSameAs(fakeResponse)
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
-            assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
-                .isEqualTo(
-                    "00-%s-%s-00".format(
-                        mockSpan.context().toTraceId(),
-                        mockSpan.context().toSpanId()
-                    )
+            assertThat(lastValue.headers)
+                .hasTraceParentHeader(
+                    mockSpan.context().toTraceId(),
+                    mockSpan.context().toSpanId(),
+                    isSampled = false
+                )
+                .hasTraceStateHeaderWithOnlyDatadogVendorValues(
+                    mockSpan.context().toSpanId(),
+                    isSampled = false,
+                    getExpectedOrigin()
                 )
         }
     }

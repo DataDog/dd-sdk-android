@@ -485,14 +485,25 @@ internal constructor(
 
                 TracingHeaderType.TRACECONTEXT -> {
                     requestBuilder.removeHeader(W3C_TRACEPARENT_KEY)
+                    requestBuilder.removeHeader(W3C_TRACESTATE_KEY)
+                    val traceId = span.context().toTraceId()
+                    val spanId = span.context().toSpanId()
                     requestBuilder.addHeader(
                         W3C_TRACEPARENT_KEY,
                         @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
-                        W3C_DROP_SAMPLING_DECISION.format(
-                            span.context().toTraceId(),
-                            span.context().toSpanId()
+                        W3C_TRACEPARENT_DROP_SAMPLING_DECISION.format(
+                            traceId.padStart(length = W3C_TRACE_ID_LENGTH, padChar = '0'),
+                            spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0')
                         )
                     )
+                    // TODO RUM-2121 3rd party vendor information will be erased
+                    @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
+                    var traceStateHeader = W3C_TRACESTATE_DROP_SAMPLING_DECISION
+                        .format(spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0'))
+                    if (traceOrigin != null) {
+                        traceStateHeader += ";o:$traceOrigin"
+                    }
+                    requestBuilder.addHeader(W3C_TRACESTATE_KEY, traceStateHeader)
                 }
             }
         }
@@ -543,7 +554,8 @@ internal constructor(
                             tracedRequestBuilder.addHeader(key, value)
                         }
 
-                        W3C_TRACEPARENT_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.TRACECONTEXT)) {
+                        W3C_TRACEPARENT_KEY,
+                        W3C_TRACESTATE_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.TRACECONTEXT)) {
                             tracedRequestBuilder.addHeader(key, value)
                         }
 
@@ -654,7 +666,13 @@ internal constructor(
 
         // taken from W3CHttpCodec
         internal const val W3C_TRACEPARENT_KEY = "traceparent"
-        internal const val W3C_DROP_SAMPLING_DECISION = "00-%s-%s-00"
+        internal const val W3C_TRACESTATE_KEY = "tracestate"
+
+        // https://www.w3.org/TR/trace-context/#traceparent-header
+        internal const val W3C_TRACEPARENT_DROP_SAMPLING_DECISION = "00-%s-%s-00"
+        internal const val W3C_TRACESTATE_DROP_SAMPLING_DECISION = "dd=p:%s;s:0"
         internal const val W3C_SAMPLING_DECISION_INDEX = 3
+        internal const val W3C_TRACE_ID_LENGTH = 32
+        internal const val W3C_PARENT_ID_LENGTH = 16
     }
 }
