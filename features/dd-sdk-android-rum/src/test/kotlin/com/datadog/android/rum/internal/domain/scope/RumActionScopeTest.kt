@@ -239,6 +239,8 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
@@ -343,6 +345,8 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -426,6 +430,8 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -562,6 +568,8 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -632,6 +640,8 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -689,6 +699,8 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -756,6 +768,8 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -817,6 +831,8 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -875,6 +891,8 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -932,6 +950,8 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -994,6 +1014,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -1059,6 +1081,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -1115,6 +1139,8 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -1171,6 +1197,8 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -1232,6 +1260,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -1295,9 +1325,99 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action with synthetics info after threshold 𝕎 init()+handleEvent(any) `(
+        @StringForgery fakeTestId: String,
+        @StringForgery fakeResultId: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeGlobalAttributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
+        testedScope = RumActionScope(
+            mockParentScope,
+            rumMonitor.mockSdkCore,
+            false,
+            fakeEventTime,
+            fakeType,
+            fakeName,
+            fakeAttributes,
+            fakeServerOffset,
+            TEST_INACTIVITY_MS,
+            TEST_MAX_DURATION_MS,
+            mockFeaturesContextResolver,
+            fakeTrackFrustrations,
+            fakeSampleRate
+        )
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
+        fakeParentContext = fakeParentContext.copy(
+            syntheticsTestId = fakeTestId,
+            syntheticsResultId = fakeResultId
+        )
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        val result = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasNoFrustration()
+                    hasView(fakeParentContext)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasSyntheticsSession()
+                    hasSyntheticsTest(fakeTestId, fakeResultId)
+                    hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
+                    containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -1374,6 +1494,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -1437,6 +1559,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -1491,6 +1615,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -1548,6 +1674,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -1609,6 +1737,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -1671,6 +1801,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -1724,6 +1856,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -1784,6 +1918,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -1842,6 +1978,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -1898,6 +2036,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -1954,6 +2094,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -2012,6 +2154,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -2100,6 +2244,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -2153,6 +2299,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -2206,6 +2354,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -2259,6 +2409,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -2348,6 +2500,8 @@ internal class RumActionScopeTest {
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
