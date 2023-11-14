@@ -112,7 +112,12 @@ internal constructor(
         traceSampler: Sampler = RateBasedSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
         sdkInstanceName,
-        tracedHosts.associateWith { setOf(TracingHeaderType.DATADOG) },
+        tracedHosts.associateWith {
+            setOf(
+                TracingHeaderType.DATADOG,
+                TracingHeaderType.TRACECONTEXT
+            )
+        },
         tracedRequestListener,
         null,
         traceSampler,

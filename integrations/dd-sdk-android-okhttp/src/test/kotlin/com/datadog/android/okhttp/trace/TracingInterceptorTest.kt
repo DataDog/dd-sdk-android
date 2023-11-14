@@ -234,6 +234,14 @@ internal open class TracingInterceptorTest {
 
         // Then
         assertThat(interceptor.tracedHosts.keys).containsAll(hosts)
+        val allHeaderTypes = interceptor.tracedHosts
+            .values
+            .fold(mutableSetOf<TracingHeaderType>()) { acc, tracingHeaderTypes ->
+                acc.apply { this += tracingHeaderTypes }
+            }
+        assertThat(allHeaderTypes).isEqualTo(
+            setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
+        )
         assertThat(interceptor.tracedRequestListener)
             .isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler)
