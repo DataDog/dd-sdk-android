@@ -176,6 +176,22 @@ internal class RumResourceScope(
         val rulePsr = attributes.remove(RumAttributes.RULE_PSR) as? Number
 
         val rumContext = getRumContext()
+        val syntheticsAttribute = if (
+            rumContext.syntheticsTestId.isNullOrBlank() ||
+            rumContext.syntheticsResultId.isNullOrBlank()
+        ) {
+            null
+        } else {
+            ResourceEvent.Synthetics(
+                testId = rumContext.syntheticsTestId,
+                resultId = rumContext.syntheticsResultId
+            )
+        }
+        val sessionType = if (syntheticsAttribute == null) {
+            ResourceEvent.ResourceEventSessionType.USER
+        } else {
+            ResourceEvent.ResourceEventSessionType.SYNTHETICS
+        }
 
         @Suppress("UNCHECKED_CAST")
         val finalTiming = timing ?: extractResourceTiming(
@@ -233,9 +249,10 @@ internal class RumResourceScope(
                     application = ResourceEvent.Application(rumContext.applicationId),
                     session = ResourceEvent.ResourceEventSession(
                         id = rumContext.sessionId,
-                        type = ResourceEvent.ResourceEventSessionType.USER,
+                        type = sessionType,
                         hasReplay = hasReplay
                     ),
+                    synthetics = syntheticsAttribute,
                     source = ResourceEvent.Source.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger

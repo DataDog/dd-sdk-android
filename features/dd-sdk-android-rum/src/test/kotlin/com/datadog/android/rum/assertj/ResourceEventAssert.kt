@@ -385,6 +385,46 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
+    fun hasUserSession(): ResourceEventAssert {
+        assertThat(actual.session.type)
+            .overridingErrorMessage(
+                "Expected event to have session.type:user but was ${actual.session.type}"
+            ).isEqualTo(ResourceEvent.ResourceEventSessionType.USER)
+        return this
+    }
+
+    fun hasSyntheticsSession(): ResourceEventAssert {
+        assertThat(actual.session.type)
+            .overridingErrorMessage(
+                "Expected event to have session.type:synthetics but was ${actual.session.type}"
+            ).isEqualTo(ResourceEvent.ResourceEventSessionType.SYNTHETICS)
+        return this
+    }
+
+    fun hasNoSyntheticsTest(): ResourceEventAssert {
+        assertThat(actual.synthetics?.testId)
+            .overridingErrorMessage(
+                "Expected event to have no synthetics.testId but was ${actual.synthetics?.testId}"
+            ).isNull()
+        assertThat(actual.synthetics?.resultId)
+            .overridingErrorMessage(
+                "Expected event to have no synthetics.resultId but was ${actual.synthetics?.resultId}"
+            ).isNull()
+        return this
+    }
+
+    fun hasSyntheticsTest(testId: String, resultId: String): ResourceEventAssert {
+        assertThat(actual.synthetics?.testId)
+            .overridingErrorMessage(
+                "Expected event to have synthetics.testId $testId but was ${actual.synthetics?.testId}"
+            ).isEqualTo(testId)
+        assertThat(actual.synthetics?.resultId)
+            .overridingErrorMessage(
+                "Expected event to have synthetics.resultId $resultId but was ${actual.synthetics?.resultId}"
+            ).isEqualTo(resultId)
+        return this
+    }
+
     fun hasActionId(expected: String?): ResourceEventAssert {
         if (expected != null) {
             assertThat(actual.action?.id)
