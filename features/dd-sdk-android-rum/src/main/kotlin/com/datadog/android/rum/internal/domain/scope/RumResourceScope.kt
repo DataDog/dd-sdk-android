@@ -308,6 +308,23 @@ internal class RumResourceScope(
         attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
 
         val rumContext = getRumContext()
+
+        val syntheticsAttribute = if (
+            rumContext.syntheticsTestId.isNullOrBlank() ||
+            rumContext.syntheticsResultId.isNullOrBlank()
+        ) {
+            null
+        } else {
+            ErrorEvent.Synthetics(
+                testId = rumContext.syntheticsTestId,
+                resultId = rumContext.syntheticsResultId
+            )
+        }
+        val sessionType = if (syntheticsAttribute == null) {
+            ErrorEvent.ErrorEventSessionType.USER
+        } else {
+            ErrorEvent.ErrorEventSessionType.SYNTHETICS
+        }
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val user = datadogContext.userInfo
@@ -351,9 +368,10 @@ internal class RumResourceScope(
                     application = ErrorEvent.Application(rumContext.applicationId),
                     session = ErrorEvent.ErrorEventSession(
                         id = rumContext.sessionId,
-                        type = ErrorEvent.ErrorEventSessionType.USER,
+                        type = sessionType,
                         hasReplay = hasReplay
                     ),
+                    synthetics = syntheticsAttribute,
                     source = ErrorEvent.ErrorEventSource.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
