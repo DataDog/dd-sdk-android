@@ -177,7 +177,7 @@ internal class ViewEventAssert(actual: ViewEvent) :
     fun hasApplicationId(expected: String): ViewEventAssert {
         assertThat(actual.application.id)
             .overridingErrorMessage(
-                "Expected context to have application.id $expected but was ${actual.application.id}"
+                "Expected event to have application.id $expected but was ${actual.application.id}"
             )
             .isEqualTo(expected)
         return this
@@ -186,7 +186,7 @@ internal class ViewEventAssert(actual: ViewEvent) :
     fun hasSessionId(expected: String): ViewEventAssert {
         assertThat(actual.session.id)
             .overridingErrorMessage(
-                "Expected context to have session.id $expected but was ${actual.session.id}"
+                "Expected event to have session.id $expected but was ${actual.session.id}"
             )
             .isEqualTo(expected)
         return this
@@ -195,8 +195,48 @@ internal class ViewEventAssert(actual: ViewEvent) :
     fun hasSessionActive(expected: Boolean): ViewEventAssert {
         assertThat(actual.session.isActive)
             .overridingErrorMessage(
-                "Expected context to have session.isActive $expected but was ${actual.session.isActive}"
+                "Expected event to have session.isActive $expected but was ${actual.session.isActive}"
             ).isEqualTo(expected)
+        return this
+    }
+
+    fun hasUserSession(): ViewEventAssert {
+        assertThat(actual.session.type)
+            .overridingErrorMessage(
+                "Expected event to have session.type:user but was ${actual.session.type}"
+            ).isEqualTo(ViewEvent.ViewEventSessionType.USER)
+        return this
+    }
+
+    fun hasSyntheticsSession(): ViewEventAssert {
+        assertThat(actual.session.type)
+            .overridingErrorMessage(
+                "Expected event to have session.type:synthetics but was ${actual.session.type}"
+            ).isEqualTo(ViewEvent.ViewEventSessionType.SYNTHETICS)
+        return this
+    }
+
+    fun hasNoSyntheticsTest(): ViewEventAssert {
+        assertThat(actual.synthetics?.testId)
+            .overridingErrorMessage(
+                "Expected event to have no synthetics.testId but was ${actual.synthetics?.testId}"
+            ).isNull()
+        assertThat(actual.synthetics?.resultId)
+            .overridingErrorMessage(
+                "Expected event to have no synthetics.resultId but was ${actual.synthetics?.resultId}"
+            ).isNull()
+        return this
+    }
+
+    fun hasSyntheticsTest(testId: String, resultId: String): ViewEventAssert {
+        assertThat(actual.synthetics?.testId)
+            .overridingErrorMessage(
+                "Expected event to have synthetics.testId $testId but was ${actual.synthetics?.testId}"
+            ).isEqualTo(testId)
+        assertThat(actual.synthetics?.resultId)
+            .overridingErrorMessage(
+                "Expected event to have synthetics.resultId $resultId but was ${actual.synthetics?.resultId}"
+            ).isEqualTo(resultId)
         return this
     }
 

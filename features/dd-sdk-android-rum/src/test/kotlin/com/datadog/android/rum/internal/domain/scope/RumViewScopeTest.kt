@@ -802,6 +802,8 @@ internal class RumViewScopeTest {
                 hasViewId(testedScope.viewId)
                 hasApplicationId(fakeParentContext.applicationId)
                 hasSessionId(fakeParentContext.sessionId)
+                hasUserSession()
+                hasNoSyntheticsTest()
                 hasLiteSessionPlan()
                 hasReplay(fakeHasReplay)
                 hasReplayStats(fakeReplayStats)
@@ -874,6 +876,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
@@ -901,77 +905,6 @@ internal class RumViewScopeTest {
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
         assertThat(result2).isNull()
-    }
-
-    @Test
-    fun `𝕄 send event 𝕎 handleEvent(StopView) on active view`(
-        forge: Forge
-    ) {
-        // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(attributes)
-
-        // When
-        val result = testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, attributes),
-            mockWriter
-        )
-
-        // Then
-        argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertThat(lastValue)
-                .apply {
-                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
-                    hasName(fakeName)
-                    hasUrl(fakeUrl)
-                    hasDurationGreaterThan(1)
-                    hasVersion(2)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasResourceCount(0)
-                    hasActionCount(0)
-                    hasFrustrationCount(0)
-                    hasLongTaskCount(0)
-                    hasFrozenFrameCount(0)
-                    hasCpuMetric(null)
-                    hasMemoryMetric(null, null)
-                    hasRefreshRateMetric(null, null)
-                    isActive(false)
-                    isSlowRendered(false)
-                    hasNoCustomTimings()
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasViewId(testedScope.viewId)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    containsExactlyContextAttributes(expectedAttributes)
-                    hasLiteSessionPlan()
-                    hasReplay(fakeHasReplay)
-                    hasReplayStats(fakeReplayStats)
-                    hasSource(fakeSourceViewEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                    hasSessionActive(fakeParentContext.isSessionActive)
-                    hasSampleRate(fakeSampleRate)
-                }
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNull()
     }
 
     @Test
@@ -1024,6 +957,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasReplay(fakeHasReplay)
@@ -1099,6 +1034,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasReplay(fakeHasReplay)
@@ -1174,6 +1111,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasReplay(fakeHasReplay)
@@ -1237,6 +1176,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -1329,6 +1270,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -1403,6 +1346,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -1496,6 +1441,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -1592,6 +1539,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -1667,6 +1616,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -1741,6 +1692,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -1808,6 +1761,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -1918,6 +1873,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -1987,6 +1944,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     // TODO RUMM-3316 if viewId changes, we need to relink replay as well.
                     hasReplay(false)
@@ -2074,6 +2033,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -2143,6 +2104,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     // TODO RUMM-3316 if viewId changes, we need to relink replay as well.
                     hasReplay(false)
@@ -2231,6 +2194,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -2301,6 +2266,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     // TODO RUMM-3316 if viewId changes, we need to relink replay as well.
                     hasReplay(false)
@@ -2391,6 +2358,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -2463,6 +2432,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     // TODO RUMM-3316 if viewId changes, we need to relink replay as well.
                     hasReplay(false)
@@ -2533,6 +2504,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -2605,6 +2578,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     // TODO RUMM-3316 if viewId changes, we need to relink replay as well.
                     hasReplay(false)
@@ -2750,6 +2725,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -2837,6 +2814,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -2926,6 +2905,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -3014,6 +2995,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -3376,6 +3359,86 @@ internal class RumViewScopeTest {
             eq(Feature.SESSION_REPLAY_FEATURE_NAME),
             any()
         )
+    }
+
+    @Test
+    fun `𝕄 send event with synthetics info 𝕎 handleEvent(StopView) on active view`(
+        @StringForgery fakeTestId: String,
+        @StringForgery fakeResultId: String,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+        fakeParentContext = fakeParentContext.copy(
+            syntheticsTestId = fakeTestId,
+            syntheticsResultId = fakeResultId
+        )
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
+
+        // When
+        val result = testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, attributes),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertThat(lastValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasFrustrationCount(0)
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(false)
+                    isSlowRendered(false)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasSyntheticsSession()
+                    hasSyntheticsTest(fakeTestId, fakeResultId)
+                    containsExactlyContextAttributes(expectedAttributes)
+                    hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
+                    hasReplayStats(fakeReplayStats)
+                    hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
+                    hasSessionActive(fakeParentContext.isSessionActive)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
     }
 
     // endregion
@@ -4569,6 +4632,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -4756,6 +4821,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -4886,6 +4953,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -5145,6 +5214,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -5864,6 +5935,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -5938,6 +6011,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -5990,6 +6065,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -6094,6 +6171,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -6168,6 +6247,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -6241,6 +6322,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -6324,6 +6407,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
@@ -6407,6 +6492,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasUserSession()
+                    hasNoSyntheticsTest()
                     hasLiteSessionPlan()
                     hasReplay(fakeHasReplay)
                     hasReplayStats(fakeReplayStats)
