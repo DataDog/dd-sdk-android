@@ -252,7 +252,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
     fun hasApplicationId(expected: String): ErrorEventAssert {
         assertThat(actual.application.id)
             .overridingErrorMessage(
-                "Expected context to have application.id $expected but was ${actual.application.id}"
+                "Expected event to have application.id $expected but was ${actual.application.id}"
             )
             .isEqualTo(expected)
         return this
@@ -261,9 +261,49 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
     fun hasSessionId(expected: String): ErrorEventAssert {
         assertThat(actual.session.id)
             .overridingErrorMessage(
-                "Expected context to have session.id $expected but was ${actual.session.id}"
+                "Expected event to have session.id $expected but was ${actual.session.id}"
             )
             .isEqualTo(expected)
+        return this
+    }
+
+    fun hasUserSession(): ErrorEventAssert {
+        assertThat(actual.session.type)
+            .overridingErrorMessage(
+                "Expected event to have session.type:user but was ${actual.session.type}"
+            ).isEqualTo(ErrorEvent.ErrorEventSessionType.USER)
+        return this
+    }
+
+    fun hasSyntheticsSession(): ErrorEventAssert {
+        assertThat(actual.session.type)
+            .overridingErrorMessage(
+                "Expected event to have session.type:synthetics but was ${actual.session.type}"
+            ).isEqualTo(ErrorEvent.ErrorEventSessionType.SYNTHETICS)
+        return this
+    }
+
+    fun hasNoSyntheticsTest(): ErrorEventAssert {
+        assertThat(actual.synthetics?.testId)
+            .overridingErrorMessage(
+                "Expected event to have no synthetics.testId but was ${actual.synthetics?.testId}"
+            ).isNull()
+        assertThat(actual.synthetics?.resultId)
+            .overridingErrorMessage(
+                "Expected event to have no synthetics.resultId but was ${actual.synthetics?.resultId}"
+            ).isNull()
+        return this
+    }
+
+    fun hasSyntheticsTest(testId: String, resultId: String): ErrorEventAssert {
+        assertThat(actual.synthetics?.testId)
+            .overridingErrorMessage(
+                "Expected event to have synthetics.testId $testId but was ${actual.synthetics?.testId}"
+            ).isEqualTo(testId)
+        assertThat(actual.synthetics?.resultId)
+            .overridingErrorMessage(
+                "Expected event to have synthetics.resultId $resultId but was ${actual.synthetics?.resultId}"
+            ).isEqualTo(resultId)
         return this
     }
 
