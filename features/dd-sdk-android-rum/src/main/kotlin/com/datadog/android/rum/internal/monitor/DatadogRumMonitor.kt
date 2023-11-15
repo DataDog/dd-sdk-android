@@ -527,7 +527,7 @@ internal class DatadogRumMonitor(
 
     override fun setSyntheticsAttribute(
         testId: String,
-        resultId: String?
+        resultId: String
     ) {
         handleEvent(RumRawEvent.SetSyntheticsTestAttribute(testId, resultId))
     }
