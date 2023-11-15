@@ -9,7 +9,6 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.rum.internal.domain.scope.isConnected
-import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
@@ -196,7 +195,7 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
-    fun hasNoSyntheticsTest(): LongTaskEventAssert{
+    fun hasNoSyntheticsTest(): LongTaskEventAssert {
         assertThat(actual.synthetics?.testId)
             .overridingErrorMessage(
                 "Expected event to have no synthetics.testId but was ${actual.synthetics?.testId}"
@@ -208,7 +207,7 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
-    fun hasSyntheticsTest(testId: String, resultId: String): LongTaskEventAssert{
+    fun hasSyntheticsTest(testId: String, resultId: String): LongTaskEventAssert {
         assertThat(actual.synthetics?.testId)
             .overridingErrorMessage(
                 "Expected event to have synthetics.testId $testId but was ${actual.synthetics?.testId}"
