@@ -8,6 +8,7 @@ package com.datadog.android.telemetry.internal
 
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -31,7 +32,7 @@ internal class TelemetryCoreConfigurationTest {
         @BoolForgery useLocalEncryption: Boolean,
         @LongForgery(min = 0L) batchSize: Long,
         @LongForgery(min = 0L) batchUploadFrequency: Long,
-        @LongForgery(min = 0L) batchProcessingLevel: Long
+        @IntForgery(min = 0) batchProcessingLevel: Int
     ) {
         // Given
         val event = mapOf(

@@ -17,7 +17,7 @@ internal data class TelemetryCoreConfiguration(
     val useProxy: Boolean,
     val useLocalEncryption: Boolean,
     // batchProcessingLevel.maxBatchesPerUploadJob
-    val batchProcessingLevel: Long
+    val batchProcessingLevel: Int
 ) {
     companion object {
         fun fromEvent(event: Map<*, *>, internalLogger: InternalLogger): TelemetryCoreConfiguration? {
@@ -26,7 +26,7 @@ internal data class TelemetryCoreConfiguration(
             val batchUploadFrequency = event["batch_upload_frequency"] as? Long
             val useProxy = event["use_proxy"] as? Boolean
             val useLocalEncryption = event["use_local_encryption"] as? Boolean
-            val batchProcessingLevel = event["batch_processing_level"] as? Long
+            val batchProcessingLevel = event["batch_processing_level"] as? Int
 
             @Suppress("ComplexCondition")
             if (trackErrors == null || batchSize == null || batchUploadFrequency == null ||
