@@ -17,7 +17,7 @@ class UserInfoForgeryFactory : ForgeryFactory<UserInfo> {
             id = forge.aNullable { anHexadecimalString() },
             name = forge.aNullable { forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+") },
             email = forge.aNullable { forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}") },
-            additionalProperties = forge.exhaustiveAttributes()
+            additionalProperties = forge.exhaustiveAttributes(excludedKeys = setOf("id", "name", "email"))
         )
     }
 }
