@@ -217,6 +217,8 @@ internal class RumFeature constructor(
         anrDetectorRunnable.stop()
         vitalExecutorService = NoOpScheduledExecutorService()
         sessionListener = NoOpRumSessionListener()
+
+        GlobalRumMonitor.unregister(sdkCore)
     }
 
     // endregion
