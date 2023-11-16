@@ -697,6 +697,23 @@ internal open class RumViewScope(
                     currentViewId
                 )
                 val replayStats = ViewEvent.ReplayStats(recordsCount = sessionReplayRecordsCount)
+                val syntheticsAttribute = if (
+                    rumContext.syntheticsTestId.isNullOrBlank() ||
+                    rumContext.syntheticsResultId.isNullOrBlank()
+                ) {
+                    null
+                } else {
+                    ViewEvent.Synthetics(
+                        testId = rumContext.syntheticsTestId,
+                        resultId = rumContext.syntheticsResultId
+                    )
+                }
+                val sessionType = if (syntheticsAttribute == null) {
+                    ViewEvent.ViewEventSessionType.USER
+                } else {
+                    ViewEvent.ViewEventSessionType.SYNTHETICS
+                }
+
                 val viewEvent = ViewEvent(
                     date = eventTimestamp,
                     featureFlags = ViewEvent.Context(additionalProperties = featureFlags),
@@ -742,10 +759,11 @@ internal open class RumViewScope(
                     application = ViewEvent.Application(rumContext.applicationId),
                     session = ViewEvent.ViewEventSession(
                         id = rumContext.sessionId,
-                        type = ViewEvent.ViewEventSessionType.USER,
+                        type = sessionType,
                         hasReplay = hasReplay,
                         isActive = rumContext.isSessionActive
                     ),
+                    synthetics = syntheticsAttribute,
                     source = ViewEvent.Source.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
