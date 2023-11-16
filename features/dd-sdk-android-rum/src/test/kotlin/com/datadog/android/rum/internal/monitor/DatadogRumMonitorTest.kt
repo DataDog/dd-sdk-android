@@ -1621,6 +1621,26 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M handle synthetics test attributes W setSyntheticsTestAttribute()`(
+        @StringForgery fakeTestId: String,
+        @StringForgery fakeResultId: String
+    ) {
+        // When
+        testedMonitor.setSyntheticsAttribute(fakeTestId, fakeResultId)
+        Thread.sleep(PROCESSING_DELAY)
+
+        // Then
+        argumentCaptor<RumRawEvent.SetSyntheticsTestAttribute> {
+            verify(mockScope).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            assertThat(lastValue.testId).isEqualTo(fakeTestId)
+            assertThat(lastValue.resultId).isEqualTo(fakeResultId)
+        }
+    }
+
+    @Test
     fun `M allow only one thread inside rootScope#handleEvent at the time W handleEvent()`(
         forge: Forge
     ) {

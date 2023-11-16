@@ -197,6 +197,12 @@ internal sealed class RumRawEvent {
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
+    internal data class SetSyntheticsTestAttribute(
+        val testId: String,
+        val resultId: String?,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
     internal data class WebViewEvent(override val eventTime: Time = Time()) : RumRawEvent()
 
     internal data class SendTelemetry(
