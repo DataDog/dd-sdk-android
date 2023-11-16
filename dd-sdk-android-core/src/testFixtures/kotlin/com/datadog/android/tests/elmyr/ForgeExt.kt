@@ -14,7 +14,9 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-fun Forge.exhaustiveAttributes(): MutableMap<String, Any?> {
+fun Forge.exhaustiveAttributes(
+    excludedKeys: Set<String> = emptySet()
+): MutableMap<String, Any?> {
     return listOf(
         aBool(),
         anInt(),
@@ -33,6 +35,7 @@ fun Forge.exhaustiveAttributes(): MutableMap<String, Any?> {
         null
     )
         .associateBy { anAlphaNumericalString() }
+        .filter { it.key !in excludedKeys }
         .toMutableMap()
 }
 
