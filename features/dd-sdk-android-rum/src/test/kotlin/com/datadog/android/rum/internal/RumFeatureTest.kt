@@ -13,6 +13,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
@@ -570,6 +571,20 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.dataWriter).isInstanceOf(NoOpDataWriter::class.java)
+    }
+
+    @Test
+    fun `𝕄 remove associated monitor 𝕎 onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(GlobalRumMonitor.isRegistered(mockSdkCore)).isFalse
+        assertThat(GlobalRumMonitor.get(mockSdkCore)).isInstanceOf(NoOpRumMonitor::class.java)
     }
 
     @ParameterizedTest

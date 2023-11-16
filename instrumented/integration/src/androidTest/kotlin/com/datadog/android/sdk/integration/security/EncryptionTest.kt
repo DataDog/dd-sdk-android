@@ -205,10 +205,6 @@ internal class EncryptionTest {
     private fun stopSdk() {
         Datadog.stopInstance()
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        GlobalRumMonitor::class.java.getDeclaredMethod("reset").apply {
-            isAccessible = true
-            invoke(null)
-        }
     }
 
     private fun flushAndShutdownExecutors() {

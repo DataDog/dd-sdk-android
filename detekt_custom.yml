@@ -902,6 +902,7 @@ datadog:
       - "kotlin.collections.MutableMap.put(kotlin.String, kotlin.String)"
       - "kotlin.collections.MutableMap.putAll(kotlin.collections.Map)"
       - "kotlin.collections.MutableMap.remove(androidx.compose.foundation.interaction.DragInteraction.Start)"
+      - "kotlin.collections.MutableMap.remove(com.datadog.android.api.SdkCore)"
       - "kotlin.collections.MutableMap.remove(com.datadog.android.rum.internal.vitals.VitalListener)"
       - "kotlin.collections.MutableMap.remove(kotlin.Int)"
       - "kotlin.collections.MutableMap.remove(kotlin.Long)"

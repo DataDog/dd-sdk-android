@@ -80,10 +80,6 @@ fun stopSdk() {
 
     // Reset Global states
     GlobalTracer::class.java.setStaticValue("isRegistered", false)
-    GlobalRumMonitor::class.java.getDeclaredMethod("reset").apply {
-        isAccessible = true
-        invoke(null)
-    }
 }
 
 fun flushAndShutdownExecutors() {
