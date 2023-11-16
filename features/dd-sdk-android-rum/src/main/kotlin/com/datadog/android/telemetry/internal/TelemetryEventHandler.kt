@@ -263,7 +263,7 @@ internal class TelemetryEventHandler(
                     sessionReplaySampleRate = sessionReplaySampleRate,
                     defaultPrivacyLevel = sessionReplayPrivacy,
                     startSessionReplayRecordingManually = startSessionReplayManually,
-                    batchProcessingLevel = coreConfiguration.batchProcessingLevel
+                    batchProcessingLevel = coreConfiguration.batchProcessingLevel.toLong()
                 )
             )
         )

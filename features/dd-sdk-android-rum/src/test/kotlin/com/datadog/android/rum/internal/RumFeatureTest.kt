@@ -1214,7 +1214,7 @@ internal class RumFeatureTest {
         @BoolForgery useLocalEncryption: Boolean,
         @LongForgery(min = 0L) batchSize: Long,
         @LongForgery(min = 0L) batchUploadFrequency: Long,
-        @LongForgery(min = 0L) batchProcessingLevel: Long
+        @IntForgery(min = 0) batchProcessingLevel: Int
     ) {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
