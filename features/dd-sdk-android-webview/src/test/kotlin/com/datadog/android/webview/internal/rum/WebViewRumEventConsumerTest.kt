@@ -834,12 +834,9 @@ internal class WebViewRumEventConsumerTest {
         }
 
         val expectedOffsets = LinkedHashMap<String, Long>()
-        val expectedOffsetsKeys = fakeViewEvents
-            .takeLast(WebViewRumEventConsumer.MAX_VIEW_TIME_OFFSETS_RETAIN)
-            .map { it.view.id }
-        val expectedOffsetsValues = fakeServerOffsets.takeLast(WebViewRumEventConsumer.MAX_VIEW_TIME_OFFSETS_RETAIN)
+        val expectedOffsetsKeys = fakeViewEvents.map { it.view.id }
         expectedOffsetsKeys.forEachIndexed { index, key ->
-            expectedOffsets[key] = expectedOffsetsValues[index]
+            expectedOffsets[key] = fakeServerOffsets[index]
         }
         whenever(
             mockWebViewRumEventMapper.mapEvent(
@@ -857,8 +854,12 @@ internal class WebViewRumEventConsumerTest {
 
         // Then
         val rumEventConsumer = testedConsumer as WebViewRumEventConsumer
+        // Because the threads are processed in any order,
+        // we can't guarantee the order of the entries, and can only assert
+        // the size of the offsets, and the pairs of key values in it
         assertThat(rumEventConsumer.offsets.entries)
-            .containsExactlyElementsOf(expectedOffsets.entries)
+            .containsAnyElementsOf(expectedOffsets.entries)
+            .hasSizeLessThanOrEqualTo(WebViewRumEventConsumer.MAX_VIEW_TIME_OFFSETS_RETAIN)
     }
 
     // endregion
