@@ -1207,7 +1207,7 @@ internal class BatchFileOrchestratorTest {
         repeat(repeatCount) {
             Thread {
                 val result = testedOrchestrator.getRootDir()
-                results.add(result)
+                synchronized(results) { results.add(result) }
                 countDownLatch.countDown()
             }.start()
         }
@@ -1215,7 +1215,9 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(countDownLatch.count).isZero()
-        assertThat(results).containsExactlyElementsOf(List(repeatCount) { fakeRootDir })
+        assertThat(results)
+            .hasSize(repeatCount)
+            .containsOnly(fakeRootDir)
         verifyNoInteractions(mockLogger)
     }
 
