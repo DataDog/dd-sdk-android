@@ -199,7 +199,7 @@ internal sealed class RumRawEvent {
 
     internal data class SetSyntheticsTestAttribute(
         val testId: String,
-        val resultId: String?,
+        val resultId: String,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
