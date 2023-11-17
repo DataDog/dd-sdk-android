@@ -8,6 +8,7 @@ package com.datadog.gradle.config
 
 import com.android.build.api.dsl.ApplicationProductFlavor
 import com.google.gson.Gson
+import org.gradle.api.Project
 import java.io.File
 import java.util.Locale
 
@@ -23,9 +24,13 @@ fun sampleAppConfig(filePath: String): SampleAppConfig {
 }
 
 @Suppress("UnstableApiUsage")
-fun configureFlavorForSampleApp(flavor: ApplicationProductFlavor, rootDir: File) {
+fun configureFlavorForSampleApp(
+    project: Project,
+    flavor: ApplicationProductFlavor,
+    rootDir: File
+) {
     val config = sampleAppConfig("${rootDir.absolutePath}/config/${flavor.name}.json")
-    println("Configuring flavor: [${flavor.name}] with config: [$config]")
+    project.logger.info("Configuring flavor: [${flavor.name}] with config: [$config]")
     flavor.buildConfigField(
         "String",
         "DD_OVERRIDE_LOGS_URL",

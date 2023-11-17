@@ -46,7 +46,7 @@ open class GenerateApiSurfaceTask : DefaultTask() {
 
     private fun visitDirectoryRecursively(file: File) {
         when {
-            !file.exists() -> logger.warn("File $file doesn't exist, ignoring")
+            !file.exists() -> logger.info("File $file doesn't exist, ignoring")
             file.isDirectory ->
                 file.listFiles().orEmpty()
                     .sortedBy { it.absolutePath }

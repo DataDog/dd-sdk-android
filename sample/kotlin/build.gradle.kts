@@ -84,7 +84,7 @@ android {
             register(region) {
                 isDefault = index == 0
                 dimension = "site"
-                configureFlavorForSampleApp(this, project.rootDir)
+                configureFlavorForSampleApp(project, this, project.rootDir)
             }
         }
     }
