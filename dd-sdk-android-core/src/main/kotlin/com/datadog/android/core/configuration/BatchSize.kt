@@ -17,11 +17,11 @@ enum class BatchSize(
 ) {
 
     /** Prefer small batches. **/
-    SMALL(5000L),
+    SMALL(3000L),
 
     /** Prefer medium sized batches. **/
-    MEDIUM(15000L),
+    MEDIUM(10000L),
 
     /** Prefer large batches. **/
-    LARGE(60000L);
+    LARGE(35000L);
 }
