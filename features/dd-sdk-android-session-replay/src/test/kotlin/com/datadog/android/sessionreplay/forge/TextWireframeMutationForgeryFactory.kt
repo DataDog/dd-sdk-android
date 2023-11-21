@@ -15,7 +15,7 @@ internal class TextWireframeMutationForgeryFactory :
     override fun getForgery(forge: Forge):
         MobileSegment.WireframeUpdateMutation.TextWireframeUpdate {
         return MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
-            id = forge.aPositiveLong(),
+            id = forge.aPositiveInt().toLong(),
             x = forge.aNullable { aPositiveLong() },
             y = forge.aNullable { aPositiveLong() },
             width = forge.aNullable { aPositiveLong(strict = true) },
