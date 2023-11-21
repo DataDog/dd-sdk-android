@@ -75,9 +75,9 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(libs.okHttp)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
+    testImplementation(libs.okHttp)
     testImplementation(libs.okHttpMock)
     testImplementation(libs.bundles.openTracing)
     unmock(libs.robolectric)
