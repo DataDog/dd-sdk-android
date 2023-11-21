@@ -115,4 +115,23 @@ internal class UniqueIdentifierGeneratorTest {
 
         assertThat(generatedUniqueNumbers).isEmpty()
     }
+
+    @Test
+    fun `M always generate a 32bit Int compatible identifier W resolveChildUniqueIdentifier`(forge: Forge) {
+        // Given
+        val numberOfCalls = 1000
+
+        // When
+        val results = forge.aList<View>(numberOfCalls) { mock() }
+            .map {
+                UniqueIdentifierGenerator.resolveChildUniqueIdentifier(mock(), forge.aString())
+            }
+
+        // Then
+        results.forEach {
+            if (it != null) {
+                assertThat(it).isBetween(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong())
+            }
+        }
+    }
 }

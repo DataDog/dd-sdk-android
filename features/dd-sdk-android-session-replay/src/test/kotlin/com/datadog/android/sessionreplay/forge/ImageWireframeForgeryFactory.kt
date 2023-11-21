@@ -14,7 +14,7 @@ internal class ImageWireframeForgeryFactory :
     ForgeryFactory<MobileSegment.Wireframe.ImageWireframe> {
     override fun getForgery(forge: Forge): MobileSegment.Wireframe.ImageWireframe {
         return MobileSegment.Wireframe.ImageWireframe(
-            id = forge.aPositiveLong(),
+            id = forge.aPositiveInt().toLong(),
             x = forge.aPositiveLong(),
             y = forge.aPositiveLong(),
             width = forge.aPositiveLong(strict = true),

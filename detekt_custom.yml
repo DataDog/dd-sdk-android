@@ -707,6 +707,7 @@ datadog:
       - "java.security.MessageDigest.update(kotlin.ByteArray?)"
       - "java.security.SecureRandom.constructor()"
       - "java.security.SecureRandom.nextFloat()"
+      - "java.security.SecureRandom.nextInt()"
       - "java.security.SecureRandom.nextLong()"
       - "java.util.HashSet.find(kotlin.Function1)"
       - "java.util.Properties.constructor()"
