@@ -38,7 +38,8 @@ internal class RumApplicationScope(
     private val appStartTimeProvider: AppStartTimeProvider = DefaultAppStartTimeProvider()
 ) : RumScope, RumViewChangedListener {
 
-    private val rumContext = RumContext(applicationId = applicationId)
+    private var rumContext = RumContext(applicationId = applicationId)
+
     internal val childScopes: MutableList<RumScope> = mutableListOf(
         RumSessionScope(
             this,
@@ -71,6 +72,13 @@ internal class RumApplicationScope(
         event: RumRawEvent,
         writer: DataWriter<Any>
     ): RumScope {
+        if (event is RumRawEvent.SetSyntheticsTestAttribute) {
+            rumContext = rumContext.copy(
+                syntheticsTestId = event.testId,
+                syntheticsResultId = event.resultId
+            )
+        }
+
         val isInteraction = (event is RumRawEvent.StartView) || (event is RumRawEvent.StartAction)
         if (activeSession == null && isInteraction) {
             startNewSession(event, writer)

@@ -7,8 +7,12 @@
 package com.datadog.android.core.internal.persistence
 
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -22,6 +26,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
 internal class NoOpEventBatchWriterTest {
 
     private lateinit var testedWriter: EventBatchWriter
@@ -38,13 +43,13 @@ internal class NoOpEventBatchWriterTest {
 
     @Test
     fun `𝕄 notify about successful write 𝕎 write()`(
-        @StringForgery fakeData: String,
+        @Forgery fakeData: RawBatchEvent,
         @StringForgery fakeMetadata: String,
         forge: Forge
     ) {
         // When
         val result = testedWriter.write(
-            fakeData.toByteArray(),
+            fakeData,
             forge.aNullable { fakeMetadata.toByteArray() }
         )
 

@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.event.EventMapper
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
@@ -123,7 +124,7 @@ internal class TraceWriterTest {
 
         // THEN
         serializedSpans.forEach {
-            verify(mockEventBatchWriter).write(it.toByteArray(), null)
+            verify(mockEventBatchWriter).write(RawBatchEvent(data = it.toByteArray()), null)
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
 
@@ -160,7 +161,7 @@ internal class TraceWriterTest {
 
         // THEN
         serializedSpans.forEach {
-            verify(mockEventBatchWriter).write(it.toByteArray(), null)
+            verify(mockEventBatchWriter).write(RawBatchEvent(data = it.toByteArray()), null)
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
 
@@ -192,7 +193,7 @@ internal class TraceWriterTest {
 
         // THEN
         serializedSpans.filterNotNull().forEach {
-            verify(mockEventBatchWriter).write(it.toByteArray(), null)
+            verify(mockEventBatchWriter).write(RawBatchEvent(data = it.toByteArray()), null)
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
 
@@ -251,7 +252,7 @@ internal class TraceWriterTest {
         // THEN
         serializedSpans.forEachIndexed { index, serializedSpan ->
             if (index != faultySpanIndex) {
-                verify(mockEventBatchWriter).write(serializedSpan.toByteArray(), null)
+                verify(mockEventBatchWriter).write(RawBatchEvent(data = serializedSpan.toByteArray()), null)
             }
         }
         verifyNoMoreInteractions(mockEventBatchWriter)

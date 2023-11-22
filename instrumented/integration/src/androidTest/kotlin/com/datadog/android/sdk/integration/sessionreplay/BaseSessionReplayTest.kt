@@ -40,10 +40,6 @@ internal abstract class BaseSessionReplayTest<R : Activity> {
     fun tearDown() {
         GlobalRumMonitor.get().stopSession()
         Datadog.stopInstance()
-        GlobalRumMonitor::class.java.getDeclaredMethod("reset").apply {
-            isAccessible = true
-            invoke(null)
-        }
     }
 
     protected fun assessSrPayload(payloadFileName: String, rule: SessionReplayTestRule<R>) {

@@ -4,9 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.java11
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -37,49 +36,9 @@ plugins {
 }
 
 android {
-    compileSdk = AndroidConfig.TARGET_SDK
-    buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
-
-    defaultConfig {
-        minSdk = AndroidConfig.MIN_SDK
-        targetSdk = AndroidConfig.TARGET_SDK
-    }
-
     namespace = "com.datadog.android.sessionreplay.material"
-
-    sourceSets.named("test") {
-        java.srcDir("src/test/kotlin")
-    }
-    sourceSets.named("androidTest") {
-        java.srcDir("src/androidTest/kotlin")
-    }
-
-    compileOptions {
-        java11()
-    }
-
-    testOptions {
-        unitTests.isReturnDefaultValues = true
-    }
-
-    packaging {
-        resources {
-            excludes += listOf(
-                "META-INF/jvm.kotlin_module",
-                "META-INF/LICENSE.md",
-                "META-INF/LICENSE-notice.md"
-            )
-        }
-    }
-
-    lint {
-        warningsAsErrors = true
-        abortOnError = true
-        checkReleaseBuilds = false
-        checkGeneratedSources = true
-        ignoreTestSources = true
-    }
 }
+
 dependencies {
     api(project(":features:dd-sdk-android-session-replay"))
     implementation(libs.kotlin)
@@ -96,12 +55,10 @@ dependencies {
     }
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
-
-    // TODO MTG-12 detekt(project(":tools:detekt"))
-    // TODO MTG-12 detekt(libs.detektCli)
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+androidLibraryConfig()
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()

@@ -44,6 +44,36 @@ object GlobalRumMonitor {
     }
 
     /**
+     * Returns the constant [RumMonitor] instance.
+     *
+     * Until a RUM feature is enabled, a no-op implementation is returned.
+     *
+     * @return The monitor associated with the instance given instance, or a no-op monitor. If SDK
+     * instance is not provided, default instance will be used.
+     */
+    @JvmOverloads
+    @JvmStatic
+    fun get(sdkCore: SdkCore = Datadog.getInstance()): RumMonitor {
+        return synchronized(registeredMonitors) {
+            val monitor = registeredMonitors[sdkCore]
+            if (monitor == null) {
+                (sdkCore as? FeatureSdkCore)
+                    ?.internalLogger
+                    ?.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.USER,
+                        { NO_MONITOR_REGISTERED_MESSAGE.format(Locale.US, sdkCore.name) }
+                    )
+                NoOpRumMonitor()
+            } else {
+                monitor
+            }
+        }
+    }
+
+    // region Internal
+
+    /**
      * Register a [RumMonitor] with an [SdkCore] to back the behaviour of the [get] function.
      *
      * Registration is a one-time operation. Once a monitor has been registered, all attempts at re-registering
@@ -74,35 +104,11 @@ object GlobalRumMonitor {
         }
     }
 
-    /**
-     * Returns the constant [RumMonitor] instance.
-     *
-     * Until a RUM feature is enabled, a no-op implementation is returned.
-     *
-     * @return The monitor associated with the instance given instance, or a no-op monitor. If SDK
-     * instance is not provided, default instance will be used.
-     */
-    @JvmOverloads
-    @JvmStatic
-    fun get(sdkCore: SdkCore = Datadog.getInstance()): RumMonitor {
-        return synchronized(registeredMonitors) {
-            val monitor = registeredMonitors[sdkCore]
-            if (monitor == null) {
-                (sdkCore as? FeatureSdkCore)
-                    ?.internalLogger
-                    ?.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.USER,
-                        { NO_MONITOR_REGISTERED_MESSAGE.format(Locale.US, sdkCore.name) }
-                    )
-                NoOpRumMonitor()
-            } else {
-                monitor
-            }
+    internal fun unregister(sdkCore: SdkCore = Datadog.getInstance()) {
+        synchronized(registeredMonitors) {
+            registeredMonitors.remove(sdkCore)
         }
     }
-
-    // region Internal
 
     internal fun clear() {
         synchronized(registeredMonitors) {

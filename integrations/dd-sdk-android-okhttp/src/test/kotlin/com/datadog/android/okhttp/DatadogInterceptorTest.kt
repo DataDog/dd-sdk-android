@@ -156,6 +156,14 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         // Then
         assertThat(interceptor.tracedHosts.keys).containsAll(hosts)
+        val allHeaderTypes = interceptor.tracedHosts
+            .values
+            .fold(mutableSetOf<TracingHeaderType>()) { acc, tracingHeaderTypes ->
+                acc.apply { this += tracingHeaderTypes }
+            }
+        assertThat(allHeaderTypes).isEqualTo(
+            setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
+        )
         assertThat(interceptor.rumResourceAttributesProvider)
             .isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
         assertThat(interceptor.tracedRequestListener)

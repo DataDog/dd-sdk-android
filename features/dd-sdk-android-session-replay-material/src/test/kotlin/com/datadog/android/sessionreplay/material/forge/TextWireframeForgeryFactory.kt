@@ -14,7 +14,7 @@ internal class TextWireframeForgeryFactory :
     ForgeryFactory<MobileSegment.Wireframe.TextWireframe> {
     override fun getForgery(forge: Forge): MobileSegment.Wireframe.TextWireframe {
         return MobileSegment.Wireframe.TextWireframe(
-            id = forge.aPositiveLong(),
+            id = forge.aPositiveInt().toLong(),
             x = forge.aPositiveLong(),
             y = forge.aPositiveLong(),
             width = forge.aPositiveLong(strict = true),

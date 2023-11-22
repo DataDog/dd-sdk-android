@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.data.upload
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.RequestFactory
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -175,13 +176,12 @@ internal class DataOkHttpUploaderTest {
 
     @Test
     fun `𝕄 redact invalid user agent header 𝕎 upload()`(
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery(regex = "[a-z]+") validValue: String,
         @StringForgery(regex = "[\u007F-\u00FF]+") invalidValuePostfix: String
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
 
         fakeSystemUserAgent = validValue + invalidValuePostfix
@@ -189,7 +189,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(202, "{}")
 
         // When
-        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.Success::class.java)
@@ -200,12 +200,11 @@ internal class DataOkHttpUploaderTest {
 
     @Test
     fun `𝕄 replace fully invalid user agent header 𝕎 upload()`(
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery(regex = "[\u007F-\u00FF]+") invalidValue: String
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
 
         fakeSystemUserAgent = invalidValue
@@ -213,7 +212,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(202, "{}")
 
         // When
-        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.Success::class.java)
@@ -224,24 +223,23 @@ internal class DataOkHttpUploaderTest {
 
     @Test
     fun `𝕄 return client token error 𝕎 upload() { bad api key format }`(
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery(regex = "[\u007F-\u00FF]+") invalidValue: String,
         forge: Forge
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
         fakeDatadogRequest = fakeDatadogRequest.copy(
             headers = fakeDatadogRequest.headers.toMutableMap().apply {
                 put(RequestFactory.HEADER_API_KEY, forge.anElementFrom("", invalidValue))
             }
         )
-        whenever(mockRequestFactory.create(fakeContext, batchData, batchMetadata)) doReturn
+        whenever(mockRequestFactory.create(fakeContext, batch, batchMetadata)) doReturn
             fakeDatadogRequest
 
         // When
-        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.InvalidTokenError::class.java)
@@ -253,17 +251,16 @@ internal class DataOkHttpUploaderTest {
 
     @Test
     fun `𝕄 return success 𝕎 upload() {202 accepted status} `(
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
         whenever(mockCall.execute()) doReturn mockResponse(202, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.Success::class.java)
@@ -274,17 +271,16 @@ internal class DataOkHttpUploaderTest {
 
     @Test
     fun `𝕄 return client error 𝕎 upload() {400 bad request status}`(
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
         whenever(mockCall.execute()) doReturn mockResponse(400, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.HttpClientError::class.java)
@@ -295,17 +291,16 @@ internal class DataOkHttpUploaderTest {
 
     @Test
     fun `𝕄 return client token error 𝕎 upload() {401 unauthorized status}`(
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
         whenever(mockCall.execute()) doReturn mockResponse(401, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.InvalidTokenError::class.java)
@@ -316,17 +311,16 @@ internal class DataOkHttpUploaderTest {
 
     @Test
     fun `𝕄 return client error 𝕎 upload() {403 forbidden status}`(
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
         whenever(mockCall.execute()) doReturn mockResponse(403, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.InvalidTokenError::class.java)
@@ -337,17 +331,16 @@ internal class DataOkHttpUploaderTest {
 
     @Test
     fun `𝕄 return client error with retry 𝕎 upload() {408 timeout status}`(
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
         whenever(mockCall.execute()) doReturn mockResponse(408, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.HttpClientRateLimiting::class.java)
@@ -358,17 +351,16 @@ internal class DataOkHttpUploaderTest {
 
     @Test
     fun `𝕄 return client error 𝕎 upload() {413 too large status}`(
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
         whenever(mockCall.execute()) doReturn mockResponse(413, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.HttpClientError::class.java)
@@ -379,17 +371,16 @@ internal class DataOkHttpUploaderTest {
 
     @Test
     fun `𝕄 return client error with retry 𝕎 upload() {429 too many requests status}`(
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
         whenever(mockCall.execute()) doReturn mockResponse(429, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.HttpClientRateLimiting::class.java)
@@ -400,17 +391,16 @@ internal class DataOkHttpUploaderTest {
 
     @Test
     fun `𝕄 return server error 𝕎 upload() {500 internal error status}`(
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
         whenever(mockCall.execute()) doReturn mockResponse(500, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.HttpServerError::class.java)
@@ -421,17 +411,16 @@ internal class DataOkHttpUploaderTest {
 
     @Test
     fun `𝕄 return server error 𝕎 upload() {503 unavailable status}`(
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
         whenever(mockCall.execute()) doReturn mockResponse(503, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.HttpServerError::class.java)
@@ -446,13 +435,12 @@ internal class DataOkHttpUploaderTest {
 
     @RepeatedTest(32)
     fun `𝕄 return unknown error 𝕎 upload() {xxx status}`(
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         forge: Forge,
         @StringForgery message: String
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
 
         var statusCode: Int
@@ -462,7 +450,7 @@ internal class DataOkHttpUploaderTest {
         whenever(mockCall.execute()) doReturn mockResponse(statusCode, message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.UnknownError::class.java)
@@ -473,17 +461,16 @@ internal class DataOkHttpUploaderTest {
 
     @Test
     fun `𝕄 return error 𝕎 upload() {IOException}`(
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
         whenever(mockCall.execute()) doThrow IOException(message)
 
         // When
-        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.NetworkError::class.java)
@@ -493,17 +480,16 @@ internal class DataOkHttpUploaderTest {
 
     @Test
     fun `𝕄 return error 𝕎 upload() {any Throwable}`(
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @Forgery throwable: Throwable
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
         whenever(mockCall.execute()) doThrow throwable
 
         // When
-        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.NetworkError::class.java)
@@ -514,17 +500,16 @@ internal class DataOkHttpUploaderTest {
     @Test
     fun `M return RequestCreationError W upload() { request factory throws }`(
         @Forgery fakeException: Exception,
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
-        whenever(mockRequestFactory.create(fakeContext, batchData, batchMetadata))
+        whenever(mockRequestFactory.create(fakeContext, batch, batchMetadata))
             .doThrow(fakeException)
 
         // When
-        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+        val result = testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         assertThat(result).isInstanceOf(UploadStatus.RequestCreationError::class.java)
@@ -535,17 +520,16 @@ internal class DataOkHttpUploaderTest {
     @Test
     fun `M log the exception to telemetry W upload() { request factory throws }`(
         @Forgery fakeException: Exception,
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
-        whenever(mockRequestFactory.create(fakeContext, batchData, batchMetadata))
+        whenever(mockRequestFactory.create(fakeContext, batch, batchMetadata))
             .doThrow(fakeException)
 
         // When
-        testedUploader.upload(fakeContext, batchData, batchMetadata)
+        testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         mockLogger.verifyLog(
@@ -561,14 +545,13 @@ internal class DataOkHttpUploaderTest {
 
     @Test
     fun `𝕄 log warning 𝕎 upload() { feature request has user-agent header }`(
-        @StringForgery batch: List<String>,
+        @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String,
         @StringForgery userAgentValue: String,
         forge: Forge
     ) {
         // Given
-        val batchData = batch.map { it.toByteArray() }
         val batchMetadata = batchMeta.toByteArray()
         whenever(mockCall.execute()) doReturn mockResponse(202, message)
 
@@ -578,11 +561,11 @@ internal class DataOkHttpUploaderTest {
             }
         )
 
-        whenever(mockRequestFactory.create(fakeContext, batchData, batchMetadata)) doReturn
+        whenever(mockRequestFactory.create(fakeContext, batch, batchMetadata)) doReturn
             fakeDatadogRequest
 
         // When
-        testedUploader.upload(fakeContext, batchData, batchMetadata)
+        testedUploader.upload(fakeContext, batch, batchMetadata)
 
         // Then
         mockLogger.verifyLog(

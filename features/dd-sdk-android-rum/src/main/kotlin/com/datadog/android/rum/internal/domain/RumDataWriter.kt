@@ -9,10 +9,12 @@ package com.datadog.android.rum.internal.domain
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.serializeToByteArray
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.internal.domain.event.RumEventMeta
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
@@ -22,7 +24,8 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 
 internal class RumDataWriter(
-    internal val serializer: Serializer<Any>,
+    internal val eventSerializer: Serializer<Any>,
+    private val eventMetaSerializer: Serializer<RumEventMeta>,
     private val sdkCore: InternalSdkCore
 ) : DataWriter<Any> {
 
@@ -30,13 +33,29 @@ internal class RumDataWriter(
 
     @WorkerThread
     override fun write(writer: EventBatchWriter, element: Any): Boolean {
-        val byteArray = serializer.serializeToByteArray(
+        val byteArray = eventSerializer.serializeToByteArray(
             element,
             sdkCore.internalLogger
         ) ?: return false
 
+        val batchEvent = if (element is ViewEvent) {
+            val eventMeta = RumEventMeta.View(
+                viewId = element.view.id,
+                documentVersion = element.dd.documentVersion
+            )
+            val serializedEventMeta =
+                eventMetaSerializer.serializeToByteArray(eventMeta, sdkCore.internalLogger)
+                    ?: EMPTY_BYTE_ARRAY
+            RawBatchEvent(
+                data = byteArray,
+                metadata = serializedEventMeta
+            )
+        } else {
+            RawBatchEvent(data = byteArray)
+        }
+
         synchronized(this) {
-            val result = writer.write(byteArray, null)
+            val result = writer.write(batchEvent, null)
             if (result) {
                 onDataWritten(element, byteArray)
             }
@@ -85,4 +104,8 @@ internal class RumDataWriter(
     }
 
     // endregion
+
+    companion object {
+        val EMPTY_BYTE_ARRAY = ByteArray(0)
+    }
 }

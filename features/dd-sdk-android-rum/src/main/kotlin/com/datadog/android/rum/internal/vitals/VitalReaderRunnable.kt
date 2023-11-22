@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.vitals
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -22,8 +23,9 @@ internal class VitalReaderRunnable(
 ) : Runnable {
 
     override fun run() {
-        val rumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
-        val rumViewType = rumContext["view_type"] as? RumViewScope.RumViewType
+        val rumContext =
+            RumContext.fromFeatureContext(sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME))
+        val rumViewType = rumContext.viewType
         if (rumViewType == RumViewScope.RumViewType.FOREGROUND) {
             val data = reader.readVitalData()
             if (data != null) {

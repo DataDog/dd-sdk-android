@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.forge
 
+import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.jvm.useJvmFactories
@@ -16,7 +17,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
         super.configure(forge)
 
         // Core
-        forge.addFactory(DatadogContextForgeryFactory())
+        forge.useCoreFactories()
 
         // Session Replay
         forge.addFactory(NodeForgeryFactory())
@@ -48,6 +49,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(PlaceholderWireframeForgeryFactory())
         forge.addFactory(SnapshotRecordedDataQueueItemForgeryFactory())
         forge.addFactory(TouchEventRecordedDataQueueItemForgeryFactory())
+        forge.addFactory(WireframeBoundsForgeryFactory())
 
         forge.useJvmFactories()
     }

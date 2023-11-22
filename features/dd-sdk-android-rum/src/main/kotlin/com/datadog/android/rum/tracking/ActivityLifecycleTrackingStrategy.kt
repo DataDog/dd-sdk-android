@@ -15,7 +15,9 @@ import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 
 /**
  * The ActivityLifecycleTrackingStrategy as an [Application.ActivityLifecycleCallbacks]
@@ -89,7 +91,17 @@ abstract class ActivityLifecycleTrackingStrategy :
 
     @MainThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-        // No Op
+        val intent = activity.intent
+        val extras = intent.extras
+        val testId = extras?.getString("_dd.synthetics.test_id")
+        val resultId = extras?.getString("_dd.synthetics.result_id")
+        if (!testId.isNullOrBlank() && !resultId.isNullOrBlank()) {
+            (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)
+                ?.setSyntheticsAttribute(
+                    testId,
+                    resultId
+                )
+        }
     }
 
     @MainThread
@@ -178,5 +190,8 @@ abstract class ActivityLifecycleTrackingStrategy :
         internal const val ARGUMENT_TAG = "view.arguments"
         internal const val INTENT_ACTION_TAG = "view.intent.action"
         internal const val INTENT_URI_TAG = "view.intent.uri"
+
+        internal const val EXTRA_SYNTHETICS_TEST_ID = "_dd.synthetics.test_id"
+        internal const val EXTRA_SYNTHETICS_RESULT_ID = "_dd.synthetics.result_id"
     }
 }

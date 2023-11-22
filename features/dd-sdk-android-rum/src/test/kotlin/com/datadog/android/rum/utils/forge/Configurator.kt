@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.utils.forge
 
+import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.jvm.useJvmFactories
@@ -17,12 +18,7 @@ internal class Configurator : BaseConfigurator() {
         forge.useJvmFactories()
 
         // Core
-        forge.addFactory(DatadogContextForgeryFactory())
-        forge.addFactory(TimeInfoForgeryFactory())
-        forge.addFactory(ProcessInfoForgeryFactory())
-        forge.addFactory(NetworkInfoForgeryFactory())
-        forge.addFactory(UserInfoForgeryFactory())
-        forge.addFactory(DeviceInfoForgeryFactory())
+        forge.useCoreFactories()
 
         // RUM
         forge.addFactory(ConfigurationRumForgeryFactory())
@@ -38,6 +34,8 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(ViewEventForgeryFactory())
         forge.addFactory(VitalInfoForgeryFactory())
         forge.addFactory(TelemetryCoreConfigurationForgeryFactory())
+        forge.addFactory(RumEventMetaForgeryFactory())
+        forge.addFactory(ViewEventMetaForgeryFactory())
 
         // Telemetry
         forge.addFactory(TelemetryDebugEventForgeryFactory())

@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.domain
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestFactory
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import okhttp3.RequestBody
@@ -24,10 +25,10 @@ internal class SessionReplayRequestFactory(
 
     override fun create(
         context: DatadogContext,
-        batchData: List<ByteArray>,
+        batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
     ): Request {
-        val serializedSegmentPair = batchToSegmentsMapper.map(batchData)
+        val serializedSegmentPair = batchToSegmentsMapper.map(batchData.map { it.data })
         if (serializedSegmentPair == null) {
             @Suppress("ThrowingInternalException")
             throw InvalidPayloadFormatException(

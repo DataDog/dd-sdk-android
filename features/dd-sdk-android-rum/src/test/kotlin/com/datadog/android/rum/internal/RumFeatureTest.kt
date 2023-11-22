@@ -13,6 +13,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
@@ -434,7 +435,7 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.dataWriter).isInstanceOf(RumDataWriter::class.java)
-        val serializer = (testedFeature.dataWriter as RumDataWriter).serializer
+        val serializer = (testedFeature.dataWriter as RumDataWriter).eventSerializer
         assertThat(serializer).isInstanceOf(MapperSerializer::class.java)
         val eventMapper = (serializer as MapperSerializer)
             .getFieldValue<EventMapper<*>, MapperSerializer<*>>("eventMapper")
@@ -570,6 +571,20 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.dataWriter).isInstanceOf(NoOpDataWriter::class.java)
+    }
+
+    @Test
+    fun `𝕄 remove associated monitor 𝕎 onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(GlobalRumMonitor.isRegistered(mockSdkCore)).isFalse
+        assertThat(GlobalRumMonitor.get(mockSdkCore)).isInstanceOf(NoOpRumMonitor::class.java)
     }
 
     @ParameterizedTest
@@ -1213,7 +1228,8 @@ internal class RumFeatureTest {
         @BoolForgery useProxy: Boolean,
         @BoolForgery useLocalEncryption: Boolean,
         @LongForgery(min = 0L) batchSize: Long,
-        @LongForgery(min = 0L) batchUploadFrequency: Long
+        @LongForgery(min = 0L) batchUploadFrequency: Long,
+        @IntForgery(min = 0) batchProcessingLevel: Int
     ) {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
@@ -1223,7 +1239,8 @@ internal class RumFeatureTest {
             "batch_size" to batchSize,
             "batch_upload_frequency" to batchUploadFrequency,
             "use_proxy" to useProxy,
-            "use_local_encryption" to useLocalEncryption
+            "use_local_encryption" to useLocalEncryption,
+            "batch_processing_level" to batchProcessingLevel
         )
 
         // When
@@ -1237,7 +1254,8 @@ internal class RumFeatureTest {
                     batchSize = batchSize,
                     batchUploadFrequency = batchUploadFrequency,
                     useProxy = useProxy,
-                    useLocalEncryption = useLocalEncryption
+                    useLocalEncryption = useLocalEncryption,
+                    batchProcessingLevel = batchProcessingLevel
                 )
             )
 

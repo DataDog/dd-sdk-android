@@ -24,7 +24,7 @@ internal class NdkNetworkInfoDataWriter(
     storageDir: File,
     consentProvider: ConsentProvider,
     executorService: ExecutorService,
-    fileWriter: FileWriter,
+    fileWriter: FileWriter<ByteArray>,
     fileMover: FileMover,
     internalLogger: InternalLogger,
     filePersistenceConfig: FilePersistenceConfig

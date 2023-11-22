@@ -12,6 +12,7 @@ import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.file.FileReader
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
@@ -99,7 +100,7 @@ internal class DatadogNdkCrashHandlerTest {
     lateinit var mockRumFileReader: BatchFileReader
 
     @Mock
-    lateinit var mockEnvFileReader: FileReader
+    lateinit var mockEnvFileReader: FileReader<ByteArray>
 
     lateinit var fakeNdkCacheDir: File
 
@@ -114,7 +115,7 @@ internal class DatadogNdkCrashHandlerTest {
         fakeNdkCacheDir = File(tempDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME)
         whenever(mockRumFileReader.readData(any())) doAnswer {
             listOf(
-                it.getArgument<File>(0).readBytes()
+                RawBatchEvent(it.getArgument<File>(0).readBytes())
             )
         }
         whenever(mockEnvFileReader.readData(any())) doAnswer {

@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.security.Encryption
 import java.io.File
 
@@ -20,12 +21,15 @@ internal class EncryptedBatchReaderWriter(
     @WorkerThread
     override fun writeData(
         file: File,
-        data: ByteArray,
+        data: RawBatchEvent,
         append: Boolean
     ): Boolean {
-        val encryptedData = encryption.encrypt(data)
+        val encryptedRawBatchEvent = RawBatchEvent(
+            data = encryption.encrypt(data.data),
+            metadata = encryption.encrypt(data.metadata)
+        )
 
-        if (data.isNotEmpty() && encryptedData.isEmpty()) {
+        if (data.data.isNotEmpty() && encryptedRawBatchEvent.data.isEmpty()) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
@@ -36,7 +40,7 @@ internal class EncryptedBatchReaderWriter(
 
         return delegate.writeData(
             file,
-            encryptedData,
+            encryptedRawBatchEvent,
             append
         )
     }
@@ -44,10 +48,13 @@ internal class EncryptedBatchReaderWriter(
     @WorkerThread
     override fun readData(
         file: File
-    ): List<ByteArray> {
+    ): List<RawBatchEvent> {
         return delegate.readData(file)
             .map {
-                encryption.decrypt(it)
+                RawBatchEvent(
+                    data = if (it.data.isNotEmpty()) encryption.decrypt(it.data) else it.data,
+                    metadata = if (it.metadata.isNotEmpty()) encryption.decrypt(it.metadata) else it.metadata
+                )
             }
     }
 

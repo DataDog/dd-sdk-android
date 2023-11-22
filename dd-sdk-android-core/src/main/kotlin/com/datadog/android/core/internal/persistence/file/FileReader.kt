@@ -9,7 +9,7 @@ package com.datadog.android.core.internal.persistence.file
 import androidx.annotation.WorkerThread
 import java.io.File
 
-internal interface FileReader {
+internal interface FileReader<T> {
 
     /**
      * Reads data from the given file.
@@ -17,7 +17,5 @@ internal interface FileReader {
      *  @return the data
      */
     @WorkerThread
-    fun readData(
-        file: File
-    ): ByteArray
+    fun readData(file: File): T
 }

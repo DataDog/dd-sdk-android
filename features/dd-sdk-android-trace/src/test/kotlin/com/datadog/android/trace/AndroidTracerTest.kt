@@ -492,6 +492,31 @@ internal class AndroidTracerTest {
     }
 
     @Test
+    fun `it will build a valid Tracer with DATADOG and TRACECONTEXT propagation by default`() {
+        // Given
+
+        // When
+        val tracer = testedTracerBuilder
+            .build()
+        val properties = testedTracerBuilder.properties()
+
+        // Then
+        assertThat(tracer).isNotNull()
+
+        val injectionStyles =
+            properties.getProperty(Config.PROPAGATION_STYLE_INJECT).toString().split(",").toSet()
+        val extractionStyles =
+            properties.getProperty(Config.PROPAGATION_STYLE_EXTRACT).toString().split(",").toSet()
+
+        val expectedPropagationStyles =
+            listOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
+                .map { it.headerType }
+                .toSet()
+        assertThat(injectionStyles).isEqualTo(expectedPropagationStyles)
+        assertThat(extractionStyles).isEqualTo(expectedPropagationStyles)
+    }
+
+    @Test
     fun `it will build a valid Tracer with global tags { addGlobalTag }`(
         @StringForgery operation: String,
         @StringForgery key: String,

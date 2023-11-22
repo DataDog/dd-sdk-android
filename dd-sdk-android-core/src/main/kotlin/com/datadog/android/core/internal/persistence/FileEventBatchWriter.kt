@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.persistence
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.FileWriter
@@ -19,7 +20,7 @@ import java.util.Locale
 internal class FileEventBatchWriter(
     private val batchFile: File,
     private val metadataFile: File?,
-    private val eventsWriter: FileWriter,
+    private val eventsWriter: FileWriter<RawBatchEvent>,
     private val metadataReaderWriter: FileReaderWriter,
     private val filePersistenceConfig: FilePersistenceConfig,
     private val internalLogger: InternalLogger
@@ -34,17 +35,17 @@ internal class FileEventBatchWriter(
 
     @WorkerThread
     override fun write(
-        event: ByteArray,
-        newMetadata: ByteArray?
+        event: RawBatchEvent,
+        batchMetadata: ByteArray?
     ): Boolean {
         // prevent useless operation for empty event
-        return if (event.isEmpty()) {
+        return if (event.data.isEmpty()) {
             true
-        } else if (!checkEventSize(event.size)) {
+        } else if (!checkEventSize(event.data.size)) {
             false
         } else if (eventsWriter.writeData(batchFile, event, true)) {
-            if (newMetadata?.isNotEmpty() == true && metadataFile != null) {
-                writeBatchMetadata(metadataFile, newMetadata)
+            if (batchMetadata?.isNotEmpty() == true && metadataFile != null) {
+                writeBatchMetadata(metadataFile, batchMetadata)
             }
             true
         } else {

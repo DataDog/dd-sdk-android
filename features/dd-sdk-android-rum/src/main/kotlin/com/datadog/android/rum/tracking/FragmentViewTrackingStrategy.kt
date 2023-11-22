@@ -91,7 +91,9 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
     override fun onActivityStarted(activity: Activity) {
         super.onActivityStarted(activity)
         withSdkCore { sdkCore ->
-            if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            val isFragmentActivity = FragmentActivity::class.java.isAssignableFrom(activity::class.java)
+            if (isFragmentActivity) {
                 androidXLifecycleCallbacks.register(activity as FragmentActivity, sdkCore)
             } else {
                 // old deprecated way
@@ -103,7 +105,9 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
     @MainThread
     override fun onActivityStopped(activity: Activity) {
         super.onActivityStopped(activity)
-        if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+        val isFragmentActivity = FragmentActivity::class.java.isAssignableFrom(activity::class.java)
+        if (isFragmentActivity) {
             androidXLifecycleCallbacks.unregister(activity as FragmentActivity)
         } else {
             // old deprecated way

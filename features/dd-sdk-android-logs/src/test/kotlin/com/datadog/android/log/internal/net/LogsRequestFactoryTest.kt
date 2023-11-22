@@ -9,6 +9,7 @@ package com.datadog.android.log.internal.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.RequestFactory
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -49,12 +50,11 @@ internal class LogsRequestFactoryTest {
     @Suppress("NAME_SHADOWING")
     @Test
     fun `𝕄 create a proper request 𝕎 create()`(
-        @StringForgery batchData: List<String>,
+        @Forgery batchData: List<RawBatchEvent>,
         @StringForgery batchMetadata: String,
         forge: Forge
     ) {
         // Given
-        val batchData = batchData.map { it.toByteArray() }
         val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
 
         // When
@@ -77,12 +77,13 @@ internal class LogsRequestFactoryTest {
         assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
         assertThat(request.description).isEqualTo("Logs Request")
         assertThat(request.body).isEqualTo(
-            batchData.join(
-                separator = ",".toByteArray(),
-                prefix = "[".toByteArray(),
-                suffix = "]".toByteArray(),
-                internalLogger = InternalLogger.UNBOUND
-            )
+            batchData.map { it.data }
+                .join(
+                    separator = ",".toByteArray(),
+                    prefix = "[".toByteArray(),
+                    suffix = "]".toByteArray(),
+                    internalLogger = InternalLogger.UNBOUND
+                )
         )
     }
 
@@ -90,7 +91,7 @@ internal class LogsRequestFactoryTest {
     @Test
     fun `𝕄 create a proper request 𝕎 create() { custom endpoint }`(
         @StringForgery(regex = "https://[a-z]+\\.com") fakeEndpoint: String,
-        @StringForgery batchData: List<String>,
+        @Forgery batchData: List<RawBatchEvent>,
         @StringForgery batchMetadata: String,
         forge: Forge
     ) {
@@ -99,7 +100,6 @@ internal class LogsRequestFactoryTest {
             customEndpointUrl = fakeEndpoint,
             internalLogger = InternalLogger.UNBOUND
         )
-        val batchData = batchData.map { it.toByteArray() }
         val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
 
         // When
@@ -122,12 +122,13 @@ internal class LogsRequestFactoryTest {
         assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
         assertThat(request.description).isEqualTo("Logs Request")
         assertThat(request.body).isEqualTo(
-            batchData.join(
-                separator = ",".toByteArray(),
-                prefix = "[".toByteArray(),
-                suffix = "]".toByteArray(),
-                internalLogger = InternalLogger.UNBOUND
-            )
+            batchData.map { it.data }
+                .join(
+                    separator = ",".toByteArray(),
+                    prefix = "[".toByteArray(),
+                    suffix = "]".toByteArray(),
+                    internalLogger = InternalLogger.UNBOUND
+                )
         )
     }
 }

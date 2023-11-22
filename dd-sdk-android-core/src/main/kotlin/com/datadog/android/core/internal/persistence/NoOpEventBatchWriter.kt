@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.persistence
 
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
 
 internal class NoOpEventBatchWriter : EventBatchWriter {
 
@@ -15,7 +16,7 @@ internal class NoOpEventBatchWriter : EventBatchWriter {
     }
 
     override fun write(
-        event: ByteArray,
-        newMetadata: ByteArray?
+        event: RawBatchEvent,
+        batchMetadata: ByteArray?
     ): Boolean = true
 }

@@ -11,6 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.allowThreadDiskReads
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import java.io.File
@@ -49,7 +50,9 @@ internal class NdkCrashReportsFeature(private val sdkCore: FeatureSdkCore) :
             NDK_CRASH_REPORTS_FOLDER
         )
         try {
-            ndkCrashesDirs.mkdirs()
+            allowThreadDiskReads {
+                ndkCrashesDirs.mkdirs()
+            }
         } catch (e: SecurityException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -98,7 +101,9 @@ internal class NdkCrashReportsFeature(private val sdkCore: FeatureSdkCore) :
     private fun loadNativeLibrary(internalLogger: InternalLogger) {
         var exception: Throwable? = null
         try {
-            System.loadLibrary("datadog-native-lib")
+            allowThreadDiskReads {
+                System.loadLibrary("datadog-native-lib")
+            }
             nativeLibraryLoaded = true
         } catch (e: SecurityException) {
             exception = e

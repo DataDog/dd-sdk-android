@@ -14,7 +14,7 @@ internal class ShapeWireframeForgeryFactory :
     ForgeryFactory<MobileSegment.Wireframe.ShapeWireframe> {
     override fun getForgery(forge: Forge): MobileSegment.Wireframe.ShapeWireframe {
         return MobileSegment.Wireframe.ShapeWireframe(
-            id = forge.aPositiveLong(),
+            id = forge.aPositiveInt().toLong(),
             x = forge.aPositiveLong(),
             y = forge.aPositiveLong(),
             width = forge.aPositiveLong(strict = true),

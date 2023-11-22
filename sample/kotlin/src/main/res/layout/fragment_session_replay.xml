@@ -110,5 +110,15 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/navigation_unsupported_views"/>
 
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/navigation_image_scaling"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/title_image_scaling"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/navigation_image_components"/>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

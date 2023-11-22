@@ -7,13 +7,12 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.BuildConfigPropertiesKeys
 import com.datadog.gradle.config.GradlePropertiesKeys
+import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.java11
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
-import com.datadog.gradle.config.setLibraryVersion
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -50,49 +49,23 @@ fun isLogEnabledInRelease(): String {
 }
 
 android {
-    compileSdk = AndroidConfig.TARGET_SDK
-    buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
-
     defaultConfig {
-        minSdk = AndroidConfig.MIN_SDK
-        targetSdk = AndroidConfig.TARGET_SDK
-
         buildFeatures {
             buildConfig = true
         }
-        setLibraryVersion()
+        buildConfigField(
+            "int",
+            "SDK_VERSION_CODE",
+            "${AndroidConfig.VERSION.code}"
+        )
+        buildConfigField(
+            "String",
+            "SDK_VERSION_NAME",
+            "\"${AndroidConfig.VERSION.name}\""
+        )
     }
 
     namespace = "com.datadog.android"
-
-    sourceSets.named("main") {
-        java.srcDir("src/main/kotlin")
-    }
-    sourceSets.named("test") {
-        java.srcDir("src/test/kotlin")
-    }
-    sourceSets.named("testDebug") {
-        java.srcDir("src/testDebug/kotlin")
-    }
-    sourceSets.named("testRelease") {
-        java.srcDir("src/testRelease/kotlin")
-    }
-    sourceSets.named("androidTest") {
-        java.srcDir("src/androidTest/kotlin")
-    }
-
-    compileOptions {
-        java11()
-    }
-
-    testOptions {
-        unitTests.apply {
-            isReturnDefaultValues = true
-        }
-    }
-    testFixtures {
-        enable = true
-    }
 
     buildTypes {
         getByName("release") {
@@ -112,29 +85,9 @@ android {
         }
     }
 
-    libraryVariants.configureEach {
-        addJavaSourceFoldersToModel(
-            layout.buildDirectory
-                .dir("generated/ksp/$name/kotlin").get().asFile
-        )
-    }
-
-    packaging {
-        resources {
-            excludes += listOf(
-                "META-INF/jvm.kotlin_module",
-                "META-INF/LICENSE.md",
-                "META-INF/LICENSE-notice.md"
-            )
-        }
-    }
-
-    lint {
-        warningsAsErrors = true
-        abortOnError = true
-        checkReleaseBuilds = false
-        checkGeneratedSources = true
-        ignoreTestSources = true
+    sourceSets.named("test") {
+        // Required because AGP doesn't support kotlin test fixtures :/
+        java.srcDir("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
     }
 }
 
@@ -170,9 +123,11 @@ dependencies {
     testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)
 
-    // Static Analysis
-    // TODO MTG-12 detekt(project(":tools:detekt"))
-    // TODO MTG-12 detekt(libs.detektCli)
+    // Test Fixtures
+    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.bundles.jUnit5)
+    testFixturesImplementation(libs.okHttp)
+    testFixturesImplementation(libs.bundles.testTools)
 }
 
 unMock {
@@ -189,6 +144,7 @@ unMock {
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+androidLibraryConfig()
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()

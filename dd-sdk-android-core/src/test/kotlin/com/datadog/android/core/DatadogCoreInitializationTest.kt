@@ -11,6 +11,7 @@ import android.content.pm.ApplicationInfo
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.core.configuration.BatchProcessingLevel
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
@@ -320,6 +321,7 @@ internal class DatadogCoreInitializationTest {
         val useLocalEncryption = forge.aBool()
         val batchSize = forge.aValueFrom(BatchSize::class.java)
         val uploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
+        val batchProcessingLevel = forge.aValueFrom(BatchProcessingLevel::class.java)
 
         val configuration = Configuration.Builder(
             clientToken = fakeConfiguration.clientToken,
@@ -339,6 +341,7 @@ internal class DatadogCoreInitializationTest {
         }
             .setBatchSize(batchSize)
             .setUploadFrequency(uploadFrequency)
+            .setBatchProcessingLevel(batchProcessingLevel)
             .setCrashReportsEnabled(trackErrors)
             .build()
 
@@ -371,7 +374,8 @@ internal class DatadogCoreInitializationTest {
                     "use_local_encryption" to useLocalEncryption,
                     "batch_size" to batchSize.windowDurationMs,
                     "batch_upload_frequency" to uploadFrequency.baseStepMs,
-                    "track_errors" to trackErrors
+                    "track_errors" to trackErrors,
+                    "batch_processing_level" to batchProcessingLevel.maxBatchesPerUploadJob
                 )
             )
     }

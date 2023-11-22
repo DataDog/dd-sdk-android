@@ -525,6 +525,13 @@ internal class DatadogRumMonitor(
         handleEvent(RumRawEvent.UpdatePerformanceMetric(metric, value))
     }
 
+    override fun setSyntheticsAttribute(
+        testId: String,
+        resultId: String
+    ) {
+        handleEvent(RumRawEvent.SetSyntheticsTestAttribute(testId, resultId))
+    }
+
     override fun _getInternal(): _RumInternalProxy {
         return internalProxy
     }

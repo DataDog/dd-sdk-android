@@ -84,12 +84,15 @@ ENV PATH $PATH:$GRADLE_HOME/bin
 ENV PATH $PATH:$ANDROID_HOME/platform-tools
 ENV PATH $PATH:$ANDROID_SDK_ROOT/build-tools/${ANDROID_BUILD_TOOLS}:$ANDROID_NDK
 
-# Woke
-ENV WOKE_VERSION "0.6.0"
-ENV WOKE_SHA256 "ea5605d4242b93d9586a21878264dd8abcf64ed92f0f6538ea831d9d3215b883"
+# Install Node
+ENV NODENV_VERSION 16.13.0
+ENV NODENV_ROOT /root/.nodenv
+ENV PATH "$NODENV_ROOT/shims:$NODENV_ROOT/bin:$PATH"
+RUN set -x \
+    && curl -fsSL https://github.com/nodenv/nodenv-installer/raw/master/bin/nodenv-installer | bash \
+    && nodenv install $NODENV_VERSION \
+    && nodenv rehash
 
-RUN curl -L https://github.com/get-woke/woke/releases/download/v${WOKE_VERSION}/woke-${WOKE_VERSION}-linux-amd64.tar.gz -o woke-linux-amd64.tar.gz \
- && echo "${WOKE_SHA256} woke-linux-amd64.tar.gz" | sha256sum -c  \
- && tar -xf woke-linux-amd64.tar.gz \
- && mv woke-${WOKE_VERSION}-linux-amd64/woke /usr/bin/woke \
- && rm -Rf woke-${WOKE_VERSION}-linux-amd64 woke-${WOKE_VERSION}-linux-amd64.tar.gz
+# Install Datadog CI
+RUN npm install -g npm@9.6.5
+RUN npm install -g @datadog/datadog-ci

@@ -51,7 +51,6 @@ internal open class RumViewScope(
     internal val cpuVitalMonitor: VitalMonitor,
     internal val memoryVitalMonitor: VitalMonitor,
     internal val frameRateVitalMonitor: VitalMonitor,
-    private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate(),
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
     internal val type: RumViewType = RumViewType.FOREGROUND,
     private val trackFrustrations: Boolean,
@@ -382,6 +381,22 @@ internal open class RumViewScope(
                     datadogContext,
                     rumContext.viewId.orEmpty()
                 )
+                val syntheticsAttribute = if (
+                    rumContext.syntheticsTestId.isNullOrBlank() ||
+                    rumContext.syntheticsResultId.isNullOrBlank()
+                ) {
+                    null
+                } else {
+                    ErrorEvent.Synthetics(
+                        testId = rumContext.syntheticsTestId,
+                        resultId = rumContext.syntheticsResultId
+                    )
+                }
+                val sessionType = if (syntheticsAttribute == null) {
+                    ErrorEvent.ErrorEventSessionType.USER
+                } else {
+                    ErrorEvent.ErrorEventSessionType.SYNTHETICS
+                }
                 val errorEvent = ErrorEvent(
                     date = event.eventTime.timestamp + serverTimeOffsetInMs,
                     featureFlags = ErrorEvent.Context(featureFlags),
@@ -413,9 +428,10 @@ internal open class RumViewScope(
                     application = ErrorEvent.Application(rumContext.applicationId),
                     session = ErrorEvent.ErrorEventSession(
                         id = rumContext.sessionId,
-                        type = ErrorEvent.ErrorEventSessionType.USER,
+                        type = sessionType,
                         hasReplay = hasReplay
                     ),
+                    synthetics = syntheticsAttribute,
                     source = ErrorEvent.ErrorEventSource.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
@@ -653,9 +669,6 @@ internal open class RumViewScope(
     @Suppress("LongMethod", "ComplexMethod")
     private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<Any>) {
         val viewComplete = isViewComplete()
-        if (!viewUpdatePredicate.canUpdateView(viewComplete, event)) {
-            return
-        }
         attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
         version++
 
@@ -701,6 +714,23 @@ internal open class RumViewScope(
                     currentViewId
                 )
                 val replayStats = ViewEvent.ReplayStats(recordsCount = sessionReplayRecordsCount)
+                val syntheticsAttribute = if (
+                    rumContext.syntheticsTestId.isNullOrBlank() ||
+                    rumContext.syntheticsResultId.isNullOrBlank()
+                ) {
+                    null
+                } else {
+                    ViewEvent.Synthetics(
+                        testId = rumContext.syntheticsTestId,
+                        resultId = rumContext.syntheticsResultId
+                    )
+                }
+                val sessionType = if (syntheticsAttribute == null) {
+                    ViewEvent.ViewEventSessionType.USER
+                } else {
+                    ViewEvent.ViewEventSessionType.SYNTHETICS
+                }
+
                 val viewEvent = ViewEvent(
                     date = eventTimestamp,
                     featureFlags = ViewEvent.Context(additionalProperties = featureFlags),
@@ -746,10 +776,11 @@ internal open class RumViewScope(
                     application = ViewEvent.Application(rumContext.applicationId),
                     session = ViewEvent.ViewEventSession(
                         id = rumContext.sessionId,
-                        type = ViewEvent.ViewEventSessionType.USER,
+                        type = sessionType,
                         hasReplay = hasReplay,
                         isActive = rumContext.isSessionActive
                     ),
+                    synthetics = syntheticsAttribute,
                     source = ViewEvent.Source.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
@@ -834,6 +865,22 @@ internal open class RumViewScope(
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val user = datadogContext.userInfo
+                val syntheticsAttribute = if (
+                    rumContext.syntheticsTestId.isNullOrBlank() ||
+                    rumContext.syntheticsResultId.isNullOrBlank()
+                ) {
+                    null
+                } else {
+                    ActionEvent.Synthetics(
+                        testId = rumContext.syntheticsTestId,
+                        resultId = rumContext.syntheticsResultId
+                    )
+                }
+                val sessionType = if (syntheticsAttribute == null) {
+                    ActionEvent.ActionEventSessionType.USER
+                } else {
+                    ActionEvent.ActionEventSessionType.SYNTHETICS
+                }
 
                 val actionEvent = ActionEvent(
                     date = eventTimestamp,
@@ -864,9 +911,10 @@ internal open class RumViewScope(
                     application = ActionEvent.Application(rumContext.applicationId),
                     session = ActionEvent.ActionEventSession(
                         id = rumContext.sessionId,
-                        type = ActionEvent.ActionEventSessionType.USER,
+                        type = sessionType,
                         hasReplay = false
                     ),
+                    synthetics = syntheticsAttribute,
                     source = ActionEvent.Source.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
@@ -920,6 +968,22 @@ internal open class RumViewScope(
                     datadogContext,
                     rumContext.viewId.orEmpty()
                 )
+                val syntheticsAttribute = if (
+                    rumContext.syntheticsTestId.isNullOrBlank() ||
+                    rumContext.syntheticsResultId.isNullOrBlank()
+                ) {
+                    null
+                } else {
+                    LongTaskEvent.Synthetics(
+                        testId = rumContext.syntheticsTestId,
+                        resultId = rumContext.syntheticsResultId
+                    )
+                }
+                val sessionType = if (syntheticsAttribute == null) {
+                    LongTaskEvent.LongTaskEventSessionType.USER
+                } else {
+                    LongTaskEvent.LongTaskEventSessionType.SYNTHETICS
+                }
                 val longTaskEvent = LongTaskEvent(
                     date = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
                     longTask = LongTaskEvent.LongTask(
@@ -946,9 +1010,10 @@ internal open class RumViewScope(
                     application = LongTaskEvent.Application(rumContext.applicationId),
                     session = LongTaskEvent.LongTaskEventSession(
                         id = rumContext.sessionId,
-                        type = LongTaskEvent.LongTaskEventSessionType.USER,
+                        type = sessionType,
                         hasReplay = hasReplay
                     ),
+                    synthetics = syntheticsAttribute,
                     source = LongTaskEvent.Source.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger

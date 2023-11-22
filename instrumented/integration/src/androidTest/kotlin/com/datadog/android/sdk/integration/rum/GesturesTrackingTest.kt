@@ -74,12 +74,9 @@ internal abstract class GesturesTrackingTest :
     ): List<ExpectedEvent> {
         return listOf(
             ExpectedApplicationStartActionEvent(),
-            ExpectedApplicationLaunchViewEvent(docVersion = 2),
+            // ignore first view event for application launch, it will be reduced
             ExpectedApplicationLaunchViewEvent(docVersion = 3),
-            ExpectedViewEvent(
-                viewUrl,
-                2
-            ),
+            // ignore first view event, it will be reduced
             ExpectedGestureEvent(
                 Gesture.TAP,
                 activity.button.targetName(),
@@ -105,6 +102,10 @@ internal abstract class GesturesTrackingTest :
                 extraAttributes = mapOf(
                     RumAttributes.ACTION_GESTURE_DIRECTION to "down"
                 )
+            ),
+            ExpectedViewEvent(
+                viewUrl,
+                docVersion = 5
             )
         )
     }

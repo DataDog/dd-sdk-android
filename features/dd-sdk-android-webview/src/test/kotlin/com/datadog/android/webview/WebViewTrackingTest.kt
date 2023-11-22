@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.android.webview.internal.DatadogEventBridge
@@ -352,9 +353,9 @@ internal class WebViewTrackingTest {
         }
 
         // Then
-        argumentCaptor<ByteArray> {
+        argumentCaptor<RawBatchEvent> {
             verify(mockEventBatchWriter).write(capture(), isNull())
-            val capturedJson = String(firstValue, Charsets.UTF_8)
+            val capturedJson = String(firstValue.data, Charsets.UTF_8)
             assertThat(capturedJson).isEqualTo(expectedEvent.toString())
         }
     }

@@ -72,7 +72,8 @@ internal class ConfigurationBuilderTest {
                 proxy = null,
                 proxyAuth = Authenticator.NONE,
                 encryption = null,
-                site = DatadogSite.US1
+                site = DatadogSite.US1,
+                batchProcessingLevel = BatchProcessingLevel.MEDIUM
             )
         )
         assertThat(config.crashReportsEnabled).isTrue
@@ -130,7 +131,12 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(
                 firstPartyHostsWithHeaderTypes =
-                hosts.associateWith { setOf(TracingHeaderType.DATADOG) }
+                hosts.associateWith {
+                    setOf(
+                        TracingHeaderType.DATADOG,
+                        TracingHeaderType.TRACECONTEXT
+                    )
+                }
             )
         )
         assertThat(config.additionalConfig).isEmpty()
@@ -153,7 +159,8 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_CORE_CONFIG.copy(
                 firstPartyHostsWithHeaderTypes = hosts.associateWith {
                     setOf(
-                        TracingHeaderType.DATADOG
+                        TracingHeaderType.DATADOG,
+                        TracingHeaderType.TRACECONTEXT
                     )
                 }
             )
@@ -177,7 +184,12 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(
                 firstPartyHostsWithHeaderTypes =
-                hosts.associate { URL(it).host to setOf(TracingHeaderType.DATADOG) }
+                hosts.associate {
+                    URL(it).host to setOf(
+                        TracingHeaderType.DATADOG,
+                        TracingHeaderType.TRACECONTEXT
+                    )
+                }
             )
         )
         assertThat(config.crashReportsEnabled).isTrue

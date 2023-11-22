@@ -349,6 +349,7 @@ internal class TelemetryEventHandlerTest {
                 .hasTrackErrors(fakeCoreConfiguration.trackErrors)
                 .hasBatchSize(fakeCoreConfiguration.batchSize)
                 .hasBatchUploadFrequency(fakeCoreConfiguration.batchUploadFrequency)
+                .hasBatchProcessingLevel(fakeCoreConfiguration.batchProcessingLevel)
         }
     }
 
@@ -717,11 +718,13 @@ internal class TelemetryEventHandlerTest {
     @Test
     fun `𝕄 continue writing events after new session 𝕎 handleEvent(SendTelemetry)`(forge: Forge) {
         // Given
-        val eventsInOldSession = forge.aList(
-            size = forge.anInt(MAX_EVENTS_PER_SESSION_TEST * 2, MAX_EVENTS_PER_SESSION_TEST * 4)
-        ) { createRumRawTelemetryEvent() }
-            // remove unwanted identity collisions
-            .groupBy { it.identity }.map { it.value.first() }
+        val eventMap = mutableMapOf<TelemetryEventId, RumRawEvent.SendTelemetry>()
+        while (eventMap.size <= MAX_EVENTS_PER_SESSION_TEST) {
+            val candidate = forge.createRumRawTelemetryEvent()
+            val id = candidate.identity
+            eventMap[id] = candidate
+        }
+        val eventsInOldSession = eventMap.map { it.value }
         val extraNumber = eventsInOldSession.size - MAX_EVENTS_PER_SESSION_TEST
 
         val eventsInNewSession = forge.aList(

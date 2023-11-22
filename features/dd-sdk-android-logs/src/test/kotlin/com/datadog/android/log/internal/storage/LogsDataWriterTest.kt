@@ -8,6 +8,7 @@ package com.datadog.android.log.internal.storage
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
@@ -66,7 +67,7 @@ internal class LogsDataWriterTest {
         whenever(mockSerializer.serialize(fakeLogEvent)) doReturn fakeSerializedLogEvent
         whenever(
             mockEventBatchWriter.write(
-                fakeSerializedLogEvent.toByteArray(),
+                RawBatchEvent(data = fakeSerializedLogEvent.toByteArray()),
                 null
             )
         ) doReturn true
@@ -76,7 +77,7 @@ internal class LogsDataWriterTest {
 
         // Then
         assertThat(result).isTrue
-        verify(mockEventBatchWriter).write(fakeSerializedLogEvent.toByteArray(), null)
+        verify(mockEventBatchWriter).write(RawBatchEvent(data = fakeSerializedLogEvent.toByteArray()), null)
         verifyNoInteractions(mockInternalLogger)
     }
 
@@ -89,7 +90,7 @@ internal class LogsDataWriterTest {
         whenever(mockSerializer.serialize(fakeLogEvent)) doReturn fakeSerializedLogEvent
         whenever(
             mockEventBatchWriter.write(
-                fakeSerializedLogEvent.toByteArray(),
+                RawBatchEvent(data = fakeSerializedLogEvent.toByteArray()),
                 null
             )
         ) doReturn false
@@ -99,7 +100,7 @@ internal class LogsDataWriterTest {
 
         // Then
         assertThat(result).isFalse
-        verify(mockEventBatchWriter).write(fakeLogEvent.toString().toByteArray(), null)
+        verify(mockEventBatchWriter).write(RawBatchEvent(data = fakeLogEvent.toString().toByteArray()), null)
         verifyNoInteractions(mockInternalLogger)
     }
 

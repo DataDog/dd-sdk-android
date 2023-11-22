@@ -64,7 +64,10 @@ class DefaultFirstPartyHostHeaderTypeResolver(
 
     internal fun addKnownHosts(hosts: List<String>) {
         knownHosts = knownHosts + hosts.associate {
-            it.lowercase(Locale.US) to setOf(TracingHeaderType.DATADOG)
+            it.lowercase(Locale.US) to setOf(
+                TracingHeaderType.DATADOG,
+                TracingHeaderType.TRACECONTEXT
+            )
         }
     }
 

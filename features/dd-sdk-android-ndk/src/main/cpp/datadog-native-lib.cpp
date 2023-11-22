@@ -13,13 +13,11 @@
 #include <string>
 
 #include "android/log.h"
-#include "crash-log.h"
 #include "backtrace-handler.h"
 #include "datetime-utils.h"
 #include "file-utils.h"
 #include "signal-monitor.h"
 #include "string-utils.h"
-
 
 static struct Context {
     std::string storage_dir;
@@ -29,11 +27,35 @@ static struct Context {
 
 
 static const char *LOG_TAG = "DatadogNdkCrashReporter";
+
 static pthread_mutex_t handler_mutex = PTHREAD_MUTEX_INITIALIZER;
 static const uint8_t tracking_consent_pending = 0;
 static const uint8_t tracking_consent_granted = 1;
 static uint8_t tracking_consent = tracking_consent_pending; // 0 - PENDING, 1 - GRANTED, 2 - NOT-GRANTED
 
+#ifndef NDEBUG
+
+void lockMutex() {
+    pthread_mutex_lock(&handler_mutex);
+}
+
+void unlockMutex() {
+    pthread_mutex_unlock(&handler_mutex);
+}
+
+#endif
+
+std::string serialize_crash_report(int signum, uint64_t timestamp, const char* signal_name, const char* error_message, const char* error_stacktrace) {
+    static const char* json_formatter = R"({"signal":%s,"timestamp":%s,"signal_name":"%s","message":"%s","stacktrace":"%s"})";
+
+    std::string serialized_log = stringutils::format(json_formatter,
+                                                     std::to_string(signum).c_str(),
+                                                     std::to_string(timestamp).c_str(),
+                                                     signal_name,
+                                                     error_message,
+                                                     error_stacktrace);
+    return serialized_log;
+}
 
 void write_crash_report(int signum,
                         const char *signal_name,
@@ -43,11 +65,17 @@ void write_crash_report(int signum,
     static const std::string crash_log_filename = "crash_log";
 
     // sync everything
-    pthread_mutex_lock(&handler_mutex);
     if (tracking_consent != tracking_consent_granted) {
-        pthread_mutex_unlock(&handler_mutex);
         return;
     }
+
+    if(pthread_mutex_trylock(&handler_mutex) != 0){
+        // There is no action to take if the mutex cannot be acquired.
+        // In this case will fail to write the crash log and return here in order not
+        // to block the process and create possible ANRs.
+        return;
+    }
+
     if (main_context.storage_dir.empty()) {
         __android_log_write(ANDROID_LOG_ERROR, LOG_TAG,
                             "The crash reports storage directory file path was null");
@@ -65,14 +93,9 @@ void write_crash_report(int signum,
     }
 
     // serialize the log
-    string file_path = main_context.storage_dir.append("/").append(crash_log_filename);
-    long long timestamp = time_since_epoch();
-    std::unique_ptr<CrashLog> crash_log_ptr = std::make_unique<CrashLog>(signum,
-                                                                         timestamp,
-                                                                         signal_name,
-                                                                         error_message,
-                                                                         error_stacktrace);
-    string serialized_log = crash_log_ptr->serialise();
+    const string file_path = main_context.storage_dir.append("/").append(crash_log_filename);
+    const uint64_t timestamp = time_since_epoch();
+    const std::string serialized_log = serialize_crash_report(signum, timestamp, signal_name, error_message, error_stacktrace);
 
     // write the log in the crash log file
     ofstream logs_file_output_stream(file_path.c_str(),
@@ -87,7 +110,13 @@ void write_crash_report(int signum,
 void update_main_context(JNIEnv *env,
                          jstring storage_path) {
     using namespace stringutils;
-    pthread_mutex_lock(&handler_mutex);
+    if(pthread_mutex_trylock(&handler_mutex) != 0){
+        // There is no action to take if the mutex cannot be acquired. Probably int this case
+        // there is already a log writing due to a crash in progress.
+        // In this case updating the context will not make sense anymore and we do not want to
+        // stale the process here.
+        return;
+    }
     main_context.storage_dir = copy_to_string(env, storage_path);
     pthread_mutex_unlock(&handler_mutex);
 }

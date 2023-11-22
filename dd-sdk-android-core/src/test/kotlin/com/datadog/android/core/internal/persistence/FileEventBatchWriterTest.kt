@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.FileEventBatchWriter.Companion.ERROR_LARGE_DATA
 import com.datadog.android.core.internal.persistence.FileEventBatchWriter.Companion.WARNING_METADATA_WRITE_FAILED
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -50,7 +51,7 @@ internal class FileEventBatchWriterTest {
     private lateinit var testedWriter: EventBatchWriter
 
     @Mock
-    lateinit var mockBatchWriter: FileWriter
+    lateinit var mockBatchWriter: FileWriter<RawBatchEvent>
 
     @Mock
     lateinit var mockMetaReaderWriter: FileReaderWriter
@@ -84,26 +85,25 @@ internal class FileEventBatchWriterTest {
 
     @Test
     fun `𝕄 write event 𝕎 write()`(
-        @StringForgery data: String,
+        @Forgery batchEvent: RawBatchEvent,
         @StringForgery batchMetadata: String
     ) {
         // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
         val serializedMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         whenever(mockMetaReaderWriter.readData(fakeBatchMetadataFile)) doReturn serializedMetadata
         whenever(
-            mockBatchWriter.writeData(fakeBatchFile, serializedData, true)
+            mockBatchWriter.writeData(fakeBatchFile, batchEvent, true)
         ) doReturn true
 
         // When
-        val result = testedWriter.write(serializedData, serializedMetadata)
+        val result = testedWriter.write(batchEvent, serializedMetadata)
 
         // Then
         assertThat(result).isTrue()
 
         verify(mockBatchWriter).writeData(
             fakeBatchFile,
-            serializedData,
+            batchEvent,
             append = true
         )
         verify(mockMetaReaderWriter).writeData(
@@ -123,11 +123,11 @@ internal class FileEventBatchWriterTest {
         @StringForgery batchMetadata: String
     ) {
         // Given
-        val serializedData = ByteArray(0)
+        val rawBatchEvent = RawBatchEvent(data = ByteArray(0))
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
 
         // When
-        val result = testedWriter.write(serializedData, serializedBatchMetadata)
+        val result = testedWriter.write(rawBatchEvent, serializedBatchMetadata)
 
         // Then
         assertThat(result).isTrue
@@ -140,17 +140,16 @@ internal class FileEventBatchWriterTest {
 
     @Test
     fun `𝕄 return false 𝕎 write() {item is too big}`(
-        @StringForgery data: String,
+        @Forgery batchEvent: RawBatchEvent,
         @StringForgery batchMetadata: String
     ) {
         // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val maxItemSize = serializedData.size - 1
+        val maxItemSize = batchEvent.data.size - 1
         whenever(mockFilePersistenceConfig.maxItemSize) doReturn maxItemSize.toLong()
 
         // When
-        val result = testedWriter.write(serializedData, serializedBatchMetadata)
+        val result = testedWriter.write(batchEvent, serializedBatchMetadata)
 
         // Then
         assertThat(result).isFalse
@@ -160,7 +159,7 @@ internal class FileEventBatchWriterTest {
             InternalLogger.Target.USER,
             ERROR_LARGE_DATA.format(
                 Locale.US,
-                serializedData.size,
+                batchEvent.data.size,
                 maxItemSize
             )
         )
@@ -168,17 +167,16 @@ internal class FileEventBatchWriterTest {
 
     @Test
     fun `𝕄 return false 𝕎 write() {write operation failed}`(
-        @StringForgery data: String,
+        @Forgery batchEvent: RawBatchEvent,
         @StringForgery batchMetadata: String,
         @Forgery batchFile: File
     ) {
         // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        whenever(mockBatchWriter.writeData(batchFile, serializedData, true)) doReturn false
+        whenever(mockBatchWriter.writeData(batchFile, batchEvent, true)) doReturn false
 
         // When
-        val result = testedWriter.write(serializedData, serializedBatchMetadata)
+        val result = testedWriter.write(batchEvent, serializedBatchMetadata)
 
         // Then
         assertThat(result).isFalse
@@ -186,7 +184,7 @@ internal class FileEventBatchWriterTest {
 
     @Test
     fun `𝕄 not write metadata 𝕎 write() {no available file}`(
-        @StringForgery data: String,
+        @Forgery batchEvent: RawBatchEvent,
         @StringForgery batchMetadata: String
     ) {
         // Given
@@ -199,13 +197,12 @@ internal class FileEventBatchWriterTest {
             internalLogger = mockInternalLogger
         )
 
-        val serializedData = data.toByteArray(Charsets.UTF_8)
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
 
-        whenever(mockBatchWriter.writeData(fakeBatchFile, serializedData, true)) doReturn true
+        whenever(mockBatchWriter.writeData(fakeBatchFile, batchEvent, true)) doReturn true
 
         // When
-        val result = testedWriter.write(serializedData, serializedBatchMetadata)
+        val result = testedWriter.write(batchEvent, serializedBatchMetadata)
 
         // Then
         assertThat(result).isTrue
@@ -215,22 +212,21 @@ internal class FileEventBatchWriterTest {
 
     @Test
     fun `𝕄 not write metadata 𝕎 write() {null or empty metadata}`(
-        @StringForgery data: String,
+        @Forgery batchEvent: RawBatchEvent,
         forge: Forge
     ) {
         // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        whenever(mockBatchWriter.writeData(fakeBatchFile, serializedData, true)) doReturn true
+        whenever(mockBatchWriter.writeData(fakeBatchFile, batchEvent, true)) doReturn true
 
         // When
-        val result = testedWriter.write(serializedData, forge.aNullable { ByteArray(0) })
+        val result = testedWriter.write(batchEvent, forge.aNullable { ByteArray(0) })
 
         // Then
         assertThat(result).isTrue
 
         verify(mockBatchWriter).writeData(
             fakeBatchFile,
-            serializedData,
+            batchEvent,
             true
         )
         verifyNoMoreInteractions(mockBatchWriter)
@@ -239,17 +235,16 @@ internal class FileEventBatchWriterTest {
 
     @Test
     fun `𝕄 not write metadata 𝕎 write() {item is too big}`(
-        @StringForgery data: String,
+        @Forgery batchEvent: RawBatchEvent,
         @StringForgery batchMetadata: String
     ) {
         // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val maxItemSize = serializedData.size - 1
+        val maxItemSize = batchEvent.data.size - 1
         whenever(mockFilePersistenceConfig.maxItemSize) doReturn maxItemSize.toLong()
 
         // When
-        val result = testedWriter.write(serializedData, serializedBatchMetadata)
+        val result = testedWriter.write(batchEvent, serializedBatchMetadata)
 
         // Then
         assertThat(result).isFalse
@@ -259,18 +254,17 @@ internal class FileEventBatchWriterTest {
 
     @Test
     fun `𝕄 not write metadata 𝕎 write() {write operation failed}`(
-        @StringForgery data: String,
+        @Forgery batchEvent: RawBatchEvent,
         @StringForgery batchMetadata: String
     ) {
         // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         whenever(
-            mockBatchWriter.writeData(fakeBatchFile, serializedData, true)
+            mockBatchWriter.writeData(fakeBatchFile, batchEvent, true)
         ) doReturn false
 
         // When
-        val result = testedWriter.write(serializedData, serializedBatchMetadata)
+        val result = testedWriter.write(batchEvent, serializedBatchMetadata)
 
         // Then
         assertThat(result).isFalse
@@ -280,21 +274,20 @@ internal class FileEventBatchWriterTest {
 
     @Test
     fun `𝕄 log warning 𝕎 write() {write metadata failed}`(
-        @StringForgery data: String,
+        @Forgery batchEvent: RawBatchEvent,
         @StringForgery batchMetadata: String
     ) {
         // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         whenever(
-            mockBatchWriter.writeData(fakeBatchFile, serializedData, true)
+            mockBatchWriter.writeData(fakeBatchFile, batchEvent, true)
         ) doReturn true
         whenever(
             mockMetaReaderWriter.writeData(fakeBatchMetadataFile, serializedBatchMetadata, false)
         ) doReturn false
 
         // When
-        val result = testedWriter.write(serializedData, serializedBatchMetadata)
+        val result = testedWriter.write(batchEvent, serializedBatchMetadata)
 
         // Then
         assertThat(result).isTrue()
