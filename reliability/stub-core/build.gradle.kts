@@ -6,8 +6,6 @@
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.javadocConfig
-import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -26,21 +24,15 @@ plugins {
 }
 
 android {
-    namespace = "com.datadog.android.logs.integration"
-
-    sourceSets.named("test") {
-        // Required because AGP doesn't support kotlin test fixtures :/
-        java.srcDir("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
-    }
+    namespace = "com.datadog.android.core.stub"
 }
 
 dependencies {
     implementation(project(":dd-sdk-android-core"))
-    implementation(project(":features:dd-sdk-android-logs"))
     implementation(libs.kotlin)
 
     // Testing
-    testImplementation(project(":tools:unit")) {
+    implementation(project(":tools:unit")) {
         attributes {
             attribute(
                 com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
@@ -48,22 +40,12 @@ dependencies {
             )
         }
     }
-    testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(project(":reliability:stub-core"))
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
-    testImplementation(libs.okHttp)
-    testImplementation(libs.gson)
-    unmock(libs.robolectric)
-}
-
-unMock {
-    keepStartingWith("android.os")
-    keepStartingWith("org.json")
+    implementation(libs.bundles.jUnit5)
+    implementation(libs.bundles.testTools)
+    implementation(libs.okHttp)
+    implementation(libs.gson)
 }
 
 androidLibraryConfig()
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
-junitConfig()
-javadocConfig()
 dependencyUpdateConfig()

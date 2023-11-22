@@ -4,12 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.api
+package com.datadog.android.core.stub
 
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.trace.TracingHeaderType
 import okhttp3.HttpUrl
 
+/**
+ * Stubbed implementation of [FirstPartyHostHeaderTypeResolver], which is an
+ * allow all, trace all implementation (using the W3C TraceContext headers).
+ */
 class StubFirstPartyHostHeaderTypeResolver :
     FirstPartyHostHeaderTypeResolver {
 

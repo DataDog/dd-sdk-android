@@ -7,10 +7,9 @@
 package com.datadog.android.logs.integration
 
 import android.util.Log
-import com.datadog.android.api.StubEvent
-import com.datadog.android.api.StubSDKCore
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -36,7 +35,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.lang.Exception
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -69,7 +67,7 @@ class LoggerTest {
         logger.log(fakeLevel, fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -88,7 +86,7 @@ class LoggerTest {
         logger.v(fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -107,7 +105,7 @@ class LoggerTest {
         logger.d(fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -126,7 +124,7 @@ class LoggerTest {
         logger.i(fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -145,7 +143,7 @@ class LoggerTest {
         logger.w(fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -164,7 +162,7 @@ class LoggerTest {
         logger.e(fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -183,7 +181,7 @@ class LoggerTest {
         logger.wtf(fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -204,7 +202,7 @@ class LoggerTest {
         testedLogger.log(fakeLevel, fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(fakeServiceName)
@@ -225,7 +223,7 @@ class LoggerTest {
         testedLogger.log(fakeLevel, fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -250,7 +248,7 @@ class LoggerTest {
         testedLogger.log(fakeLevel, fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -276,7 +274,7 @@ class LoggerTest {
         testedLogger.log(fakeLevel, fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -299,7 +297,7 @@ class LoggerTest {
         testedLogger.log(fakeLevel, fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -325,7 +323,7 @@ class LoggerTest {
         testedLogger.log(fakeLevel, fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -350,7 +348,7 @@ class LoggerTest {
         testedLogger.log(fakeLevel, fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -372,7 +370,7 @@ class LoggerTest {
         testedLogger.log(fakeLevel, fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).isEmpty()
     }
 
@@ -394,7 +392,7 @@ class LoggerTest {
 
         // Then
         val expectedCount = (repeatCount * fakeSampleRate / 100f).toInt()
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten.size).isCloseTo(expectedCount, offset(offsetMargin))
     }
 
@@ -420,7 +418,7 @@ class LoggerTest {
         testedLogger.log(fakeLevel, fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -452,7 +450,7 @@ class LoggerTest {
         testedLogger.log(fakeLevel, fakeMessage)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -476,7 +474,7 @@ class LoggerTest {
         testedLogger.log(fakeLevel, fakeMessage, null, mapOf(fakeKey to fakeValue))
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -498,7 +496,7 @@ class LoggerTest {
         testedLogger.log(fakeLevel, fakeMessage, fakeException)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
@@ -525,7 +523,7 @@ class LoggerTest {
         testedLogger.log(fakeLevel, fakeMessage, fakeErrorKind, fakeErrorMessage, fakeErrorStack)
 
         // Then
-        val eventsWritten: List<StubEvent> = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)

@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.api
+package com.datadog.android.core.stub
 
 /**
  * Holds the data and metadata of an event written via the [StubSDKCore].
