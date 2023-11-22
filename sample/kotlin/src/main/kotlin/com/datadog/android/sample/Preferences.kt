@@ -62,7 +62,7 @@ internal object Preferences {
         fun getTrackingConsent(): TrackingConsent {
             val consentId = PreferenceManager
                 .getDefaultSharedPreferences(applicationContext)
-                .getInt(PREF_TRACKING_CONSENT, CONSENT_PENDING)
+                .getInt(PREF_TRACKING_CONSENT, CONSENT_GRANTED)
             return resolveConsentFromId(consentId)
         }
 

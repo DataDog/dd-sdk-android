@@ -12,6 +12,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.event.EventMapper
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
@@ -67,7 +68,7 @@ internal class TraceWriter(
                 .serialize(datadogContext, mapped)
                 ?.toByteArray(Charsets.UTF_8) ?: return
             synchronized(this) {
-                writer.write(serialized, null)
+                writer.write(RawBatchEvent(data = serialized), batchMetadata = null)
             }
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             internalLogger.log(

@@ -68,6 +68,7 @@ fun <T> runBlockingTraced(
     block: suspend CoroutineScope.() -> T
 ): T {
     val parentSpan = GlobalTracer.get().activeSpan()
+    @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
     return runBlocking(context) {
         withinCoroutineSpan(operationName, parentSpan, context, block)
     }
@@ -136,6 +137,7 @@ suspend fun <T : Any?> withContextTraced(
     block: suspend CoroutineScopeSpan.() -> T
 ): T {
     val parentSpan = GlobalTracer.get().activeSpan()
+    @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
     return withContext(context) {
         withinCoroutineSpan(operationName, parentSpan, context, block)
     }

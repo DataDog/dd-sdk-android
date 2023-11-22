@@ -37,6 +37,7 @@ internal class BatchFileDataReader(
     override fun lockAndReadNext(): Batch? {
         val file = getAndLockReadableFile() ?: return null
         val data = fileReader.readData(file)
+            .map { it.data }
             .join(
                 separator = decoration.separatorBytes,
                 prefix = decoration.prefixBytes,

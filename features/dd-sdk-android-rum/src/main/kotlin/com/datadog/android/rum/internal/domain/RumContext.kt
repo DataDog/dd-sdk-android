@@ -19,7 +19,9 @@ internal data class RumContext(
     val viewUrl: String? = null,
     val actionId: String? = null,
     val sessionState: RumSessionScope.State = RumSessionScope.State.NOT_TRACKED,
-    val viewType: RumViewScope.RumViewType = RumViewScope.RumViewType.NONE
+    val viewType: RumViewScope.RumViewType = RumViewScope.RumViewType.NONE,
+    val syntheticsTestId: String? = null,
+    val syntheticsResultId: String? = null
 ) {
 
     fun toMap(): Map<String, Any?> {
@@ -31,7 +33,9 @@ internal data class RumContext(
             VIEW_NAME to viewName,
             VIEW_URL to viewUrl,
             VIEW_TYPE to viewType.asString,
-            ACTION_ID to actionId
+            ACTION_ID to actionId,
+            SYNTHETICS_TEST_ID to syntheticsTestId,
+            SYNTHETICS_RESULT_ID to syntheticsResultId
         )
     }
 
@@ -48,16 +52,21 @@ internal data class RumContext(
         const val VIEW_URL = "view_url"
         const val VIEW_TYPE = "view_type"
         const val ACTION_ID = "action_id"
+        const val SYNTHETICS_TEST_ID = "synthetics_test_id"
+        const val SYNTHETICS_RESULT_ID = "synthetics_result_id"
 
         fun fromFeatureContext(featureContext: Map<String, Any?>): RumContext {
             val applicationId = featureContext[APPLICATION_ID] as? String
             val sessionId = featureContext[SESSION_ID] as? String
-            val sessionState = RumSessionScope.State.fromString(featureContext[SESSION_STATE] as? String)
+            val sessionState =
+                RumSessionScope.State.fromString(featureContext[SESSION_STATE] as? String)
             val viewId = featureContext[VIEW_ID] as? String
             val viewName = featureContext[VIEW_NAME] as? String
             val viewUrl = featureContext[VIEW_URL] as? String
             val viewType = RumViewScope.RumViewType.fromString(featureContext[VIEW_TYPE] as? String)
             val actionId = featureContext[ACTION_ID] as? String
+            val syntheticsTestId = featureContext[SYNTHETICS_TEST_ID] as? String
+            val syntheticsResultId = featureContext[SYNTHETICS_RESULT_ID] as? String
 
             return RumContext(
                 applicationId = applicationId ?: NULL_UUID,
@@ -67,7 +76,9 @@ internal data class RumContext(
                 viewName = viewName,
                 viewUrl = viewUrl,
                 viewType = viewType ?: RumViewScope.RumViewType.NONE,
-                actionId = actionId
+                actionId = actionId,
+                syntheticsTestId = syntheticsTestId,
+                syntheticsResultId = syntheticsResultId
             )
         }
     }

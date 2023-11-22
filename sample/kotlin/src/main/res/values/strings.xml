@@ -18,6 +18,7 @@
     <string name="title_view_pager">View Pager</string>
     <string name="title_unsupported_views">Unsupported views</string>
     <string name="title_image_components">Image Components</string>
+    <string name="title_image_scaling">Image Scaling</string>
     <string name="title_snackbar">Snackbar</string>
     <string name="title_foreground_service">Foreground service</string>
     <string name="title_picture">Picture loading</string>
@@ -50,9 +51,7 @@
     <string name="msg_clear_all_data">Are you sure you want to clear all unsent data. You’ll lose any data still on disk. Note that this won’t delete data already sent to Datadog servers.</string>
     <string name="msg_all_data_cleared">All unsent data has been cleared.</string>
 
-    <string name="button_warning">⚠️</string>
-    <string name="button_error">🚨</string>
-    <string name="button_critical">💥</string>
+    <string name="button_send">Send</string>
     <string name="button_anr">Simulate ANR</string>
     <string name="button_oom">Simulate OOM</string>
     <string name="button_crash">Crash</string>
@@ -79,6 +78,15 @@
     <string name="choice_sqlite">SQLite</string>
     <string name="choice_sqldelight">SQLDelight</string>
 
+    <string-array name="log_levels">
+        <item>💬 Verbose</item>
+        <item>⚙️ Debug</item>
+        <item>ℹ️ Info</item>
+        <item>⚠️ Warn</item>
+        <item>🚨 Error</item>
+        <item>💥 Assert</item>
+    </string-array>
+
 
     <string name="foreground_service_title">Sample App Logs Foreground Service</string>
     <string name="foreground_service_desc">Used to send logs from a different process</string>
@@ -90,6 +98,7 @@
     <string name="hint_user_email">User email</string>
     <string name="hint_user_gender">Gender</string>
     <string name="hint_user_age">Age</string>
+    <string name="hint_message">Message</string>
 
     <string name="load_picture">Load picture</string>
     <string name="widget_description">Datadog Sample Widget</string>

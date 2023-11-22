@@ -18,7 +18,8 @@ internal class TelemetryCoreConfigurationForgeryFactory :
             batchSize = forge.aPositiveLong(),
             batchUploadFrequency = forge.aPositiveLong(),
             useProxy = forge.aBool(),
-            useLocalEncryption = forge.aBool()
+            useLocalEncryption = forge.aBool(),
+            batchProcessingLevel = forge.aPositiveInt()
         )
     }
 }

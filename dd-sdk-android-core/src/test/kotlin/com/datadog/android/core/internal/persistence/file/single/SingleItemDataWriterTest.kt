@@ -53,7 +53,7 @@ internal class SingleItemDataWriterTest {
     lateinit var mockOrchestrator: FileOrchestrator
 
     @Mock
-    lateinit var mockFileWriter: FileWriter
+    lateinit var mockFileWriter: FileWriter<ByteArray>
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger

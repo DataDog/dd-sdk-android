@@ -161,7 +161,8 @@ internal class DatadogContextProviderTest {
         forge: Forge
     ) {
         // Given
-        val mutableFeaturesContext = forge.aMap<String, Map<String, Any?>> {
+        val mapSize = forge.anInt(4, 20)
+        val mutableFeaturesContext = forge.aMap<String, Map<String, Any?>>(mapSize) {
             aString() to forge.exhaustiveAttributes()
         }.toMutableMap()
 
@@ -188,7 +189,7 @@ internal class DatadogContextProviderTest {
             }
         }
         val keysToRemove = mutableFeaturesContext.keys
-            .take(forge.anInt(min = 0, max = mutableFeaturesContext.keys.size))
+            .take(forge.anInt(min = 1, max = mutableFeaturesContext.keys.size))
         keysToRemove.forEach {
             mutableFeaturesContext.remove(it)
         }

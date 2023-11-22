@@ -10,6 +10,7 @@ import android.net.TrafficStats
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.RequestFactory
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.data.upload.v2.DataUploader
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import okhttp3.Call
@@ -32,7 +33,7 @@ internal class DataOkHttpUploader(
     @Suppress("TooGenericExceptionCaught")
     override fun upload(
         context: DatadogContext,
-        batch: List<ByteArray>,
+        batch: List<RawBatchEvent>,
         batchMeta: ByteArray?
     ): UploadStatus {
         val request = try {

@@ -6,7 +6,7 @@
 
 package com.datadog.tools.detekt.rules
 
-import com.datadog.tools.detekt.ext.fullType
+import com.datadog.tools.detekt.ext.fqTypeName
 import com.datadog.tools.detekt.ext.type
 import io.gitlab.arturbosch.detekt.api.CodeSmell
 import io.gitlab.arturbosch.detekt.api.Debt
@@ -63,7 +63,11 @@ class InvalidStringFormat : Rule() {
 
         // check receiver type
         val explicitReceiver = call.explicitReceiver
-        val receiverType = explicitReceiver?.type(bindingContext)
+        val receiverType = explicitReceiver?.type(
+            bindingContext,
+            treatGenericAsSuper = true,
+            includeTypeArguments = true
+        )
         if (receiverType != STRING_CLASS) return
 
         // check method call
@@ -89,7 +93,7 @@ class InvalidStringFormat : Rule() {
             is ClassQualifier -> {
                 // String.format(…)
                 val arguments = resolvedCall.valueArguments.toList().firstOrNull {
-                    it.first.type.fullType().toString() == STRING_CLASS
+                    it.first.type.fqTypeName() == STRING_CLASS
                 }?.second?.arguments
                 if (arguments != null && arguments.size == 1) {
                     arguments.first().getArgumentExpression()
@@ -152,7 +156,7 @@ class InvalidStringFormat : Rule() {
 
         val rawTypes = formatParams?.arguments.orEmpty()
             .map {
-                it.getArgumentExpression()?.getType(bindingContext)?.lowerIfFlexible()?.fullType()
+                it.getArgumentExpression()?.getType(bindingContext)?.lowerIfFlexible()?.fqTypeName()
             }
         return if (receiver is ClassQualifier && rawTypes.firstOrNull() == LOCALE_CLASS) {
             rawTypes.drop(1)

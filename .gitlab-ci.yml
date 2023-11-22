@@ -4,7 +4,7 @@ include:
 # SETUP
 
 variables:
-  CURRENT_CI_IMAGE: "4"
+  CURRENT_CI_IMAGE: "5"
   CI_IMAGE_DOCKER: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/dd-sdk-android:$CURRENT_CI_IMAGE
   GIT_DEPTH: 5
 
@@ -19,7 +19,8 @@ stages:
   - ci-image
   - security
   - analysis
-  - test
+  - test # TODO RUM-1622 cleanup eventually
+  - test-pyramid
   - publish
   - notify
 
@@ -59,14 +60,14 @@ static-analysis:
   stage: analysis
   variables:
     DETEKT_PUBLIC_API: "true"
-    DETEKT_CUSTOM_RULES_BUILD_TASK: "assembleAll :tools:detekt:jar"
+    DETEKT_CUSTOM_RULES_BUILD_TASK: "assembleLibraries :tools:detekt:jar"
     DETEKT_CUSTOM_RULES_JAR_PATH: "tools/detekt/build/libs/detekt.jar"
     DETEKT_CUSTOM_RULES_YML_PATH: "detekt_custom.yml"
     DETEKT_GENERATE_CLASSPATH_BUILD_TASK: "printSdkDebugRuntimeClasspath"
     DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
     FLAVORED_ANDROID_LINT: ":tools:lint:lint :sample:kotlin:lintUs1Release :sample:wear:lintUs1Release"
   trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v20132793-918be90a/static-analysis.yml"
+    include: "https://gitlab-templates.ddbuild.io/mobile/v21503284-abb6cabb/static-analysis.yml"
     strategy: depend
 
 analysis:licenses:
@@ -85,6 +86,7 @@ analysis:nightly-tests-coverage:
   script:
     - GRADLE_OPTS="-Xmx3072m" ./gradlew checkNightlyTestsCoverage --stacktrace --no-daemon
 
+# TODO RUM-1622 cleanup this section
 # TESTS
 
 test:debug:
@@ -151,6 +153,78 @@ test:kover:
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :koverReportAll --stacktrace --no-daemon --build-cache --gradle-user-home cache/
     - python3 ddcoverage.py --prefix dd-sdk-android
     - bash <(cat ./codecov.sh) -t $CODECOV_TOKEN
+
+
+# TEST PYRAMID
+# the steps in this section should reflect our test pyramid strategy
+
+test-pyramid:single-fit-logs:
+  tags: [ "runner:main" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/notifications/
+    policy: pull
+  script:
+    - rm -rf ~/.gradle/daemon/
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :reliability:single-fit:logs:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+
+test-pyramid:single-fit-rum:
+  tags: [ "runner:main" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/notifications/
+    policy: pull
+  script:
+    - rm -rf ~/.gradle/daemon/
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :reliability:single-fit:rum:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+
+test-pyramid:single-fit-trace:
+  tags: [ "runner:main" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/notifications/
+    policy: pull
+  script:
+    - rm -rf ~/.gradle/daemon/
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :reliability:single-fit:trace:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+
+
+test-pyramid:publish-e2e-synthetics:
+  tags: [ "runner:main" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  only:
+    - develop
+  script:
+    - mkdir -p ./config/
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-android.keystore
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_config_json --with-decryption --query "Parameter.Value" --out text > ./config/us1.json
+    - export E2E_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_api_key --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_app_key --with-decryption --query "Parameter.Value" --out text)
+    - export E2E_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibraries --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageUs1Release --stacktrace --no-daemon
+    - npm update -g @datadog/datadog-ci
+    - echo "Using datadog-ci $(npx @datadog/datadog-ci version)"
+    - npx @datadog/datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
 
 # PUBLISH ARTIFACTS ON MAVEN
 

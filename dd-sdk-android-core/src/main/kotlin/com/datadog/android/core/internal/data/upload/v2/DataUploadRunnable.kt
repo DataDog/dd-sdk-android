@@ -10,6 +10,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
@@ -43,38 +44,31 @@ internal class DataUploadRunnable(
     internal var currentDelayIntervalMs = uploadConfiguration.defaultDelayMs
     internal val minDelayMs = uploadConfiguration.minDelayMs
     internal val maxDelayMs = uploadConfiguration.maxDelayMs
+    internal val maxBatchesPerJob = uploadConfiguration.maxBatchesPerUploadJob
 
     //  region Runnable
 
     @WorkerThread
-    @Suppress("UnsafeThirdPartyFunctionCall") // called inside a dedicated executor
     override fun run() {
         if (isNetworkAvailable() && isSystemReady()) {
             val context = contextProvider.context
             // TODO RUMM-0000 it should be already on the worker thread and if readNextBatch is async,
             //  we should wait until it completes before scheduling further
-            val lock = CountDownLatch(1)
-            storage.readNextBatch(
-                noBatchCallback = {
-                    increaseInterval()
-                    lock.countDown()
-                }
-            ) { batchId, reader ->
-                try {
-                    val batch = reader.read()
-                    val batchMeta = reader.currentMetadata()
-
-                    consumeBatch(
-                        context,
-                        batchId,
-                        batch,
-                        batchMeta
-                    )
-                } finally {
-                    lock.countDown()
-                }
+            var batchConsumerAvailableAttempts = maxBatchesPerJob
+            var lastBatchUploadStatus: UploadStatus?
+            do {
+                batchConsumerAvailableAttempts--
+                lastBatchUploadStatus = handleNextBatch(context)
+            } while (batchConsumerAvailableAttempts > 0 &&
+                lastBatchUploadStatus is UploadStatus.Success
+            )
+            if (lastBatchUploadStatus != null) {
+                handleBatchConsumingJobFrequency(lastBatchUploadStatus)
+            } else {
+                // there was no batch left or there was a problem reading the next batch
+                // in the storage so we increase the interval
+                increaseInterval()
             }
-            lock.await(batchUploadWaitTimeoutMs, TimeUnit.MILLISECONDS)
         }
 
         scheduleNextUpload()
@@ -83,6 +77,42 @@ internal class DataUploadRunnable(
     // endregion
 
     // region Internal
+
+    private fun handleBatchConsumingJobFrequency(lastBatchUploadStatus: UploadStatus) {
+        if (lastBatchUploadStatus.shouldRetry) {
+            increaseInterval()
+        } else {
+            decreaseInterval()
+        }
+    }
+
+    @WorkerThread
+    @Suppress("UnsafeThirdPartyFunctionCall") // called inside a dedicated executor
+    private fun handleNextBatch(context: DatadogContext): UploadStatus? {
+        var uploadStatus: UploadStatus? = null
+        val lock = CountDownLatch(1)
+        storage.readNextBatch(
+            noBatchCallback = {
+                lock.countDown()
+            }
+        ) { batchId, reader ->
+            try {
+                val batch = reader.read()
+                val batchMeta = reader.currentMetadata()
+
+                uploadStatus = consumeBatch(
+                    context,
+                    batchId,
+                    batch,
+                    batchMeta
+                )
+            } finally {
+                lock.countDown()
+            }
+        }
+        lock.await(batchUploadWaitTimeoutMs, TimeUnit.MILLISECONDS)
+        return uploadStatus
+    }
 
     private fun isNetworkAvailable(): Boolean {
         val networkInfo = networkInfoProvider.getLatestNetworkInfo()
@@ -112,9 +142,9 @@ internal class DataUploadRunnable(
     private fun consumeBatch(
         context: DatadogContext,
         batchId: BatchId,
-        batch: List<ByteArray>,
+        batch: List<RawBatchEvent>,
         batchMeta: ByteArray?
-    ) {
+    ): UploadStatus {
         val status = dataUploader.upload(context, batch, batchMeta)
         val removalReason = if (status is UploadStatus.RequestCreationError) {
             RemovalReason.Invalid
@@ -122,14 +152,9 @@ internal class DataUploadRunnable(
             RemovalReason.IntakeCode(status.code)
         }
         storage.confirmBatchRead(batchId, removalReason) {
-            if (status.shouldRetry) {
-                it.markAsRead(false)
-                increaseInterval()
-            } else {
-                it.markAsRead(true)
-                decreaseInterval()
-            }
+            it.markAsRead(deleteBatch = !status.shouldRetry)
         }
+        return status
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // rounded Double isn't NaN

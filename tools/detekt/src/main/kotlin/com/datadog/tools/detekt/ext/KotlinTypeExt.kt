@@ -9,23 +9,39 @@ package com.datadog.tools.detekt.ext
 import org.jetbrains.kotlin.descriptors.buildPossiblyInnerType
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.getArguments
 import org.jetbrains.kotlin.types.isNullable
 import org.jetbrains.kotlin.types.typeUtil.supertypes
 
-internal fun KotlinType.fullType(): String? {
-    val descriptor = if (toString() == "T" || toString() == "C") {
+internal fun KotlinType.fqTypeName(
+    treatGenericAsSuper: Boolean = true,
+    includeTypeArguments: Boolean = true
+): String {
+    val descriptor = if ((constructor.toString().length == 1) && treatGenericAsSuper) {
         // Treat generic types as their closest supertype (usually Any)
         supertypes().firstOrNull()?.buildPossiblyInnerType()?.classifierDescriptor
     } else {
         buildPossiblyInnerType()?.classifierDescriptor
     }
-    val fqName = descriptor?.fqNameOrNull()
-    return if (fqName != null) {
-        val nullableSuffix = if (isNullable()) "?" else ""
-        "$fqName$nullableSuffix"
+    val fqName = descriptor?.fqNameOrNull()?.asString()
+    if (fqName == null) {
+        println("Unable to get fqName for ${this.javaClass} $this")
+        return "UNKNOWN"
+    }
+    val arguments = if (getArguments().isNotEmpty()) {
+        if (includeTypeArguments) {
+            arguments.joinToString(", ", prefix = "<", postfix = ">") {
+                it.type.fqTypeName(treatGenericAsSuper)
+            }
+        } else {
+            ""
+        }
     } else {
-        val supertypes = this.supertypes().joinToString()
-        println("Unable to get fqName for ${this.javaClass} $this: $supertypes")
-        null
+        ""
+    }
+    return if (isNullable()) {
+        "$fqName$arguments?"
+    } else {
+        fqName + arguments
     }
 }

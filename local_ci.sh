@@ -2,13 +2,14 @@
 
 local_ci_usage="Usage: local_ci.sh [-s|--setup] [-n|--clean] [-a|--analysis] [-c|--compile] [-t|--test] [--update-session-replay-payloads] [-h|--help]"
 
-
 SETUP=0
 CLEANUP=0
 ANALYSIS=0
 COMPILE=0
 TEST=0
 UPDATE_SESSION_REPLAY_PAYLOAD=0
+
+export CI=true
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -97,6 +98,7 @@ if [[ $CLEANUP == 1 ]]; then
   rm -rf integrations/dd-sdk-android-timber/build/
   rm -rf integrations/dd-sdk-android-tv/build/
 
+  ./gradlew --stop
 fi
 
 if [[ $ANALYSIS == 1 ]]; then
@@ -125,17 +127,38 @@ if [[ $ANALYSIS == 1 ]]; then
 
   if [[ $COMPILE == 1 ]]; then
     # Assemble is required to get generated classes type resolution
-    echo "------ Assemble Library"
-    ./gradlew assembleAll
-
-    echo "------ Detekt custom rules"
-    ./gradlew :tools:detekt:jar
+    echo "------ Assemble Libraries"
+    ./gradlew assembleLibraries
     ./gradlew printSdkDebugRuntimeClasspath
     classpath=$(cat sdk_classpath)
-    detekt --config detekt_custom.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
+
+    echo "------ Build Detekt custom rules"
+    ./gradlew :tools:detekt:jar
+
     # TODO RUMM-3263 Switch to Java 17 bytecode
+    echo "------ Detekt custom rules"
+    detekt --config detekt_custom.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
+
+    echo "------ Detekt test pyramid rules"
+    rm apiSurface.log apiUsage.log
+    detekt --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
+
+    grep -v -f apiUsage.log apiSurface.log > apiCoverageMiss.log
+    grep -f apiUsage.log apiSurface.log > apiCoverageHit.log
+    if [ ! -s "${FILENAME}" ]; then
+      surfaceCount=`sed -n '$=' apiSurface.log`
+      coverageMissCount=`sed -n '$=' apiCoverageMiss.log`
+      coverageHitCount=`sed -n '$=' apiCoverageHit.log`
+      hitPercent=$(( (coverageHitCount * 100)/surfaceCount ))
+      missPercent=$(( (coverageMissCount * 100)/surfaceCount ))
+      echo "✘ Test Integration coverage missed ${coverageMissCount} apis ($hitPercent % coverage; $missPercent % miss)"
+      exit 1
+    else
+      echo "✔ Test Integration coverage 100%"
+    fi
+
   else
-    echo "------ Detekt Custom Rules ignored, run again with --analysis --compile"
+    echo "------ Detekt Custom Rules & API Coverage ignored, run again with --analysis --compile"
   fi
 
   echo "---- AndroidLint"
@@ -148,8 +171,8 @@ fi
 if [[ $COMPILE == 1 ]]; then
   echo "-- COMPILATION"
 
-  echo "---- Assemble Library"
-  ./gradlew assembleAll
+  echo "---- Assemble Libraries"
+  ./gradlew assembleLibraries
 
   echo "---- Assemble Unit Tests"
   ./gradlew assembleDebugUnitTest
@@ -187,4 +210,5 @@ if [[ $UPDATE_SESSION_REPLAY_PAYLOAD == 1 ]]; then
   adb pull $PAYLOAD_INPUT_DIRECTORY_PATH $PAYLOAD_OUTPUT_DIRECTORY_PATH
 fi
 
+unset CI
 echo "-- Done ✔︎"

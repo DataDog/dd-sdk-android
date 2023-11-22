@@ -1,10 +1,14 @@
+#include <dirent.h>
 #include <jni.h>
 #include <string>
+#include <thread>
+
 
 #include <android/log.h>
 #include <datadog-native-lib.h>
 #include "greatest/greatest.h"
 #include "utils/string-utils.h"
+
 
 SUITE (datetime_utils);
 
@@ -105,6 +109,40 @@ Java_com_datadog_android_ndk_NdkTests_simulateSignalInterception(
     env->ReleaseStringUTFChars(error_message, message);
     env->ReleaseStringUTFChars(error_stack, stack);
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_datadog_android_ndk_NdkTests_simulateFailedSignalInterception(
+        JNIEnv *env,
+        jobject thiz,
+        jint signal,
+        jstring signal_name,
+        jstring error_message,
+        jstring error_stack) {
+
+    const int c_signal = (int) signal;
+    const char *name = env->GetStringUTFChars(signal_name, 0);
+    const char *message = env->GetStringUTFChars(error_message, 0);
+    const char *stack = env->GetStringUTFChars(error_stack, 0);
+    // acquire the mutex to simulate a concurrent signal interception
+    auto acquire_mutex_lambda = [] {
+        lockMutex();
+    };
+    std::thread t1 = std::thread(acquire_mutex_lambda);
+    t1.join();
+    test_generate_log(c_signal, name, message, stack);
+    env->ReleaseStringUTFChars(signal_name, name);
+    env->ReleaseStringUTFChars(error_message, message);
+    env->ReleaseStringUTFChars(error_stack, stack);
+    // release the mutex to simulate a concurrent signal interception
+    auto release_mutex_lambda = [] {
+        unlockMutex();
+    };
+    std::thread t2 = std::thread(release_mutex_lambda);
+    t2.join();
+}
+
+
 
 extern "C"
 JNIEXPORT void JNICALL

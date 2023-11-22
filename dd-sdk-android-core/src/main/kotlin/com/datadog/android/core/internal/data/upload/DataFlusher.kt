@@ -28,6 +28,7 @@ internal class DataFlusher(
         val toUploadFiles = fileOrchestrator.getFlushableFiles()
         toUploadFiles.forEach {
             val batch = fileReader.readData(it)
+                .map { it.data }
                 .join(
                     separator = decoration.separatorBytes,
                     prefix = decoration.prefixBytes,

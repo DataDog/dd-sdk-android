@@ -21,7 +21,7 @@ internal class DataFlusher(
     internal val contextProvider: ContextProvider,
     internal val fileOrchestrator: FileOrchestrator,
     internal val fileReader: BatchFileReader,
-    internal val metadataFileReader: FileReader,
+    internal val metadataFileReader: FileReader<ByteArray>,
     internal val fileMover: FileMover,
     private val internalLogger: InternalLogger
 ) : Flusher {

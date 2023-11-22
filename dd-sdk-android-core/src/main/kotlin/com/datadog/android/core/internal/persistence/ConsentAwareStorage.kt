@@ -10,6 +10,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.persistence.file.FileMover
@@ -111,7 +112,7 @@ internal class ConsentAwareStorage(
             }
 
             @WorkerThread
-            override fun read(): List<ByteArray> {
+            override fun read(): List<RawBatchEvent> {
                 return batchEventsReaderWriter.readData(batchFile)
             }
         }

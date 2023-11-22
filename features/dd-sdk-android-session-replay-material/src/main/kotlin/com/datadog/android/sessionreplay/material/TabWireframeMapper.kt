@@ -94,7 +94,10 @@ internal open class TabWireframeMapper(
         List<MobileSegment.Wireframe> {
         for (i in 0 until view.childCount) {
             val viewChild = view.getChildAt(i) ?: continue
-            if (TextView::class.java.isAssignableFrom(viewChild::class.java)) {
+
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            val isTextView = TextView::class.java.isAssignableFrom(viewChild::class.java)
+            if (isTextView) {
                 return textViewMapper.map(
                     viewChild as TextView,
                     mappingContext,

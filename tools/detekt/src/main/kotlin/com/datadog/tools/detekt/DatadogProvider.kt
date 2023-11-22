@@ -29,14 +29,14 @@ class DatadogProvider : RuleSetProvider {
         return RuleSet(
             ruleSetId,
             listOf(
-                ThrowingInternalException(),
                 CheckInternal(),
-                RequireInternal(),
-                TodoWithoutTask(),
                 InvalidStringFormat(),
-                UnsafeThirdPartyFunctionCall(config),
+                RequireInternal(),
+                ThreadSafety(),
+                ThrowingInternalException(),
+                TodoWithoutTask(),
                 UnsafeCallOnNullableType(),
-                ThreadSafety()
+                UnsafeThirdPartyFunctionCall(config)
             )
         )
     }

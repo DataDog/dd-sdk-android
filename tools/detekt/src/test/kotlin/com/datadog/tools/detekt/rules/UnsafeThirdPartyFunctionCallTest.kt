@@ -147,7 +147,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
     fun `detekt unsafe call on known third party function {disambiguate signatures}`() {
         // Given
         val knownThrowingCalls = listOf(
-            "java.io.File.listFiles(java.io.FileFilter):java.io.FileNotFoundException"
+            "java.io.File.listFiles(java.io.FileFilter?):java.io.FileNotFoundException"
         )
         val config = TestConfig(
             mapOf(
@@ -452,10 +452,10 @@ internal class UnsafeThirdPartyFunctionCallTest {
     }
 
     @Test
-    fun `detekt unsafe call on unknown constructor {treatUnknownConstructorAsThrowing=true}`() {
+    fun `detekt unsafe call on unknown constructor {treatUnknownFunctionAsThrowing=true}`() {
         // Given
         val config = TestConfig(
-            mapOf("treatUnknownConstructorAsThrowing" to true)
+            mapOf("treatUnknownFunctionAsThrowing" to true)
         )
         val code =
             """
@@ -475,10 +475,10 @@ internal class UnsafeThirdPartyFunctionCallTest {
     }
 
     @Test
-    fun `ignore calls on unknown constructor {treatUnknownConstructorAsThrowing=false}`() {
+    fun `ignore calls on unknown constructor {treatUnknownFunctionAsThrowing=false}`() {
         // Given
         val config = TestConfig(
-            mapOf("treatUnknownConstructorAsThrowing" to false)
+            mapOf("treatUnknownFunctionAsThrowing" to false)
         )
         val code =
             """
@@ -561,36 +561,6 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(Config.empty)
-            .compileAndLintWithContext(kotlinEnv.env, code)
-
-        // Then
-        assertThat(findings).hasSize(0)
-    }
-
-    @Test
-    fun `ignore custom kotlin extension`() {
-        // Given
-        val config = TestConfig(
-            mapOf("internalPackagePrefix" to "com.example")
-        )
-        val code =
-            """
-                package com.example.foo
-                
-                import java.io.File
-                
-                fun File.doSomething(): Boolean {
-                    println("doing something with file:$this")
-                    return file.readText().isEmpty()
-                }
-                
-                fun test(file: File): Boolean {
-                    return file.doSomething()
-                }
-            """.trimIndent()
-
-        // When
-        val findings = UnsafeThirdPartyFunctionCall(config)
             .compileAndLintWithContext(kotlinEnv.env, code)
 
         // Then

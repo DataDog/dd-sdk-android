@@ -56,6 +56,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -526,6 +527,7 @@ internal class DatadogCoreTest {
         val mockEncryption = mock<Encryption>()
         whenever(mockCoreFeature.localDataEncryption) doReturn mockEncryption
         whenever(mockEncryption.encrypt(fakeViewEvent)) doReturn fakeViewEvent.reversedArray()
+        whenever(mockEncryption.encrypt(argThat { isEmpty() })) doAnswer { it.getArgument(0) }
 
         testedCore.coreFeature = mockCoreFeature
 

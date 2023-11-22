@@ -23,15 +23,27 @@
         "type": "shape"
       },
       {
-        "width": 75,
-        "height": 80,
+        "width": 80,
+        "height": 84,
+        "clip": {
+          "top": 2,
+          "bottom": 2,
+          "left": 0,
+          "right": 0
+        },
         "type": "image",
         "mimeType": "image/webp",
         "isEmpty": false
       },
       {
-        "width": 75,
-        "height": 80,
+        "width": 80,
+        "height": 84,
+        "clip": {
+          "top": 2,
+          "bottom": 2,
+          "left": 0,
+          "right": 0
+        },
         "type": "image",
         "mimeType": "image/webp",
         "isEmpty": false

@@ -29,6 +29,7 @@ internal class ViewUtilsInternal {
             view is ActionBarContextView
     }
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
     internal fun isToolbar(view: View): Boolean {
         return Toolbar::class.java.isAssignableFrom(view::class.java) ||
             android.widget.Toolbar::class.java.isAssignableFrom(view::class.java)

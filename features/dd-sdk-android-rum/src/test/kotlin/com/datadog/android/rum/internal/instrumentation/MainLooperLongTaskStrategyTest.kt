@@ -23,7 +23,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.data.Offset.offset
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -92,7 +91,7 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
 
     @Test
     fun `𝕄 report long task 𝕎 print()`(
-        @LongForgery(min = TEST_THRESHOLD_MS, max = 500) duration: Long,
+        @LongForgery(min = MIN_LONG_TASK_DURATION_MS, max = 500) duration: Long,
         @StringForgery target: String,
         @StringForgery callback: String,
         @IntForgery what: Int
@@ -101,7 +100,7 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
 
         // When
         testedPrinter.println(">>>>> Dispatching to $target $callback: $what")
-        Thread.sleep(duration + 1)
+        Thread.sleep(duration)
         testedPrinter.println("<<<<< Finished to $target $callback")
 
         // Then
@@ -110,13 +109,13 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
                 .addLongTask(capture(), eq("$target $callback: $what"))
             val capturedMs = TimeUnit.NANOSECONDS.toMillis(firstValue)
             assertThat(capturedMs)
-                .isCloseTo(duration, offset(10L))
+                .isBetween(duration, duration + 16L)
         }
     }
 
     @Test
     fun `𝕄 do not report short task 𝕎 print()`(
-        @LongForgery(min = 0, max = TEST_THRESHOLD_MS) duration: Long,
+        @LongForgery(min = 0, max = MAX_SHORT_TASK_DURATION_MS) duration: Long,
         @StringForgery target: String,
         @StringForgery callback: String,
         @IntForgery what: Int
@@ -152,6 +151,8 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
 
     companion object {
         const val TEST_THRESHOLD_MS = 50L
+        const val MAX_SHORT_TASK_DURATION_MS = TEST_THRESHOLD_MS - 1L
+        const val MIN_LONG_TASK_DURATION_MS = TEST_THRESHOLD_MS + 1L
 
         val rumMonitor = GlobalRumMonitorTestConfiguration()
 

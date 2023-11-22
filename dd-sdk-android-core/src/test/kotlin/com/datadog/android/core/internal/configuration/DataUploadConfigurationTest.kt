@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.configuration
 
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.utils.forge.Configurator
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -34,8 +35,11 @@ internal class DataUploadConfigurationTest {
     lateinit var testedConfiguration: DataUploadConfiguration
 
     @BeforeEach
-    fun `set up`() {
-        testedConfiguration = DataUploadConfiguration(fakeUploadFrequency)
+    fun `set up`(forge: Forge) {
+        testedConfiguration = DataUploadConfiguration(
+            fakeUploadFrequency,
+            forge.anInt()
+        )
     }
 
     @Test

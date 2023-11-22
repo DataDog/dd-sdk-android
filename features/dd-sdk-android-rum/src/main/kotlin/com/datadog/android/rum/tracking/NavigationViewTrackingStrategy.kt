@@ -55,6 +55,7 @@ class NavigationViewTrackingStrategy(
 
     private val predicate: ComponentPredicate<Fragment> = object : ComponentPredicate<Fragment> {
         override fun accept(component: Fragment): Boolean {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             return !NavHostFragment::class.java.isAssignableFrom(component.javaClass)
         }
 
@@ -162,7 +163,9 @@ class NavigationViewTrackingStrategy(
         val activity = startedActivity ?: return
         activity.findNavControllerOrNull(navigationViewId)?.let {
             it.removeOnDestinationChangedListener(this)
-            if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            val isFragmentActivity = FragmentActivity::class.java.isAssignableFrom(activity::class.java)
+            if (isFragmentActivity) {
                 lifecycleCallbackRefs.remove(activity)?.unregister(activity as FragmentActivity)
             }
         }

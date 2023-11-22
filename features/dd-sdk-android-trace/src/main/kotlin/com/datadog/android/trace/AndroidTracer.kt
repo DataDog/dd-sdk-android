@@ -91,7 +91,8 @@ class AndroidTracer internal constructor(
         private val logsHandler: LogHandler
     ) {
 
-        private var tracingHeaderTypes: Set<TracingHeaderType> = setOf(TracingHeaderType.DATADOG)
+        private var tracingHeaderTypes: Set<TracingHeaderType> =
+            setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
         private var bundleWithRumEnabled: Boolean = true
         private var sampleRate: Double = DEFAULT_SAMPLE_RATE
 

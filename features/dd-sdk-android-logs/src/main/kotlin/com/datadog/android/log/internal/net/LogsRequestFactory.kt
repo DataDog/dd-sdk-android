@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestFactory
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
 import java.util.Locale
 import java.util.UUID
@@ -27,7 +28,7 @@ internal class LogsRequestFactory(
     /** @inheritdoc */
     override fun create(
         context: DatadogContext,
-        batchData: List<ByteArray>,
+        batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
     ): Request {
         val requestId = UUID.randomUUID().toString()
@@ -42,12 +43,13 @@ internal class LogsRequestFactory(
                 context.source,
                 context.sdkVersion
             ),
-            body = batchData.join(
-                separator = PAYLOAD_SEPARATOR,
-                prefix = PAYLOAD_PREFIX,
-                suffix = PAYLOAD_SUFFIX,
-                internalLogger = internalLogger
-            ),
+            body = batchData.map { it.data }
+                .join(
+                    separator = PAYLOAD_SEPARATOR,
+                    prefix = PAYLOAD_PREFIX,
+                    suffix = PAYLOAD_SUFFIX,
+                    internalLogger = internalLogger
+                ),
             contentType = RequestFactory.CONTENT_TYPE_JSON
         )
     }

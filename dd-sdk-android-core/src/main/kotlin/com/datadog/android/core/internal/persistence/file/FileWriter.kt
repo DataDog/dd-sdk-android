@@ -9,10 +9,11 @@ package com.datadog.android.core.internal.persistence.file
 import androidx.annotation.WorkerThread
 import java.io.File
 
-internal interface FileWriter {
+internal interface FileWriter<T> {
 
     /**
-     * Writes data as a [ByteArray] into a file.
+     * Writes data as a [T] into a file.
+     * @type T type of the data to write
      * @param file the file to write to
      * @param data the data to write
      * @param append whether to append data at the end of the file or overwrite
@@ -21,7 +22,7 @@ internal interface FileWriter {
     @WorkerThread
     fun writeData(
         file: File,
-        data: ByteArray,
+        data: T,
         append: Boolean
     ): Boolean
 }

@@ -137,7 +137,12 @@ internal open class SeekBarWireframeMapper(
     }
 
     private fun SeekBar.normalizedValue(): Float {
-        return (this.progress.toFloat() - min.toFloat()) / (max.toFloat() - min.toFloat())
+        val range = max.toFloat() - min.toFloat()
+        return if (range == 0f) {
+            0f
+        } else {
+            (this.progress.toFloat() - min.toFloat()) / range
+        }
     }
 
     private fun SeekBar.getTrackColor(): Int {

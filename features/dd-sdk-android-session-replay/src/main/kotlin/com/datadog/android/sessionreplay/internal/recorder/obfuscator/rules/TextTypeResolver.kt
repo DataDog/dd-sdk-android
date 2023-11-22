@@ -35,6 +35,7 @@ internal class TextTypeResolver {
     }
 
     private fun TextView.isInputText(): Boolean {
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         return EditText::class.java.isAssignableFrom(this::class.java)
     }
 

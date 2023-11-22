@@ -10,19 +10,19 @@ import com.datadog.android.sessionreplay.internal.utils.hasOpaqueBackground
 import com.datadog.android.sessionreplay.model.MobileSegment
 import kotlin.math.max
 
-internal class WireframeUtils {
+internal class WireframeUtils(private val boundsUtils: BoundsUtils = BoundsUtils) {
 
     internal fun resolveWireframeClip(
         wireframe: MobileSegment.Wireframe,
         parents: List<MobileSegment.Wireframe>
     ): MobileSegment.WireframeClip? {
-        var clipTop = 0L
-        var clipLeft = 0L
-        var clipRight = 0L
-        var clipBottom = 0L
-        val wireframeBounds = wireframe.bounds()
-
-        parents.map { it.bounds() }.forEach {
+        val previousClip = wireframe.clip()
+        var clipTop = previousClip?.top ?: 0L
+        var clipLeft = previousClip?.left ?: 0L
+        var clipRight = previousClip?.right ?: 0L
+        var clipBottom = previousClip?.bottom ?: 0L
+        val wireframeBounds = boundsUtils.resolveBounds(wireframe)
+        parents.map { boundsUtils.resolveBounds(it) }.forEach {
             clipTop = max(it.top - wireframeBounds.top, clipTop)
             clipBottom = max(wireframeBounds.bottom - it.bottom, clipBottom)
             clipLeft = max(it.left - wireframeBounds.left, clipLeft)
@@ -46,9 +46,12 @@ internal class WireframeUtils {
         wireframe: MobileSegment.Wireframe,
         topWireframes: List<MobileSegment.Wireframe>
     ): Boolean {
-        val wireframeBounds = wireframe.bounds()
+        val wireframeBounds = boundsUtils.resolveBounds(wireframe)
         topWireframes.forEach {
-            if (it.bounds().isCovering(wireframeBounds) && it.hasOpaqueBackground()) {
+            val topBounds = boundsUtils.resolveBounds(it)
+            if (boundsUtils.isCovering(topBounds, wireframeBounds) &&
+                it.hasOpaqueBackground()
+            ) {
                 return true
             }
         }
@@ -56,7 +59,7 @@ internal class WireframeUtils {
     }
 
     internal fun checkWireframeIsValid(wireframe: MobileSegment.Wireframe): Boolean {
-        val wireframeBounds = wireframe.bounds()
+        val wireframeBounds = boundsUtils.resolveBounds(wireframe)
         return (
             wireframeBounds.width > 0 &&
                 wireframeBounds.height > 0 &&
@@ -68,71 +71,12 @@ internal class WireframeUtils {
             )
     }
 
-    private fun Bounds.isCovering(other: Bounds): Boolean {
-        return left <= other.left &&
-            right >= other.right &&
-            top <= other.top &&
-            bottom >= other.bottom
-    }
-
-    private fun MobileSegment.Wireframe.bounds(): Bounds {
+    private fun MobileSegment.Wireframe.clip(): MobileSegment.WireframeClip? {
         return when (this) {
-            is MobileSegment.Wireframe.ShapeWireframe -> this.bounds()
-            is MobileSegment.Wireframe.TextWireframe -> this.bounds()
-            is MobileSegment.Wireframe.ImageWireframe -> this.bounds()
-            is MobileSegment.Wireframe.PlaceholderWireframe -> this.bounds()
+            is MobileSegment.Wireframe.ShapeWireframe -> this.clip
+            is MobileSegment.Wireframe.TextWireframe -> this.clip
+            is MobileSegment.Wireframe.ImageWireframe -> this.clip
+            is MobileSegment.Wireframe.PlaceholderWireframe -> this.clip
         }
     }
-
-    private fun MobileSegment.Wireframe.ShapeWireframe.bounds(): Bounds {
-        return Bounds(
-            left = x + (clip?.left ?: 0),
-            right = x + width - (clip?.right ?: 0),
-            top = y + (clip?.top ?: 0),
-            bottom = y + height - (clip?.bottom ?: 0),
-            width = width,
-            height = height
-        )
-    }
-
-    private fun MobileSegment.Wireframe.TextWireframe.bounds(): Bounds {
-        return Bounds(
-            left = x + (clip?.left ?: 0),
-            right = x + width - (clip?.right ?: 0),
-            top = y + (clip?.top ?: 0),
-            bottom = y + height - (clip?.bottom ?: 0),
-            width = width,
-            height = height
-        )
-    }
-    private fun MobileSegment.Wireframe.ImageWireframe.bounds(): Bounds {
-        return Bounds(
-            left = x + (clip?.left ?: 0),
-            right = x + width - (clip?.right ?: 0),
-            top = y + (clip?.top ?: 0),
-            bottom = y + height - (clip?.bottom ?: 0),
-            width = width,
-            height = height
-        )
-    }
-
-    private fun MobileSegment.Wireframe.PlaceholderWireframe.bounds(): Bounds {
-        return Bounds(
-            left = x + (clip?.left ?: 0),
-            right = x + width - (clip?.right ?: 0),
-            top = y + (clip?.top ?: 0),
-            bottom = y + height - (clip?.bottom ?: 0),
-            width = width,
-            height = height
-        )
-    }
-
-    internal data class Bounds(
-        val left: Long,
-        val right: Long,
-        val top: Long,
-        val bottom: Long,
-        val width: Long,
-        val height: Long
-    )
 }

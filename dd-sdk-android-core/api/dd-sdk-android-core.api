@@ -390,21 +390,23 @@ public abstract interface class com/datadog/android/api/storage/DataWriter {
 
 public abstract interface class com/datadog/android/api/storage/EventBatchWriter {
 	public abstract fun currentMetadata ()[B
-	public abstract fun write ([B[B)Z
+	public abstract fun write (Lcom/datadog/android/api/storage/RawBatchEvent;[B)Z
 }
 
 public final class com/datadog/android/api/storage/FeatureStorageConfiguration {
 	public static final field Companion Lcom/datadog/android/api/storage/FeatureStorageConfiguration$Companion;
-	public fun <init> (JIJJLcom/datadog/android/core/configuration/UploadFrequency;Lcom/datadog/android/core/configuration/BatchSize;)V
+	public fun <init> (JIJJLcom/datadog/android/core/configuration/UploadFrequency;Lcom/datadog/android/core/configuration/BatchSize;Lcom/datadog/android/core/configuration/BatchProcessingLevel;)V
 	public final fun component1 ()J
 	public final fun component2 ()I
 	public final fun component3 ()J
 	public final fun component4 ()J
 	public final fun component5 ()Lcom/datadog/android/core/configuration/UploadFrequency;
 	public final fun component6 ()Lcom/datadog/android/core/configuration/BatchSize;
-	public final fun copy (JIJJLcom/datadog/android/core/configuration/UploadFrequency;Lcom/datadog/android/core/configuration/BatchSize;)Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
-	public static synthetic fun copy$default (Lcom/datadog/android/api/storage/FeatureStorageConfiguration;JIJJLcom/datadog/android/core/configuration/UploadFrequency;Lcom/datadog/android/core/configuration/BatchSize;ILjava/lang/Object;)Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
+	public final fun component7 ()Lcom/datadog/android/core/configuration/BatchProcessingLevel;
+	public final fun copy (JIJJLcom/datadog/android/core/configuration/UploadFrequency;Lcom/datadog/android/core/configuration/BatchSize;Lcom/datadog/android/core/configuration/BatchProcessingLevel;)Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/api/storage/FeatureStorageConfiguration;JIJJLcom/datadog/android/core/configuration/UploadFrequency;Lcom/datadog/android/core/configuration/BatchSize;Lcom/datadog/android/core/configuration/BatchProcessingLevel;ILjava/lang/Object;)Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBatchProcessingLevel ()Lcom/datadog/android/core/configuration/BatchProcessingLevel;
 	public final fun getBatchSize ()Lcom/datadog/android/core/configuration/BatchSize;
 	public final fun getMaxBatchSize ()J
 	public final fun getMaxItemSize ()J
@@ -417,6 +419,20 @@ public final class com/datadog/android/api/storage/FeatureStorageConfiguration {
 
 public final class com/datadog/android/api/storage/FeatureStorageConfiguration$Companion {
 	public final fun getDEFAULT ()Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
+}
+
+public final class com/datadog/android/api/storage/RawBatchEvent {
+	public fun <init> ([B[B)V
+	public synthetic fun <init> ([B[BILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()[B
+	public final fun component2 ()[B
+	public final fun copy ([B[B)Lcom/datadog/android/api/storage/RawBatchEvent;
+	public static synthetic fun copy$default (Lcom/datadog/android/api/storage/RawBatchEvent;[B[BILjava/lang/Object;)Lcom/datadog/android/api/storage/RawBatchEvent;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getData ()[B
+	public final fun getMetadata ()[B
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public abstract interface class com/datadog/android/core/InternalSdkCore : com/datadog/android/api/feature/FeatureSdkCore {
@@ -437,6 +453,19 @@ public final class com/datadog/android/core/SdkReference {
 	public fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 	public synthetic fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun get ()Lcom/datadog/android/api/SdkCore;
+}
+
+public final class com/datadog/android/core/StrictModeExtKt {
+	public static final fun allowThreadDiskReads (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+}
+
+public final class com/datadog/android/core/configuration/BatchProcessingLevel : java/lang/Enum {
+	public static final field HIGH Lcom/datadog/android/core/configuration/BatchProcessingLevel;
+	public static final field LOW Lcom/datadog/android/core/configuration/BatchProcessingLevel;
+	public static final field MEDIUM Lcom/datadog/android/core/configuration/BatchProcessingLevel;
+	public final fun getMaxBatchesPerUploadJob ()I
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/configuration/BatchProcessingLevel;
+	public static fun values ()[Lcom/datadog/android/core/configuration/BatchProcessingLevel;
 }
 
 public final class com/datadog/android/core/configuration/BatchSize : java/lang/Enum {
@@ -463,6 +492,7 @@ public final class com/datadog/android/core/configuration/Configuration$Builder 
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun build ()Lcom/datadog/android/core/configuration/Configuration;
 	public final fun setAdditionalConfiguration (Ljava/util/Map;)Lcom/datadog/android/core/configuration/Configuration$Builder;
+	public final fun setBatchProcessingLevel (Lcom/datadog/android/core/configuration/BatchProcessingLevel;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setBatchSize (Lcom/datadog/android/core/configuration/BatchSize;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setCrashReportsEnabled (Z)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setEncryption (Lcom/datadog/android/security/Encryption;)Lcom/datadog/android/core/configuration/Configuration$Builder;

@@ -15,6 +15,7 @@ import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.core.configuration.BatchProcessingLevel
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
@@ -104,17 +105,23 @@ internal class SdkFeatureTest {
 
     private lateinit var fakeCoreBatchSize: BatchSize
 
+    private lateinit var fakeCoreBatchProcessingLevel: BatchProcessingLevel
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         // make sure this has a clean state
         fakeStorageConfiguration = fakeStorageConfiguration.copy(
             uploadFrequency = null,
-            batchSize = null
+            batchSize = null,
+            batchProcessingLevel = null
         )
         fakeCoreUploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
         fakeCoreBatchSize = forge.aValueFrom(BatchSize::class.java)
+        fakeCoreBatchProcessingLevel = forge.aValueFrom(BatchProcessingLevel::class.java)
         whenever(coreFeature.mockInstance.batchSize).thenReturn(fakeCoreBatchSize)
         whenever(coreFeature.mockInstance.uploadFrequency).thenReturn(fakeCoreUploadFrequency)
+        whenever(coreFeature.mockInstance.batchProcessingLevel)
+            .thenReturn(fakeCoreBatchProcessingLevel)
         whenever(coreFeature.mockTrackingConsentProvider.getConsent()) doReturn fakeConsent
         whenever(mockWrappedFeature.name) doReturn fakeFeatureName
         whenever(mockWrappedFeature.requestFactory) doReturn mock()
@@ -160,7 +167,10 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 initialize uploader 𝕎 initialize()`() {
         // Given
-        val expectedUploadConfiguration = DataUploadConfiguration(fakeCoreUploadFrequency)
+        val expectedUploadConfiguration = DataUploadConfiguration(
+            fakeCoreUploadFrequency,
+            fakeCoreBatchProcessingLevel.maxBatchesPerUploadJob
+        )
 
         // When
         testedFeature.initialize(appContext.mockInstance)
@@ -173,6 +183,8 @@ internal class SdkFeatureTest {
         assertThat(dataUploadRunnable.maxDelayMs).isEqualTo(expectedUploadConfiguration.maxDelayMs)
         assertThat(dataUploadRunnable.currentDelayIntervalMs)
             .isEqualTo(expectedUploadConfiguration.defaultDelayMs)
+        assertThat(dataUploadRunnable.maxBatchesPerJob)
+            .isEqualTo(fakeCoreBatchProcessingLevel.maxBatchesPerUploadJob)
         argumentCaptor<Runnable> {
             verify(coreFeature.mockUploadExecutor).schedule(
                 any(),
@@ -187,7 +199,8 @@ internal class SdkFeatureTest {
     fun `𝕄 use the storage frequency if set 𝕎 initialize()`(forge: Forge) {
         // Given
         val fakeUploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
-        val expectedUploadConfiguration = DataUploadConfiguration(fakeUploadFrequency)
+        val expectedUploadConfiguration: DataUploadConfiguration =
+            forge.getForgery<DataUploadConfiguration>().copy(frequency = fakeUploadFrequency)
         val fakeStorageConfig = mockWrappedFeature.storageConfiguration
             .copy(uploadFrequency = fakeUploadFrequency)
         whenever(mockWrappedFeature.storageConfiguration)
@@ -204,6 +217,26 @@ internal class SdkFeatureTest {
         assertThat(dataUploadRunnable.maxDelayMs).isEqualTo(expectedUploadConfiguration.maxDelayMs)
         assertThat(dataUploadRunnable.currentDelayIntervalMs)
             .isEqualTo(expectedUploadConfiguration.defaultDelayMs)
+    }
+
+    @Test
+    fun `𝕄 use the storage batchProcessingLevel if set 𝕎 initialize()`(forge: Forge) {
+        // Given
+        val fakeBatchProcessingLevel = forge.aValueFrom(BatchProcessingLevel::class.java)
+        val fakeStorageConfig = mockWrappedFeature.storageConfiguration
+            .copy(batchProcessingLevel = fakeBatchProcessingLevel)
+        whenever(mockWrappedFeature.storageConfiguration)
+            .thenReturn(fakeStorageConfig)
+
+        // When
+        testedFeature.initialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.uploadScheduler)
+            .isInstanceOf(DataUploadScheduler::class.java)
+        val dataUploadRunnable = (testedFeature.uploadScheduler as DataUploadScheduler).runnable
+        assertThat(dataUploadRunnable.maxBatchesPerJob)
+            .isEqualTo(fakeBatchProcessingLevel.maxBatchesPerUploadJob)
     }
 
     @Test

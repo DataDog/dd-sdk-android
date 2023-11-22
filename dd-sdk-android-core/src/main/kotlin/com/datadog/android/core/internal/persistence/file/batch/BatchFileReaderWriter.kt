@@ -7,10 +7,11 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.security.Encryption
 
-internal interface BatchFileReaderWriter : FileWriter, BatchFileReader {
+internal interface BatchFileReaderWriter : FileWriter<RawBatchEvent>, BatchFileReader {
 
     companion object {
         /**
@@ -18,12 +19,13 @@ internal interface BatchFileReaderWriter : FileWriter, BatchFileReader {
          * [EncryptedBatchReaderWriter] if encryption is provided.
          */
         fun create(internalLogger: InternalLogger, encryption: Encryption?): BatchFileReaderWriter {
+            val readerWriter = PlainBatchFileReaderWriter(internalLogger)
             return if (encryption == null) {
-                PlainBatchFileReaderWriter(internalLogger)
+                readerWriter
             } else {
                 EncryptedBatchReaderWriter(
                     encryption,
-                    PlainBatchFileReaderWriter(internalLogger),
+                    readerWriter,
                     internalLogger
                 )
             }

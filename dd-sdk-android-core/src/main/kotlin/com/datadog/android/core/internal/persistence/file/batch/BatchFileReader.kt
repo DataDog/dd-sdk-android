@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.storage.RawBatchEvent
 import java.io.File
 
 internal interface BatchFileReader {
@@ -14,10 +15,10 @@ internal interface BatchFileReader {
     /**
      * Reads data from the given file.
      *  @param file the file to read from
-     *  @return the list of events as [ByteArray] data stored in a file.
+     *  @return the list of events as [RawBatchEvent] data stored in a file.
      */
     @WorkerThread
     fun readData(
         file: File
-    ): List<ByteArray>
+    ): List<RawBatchEvent>
 }

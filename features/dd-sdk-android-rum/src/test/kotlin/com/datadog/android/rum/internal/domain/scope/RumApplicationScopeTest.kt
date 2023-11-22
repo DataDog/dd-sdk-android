@@ -144,10 +144,37 @@ internal class RumApplicationScopeTest {
     }
 
     @Test
-    fun `always returns the same applicationId`() {
+    fun `M always return the same applicationId W getRumContext()`() {
         val context = testedScope.getRumContext()
 
         assertThat(context.applicationId).isEqualTo(fakeApplicationId)
+    }
+
+    @Test
+    fun `M return null synthetics info W getRumContext()`() {
+        val context = testedScope.getRumContext()
+
+        assertThat(context.syntheticsTestId).isNull()
+        assertThat(context.syntheticsResultId).isNull()
+    }
+
+    @Test
+    fun `M return synthetics test attributes W handleEvent() + getRumContext()`(
+        @StringForgery fakeTestId: String,
+        @StringForgery fakeResultId: String
+    ) {
+        // Given
+        val event = RumRawEvent.SetSyntheticsTestAttribute(fakeTestId, fakeResultId)
+
+        // When
+        val result = testedScope.handleEvent(event, mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.syntheticsTestId).isEqualTo(fakeTestId)
+        assertThat(context.syntheticsResultId).isEqualTo(fakeResultId)
+        verifyNoInteractions(mockWriter)
     }
 
     @Test

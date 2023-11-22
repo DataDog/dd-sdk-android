@@ -4,7 +4,19 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+// CORE LIBRARY
 include(":dd-sdk-android-core")
+
+// MAIN FEATURE LIBRARIES
+include(":features:dd-sdk-android-rum")
+include(":features:dd-sdk-android-logs")
+include(":features:dd-sdk-android-ndk")
+include(":features:dd-sdk-android-trace")
+include(":features:dd-sdk-android-webview")
+include(":features:dd-sdk-android-session-replay")
+include(":features:dd-sdk-android-session-replay-material")
+
+// INTEGRATION LIBRARIES
 include(":integrations:dd-sdk-android-coil")
 include(":integrations:dd-sdk-android-compose")
 include(":integrations:dd-sdk-android-fresco")
@@ -17,21 +29,21 @@ include(":integrations:dd-sdk-android-okhttp")
 include(":integrations:dd-sdk-android-rum-coroutines")
 include(":integrations:dd-sdk-android-trace-coroutines")
 
+// SINGLE FEATURE INTEGRATION TESTS
+include(":reliability:single-fit:logs")
+include(":reliability:single-fit:rum")
+include(":reliability:single-fit:trace")
+
+// LEGACY TESTS
 include(":instrumented:integration")
 include(":instrumented:nightly-tests")
 
-include(":features:dd-sdk-android-rum")
-include(":features:dd-sdk-android-logs")
-include(":features:dd-sdk-android-ndk")
-include(":features:dd-sdk-android-trace")
-include(":features:dd-sdk-android-webview")
-include(":features:dd-sdk-android-session-replay")
-include(":features:dd-sdk-android-session-replay-material")
-
+// SAMPLE PROJECTS
 include(":sample:kotlin")
 include(":sample:wear")
 include(":sample:vendor-lib")
 
+// TOOLCHAIN
 include(":tools:detekt")
 include(":tools:unit")
 include(":tools:noopfactory")

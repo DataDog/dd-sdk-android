@@ -38,7 +38,8 @@ internal constructor(
         val proxy: Proxy?,
         val proxyAuth: Authenticator,
         val encryption: Encryption?,
-        val site: DatadogSite
+        val site: DatadogSite,
+        val batchProcessingLevel: BatchProcessingLevel
     )
 
     // region Builder
@@ -113,7 +114,12 @@ internal constructor(
                 NETWORK_REQUESTS_TRACKING_FEATURE_NAME
             )
             coreConfig = coreConfig.copy(
-                firstPartyHostsWithHeaderTypes = sanitizedHosts.associateWith { setOf(TracingHeaderType.DATADOG) }
+                firstPartyHostsWithHeaderTypes = sanitizedHosts.associateWith {
+                    setOf(
+                        TracingHeaderType.DATADOG,
+                        TracingHeaderType.TRACECONTEXT
+                    )
+                }
             )
             return this
         }
@@ -163,6 +169,18 @@ internal constructor(
          */
         fun setUploadFrequency(uploadFrequency: UploadFrequency): Builder {
             coreConfig = coreConfig.copy(uploadFrequency = uploadFrequency)
+            return this
+        }
+
+        /**
+         * Defines the Batch processing level, defining the maximum number of batches processed
+         * sequentially without a delay within one reading/uploading cycle.
+         * @param batchProcessingLevel the desired batch processing level. By default it's set to
+         * [BatchProcessingLevel.MEDIUM].
+         * @see BatchProcessingLevel
+         */
+        fun setBatchProcessingLevel(batchProcessingLevel: BatchProcessingLevel): Builder {
+            coreConfig = coreConfig.copy(batchProcessingLevel = batchProcessingLevel)
             return this
         }
 
@@ -238,7 +256,8 @@ internal constructor(
             proxy = null,
             proxyAuth = Authenticator.NONE,
             encryption = null,
-            site = DatadogSite.US1
+            site = DatadogSite.US1,
+            batchProcessingLevel = BatchProcessingLevel.MEDIUM
         )
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network requests"

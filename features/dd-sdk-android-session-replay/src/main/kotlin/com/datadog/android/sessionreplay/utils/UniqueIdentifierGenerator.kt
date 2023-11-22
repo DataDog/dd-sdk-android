@@ -39,7 +39,7 @@ object UniqueIdentifierGenerator {
             // was a long and use that as an identifier.
             uniqueIdentifier as? Long
         } else {
-            val newUniqueIdentifier = secureRandom.nextLong()
+            val newUniqueIdentifier = secureRandom.nextInt().toLong()
             parent.setTag(key, newUniqueIdentifier)
             newUniqueIdentifier
         }
