@@ -44,7 +44,7 @@ class ApiUsage(
             it.shortName?.asString()?.resolveFullType()
         }
 
-        if (annotations.any { it == "org.junit.jupiter.api.Test" }) {
+        if (annotations.any { it in testAnnotations }) {
             visitingTestFunction = true
             super.visitNamedFunction(function)
             visitingTestFunction = false
@@ -70,4 +70,11 @@ class ApiUsage(
     }
 
     // endregion
+
+    companion object {
+        internal val testAnnotations = arrayOf(
+            "org.junit.jupiter.api.Test",
+            "org.junit.jupiter.api.RepeatedTest"
+        )
+    }
 }
