@@ -8,6 +8,7 @@ package com.datadog.android.core.configuration
 
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.security.Encryption
 import com.datadog.android.trace.TracingHeaderType
 import okhttp3.Authenticator
@@ -39,7 +40,8 @@ internal constructor(
         val proxyAuth: Authenticator,
         val encryption: Encryption?,
         val site: DatadogSite,
-        val batchProcessingLevel: BatchProcessingLevel
+        val batchProcessingLevel: BatchProcessingLevel,
+        val persistenceStrategyFactory: PersistenceStrategy.Factory?
     )
 
     // region Builder
@@ -221,6 +223,17 @@ internal constructor(
         }
 
         /**
+         * Allows to use a custom persistence strategy.
+         * @param persistenceStrategyFactory the persistence strategy to use (or null to use the default one)
+         */
+        fun setPersistenceStrategyFactory(persistenceStrategyFactory: PersistenceStrategy.Factory?): Builder {
+            coreConfig = coreConfig.copy(
+                persistenceStrategyFactory = persistenceStrategyFactory
+            )
+            return this
+        }
+
+        /**
          * Allows to control if JVM crashes are tracked or not. Default value is [true].
          *
          * @param crashReportsEnabled whether crashes are tracked and sent to Datadog
@@ -257,7 +270,8 @@ internal constructor(
             proxyAuth = Authenticator.NONE,
             encryption = null,
             site = DatadogSite.US1,
-            batchProcessingLevel = BatchProcessingLevel.MEDIUM
+            batchProcessingLevel = BatchProcessingLevel.MEDIUM,
+            persistenceStrategyFactory = null
         )
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network requests"

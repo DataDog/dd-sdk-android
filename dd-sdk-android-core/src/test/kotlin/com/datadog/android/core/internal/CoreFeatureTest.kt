@@ -29,9 +29,11 @@ import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
+import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NoOpNdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -43,6 +45,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -83,6 +86,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import kotlin.experimental.xor
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -806,6 +810,59 @@ internal class CoreFeatureTest {
                 CoreFeature.DATADOG_STORAGE_DIR_NAME.format(Locale.US, fakeSdkInstanceId)
             )
         )
+    }
+
+    @Test
+    fun `𝕄 initialise encryption 𝕎 initialize`(
+        @IntForgery(-128, 128) fakeByte: Int
+    ) {
+        // Given
+        val mockEncryption = mock<Encryption>()
+        whenever(mockEncryption.encrypt(any())) doAnswer { invocation ->
+            (invocation.getArgument(0) as ByteArray)
+                .map { it xor fakeByte.toByte() }
+                .toByteArray()
+        }
+        fakeConfig = fakeConfig.copy(
+            coreConfig = fakeConfig.coreConfig.copy(
+                encryption = mockEncryption
+            )
+        )
+
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.localDataEncryption).isNotNull()
+            .isSameAs(mockEncryption)
+    }
+
+    @Test
+    fun `𝕄 initialise persitence strategy 𝕎 initialize`() {
+        // Given
+        val mockPersistenceStrategyFactory = mock<PersistenceStrategy.Factory>()
+        fakeConfig = fakeConfig.copy(
+            coreConfig = fakeConfig.coreConfig.copy(
+                persistenceStrategyFactory = mockPersistenceStrategyFactory
+            )
+        )
+
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.persistenceStrategyFactory).isNotNull()
+            .isSameAs(mockPersistenceStrategyFactory)
     }
 
     // endregion

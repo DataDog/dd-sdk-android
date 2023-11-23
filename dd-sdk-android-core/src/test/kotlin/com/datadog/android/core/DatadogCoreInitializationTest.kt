@@ -319,6 +319,7 @@ internal class DatadogCoreInitializationTest {
         val trackErrors = forge.aBool()
         val useProxy = forge.aBool()
         val useLocalEncryption = forge.aBool()
+        val usePersistenceStrategyFactory = forge.aBool()
         val batchSize = forge.aValueFrom(BatchSize::class.java)
         val uploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
         val batchProcessingLevel = forge.aValueFrom(BatchProcessingLevel::class.java)
@@ -337,6 +338,9 @@ internal class DatadogCoreInitializationTest {
                 whenever(mockEncryption.encrypt(any())) doAnswer { it.getArgument<ByteArray>(0) }
                 whenever(mockEncryption.decrypt(any())) doAnswer { it.getArgument<ByteArray>(0) }
                 setEncryption(mockEncryption)
+            }
+            if (usePersistenceStrategyFactory) {
+                setPersistenceStrategyFactory(mock())
             }
         }
             .setBatchSize(batchSize)
@@ -375,7 +379,8 @@ internal class DatadogCoreInitializationTest {
                     "batch_size" to batchSize.windowDurationMs,
                     "batch_upload_frequency" to uploadFrequency.baseStepMs,
                     "track_errors" to trackErrors,
-                    "batch_processing_level" to batchProcessingLevel.maxBatchesPerUploadJob
+                    "batch_processing_level" to batchProcessingLevel.maxBatchesPerUploadJob,
+                    "use_persistence_strategy_factory" to usePersistenceStrategyFactory
                 )
             )
     }

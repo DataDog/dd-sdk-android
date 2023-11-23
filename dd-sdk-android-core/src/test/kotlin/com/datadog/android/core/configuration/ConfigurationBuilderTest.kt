@@ -7,6 +7,7 @@
 package com.datadog.android.core.configuration
 
 import com.datadog.android.DatadogSite
+import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.security.Encryption
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
@@ -73,7 +74,8 @@ internal class ConfigurationBuilderTest {
                 proxyAuth = Authenticator.NONE,
                 encryption = null,
                 site = DatadogSite.US1,
-                batchProcessingLevel = BatchProcessingLevel.MEDIUM
+                batchProcessingLevel = BatchProcessingLevel.MEDIUM,
+                persistenceStrategyFactory = null
             )
         )
         assertThat(config.crashReportsEnabled).isTrue
@@ -366,6 +368,24 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(
                 encryption = mockEncryption
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 build config with persistence strategy 𝕎 setPersistenceStrategyFactory() and build()`() {
+        // Given
+        val mockFactory = mock<PersistenceStrategy.Factory>()
+
+        // When
+        val config = testedBuilder
+            .setPersistenceStrategyFactory(mockFactory)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                persistenceStrategyFactory = mockFactory
             )
         )
     }

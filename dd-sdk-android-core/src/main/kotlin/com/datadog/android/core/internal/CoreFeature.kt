@@ -62,6 +62,7 @@ import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.core.internal.user.UserInfoDeserializer
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.internal.utils.unboundInternalLogger
+import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashLogDeserializer
@@ -137,6 +138,7 @@ internal class CoreFeature(
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: ExecutorService
     internal var localDataEncryption: Encryption? = null
+    internal var persistenceStrategyFactory: PersistenceStrategy.Factory? = null
     internal lateinit var storageDir: File
     internal lateinit var androidInfoProvider: AndroidInfoProvider
 
@@ -358,6 +360,7 @@ internal class CoreFeature(
         batchSize = configuration.batchSize
         uploadFrequency = configuration.uploadFrequency
         localDataEncryption = configuration.encryption
+        persistenceStrategyFactory = configuration.persistenceStrategyFactory
         site = configuration.site
     }
 
@@ -455,8 +458,7 @@ internal class CoreFeature(
 
     private fun setupExecutors() {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
-        uploadExecutorService =
-            LoggingScheduledThreadPoolExecutor(CORE_DEFAULT_POOL_SIZE, internalLogger)
+        uploadExecutorService = LoggingScheduledThreadPoolExecutor(CORE_DEFAULT_POOL_SIZE, internalLogger)
         @Suppress("UnsafeThirdPartyFunctionCall") // workQueue can't be null
         persistenceExecutorService = persistenceExecutorServiceFactory(internalLogger)
     }
