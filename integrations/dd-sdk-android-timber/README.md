@@ -15,7 +15,21 @@ dependencies {
 ### Initial Setup
 
 1. Setup RUM monitoring, see the dedicated [Datadog Android Log Collection documentation][1] to learn how.
-2. That's it, now all your Timber logs will be sent to Datadog automatically.
+2. Add `DatadogTree` to Timber
+
+```kotlin
+val logger = Logger.Builder()
+        .setNetworkInfoEnabled(true)
+        .setLogcatLogsEnabled(true)
+        .setRemoteSampleRate(100f)
+        .setBundleWithTraceEnabled(true)
+        .setName("<LOGGER_NAME>")
+        .build()
+
+Timber.plant(Timber.DebugTree(), DatadogTree(logger))
+```
+
+That's it, now all your Timber logs will be sent to Datadog automatically.
 
 You can configure the logger's tags and attributes, as explained in the  [Datadog Android Log Collection documentation][1]
 
