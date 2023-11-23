@@ -4,9 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.api
+package com.datadog.android.core.stub
 
 import android.content.Context
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
@@ -26,9 +27,10 @@ import org.mockito.kotlin.whenever
  * It adds several functions to get info about internal state and usage:
  * [eventsWritten], …
  */
+@Suppress("UnsafeThirdPartyFunctionCall")
 class StubSDKCore(
     private val forge: Forge,
-    val mockContext: Context = mock(),
+    private val mockContext: Context = mock(),
     private val mockSdkCore: InternalSdkCore = mock()
 ) : InternalSdkCore by mockSdkCore {
 
@@ -51,10 +53,18 @@ class StubSDKCore(
         return featureScopes[featureName]?.eventsWritten() ?: emptyList()
     }
 
+    /**
+     * Stubs the network info visible via the SDK Core.
+     * @param networkInfo the network info
+     */
     fun stubNetworkInfo(networkInfo: NetworkInfo) {
         datadogContext = datadogContext.copy(networkInfo = networkInfo)
     }
 
+    /**
+     * Stubs the user info visible via the SDK Core.
+     * @param userInfo the user info
+     */
     fun stubUserInfo(userInfo: UserInfo) {
         networkInfo
         datadogContext = datadogContext.copy(userInfo = userInfo)
@@ -125,7 +135,7 @@ class StubSDKCore(
         email: String?,
         extraInfo: Map<String, Any?>
     ) {
-        datadogContext = datadogContext.copy(userInfo = UserInfo(id, name, email, extraInfo))
+        stubUserInfo(UserInfo(id, name, email, extraInfo))
     }
 
     // endregion

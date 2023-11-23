@@ -21,6 +21,7 @@ import com.google.gson.JsonObject
  *   }
  * }
  */
+@Suppress("UnsafeThirdPartyFunctionCall")
 fun JsonObject.getString(path: String): String? {
     return if (has(path)) {
         getAsJsonPrimitive(path)?.asString

@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.api
+package com.datadog.android.core.stub
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
@@ -14,6 +14,7 @@ import com.datadog.android.api.storage.RawBatchEvent
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockingDetails
 
+@Suppress("CheckInternal", "UnsafeThirdPartyFunctionCall")
 internal class StubFeatureScope(
     private val feature: Feature,
     private val datadogContextProvider: () -> DatadogContext,

@@ -4,8 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.api
+package com.datadog.android.core.stub
 
+import com.datadog.android.api.InternalLogger
+
+@Suppress("UnsafeThirdPartyFunctionCall")
 internal class StubInternalLogger : InternalLogger {
     override fun log(
         level: InternalLogger.Level,
