@@ -41,13 +41,13 @@ internal interface Storage {
     /**
      * Utility to read a batch, asynchronously.
      * @param noBatchCallback an optional callback which is called when there is no batch available to read.
-     * @param batchCallback an operation to perform with a [BatchId] and [BatchReader] that will target
+     * @param readBatchCallback an operation to perform with a [BatchId] and [BatchReader] that will target
      * the next readable Batch
      */
     @WorkerThread
     fun readNextBatch(
         noBatchCallback: () -> Unit = {},
-        batchCallback: (BatchId, BatchReader) -> Unit
+        readBatchCallback: (BatchId, BatchReader) -> Unit
     )
 
     /**
@@ -66,6 +66,5 @@ internal interface Storage {
     /**
      * Removes all the files backed by this storage, synchronously.
      */
-    @WorkerThread
     fun dropAll()
 }

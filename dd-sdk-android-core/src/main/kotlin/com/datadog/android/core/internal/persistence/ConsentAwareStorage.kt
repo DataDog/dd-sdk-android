@@ -86,7 +86,7 @@ internal class ConsentAwareStorage(
     @WorkerThread
     override fun readNextBatch(
         noBatchCallback: () -> Unit,
-        batchCallback: (BatchId, BatchReader) -> Unit
+        readBatchCallback: (BatchId, BatchReader) -> Unit
     ) {
         val (batchFile, metaFile) = synchronized(lockedBatches) {
             val batchFile = grantedOrchestrator
@@ -116,7 +116,7 @@ internal class ConsentAwareStorage(
                 return batchEventsReaderWriter.readData(batchFile)
             }
         }
-        batchCallback(batchId, reader)
+        readBatchCallback(batchId, reader)
     }
 
     /** @inheritdoc */

@@ -6,6 +6,7 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.test.elmyr.PersistenceStrategyBatchForgeryFactory
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -62,6 +63,8 @@ internal class Configurator :
         forge.addFactory(RemovalReasonForgeryFactory())
 
         forge.addFactory(BatchClosedMetadataForgeryFactory())
+
+        forge.addFactory(PersistenceStrategyBatchForgeryFactory())
 
         forge.useJvmFactories()
     }
