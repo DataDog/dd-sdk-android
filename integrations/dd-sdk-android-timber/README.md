@@ -15,7 +15,7 @@ dependencies {
 ### Initial Setup
 
 1. Setup RUM monitoring, see the dedicated [Datadog Android Log Collection documentation][1] to learn how.
-2. Add `DatadogTree` to Timber
+2. Add `DatadogTree` to Timber:
 
 ```kotlin
 val logger = Logger.Builder()
