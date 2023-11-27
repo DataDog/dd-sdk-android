@@ -27,12 +27,14 @@ import com.datadog.android.core.internal.data.upload.v2.NoOpDataUploader
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher
 import com.datadog.android.core.internal.metrics.NoOpMetricsDispatcher
+import com.datadog.android.core.internal.persistence.AbstractStorage
 import com.datadog.android.core.internal.persistence.ConsentAwareStorage
 import com.datadog.android.core.internal.persistence.NoOpStorage
 import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
+import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -268,6 +270,22 @@ internal class SdkFeatureTest {
         )
         assertThat(pendingFileOrchestrator.config).isEqualTo(expectedFilePersistenceConfig)
         assertThat(grantedFileOrchestrator.config).isEqualTo(expectedFilePersistenceConfig)
+    }
+
+    @Test
+    fun `𝕄 initialize the storage 𝕎 initialize() {custom persistence strategy}`() {
+        // Given
+        val mockPersistenceStrategy = mock<PersistenceStrategy.Factory>()
+        whenever(coreFeature.mockInstance.persistenceStrategyFactory) doReturn mockPersistenceStrategy
+
+        // When
+        testedFeature.initialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.storage).isInstanceOf(AbstractStorage::class.java)
+        val abstractStorage = testedFeature.storage as AbstractStorage
+        assertThat(abstractStorage.persistenceStrategyFactory)
+            .isEqualTo(mockPersistenceStrategy)
     }
 
     @Test
