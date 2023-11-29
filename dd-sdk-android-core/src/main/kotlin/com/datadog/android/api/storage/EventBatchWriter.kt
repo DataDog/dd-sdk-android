@@ -14,7 +14,7 @@ import androidx.annotation.WorkerThread
 interface EventBatchWriter {
 
     /**
-     * @return the metadata of the current writeable file
+     * @return the metadata of the current writeable batch
      */
     @WorkerThread
     fun currentMetadata(): ByteArray?

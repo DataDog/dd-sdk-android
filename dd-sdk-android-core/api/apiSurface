@@ -234,6 +234,18 @@ fun Int.toHexString(): String
 fun Long.toHexString(): String
 fun java.math.BigInteger.toHexString(): String
 fun Throwable.loggableStackTrace(): String
+interface com.datadog.android.core.persistence.PersistenceStrategy
+  interface Factory
+    fun create(String, Int, Long): PersistenceStrategy
+  data class Batch
+    constructor(String, ByteArray? = null, List<com.datadog.android.api.storage.RawBatchEvent> = mutableListOf())
+  fun currentMetadata(): ByteArray?
+  fun write(com.datadog.android.api.storage.RawBatchEvent, ByteArray?): Boolean
+  fun lockAndReadNext(): Batch?
+  fun unlockAndKeep(String)
+  fun unlockAndDelete(String)
+  fun dropAll()
+  fun migrateData(PersistenceStrategy)
 interface com.datadog.android.core.persistence.Serializer<T: Any>
   fun serialize(T): String?
   companion object 
