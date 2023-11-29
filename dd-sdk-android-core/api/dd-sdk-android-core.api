@@ -498,6 +498,7 @@ public final class com/datadog/android/core/configuration/Configuration$Builder 
 	public final fun setEncryption (Lcom/datadog/android/security/Encryption;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setFirstPartyHosts (Ljava/util/List;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setFirstPartyHostsWithHeaderType (Ljava/util/Map;)Lcom/datadog/android/core/configuration/Configuration$Builder;
+	public final fun setPersistenceStrategyFactory (Lcom/datadog/android/core/persistence/PersistenceStrategy$Factory;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setProxy (Ljava/net/Proxy;Lokhttp3/Authenticator;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setUploadFrequency (Lcom/datadog/android/core/configuration/UploadFrequency;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setUseDeveloperModeWhenDebuggable (Z)Lcom/datadog/android/core/configuration/Configuration$Builder;
