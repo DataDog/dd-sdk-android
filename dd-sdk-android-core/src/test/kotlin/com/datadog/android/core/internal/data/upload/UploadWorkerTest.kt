@@ -707,12 +707,12 @@ internal class UploadWorkerTest {
 
         override fun readNextBatch(
             noBatchCallback: () -> Unit,
-            batchCallback: (BatchId, BatchReader) -> Unit
+            readBatchCallback: (BatchId, BatchReader) -> Unit
         ) {
             executor.execute {
                 delegate.readNextBatch(
                     noBatchCallback,
-                    batchCallback
+                    readBatchCallback
                 )
             }
         }

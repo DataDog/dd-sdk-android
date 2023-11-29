@@ -52,7 +52,6 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 import java.util.Locale
-import java.util.concurrent.AbstractExecutorService
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
@@ -758,30 +757,4 @@ internal class ConsentAwareStorageTest {
     }
 
     // endregion
-
-    class FakeSameThreadExecutorService : AbstractExecutorService() {
-
-        private var isShutdown = false
-
-        override fun execute(command: Runnable?) {
-            command?.run()
-        }
-
-        override fun shutdown() {
-            isShutdown = true
-        }
-
-        override fun shutdownNow(): MutableList<Runnable> {
-            isShutdown = true
-            return mutableListOf()
-        }
-
-        override fun isShutdown(): Boolean = isShutdown
-
-        override fun isTerminated(): Boolean = isShutdown
-
-        override fun awaitTermination(timeout: Long, unit: TimeUnit?): Boolean {
-            return true
-        }
-    }
 }
