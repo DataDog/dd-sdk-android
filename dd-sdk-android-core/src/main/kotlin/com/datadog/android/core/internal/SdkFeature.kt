@@ -66,7 +66,7 @@ internal class SdkFeature(
 
     // region SdkFeature
 
-    fun initialize(context: Context) {
+    fun initialize(context: Context, instanceId: String) {
         if (initialized.get()) {
             return
         }
@@ -83,6 +83,7 @@ internal class SdkFeature(
                 dataUploadConfiguration,
                 wrappedFeature,
                 context,
+                instanceId,
                 coreFeature.persistenceStrategyFactory
             )
         }
@@ -243,6 +244,7 @@ internal class SdkFeature(
         dataUploadConfiguration: DataUploadConfiguration,
         wrappedFeature: StorageBackedFeature,
         context: Context,
+        instanceId: String,
         persistenceStrategyFactory: PersistenceStrategy.Factory?
     ): Storage {
         val storageConfiguration = wrappedFeature.storageConfiguration
@@ -259,17 +261,18 @@ internal class SdkFeature(
 
             createFileStorage(wrappedFeature.name, filePersistenceConfig)
         } else {
-            createCustomStorage(wrappedFeature.name, storageConfiguration, persistenceStrategyFactory)
+            createCustomStorage(instanceId, wrappedFeature.name, storageConfiguration, persistenceStrategyFactory)
         }
     }
 
     private fun createCustomStorage(
+        instanceId: String,
         featureName: String,
         storageConfiguration: FeatureStorageConfiguration,
         persistenceStrategyFactory: PersistenceStrategy.Factory
     ): Storage {
         return AbstractStorage(
-            coreFeature.variant,
+            instanceId,
             featureName,
             persistenceStrategyFactory,
             coreFeature.persistenceExecutorService,

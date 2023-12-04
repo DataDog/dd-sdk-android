@@ -23,7 +23,7 @@ import com.datadog.android.privacy.TrackingConsentProviderCallback
 import java.util.concurrent.ExecutorService
 
 internal class AbstractStorage(
-    private val sdkCoreId: String?,
+    internal val sdkCoreId: String?,
     private val featureName: String,
     internal val persistenceStrategyFactory: PersistenceStrategy.Factory,
     private val executorService: ExecutorService,

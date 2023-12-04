@@ -101,6 +101,9 @@ internal class SdkFeatureTest {
     lateinit var fakeStorageConfiguration: FeatureStorageConfiguration
 
     @StringForgery
+    lateinit var fakeInstanceId: String
+
+    @StringForgery
     lateinit var fakeFeatureName: String
 
     private lateinit var fakeCoreUploadFrequency: UploadFrequency
@@ -138,7 +141,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 mark itself as initialized 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         assertThat(testedFeature.isInitialized()).isTrue()
@@ -147,7 +150,7 @@ internal class SdkFeatureTest {
     @Test
     fun `M register ProcessLifecycleMonitor for MetricsDispatcher W initialize()`() {
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         argumentCaptor<Application.ActivityLifecycleCallbacks>() {
@@ -162,7 +165,7 @@ internal class SdkFeatureTest {
     fun `M not throw W initialize(){ no app context }`() {
         // When
         assertDoesNotThrow {
-            testedFeature.initialize(mock())
+            testedFeature.initialize(mock(), fakeInstanceId)
         }
     }
 
@@ -175,7 +178,7 @@ internal class SdkFeatureTest {
         )
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         assertThat(testedFeature.uploadScheduler)
@@ -209,7 +212,7 @@ internal class SdkFeatureTest {
             .thenReturn(fakeStorageConfig)
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         assertThat(testedFeature.uploadScheduler)
@@ -231,7 +234,7 @@ internal class SdkFeatureTest {
             .thenReturn(fakeStorageConfig)
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         assertThat(testedFeature.uploadScheduler)
@@ -249,7 +252,7 @@ internal class SdkFeatureTest {
             .thenReturn(fakeCorePersistenceConfig)
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         assertThat(testedFeature.storage).isInstanceOf(ConsentAwareStorage::class.java)
@@ -279,11 +282,12 @@ internal class SdkFeatureTest {
         whenever(coreFeature.mockInstance.persistenceStrategyFactory) doReturn mockPersistenceStrategy
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         assertThat(testedFeature.storage).isInstanceOf(AbstractStorage::class.java)
         val abstractStorage = testedFeature.storage as AbstractStorage
+        assertThat(abstractStorage.sdkCoreId).isEqualTo(fakeInstanceId)
         assertThat(abstractStorage.persistenceStrategyFactory)
             .isEqualTo(mockPersistenceStrategy)
     }
@@ -298,7 +302,7 @@ internal class SdkFeatureTest {
             .thenReturn(fakeStorageConfig)
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         assertThat(testedFeature.storage).isInstanceOf(ConsentAwareStorage::class.java)
@@ -318,7 +322,7 @@ internal class SdkFeatureTest {
         )
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         verify(coreFeature.mockInstance.trackingConsentProvider)
@@ -338,7 +342,7 @@ internal class SdkFeatureTest {
         )
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         assertThat(testedFeature.isInitialized()).isTrue
@@ -356,7 +360,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 stop scheduler 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
         val mockUploadScheduler: UploadScheduler = mock()
         testedFeature.uploadScheduler = mockUploadScheduler
 
@@ -370,7 +374,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 unregister ProcessLifecycleMonitor 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // When
         testedFeature.stop()
@@ -384,7 +388,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 cleanup data 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // When
         testedFeature.stop()
@@ -405,7 +409,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 mark itself as not initialized 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // When
         testedFeature.stop()
@@ -417,7 +421,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 call wrapped feature onStop 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // When
         testedFeature.stop()
@@ -437,7 +441,7 @@ internal class SdkFeatureTest {
             wrappedFeature = mockFeature,
             internalLogger = mockInternalLogger
         )
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // When
         testedFeature.stop()
@@ -449,14 +453,14 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 initialize only once 𝕎 initialize() twice`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
         val uploadScheduler = testedFeature.uploadScheduler
         val uploader = testedFeature.uploader
         val storage = testedFeature.storage
         val fileOrchestrator = testedFeature.fileOrchestrator
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         assertThat(testedFeature.uploadScheduler).isSameAs(uploadScheduler)
@@ -471,7 +475,7 @@ internal class SdkFeatureTest {
         whenever(testedFeature.coreFeature.isMainProcess) doReturn false
 
         // When
-        testedFeature.initialize(appContext.mockInstance)
+        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
         assertThat(testedFeature.uploadScheduler).isInstanceOf(NoOpUploadScheduler::class.java)
