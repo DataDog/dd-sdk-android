@@ -131,7 +131,7 @@ internal class DatadogCore(
             internalLogger
         )
         features[feature.name] = sdkFeature
-        sdkFeature.initialize(context)
+        sdkFeature.initialize(context, instanceId)
 
         when (feature.name) {
             Feature.LOGS_FEATURE_NAME -> {
