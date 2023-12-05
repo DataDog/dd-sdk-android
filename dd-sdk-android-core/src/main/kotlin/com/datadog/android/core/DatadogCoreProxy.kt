@@ -59,8 +59,9 @@ internal class FeatureScopeInterceptor(
         forceNewBatch: Boolean,
         callback: (DatadogContext, EventBatchWriter) -> Unit
     ) {
-        val context = core.getDatadogContext()!!
+        featureScope.withWriteContext(forceNewBatch, callback)
 
+        val context = core.getDatadogContext()!!
         callback(context, eventsBatchInterceptor)
     }
 
