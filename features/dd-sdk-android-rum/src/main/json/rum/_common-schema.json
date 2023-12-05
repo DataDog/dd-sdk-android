@@ -302,6 +302,20 @@
               "type": "number",
               "description": "Session plan: 1 is the plan without replay, 2 is the plan with replay (deprecated)",
               "enum": [1, 2]
+            },
+            "session_precondition": {
+              "type": "string",
+              "description": "The precondition that led to the creation of the session",
+              "enum": [
+                "user_app_launch",
+                "inactivity_timeout",
+                "max_duration",
+                "background_launch",
+                "prewarm",
+                "from_non_interactive_session",
+                "explicit_stop"
+              ],
+              "readOnly": true
             }
           }
         },

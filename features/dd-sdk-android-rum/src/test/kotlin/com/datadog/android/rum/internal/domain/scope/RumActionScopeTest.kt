@@ -109,7 +109,7 @@ internal class RumActionScopeTest {
 
     var fakeServerOffset: Long = 0L
 
-    var fakeSourceActionEvent: ActionEvent.Source? = null
+    var fakeSourceActionEvent: ActionEvent.ActionEventSource? = null
 
     @BoolForgery
     var fakeHasReplay: Boolean = false
@@ -122,7 +122,7 @@ internal class RumActionScopeTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.Source::class.java) }
+        fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.ActionEventSource::class.java) }
 
         fakeDatadogContext = fakeDatadogContext.copy(
             source = with(fakeSourceActionEvent) {

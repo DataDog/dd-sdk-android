@@ -253,7 +253,7 @@ internal class RumResourceScope(
                         hasReplay = hasReplay
                     ),
                     synthetics = syntheticsAttribute,
-                    source = ResourceEvent.Source.tryFromSource(
+                    source = ResourceEvent.ResourceEventSource.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
                     ),

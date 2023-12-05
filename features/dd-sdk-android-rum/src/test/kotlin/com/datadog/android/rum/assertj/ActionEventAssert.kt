@@ -332,7 +332,7 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
-    fun hasSource(source: ActionEvent.Source?): ActionEventAssert {
+    fun hasSource(source: ActionEvent.ActionEventSource?): ActionEventAssert {
         assertThat(actual.source)
             .overridingErrorMessage(
                 "Expected event to have a source %s" +
