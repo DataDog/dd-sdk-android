@@ -507,7 +507,7 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
-    fun hasSource(source: ResourceEvent.Source?): ResourceEventAssert {
+    fun hasSource(source: ResourceEvent.ResourceEventSource?): ResourceEventAssert {
         assertThat(actual.source)
             .overridingErrorMessage(
                 "Expected event to have a source %s" +

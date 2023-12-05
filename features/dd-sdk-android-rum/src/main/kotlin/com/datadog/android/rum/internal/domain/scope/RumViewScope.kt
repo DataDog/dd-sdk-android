@@ -781,7 +781,7 @@ internal open class RumViewScope(
                         isActive = rumContext.isSessionActive
                     ),
                     synthetics = syntheticsAttribute,
-                    source = ViewEvent.Source.tryFromSource(
+                    source = ViewEvent.ViewEventSource.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
                     ),
@@ -915,7 +915,7 @@ internal open class RumViewScope(
                         hasReplay = false
                     ),
                     synthetics = syntheticsAttribute,
-                    source = ActionEvent.Source.tryFromSource(
+                    source = ActionEvent.ActionEventSource.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
                     ),
@@ -1014,7 +1014,7 @@ internal open class RumViewScope(
                         hasReplay = hasReplay
                     ),
                     synthetics = syntheticsAttribute,
-                    source = LongTaskEvent.Source.tryFromSource(
+                    source = LongTaskEvent.LongTaskEventSource.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
                     ),

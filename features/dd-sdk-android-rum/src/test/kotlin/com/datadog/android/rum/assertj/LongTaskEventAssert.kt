@@ -246,7 +246,7 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
-    fun hasSource(source: LongTaskEvent.Source?): LongTaskEventAssert {
+    fun hasSource(source: LongTaskEvent.LongTaskEventSource?): LongTaskEventAssert {
         assertThat(actual.source)
             .overridingErrorMessage(
                 "Expected event to have a source %s" +

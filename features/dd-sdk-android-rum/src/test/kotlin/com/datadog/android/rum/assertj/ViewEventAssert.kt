@@ -513,7 +513,7 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
-    fun hasSource(source: ViewEvent.Source?): ViewEventAssert {
+    fun hasSource(source: ViewEvent.ViewEventSource?): ViewEventAssert {
         assertThat(actual.source)
             .overridingErrorMessage(
                 "Expected event to have a source %s" +

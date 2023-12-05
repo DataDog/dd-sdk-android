@@ -111,14 +111,14 @@ internal class RumContinuousActionScopeTest {
 
     var fakeSampleRate: Float = 0.0f
 
-    var fakeSourceActionEvent: ActionEvent.Source? = null
+    var fakeSourceActionEvent: ActionEvent.ActionEventSource? = null
 
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.Source::class.java) }
+        fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.ActionEventSource::class.java) }
 
         fakeDatadogContext = fakeDatadogContext.copy(
             source = with(fakeSourceActionEvent) {

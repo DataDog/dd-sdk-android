@@ -159,10 +159,10 @@ internal class RumViewScopeTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
-    var fakeSourceViewEvent: ViewEvent.Source? = null
+    var fakeSourceViewEvent: ViewEvent.ViewEventSource? = null
     var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
-    var fakeSourceActionEvent: ActionEvent.Source? = null
-    var fakeSourceLongTaskEvent: LongTaskEvent.Source? = null
+    var fakeSourceActionEvent: ActionEvent.ActionEventSource? = null
+    var fakeSourceLongTaskEvent: LongTaskEvent.LongTaskEventSource? = null
 
     @BoolForgery
     var fakeHasReplay: Boolean = false
@@ -189,14 +189,14 @@ internal class RumViewScopeTest {
 
         val fakeSource = if (isValidSource) {
             forge.anElementFrom(
-                ViewEvent.Source.values().map { it.toJson().asString }
+                ViewEvent.ViewEventSource.values().map { it.toJson().asString }
             )
         } else {
             forge.anAlphabeticalString()
         }
 
         fakeSourceViewEvent = if (isValidSource) {
-            ViewEvent.Source.fromJson(fakeSource)
+            ViewEvent.ViewEventSource.fromJson(fakeSource)
         } else {
             null
         }
@@ -206,12 +206,12 @@ internal class RumViewScopeTest {
             null
         }
         fakeSourceActionEvent = if (isValidSource) {
-            ActionEvent.Source.fromJson(fakeSource)
+            ActionEvent.ActionEventSource.fromJson(fakeSource)
         } else {
             null
         }
         fakeSourceLongTaskEvent = if (isValidSource) {
-            LongTaskEvent.Source.fromJson(fakeSource)
+            LongTaskEvent.LongTaskEventSource.fromJson(fakeSource)
         } else {
             null
         }

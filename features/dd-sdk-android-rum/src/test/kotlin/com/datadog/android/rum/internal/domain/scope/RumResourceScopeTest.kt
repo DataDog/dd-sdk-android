@@ -123,7 +123,7 @@ internal class RumResourceScopeTest {
     var fakeSampleRate: Float = 0.0f
 
     private lateinit var fakeEventTime: Time
-    var fakeSourceResourceEvent: ResourceEvent.Source? = null
+    var fakeSourceResourceEvent: ResourceEvent.ResourceEventSource? = null
     var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
 
     @BoolForgery
@@ -149,7 +149,7 @@ internal class RumResourceScopeTest {
         )
 
         fakeSourceResourceEvent = if (isValidSource) {
-            ResourceEvent.Source.fromJson(fakeSource)
+            ResourceEvent.ResourceEventSource.fromJson(fakeSource)
         } else {
             null
         }
