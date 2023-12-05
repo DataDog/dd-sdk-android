@@ -435,6 +435,35 @@ public final class com/datadog/android/api/storage/RawBatchEvent {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/core/DatadogCoreProxy : com/datadog/android/core/InternalSdkCore {
+	public fun <init> (Lcom/datadog/android/core/InternalSdkCore;)V
+	public fun addUserProperties (Ljava/util/Map;)V
+	public fun clearAllData ()V
+	public final fun eventsWritten (Ljava/lang/String;)Ljava/util/List;
+	public fun getAllFeatures ()Ljava/util/List;
+	public final fun getCore ()Lcom/datadog/android/core/InternalSdkCore;
+	public fun getDatadogContext ()Lcom/datadog/android/api/context/DatadogContext;
+	public fun getFeature (Ljava/lang/String;)Lcom/datadog/android/api/feature/FeatureScope;
+	public fun getFeatureContext (Ljava/lang/String;)Ljava/util/Map;
+	public fun getFirstPartyHostResolver ()Lcom/datadog/android/core/internal/net/FirstPartyHostHeaderTypeResolver;
+	public fun getInternalLogger ()Lcom/datadog/android/api/InternalLogger;
+	public fun getName ()Ljava/lang/String;
+	public fun getNetworkInfo ()Lcom/datadog/android/api/context/NetworkInfo;
+	public fun getPersistenceExecutorService ()Ljava/util/concurrent/ExecutorService;
+	public fun getRootStorageDir ()Ljava/io/File;
+	public fun getService ()Ljava/lang/String;
+	public fun getTime ()Lcom/datadog/android/api/context/TimeInfo;
+	public fun getTrackingConsent ()Lcom/datadog/android/privacy/TrackingConsent;
+	public fun isDeveloperModeEnabled ()Z
+	public fun registerFeature (Lcom/datadog/android/api/feature/Feature;)V
+	public fun removeEventReceiver (Ljava/lang/String;)V
+	public fun setEventReceiver (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureEventReceiver;)V
+	public fun setTrackingConsent (Lcom/datadog/android/privacy/TrackingConsent;)V
+	public fun setUserInfo (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
+	public fun updateFeatureContext (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public fun writeLastViewEvent ([B)V
+}
+
 public abstract interface class com/datadog/android/core/InternalSdkCore : com/datadog/android/api/feature/FeatureSdkCore {
 	public abstract fun getAllFeatures ()Ljava/util/List;
 	public abstract fun getDatadogContext ()Lcom/datadog/android/api/context/DatadogContext;
@@ -445,6 +474,21 @@ public abstract interface class com/datadog/android/core/InternalSdkCore : com/d
 	public abstract fun getTrackingConsent ()Lcom/datadog/android/privacy/TrackingConsent;
 	public abstract fun isDeveloperModeEnabled ()Z
 	public abstract fun writeLastViewEvent ([B)V
+}
+
+public final class com/datadog/android/core/RawFeatureEvent {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/core/RawFeatureEvent;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/RawFeatureEvent;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/core/RawFeatureEvent;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBatchMetadata ()Ljava/lang/String;
+	public final fun getEventData ()Ljava/lang/String;
+	public final fun getEventMetadata ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/datadog/android/core/SdkReference {

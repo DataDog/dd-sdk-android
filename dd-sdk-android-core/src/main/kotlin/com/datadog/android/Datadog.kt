@@ -13,6 +13,7 @@ import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.DatadogCore
+import com.datadog.android.core.DatadogCoreProxy
 import com.datadog.android.core.NoOpInternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.HashGenerator
@@ -85,13 +86,14 @@ object Datadog {
             }
 
             val sdkInstanceName = instanceName ?: SdkCoreRegistry.DEFAULT_INSTANCE_NAME
-            val sdkCore = DatadogCore(
+            val unwrappedSdkCore = DatadogCore(
                 context,
                 sdkInstanceId,
                 sdkInstanceName
             ).apply {
                 initialize(configuration)
             }
+            val sdkCore = DatadogCoreProxy(unwrappedSdkCore)
             sdkCore.setTrackingConsent(trackingConsent)
             registry.register(sdkInstanceName, sdkCore)
 
