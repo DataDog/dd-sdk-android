@@ -139,6 +139,8 @@ data class com.datadog.android.api.storage.RawBatchEvent
   constructor(ByteArray, ByteArray = EMPTY_BYTE_ARRAY)
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
+class com.datadog.android.core.DatadogCoreProxy : InternalSdkCore
+  constructor(InternalSdkCore)
 interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.feature.FeatureSdkCore
   val networkInfo: com.datadog.android.api.context.NetworkInfo
   val trackingConsent: com.datadog.android.privacy.TrackingConsent
