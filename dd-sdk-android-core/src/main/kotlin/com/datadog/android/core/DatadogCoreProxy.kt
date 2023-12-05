@@ -11,14 +11,17 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.RawBatchEvent
+import com.google.gson.Gson
+import com.google.gson.JsonElement
 
 class DatadogCoreProxy(
     val core: InternalSdkCore,
 ) : InternalSdkCore by core {
     private val featureScopes = mutableMapOf<String, FeatureScopeInterceptor>()
 
-    fun eventsWritten(featureName: String): List<RawFeatureEvent> {
-        return featureScopes[featureName]?.eventsWritten() ?: emptyList()
+    fun eventsWritten(featureName: String): String {
+        val events = featureScopes[featureName]?.eventsWritten()?.toList() ?: emptyList<Any>()
+        return Gson().toJson(events)
     }
 
     fun clearData(featureName: String) {
@@ -45,7 +48,7 @@ internal class FeatureScopeInterceptor(
 
     private val eventsBatchInterceptor = EventBatchInterceptor()
 
-    fun eventsWritten(): List<RawFeatureEvent> {
+    fun eventsWritten(): List<String> {
         return eventsBatchInterceptor.events
     }
 
@@ -73,14 +76,9 @@ internal class FeatureScopeInterceptor(
     // endregion
 }
 
-data class RawFeatureEvent(
-    val eventData: String,
-    val eventMetadata: String,
-    val batchMetadata: String
-)
 
 internal class EventBatchInterceptor: EventBatchWriter {
-    internal val events = mutableListOf<RawFeatureEvent>()
+    internal val events = mutableListOf<String>()
 
     override fun currentMetadata(): ByteArray? {
         TODO("Not yet implemented")
@@ -95,14 +93,9 @@ internal class EventBatchInterceptor: EventBatchWriter {
         batchMetadata: ByteArray?
     ): Boolean {
         val eventContent = String(event.data)
-        val eventMetadata = String(event.metadata)
 
         events.add(events.size,
-            RawFeatureEvent(
-                eventContent,
-                eventMetadata,
-                String(batchMetadata ?: ByteArray(0))
-            )
+            eventContent
         )
 
         return false
