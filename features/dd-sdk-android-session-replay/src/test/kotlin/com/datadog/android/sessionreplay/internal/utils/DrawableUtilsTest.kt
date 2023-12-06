@@ -14,7 +14,6 @@ import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.base64.Base64Serializer
-import com.datadog.android.sessionreplay.internal.recorder.base64.Base64SerializerCallback
 import com.datadog.android.sessionreplay.internal.recorder.base64.BitmapPool
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
@@ -34,7 +33,6 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
@@ -75,9 +73,6 @@ internal class DrawableUtilsTest {
 
     @Mock
     private lateinit var mockExecutorService: ExecutorService
-
-    @Mock
-    private lateinit var mockBase64SerializerCallback: Base64SerializerCallback
 
     @Mock
     private lateinit var mockBitmapCreationCallback: Base64Serializer.BitmapCreationCallback
@@ -141,7 +136,6 @@ internal class DrawableUtilsTest {
             displayMetrics = mockDisplayMetrics,
             requestedSizeInBytes = requestedSize,
             config = mockConfig,
-            base64SerializerCallback = mockBase64SerializerCallback,
             bitmapCreationCallback = mockBitmapCreationCallback
         )
 
@@ -177,7 +171,6 @@ internal class DrawableUtilsTest {
             drawableWidth = mockDrawable.intrinsicWidth,
             drawableHeight = mockDrawable.intrinsicHeight,
             displayMetrics = mockDisplayMetrics,
-            base64SerializerCallback = mockBase64SerializerCallback,
             bitmapCreationCallback = mockBitmapCreationCallback
         )
 
@@ -213,7 +206,6 @@ internal class DrawableUtilsTest {
             drawableHeight = mockDrawable.intrinsicHeight,
             displayMetrics = mockDisplayMetrics,
             config = mockConfig,
-            base64SerializerCallback = mockBase64SerializerCallback,
             bitmapCreationCallback = mockBitmapCreationCallback
         )
 
@@ -253,17 +245,15 @@ internal class DrawableUtilsTest {
             drawableHeight = mockDrawable.intrinsicHeight,
             displayMetrics = mockDisplayMetrics,
             config = mockConfig,
-            base64SerializerCallback = mockBase64SerializerCallback,
             bitmapCreationCallback = mockBitmapCreationCallback
         )
 
         // Then
         verify(mockBitmapCreationCallback).onReady(mockBitmapFromPool)
-        verifyNoInteractions(mockBase64SerializerCallback)
     }
 
     @Test
-    fun `M call onReady W createBitmapOfApproxSizeFromDrawable { failed to create bitmap }`() {
+    fun `M call onFailure W createBitmapOfApproxSizeFromDrawable { failed to create bitmap }`() {
         // Given
         whenever(mockDrawable.intrinsicWidth).thenReturn(1)
         whenever(mockDrawable.intrinsicHeight).thenReturn(1)
@@ -279,17 +269,15 @@ internal class DrawableUtilsTest {
             drawableHeight = mockDrawable.intrinsicHeight,
             displayMetrics = mockDisplayMetrics,
             config = mockConfig,
-            base64SerializerCallback = mockBase64SerializerCallback,
             bitmapCreationCallback = mockBitmapCreationCallback
         )
 
         // Then
-        verifyNoInteractions(mockBitmapCreationCallback)
-        verify(mockBase64SerializerCallback).onReady()
+        verify(mockBitmapCreationCallback).onFailure()
     }
 
     @Test
-    fun `M call onReady W createBitmapOfApproxSizeFromDrawable { failed to create canvas }`() {
+    fun `M call onFailure W createBitmapOfApproxSizeFromDrawable { failed to create canvas }`() {
         // Given
         whenever(mockDrawable.intrinsicWidth).thenReturn(1)
         whenever(mockDrawable.intrinsicHeight).thenReturn(1)
@@ -303,13 +291,11 @@ internal class DrawableUtilsTest {
             drawableHeight = mockDrawable.intrinsicHeight,
             displayMetrics = mockDisplayMetrics,
             config = mockConfig,
-            base64SerializerCallback = mockBase64SerializerCallback,
             bitmapCreationCallback = mockBitmapCreationCallback
         )
 
         // Then
-        verifyNoInteractions(mockBitmapCreationCallback)
-        verify(mockBase64SerializerCallback).onReady()
+        verify(mockBitmapCreationCallback).onFailure()
     }
 
     @Test
