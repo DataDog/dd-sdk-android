@@ -105,6 +105,7 @@ datadog:
       - "android.app.ActivityManager.getHistoricalProcessExitReasons(kotlin.String?, kotlin.Int, kotlin.Int):java.lang.RuntimeException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, android.content.pm.PackageManager.PackageInfoFlags):android.content.pm.PackageManager.NameNotFoundException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, kotlin.Int):android.content.pm.PackageManager.NameNotFoundException"
+      - "android.content.res.AssetManager.open(kotlin.String):java.io.IOException"
       - "android.content.res.Resources.getResourceEntryName(kotlin.Int):android.content.res.Resources.NotFoundException"
       - "android.content.res.Resources.getResourceName(kotlin.Int):android.content.res.Resources.NotFoundException"
       - "android.content.res.Resources.openRawResource(kotlin.Int):android.content.res.Resources.NotFoundException"
@@ -683,6 +684,8 @@ datadog:
       - "java.util.concurrent.atomic.AtomicReference.set(kotlin.String?)"
       # endregion
       # region Java I/O
+      - "java.io.BufferedReader.readText()"
+      - "java.io.BufferedReader.use(kotlin.Function1)"
       - "java.io.ByteArrayOutputStream.constructor()"
       - "java.io.ByteArrayOutputStream.constructor(kotlin.Int)"
       - "java.io.ByteArrayOutputStream.size()"
@@ -717,6 +720,7 @@ datadog:
       - "java.io.File.safeCall(kotlin.collections.List?, com.datadog.android.api.InternalLogger, kotlin.Function1)"
       - "java.io.File.safeCall(kotlin.Unit?, com.datadog.android.api.InternalLogger, kotlin.Function1)"
       - "java.io.File.writeTextSafe(kotlin.String, java.nio.charset.Charset, com.datadog.android.api.InternalLogger)"
+      - "java.io.InputStream.bufferedReader(java.nio.charset.Charset)"
       - "java.io.InputStream.mark(kotlin.Int)"
       - "java.io.InputStream.markSupported()"
       - "java.io.InputStream.reader(java.nio.charset.Charset)"
@@ -1156,6 +1160,7 @@ datadog:
       - "kotlin.String.toMediaTypeOrNull()"
       - "kotlin.String.toMethod()"
       - "kotlin.String.toOperationType(com.datadog.android.api.InternalLogger)"
+      - "kotlin.String.trim()"
       - "kotlin.String.trimStart()"
       - "kotlin.String.uppercase(java.util.Locale)"
       - "kotlin.String.withSdkName()"

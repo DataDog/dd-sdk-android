@@ -171,6 +171,7 @@ internal class DatadogLateCrashReporterTest {
                     fakeViewEvent.view.name,
                     fakeViewEvent.view.url
                 )
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasMessage(crashMessage)
                 .hasStackTrace(fakeStacktrace)
                 .isCrash(true)
@@ -271,6 +272,7 @@ internal class DatadogLateCrashReporterTest {
                     fakeViewEvent.view.name,
                     fakeViewEvent.view.url
                 )
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasMessage(crashMessage)
                 .hasStackTrace(fakeStacktrace)
                 .isCrash(true)
@@ -422,6 +424,7 @@ internal class DatadogLateCrashReporterTest {
                     fakeViewEvent.view.name,
                     fakeViewEvent.view.url
                 )
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasMessage(crashMessage)
                 .hasStackTrace(fakeStacktrace)
                 .isCrash(true)
@@ -512,6 +515,7 @@ internal class DatadogLateCrashReporterTest {
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasView(
                     fakeViewEvent.view.id,
                     fakeViewEvent.view.name,
@@ -713,6 +717,7 @@ internal class DatadogLateCrashReporterTest {
                     fakeViewEvent.view.name,
                     fakeViewEvent.view.url
                 )
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasMessage(ANRDetectorRunnable.ANR_MESSAGE)
                 .hasStackTrace(fakeThreadsDump.first { it.name == "main" }.stack)
                 .isCrash(true)
@@ -802,6 +807,7 @@ internal class DatadogLateCrashReporterTest {
                     fakeViewEvent.view.name,
                     fakeViewEvent.view.url
                 )
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasMessage(ANRDetectorRunnable.ANR_MESSAGE)
                 .hasStackTrace(fakeThreadsDump.first { it.name == "main" }.stack)
                 .isCrash(true)
@@ -889,6 +895,7 @@ internal class DatadogLateCrashReporterTest {
                     fakeViewEvent.view.name,
                     fakeViewEvent.view.url
                 )
+                .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasMessage(ANRDetectorRunnable.ANR_MESSAGE)
                 .hasStackTrace(fakeThreadsDump.first { it.name == "main" }.stack)
                 .isCrash(true)

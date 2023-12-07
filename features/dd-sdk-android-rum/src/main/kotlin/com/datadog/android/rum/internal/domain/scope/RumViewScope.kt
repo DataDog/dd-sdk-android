@@ -418,6 +418,7 @@ internal open class RumViewScope(
                 ErrorEvent.ErrorEventSessionType.SYNTHETICS
             }
             ErrorEvent(
+                buildId = datadogContext.appBuildId,
                 date = event.eventTime.timestamp + serverTimeOffsetInMs,
                 featureFlags = ErrorEvent.Context(eventFeatureFlags),
                 error = ErrorEvent.Error(

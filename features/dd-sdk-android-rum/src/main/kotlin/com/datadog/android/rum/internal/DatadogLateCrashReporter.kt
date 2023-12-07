@@ -192,7 +192,9 @@ internal class DatadogLateCrashReporter(
         val deviceInfo = datadogContext.deviceInfo
 
         return ErrorEvent(
+            // TODO RUM-3832 NDK/fatal ANRs reported should have build ID from the previous application run
             date = timestamp + datadogContext.time.serverTimeOffsetMs,
+            buildId = datadogContext.appBuildId,
             application = ErrorEvent.Application(viewEvent.application.id),
             service = viewEvent.service,
             session = ErrorEvent.ErrorEventSession(

@@ -20,6 +20,7 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
 
     override fun getForgery(forge: Forge): ErrorEvent {
         return ErrorEvent(
+            buildId = forge.aNullable { getForgery<UUID>().toString() },
             date = forge.aTimestamp(),
             error = ErrorEvent.Error(
                 id = forge.aNullable { getForgery<UUID>().toString() },
