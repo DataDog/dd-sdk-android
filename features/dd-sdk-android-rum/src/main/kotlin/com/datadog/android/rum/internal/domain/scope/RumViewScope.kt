@@ -433,8 +433,8 @@ internal open class RumViewScope(
                     ),
                     synthetics = syntheticsAttribute,
                     source = ErrorEvent.ErrorEventSource.tryFromSource(
-                        datadogContext.source,
-                        sdkCore.internalLogger
+                        source = datadogContext.source,
+                        internalLogger = sdkCore.internalLogger
                     ),
                     os = ErrorEvent.Os(
                         name = datadogContext.deviceInfo.osName,
@@ -450,7 +450,10 @@ internal open class RumViewScope(
                     ),
                     context = ErrorEvent.Context(additionalProperties = updatedAttributes),
                     dd = ErrorEvent.Dd(
-                        session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1),
+                        session = ErrorEvent.DdSession(
+                            plan = ErrorEvent.Plan.PLAN_1,
+                            sessionPrecondition = rumContext.sessionStartReason.toErrorSessionPrecondition()
+                        ),
                         configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
                     ),
                     service = datadogContext.service,
@@ -800,7 +803,10 @@ internal open class RumViewScope(
                     context = ViewEvent.Context(additionalProperties = attributes),
                     dd = ViewEvent.Dd(
                         documentVersion = eventVersion,
-                        session = ViewEvent.DdSession(plan = ViewEvent.Plan.PLAN_1),
+                        session = ViewEvent.DdSession(
+                            plan = ViewEvent.Plan.PLAN_1,
+                            sessionPrecondition = rumContext.sessionStartReason.toViewSessionPrecondition()
+                        ),
                         replayStats = replayStats,
                         configuration = ViewEvent.Configuration(sessionSampleRate = sampleRate)
                     ),
@@ -935,7 +941,10 @@ internal open class RumViewScope(
                         additionalProperties = globalAttributes
                     ),
                     dd = ActionEvent.Dd(
-                        session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1),
+                        session = ActionEvent.DdSession(
+                            plan = ActionEvent.Plan.PLAN_1,
+                            sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
+                        ),
                         configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
                     ),
                     connectivity = datadogContext.networkInfo.toActionConnectivity(),
@@ -1032,7 +1041,10 @@ internal open class RumViewScope(
                     ),
                     context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
                     dd = LongTaskEvent.Dd(
-                        session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1),
+                        session = LongTaskEvent.DdSession(
+                            plan = LongTaskEvent.Plan.PLAN_1,
+                            sessionPrecondition = rumContext.sessionStartReason.toLongTaskSessionPrecondition()
+                        ),
                         configuration = LongTaskEvent.Configuration(sessionSampleRate = sampleRate)
                     ),
                     service = datadogContext.service,

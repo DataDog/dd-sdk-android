@@ -23,6 +23,8 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import java.util.Locale
 
+// region Resource.Method conversion
+
 internal fun RumResourceMethod.toResourceMethod(): ResourceEvent.Method {
     return when (this) {
         RumResourceMethod.GET -> ResourceEvent.Method.GET
@@ -44,6 +46,8 @@ internal fun RumResourceMethod.toErrorMethod(): ErrorEvent.Method {
         RumResourceMethod.PATCH -> ErrorEvent.Method.PATCH
     }
 }
+
+// endregion
 
 internal fun String.toOperationType(internalLogger: InternalLogger): ResourceEvent.OperationType? {
     return try {
@@ -478,5 +482,74 @@ internal fun ResourceEvent.ResourceEventSource.Companion.tryFromSource(
 
 internal const val UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT = "You are using an unknown " +
     "source %s for your events"
+
+// endregion
+
+// region SessionPrecondition conversion
+
+internal fun RumSessionScope.StartReason.toViewSessionPrecondition(): ViewEvent.SessionPrecondition {
+    return when (this) {
+        RumSessionScope.StartReason.USER_APP_LAUNCH -> ViewEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> ViewEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionScope.StartReason.MAX_DURATION -> ViewEvent.SessionPrecondition.MAX_DURATION
+        RumSessionScope.StartReason.EXPLICIT_STOP -> ViewEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> ViewEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionScope.StartReason.PREWARM -> ViewEvent.SessionPrecondition.PREWARM
+        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+            ViewEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
+    }
+}
+
+internal fun RumSessionScope.StartReason.toActionSessionPrecondition(): ActionEvent.SessionPrecondition {
+    return when (this) {
+        RumSessionScope.StartReason.USER_APP_LAUNCH -> ActionEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> ActionEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionScope.StartReason.MAX_DURATION -> ActionEvent.SessionPrecondition.MAX_DURATION
+        RumSessionScope.StartReason.EXPLICIT_STOP -> ActionEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> ActionEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionScope.StartReason.PREWARM -> ActionEvent.SessionPrecondition.PREWARM
+        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+            ActionEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
+    }
+}
+
+internal fun RumSessionScope.StartReason.toErrorSessionPrecondition(): ErrorEvent.SessionPrecondition {
+    return when (this) {
+        RumSessionScope.StartReason.USER_APP_LAUNCH -> ErrorEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> ErrorEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionScope.StartReason.MAX_DURATION -> ErrorEvent.SessionPrecondition.MAX_DURATION
+        RumSessionScope.StartReason.EXPLICIT_STOP -> ErrorEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> ErrorEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionScope.StartReason.PREWARM -> ErrorEvent.SessionPrecondition.PREWARM
+        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+            ErrorEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
+    }
+}
+
+internal fun RumSessionScope.StartReason.toResourceSessionPrecondition(): ResourceEvent.SessionPrecondition {
+    return when (this) {
+        RumSessionScope.StartReason.USER_APP_LAUNCH -> ResourceEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> ResourceEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionScope.StartReason.MAX_DURATION -> ResourceEvent.SessionPrecondition.MAX_DURATION
+        RumSessionScope.StartReason.EXPLICIT_STOP -> ResourceEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> ResourceEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionScope.StartReason.PREWARM -> ResourceEvent.SessionPrecondition.PREWARM
+        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+            ResourceEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
+    }
+}
+
+internal fun RumSessionScope.StartReason.toLongTaskSessionPrecondition(): LongTaskEvent.SessionPrecondition {
+    return when (this) {
+        RumSessionScope.StartReason.USER_APP_LAUNCH -> LongTaskEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> LongTaskEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionScope.StartReason.MAX_DURATION -> LongTaskEvent.SessionPrecondition.MAX_DURATION
+        RumSessionScope.StartReason.EXPLICIT_STOP -> LongTaskEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> LongTaskEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionScope.StartReason.PREWARM -> LongTaskEvent.SessionPrecondition.PREWARM
+        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+            LongTaskEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
+    }
+}
 
 // endregion
