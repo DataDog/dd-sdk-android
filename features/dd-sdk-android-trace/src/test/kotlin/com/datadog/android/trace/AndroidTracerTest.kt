@@ -10,7 +10,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.TracingFeature
 import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
@@ -18,6 +17,7 @@ import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
 import com.datadog.opentracing.scopemanager.ScopeTestHelper
 import com.datadog.trace.api.Config
+import com.datadog.trace.api.DDTags
 import com.datadog.trace.common.writer.Writer
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.DoubleForgery
@@ -243,21 +243,21 @@ internal class AndroidTracerTest {
 
         val span = tracer.buildSpan(operationName).start() as DDSpan
         val meta = span.meta
-        assertThat(meta[LogAttributes.RUM_APPLICATION_ID])
+        assertThat(meta[DDTags.RUM_APPLICATION_ID])
             .isEqualTo(fakeRumApplicationId)
-        assertThat(meta[LogAttributes.RUM_SESSION_ID])
+        assertThat(meta[DDTags.RUM_SESSION_ID])
             .isEqualTo(fakeRumSessionId)
         val viewId = fakeRumViewId
         if (viewId == null) {
-            assertThat(meta.containsKey(LogAttributes.RUM_VIEW_ID)).isFalse()
+            assertThat(meta.containsKey(DDTags.RUM_VIEW_ID)).isFalse()
         } else {
-            assertThat(meta[LogAttributes.RUM_VIEW_ID]).isEqualTo(viewId)
+            assertThat(meta[DDTags.RUM_VIEW_ID]).isEqualTo(viewId)
         }
         val actionId = fakeRumActionId
         if (actionId == null) {
-            assertThat(meta.containsKey(LogAttributes.RUM_ACTION_ID)).isFalse()
+            assertThat(meta.containsKey(DDTags.RUM_ACTION_ID)).isFalse()
         } else {
-            assertThat(meta[LogAttributes.RUM_ACTION_ID]).isEqualTo(actionId)
+            assertThat(meta[DDTags.RUM_ACTION_ID]).isEqualTo(actionId)
         }
     }
 
@@ -284,7 +284,7 @@ internal class AndroidTracerTest {
         val meta = span.meta
 
         // Then
-        assertThat(meta[LogAttributes.RUM_VIEW_ID]).isEqualTo(fakeViewId)
+        assertThat(meta[DDTags.RUM_VIEW_ID]).isEqualTo(fakeViewId)
     }
 
     @Test
@@ -308,7 +308,7 @@ internal class AndroidTracerTest {
         val meta = span.meta
 
         // Then
-        assertThat(meta.containsKey(LogAttributes.RUM_VIEW_ID)).isFalse()
+        assertThat(meta.containsKey(DDTags.RUM_VIEW_ID)).isFalse()
     }
 
     @Test
@@ -333,7 +333,7 @@ internal class AndroidTracerTest {
         val meta = span.meta
 
         // Then
-        assertThat(meta.containsKey(LogAttributes.RUM_VIEW_ID)).isFalse()
+        assertThat(meta.containsKey(DDTags.RUM_VIEW_ID)).isFalse()
     }
 
     @Test
@@ -359,7 +359,7 @@ internal class AndroidTracerTest {
         val meta = span.meta
 
         // Then
-        assertThat(meta[LogAttributes.RUM_ACTION_ID]).isEqualTo(fakeActionId)
+        assertThat(meta[DDTags.RUM_ACTION_ID]).isEqualTo(fakeActionId)
     }
 
     @Test
@@ -383,7 +383,7 @@ internal class AndroidTracerTest {
         val meta = span.meta
 
         // Then
-        assertThat(meta.containsKey(LogAttributes.RUM_ACTION_ID)).isFalse()
+        assertThat(meta.containsKey(DDTags.RUM_ACTION_ID)).isFalse()
     }
 
     @Test
@@ -408,7 +408,7 @@ internal class AndroidTracerTest {
         val meta = span.meta
 
         // Then
-        assertThat(meta.containsKey(LogAttributes.RUM_ACTION_ID)).isFalse()
+        assertThat(meta.containsKey(DDTags.RUM_ACTION_ID)).isFalse()
     }
 
     @Test
@@ -425,9 +425,9 @@ internal class AndroidTracerTest {
 
         // THEN
         val meta = span.meta
-        assertThat(meta[LogAttributes.RUM_APPLICATION_ID])
+        assertThat(meta[DDTags.RUM_APPLICATION_ID])
             .isNull()
-        assertThat(meta[LogAttributes.RUM_SESSION_ID])
+        assertThat(meta[DDTags.RUM_SESSION_ID])
             .isNull()
     }
 
@@ -445,9 +445,9 @@ internal class AndroidTracerTest {
 
         // THEN
         val meta = span.meta
-        assertThat(meta[LogAttributes.RUM_APPLICATION_ID])
+        assertThat(meta[DDTags.RUM_APPLICATION_ID])
             .isNull()
-        assertThat(meta[LogAttributes.RUM_SESSION_ID])
+        assertThat(meta[DDTags.RUM_SESSION_ID])
             .isNull()
     }
 

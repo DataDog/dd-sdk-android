@@ -947,6 +947,10 @@ public class com/datadog/trace/api/DDTags {
 	public static final field MANUAL_DROP Ljava/lang/String;
 	public static final field MANUAL_KEEP Ljava/lang/String;
 	public static final field RESOURCE_NAME Ljava/lang/String;
+	public static final field RUM_ACTION_ID Ljava/lang/String;
+	public static final field RUM_APPLICATION_ID Ljava/lang/String;
+	public static final field RUM_SESSION_ID Ljava/lang/String;
+	public static final field RUM_VIEW_ID Ljava/lang/String;
 	public static final field SERVICE_NAME Ljava/lang/String;
 	public static final field SPAN_TYPE Ljava/lang/String;
 	public static final field THREAD_ID Ljava/lang/String;

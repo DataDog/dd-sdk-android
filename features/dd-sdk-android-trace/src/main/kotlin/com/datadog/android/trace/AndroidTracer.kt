@@ -12,13 +12,13 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.TracingFeature
 import com.datadog.android.trace.internal.data.NoOpWriter
 import com.datadog.android.trace.internal.handlers.AndroidSpanLogsHandler
 import com.datadog.opentracing.DDTracer
 import com.datadog.opentracing.LogHandler
 import com.datadog.trace.api.Config
+import com.datadog.trace.api.DDTags
 import com.datadog.trace.common.writer.Writer
 import com.datadog.trace.context.ScopeListener
 import io.opentracing.Span
@@ -281,10 +281,10 @@ class AndroidTracer internal constructor(
     private fun DDSpanBuilder.withRumContext(): DDSpanBuilder {
         return if (bundleWithRum) {
             val rumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
-            withTag(LogAttributes.RUM_APPLICATION_ID, rumContext["application_id"] as? String)
-                .withTag(LogAttributes.RUM_SESSION_ID, rumContext["session_id"] as? String)
-                .withTag(LogAttributes.RUM_VIEW_ID, rumContext["view_id"] as? String)
-                .withTag(LogAttributes.RUM_ACTION_ID, rumContext["action_id"] as? String)
+            withTag(DDTags.RUM_APPLICATION_ID, rumContext["application_id"] as? String)
+                .withTag(DDTags.RUM_SESSION_ID, rumContext["session_id"] as? String)
+                .withTag(DDTags.RUM_VIEW_ID, rumContext["view_id"] as? String)
+                .withTag(DDTags.RUM_ACTION_ID, rumContext["action_id"] as? String)
         } else {
             this
         }

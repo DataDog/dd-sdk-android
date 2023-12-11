@@ -30,4 +30,10 @@ public class DDTags {
   public static final String MANUAL_KEEP = "manual.keep";
   /** Manually force tracer to be drop the trace */
   public static final String MANUAL_DROP = "manual.drop";
+
+  /** RUM Context propagation */
+  public static final String RUM_APPLICATION_ID = "_dd.application.id";
+  public static final String RUM_SESSION_ID = "_dd.session.id";
+  public static final String RUM_VIEW_ID = "_dd.view.id";
+  public static final String RUM_ACTION_ID = "_dd.action.id";
 }
