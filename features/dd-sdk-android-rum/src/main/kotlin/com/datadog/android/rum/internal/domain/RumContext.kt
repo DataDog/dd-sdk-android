@@ -29,7 +29,9 @@ internal data class RumContext(
         return mapOf(
             APPLICATION_ID to applicationId,
             SESSION_ID to sessionId,
+            SESSION_ACTIVE to isSessionActive,
             SESSION_STATE to sessionState.asString,
+            SESSION_START_REASON to sessionStartReason.asString,
             VIEW_ID to viewId,
             VIEW_NAME to viewName,
             VIEW_URL to viewUrl,
@@ -47,6 +49,7 @@ internal data class RumContext(
         // literal) from other modules
         const val APPLICATION_ID = "application_id"
         const val SESSION_ID = "session_id"
+        const val SESSION_ACTIVE = "session_active"
         const val SESSION_STATE = "session_state"
         const val SESSION_START_REASON = "session_start_reason"
         const val VIEW_ID = "view_id"
@@ -60,6 +63,7 @@ internal data class RumContext(
         fun fromFeatureContext(featureContext: Map<String, Any?>): RumContext {
             val applicationId = featureContext[APPLICATION_ID] as? String
             val sessionId = featureContext[SESSION_ID] as? String
+            val isSessionActive = featureContext[SESSION_ACTIVE] as? Boolean
             val sessionState = RumSessionScope.State.fromString(
                 featureContext[SESSION_STATE] as? String
             )
@@ -77,6 +81,7 @@ internal data class RumContext(
             return RumContext(
                 applicationId = applicationId ?: NULL_UUID,
                 sessionId = sessionId ?: NULL_UUID,
+                isSessionActive = isSessionActive ?: false,
                 sessionState = sessionState ?: RumSessionScope.State.NOT_TRACKED,
                 sessionStartReason = sessionStartReason ?: RumSessionScope.StartReason.USER_APP_LAUNCH,
                 viewId = viewId,

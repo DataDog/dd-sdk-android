@@ -7,6 +7,7 @@
 package com.datadog.android.rum.utils.forge
 
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -17,11 +18,16 @@ internal class RumContextForgeryFactory : ForgeryFactory<RumContext> {
         return RumContext(
             applicationId = forge.getForgery<UUID>().toString(),
             sessionId = forge.getForgery<UUID>().toString(),
+            isSessionActive = forge.aBool(),
             viewId = forge.aNullable { getForgery<UUID>().toString() },
             viewName = forge.aNullable { forge.anAlphaNumericalString() },
             viewUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/[a-z]+"),
             actionId = forge.aNullable { getForgery<UUID>().toString() },
-            viewType = forge.aValueFrom(RumViewScope.RumViewType::class.java)
+            sessionState = forge.aValueFrom(RumSessionScope.State::class.java),
+            sessionStartReason = forge.aValueFrom(RumSessionScope.StartReason::class.java),
+            viewType = forge.aValueFrom(RumViewScope.RumViewType::class.java),
+            syntheticsTestId = forge.aNullable { forge.anAlphaNumericalString() },
+            syntheticsResultId = forge.aNullable { forge.anAlphaNumericalString() }
         )
     }
 }
