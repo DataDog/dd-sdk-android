@@ -124,7 +124,6 @@ if [[ $ANALYSIS == 1 ]]; then
   echo "------ Detekt public API rules"
   detekt --config "$DD_SOURCE/domains/mobile/config/android/gitlab/detekt/detekt-public-api.yml"
 
-
   if [[ $COMPILE == 1 ]]; then
     # Assemble is required to get generated classes type resolution
     echo "------ Assemble Libraries"

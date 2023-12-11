@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import android.app.ActivityManager
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
@@ -77,6 +78,7 @@ internal class RumApplicationScope(
                 syntheticsTestId = event.testId,
                 syntheticsResultId = event.resultId
             )
+            Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.application.id=${rumContext.applicationId}")
         }
 
         val isInteraction = (event is RumRawEvent.StartView) || (event is RumRawEvent.StartAction)

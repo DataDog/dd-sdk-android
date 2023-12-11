@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
@@ -200,6 +201,9 @@ internal class RumSessionScope(
         sessionId = UUID.randomUUID().toString()
         sessionStartNs.set(nanoTime)
         sessionListener?.onSessionStarted(sessionId, !keepSession)
+        if (getRumContext().syntheticsTestId != null) {
+            Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.session.id=$sessionId")
+        }
     }
 
     private fun updateSessionStateForSessionReplay(state: State, sessionId: String) {

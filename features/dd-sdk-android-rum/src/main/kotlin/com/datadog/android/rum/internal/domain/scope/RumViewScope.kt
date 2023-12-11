@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
@@ -67,6 +68,9 @@ internal open class RumViewScope(
         set(value) {
             oldViewIds += field
             field = value
+            if (getRumContext().syntheticsTestId != null) {
+                Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.view.id=$viewId")
+            }
         }
     private val oldViewIds = mutableSetOf<String>()
     private val startedNanos: Long = eventTime.nanoTime
@@ -141,6 +145,9 @@ internal open class RumViewScope(
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
         frameRateVitalMonitor.register(frameRateVitalListener)
+        if (parentScope.getRumContext().syntheticsTestId != null) {
+            Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.view.id=$viewId")
+        }
     }
 
     // region RumScope
@@ -1167,7 +1174,7 @@ internal open class RumViewScope(
          *
          * As we take the inverse, the min of the inverse is the inverse of the max and
          * vice-versa.
-         * For instance, if the the min frame time is 20ms (50 fps) and the max is 500ms (2 fps),
+         * For instance, if the min frame time is 20ms (50 fps) and the max is 500ms (2 fps),
          * the max frame rate is 50 fps (1/minValue) and the min is 2 fps (1/maxValue).
          *
          * As the frame times are reported in nanoseconds, we need to add a multiplier.
