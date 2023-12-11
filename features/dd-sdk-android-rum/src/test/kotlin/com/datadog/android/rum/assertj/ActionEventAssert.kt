@@ -10,7 +10,9 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.isConnected
+import com.datadog.android.rum.internal.domain.scope.toActionSessionPrecondition
 import com.datadog.android.rum.internal.domain.scope.toSchemaType
 import com.datadog.android.rum.model.ActionEvent
 import org.assertj.core.api.AbstractObjectAssert
@@ -329,6 +331,16 @@ internal class ActionEventAssert(actual: ActionEvent) :
                 actual.dd.session?.plan ?: "null"
             )
             .isEqualTo(ActionEvent.Plan.PLAN_1)
+        return this
+    }
+
+    fun hasStartReason(reason: RumSessionScope.StartReason): ActionEventAssert {
+        assertThat(actual.dd.session?.sessionPrecondition)
+            .overridingErrorMessage(
+                "Expected event to have a session sessionPrecondition of ${reason.name} " +
+                    "but was ${actual.dd.session?.sessionPrecondition}"
+            )
+            .isEqualTo(reason.toActionSessionPrecondition())
         return this
     }
 

@@ -19,6 +19,7 @@ internal data class RumContext(
     val viewUrl: String? = null,
     val actionId: String? = null,
     val sessionState: RumSessionScope.State = RumSessionScope.State.NOT_TRACKED,
+    val sessionStartReason: RumSessionScope.StartReason = RumSessionScope.StartReason.USER_APP_LAUNCH,
     val viewType: RumViewScope.RumViewType = RumViewScope.RumViewType.NONE,
     val syntheticsTestId: String? = null,
     val syntheticsResultId: String? = null
@@ -28,7 +29,9 @@ internal data class RumContext(
         return mapOf(
             APPLICATION_ID to applicationId,
             SESSION_ID to sessionId,
+            SESSION_ACTIVE to isSessionActive,
             SESSION_STATE to sessionState.asString,
+            SESSION_START_REASON to sessionStartReason.asString,
             VIEW_ID to viewId,
             VIEW_NAME to viewName,
             VIEW_URL to viewUrl,
@@ -46,7 +49,9 @@ internal data class RumContext(
         // literal) from other modules
         const val APPLICATION_ID = "application_id"
         const val SESSION_ID = "session_id"
+        const val SESSION_ACTIVE = "session_active"
         const val SESSION_STATE = "session_state"
+        const val SESSION_START_REASON = "session_start_reason"
         const val VIEW_ID = "view_id"
         const val VIEW_NAME = "view_name"
         const val VIEW_URL = "view_url"
@@ -58,8 +63,13 @@ internal data class RumContext(
         fun fromFeatureContext(featureContext: Map<String, Any?>): RumContext {
             val applicationId = featureContext[APPLICATION_ID] as? String
             val sessionId = featureContext[SESSION_ID] as? String
-            val sessionState =
-                RumSessionScope.State.fromString(featureContext[SESSION_STATE] as? String)
+            val isSessionActive = featureContext[SESSION_ACTIVE] as? Boolean
+            val sessionState = RumSessionScope.State.fromString(
+                featureContext[SESSION_STATE] as? String
+            )
+            val sessionStartReason = RumSessionScope.StartReason.fromString(
+                featureContext[SESSION_START_REASON] as? String
+            )
             val viewId = featureContext[VIEW_ID] as? String
             val viewName = featureContext[VIEW_NAME] as? String
             val viewUrl = featureContext[VIEW_URL] as? String
@@ -71,7 +81,9 @@ internal data class RumContext(
             return RumContext(
                 applicationId = applicationId ?: NULL_UUID,
                 sessionId = sessionId ?: NULL_UUID,
+                isSessionActive = isSessionActive ?: false,
                 sessionState = sessionState ?: RumSessionScope.State.NOT_TRACKED,
+                sessionStartReason = sessionStartReason ?: RumSessionScope.StartReason.USER_APP_LAUNCH,
                 viewId = viewId,
                 viewName = viewName,
                 viewUrl = viewUrl,
