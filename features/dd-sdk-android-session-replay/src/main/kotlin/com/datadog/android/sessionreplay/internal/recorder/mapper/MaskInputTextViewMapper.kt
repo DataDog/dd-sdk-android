@@ -16,7 +16,7 @@ import com.datadog.android.sessionreplay.utils.UniqueIdentifierGenerator
  * A [WireframeMapper] implementation to map a [TextView] component and apply the
  * [SessionReplayPrivacy.MASK_USER_INPUT] masking rule.
  */
-class MaskInputTextViewMapper : TextViewMapper {
+open class MaskInputTextViewMapper : TextViewMapper {
     constructor() : super(textValueObfuscationRule = MaskInputObfuscationRule())
 
     internal constructor(
