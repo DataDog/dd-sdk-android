@@ -48,7 +48,7 @@ data class com.datadog.android.trace.model.SpanEvent
       fun fromJson(kotlin.String): Meta
       fun fromJsonObject(com.google.gson.JsonObject): Meta
   data class Dd
-    constructor(kotlin.String? = "android")
+    constructor(kotlin.String? = "android", Application? = null, Session? = null, View? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Dd
@@ -74,6 +74,24 @@ data class com.datadog.android.trace.model.SpanEvent
     companion object 
       fun fromJson(kotlin.String): Network
       fun fromJsonObject(com.google.gson.JsonObject): Network
+  data class Application
+    constructor(kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
+      fun fromJsonObject(com.google.gson.JsonObject): Application
+  data class Session
+    constructor(kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
+      fun fromJsonObject(com.google.gson.JsonObject): Session
+  data class View
+    constructor(kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
+      fun fromJsonObject(com.google.gson.JsonObject): View
   data class Client
     constructor(SimCarrier? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
