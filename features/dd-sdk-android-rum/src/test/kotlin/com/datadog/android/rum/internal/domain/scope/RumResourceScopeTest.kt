@@ -148,6 +148,8 @@ internal class RumResourceScopeTest {
             source = fakeSource
         )
 
+        fakeParentContext = fakeParentContext.copy(syntheticsTestId = null, syntheticsResultId = null)
+
         fakeSourceResourceEvent = if (isValidSource) {
             ResourceEvent.ResourceEventSource.fromJson(fakeSource)
         } else {

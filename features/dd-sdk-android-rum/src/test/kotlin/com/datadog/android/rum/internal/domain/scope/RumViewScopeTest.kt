@@ -220,6 +220,8 @@ internal class RumViewScopeTest {
             source = fakeSource
         )
 
+        fakeParentContext = fakeParentContext.copy(syntheticsTestId = null, syntheticsResultId = null)
+
         val fakeOffset = -forge.aLong(1000, 50000)
         val fakeTimestamp = System.currentTimeMillis() + fakeOffset
         val fakeNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(fakeOffset)
