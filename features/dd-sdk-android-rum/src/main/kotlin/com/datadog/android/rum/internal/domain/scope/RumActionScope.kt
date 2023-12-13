@@ -233,7 +233,7 @@ internal class RumActionScope(
                             null
                         }
                     ),
-                    view = ActionEvent.View(
+                    view = ActionEvent.ActionEventView(
                         id = rumContext.viewId.orEmpty(),
                         name = rumContext.viewName,
                         url = rumContext.viewUrl.orEmpty()
@@ -244,7 +244,7 @@ internal class RumActionScope(
                         type = ActionEvent.ActionEventSessionType.USER,
                         hasReplay = hasReplay
                     ),
-                    source = ActionEvent.Source.tryFromSource(
+                    source = ActionEvent.ActionEventSource.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
                     ),

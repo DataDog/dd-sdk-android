@@ -7,7 +7,7 @@ public final class com/datadog/android/webview/WebViewTracking {
 }
 
 public final class com/datadog/android/webview/WebViewTracking$_InternalWebViewProxy {
-	public fun <init> (Lcom/datadog/android/api/SdkCore;)V
+	public fun <init> (Lcom/datadog/android/api/SdkCore;Landroid/webkit/WebView;)V
 	public final fun consumeWebviewEvent (Ljava/lang/String;)V
 }
 

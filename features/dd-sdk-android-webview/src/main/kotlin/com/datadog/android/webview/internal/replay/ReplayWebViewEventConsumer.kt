@@ -15,7 +15,9 @@ import com.google.gson.JsonObject
 
 internal class ReplayWebViewEventConsumer(
     private val sdkCore: FeatureSdkCore,
-    private val webViewReplayEventMapper: WebViewReplayEventMapper = WebViewReplayEventMapper(),
+    webViewId: Long,
+    private val webViewReplayEventMapper: WebViewReplayEventMapper =
+        WebViewReplayEventMapper(webViewId),
     private val contextProvider: WebViewRumEventContextProvider =
         WebViewRumEventContextProvider(sdkCore.internalLogger)
 ) :

@@ -14,16 +14,16 @@ import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.TextView
+import android.widget.Button
 import androidx.fragment.app.Fragment
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.R
 import com.datadog.android.webview.WebViewTracking
-import java.util.Locale
 
 internal class WebSessionReplayFragment : Fragment() {
 
     private lateinit var webView1: WebView
-    private lateinit var currentTimestampView: TextView
+    private lateinit var triggerRumViewButton: Button
     private val handler = Handler(Looper.getMainLooper())
 
     private val webViewTrackingHosts = listOf(
@@ -39,11 +39,14 @@ internal class WebSessionReplayFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_web_session_replay, container, false)
-        currentTimestampView = rootView.findViewById(R.id.current_timestamp_view)
+        triggerRumViewButton = rootView.findViewById(R.id.trigger_new_rum_view_button)
         webView1 = rootView.findViewById(R.id.webview1)
         webView1.webViewClient = WebViewClient()
         webView1.settings.javaScriptEnabled = true
         WebViewTracking.enable(webView1, webViewTrackingHosts)
+        triggerRumViewButton.setOnClickListener {
+            GlobalRumMonitor.get().startView(this, "Custom RUM View")
+        }
         return rootView
     }
 
@@ -57,24 +60,7 @@ internal class WebSessionReplayFragment : Fragment() {
 
     // endregion
 
-    private fun displayCurrentTimeInMillisPeriodically() {
-        handler.postDelayed(
-            object : Runnable {
-                override fun run() {
-                    webView1.evaluateJavascript("String(new Date().getTime())") {
-                        val webTimestamp = it.replace("\"", "")
-                        val deviceTimestamp = System.currentTimeMillis().toString()
-                        currentTimestampView.text = TIMESTAMP_LABEL_FORMAT.format(Locale.US, deviceTimestamp, webTimestamp)
-                        handler.postDelayed(this, 2000)
-                    }
-                }
-            },
-            10000
-        )
-    }
-
     companion object {
-        private const val TIMESTAMP_LABEL_FORMAT = "Device Timestamp: %s \n Webview Timestamp: %s"
         fun newInstance(): WebSessionReplayFragment {
             return WebSessionReplayFragment()
         }

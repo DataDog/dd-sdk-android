@@ -73,14 +73,17 @@ object WebViewTracking {
                 { JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE }
             )
         }
-        val webViewEventConsumer = buildWebViewEventConsumer(sdkCore as FeatureSdkCore, logsSampleRate)
+        val webViewEventConsumer = buildWebViewEventConsumer(
+            sdkCore as FeatureSdkCore,
+            logsSampleRate,
+            webView
+        )
         val featureContext = sdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)
         val privacy = featureContext[SESSION_REPLAY_PRIVACY_KEY] as? String ?: "mask"
         webView.addJavascriptInterface(
             DatadogEventBridge(
                 webViewEventConsumer,
                 allowedHosts,
-                System.identityHashCode(webView).toLong(),
                 privacy
             ),
             DATADOG_EVENT_BRIDGE_NAME
@@ -89,7 +92,8 @@ object WebViewTracking {
 
     private fun buildWebViewEventConsumer(
         sdkCore: FeatureSdkCore,
-        logsSampleRate: Float
+        logsSampleRate: Float,
+        webView: WebView
     ): WebViewEventConsumer<String> {
         val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.unwrap<StorageBackedFeature>()
@@ -137,7 +141,7 @@ object WebViewTracking {
                     rumContextProvider = contextProvider,
                     sampleRate = logsSampleRate
                 ),
-                ReplayWebViewEventConsumer(sdkCore),
+                ReplayWebViewEventConsumer(sdkCore, System.identityHashCode(webView).toLong()),
                 sdkCore.internalLogger
             )
         }
@@ -150,10 +154,11 @@ object WebViewTracking {
         "ClassName",
         "ClassNaming"
     )
-    class _InternalWebViewProxy(sdkCore: SdkCore) {
+    class _InternalWebViewProxy(sdkCore: SdkCore, webView: WebView) {
         private val consumer = buildWebViewEventConsumer(
             sdkCore as FeatureSdkCore,
-            WebViewLogEventConsumer.DEFAULT_SAMPLE_RATE
+            WebViewLogEventConsumer.DEFAULT_SAMPLE_RATE,
+            webView
         )
 
         fun consumeWebviewEvent(event: String) {

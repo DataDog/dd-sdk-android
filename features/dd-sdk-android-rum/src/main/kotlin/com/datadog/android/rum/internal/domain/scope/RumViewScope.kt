@@ -393,7 +393,7 @@ internal open class RumViewScope(
                         sourceType = event.sourceType.toSchemaSourceType()
                     ),
                     action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },
-                    view = ErrorEvent.View(
+                    view = ErrorEvent.ErrorEventView(
                         id = rumContext.viewId.orEmpty(),
                         name = rumContext.viewName,
                         url = rumContext.viewUrl.orEmpty()
@@ -700,7 +700,7 @@ internal open class RumViewScope(
                 val viewEvent = ViewEvent(
                     date = eventTimestamp,
                     featureFlags = ViewEvent.Context(additionalProperties = featureFlags),
-                    view = ViewEvent.View(
+                    view = ViewEvent.ViewEventView(
                         id = currentViewId,
                         name = rumContext.viewName,
                         url = rumContext.viewUrl.orEmpty(),
@@ -746,7 +746,7 @@ internal open class RumViewScope(
                         hasReplay = hasReplay,
                         isActive = rumContext.isSessionActive
                     ),
-                    source = ViewEvent.Source.tryFromSource(
+                    source = ViewEvent.ViewEventSource.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
                     ),
@@ -842,7 +842,7 @@ internal open class RumViewScope(
                         resource = ActionEvent.Resource(0),
                         loadingTime = event.applicationStartupNanos
                     ),
-                    view = ActionEvent.View(
+                    view = ActionEvent.ActionEventView(
                         id = rumContext.viewId.orEmpty(),
                         name = rumContext.viewName,
                         url = rumContext.viewUrl.orEmpty()
@@ -863,7 +863,7 @@ internal open class RumViewScope(
                         type = ActionEvent.ActionEventSessionType.USER,
                         hasReplay = false
                     ),
-                    source = ActionEvent.Source.tryFromSource(
+                    source = ActionEvent.ActionEventSource.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
                     ),
@@ -923,7 +923,7 @@ internal open class RumViewScope(
                         isFrozenFrame = isFrozenFrame
                     ),
                     action = rumContext.actionId?.let { LongTaskEvent.Action(listOf(it)) },
-                    view = LongTaskEvent.View(
+                    view = LongTaskEvent.LongTaskEventView(
                         id = rumContext.viewId.orEmpty(),
                         name = rumContext.viewName,
                         url = rumContext.viewUrl.orEmpty()
@@ -945,7 +945,7 @@ internal open class RumViewScope(
                         type = LongTaskEvent.LongTaskEventSessionType.USER,
                         hasReplay = hasReplay
                     ),
-                    source = LongTaskEvent.Source.tryFromSource(
+                    source = LongTaskEvent.LongTaskEventSource.tryFromSource(
                         datadogContext.source,
                         sdkCore.internalLogger
                     ),

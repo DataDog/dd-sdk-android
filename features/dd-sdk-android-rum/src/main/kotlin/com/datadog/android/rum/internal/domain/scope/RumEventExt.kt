@@ -391,10 +391,10 @@ internal fun DeviceType.toErrorSchemaType(): ErrorEvent.DeviceType {
 
 // region Source
 
-internal fun ViewEvent.Source.Companion.tryFromSource(
+internal fun ViewEvent.ViewEventSource.Companion.tryFromSource(
     source: String,
     internalLogger: InternalLogger
-): ViewEvent.Source? {
+): ViewEvent.ViewEventSource? {
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
@@ -408,10 +408,10 @@ internal fun ViewEvent.Source.Companion.tryFromSource(
     }
 }
 
-internal fun LongTaskEvent.Source.Companion.tryFromSource(
+internal fun LongTaskEvent.LongTaskEventSource.Companion.tryFromSource(
     source: String,
     internalLogger: InternalLogger
-): LongTaskEvent.Source? {
+): LongTaskEvent.LongTaskEventSource? {
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
@@ -442,10 +442,10 @@ internal fun ErrorEvent.ErrorEventSource.Companion.tryFromSource(
     }
 }
 
-internal fun ActionEvent.Source.Companion.tryFromSource(
+internal fun ActionEvent.ActionEventSource.Companion.tryFromSource(
     source: String,
     internalLogger: InternalLogger
-): ActionEvent.Source? {
+): ActionEvent.ActionEventSource? {
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
@@ -459,10 +459,10 @@ internal fun ActionEvent.Source.Companion.tryFromSource(
     }
 }
 
-internal fun ResourceEvent.Source.Companion.tryFromSource(
+internal fun ResourceEvent.ResourceEventSource.Companion.tryFromSource(
     source: String,
     internalLogger: InternalLogger
-): ResourceEvent.Source? {
+): ResourceEvent.ResourceEventSource? {
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {

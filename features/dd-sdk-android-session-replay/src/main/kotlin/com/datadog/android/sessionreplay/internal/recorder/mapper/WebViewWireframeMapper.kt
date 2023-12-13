@@ -25,14 +25,16 @@ internal class WebViewWireframeMapper :
             view,
             mappingContext.systemInformation.screenDensity
         )
+        val webViewId = resolveViewId(view)
+
         return listOf(
             MobileSegment.Wireframe.WebviewWireframe(
-                resolveViewId(view),
+                webViewId,
                 viewGlobalBounds.x,
                 viewGlobalBounds.y,
                 viewGlobalBounds.width,
                 viewGlobalBounds.height,
-                nestedEnvId = resolveViewId(view)
+                slotId = webViewId.toString()
             )
         )
     }

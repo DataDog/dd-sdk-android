@@ -146,4 +146,5 @@
     <string name="visible_password_label">Visible Password</string>
     <string name="default_password_label">Default password</string>
     <string name="title_webview_session_replay">WebView Session Replay</string>
+    <string name="trigger_new_rum_view">Trigger New RUM View</string>
 </resources>

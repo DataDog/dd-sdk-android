@@ -9,6 +9,9 @@
       "$ref": "_common-schema.json"
     },
     {
+      "$ref": "_view-container-schema.json"
+    },
+    {
       "required": ["type", "action"],
       "properties": {
         "type": {

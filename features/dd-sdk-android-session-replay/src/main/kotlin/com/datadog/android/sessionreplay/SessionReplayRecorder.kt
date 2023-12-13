@@ -92,6 +92,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             recordedDataQueueHandler = recordedDataQueueHandler,
             SnapshotProducer(
                 TreeViewTraversal(customMappers + privacy.mappers()),
+                rumContextProvider,
                 ComposedOptionSelectorDetector(
                     customOptionSelectorDetectors + DefaultOptionSelectorDetector()
                 )

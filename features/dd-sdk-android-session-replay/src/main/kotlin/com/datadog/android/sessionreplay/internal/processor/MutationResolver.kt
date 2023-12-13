@@ -308,7 +308,7 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
         currentWireframe: MobileSegment.Wireframe.WebviewWireframe
     ): MobileSegment.WireframeUpdateMutation {
         var mutation = MobileSegment.WireframeUpdateMutation
-            .WebviewWireframeUpdate(currentWireframe.id, nestedEnvId = currentWireframe.nestedEnvId)
+            .WebviewWireframeUpdate(currentWireframe.id, slotId = currentWireframe.slotId)
         if (prevWireframe.x != currentWireframe.x) {
             mutation = mutation.copy(x = currentWireframe.x)
         }

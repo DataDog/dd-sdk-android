@@ -57,7 +57,7 @@ internal class RecordedDataProcessor(
     override fun processWebViewRecord(item: WebViewRecordedDataQueueItem) {
         JsonParser.parseString(item.serializedRecord)?.asJsonObject?.let {
             val event = it.get("event").asJsonObject
-            val viewId = it.get("viewId")?.asString
+            val viewId = it.get("view")?.asJsonObject?.get("id")?.asString
             val sessionId = it.get("sessionId")?.asString
             val applicationId = it.get("applicationId")?.asString
             if (viewId != null && sessionId != null && applicationId != null) {

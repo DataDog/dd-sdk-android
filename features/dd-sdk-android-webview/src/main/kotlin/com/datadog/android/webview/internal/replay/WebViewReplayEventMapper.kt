@@ -12,7 +12,7 @@ import java.lang.ClassCastException
 import java.lang.IllegalStateException
 import java.lang.NumberFormatException
 
-internal class WebViewReplayEventMapper {
+internal class WebViewReplayEventMapper(private val webViewId: Long) {
 
     @Throws(
         ClassCastException::class,
@@ -35,6 +35,7 @@ internal class WebViewReplayEventMapper {
             record.addProperty("is_browser_record", true)
             event.addProperty("applicationId", rumContext.applicationId)
             event.addProperty("sessionId", rumContext.sessionId)
+            record.addProperty("slotId", webViewId.toString())
         }
         return event
     }

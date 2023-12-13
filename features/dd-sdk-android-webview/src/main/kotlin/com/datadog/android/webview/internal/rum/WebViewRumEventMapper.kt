@@ -44,10 +44,14 @@ internal class WebViewRumEventMapper {
             session.addProperty(ID_KEY_NAME, rumContext.sessionId)
             event.add(APPLICATION_KEY_NAME, application)
             event.add(SESSION_KEY_NAME, session)
-            JsonObject().apply {
-                addProperty("id", rumContext.viewId)
-                addProperty("source", "android")
-            }.let { event.add("parent_view", it) }
+            val container = JsonObject().apply {
+                val view = JsonObject().apply {
+                    addProperty(ID_KEY_NAME, rumContext.viewId)
+                }
+                add(VIEW_KEY_NAME, view)
+                addProperty(SOURCE_KEY_NAME, "android")
+            }
+            event.add(CONTAINER_KEY_NAME, container)
         }
         return event
     }
@@ -60,6 +64,9 @@ internal class WebViewRumEventMapper {
         internal const val SESSION_PLAN_KEY_NAME = "plan"
         internal const val DATE_KEY_NAME = "date"
         internal const val ID_KEY_NAME = "id"
+        internal const val VIEW_KEY_NAME = "view"
+        internal const val CONTAINER_KEY_NAME = "container"
+        internal const val SOURCE_KEY_NAME = "source"
         internal const val SESSION_PLAN_VALUE = 1
     }
 }

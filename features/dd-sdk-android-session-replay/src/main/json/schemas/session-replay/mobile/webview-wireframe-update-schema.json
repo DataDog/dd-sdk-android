@@ -9,7 +9,7 @@
       "$ref": "_common-shape-wireframe-update-schema.json"
     },
     {
-      "required": ["type", "nestedEnvId"],
+      "required": ["type", "slotId"],
       "properties": {
         "type": {
           "type": "string",
@@ -17,9 +17,9 @@
           "const": "webview",
           "readOnly": true
         },
-        "nestedEnvId": {
-          "type": "integer",
-          "description": "Defines the unique ID of the replayed webview environment that will be nested in this container.",
+        "slotId": {
+          "type": "string",
+          "description": "Unique Id of the slot containing this webview.",
           "readOnly": true
         }
       }

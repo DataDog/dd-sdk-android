@@ -122,7 +122,7 @@ internal class DatadogNdkCrashEventHandler(
                     internalLogger
                 )
             },
-            view = ErrorEvent.View(
+            view = ErrorEvent.ErrorEventView(
                 id = viewEvent.view.id,
                 name = viewEvent.view.name,
                 referrer = viewEvent.view.referrer,
