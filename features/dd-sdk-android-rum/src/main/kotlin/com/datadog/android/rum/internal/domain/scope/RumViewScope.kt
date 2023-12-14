@@ -244,6 +244,7 @@ internal open class RumViewScope(
         writer: DataWriter<Any>
     ) {
         delegateEventToChildren(event, writer)
+        if (stopped) return
         val startedKey = keyRef.get()
         val shouldStop = (event.key == startedKey) || (startedKey == null)
         if (shouldStop && !stopped) {
