@@ -41,6 +41,7 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doReturnConsecutively
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -713,9 +714,9 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 delete everything 𝕎 dropAll() { there is locked batch }`(
-        @Forgery file: File,
-        @StringForgery fakeMetaFilePath: String
+    fun `𝕄 delete everything 𝕎 dropAll() { there are locked batches }`(
+        @Forgery files: List<File>,
+        forge: Forge
     ) {
         // Given
         testedStorage = ConsentAwareStorage(
@@ -730,30 +731,42 @@ internal class ConsentAwareStorageTest {
             mockMetricsDispatcher
         )
 
-        whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
-        val mockMetaFile: File = mock()
-        whenever(mockMetaFile.exists()) doReturn true
-        whenever(mockMetaFile.path) doReturn fakeMetaFilePath
-        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
-        whenever(mockFileMover.delete(file)) doReturn true
-        doReturn(true).whenever(mockFileMover).delete(mockMetaFile)
+        whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturnConsecutively files
+        val mockMetaFiles = files.map {
+            val fakeMetaFilePath = forge.anAlphabeticalString()
+            val mockMetaFile = mock<File>()
+            whenever(mockMetaFile.exists()) doReturn true
+            whenever(mockMetaFile.path) doReturn fakeMetaFilePath
+            whenever(mockGrantedOrchestrator.getMetadataFile(it)) doReturn mockMetaFile
+            doReturn(true).whenever(mockFileMover).delete(mockMetaFile)
+            mockMetaFile
+        }
+        files.forEach {
+            whenever(mockFileMover.delete(it)) doReturn true
+        }
 
-        testedStorage.readNextBatch { _, _ ->
-            // no-op
+        // ConcurrentModificationException is thrown only during the next check after remove,
+        // so to make sure it is not thrown we need at least 2 locked batches
+        repeat(files.size) {
+            testedStorage.readNextBatch { _, _ ->
+                // no-op
+            }
         }
 
         // When
         testedStorage.dropAll()
 
         // Then
-        verify(mockFileMover).delete(file)
-        verify(mockFileMover).delete(mockMetaFile)
-        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
-            eq(file),
-            argThat {
-                this is RemovalReason.Flushed
-            }
-        )
+        files.forEachIndexed { index, file ->
+            verify(mockFileMover).delete(file)
+            verify(mockFileMover).delete(mockMetaFiles[index])
+            verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+                eq(file),
+                argThat {
+                    this is RemovalReason.Flushed
+                }
+            )
+        }
     }
 
     // endregion

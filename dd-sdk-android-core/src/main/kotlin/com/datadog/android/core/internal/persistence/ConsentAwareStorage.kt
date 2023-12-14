@@ -149,8 +149,8 @@ internal class ConsentAwareStorage(
         synchronized(lockedBatches) {
             lockedBatches.forEach {
                 deleteBatch(it, RemovalReason.Flushed)
-                lockedBatches.remove(it)
             }
+            lockedBatches.clear()
         }
 
         arrayOf(pendingOrchestrator, grantedOrchestrator).forEach { orchestrator ->
