@@ -846,6 +846,7 @@ datadog:
       - "kotlin.collections.MutableCollection.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableCollection.toList()"
       - "kotlin.collections.MutableIterator.hasNext()"
+      - "kotlin.collections.MutableList.add(com.datadog.android.api.InternalLogger.Target)"
       - "kotlin.collections.MutableList.add(com.datadog.android.core.internal.persistence.Batch)"
       - "kotlin.collections.MutableList.add(com.datadog.android.plugin.DatadogPlugin)"
       - "kotlin.collections.MutableList.add(com.datadog.android.rum.internal.domain.scope.RumScope)"

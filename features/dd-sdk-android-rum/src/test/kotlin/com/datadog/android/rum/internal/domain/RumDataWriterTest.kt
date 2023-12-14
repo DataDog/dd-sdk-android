@@ -11,8 +11,6 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.rum.internal.domain.event.RumEventMeta
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -37,11 +35,8 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -233,120 +228,6 @@ internal class RumDataWriterTest {
         // Then
         verify(rumMonitor.mockSdkCore).writeLastViewEvent(fakeSerializedData)
         verifyNoInteractions(mockInternalLogger)
-    }
-
-    @Test
-    fun `𝕄 notify the RumMonitor 𝕎 onDataWritten() { ActionEvent }`(
-        @Forgery actionEvent: ActionEvent
-    ) {
-        // When
-        testedWriter.onDataWritten(actionEvent, fakeSerializedData)
-
-        // Then
-        verify(rumMonitor.mockInstance as AdvancedRumMonitor).eventSent(
-            actionEvent.view.id,
-            StorageEvent.Action(frustrationCount = actionEvent.action.frustration?.type?.size ?: 0)
-        )
-        verifyNoInteractions(rumMonitor.mockSdkCore)
-    }
-
-    @Test
-    fun `𝕄 notify the RumMonitor 𝕎 onDataWritten() { ResourceEvent }`(
-        @Forgery resourceEvent: ResourceEvent
-    ) {
-        // When
-        testedWriter.onDataWritten(resourceEvent, fakeSerializedData)
-
-        // Then
-        verify(rumMonitor.mockInstance as AdvancedRumMonitor).eventSent(
-            resourceEvent.view.id,
-            StorageEvent.Resource
-        )
-        verifyNoInteractions(rumMonitor.mockSdkCore)
-    }
-
-    @Test
-    fun `𝕄 notify the RumMonitor 𝕎 onDataWritten() { ErrorEvent isCrash=false }`(
-        @Forgery fakeEvent: ErrorEvent
-    ) {
-        // Given
-        val errorEvent = fakeEvent.copy(error = fakeEvent.error.copy(isCrash = false))
-
-        // When
-        testedWriter.onDataWritten(errorEvent, fakeSerializedData)
-
-        // Then
-        verify(rumMonitor.mockInstance as AdvancedRumMonitor).eventSent(
-            fakeEvent.view.id,
-            StorageEvent.Error
-        )
-        verifyNoInteractions(rumMonitor.mockSdkCore)
-    }
-
-    @Test
-    fun `𝕄 not notify the RumMonitor 𝕎 onDataWritten() { ErrorEvent isCrash=true }`(
-        @Forgery fakeEvent: ErrorEvent
-    ) {
-        // Given
-        val errorEvent = fakeEvent.copy(error = fakeEvent.error.copy(isCrash = true))
-
-        // When
-        testedWriter.onDataWritten(errorEvent, fakeSerializedData)
-
-        // Then
-        verify(
-            rumMonitor.mockInstance as AdvancedRumMonitor,
-            never()
-        ).eventSent(eq(fakeEvent.view.id), any())
-        verifyNoInteractions(rumMonitor.mockSdkCore)
-    }
-
-    @Test
-    fun `𝕄 notify the RumMonitor 𝕎 onDataWritten() { LongTaskEvent }`(
-        @Forgery fakeEvent: LongTaskEvent
-    ) {
-        // Given
-        val longTaskEvent = fakeEvent.copy(
-            longTask = LongTaskEvent.LongTask(
-                id = fakeEvent.longTask.id,
-                duration = fakeEvent.longTask.duration,
-                isFrozenFrame = false
-            )
-        )
-
-        // When
-        testedWriter.onDataWritten(longTaskEvent, fakeSerializedData)
-
-        // Then
-        verify(rumMonitor.mockInstance as AdvancedRumMonitor).eventSent(
-            longTaskEvent.view.id,
-            StorageEvent.LongTask
-        )
-        verifyNoInteractions(rumMonitor.mockSdkCore)
-    }
-
-    @Test
-    fun `𝕄 notify the RumMonitor 𝕎 onDataWritten() { FrozenFrame Event }`(
-        @Forgery fakeEvent: LongTaskEvent
-    ) {
-        // Given
-        val frozenFrameEvent = fakeEvent.copy(
-            longTask = LongTaskEvent.LongTask(
-                id = fakeEvent.longTask.id,
-                duration = fakeEvent.longTask.duration,
-                isFrozenFrame = true
-            )
-        )
-
-        // When
-        testedWriter.onDataWritten(frozenFrameEvent, fakeSerializedData)
-
-        // Then
-        verify(rumMonitor.mockInstance as AdvancedRumMonitor).eventSent(
-            frozenFrameEvent.view.id,
-            StorageEvent.FrozenFrame
-        )
-        verifyNoInteractions(rumMonitor.mockSdkCore)
     }
 
     // endregion

@@ -30,6 +30,8 @@ import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -45,6 +47,7 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aFilteredMap
+import com.datadog.tools.unit.forge.anException
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -73,7 +76,9 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -252,6 +257,7 @@ internal class RumViewScopeTest {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any())) doReturn true
         fakeReplayStats = ViewEvent.ReplayStats(recordsCount = fakeReplayRecordsCount)
         testedScope = RumViewScope(
             mockParentScope,
@@ -7448,6 +7454,357 @@ internal class RumViewScopeTest {
     }
 
     // endregion
+
+    // region write notification
+
+    @Test
+    fun `𝕄 notify about success 𝕎 handleEvent(AddError+non-fatal) { write succeeded }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            false,
+            attributes
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(testedScope.viewId, StorageEvent.Error)
+    }
+
+    @Test
+    fun `𝕄 notify about error 𝕎 handleEvent(AddError+non-fatal) { write failed }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            false,
+            attributes
+        )
+        whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>())) doReturn false
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(testedScope.viewId, StorageEvent.Error)
+    }
+
+    @Test
+    fun `𝕄 notify about error 𝕎 handleEvent(AddError+non-fatal) { write throws }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            false,
+            attributes
+        )
+        whenever(
+            mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>())
+        ) doThrow forge.anException()
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(testedScope.viewId, StorageEvent.Error)
+    }
+
+    @Test
+    fun `𝕄 not notify about success 𝕎 handleEvent(AddError+fatal) { write succeeded }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            true,
+            attributes
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor, never())
+            .eventSent(testedScope.viewId, StorageEvent.Error)
+    }
+
+    @Test
+    fun `𝕄 not notify about error 𝕎 handleEvent(AddError+fatal) { write failed }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            true,
+            attributes
+        )
+        whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>())) doReturn false
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor, never())
+            .eventDropped(testedScope.viewId, StorageEvent.Error)
+    }
+
+    @Test
+    fun `𝕄 not notify about error 𝕎 handleEvent(AddError+fatal) { write throws }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            true,
+            attributes
+        )
+        whenever(
+            mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>())
+        ) doThrow forge.anException()
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor, never())
+            .eventDropped(testedScope.viewId, StorageEvent.Error)
+    }
+
+    @Test
+    fun `𝕄 notify about success 𝕎 handleEvent(ApplicationStarted) { write succeeded }`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.ApplicationStarted(
+            eventTime = Time(),
+            applicationStartupNanos = forge.aPositiveLong()
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(testedScope.viewId, StorageEvent.Action(0))
+    }
+
+    @Test
+    fun `𝕄 notify about error 𝕎 handleEvent(ApplicationStarted) { write failed }`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.ApplicationStarted(
+            eventTime = Time(),
+            applicationStartupNanos = forge.aPositiveLong()
+        )
+        whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ActionEvent>())) doReturn false
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(testedScope.viewId, StorageEvent.Action(0))
+    }
+
+    @Test
+    fun `𝕄 notify about error 𝕎 handleEvent(ApplicationStarted) { write throws }`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.ApplicationStarted(
+            eventTime = Time(),
+            applicationStartupNanos = forge.aPositiveLong()
+        )
+        whenever(
+            mockWriter.write(eq(mockEventBatchWriter), isA<ActionEvent>())
+        ) doThrow forge.anException()
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(testedScope.viewId, StorageEvent.Action(0))
+    }
+
+    @Test
+    fun `𝕄 notify about success 𝕎 handleEvent(AddLongTask) { write succeeded }`(
+        @LongForgery(250_000_000L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(testedScope.viewId, StorageEvent.LongTask)
+    }
+
+    @Test
+    fun `𝕄 notify about error 𝕎 handleEvent(AddLongTask) { write failed }`(
+        @LongForgery(250_000_000L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        whenever(mockWriter.write(eq(mockEventBatchWriter), isA<LongTaskEvent>())) doReturn false
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(testedScope.viewId, StorageEvent.LongTask)
+    }
+
+    @Test
+    fun `𝕄 notify about error 𝕎 handleEvent(AddLongTask) { write throws }`(
+        @LongForgery(250_000_000L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        whenever(
+            mockWriter.write(eq(mockEventBatchWriter), isA<LongTaskEvent>())
+        ) doThrow forge.anException()
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(testedScope.viewId, StorageEvent.LongTask)
+    }
+
+    @Test
+    fun `𝕄 notify about success 𝕎 handleEvent(AddLongTask, is frozen frame) { write succeeded }`(
+        @LongForgery(700_000_000L, 10_000_000_000L) durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventSent(testedScope.viewId, StorageEvent.FrozenFrame)
+    }
+
+    @Test
+    fun `𝕄 notify about error 𝕎 handleEvent(AddLongTask, is frozen frame) { write failed }`(
+        @LongForgery(700_000_000L, 10_000_000_000L) durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        whenever(mockWriter.write(eq(mockEventBatchWriter), isA<LongTaskEvent>())) doReturn false
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(testedScope.viewId, StorageEvent.FrozenFrame)
+    }
+
+    @Test
+    fun `𝕄 notify about error 𝕎 handleEvent(AddLongTask, is frozen frame) { write throws }`(
+        @LongForgery(700_000_000L, 10_000_000_000L) durationNs: Long,
+        @StringForgery target: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        whenever(
+            mockWriter.write(eq(mockEventBatchWriter), isA<LongTaskEvent>())
+        ) doThrow forge.anException()
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(testedScope.viewId, StorageEvent.FrozenFrame)
+    }
 
     // region Misc
 

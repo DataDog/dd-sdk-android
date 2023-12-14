@@ -22,6 +22,7 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -30,6 +31,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.hasUserData
+import com.datadog.android.rum.utils.newRumEventWriteOperation
 import com.datadog.android.rum.utils.resolveViewUrl
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
@@ -381,96 +383,100 @@ internal open class RumViewScope(
             event.message
         }
 
-        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
+        sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
 
-                val user = datadogContext.userInfo
-                val hasReplay = featuresContextResolver.resolveViewHasReplay(
-                    datadogContext,
-                    rumContext.viewId.orEmpty()
+            val user = datadogContext.userInfo
+            val hasReplay = featuresContextResolver.resolveViewHasReplay(
+                datadogContext,
+                rumContext.viewId.orEmpty()
+            )
+            val syntheticsAttribute = if (
+                rumContext.syntheticsTestId.isNullOrBlank() ||
+                rumContext.syntheticsResultId.isNullOrBlank()
+            ) {
+                null
+            } else {
+                ErrorEvent.Synthetics(
+                    testId = rumContext.syntheticsTestId,
+                    resultId = rumContext.syntheticsResultId
                 )
-                val syntheticsAttribute = if (
-                    rumContext.syntheticsTestId.isNullOrBlank() ||
-                    rumContext.syntheticsResultId.isNullOrBlank()
-                ) {
-                    null
-                } else {
-                    ErrorEvent.Synthetics(
-                        testId = rumContext.syntheticsTestId,
-                        resultId = rumContext.syntheticsResultId
-                    )
-                }
-                val sessionType = if (syntheticsAttribute == null) {
-                    ErrorEvent.ErrorEventSessionType.USER
-                } else {
-                    ErrorEvent.ErrorEventSessionType.SYNTHETICS
-                }
-                val errorEvent = ErrorEvent(
-                    date = event.eventTime.timestamp + serverTimeOffsetInMs,
-                    featureFlags = ErrorEvent.Context(featureFlags),
-                    error = ErrorEvent.Error(
-                        message = message,
-                        source = event.source.toSchemaSource(),
-                        stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
-                        isCrash = isFatal,
-                        type = errorType,
-                        sourceType = event.sourceType.toSchemaSourceType()
-                    ),
-                    action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },
-                    view = ErrorEvent.View(
-                        id = rumContext.viewId.orEmpty(),
-                        name = rumContext.viewName,
-                        url = rumContext.viewUrl.orEmpty()
-                    ),
-                    usr = if (user.hasUserData()) {
-                        ErrorEvent.Usr(
-                            id = user.id,
-                            name = user.name,
-                            email = user.email,
-                            additionalProperties = user.additionalProperties.toMutableMap()
-                        )
-                    } else {
-                        null
-                    },
-                    connectivity = datadogContext.networkInfo.toErrorConnectivity(),
-                    application = ErrorEvent.Application(rumContext.applicationId),
-                    session = ErrorEvent.ErrorEventSession(
-                        id = rumContext.sessionId,
-                        type = sessionType,
-                        hasReplay = hasReplay
-                    ),
-                    synthetics = syntheticsAttribute,
-                    source = ErrorEvent.ErrorEventSource.tryFromSource(
-                        source = datadogContext.source,
-                        internalLogger = sdkCore.internalLogger
-                    ),
-                    os = ErrorEvent.Os(
-                        name = datadogContext.deviceInfo.osName,
-                        version = datadogContext.deviceInfo.osVersion,
-                        versionMajor = datadogContext.deviceInfo.osMajorVersion
-                    ),
-                    device = ErrorEvent.Device(
-                        type = datadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        name = datadogContext.deviceInfo.deviceName,
-                        model = datadogContext.deviceInfo.deviceModel,
-                        brand = datadogContext.deviceInfo.deviceBrand,
-                        architecture = datadogContext.deviceInfo.architecture
-                    ),
-                    context = ErrorEvent.Context(additionalProperties = updatedAttributes),
-                    dd = ErrorEvent.Dd(
-                        session = ErrorEvent.DdSession(
-                            plan = ErrorEvent.Plan.PLAN_1,
-                            sessionPrecondition = rumContext.sessionStartReason.toErrorSessionPrecondition()
-                        ),
-                        configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
-                    ),
-                    service = datadogContext.service,
-                    version = datadogContext.version
-                )
-
-                @Suppress("ThreadSafety") // called in a worker thread context
-                writer.write(eventBatchWriter, errorEvent)
             }
+            val sessionType = if (syntheticsAttribute == null) {
+                ErrorEvent.ErrorEventSessionType.USER
+            } else {
+                ErrorEvent.ErrorEventSessionType.SYNTHETICS
+            }
+            ErrorEvent(
+                date = event.eventTime.timestamp + serverTimeOffsetInMs,
+                featureFlags = ErrorEvent.Context(featureFlags),
+                error = ErrorEvent.Error(
+                    message = message,
+                    source = event.source.toSchemaSource(),
+                    stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
+                    isCrash = isFatal,
+                    type = errorType,
+                    sourceType = event.sourceType.toSchemaSourceType()
+                ),
+                action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },
+                view = ErrorEvent.View(
+                    id = rumContext.viewId.orEmpty(),
+                    name = rumContext.viewName,
+                    url = rumContext.viewUrl.orEmpty()
+                ),
+                usr = if (user.hasUserData()) {
+                    ErrorEvent.Usr(
+                        id = user.id,
+                        name = user.name,
+                        email = user.email,
+                        additionalProperties = user.additionalProperties.toMutableMap()
+                    )
+                } else {
+                    null
+                },
+                connectivity = datadogContext.networkInfo.toErrorConnectivity(),
+                application = ErrorEvent.Application(rumContext.applicationId),
+                session = ErrorEvent.ErrorEventSession(
+                    id = rumContext.sessionId,
+                    type = sessionType,
+                    hasReplay = hasReplay
+                ),
+                synthetics = syntheticsAttribute,
+                source = ErrorEvent.ErrorEventSource.tryFromSource(
+                    source = datadogContext.source,
+                    internalLogger = sdkCore.internalLogger
+                ),
+                os = ErrorEvent.Os(
+                    name = datadogContext.deviceInfo.osName,
+                    version = datadogContext.deviceInfo.osVersion,
+                    versionMajor = datadogContext.deviceInfo.osMajorVersion
+                ),
+                device = ErrorEvent.Device(
+                    type = datadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                    name = datadogContext.deviceInfo.deviceName,
+                    model = datadogContext.deviceInfo.deviceModel,
+                    brand = datadogContext.deviceInfo.deviceBrand,
+                    architecture = datadogContext.deviceInfo.architecture
+                ),
+                context = ErrorEvent.Context(additionalProperties = updatedAttributes),
+                dd = ErrorEvent.Dd(
+                    session = ErrorEvent.DdSession(
+                        plan = ErrorEvent.Plan.PLAN_1,
+                        sessionPrecondition = rumContext.sessionStartReason.toErrorSessionPrecondition()
+                    ),
+                    configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
+                ),
+                service = datadogContext.service,
+                version = datadogContext.version
+            )
+        }
+            .apply {
+                if (!isFatal) {
+                    // if fatal, then we don't have time for the notification, app is crashing
+                    onError { it.eventDropped(rumContext.viewId.orEmpty(), StorageEvent.Error) }
+                    onSuccess { it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Error) }
+                }
+            }
+            .submit()
 
         if (isFatal) {
             errorCount++
@@ -720,120 +726,117 @@ internal open class RumViewScope(
         val refreshRateInfo = lastFrameRateInfo
         val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo) ?: false
 
-        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
-                val currentViewId = rumContext.viewId.orEmpty()
-                val user = datadogContext.userInfo
-                val hasReplay = featuresContextResolver.resolveViewHasReplay(
-                    datadogContext,
-                    currentViewId
+        sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
+            val currentViewId = rumContext.viewId.orEmpty()
+            val user = datadogContext.userInfo
+            val hasReplay = featuresContextResolver.resolveViewHasReplay(
+                datadogContext,
+                currentViewId
+            )
+            val sessionReplayRecordsCount = featuresContextResolver.resolveViewRecordsCount(
+                datadogContext,
+                currentViewId
+            )
+            val replayStats = ViewEvent.ReplayStats(recordsCount = sessionReplayRecordsCount)
+            val syntheticsAttribute = if (
+                rumContext.syntheticsTestId.isNullOrBlank() ||
+                rumContext.syntheticsResultId.isNullOrBlank()
+            ) {
+                null
+            } else {
+                ViewEvent.Synthetics(
+                    testId = rumContext.syntheticsTestId,
+                    resultId = rumContext.syntheticsResultId
                 )
-                val sessionReplayRecordsCount = featuresContextResolver.resolveViewRecordsCount(
-                    datadogContext,
-                    currentViewId
-                )
-                val replayStats = ViewEvent.ReplayStats(recordsCount = sessionReplayRecordsCount)
-                val syntheticsAttribute = if (
-                    rumContext.syntheticsTestId.isNullOrBlank() ||
-                    rumContext.syntheticsResultId.isNullOrBlank()
-                ) {
-                    null
-                } else {
-                    ViewEvent.Synthetics(
-                        testId = rumContext.syntheticsTestId,
-                        resultId = rumContext.syntheticsResultId
-                    )
-                }
-                val sessionType = if (syntheticsAttribute == null) {
-                    ViewEvent.ViewEventSessionType.USER
-                } else {
-                    ViewEvent.ViewEventSessionType.SYNTHETICS
-                }
+            }
+            val sessionType = if (syntheticsAttribute == null) {
+                ViewEvent.ViewEventSessionType.USER
+            } else {
+                ViewEvent.ViewEventSessionType.SYNTHETICS
+            }
 
-                val viewEvent = ViewEvent(
-                    date = eventTimestamp,
-                    featureFlags = ViewEvent.Context(additionalProperties = featureFlags),
-                    view = ViewEvent.View(
-                        id = currentViewId,
-                        name = rumContext.viewName,
-                        url = rumContext.viewUrl.orEmpty(),
-                        timeSpent = updatedDurationNs,
-                        action = ViewEvent.Action(eventActionCount),
-                        resource = ViewEvent.Resource(eventResourceCount),
-                        error = ViewEvent.Error(eventErrorCount),
-                        crash = ViewEvent.Crash(eventCrashCount),
-                        longTask = ViewEvent.LongTask(eventLongTaskCount),
-                        frozenFrame = ViewEvent.FrozenFrame(eventFrozenFramesCount),
-                        customTimings = timings,
-                        isActive = !viewComplete,
-                        cpuTicksCount = eventCpuTicks,
-                        cpuTicksPerSecond = if (updatedDurationNs >= ONE_SECOND_NS) {
-                            eventCpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs }
-                        } else {
-                            null
-                        },
-                        memoryAverage = memoryInfo?.meanValue,
-                        memoryMax = memoryInfo?.maxValue,
-                        refreshRateAverage = refreshRateInfo?.meanValue,
-                        refreshRateMin = refreshRateInfo?.minValue,
-                        isSlowRendered = isSlowRendered,
-                        frustration = ViewEvent.Frustration(eventFrustrationCount.toLong()),
-                        flutterBuildTime = eventFlutterBuildTime,
-                        flutterRasterTime = eventFlutterRasterTime,
-                        jsRefreshRate = eventJsRefreshRate
-                    ),
-                    usr = if (user.hasUserData()) {
-                        ViewEvent.Usr(
-                            id = user.id,
-                            name = user.name,
-                            email = user.email,
-                            additionalProperties = user.additionalProperties.toMutableMap()
-                        )
+            ViewEvent(
+                date = eventTimestamp,
+                featureFlags = ViewEvent.Context(additionalProperties = featureFlags),
+                view = ViewEvent.View(
+                    id = currentViewId,
+                    name = rumContext.viewName,
+                    url = rumContext.viewUrl.orEmpty(),
+                    timeSpent = updatedDurationNs,
+                    action = ViewEvent.Action(eventActionCount),
+                    resource = ViewEvent.Resource(eventResourceCount),
+                    error = ViewEvent.Error(eventErrorCount),
+                    crash = ViewEvent.Crash(eventCrashCount),
+                    longTask = ViewEvent.LongTask(eventLongTaskCount),
+                    frozenFrame = ViewEvent.FrozenFrame(eventFrozenFramesCount),
+                    customTimings = timings,
+                    isActive = !viewComplete,
+                    cpuTicksCount = eventCpuTicks,
+                    cpuTicksPerSecond = if (updatedDurationNs >= ONE_SECOND_NS) {
+                        eventCpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs }
                     } else {
                         null
                     },
-                    application = ViewEvent.Application(rumContext.applicationId),
-                    session = ViewEvent.ViewEventSession(
-                        id = rumContext.sessionId,
-                        type = sessionType,
-                        hasReplay = hasReplay,
-                        isActive = rumContext.isSessionActive
+                    memoryAverage = memoryInfo?.meanValue,
+                    memoryMax = memoryInfo?.maxValue,
+                    refreshRateAverage = refreshRateInfo?.meanValue,
+                    refreshRateMin = refreshRateInfo?.minValue,
+                    isSlowRendered = isSlowRendered,
+                    frustration = ViewEvent.Frustration(eventFrustrationCount.toLong()),
+                    flutterBuildTime = eventFlutterBuildTime,
+                    flutterRasterTime = eventFlutterRasterTime,
+                    jsRefreshRate = eventJsRefreshRate
+                ),
+                usr = if (user.hasUserData()) {
+                    ViewEvent.Usr(
+                        id = user.id,
+                        name = user.name,
+                        email = user.email,
+                        additionalProperties = user.additionalProperties.toMutableMap()
+                    )
+                } else {
+                    null
+                },
+                application = ViewEvent.Application(rumContext.applicationId),
+                session = ViewEvent.ViewEventSession(
+                    id = rumContext.sessionId,
+                    type = sessionType,
+                    hasReplay = hasReplay,
+                    isActive = rumContext.isSessionActive
+                ),
+                synthetics = syntheticsAttribute,
+                source = ViewEvent.ViewEventSource.tryFromSource(
+                    datadogContext.source,
+                    sdkCore.internalLogger
+                ),
+                os = ViewEvent.Os(
+                    name = datadogContext.deviceInfo.osName,
+                    version = datadogContext.deviceInfo.osVersion,
+                    versionMajor = datadogContext.deviceInfo.osMajorVersion
+                ),
+                device = ViewEvent.Device(
+                    type = datadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                    name = datadogContext.deviceInfo.deviceName,
+                    model = datadogContext.deviceInfo.deviceModel,
+                    brand = datadogContext.deviceInfo.deviceBrand,
+                    architecture = datadogContext.deviceInfo.architecture
+                ),
+                context = ViewEvent.Context(additionalProperties = attributes),
+                dd = ViewEvent.Dd(
+                    documentVersion = eventVersion,
+                    session = ViewEvent.DdSession(
+                        plan = ViewEvent.Plan.PLAN_1,
+                        sessionPrecondition = rumContext.sessionStartReason.toViewSessionPrecondition()
                     ),
-                    synthetics = syntheticsAttribute,
-                    source = ViewEvent.ViewEventSource.tryFromSource(
-                        datadogContext.source,
-                        sdkCore.internalLogger
-                    ),
-                    os = ViewEvent.Os(
-                        name = datadogContext.deviceInfo.osName,
-                        version = datadogContext.deviceInfo.osVersion,
-                        versionMajor = datadogContext.deviceInfo.osMajorVersion
-                    ),
-                    device = ViewEvent.Device(
-                        type = datadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        name = datadogContext.deviceInfo.deviceName,
-                        model = datadogContext.deviceInfo.deviceModel,
-                        brand = datadogContext.deviceInfo.deviceBrand,
-                        architecture = datadogContext.deviceInfo.architecture
-                    ),
-                    context = ViewEvent.Context(additionalProperties = attributes),
-                    dd = ViewEvent.Dd(
-                        documentVersion = eventVersion,
-                        session = ViewEvent.DdSession(
-                            plan = ViewEvent.Plan.PLAN_1,
-                            sessionPrecondition = rumContext.sessionStartReason.toViewSessionPrecondition()
-                        ),
-                        replayStats = replayStats,
-                        configuration = ViewEvent.Configuration(sessionSampleRate = sampleRate)
-                    ),
-                    connectivity = datadogContext.networkInfo.toViewConnectivity(),
-                    service = datadogContext.service,
-                    version = datadogContext.version
-                )
-
-                @Suppress("ThreadSafety") // called in a worker thread context
-                writer.write(eventBatchWriter, viewEvent)
-            }
+                    replayStats = replayStats,
+                    configuration = ViewEvent.Configuration(sessionSampleRate = sampleRate)
+                ),
+                connectivity = datadogContext.networkInfo.toViewConnectivity(),
+                service = datadogContext.service,
+                version = datadogContext.version
+            )
+        }
+            .submit()
     }
 
     private fun resolveViewDuration(event: RumRawEvent): Long {
@@ -884,93 +887,95 @@ internal open class RumViewScope(
 
         val globalAttributes = GlobalRumMonitor.get(sdkCore).getAttributes().toMutableMap()
 
-        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
-                val user = datadogContext.userInfo
-                val syntheticsAttribute = if (
-                    rumContext.syntheticsTestId.isNullOrBlank() ||
-                    rumContext.syntheticsResultId.isNullOrBlank()
-                ) {
-                    null
-                } else {
-                    ActionEvent.Synthetics(
-                        testId = rumContext.syntheticsTestId,
-                        resultId = rumContext.syntheticsResultId
-                    )
-                }
-                val sessionType = if (syntheticsAttribute == null) {
-                    ActionEvent.ActionEventSessionType.USER
-                } else {
-                    ActionEvent.ActionEventSessionType.SYNTHETICS
-                }
-
-                val actionEvent = ActionEvent(
-                    date = eventTimestamp,
-                    action = ActionEvent.ActionEventAction(
-                        type = ActionEvent.ActionEventActionType.APPLICATION_START,
-                        id = UUID.randomUUID().toString(),
-                        error = ActionEvent.Error(0),
-                        crash = ActionEvent.Crash(0),
-                        longTask = ActionEvent.LongTask(0),
-                        resource = ActionEvent.Resource(0),
-                        loadingTime = event.applicationStartupNanos
-                    ),
-                    view = ActionEvent.View(
-                        id = rumContext.viewId.orEmpty(),
-                        name = rumContext.viewName,
-                        url = rumContext.viewUrl.orEmpty()
-                    ),
-                    usr = if (user.hasUserData()) {
-                        ActionEvent.Usr(
-                            id = user.id,
-                            name = user.name,
-                            email = user.email,
-                            additionalProperties = user.additionalProperties.toMutableMap()
-                        )
-                    } else {
-                        null
-                    },
-                    application = ActionEvent.Application(rumContext.applicationId),
-                    session = ActionEvent.ActionEventSession(
-                        id = rumContext.sessionId,
-                        type = sessionType,
-                        hasReplay = false
-                    ),
-                    synthetics = syntheticsAttribute,
-                    source = ActionEvent.ActionEventSource.tryFromSource(
-                        datadogContext.source,
-                        sdkCore.internalLogger
-                    ),
-                    os = ActionEvent.Os(
-                        name = datadogContext.deviceInfo.osName,
-                        version = datadogContext.deviceInfo.osVersion,
-                        versionMajor = datadogContext.deviceInfo.osMajorVersion
-                    ),
-                    device = ActionEvent.Device(
-                        type = datadogContext.deviceInfo.deviceType.toActionSchemaType(),
-                        name = datadogContext.deviceInfo.deviceName,
-                        model = datadogContext.deviceInfo.deviceModel,
-                        brand = datadogContext.deviceInfo.deviceBrand,
-                        architecture = datadogContext.deviceInfo.architecture
-                    ),
-                    context = ActionEvent.Context(
-                        additionalProperties = globalAttributes
-                    ),
-                    dd = ActionEvent.Dd(
-                        session = ActionEvent.DdSession(
-                            plan = ActionEvent.Plan.PLAN_1,
-                            sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
-                        ),
-                        configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
-                    ),
-                    connectivity = datadogContext.networkInfo.toActionConnectivity(),
-                    service = datadogContext.service,
-                    version = datadogContext.version
+        sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
+            val user = datadogContext.userInfo
+            val syntheticsAttribute = if (
+                rumContext.syntheticsTestId.isNullOrBlank() ||
+                rumContext.syntheticsResultId.isNullOrBlank()
+            ) {
+                null
+            } else {
+                ActionEvent.Synthetics(
+                    testId = rumContext.syntheticsTestId,
+                    resultId = rumContext.syntheticsResultId
                 )
-
-                @Suppress("ThreadSafety") // called in a worker thread context
-                writer.write(eventBatchWriter, actionEvent)
             }
+            val sessionType = if (syntheticsAttribute == null) {
+                ActionEvent.ActionEventSessionType.USER
+            } else {
+                ActionEvent.ActionEventSessionType.SYNTHETICS
+            }
+
+            ActionEvent(
+                date = eventTimestamp,
+                action = ActionEvent.ActionEventAction(
+                    type = ActionEvent.ActionEventActionType.APPLICATION_START,
+                    id = UUID.randomUUID().toString(),
+                    error = ActionEvent.Error(0),
+                    crash = ActionEvent.Crash(0),
+                    longTask = ActionEvent.LongTask(0),
+                    resource = ActionEvent.Resource(0),
+                    loadingTime = event.applicationStartupNanos
+                ),
+                view = ActionEvent.View(
+                    id = rumContext.viewId.orEmpty(),
+                    name = rumContext.viewName,
+                    url = rumContext.viewUrl.orEmpty()
+                ),
+                usr = if (user.hasUserData()) {
+                    ActionEvent.Usr(
+                        id = user.id,
+                        name = user.name,
+                        email = user.email,
+                        additionalProperties = user.additionalProperties.toMutableMap()
+                    )
+                } else {
+                    null
+                },
+                application = ActionEvent.Application(rumContext.applicationId),
+                session = ActionEvent.ActionEventSession(
+                    id = rumContext.sessionId,
+                    type = sessionType,
+                    hasReplay = false
+                ),
+                synthetics = syntheticsAttribute,
+                source = ActionEvent.ActionEventSource.tryFromSource(
+                    datadogContext.source,
+                    sdkCore.internalLogger
+                ),
+                os = ActionEvent.Os(
+                    name = datadogContext.deviceInfo.osName,
+                    version = datadogContext.deviceInfo.osVersion,
+                    versionMajor = datadogContext.deviceInfo.osMajorVersion
+                ),
+                device = ActionEvent.Device(
+                    type = datadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                    name = datadogContext.deviceInfo.deviceName,
+                    model = datadogContext.deviceInfo.deviceModel,
+                    brand = datadogContext.deviceInfo.deviceBrand,
+                    architecture = datadogContext.deviceInfo.architecture
+                ),
+                context = ActionEvent.Context(
+                    additionalProperties = globalAttributes
+                ),
+                dd = ActionEvent.Dd(
+                    session = ActionEvent.DdSession(
+                        plan = ActionEvent.Plan.PLAN_1,
+                        sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
+                    ),
+                    configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
+                ),
+                connectivity = datadogContext.networkInfo.toActionConnectivity(),
+                service = datadogContext.service,
+                version = datadogContext.version
+            )
+        }
+            .apply {
+                val storageEvent = StorageEvent.Action(0)
+                onError { it.eventDropped(rumContext.viewId.orEmpty(), storageEvent) }
+                onSuccess { it.eventSent(rumContext.viewId.orEmpty(), storageEvent) }
+            }
+            .submit()
     }
 
     @Suppress("LongMethod")
@@ -985,91 +990,94 @@ internal open class RumViewScope(
         )
         val timestamp = event.eventTime.timestamp + serverTimeOffsetInMs
         val isFrozenFrame = event.durationNs > FROZEN_FRAME_THRESHOLD_NS
-        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
+        sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
 
-                val user = datadogContext.userInfo
-                val hasReplay = featuresContextResolver.resolveViewHasReplay(
-                    datadogContext,
-                    rumContext.viewId.orEmpty()
+            val user = datadogContext.userInfo
+            val hasReplay = featuresContextResolver.resolveViewHasReplay(
+                datadogContext,
+                rumContext.viewId.orEmpty()
+            )
+            val syntheticsAttribute = if (
+                rumContext.syntheticsTestId.isNullOrBlank() ||
+                rumContext.syntheticsResultId.isNullOrBlank()
+            ) {
+                null
+            } else {
+                LongTaskEvent.Synthetics(
+                    testId = rumContext.syntheticsTestId,
+                    resultId = rumContext.syntheticsResultId
                 )
-                val syntheticsAttribute = if (
-                    rumContext.syntheticsTestId.isNullOrBlank() ||
-                    rumContext.syntheticsResultId.isNullOrBlank()
-                ) {
-                    null
-                } else {
-                    LongTaskEvent.Synthetics(
-                        testId = rumContext.syntheticsTestId,
-                        resultId = rumContext.syntheticsResultId
-                    )
-                }
-                val sessionType = if (syntheticsAttribute == null) {
-                    LongTaskEvent.LongTaskEventSessionType.USER
-                } else {
-                    LongTaskEvent.LongTaskEventSessionType.SYNTHETICS
-                }
-                val longTaskEvent = LongTaskEvent(
-                    date = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
-                    longTask = LongTaskEvent.LongTask(
-                        duration = event.durationNs,
-                        isFrozenFrame = isFrozenFrame
-                    ),
-                    action = rumContext.actionId?.let { LongTaskEvent.Action(listOf(it)) },
-                    view = LongTaskEvent.View(
-                        id = rumContext.viewId.orEmpty(),
-                        name = rumContext.viewName,
-                        url = rumContext.viewUrl.orEmpty()
-                    ),
-                    usr = if (user.hasUserData()) {
-                        LongTaskEvent.Usr(
-                            id = user.id,
-                            name = user.name,
-                            email = user.email,
-                            additionalProperties = user.additionalProperties.toMutableMap()
-                        )
-                    } else {
-                        null
-                    },
-                    connectivity = datadogContext.networkInfo.toLongTaskConnectivity(),
-                    application = LongTaskEvent.Application(rumContext.applicationId),
-                    session = LongTaskEvent.LongTaskEventSession(
-                        id = rumContext.sessionId,
-                        type = sessionType,
-                        hasReplay = hasReplay
-                    ),
-                    synthetics = syntheticsAttribute,
-                    source = LongTaskEvent.LongTaskEventSource.tryFromSource(
-                        datadogContext.source,
-                        sdkCore.internalLogger
-                    ),
-                    os = LongTaskEvent.Os(
-                        name = datadogContext.deviceInfo.osName,
-                        version = datadogContext.deviceInfo.osVersion,
-                        versionMajor = datadogContext.deviceInfo.osMajorVersion
-                    ),
-                    device = LongTaskEvent.Device(
-                        type = datadogContext.deviceInfo.deviceType.toLongTaskSchemaType(),
-                        name = datadogContext.deviceInfo.deviceName,
-                        model = datadogContext.deviceInfo.deviceModel,
-                        brand = datadogContext.deviceInfo.deviceBrand,
-                        architecture = datadogContext.deviceInfo.architecture
-                    ),
-                    context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
-                    dd = LongTaskEvent.Dd(
-                        session = LongTaskEvent.DdSession(
-                            plan = LongTaskEvent.Plan.PLAN_1,
-                            sessionPrecondition = rumContext.sessionStartReason.toLongTaskSessionPrecondition()
-                        ),
-                        configuration = LongTaskEvent.Configuration(sessionSampleRate = sampleRate)
-                    ),
-                    service = datadogContext.service,
-                    version = datadogContext.version
-                )
-
-                @Suppress("ThreadSafety") // called in a worker thread context
-                writer.write(eventBatchWriter, longTaskEvent)
             }
+            val sessionType = if (syntheticsAttribute == null) {
+                LongTaskEvent.LongTaskEventSessionType.USER
+            } else {
+                LongTaskEvent.LongTaskEventSessionType.SYNTHETICS
+            }
+            LongTaskEvent(
+                date = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
+                longTask = LongTaskEvent.LongTask(
+                    duration = event.durationNs,
+                    isFrozenFrame = isFrozenFrame
+                ),
+                action = rumContext.actionId?.let { LongTaskEvent.Action(listOf(it)) },
+                view = LongTaskEvent.View(
+                    id = rumContext.viewId.orEmpty(),
+                    name = rumContext.viewName,
+                    url = rumContext.viewUrl.orEmpty()
+                ),
+                usr = if (user.hasUserData()) {
+                    LongTaskEvent.Usr(
+                        id = user.id,
+                        name = user.name,
+                        email = user.email,
+                        additionalProperties = user.additionalProperties.toMutableMap()
+                    )
+                } else {
+                    null
+                },
+                connectivity = datadogContext.networkInfo.toLongTaskConnectivity(),
+                application = LongTaskEvent.Application(rumContext.applicationId),
+                session = LongTaskEvent.LongTaskEventSession(
+                    id = rumContext.sessionId,
+                    type = sessionType,
+                    hasReplay = hasReplay
+                ),
+                synthetics = syntheticsAttribute,
+                source = LongTaskEvent.LongTaskEventSource.tryFromSource(
+                    datadogContext.source,
+                    sdkCore.internalLogger
+                ),
+                os = LongTaskEvent.Os(
+                    name = datadogContext.deviceInfo.osName,
+                    version = datadogContext.deviceInfo.osVersion,
+                    versionMajor = datadogContext.deviceInfo.osMajorVersion
+                ),
+                device = LongTaskEvent.Device(
+                    type = datadogContext.deviceInfo.deviceType.toLongTaskSchemaType(),
+                    name = datadogContext.deviceInfo.deviceName,
+                    model = datadogContext.deviceInfo.deviceModel,
+                    brand = datadogContext.deviceInfo.deviceBrand,
+                    architecture = datadogContext.deviceInfo.architecture
+                ),
+                context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
+                dd = LongTaskEvent.Dd(
+                    session = LongTaskEvent.DdSession(
+                        plan = LongTaskEvent.Plan.PLAN_1,
+                        sessionPrecondition = rumContext.sessionStartReason.toLongTaskSessionPrecondition()
+                    ),
+                    configuration = LongTaskEvent.Configuration(sessionSampleRate = sampleRate)
+                ),
+                service = datadogContext.service,
+                version = datadogContext.version
+            )
+        }
+            .apply {
+                val storageEvent =
+                    if (isFrozenFrame) StorageEvent.FrozenFrame else StorageEvent.LongTask
+                onError { it.eventDropped(rumContext.viewId.orEmpty(), storageEvent) }
+                onSuccess { it.eventSent(rumContext.viewId.orEmpty(), storageEvent) }
+            }
+            .submit()
 
         pendingLongTaskCount++
         if (isFrozenFrame) pendingFrozenFrameCount++

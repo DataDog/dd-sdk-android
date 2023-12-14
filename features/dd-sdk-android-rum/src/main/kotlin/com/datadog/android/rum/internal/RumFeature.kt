@@ -230,7 +230,6 @@ internal class RumFeature constructor(
         return RumDataWriter(
             eventSerializer = MapperSerializer(
                 RumEventMapper(
-                    sdkCore,
                     viewEventMapper = configuration.viewEventMapper,
                     errorEventMapper = configuration.errorEventMapper,
                     resourceEventMapper = configuration.resourceEventMapper,

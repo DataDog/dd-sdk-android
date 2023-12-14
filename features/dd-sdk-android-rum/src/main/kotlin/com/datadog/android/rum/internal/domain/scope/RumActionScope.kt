@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.rum.GlobalRumMonitor
@@ -15,8 +14,10 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.utils.hasUserData
+import com.datadog.android.rum.utils.newRumEventWriteOperation
 import java.lang.ref.WeakReference
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -220,90 +221,96 @@ internal class RumActionScope(
         } else {
             ActionEvent.ActionEventSessionType.SYNTHETICS
         }
+        val frustrations = mutableListOf<ActionEvent.Type>()
+        if (trackFrustrations && eventErrorCount > 0 && actualType == RumActionType.TAP) {
+            frustrations.add(ActionEvent.Type.ERROR_TAP)
+        }
 
-        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
-                val user = datadogContext.userInfo
-                val hasReplay = featuresContextResolver.resolveViewHasReplay(
-                    datadogContext,
-                    rumContext.viewId.orEmpty()
-                )
-                val frustrations = mutableListOf<ActionEvent.Type>()
-                if (trackFrustrations && eventErrorCount > 0 && actualType == RumActionType.TAP) {
-                    frustrations.add(ActionEvent.Type.ERROR_TAP)
-                }
+        sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
+            val user = datadogContext.userInfo
+            val hasReplay = featuresContextResolver.resolveViewHasReplay(
+                datadogContext,
+                rumContext.viewId.orEmpty()
+            )
 
-                val actionEvent = ActionEvent(
-                    date = eventTimestamp,
-                    action = ActionEvent.ActionEventAction(
-                        type = actualType.toSchemaType(),
-                        id = actionId,
-                        target = ActionEvent.ActionEventActionTarget(eventName),
-                        error = ActionEvent.Error(eventErrorCount),
-                        crash = ActionEvent.Crash(eventCrashCount),
-                        longTask = ActionEvent.LongTask(eventLongTaskCount),
-                        resource = ActionEvent.Resource(eventResourceCount),
-                        loadingTime = max(endNanos - startedNanos, 1L),
-                        frustration = if (frustrations.isNotEmpty()) {
-                            ActionEvent.Frustration(frustrations)
-                        } else {
-                            null
-                        }
-                    ),
-                    view = ActionEvent.View(
-                        id = rumContext.viewId.orEmpty(),
-                        name = rumContext.viewName,
-                        url = rumContext.viewUrl.orEmpty()
-                    ),
-                    application = ActionEvent.Application(rumContext.applicationId),
-                    session = ActionEvent.ActionEventSession(
-                        id = rumContext.sessionId,
-                        type = sessionType,
-                        hasReplay = hasReplay
-                    ),
-                    synthetics = syntheticsAttribute,
-                    source = ActionEvent.ActionEventSource.tryFromSource(
-                        datadogContext.source,
-                        sdkCore.internalLogger
-                    ),
-                    usr = if (user.hasUserData()) {
-                        ActionEvent.Usr(
-                            id = user.id,
-                            name = user.name,
-                            email = user.email,
-                            additionalProperties = user.additionalProperties.toMutableMap()
-                        )
+            ActionEvent(
+                date = eventTimestamp,
+                action = ActionEvent.ActionEventAction(
+                    type = actualType.toSchemaType(),
+                    id = actionId,
+                    target = ActionEvent.ActionEventActionTarget(eventName),
+                    error = ActionEvent.Error(eventErrorCount),
+                    crash = ActionEvent.Crash(eventCrashCount),
+                    longTask = ActionEvent.LongTask(eventLongTaskCount),
+                    resource = ActionEvent.Resource(eventResourceCount),
+                    loadingTime = max(endNanos - startedNanos, 1L),
+                    frustration = if (frustrations.isNotEmpty()) {
+                        ActionEvent.Frustration(frustrations)
                     } else {
                         null
-                    },
-                    os = ActionEvent.Os(
-                        name = datadogContext.deviceInfo.osName,
-                        version = datadogContext.deviceInfo.osVersion,
-                        versionMajor = datadogContext.deviceInfo.osMajorVersion
+                    }
+                ),
+                view = ActionEvent.View(
+                    id = rumContext.viewId.orEmpty(),
+                    name = rumContext.viewName,
+                    url = rumContext.viewUrl.orEmpty()
+                ),
+                application = ActionEvent.Application(rumContext.applicationId),
+                session = ActionEvent.ActionEventSession(
+                    id = rumContext.sessionId,
+                    type = sessionType,
+                    hasReplay = hasReplay
+                ),
+                synthetics = syntheticsAttribute,
+                source = ActionEvent.ActionEventSource.tryFromSource(
+                    datadogContext.source,
+                    sdkCore.internalLogger
+                ),
+                usr = if (user.hasUserData()) {
+                    ActionEvent.Usr(
+                        id = user.id,
+                        name = user.name,
+                        email = user.email,
+                        additionalProperties = user.additionalProperties.toMutableMap()
+                    )
+                } else {
+                    null
+                },
+                os = ActionEvent.Os(
+                    name = datadogContext.deviceInfo.osName,
+                    version = datadogContext.deviceInfo.osVersion,
+                    versionMajor = datadogContext.deviceInfo.osMajorVersion
+                ),
+                device = ActionEvent.Device(
+                    type = datadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                    name = datadogContext.deviceInfo.deviceName,
+                    model = datadogContext.deviceInfo.deviceModel,
+                    brand = datadogContext.deviceInfo.deviceBrand,
+                    architecture = datadogContext.deviceInfo.architecture
+                ),
+                context = ActionEvent.Context(additionalProperties = attributes),
+                dd = ActionEvent.Dd(
+                    session = ActionEvent.DdSession(
+                        plan = ActionEvent.Plan.PLAN_1,
+                        sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
                     ),
-                    device = ActionEvent.Device(
-                        type = datadogContext.deviceInfo.deviceType.toActionSchemaType(),
-                        name = datadogContext.deviceInfo.deviceName,
-                        model = datadogContext.deviceInfo.deviceModel,
-                        brand = datadogContext.deviceInfo.deviceBrand,
-                        architecture = datadogContext.deviceInfo.architecture
-                    ),
-                    context = ActionEvent.Context(additionalProperties = attributes),
-                    dd = ActionEvent.Dd(
-                        session = ActionEvent.DdSession(
-                            plan = ActionEvent.Plan.PLAN_1,
-                            sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
-                        ),
-                        configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
-                    ),
-                    connectivity = networkInfo.toActionConnectivity(),
-                    service = datadogContext.service,
-                    version = datadogContext.version
-                )
-
-                @Suppress("ThreadSafety") // called in a worker thread context
-                writer.write(eventBatchWriter, actionEvent)
+                    configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
+                ),
+                connectivity = networkInfo.toActionConnectivity(),
+                service = datadogContext.service,
+                version = datadogContext.version
+            )
+        }
+            .apply {
+                val storageEvent = StorageEvent.Action(frustrations.size)
+                onError {
+                    it.eventDropped(rumContext.viewId.orEmpty(), storageEvent)
+                }
+                onSuccess {
+                    it.eventSent(rumContext.viewId.orEmpty(), storageEvent)
+                }
             }
+            .submit()
 
         sent = true
     }
