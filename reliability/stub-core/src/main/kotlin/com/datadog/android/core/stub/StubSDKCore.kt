@@ -91,6 +91,9 @@ class StubSDKCore(
     override val internalLogger: InternalLogger = StubInternalLogger()
 
     override fun registerFeature(feature: Feature) {
+        // Stop previous registered
+        featureScopes[feature.name]?.unwrap<Feature>()?.onStop()
+
         featureScopes[feature.name] = StubFeatureScope(feature, { datadogContext })
         feature.onInitialize(mockContext)
         mockSdkCore.registerFeature(feature)
@@ -117,6 +120,11 @@ class StubSDKCore(
     // endregion
 
     // region SdkCore
+
+    override val service: String
+        get() {
+            return datadogContext.service
+        }
 
     override val time: TimeInfo
         get() {

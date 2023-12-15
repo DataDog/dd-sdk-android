@@ -73,6 +73,7 @@ class ApiUsage(
 
     companion object {
         internal val testAnnotations = arrayOf(
+            "org.junit.jupiter.api.BeforeEach",
             "org.junit.jupiter.api.Test",
             "org.junit.jupiter.api.RepeatedTest"
         )
