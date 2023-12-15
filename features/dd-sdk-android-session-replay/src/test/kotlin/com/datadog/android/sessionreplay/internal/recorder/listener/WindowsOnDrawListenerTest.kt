@@ -34,8 +34,11 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -49,12 +52,13 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class WindowsOnDrawListenerTest {
 
-    lateinit var testedListener: WindowsOnDrawListener
+    private lateinit var testedListener: WindowsOnDrawListener
 
     @Mock
     lateinit var mockDecorView: View
-    lateinit var mockResources: Resources
-    lateinit var configuration: Configuration
+
+    private lateinit var mockResources: Resources
+    private lateinit var configuration: Configuration
 
     @Mock
     lateinit var mockSnapshotProducer: SnapshotProducer
@@ -70,19 +74,16 @@ internal class WindowsOnDrawListenerTest {
 
     @IntForgery(min = 0)
     var fakeDecorHeight: Int = 0
-    var fakeOrientation: Int = Configuration.ORIENTATION_UNDEFINED
+    private var fakeOrientation: Int = Configuration.ORIENTATION_UNDEFINED
 
-    lateinit var fakeMockedDecorViews: List<View>
-    lateinit var fakeWindowsSnapshots: List<Node>
+    private lateinit var fakeMockedDecorViews: List<View>
+    private lateinit var fakeWindowsSnapshots: List<Node>
 
     @Mock
     lateinit var mockTheme: Theme
 
     @Mock
     lateinit var mockMiscUtils: MiscUtils
-
-    @Mock
-    lateinit var mockRecordedDataQueueRefs: RecordedDataQueueRefs
 
     @Forgery
     lateinit var fakeSystemInformation: SystemInformation
@@ -105,9 +106,9 @@ internal class WindowsOnDrawListenerTest {
         fakeMockedDecorViews.forEachIndexed { index, decorView ->
             whenever(
                 mockSnapshotProducer.produce(
-                    decorView,
-                    fakeSystemInformation,
-                    mockRecordedDataQueueRefs
+                    eq(decorView),
+                    eq(fakeSystemInformation),
+                    any()
                 )
             )
                 .thenReturn(fakeWindowsSnapshots[index])
@@ -130,8 +131,7 @@ internal class WindowsOnDrawListenerTest {
             mockRecordedDataQueueHandler,
             mockSnapshotProducer,
             mockDebouncer,
-            mockMiscUtils,
-            mockRecordedDataQueueRefs
+            mockMiscUtils
         )
     }
 
@@ -164,7 +164,9 @@ internal class WindowsOnDrawListenerTest {
         testedListener.onDraw()
 
         // Then
-        assertThat(fakeSnapshotQueueItem.nodes).isEqualTo(fakeWindowsSnapshots)
+        val argCaptor = argumentCaptor<RecordedDataQueueRefs>()
+        verify(mockSnapshotProducer, times(fakeWindowsSnapshots.size)).produce(any(), any(), argCaptor.capture())
+        assertThat(argCaptor.firstValue.recordedDataQueueItem).isEqualTo(fakeSnapshotQueueItem)
         verify(mockRecordedDataQueueHandler).tryToConsumeItems()
     }
 

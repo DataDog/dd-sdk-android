@@ -17,6 +17,7 @@ import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.lang.ClassCastException
 import java.lang.NullPointerException
+import java.util.Locale
 import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.ExecutorService
@@ -169,6 +170,18 @@ internal class RecordedDataQueueHandler {
 
             if (nextItem != null) {
                 if (shouldRemoveItem(nextItem, currentTime)) {
+                    // this should never happen, so if it does we should send telemetry
+                    internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        listOf(
+                            InternalLogger.Target.MAINTAINER,
+                            InternalLogger.Target.TELEMETRY
+                        ),
+                        {
+                            ITEM_DROPPED_FROM_QUEUE_ERROR_MESSAGE
+                                .format(Locale.US, nextItem.isValid())
+                        }
+                    )
                     recordedDataQueue.poll()
                 } else if (nextItem.isReady()) {
                     processItem(recordedDataQueue.poll())
@@ -249,5 +262,9 @@ internal class RecordedDataQueueHandler {
             "SR RecordedDataQueueHandler: failed to consume records from queue"
         internal const val FAILED_TO_ADD_RECORDS_TO_QUEUE_ERROR_MESSAGE =
             "SR RecordedDataQueueHandler: failed to add records into the queue"
+
+        @VisibleForTesting
+        internal const val ITEM_DROPPED_FROM_QUEUE_ERROR_MESSAGE =
+            "SR RecordedDataQueueHandler: dropped item from the queue. Valid: %s"
     }
 }
