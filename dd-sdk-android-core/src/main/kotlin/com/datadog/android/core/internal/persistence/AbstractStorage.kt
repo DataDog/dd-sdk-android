@@ -86,28 +86,13 @@ internal class AbstractStorage(
     }
 
     @WorkerThread
-    override fun readNextBatch(
-        noBatchCallback: () -> Unit,
-        readBatchCallback: (BatchId, BatchReader) -> Unit
-    ) {
-        val batch = grantedPersistenceStrategy.lockAndReadNext()
-        if (batch == null) {
-            noBatchCallback()
-        } else {
-            val batchId = BatchId(batch.batchId)
-            val reader = object : BatchReader {
-
-                @WorkerThread
-                override fun currentMetadata(): ByteArray? {
-                    return batch.metadata
-                }
-
-                @WorkerThread
-                override fun read(): List<RawBatchEvent> {
-                    return batch.events
-                }
-            }
-            readBatchCallback.invoke(batchId, reader)
+    override fun readNextBatch(): BatchData? {
+        return grantedPersistenceStrategy.lockAndReadNext()?.let {
+            BatchData(
+                id = BatchId(it.batchId),
+                data = it.events,
+                metadata = it.metadata
+            )
         }
     }
 
@@ -115,19 +100,13 @@ internal class AbstractStorage(
     override fun confirmBatchRead(
         batchId: BatchId,
         removalReason: RemovalReason,
-        callback: (BatchConfirmation) -> Unit
+        deleteBatch: Boolean
     ) {
-        val confirmation = object : BatchConfirmation {
-            @WorkerThread
-            override fun markAsRead(deleteBatch: Boolean) {
-                if (deleteBatch) {
-                    grantedPersistenceStrategy.unlockAndDelete(batchId.id)
-                } else {
-                    grantedPersistenceStrategy.unlockAndKeep(batchId.id)
-                }
-            }
+        if (deleteBatch) {
+            grantedPersistenceStrategy.unlockAndDelete(batchId.id)
+        } else {
+            grantedPersistenceStrategy.unlockAndKeep(batchId.id)
         }
-        callback(confirmation)
     }
 
     override fun dropAll() {

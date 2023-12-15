@@ -14,14 +14,12 @@ import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.UploadStatus
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.persistence.BatchConfirmation
+import com.datadog.android.core.internal.persistence.BatchData
 import com.datadog.android.core.internal.persistence.BatchId
-import com.datadog.android.core.internal.persistence.BatchReader
 import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -43,10 +41,9 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doReturnConsecutively
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.reset
 import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -58,8 +55,6 @@ import org.mockito.stubbing.Answer
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
-// TODO: RUM-2014 Simplify / Refactor these tests when we're going to switch to the
-// sync API for uploading data
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
@@ -130,7 +125,6 @@ internal class DataUploadRunnableTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             fakeDataUploadConfiguration,
-            TEST_BATCH_UPLOAD_WAIT_TIMEOUT_MS,
             mockInternalLogger
         )
     }
@@ -171,20 +165,9 @@ internal class DataUploadRunnableTest {
         )
 
         val batchId = mock<BatchId>()
-        val batchReader = mock<BatchReader>()
-        val batchConfirmation = mock<BatchConfirmation>()
         val batchMetadata = forge.aNullable { batchMeta.toByteArray() }
 
-        whenever(batchReader.read()) doReturn batch
-        whenever(batchReader.currentMetadata()) doReturn batchMetadata
-
-        whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
-            }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
-        }
-
+        whenever(mockStorage.readNextBatch()).thenReturn(BatchData(batchId, batch, batchMetadata))
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
 
         whenever(
@@ -199,9 +182,11 @@ internal class DataUploadRunnableTest {
         testedRunnable.run()
 
         // Then
-        verify(batchConfirmation).markAsRead(true)
-        verifyNoMoreInteractions(batchConfirmation)
-        verify(batchReader, times(expectedBatchesHandled)).read()
+        verify(mockStorage, times(expectedBatchesHandled)).confirmBatchRead(
+            eq(batchId),
+            any(),
+            eq(true)
+        )
         verify(mockDataUploader, times(expectedBatchesHandled)).upload(fakeContext, batch, batchMetadata)
         verify(mockThreadPoolExecutor).schedule(
             same(testedRunnable),
@@ -225,20 +210,9 @@ internal class DataUploadRunnableTest {
             powerSaveMode = false
         )
         val batchId = mock<BatchId>()
-        val batchReader = mock<BatchReader>()
-        val batchConfirmation = mock<BatchConfirmation>()
         val batchMetadata = forge.aNullable { batchMeta.toByteArray() }
 
-        whenever(batchReader.read()) doReturn batch
-        whenever(batchReader.currentMetadata()) doReturn batchMetadata
-
-        whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
-            }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
-        }
-
+        whenever(mockStorage.readNextBatch()).thenReturn(BatchData(batchId, batch, batchMetadata))
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
 
         whenever(
@@ -253,9 +227,11 @@ internal class DataUploadRunnableTest {
         testedRunnable.run()
 
         // Then
-        verify(batchConfirmation, times(expectedBatchesHandled)).markAsRead(true)
-        verifyNoMoreInteractions(batchConfirmation)
-        verify(batchReader, times(expectedBatchesHandled)).read()
+        verify(mockStorage, times(expectedBatchesHandled)).confirmBatchRead(
+            eq(batchId),
+            any(),
+            eq(true)
+        )
         verify(mockDataUploader, times(expectedBatchesHandled))
             .upload(fakeContext, batch, batchMetadata)
         verify(mockThreadPoolExecutor).schedule(
@@ -279,20 +255,9 @@ internal class DataUploadRunnableTest {
             powerSaveMode = false
         )
         val batchId = mock<BatchId>()
-        val batchReader = mock<BatchReader>()
-        val batchConfirmation = mock<BatchConfirmation>()
         val batchMetadata = forge.aNullable { batchMeta.toByteArray() }
 
-        whenever(batchReader.read()) doReturn batch
-        whenever(batchReader.currentMetadata()) doReturn batchMetadata
-
-        whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
-            }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
-        }
-
+        whenever(mockStorage.readNextBatch()).thenReturn(BatchData(batchId, batch, batchMetadata))
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
 
         whenever(
@@ -307,9 +272,11 @@ internal class DataUploadRunnableTest {
         testedRunnable.run()
 
         // Then
-        verify(batchConfirmation, times(expectedBatchesHandled)).markAsRead(true)
-        verifyNoMoreInteractions(batchConfirmation)
-        verify(batchReader, times(expectedBatchesHandled)).read()
+        verify(mockStorage, times(expectedBatchesHandled)).confirmBatchRead(
+            eq(batchId),
+            any(),
+            eq(true)
+        )
         verify(mockDataUploader, times(expectedBatchesHandled))
             .upload(fakeContext, batch, batchMetadata)
         verify(mockThreadPoolExecutor).schedule(
@@ -422,15 +389,13 @@ internal class DataUploadRunnableTest {
     @Test
     fun `𝕄 do nothing 𝕎 no batch to send`() {
         // Given
-        whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            it.getArgument<() -> Unit>(0)()
-        }
+        whenever(mockStorage.readNextBatch()).thenReturn(null)
 
         // When
         testedRunnable.run()
 
         // Then
-        verify(mockStorage).readNextBatch(any(), any())
+        verify(mockStorage).readNextBatch()
         verifyNoMoreInteractions(mockStorage)
         verifyNoInteractions(mockDataUploader)
         verify(mockThreadPoolExecutor).schedule(
@@ -448,20 +413,9 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         val batchId = mock<BatchId>()
-        val batchReader = mock<BatchReader>()
-        val batchConfirmation = mock<BatchConfirmation>()
         val batchMetadata = forge.aNullable { batchMeta.toByteArray() }
 
-        whenever(batchReader.read()) doReturn batch
-        whenever(batchReader.currentMetadata()) doReturn batchMetadata
-
-        whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
-            }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
-        }
-
+        whenever(mockStorage.readNextBatch()).thenReturn(BatchData(batchId, batch, batchMetadata))
         whenever(
             mockDataUploader.upload(
                 fakeContext,
@@ -474,9 +428,11 @@ internal class DataUploadRunnableTest {
         testedRunnable.run()
 
         // Then
-        verify(batchConfirmation, times(expectedBatchesHandled)).markAsRead(true)
-        verifyNoMoreInteractions(batchConfirmation)
-        verify(batchReader, times(expectedBatchesHandled)).read()
+        verify(mockStorage, times(expectedBatchesHandled)).confirmBatchRead(
+            any(),
+            any(),
+            eq(true)
+        )
         verify(mockDataUploader, times(expectedBatchesHandled))
             .upload(fakeContext, batch, batchMetadata)
         verify(mockThreadPoolExecutor).schedule(
@@ -496,20 +452,9 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         val batchId = mock<BatchId>()
-        val batchReader = mock<BatchReader>()
-        val batchConfirmation = mock<BatchConfirmation>()
         val batchMetadata = forge.aNullable { batchMeta.toByteArray() }
 
-        whenever(batchReader.read()) doReturn batch
-        whenever(batchReader.currentMetadata()) doReturn batchMetadata
-
-        whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
-            }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
-        }
-
+        whenever(mockStorage.readNextBatch()).thenReturn(BatchData(batchId, batch, batchMetadata))
         whenever(
             mockDataUploader.upload(
                 fakeContext,
@@ -522,9 +467,11 @@ internal class DataUploadRunnableTest {
         testedRunnable.run()
 
         // Then
-        verify(batchConfirmation, times(expectedBatchesHandled)).markAsRead(false)
-        verifyNoMoreInteractions(batchConfirmation)
-        verify(batchReader, times(expectedBatchesHandled)).read()
+        verify(mockStorage, times(expectedBatchesHandled)).confirmBatchRead(
+            eq(batchId),
+            any(),
+            eq(false)
+        )
         verify(mockDataUploader, times(expectedBatchesHandled))
             .upload(fakeContext, batch, batchMetadata)
         verify(mockThreadPoolExecutor).schedule(
@@ -545,19 +492,9 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         val batchId = mock<BatchId>()
-        val batchReader = mock<BatchReader>()
-        val batchConfirmation = mock<BatchConfirmation>()
         val batchMetadata = forge.aNullable { batchMeta.toByteArray() }
 
-        whenever(batchReader.read()) doReturn batch
-        whenever(batchReader.currentMetadata()) doReturn batchMetadata
-
-        whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
-            }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
-        }
+        whenever(mockStorage.readNextBatch()).thenReturn(BatchData(batchId, batch, batchMetadata))
         whenever(
             mockDataUploader.upload(
                 fakeContext,
@@ -572,10 +509,11 @@ internal class DataUploadRunnableTest {
         }
 
         // Then
-        verify(batchConfirmation, times(runCount))
-            .markAsRead(false)
-        verifyNoMoreInteractions(batchConfirmation)
-        verify(batchReader, times(runCount * expectedBatchesHandled)).read()
+        verify(mockStorage, times(runCount)).confirmBatchRead(
+            eq(batchId),
+            any(),
+            eq(false)
+        )
         verify(mockDataUploader, times(runCount * expectedBatchesHandled))
             .upload(fakeContext, batch, batchMetadata)
         verify(mockThreadPoolExecutor, times(runCount)).schedule(
@@ -595,19 +533,9 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         val batchId = mock<BatchId>()
-        val batchReader = mock<BatchReader>()
-        val batchConfirmation = mock<BatchConfirmation>()
         val batchMetadata = forge.aNullable { batchMeta.toByteArray() }
 
-        whenever(batchReader.read()) doReturn batch
-        whenever(batchReader.currentMetadata()) doReturn batchMetadata
-
-        whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
-            }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
-        }
+        whenever(mockStorage.readNextBatch()).thenReturn(BatchData(batchId, batch, batchMetadata))
         whenever(
             mockDataUploader.upload(
                 fakeContext,
@@ -620,9 +548,11 @@ internal class DataUploadRunnableTest {
         testedRunnable.run()
 
         // Then
-        verify(batchConfirmation, times(expectedBatchesHandled)).markAsRead(true)
-        verifyNoMoreInteractions(batchConfirmation)
-        verify(batchReader, times(expectedBatchesHandled)).read()
+        verify(mockStorage, times(expectedBatchesHandled)).confirmBatchRead(
+            eq(batchId),
+            any(),
+            eq(true)
+        )
         verify(mockDataUploader, times(expectedBatchesHandled))
             .upload(fakeContext, batch, batchMetadata)
         verify(mockThreadPoolExecutor).schedule(
@@ -640,19 +570,8 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         val batchId = mock<BatchId>()
-        val batchReader = mock<BatchReader>()
-        val batchConfirmation = mock<BatchConfirmation>()
         val batchMetadata = forge.aNullable { batchMeta.toByteArray() }
-
-        whenever(batchReader.read()) doReturn batch
-        whenever(batchReader.currentMetadata()) doReturn batchMetadata
-
-        whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
-            }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
-        }
+        whenever(mockStorage.readNextBatch()).thenReturn(BatchData(batchId, batch, batchMetadata))
         whenever(
             mockDataUploader.upload(
                 fakeContext,
@@ -688,19 +607,9 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         val batchId = mock<BatchId>()
-        val batchReader = mock<BatchReader>()
-        val batchConfirmation = mock<BatchConfirmation>()
         val batchMetadata = forge.aNullable { batchMeta.toByteArray() }
 
-        whenever(batchReader.read()) doReturn batch
-        whenever(batchReader.currentMetadata()) doReturn batchMetadata
-
-        whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            whenever(mockStorage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
-                it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
-            }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
-        }
+        whenever(mockStorage.readNextBatch()).thenReturn(BatchData(batchId, batch, batchMetadata))
         whenever(
             mockDataUploader.upload(
                 fakeContext,
@@ -749,7 +658,6 @@ internal class DataUploadRunnableTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             fakeConfiguration,
-            TEST_BATCH_UPLOAD_WAIT_TIMEOUT_MS,
             mockInternalLogger
         )
         // extra batches to make sure we are not reaching the limit as this will fall into the
@@ -757,14 +665,13 @@ internal class DataUploadRunnableTest {
         val batches = forge.aList(size = runCount * fakeConfiguration.maxBatchesPerUploadJob + 10) {
             aList { getForgery<RawBatchEvent>() }
         }
+        val batchIds: List<BatchId> = batches.map { mock() }
         val randomFailIndex = forge.anInt(min = 0, max = batches.size)
-        val batchReader = mock<BatchReader>()
-        val batchConfirmation = mock<BatchConfirmation>()
         val batchMetadata = forge.aList(size = batches.size) {
             aNullable { aString().toByteArray() }
         }
 
-        stubBatchReader(batchReader, batches, batchMetadata, batchConfirmation)
+        stubStorage(batchIds, batches, batchMetadata)
 
         batches.forEachIndexed { index, batch ->
             val expectedStatus = if (index == randomFailIndex) {
@@ -809,10 +716,7 @@ internal class DataUploadRunnableTest {
         @IntForgery(16, 64) runCount: Int
     ) {
         // When
-        whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            it.getArgument<() -> Unit>(0).invoke()
-        }
-
+        whenever(mockStorage.readNextBatch()) doReturn null
         repeat(runCount) {
             testedRunnable.run()
         }
@@ -852,12 +756,12 @@ internal class DataUploadRunnableTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             fakeConfiguration,
-            TEST_BATCH_UPLOAD_WAIT_TIMEOUT_MS,
             mockInternalLogger
         )
         val batches = forge.aList(size = runCount * fakeConfiguration.maxBatchesPerUploadJob) {
             aList { getForgery<RawBatchEvent>() }
         }
+        val batchIds: List<BatchId> = batches.map { mock() }
         val failIndexesSet = mutableSetOf<Int>().apply {
             var index = 0
             repeat(runCount) {
@@ -865,13 +769,11 @@ internal class DataUploadRunnableTest {
                 index += fakeConfiguration.maxBatchesPerUploadJob
             }
         }
-        val batchReader = mock<BatchReader>()
-        val batchConfirmation = mock<BatchConfirmation>()
         val batchMetadata = forge.aList(size = batches.size) {
             aNullable { aString().toByteArray() }
         }
 
-        stubBatchReader(batchReader, batches, batchMetadata, batchConfirmation)
+        stubStorage(batchIds, batches, batchMetadata)
         batches.forEachIndexed { index, batch ->
             val expectedStatus = if (index in failIndexesSet) {
                 status
@@ -910,70 +812,6 @@ internal class DataUploadRunnableTest {
         }
     }
 
-    // region async
-
-    @Test
-    fun `𝕄 respect batch wait upload timeout 𝕎 run()`() {
-        // Given
-        whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            // imitate async which never completes
-        }
-
-        // When
-        testedRunnable.run()
-
-        // Then
-        verify(mockThreadPoolExecutor).schedule(
-            same(testedRunnable),
-            any(),
-            eq(TimeUnit.MILLISECONDS)
-        )
-    }
-
-    @Test
-    fun `𝕄 stop waiting 𝕎 run() { exception is thrown }`(
-        @Forgery batch: List<RawBatchEvent>,
-        @StringForgery batchMeta: String,
-        forge: Forge
-    ) {
-        // Given
-        val batchId = mock<BatchId>()
-        val batchReader = mock<BatchReader>()
-        val batchMetadata = forge.aNullable { batchMeta.toByteArray() }
-
-        whenever(batchReader.read()) doReturn batch
-        whenever(batchReader.currentMetadata()) doReturn batchMetadata
-
-        whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
-            Thread {
-                it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
-            }.start()
-        }
-
-        whenever(
-            mockDataUploader.upload(
-                fakeContext,
-                batch,
-                batchMetadata
-            )
-        ) doThrow forge.aThrowable()
-
-        // When
-        val start = System.currentTimeMillis()
-        testedRunnable.run()
-
-        // Then
-        assertThat(System.currentTimeMillis() - start)
-            .isLessThan(TEST_BATCH_UPLOAD_WAIT_TIMEOUT_MS)
-        verify(mockThreadPoolExecutor).schedule(
-            same(testedRunnable),
-            any(),
-            eq(TimeUnit.MILLISECONDS)
-        )
-    }
-
-    // endregion
-
     // region maxBatchesPerJob
 
     @Test
@@ -990,7 +828,6 @@ internal class DataUploadRunnableTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             fakeConfiguration,
-            TEST_BATCH_UPLOAD_WAIT_TIMEOUT_MS,
             mockInternalLogger
         )
         val batches = forge.aList(
@@ -1001,10 +838,9 @@ internal class DataUploadRunnableTest {
         ) {
             aList { getForgery<RawBatchEvent>() }
         }
-        val batchReader = mock<BatchReader>()
-        val batchConfirmation = mock<BatchConfirmation>()
+        val batchIds: List<BatchId> = batches.map { mock() }
         val batchMetadata = forge.aList(size = batches.size) { aNullable { aString().toByteArray() } }
-        stubBatchReader(batchReader, batches, batchMetadata, batchConfirmation)
+        stubStorage(batchIds, batches, batchMetadata)
         batches.forEachIndexed { index, batch ->
             whenever(
                 mockDataUploader.upload(
@@ -1019,12 +855,13 @@ internal class DataUploadRunnableTest {
         testedRunnable.run()
 
         // Then
-        verify(batchConfirmation, times(fakeConfiguration.maxBatchesPerUploadJob))
-            .markAsRead(true)
-        verifyNoMoreInteractions(batchConfirmation)
-        verify(batchReader, times(fakeConfiguration.maxBatchesPerUploadJob)).read()
         batches.take(fakeConfiguration.maxBatchesPerUploadJob).forEachIndexed { index, batch ->
             verify(mockDataUploader).upload(fakeContext, batch, batchMetadata[index])
+            verify(mockStorage).confirmBatchRead(
+                eq(batchIds[index]),
+                any(),
+                eq(true)
+            )
         }
         verifyNoMoreInteractions(mockDataUploader)
         verify(mockThreadPoolExecutor).schedule(
@@ -1048,7 +885,6 @@ internal class DataUploadRunnableTest {
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
             fakeConfiguration,
-            TEST_BATCH_UPLOAD_WAIT_TIMEOUT_MS,
             mockInternalLogger
         )
         val fakeBatchesCount = forge.anInt(
@@ -1058,10 +894,9 @@ internal class DataUploadRunnableTest {
         val batches = forge.aList(
             size = fakeBatchesCount
         ) { aList { getForgery<RawBatchEvent>() } }
-        val batchReader = mock<BatchReader>()
-        val batchConfirmation = mock<BatchConfirmation>()
+        val batchIds: List<BatchId> = batches.map { mock() }
         val batchMetadata = forge.aList(size = batches.size) { aNullable { aString().toByteArray() } }
-        stubBatchReader(batchReader, batches, batchMetadata, batchConfirmation)
+        stubStorage(batchIds, batches, batchMetadata)
         batches.forEachIndexed { index, batch ->
             whenever(
                 mockDataUploader.upload(
@@ -1076,12 +911,13 @@ internal class DataUploadRunnableTest {
         testedRunnable.run()
 
         // Then
-        val batchesCount = batches.size
-        verify(batchConfirmation, times(batchesCount)).markAsRead(true)
-        verifyNoMoreInteractions(batchConfirmation)
-        verify(batchReader, times(batchesCount)).read()
         batches.forEachIndexed { index, batch ->
             verify(mockDataUploader).upload(fakeContext, batch, batchMetadata[index])
+            verify(mockStorage).confirmBatchRead(
+                eq(batchIds[index]),
+                any(),
+                eq(true)
+            )
         }
         verifyNoMoreInteractions(mockDataUploader)
         verify(mockThreadPoolExecutor).schedule(
@@ -1093,31 +929,24 @@ internal class DataUploadRunnableTest {
 
     // region Internal
 
-    private fun stubBatchReader(
-        mockBatchReader: BatchReader,
+    private fun stubStorage(
+        batchIds: List<BatchId>,
         batches: List<List<RawBatchEvent>>,
-        batchMeta: List<ByteArray?>,
-        batchConfirmation: BatchConfirmation
+        batchMeta: List<ByteArray?>
     ) {
-        whenever(mockBatchReader.read()).doReturnConsecutively(batches)
-            .thenReturn(null)
-        whenever(mockBatchReader.currentMetadata()).doReturnConsecutively(batchMeta)
-            .thenReturn(null)
-        val batchId = mock<BatchId>()
-        whenever(mockStorage.readNextBatch(any(), any())) doAnswer object : Answer<Unit> {
+        reset(mockStorage)
+        whenever(mockStorage.readNextBatch()) doAnswer object : Answer<BatchData?> {
             var count = 0
 
-            override fun answer(invocation: InvocationOnMock) {
-                if (count >= batches.size) {
-                    invocation.getArgument<() -> Unit>(0).invoke()
+            override fun answer(invocation: InvocationOnMock): BatchData? {
+                val data = if (count >= batches.size) {
+                    null
                 } else {
-                    whenever(mockStorage.confirmBatchRead(any(), any(), any())) doAnswer {
-                        it.getArgument<(BatchConfirmation) -> Unit>(2).invoke(batchConfirmation)
-                    }
-                    invocation.getArgument<(BatchId, BatchReader) -> Unit>(1)
-                        .invoke(batchId, mockBatchReader)
+                    val batchData = BatchData(batchIds[count], batches[count], batchMeta[count])
+                    batchData
                 }
                 count++
+                return data
             }
         }
     }
@@ -1125,7 +954,6 @@ internal class DataUploadRunnableTest {
     // endregion
 
     companion object {
-        const val TEST_BATCH_UPLOAD_WAIT_TIMEOUT_MS = 100L
 
         @JvmStatic
         fun retryBatchStatusValues(): List<UploadStatus> {

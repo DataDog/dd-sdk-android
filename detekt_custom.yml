@@ -800,6 +800,7 @@ datadog:
       - "kotlin.collections.List.forEachIndexed(kotlin.Function2)"
       - "kotlin.collections.List.getOrNull(kotlin.Int)"
       - "kotlin.collections.List.groupBy(kotlin.Function1)"
+      - "kotlin.collections.List.hashCode()"
       - "kotlin.collections.List.isEmpty()"
       - "kotlin.collections.List.isNotEmpty()"
       - "kotlin.collections.List.join(kotlin.ByteArray, kotlin.ByteArray, kotlin.ByteArray, com.datadog.android.api.InternalLogger)"

@@ -378,84 +378,43 @@ internal class AbstractStorageTest {
     // region Storage.readNextBatch
 
     @Test
-    fun `𝕄 provide reader 𝕎 readNextBatch() {no batch}`() {
+    fun `𝕄 provide null 𝕎 readNextBatch() {no batch}`() {
         // Given
-        val mockNoBatchCallback = mock<() -> Unit>()
-        val mockReadBatchCallback = mock<(BatchId, BatchReader) -> Unit>()
         whenever(mockGrantedPersistenceStrategy.lockAndReadNext()) doReturn null
 
-        // When
-        testedStorage.readNextBatch(mockNoBatchCallback, mockReadBatchCallback)
-
         // Then
-        verify(mockNoBatchCallback).invoke()
+        assertThat(testedStorage.readNextBatch()).isNull()
         verify(mockGrantedPersistenceStrategy).lockAndReadNext()
-        verifyNoInteractions(mockReadBatchCallback, mockPendingPersistenceStrategy)
         verifyNoMoreInteractions(
-            mockNoBatchCallback,
             mockGrantedPersistenceStrategy,
             mockInternalLogger
         )
     }
 
     @Test
-    fun `𝕄 provide reader 𝕎 readNextBatch()+read() {with batch}`(
+    fun `𝕄 provide BatchData 𝕎 readNextBatch() {with batch}`(
         @Forgery fakeBatch: PersistenceStrategy.Batch
     ) {
         // Given
-        val mockNoBatchCallback = mock<() -> Unit>()
-        val mockReadBatchCallback = mock<(BatchId, BatchReader) -> Unit>()
         whenever(mockGrantedPersistenceStrategy.lockAndReadNext()) doReturn fakeBatch
-        var batchId: BatchId? = null
-        var result: List<RawBatchEvent>? = null
-        whenever(mockReadBatchCallback.invoke(any(), any())) doAnswer {
-            batchId = it.getArgument(0) as? BatchId
-            result = (it.getArgument(1) as? BatchReader)?.read()
-        }
 
         // When
-        testedStorage.readNextBatch(mockNoBatchCallback, mockReadBatchCallback)
+        val batchData = testedStorage.readNextBatch()
 
         // Then
-        assertThat(batchId).isEqualTo(BatchId(fakeBatch.batchId))
-        assertThat(result).isEqualTo(fakeBatch.events)
-        verify(mockGrantedPersistenceStrategy).lockAndReadNext()
-        verifyNoInteractions(mockPendingPersistenceStrategy)
-        verifyNoMoreInteractions(
-            mockNoBatchCallback,
-            mockGrantedPersistenceStrategy,
-            mockInternalLogger
-        )
+        assertThat(batchData).isNotNull
+        assertThat(batchData?.id).isEqualTo(BatchId(fakeBatch.batchId))
+        assertThat(batchData?.data).isEqualTo(fakeBatch.events)
+        assertThat(batchData?.metadata).isEqualTo(fakeBatch.metadata)
     }
 
     @Test
-    fun `𝕄 provide reader 𝕎 readNextBatch()+currentMetadata() {with batch}`(
-        @Forgery fakeBatch: PersistenceStrategy.Batch
-    ) {
+    fun `𝕄 return null 𝕎 readNextBatch() {no batch}`() {
         // Given
-        val mockNoBatchCallback = mock<() -> Unit>()
-        val mockReadBatchCallback = mock<(BatchId, BatchReader) -> Unit>()
-        whenever(mockGrantedPersistenceStrategy.lockAndReadNext()) doReturn fakeBatch
-        var batchId: BatchId? = null
-        var result: ByteArray? = null
-        whenever(mockReadBatchCallback.invoke(any(), any())) doAnswer {
-            batchId = it.getArgument(0) as? BatchId
-            result = (it.getArgument(1) as? BatchReader)?.currentMetadata()
-        }
-
-        // When
-        testedStorage.readNextBatch(mockNoBatchCallback, mockReadBatchCallback)
+        whenever(mockGrantedPersistenceStrategy.lockAndReadNext()) doReturn null
 
         // Then
-        assertThat(batchId).isEqualTo(BatchId(fakeBatch.batchId))
-        assertThat(result).isEqualTo(fakeBatch.metadata)
-        verify(mockGrantedPersistenceStrategy).lockAndReadNext()
-        verifyNoInteractions(mockPendingPersistenceStrategy)
-        verifyNoMoreInteractions(
-            mockNoBatchCallback,
-            mockGrantedPersistenceStrategy,
-            mockInternalLogger
-        )
+        assertThat(testedStorage.readNextBatch()).isNull()
     }
 
     // endregion
@@ -463,18 +422,12 @@ internal class AbstractStorageTest {
     // region Storage.readNextBatch
 
     @Test
-    fun `𝕄 provide reader 𝕎 confirmBatchRead() {delete=true}`(
+    fun `𝕄 delete batch W confirmBatchRead() {delete=true}`(
         @StringForgery fakeBatchId: String,
         @Forgery fakeRemovalReason: RemovalReason
     ) {
-        // Given
-        val mockConfirmationCallback = mock<(BatchConfirmation) -> Unit>()
-        whenever(mockConfirmationCallback.invoke(any())) doAnswer {
-            (it.getArgument(0) as? BatchConfirmation)?.markAsRead(true)
-        }
-
         // When
-        testedStorage.confirmBatchRead(BatchId(fakeBatchId), fakeRemovalReason, mockConfirmationCallback)
+        testedStorage.confirmBatchRead(BatchId(fakeBatchId), fakeRemovalReason, true)
 
         // Then
         verify(mockGrantedPersistenceStrategy).unlockAndDelete(fakeBatchId)
@@ -486,18 +439,12 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `𝕄 provide reader 𝕎 confirmBatchRead() {delete=false}`(
+    fun `𝕄 keep batch W confirmBatchRead() {delete=false}`(
         @StringForgery fakeBatchId: String,
         @Forgery fakeRemovalReason: RemovalReason
     ) {
-        // Given
-        val mockConfirmationCallback = mock<(BatchConfirmation) -> Unit>()
-        whenever(mockConfirmationCallback.invoke(any())) doAnswer {
-            (it.getArgument(0) as? BatchConfirmation)?.markAsRead(false)
-        }
-
         // When
-        testedStorage.confirmBatchRead(BatchId(fakeBatchId), fakeRemovalReason, mockConfirmationCallback)
+        testedStorage.confirmBatchRead(BatchId(fakeBatchId), fakeRemovalReason, false)
 
         // Then
         verify(mockGrantedPersistenceStrategy).unlockAndKeep(fakeBatchId)

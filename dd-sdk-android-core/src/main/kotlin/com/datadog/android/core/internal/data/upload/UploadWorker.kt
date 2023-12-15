@@ -22,8 +22,6 @@ import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import java.util.LinkedList
 import java.util.Queue
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 internal class UploadWorker(
     appContext: Context,
@@ -87,32 +85,22 @@ internal class UploadWorker(
 
             val storage = feature.storage
             val uploader = feature.uploader
-
-            // storage APIs may be async, so we need to block current thread to keep Worker alive
-            @Suppress("UnsafeThirdPartyFunctionCall") // safe to create, argument is not negative
-            val lock = CountDownLatch(1)
-
-            storage.readNextBatch(noBatchCallback = {
-                lock.countDown()
-            }) { batchId, reader ->
-                val batch = reader.read()
-                val batchMeta = reader.currentMetadata()
-
-                val uploadStatus = consumeBatch(context, batch, batchMeta, uploader)
+            val nextBatchData = storage.readNextBatch()
+            if (nextBatchData != null) {
+                val uploadStatus = consumeBatch(
+                    context,
+                    nextBatchData.data,
+                    nextBatchData.metadata,
+                    uploader
+                )
                 storage.confirmBatchRead(
-                    batchId,
-                    RemovalReason.IntakeCode(uploadStatus.code)
-                ) { confirmation ->
-                    confirmation.markAsRead(deleteBatch = !uploadStatus.shouldRetry)
-                    @Suppress("UnsafeThirdPartyFunctionCall") // safe to add
-                    taskQueue.offer(UploadNextBatchTask(taskQueue, sdkCore, feature))
-                    lock.countDown()
-                }
+                    nextBatchData.id,
+                    RemovalReason.IntakeCode(uploadStatus.code),
+                    deleteBatch = !uploadStatus.shouldRetry
+                )
+                @Suppress("UnsafeThirdPartyFunctionCall") // safe to add
+                taskQueue.offer(UploadNextBatchTask(taskQueue, sdkCore, feature))
             }
-
-            @Suppress("UnsafeThirdPartyFunctionCall") // if interrupt happens, WorkManager
-            // will handle it
-            lock.await(LOCK_AWAIT_SECONDS, TimeUnit.SECONDS)
         }
 
         private fun consumeBatch(
@@ -128,7 +116,6 @@ internal class UploadWorker(
     // endregion
 
     companion object {
-        const val LOCK_AWAIT_SECONDS = 30L
 
         const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized."
 
