@@ -8,7 +8,6 @@ package com.datadog.android.sdk.integration.sessionreplay
 
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.RuntimeConfig
-import com.datadog.android.sdk.integration.log.LogsTest
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.tools.unit.ConditionWatcher
 import org.assertj.core.api.Assertions.assertThat
@@ -31,6 +30,6 @@ internal class ConsentNotGrantedSrTest : BaseSessionReplayTest<SessionReplayPlay
             // verify the captured log events into the MockedWebServer
             assertThat(rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)).isEmpty()
             true
-        }.doWait(timeoutMs = LogsTest.INITIAL_WAIT_MS)
+        }.doWait(timeoutMs = SRTest.INITIAL_WAIT_MS)
     }
 }
