@@ -28,11 +28,6 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.core.sampling.RateBasedSampler#constructor(Double)
  * apiMethodSignature: com.datadog.android.core.sampling.RateBasedSampler#constructor(Float)
  * apiMethodSignature: com.datadog.android.event.MapperSerializer<T#constructor(EventMapper<T>, com.datadog.android.core.persistence.Serializer<T>)
- * apiMethodSignature: com.datadog.android.log.Logs#fun enable(LogsConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
- * apiMethodSignature: com.datadog.android.log.Logs#fun isEnabled(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
- * apiMethodSignature: com.datadog.android.log.Logger#fun log(Int, String, Throwable? = null, Map<String, Any?> = emptyMap())
- * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setLogcatLogsEnabled(Boolean): Builder
- * apiMethodSignature: com.datadog.android.log.LogsConfiguration$Builder#fun useCustomEndpoint(String): Builder
  * apiMethodSignature: com.datadog.android.ndk.NdkCrashReports#fun enable(com.datadog.android.api.SdkCore = Datadog.getInstance())
  * apiMethodSignature: com.datadog.android.rum._RumInternalProxy#fun addLongTask(Long, String)
  * apiMethodSignature: com.datadog.android.rum.resource.RumResourceInputStream#constructor(java.io.InputStream, String, com.datadog.android.api.SdkCore = Datadog.getInstance())
@@ -63,4 +58,40 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: fun Throwable.loggableStackTrace(): String
  * apiMethodSignature: fun <T: java.io.Closeable, R> T.useMonitored(com.datadog.android.api.SdkCore = Datadog.getInstance(), (T) -> R): R
  * apiMethodSignature: fun okhttp3.Request.Builder.parentSpan(io.opentracing.Span): okhttp3.Request.Builder
+ */
+
+/**
+ * NOTE: all APIs under the `com.datadog.android.log` (from the logs feature module) are now covered by the
+ * reliability/single-fit/logs module.
+ *
+ * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Any?)
+ * apiMethodSignature: com.datadog.android.log.Logger#fun addTag(String)
+ * apiMethodSignature: com.datadog.android.log.Logger#fun addTag(String, String)
+ * apiMethodSignature: com.datadog.android.log.Logger#fun d(String, Throwable? = null, Map<String, Any?> = emptyMap())
+ * apiMethodSignature: com.datadog.android.log.Logger#fun e(String, Throwable? = null, Map<String, Any?> = emptyMap())
+ * apiMethodSignature: com.datadog.android.log.Logger#fun i(String, Throwable? = null, Map<String, Any?> = emptyMap())
+ * apiMethodSignature: com.datadog.android.log.Logger#fun log(Int, String, String?, String?, String?, Map<String, Any?> = emptyMap())
+ * apiMethodSignature: com.datadog.android.log.Logger#fun log(Int, String, Throwable? = null, Map<String, Any?> = emptyMap())
+ * apiMethodSignature: com.datadog.android.log.Logger#fun removeAttribute(String)
+ * apiMethodSignature: com.datadog.android.log.Logger#fun removeTag(String)
+ * apiMethodSignature: com.datadog.android.log.Logger#fun removeTagsWithKey(String)
+ * apiMethodSignature: com.datadog.android.log.Logger#fun v(String, Throwable? = null, Map<String, Any?> = emptyMap())
+ * apiMethodSignature: com.datadog.android.log.Logger#fun w(String, Throwable? = null, Map<String, Any?> = emptyMap())
+ * apiMethodSignature: com.datadog.android.log.Logger#fun wtf(String, Throwable? = null, Map<String, Any?> = emptyMap())
+ * apiMethodSignature: com.datadog.android.log.Logger$Builder#constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
+ * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
+ * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setBundleWithRumEnabled(Boolean): Builder
+ * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setBundleWithTraceEnabled(Boolean): Builder
+ * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setLogcatLogsEnabled(Boolean): Builder
+ * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setName(String): Builder
+ * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setNetworkInfoEnabled(Boolean): Builder
+ * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setRemoteLogThreshold(Int): Builder
+ * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setRemoteSampleRate(Float): Builder
+ * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setService(String): Builder
+ * apiMethodSignature: com.datadog.android.log.Logs#fun enable(LogsConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
+ * apiMethodSignature: com.datadog.android.log.Logs#fun isEnabled(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
+ * apiMethodSignature: com.datadog.android.log.LogsConfiguration$Builder#fun build(): LogsConfiguration
+ * apiMethodSignature: com.datadog.android.log.LogsConfiguration$Builder#fun setEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
+ * apiMethodSignature: com.datadog.android.log.LogsConfiguration$Builder#fun useCustomEndpoint(String): Builder
+ *
  */
