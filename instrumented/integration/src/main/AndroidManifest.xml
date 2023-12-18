@@ -18,12 +18,8 @@
         android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning,MissingApplicationIcon">
         <activity
-            android:name=".log.ActivityLifecycleLogs"
-            android:label="@string/activity_logs_end_to_end"
-            android:windowSoftInputMode="adjustResize"/>
-        <activity
             android:name=".trace.ActivityLifecycleTrace"
-            android:label="@string/activity_logs_end_to_end"
+            android:label="@string/activity_traces_end_to_end"
             android:windowSoftInputMode="adjustResize"/>
         <activity
             android:name=".rum.GesturesTrackingPlaygroundActivity"
