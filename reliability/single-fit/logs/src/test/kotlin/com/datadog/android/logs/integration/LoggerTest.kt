@@ -9,10 +9,14 @@ package com.datadog.android.logs.integration
 import android.util.Log
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.StorageBackedFeature
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.event.EventMapper
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.logs.integration.tests.elmyr.LogsIntegrationForgeConfigurator
 import com.datadog.android.tests.ktx.getString
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -26,12 +30,14 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assumptions.assumeThat
 import org.assertj.core.data.Offset.offset
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mockito.mockStatic
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -54,6 +60,81 @@ class LoggerTest {
         val fakeLogsConfiguration = LogsConfiguration.Builder().build()
         Logs.enable(fakeLogsConfiguration, stubSdkCore)
     }
+
+    // region Feature Init
+
+    @RepeatedTest(16)
+    fun `M show Log feature enabled W Logs#enable()`() {
+        // Given
+
+        // When
+        val result = Logs.isEnabled(stubSdkCore)
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    // endregion
+
+    // region RequestFactory
+
+    @RepeatedTest(16)
+    fun `M createRequest to core site W LogsConfiguration#Builder#useCustomEndpoint()`(
+        @Forgery fakeBatch: List<RawBatchEvent>,
+        @StringForgery fakeMetadata: String
+    ) {
+        // Given
+        val expectedSite = stubSdkCore.getDatadogContext().site
+        val expectedClientToken = stubSdkCore.getDatadogContext().clientToken
+        val expectedSource = stubSdkCore.getDatadogContext().source
+        val expectedSdkVersion = stubSdkCore.getDatadogContext().sdkVersion
+
+        // When
+        val logsFeature = stubSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)?.unwrap<StorageBackedFeature>()
+        val requestFactory = logsFeature?.requestFactory
+        val request = requestFactory?.create(stubSdkCore.getDatadogContext(), fakeBatch, fakeMetadata.toByteArray())
+
+        // Then
+        checkNotNull(request)
+        assertThat(request.url).isEqualTo("${expectedSite.intakeEndpoint}/api/v2/logs?ddsource=$expectedSource")
+        assertThat(request.headers).containsEntry("DD-API-KEY", expectedClientToken)
+        assertThat(request.headers).containsEntry("DD-EVP-ORIGIN", expectedSource)
+        assertThat(request.headers).containsEntry("DD-EVP-ORIGIN-VERSION", expectedSdkVersion)
+        assertThat(request.contentType).isEqualTo("application/json")
+    }
+
+    @RepeatedTest(16)
+    fun `M createRequest to custom endpoint W LogsConfiguration#Builder#useCustomEndpoint()`(
+        @StringForgery fakeEndpoint: String,
+        @Forgery fakeBatch: List<RawBatchEvent>,
+        @StringForgery fakeMetadata: String
+    ) {
+        // Given
+        val expectedClientToken = stubSdkCore.getDatadogContext().clientToken
+        val expectedSource = stubSdkCore.getDatadogContext().source
+        val expectedSdkVersion = stubSdkCore.getDatadogContext().sdkVersion
+        val fakeLogsConfiguration = LogsConfiguration.Builder()
+            .useCustomEndpoint(fakeEndpoint)
+            .build()
+        Logs.enable(fakeLogsConfiguration, stubSdkCore)
+
+        // When
+        val logsFeature = stubSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)?.unwrap<StorageBackedFeature>()
+        val requestFactory = logsFeature?.requestFactory
+        val request = requestFactory?.create(stubSdkCore.getDatadogContext(), fakeBatch, fakeMetadata.toByteArray())
+
+        // Then
+        checkNotNull(request)
+        assertThat(request.url).isEqualTo("$fakeEndpoint/api/v2/logs?ddsource=$expectedSource")
+        assertThat(request.headers).containsEntry("DD-API-KEY", expectedClientToken)
+        assertThat(request.headers).containsEntry("DD-EVP-ORIGIN", expectedSource)
+        assertThat(request.headers).containsEntry("DD-EVP-ORIGIN-VERSION", expectedSdkVersion)
+        assertThat(request.contentType).isEqualTo("application/json")
+    }
+
+    // endregion
+
+    // region Main functionality
 
     @RepeatedTest(16)
     fun `M send log with defaults W Logger#log()`(
@@ -188,6 +269,10 @@ class LoggerTest {
         assertThat(event0.getString("message")).isEqualTo(fakeMessage)
         assertThat(event0.getString("status")).isEqualTo("critical")
     }
+
+    // endregion
+
+    // region Builder
 
     @RepeatedTest(16)
     fun `M send log with custom service W Logger#Builder#setService() + Logger#log()`(
@@ -461,7 +546,34 @@ class LoggerTest {
     }
 
     @RepeatedTest(16)
-    fun `M send log with custom attributes info W  Logger#log()`(
+    fun `M forward logs to logcat W Logger#Builder#setLogcatLogsEnabled() + Logger#log()`(
+        @StringForgery fakeMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        mockStatic(Log::class.java).use {
+            // Given
+            val testedLogger = Logger.Builder(stubSdkCore).setLogcatLogsEnabled(true).build()
+
+            // When
+            testedLogger.log(fakeLevel, fakeMessage)
+
+            // Then
+            val serviceName = stubSdkCore.getDatadogContext().service
+            val expectedTag = if (serviceName.length > 23) {
+                serviceName.substring(0, 23)
+            } else {
+                serviceName
+            }
+            it.verify { Log.println(fakeLevel, expectedTag, fakeMessage) }
+        }
+    }
+
+    // endregion
+
+    // region Attributes / Tags
+
+    @RepeatedTest(16)
+    fun `M send log with custom attributes W Logger#log()`(
         @StringForgery fakeMessage: String,
         @StringForgery fakeKey: String,
         @StringForgery fakeValue: String,
@@ -533,6 +645,348 @@ class LoggerTest {
         assertThat(event0.getString("error.message")).isEqualTo(fakeErrorMessage)
         assertThat(event0.getString("error.stack")).isEqualTo(fakeErrorStack)
     }
+
+    @RepeatedTest(16)
+    fun `M send log with custom attribute W Logger#addAttribute() + Logger#log()`(
+        @StringForgery fakeAttributeKey: String,
+        @StringForgery fakeAttributeValue: String,
+        @StringForgery fakeMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        // Given
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        testedLogger.addAttribute(fakeAttributeKey, fakeAttributeValue)
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString(fakeAttributeKey)).isEqualTo(fakeAttributeValue)
+    }
+
+    @RepeatedTest(16)
+    fun `M send log with updated custom attribute W Logger#addAttribute() + Logger#addAttribute() + Logger#log()`(
+        @StringForgery fakeAttributeKey: String,
+        @StringForgery fakeAttributeValue: String,
+        @StringForgery fakeAttributeValue2: String,
+        @StringForgery fakeMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        // Given
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        testedLogger.addAttribute(fakeAttributeKey, fakeAttributeValue)
+        testedLogger.addAttribute(fakeAttributeKey, fakeAttributeValue2)
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString(fakeAttributeKey)).isEqualTo(fakeAttributeValue2)
+    }
+
+    @RepeatedTest(16)
+    fun `M send log with updated custom attribute W Logger#addAttribute() + Logger#removeAttribute() + Logger#log()`(
+        @StringForgery fakeAttributeKey: String,
+        @StringForgery fakeAttributeValue: String,
+        @StringForgery fakeMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        // Given
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        testedLogger.addAttribute(fakeAttributeKey, fakeAttributeValue)
+        testedLogger.removeAttribute(fakeAttributeKey)
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString(fakeAttributeKey)).isNull()
+    }
+
+    @RepeatedTest(16)
+    fun `M send log with custom tag W Logger#addTag() + Logger#log()`(
+        @StringForgery fakeTagKey: String,
+        @StringForgery fakeTagValue: String,
+        @StringForgery fakeMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        // Given
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        testedLogger.addTag(fakeTagKey, fakeTagValue)
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val expectedTag = "${fakeTagKey.lowercase()}:${fakeTagValue.lowercase()}"
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString("ddtags")).contains(expectedTag)
+    }
+
+    @RepeatedTest(16)
+    fun `M send log with all custom tag W Logger#addTag() + Logger#addTag() + Logger#log()`(
+        @StringForgery fakeTagKey: String,
+        @StringForgery fakeTagValue: String,
+        @StringForgery fakeTagValue2: String,
+        @StringForgery fakeMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        // Given
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        testedLogger.addTag(fakeTagKey, fakeTagValue)
+        testedLogger.addTag(fakeTagKey, fakeTagValue2)
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val expectedTag = "${fakeTagKey.lowercase()}:${fakeTagValue.lowercase()}"
+        val expectedTag2 = "${fakeTagKey.lowercase()}:${fakeTagValue2.lowercase()}"
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString("ddtags")).contains(expectedTag)
+        assertThat(event0.getString("ddtags")).contains(expectedTag2)
+    }
+
+    @RepeatedTest(16)
+    fun `M send log with custom tag W Logger#addTag() + Logger#log() {dd format}`(
+        @StringForgery fakeTagKey: String,
+        @StringForgery fakeTagValue: String,
+        @StringForgery fakeMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        // Given
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        testedLogger.addTag("$fakeTagKey:$fakeTagValue")
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val expectedTag = "${fakeTagKey.lowercase()}:${fakeTagValue.lowercase()}"
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString("ddtags")).contains(expectedTag)
+    }
+
+    @RepeatedTest(16)
+    fun `M send log with both custom tag W Logger#addTag() + Logger#addTag() + Logger#log() {dd format}`(
+        @StringForgery fakeTagKey: String,
+        @StringForgery fakeTagValue: String,
+        @StringForgery fakeTagValue2: String,
+        @StringForgery fakeMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        // Given
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        testedLogger.addTag("$fakeTagKey:$fakeTagValue")
+        testedLogger.addTag("$fakeTagKey:$fakeTagValue2")
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val expectedTag = "${fakeTagKey.lowercase()}:${fakeTagValue.lowercase()}"
+        val expectedTag2 = "${fakeTagKey.lowercase()}:${fakeTagValue2.lowercase()}"
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString("ddtags")).contains(expectedTag)
+        assertThat(event0.getString("ddtags")).contains(expectedTag2)
+    }
+
+    @RepeatedTest(16)
+    fun `M send log with updated custom tag W Logger#addTag() + Logger#removeTag() + Logger#log()`(
+        @StringForgery fakeTagKey: String,
+        @StringForgery fakeTagValue: String,
+        @StringForgery fakeMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        assumeThat("env").doesNotEndWith(fakeTagKey.lowercase())
+        assumeThat("version").doesNotEndWith(fakeTagKey.lowercase())
+        assumeThat("variant").doesNotEndWith(fakeTagKey.lowercase())
+
+        // Given
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        testedLogger.addTag(fakeTagKey, fakeTagValue)
+        testedLogger.removeTag("$fakeTagKey:$fakeTagValue")
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString("ddtags")).doesNotContain("${fakeTagKey.lowercase()}:")
+    }
+
+    @RepeatedTest(16)
+    fun `M send log with updated custom tag W Logger#addTag() + Logger#removeTagsWithKey() + Logger#log()`(
+        @StringForgery fakeTagKey: String,
+        @StringForgery fakeTagValue: String,
+        @StringForgery fakeTagValue2: String,
+        @StringForgery fakeMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        assumeThat("env").doesNotEndWith(fakeTagKey.lowercase())
+        assumeThat("version").doesNotEndWith(fakeTagKey.lowercase())
+        assumeThat("variant").doesNotEndWith(fakeTagKey.lowercase())
+
+        // Given
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        testedLogger.addTag(fakeTagKey, fakeTagValue)
+        testedLogger.addTag(fakeTagKey, fakeTagValue2)
+        testedLogger.removeTagsWithKey(fakeTagKey)
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString("ddtags")).doesNotContain("${fakeTagKey.lowercase()}:")
+    }
+
+    @RepeatedTest(16)
+    fun `M send log with updated custom tag W Logger#addTag() + Logger#removeTag() + Logger#log() {dd format}`(
+        @StringForgery fakeTagKey: String,
+        @StringForgery fakeTagValue: String,
+        @StringForgery fakeMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        assumeThat("env").doesNotEndWith(fakeTagKey.lowercase())
+        assumeThat("version").doesNotEndWith(fakeTagKey.lowercase())
+        assumeThat("variant").doesNotEndWith(fakeTagKey.lowercase())
+
+        // Given
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        testedLogger.addTag("$fakeTagKey:$fakeTagValue")
+        testedLogger.removeTag("$fakeTagKey:$fakeTagValue")
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString("ddtags")).doesNotContain("${fakeTagKey.lowercase()}:")
+    }
+
+    @RepeatedTest(16)
+    fun `M send log with both custom tag W Logger#addTag() + Logger#removeTagsWithKey() + Logger#log() {dd format}`(
+        @StringForgery fakeTagKey: String,
+        @StringForgery fakeTagValue: String,
+        @StringForgery fakeTagValue2: String,
+        @StringForgery fakeMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        assumeThat("env").doesNotEndWith(fakeTagKey.lowercase())
+        assumeThat("version").doesNotEndWith(fakeTagKey.lowercase())
+        assumeThat("variant").doesNotEndWith(fakeTagKey.lowercase())
+
+        // Given
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        testedLogger.addTag("$fakeTagKey:$fakeTagValue")
+        testedLogger.addTag("$fakeTagKey:$fakeTagValue2")
+        testedLogger.removeTagsWithKey(fakeTagKey)
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString("ddtags")).doesNotContain("${fakeTagKey.lowercase()}:")
+    }
+
+    // endregion
+
+    // region Event Mapper
+
+    @RepeatedTest(16)
+    fun `M send mapped log W LogsConfiguration#Builder#setEventMapper() + Logger#log()`(
+        @StringForgery fakeMessage: String,
+        @StringForgery fakeMappedMessage: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int,
+        @IntForgery(Log.VERBOSE, 10) fakeMappedLevel: Int
+    ) {
+        // Given
+        val stubMapper = object : EventMapper<LogEvent> {
+            override fun map(event: LogEvent): LogEvent {
+                event.message = fakeMappedMessage
+                event.status = LogEvent.Status.fromJson(LEVEL_NAMES[fakeMappedLevel])
+                return event
+            }
+        }
+        val fakeLogsConfiguration = LogsConfiguration.Builder()
+            .setEventMapper(stubMapper)
+            .build()
+        Logs.enable(fakeLogsConfiguration, stubSdkCore)
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMappedMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeMappedLevel])
+    }
+
+    // endregion
 
     companion object {
         val LEVEL_NAMES = listOf(
