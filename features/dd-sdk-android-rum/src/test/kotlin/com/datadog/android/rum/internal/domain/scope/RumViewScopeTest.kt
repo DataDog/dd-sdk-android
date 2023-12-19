@@ -4246,8 +4246,10 @@ internal class RumViewScopeTest {
         testedScope.pendingResourceCount = 0
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
 
+        // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
+        // Then
         assertThat(testedScope.pendingResourceCount).isEqualTo(1)
         assertThat(result).isSameAs(testedScope)
     }
@@ -4260,8 +4262,10 @@ internal class RumViewScopeTest {
         testedScope.pendingResourceCount = pending
         fakeEvent = RumRawEvent.ResourceDropped(testedScope.viewId)
 
+        // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
+        // Then
         assertThat(testedScope.pendingResourceCount).isEqualTo(pending - 1)
         assertThat(result).isSameAs(testedScope)
     }
@@ -4276,8 +4280,10 @@ internal class RumViewScopeTest {
         fakeEvent = RumRawEvent.ResourceDropped(testedScope.viewId)
         testedScope.viewId = fakeNewViewId.toString()
 
+        // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
+        // Then
         assertThat(testedScope.pendingResourceCount).isEqualTo(pending - 1)
         assertThat(result).isSameAs(testedScope)
     }
@@ -4289,8 +4295,10 @@ internal class RumViewScopeTest {
         fakeEvent = RumRawEvent.ResourceDropped(testedScope.viewId)
         testedScope.stopped = true
 
+        // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
+        // Then
         assertThat(testedScope.pendingResourceCount).isEqualTo(0)
         assertThat(result).isNull()
     }
@@ -4305,8 +4313,10 @@ internal class RumViewScopeTest {
         testedScope.stopped = true
         testedScope.viewId = fakeNewViewId.toString()
 
+        // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
+        // Then
         assertThat(testedScope.pendingResourceCount).isEqualTo(0)
         assertThat(result).isNull()
     }
@@ -4322,8 +4332,10 @@ internal class RumViewScopeTest {
         testedScope.pendingResourceCount = pending
         fakeEvent = RumRawEvent.ResourceDropped(viewId)
 
+        // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
+        // Then
         assertThat(testedScope.pendingResourceCount).isEqualTo(pending)
         assertThat(result).isSameAs(testedScope)
     }
@@ -4340,10 +4352,52 @@ internal class RumViewScopeTest {
         fakeEvent = RumRawEvent.ResourceDropped(viewId)
         testedScope.stopped = true
 
+        // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
+        // Then
         assertThat(testedScope.pendingResourceCount).isEqualTo(pending)
         assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 convert pending resource to error 𝕎 handleEvent() {resource stopped by error}`(
+        @LongForgery(1) pendingResources: Long,
+        @LongForgery(min = 0, max = Long.MAX_VALUE - 1) pendingErrors: Long,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.pendingErrorCount = pendingErrors
+        testedScope.pendingResourceCount = pendingResources
+        val fakeEvent = forge.stopResourceWithErrorEvent()
+        testedScope.activeResourceScopes[fakeEvent.key] = mock()
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(testedScope.pendingResourceCount).isEqualTo(pendingResources - 1)
+        assertThat(testedScope.pendingErrorCount).isEqualTo(pendingErrors + 1)
+    }
+
+    @Test
+    fun `𝕄 convert pending resource to error 𝕎 handleEvent() {resource stopped by error with stacktrace}`(
+        @LongForgery(1) pendingResources: Long,
+        @LongForgery(min = 0, max = Long.MAX_VALUE - 1) pendingErrors: Long,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.pendingErrorCount = pendingErrors
+        testedScope.pendingResourceCount = pendingResources
+        val fakeEvent = forge.stopResourceWithStacktraceEvent()
+        testedScope.activeResourceScopes[fakeEvent.key] = mock()
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(testedScope.pendingResourceCount).isEqualTo(pendingResources - 1)
+        assertThat(testedScope.pendingErrorCount).isEqualTo(pendingErrors + 1)
     }
 
     // endregion
