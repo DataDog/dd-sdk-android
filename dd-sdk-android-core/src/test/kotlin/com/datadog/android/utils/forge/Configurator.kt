@@ -26,6 +26,7 @@ internal class Configurator :
         forge.addFactory(FilePersistenceConfigForgeryFactory())
         forge.addFactory(AndroidInfoProviderForgeryFactory())
         forge.addFactory(FeatureStorageConfigurationForgeryFactory())
+        forge.addFactory(BatchDataForgeryFactory())
 
         // IO
         forge.addFactory(BatchForgeryFactory())

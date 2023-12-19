@@ -20,9 +20,8 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.data.upload.v2.DataUploader
 import com.datadog.android.core.internal.metrics.RemovalReason
-import com.datadog.android.core.internal.persistence.BatchConfirmation
+import com.datadog.android.core.internal.persistence.BatchData
 import com.datadog.android.core.internal.persistence.BatchId
-import com.datadog.android.core.internal.persistence.BatchReader
 import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
@@ -49,9 +48,7 @@ import org.mockito.Mock
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -60,7 +57,6 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import org.mockito.stubbing.Answer
-import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
 @Extensions(
@@ -84,9 +80,6 @@ internal class UploadWorkerTest {
     lateinit var mockStorageA: Storage
 
     @Mock
-    lateinit var mockBatchReaderA: BatchReader
-
-    @Mock
     lateinit var mockUploaderA: DataUploader
 
     @Mock
@@ -94,9 +87,6 @@ internal class UploadWorkerTest {
 
     @Mock
     lateinit var mockStorageB: Storage
-
-    @Mock
-    lateinit var mockBatchReaderB: BatchReader
 
     @Mock
     lateinit var mockUploaderB: DataUploader
@@ -151,24 +141,18 @@ internal class UploadWorkerTest {
         val batchAMetadata = forge.aNullable { batchAMeta.toByteArray() }
         val batchBMetadata = forge.aNullable { batchBMeta.toByteArray() }
 
-        val batchAConfirmation = mock<BatchConfirmation>()
         val batchId1 = mock<BatchId>()
         val batchId2 = mock<BatchId>()
         stubReadSequence(
             mockStorageA,
-            mockBatchReaderA,
             batchId1,
-            batchAConfirmation,
             batchA,
             batchAMetadata
         )
 
-        val batchBConfirmation = mock<BatchConfirmation>()
         stubReadSequence(
             mockStorageB,
-            mockBatchReaderB,
             batchId2,
-            batchBConfirmation,
             batchB,
             batchBMetadata
         )
@@ -208,15 +192,13 @@ internal class UploadWorkerTest {
         verify(mockStorageA).confirmBatchRead(
             eq(batchId1),
             argThat { this.toString() == "intake-code-${uploadStatus1.code}" },
-            any()
+            eq(true)
         )
         verify(mockStorageB).confirmBatchRead(
             eq(batchId2),
             argThat { this.toString() == "intake-code-${uploadStatus2.code}" },
-            any()
+            eq(true)
         )
-        verify(batchAConfirmation).markAsRead(true)
-        verify(batchBConfirmation).markAsRead(true)
 
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
@@ -236,24 +218,18 @@ internal class UploadWorkerTest {
         val batchAMetadata = forge.aNullable { batchAMeta.toByteArray() }
         val batchBMetadata = forge.aNullable { batchBMeta.toByteArray() }
 
-        val batchAConfirmation = mock<BatchConfirmation>()
         val batchId1 = mock<BatchId>()
         stubReadSequence(
             mockStorageA,
-            mockBatchReaderA,
             batchId1,
-            batchAConfirmation,
             batchA,
             batchAMetadata
         )
 
-        val batchBConfirmation = mock<BatchConfirmation>()
         val batchId2 = mock<BatchId>()
         stubReadSequence(
             mockStorageB,
-            mockBatchReaderB,
             batchId2,
-            batchBConfirmation,
             batchB,
             batchBMetadata
         )
@@ -290,15 +266,13 @@ internal class UploadWorkerTest {
         verify(mockStorageA).confirmBatchRead(
             eq(batchId1),
             argThat { this.toString() == "intake-code-${status.code}" },
-            any()
+            eq(!status.shouldRetry)
         )
         verify(mockStorageB).confirmBatchRead(
             eq(batchId2),
             argThat { this.toString() == "intake-code-${status.code}" },
-            any()
+            eq(!status.shouldRetry)
         )
-        verify(batchAConfirmation).markAsRead(!status.shouldRetry)
-        verify(batchBConfirmation).markAsRead(!status.shouldRetry)
 
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
@@ -314,28 +288,21 @@ internal class UploadWorkerTest {
             forge.aNullable { forge.aString().toByteArray() }
         }
         val aIds = forge.aList(batchesA.size) { mock<BatchId>() }
-        val aConfirmations = forge.aList(batchesA.size) { mock<BatchConfirmation>() }
-        val aReaders = forge.aList(batchesA.size) { mock<BatchReader>() }
 
         val batchB = forge.aList { RawBatchEvent(aString().toByteArray()) }
         val batchBMeta = forge.aString().toByteArray()
 
         stubMultipleReadSequence(
             mockStorageA,
-            aReaders,
             aIds,
-            aConfirmations,
             batchesA,
             batchesAMeta
         )
 
-        val batchBConfirmation = mock<BatchConfirmation>()
         val batchId = mock<BatchId>()
         stubReadSequence(
             mockStorageB,
-            mockBatchReaderB,
             batchId,
-            batchBConfirmation,
             batchB,
             batchBMeta
         )
@@ -373,10 +340,8 @@ internal class UploadWorkerTest {
             verify(mockStorageA).confirmBatchRead(
                 eq(aIds[index]),
                 argThat { this.toString() == "intake-code-${aStatuses[index].code}" },
-                any()
+                eq(true)
             )
-
-            verify(aConfirmations[index]).markAsRead(true)
         }
 
         verify(mockUploaderB).upload(
@@ -387,10 +352,8 @@ internal class UploadWorkerTest {
         verify(mockStorageB).confirmBatchRead(
             eq(batchId),
             argThat { this.toString() == "intake-code-${successStatus.code}" },
-            any()
+            eq(true)
         )
-        verify(batchBConfirmation).markAsRead(true)
-
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
@@ -405,8 +368,6 @@ internal class UploadWorkerTest {
             aNullable { aString().toByteArray() }
         }
         val aIds = forge.aList(batchesA.size) { mock<BatchId>() }
-        val aConfirmations = forge.aList(batchesA.size) { mock<BatchConfirmation>() }
-        val aReaders = forge.aList(batchesA.size) { mock<BatchReader>() }
 
         val batchB = forge.aList { RawBatchEvent(aString().toByteArray()) }
         val batchBMeta = forge.aString().toByteArray()
@@ -414,27 +375,22 @@ internal class UploadWorkerTest {
 
         stubMultipleReadSequence(
             mockStorageA,
-            aReaders,
             aIds,
-            aConfirmations,
             batchesA,
             batchesAMeta
         )
 
-        val batchBConfirmation = mock<BatchConfirmation>()
         val batchId = mock<BatchId>()
         stubReadSequence(
             mockStorageB,
-            mockBatchReaderB,
             batchId,
-            batchBConfirmation,
             batchB,
             batchBMeta
         )
 
         val executorService = Executors.newSingleThreadExecutor()
-        whenever(mockFeatureA.storage) doReturn AsyncStorageDelegate(mockStorageA, executorService)
-        whenever(mockFeatureB.storage) doReturn AsyncStorageDelegate(mockStorageB, executorService)
+        whenever(mockFeatureA.storage) doReturn StorageDelegate(mockStorageA)
+        whenever(mockFeatureB.storage) doReturn StorageDelegate(mockStorageB)
 
         batchesA.forEachIndexed { index, batch ->
             whenever(
@@ -468,9 +424,8 @@ internal class UploadWorkerTest {
             verify(mockStorageA).confirmBatchRead(
                 eq(aIds[index]),
                 argThat { this.toString() == "intake-code-${aStatuses[index].code}" },
-                any()
+                eq(true)
             )
-            verify(aConfirmations[index]).markAsRead(true)
         }
 
         verify(mockUploaderB).upload(
@@ -481,9 +436,8 @@ internal class UploadWorkerTest {
         verify(mockStorageB).confirmBatchRead(
             eq(batchId),
             argThat { this.toString() == "intake-code-${successStatus.code}" },
-            any()
+            eq(true)
         )
-        verify(batchBConfirmation).markAsRead(true)
 
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
@@ -505,8 +459,6 @@ internal class UploadWorkerTest {
             aNullable { aString().toByteArray() }
         }
         val aIds = forge.aList(batchesA.size) { mock<BatchId>() }
-        val aConfirmations = forge.aList(batchesA.size) { mock<BatchConfirmation>() }
-        val aReaders = forge.aList(batchesA.size) { mock<BatchReader>() }
 
         val batchB = forge.aList { RawBatchEvent(aString().toByteArray()) }
         val batchBMeta = forge.aString().toByteArray()
@@ -522,20 +474,15 @@ internal class UploadWorkerTest {
 
         stubMultipleReadSequence(
             mockStorageA,
-            aReaders,
             aIds,
-            aConfirmations,
             batchesA,
             batchesAMeta
         )
 
-        val batchBConfirmation = mock<BatchConfirmation>()
         val batchId = mock<BatchId>()
         stubReadSequence(
             mockStorageB,
-            mockBatchReaderB,
             batchId,
-            batchBConfirmation,
             batchB,
             batchBMeta
         )
@@ -571,15 +518,18 @@ internal class UploadWorkerTest {
             )
 
             if (index == failingBatchIndex) {
-                verify(aConfirmations[index]).markAsRead(!failingStatus.shouldRetry)
+                verify(mockStorageA).confirmBatchRead(
+                    eq(aIds[index]),
+                    argThat { this.toString() == "intake-code-${aStatuses[index].code}" },
+                    eq(!failingStatus.shouldRetry)
+                )
             } else {
-                verify(aConfirmations[index]).markAsRead(true)
+                verify(mockStorageA).confirmBatchRead(
+                    eq(aIds[index]),
+                    argThat { this.toString() == "intake-code-${aStatuses[index].code}" },
+                    eq(true)
+                )
             }
-            verify(mockStorageA).confirmBatchRead(
-                eq(aIds[index]),
-                argThat { this.toString() == "intake-code-${aStatuses[index].code}" },
-                any()
-            )
         }
 
         verify(mockUploaderB).upload(
@@ -590,10 +540,8 @@ internal class UploadWorkerTest {
         verify(mockStorageB).confirmBatchRead(
             eq(batchId),
             argThat { this.toString() == "intake-code-${fakeUploadSuccess2.code}" },
-            any()
+            eq(true)
         )
-        verify(batchBConfirmation).markAsRead(true)
-
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
@@ -612,8 +560,8 @@ internal class UploadWorkerTest {
             InternalLogger.Target.USER,
             UploadWorker.MESSAGE_NOT_INITIALIZED
         )
-        verifyNoInteractions(mockFeatureA, mockBatchReaderA, mockUploaderA)
-        verifyNoInteractions(mockFeatureB, mockBatchReaderB, mockUploaderB)
+        verifyNoInteractions(mockFeatureA, mockUploaderA)
+        verifyNoInteractions(mockFeatureB, mockUploaderB)
 
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
@@ -638,17 +586,13 @@ internal class UploadWorkerTest {
 
     private fun stubReadSequence(
         storage: Storage,
-        batchReader: BatchReader,
         batchId: BatchId,
-        batchConfirmation: BatchConfirmation,
         batch: List<RawBatchEvent>,
         batchMetadata: ByteArray?
     ) {
         stubMultipleReadSequence(
             storage,
-            listOf(batchReader),
             listOf(batchId),
-            listOf(batchConfirmation),
             listOf(batch),
             listOf(batchMetadata)
         )
@@ -656,46 +600,31 @@ internal class UploadWorkerTest {
 
     private fun stubMultipleReadSequence(
         storage: Storage,
-        batchReaders: List<BatchReader>,
         batchIds: List<BatchId>,
-        batchConfirmations: List<BatchConfirmation>,
         batches: List<List<RawBatchEvent>>,
         batchMetadata: List<ByteArray?>
     ) {
-        whenever(storage.readNextBatch(any(), any()))
-            .thenAnswer(object : Answer<Unit> {
+        whenever(storage.readNextBatch())
+            .thenAnswer(object : Answer<BatchData?> {
                 var invocationCount: Int = 0
 
-                override fun answer(invocation: InvocationOnMock) {
+                override fun answer(invocation: InvocationOnMock): BatchData? {
                     if (invocationCount >= batches.size) {
-                        (invocation.getArgument<() -> Unit>(0)).invoke()
-                        return
+                        return null
                     }
 
-                    val reader = batchReaders[invocationCount]
                     val batchId = batchIds[invocationCount]
-                    val batchConfirmation = batchConfirmations[invocationCount]
-
-                    whenever(reader.read()) doReturn batches[invocationCount]
-                    whenever(reader.currentMetadata()) doReturn batchMetadata[invocationCount]
-
-                    invocationCount++
-
-                    whenever(storage.confirmBatchRead(eq(batchId), any(), any())) doAnswer {
-                        (it.getArgument<(BatchConfirmation) -> Unit>(2)).invoke(batchConfirmation)
-                    }
-
-                    (invocation.getArgument<(BatchId, BatchReader) -> Unit>(1)).invoke(
-                        batchId,
-                        reader
+                    return BatchData(
+                        id = batchId,
+                        data = batches[invocationCount],
+                        metadata = batchMetadata[invocationCount++]
                     )
                 }
             })
     }
 
-    private class AsyncStorageDelegate(
-        private val delegate: Storage,
-        private val executor: Executor
+    private class StorageDelegate(
+        private val delegate: Storage
     ) : Storage {
         override fun writeCurrentBatch(
             datadogContext: DatadogContext,
@@ -705,24 +634,16 @@ internal class UploadWorkerTest {
             fail("we don't expect this one to be called")
         }
 
-        override fun readNextBatch(
-            noBatchCallback: () -> Unit,
-            readBatchCallback: (BatchId, BatchReader) -> Unit
-        ) {
-            executor.execute {
-                delegate.readNextBatch(
-                    noBatchCallback,
-                    readBatchCallback
-                )
-            }
+        override fun readNextBatch(): BatchData? {
+            return delegate.readNextBatch()
         }
 
         override fun confirmBatchRead(
             batchId: BatchId,
             removalReason: RemovalReason,
-            callback: (BatchConfirmation) -> Unit
+            deleteBatch: Boolean
         ) {
-            executor.execute { delegate.confirmBatchRead(batchId, removalReason, callback) }
+            delegate.confirmBatchRead(batchId, removalReason, deleteBatch)
         }
 
         override fun dropAll() {

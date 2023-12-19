@@ -12,7 +12,6 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.ContextProvider
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.UploadRunnable
 import com.datadog.android.core.internal.data.upload.UploadStatus
@@ -22,7 +21,6 @@ import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
@@ -37,7 +35,6 @@ internal class DataUploadRunnable(
     private val networkInfoProvider: NetworkInfoProvider,
     private val systemInfoProvider: SystemInfoProvider,
     uploadConfiguration: DataUploadConfiguration,
-    private val batchUploadWaitTimeoutMs: Long = CoreFeature.NETWORK_TIMEOUT_MS,
     private val internalLogger: InternalLogger
 ) : UploadRunnable {
 
@@ -52,8 +49,6 @@ internal class DataUploadRunnable(
     override fun run() {
         if (isNetworkAvailable() && isSystemReady()) {
             val context = contextProvider.context
-            // TODO RUMM-0000 it should be already on the worker thread and if readNextBatch is async,
-            //  we should wait until it completes before scheduling further
             var batchConsumerAvailableAttempts = maxBatchesPerJob
             var lastBatchUploadStatus: UploadStatus?
             do {
@@ -90,27 +85,15 @@ internal class DataUploadRunnable(
     @Suppress("UnsafeThirdPartyFunctionCall") // called inside a dedicated executor
     private fun handleNextBatch(context: DatadogContext): UploadStatus? {
         var uploadStatus: UploadStatus? = null
-        val lock = CountDownLatch(1)
-        storage.readNextBatch(
-            noBatchCallback = {
-                lock.countDown()
-            }
-        ) { batchId, reader ->
-            try {
-                val batch = reader.read()
-                val batchMeta = reader.currentMetadata()
-
-                uploadStatus = consumeBatch(
-                    context,
-                    batchId,
-                    batch,
-                    batchMeta
-                )
-            } finally {
-                lock.countDown()
-            }
+        val nextBatchData = storage.readNextBatch()
+        if (nextBatchData != null) {
+            uploadStatus = consumeBatch(
+                context,
+                nextBatchData.id,
+                nextBatchData.data,
+                nextBatchData.metadata
+            )
         }
-        lock.await(batchUploadWaitTimeoutMs, TimeUnit.MILLISECONDS)
         return uploadStatus
     }
 
@@ -151,9 +134,7 @@ internal class DataUploadRunnable(
         } else {
             RemovalReason.IntakeCode(status.code)
         }
-        storage.confirmBatchRead(batchId, removalReason) {
-            it.markAsRead(deleteBatch = !status.shouldRetry)
-        }
+        storage.confirmBatchRead(batchId, removalReason, deleteBatch = !status.shouldRetry)
         return status
     }
 
