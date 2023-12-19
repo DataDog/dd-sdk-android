@@ -169,6 +169,7 @@ internal class SessionReplayFeature(
         }
     }
 
+    @Suppress("ReturnCount")
     private fun checkStatusAndApplySample(sessionMetadata: Map<*, *>) {
         val keepSession = sessionMetadata[RUM_KEEP_SESSION_BUS_MESSAGE_KEY] as? Boolean
         val sessionId = sessionMetadata[RUM_SESSION_ID_BUS_MESSAGE_KEY] as? String
@@ -187,7 +188,24 @@ internal class SessionReplayFeature(
             return
         }
 
-        if (keepSession && rateBasedSampler.sample()) {
+        val recordNewSession = keepSession && rateBasedSampler.sample()
+
+        if (!initialized.get()) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                {
+                    if (recordNewSession) {
+                        CANNOT_START_RECORDING_NOT_INITIALIZED
+                    } else {
+                        CANNOT_STOP_RECORDING_NOT_INITIALIZED
+                    }
+                }
+            )
+            return
+        }
+
+        if (recordNewSession) {
             startRecording()
         } else {
             sdkCore.internalLogger.log(
@@ -205,14 +223,6 @@ internal class SessionReplayFeature(
      * Resumes the replay recorder.
      */
     internal fun startRecording() {
-        if (!initialized.get()) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { CANNOT_START_RECORDING_NOT_INITIALIZED }
-            )
-            return
-        }
         if (!isRecording.getAndSet(true)) {
             @Suppress("ThreadSafety") // TODO REPLAY-1861 can be called from any thread
             sessionReplayRecorder.resumeRecorders()
@@ -266,6 +276,8 @@ internal class SessionReplayFeature(
             " are either missing or have wrong type."
         internal const val CANNOT_START_RECORDING_NOT_INITIALIZED =
             "Cannot start session recording, because Session Replay feature is not initialized."
+        internal const val CANNOT_STOP_RECORDING_NOT_INITIALIZED =
+            "Cannot stop session recording, because Session Replay feature is not initialized."
         const val SESSION_REPLAY_FEATURE_NAME = "session-replay"
         const val SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY = "type"
         const val RUM_SESSION_RENEWED_BUS_MESSAGE = "rum_session_renewed"
