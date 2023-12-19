@@ -11,7 +11,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
-import com.datadog.android.core.internal.data.upload.v2.DataUploader
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
