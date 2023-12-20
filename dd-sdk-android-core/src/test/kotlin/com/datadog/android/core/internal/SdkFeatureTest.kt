@@ -114,12 +114,6 @@ internal class SdkFeatureTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        // make sure this has a clean state
-        fakeStorageConfiguration = fakeStorageConfiguration.copy(
-            uploadFrequency = null,
-            batchSize = null,
-            batchProcessingLevel = null
-        )
         fakeCoreUploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
         fakeCoreBatchSize = forge.aValueFrom(BatchSize::class.java)
         fakeCoreBatchProcessingLevel = forge.aValueFrom(BatchProcessingLevel::class.java)
@@ -201,50 +195,6 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 use the storage frequency if set 𝕎 initialize()`(forge: Forge) {
-        // Given
-        val fakeUploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
-        val expectedUploadConfiguration: DataUploadConfiguration =
-            forge.getForgery<DataUploadConfiguration>().copy(frequency = fakeUploadFrequency)
-        val fakeStorageConfig = mockWrappedFeature.storageConfiguration
-            .copy(uploadFrequency = fakeUploadFrequency)
-        whenever(mockWrappedFeature.storageConfiguration)
-            .thenReturn(fakeStorageConfig)
-
-        // When
-        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
-
-        // Then
-        assertThat(testedFeature.uploadScheduler)
-            .isInstanceOf(DataUploadScheduler::class.java)
-        val dataUploadRunnable = (testedFeature.uploadScheduler as DataUploadScheduler).runnable
-        assertThat(dataUploadRunnable.minDelayMs).isEqualTo(expectedUploadConfiguration.minDelayMs)
-        assertThat(dataUploadRunnable.maxDelayMs).isEqualTo(expectedUploadConfiguration.maxDelayMs)
-        assertThat(dataUploadRunnable.currentDelayIntervalMs)
-            .isEqualTo(expectedUploadConfiguration.defaultDelayMs)
-    }
-
-    @Test
-    fun `𝕄 use the storage batchProcessingLevel if set 𝕎 initialize()`(forge: Forge) {
-        // Given
-        val fakeBatchProcessingLevel = forge.aValueFrom(BatchProcessingLevel::class.java)
-        val fakeStorageConfig = mockWrappedFeature.storageConfiguration
-            .copy(batchProcessingLevel = fakeBatchProcessingLevel)
-        whenever(mockWrappedFeature.storageConfiguration)
-            .thenReturn(fakeStorageConfig)
-
-        // When
-        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
-
-        // Then
-        assertThat(testedFeature.uploadScheduler)
-            .isInstanceOf(DataUploadScheduler::class.java)
-        val dataUploadRunnable = (testedFeature.uploadScheduler as DataUploadScheduler).runnable
-        assertThat(dataUploadRunnable.maxBatchesPerJob)
-            .isEqualTo(fakeBatchProcessingLevel.maxBatchesPerUploadJob)
-    }
-
-    @Test
     fun `𝕄 initialize the storage 𝕎 initialize()`() {
         // Given
         val fakeCorePersistenceConfig = FilePersistenceConfig()
@@ -268,8 +218,7 @@ internal class SdkFeatureTest {
             maxItemSize = fakeStorageConfiguration.maxItemSize,
             maxItemsPerBatch = fakeStorageConfiguration.maxItemsPerBatch,
             oldFileThreshold = fakeStorageConfiguration.oldBatchThreshold,
-            recentDelayMs = fakeStorageConfiguration.batchSize?.windowDurationMs
-                ?: fakeCoreBatchSize.windowDurationMs
+            recentDelayMs = fakeCoreBatchSize.windowDurationMs
         )
         assertThat(pendingFileOrchestrator.config).isEqualTo(expectedFilePersistenceConfig)
         assertThat(grantedFileOrchestrator.config).isEqualTo(expectedFilePersistenceConfig)
@@ -290,25 +239,6 @@ internal class SdkFeatureTest {
         assertThat(abstractStorage.sdkCoreId).isEqualTo(fakeInstanceId)
         assertThat(abstractStorage.persistenceStrategyFactory)
             .isEqualTo(mockPersistenceStrategy)
-    }
-
-    @Test
-    fun `𝕄 use the storage batchSize if set 𝕎 initialize()`(forge: Forge) {
-        // Given
-        val fakeBatchSize = forge.aValueFrom(BatchSize::class.java)
-        val fakeStorageConfig = mockWrappedFeature.storageConfiguration
-            .copy(batchSize = fakeBatchSize)
-        whenever(mockWrappedFeature.storageConfiguration)
-            .thenReturn(fakeStorageConfig)
-
-        // When
-        testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
-
-        // Then
-        assertThat(testedFeature.storage).isInstanceOf(ConsentAwareStorage::class.java)
-        val consentAwareStorage = testedFeature.storage as ConsentAwareStorage
-        assertThat(consentAwareStorage.filePersistenceConfig.recentDelayMs)
-            .isEqualTo(fakeBatchSize.windowDurationMs)
     }
 
     @Test

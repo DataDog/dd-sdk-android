@@ -132,7 +132,7 @@ interface com.datadog.android.api.storage.EventBatchWriter
   fun currentMetadata(): ByteArray?
   fun write(RawBatchEvent, ByteArray?): Boolean
 data class com.datadog.android.api.storage.FeatureStorageConfiguration
-  constructor(Long, Int, Long, Long, com.datadog.android.core.configuration.UploadFrequency?, com.datadog.android.core.configuration.BatchSize?, com.datadog.android.core.configuration.BatchProcessingLevel?)
+  constructor(Long, Int, Long, Long)
   companion object 
     val DEFAULT: FeatureStorageConfiguration
 data class com.datadog.android.api.storage.RawBatchEvent

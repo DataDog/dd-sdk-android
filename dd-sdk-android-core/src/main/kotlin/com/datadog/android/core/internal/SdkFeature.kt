@@ -17,8 +17,6 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.core.configuration.BatchProcessingLevel
-import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.DataFlusher
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
@@ -73,8 +71,8 @@ internal class SdkFeature(
 
         var dataUploadConfiguration: DataUploadConfiguration? = null
         if (wrappedFeature is StorageBackedFeature) {
-            val uploadFrequency = resolveUploadFrequency()
-            val batchProcessingLevel = resolveBatchProcessingLevel()
+            val uploadFrequency = coreFeature.uploadFrequency
+            val batchProcessingLevel = coreFeature.batchProcessingLevel
             dataUploadConfiguration = DataUploadConfiguration(
                 uploadFrequency,
                 batchProcessingLevel.maxBatchesPerUploadJob
@@ -191,31 +189,6 @@ internal class SdkFeature(
         }
     }
 
-    private fun resolveBatchingDelay(
-        coreFeature: CoreFeature,
-        featureStorageConfiguration: FeatureStorageConfiguration
-    ): Long {
-        return featureStorageConfiguration.batchSize?.windowDurationMs
-            ?: coreFeature.batchSize.windowDurationMs
-    }
-
-    private fun resolveUploadFrequency(): UploadFrequency {
-        return if (wrappedFeature is StorageBackedFeature) {
-            wrappedFeature.storageConfiguration.uploadFrequency ?: coreFeature.uploadFrequency
-        } else {
-            coreFeature.uploadFrequency
-        }
-    }
-
-    private fun resolveBatchProcessingLevel(): BatchProcessingLevel {
-        return if (wrappedFeature is StorageBackedFeature) {
-            wrappedFeature.storageConfiguration.batchProcessingLevel
-                ?: coreFeature.batchProcessingLevel
-        } else {
-            coreFeature.batchProcessingLevel
-        }
-    }
-
     private fun setupUploader(
         requestFactory: RequestFactory,
         uploadConfiguration: DataUploadConfiguration
@@ -249,7 +222,7 @@ internal class SdkFeature(
     ): Storage {
         val storageConfiguration = wrappedFeature.storageConfiguration
         return if (persistenceStrategyFactory == null) {
-            val recentDelayMs = resolveBatchingDelay(coreFeature, storageConfiguration)
+            val recentDelayMs = coreFeature.batchSize.windowDurationMs
             val filePersistenceConfig = coreFeature.buildFilePersistenceConfig().copy(
                 maxBatchSize = storageConfiguration.maxBatchSize,
                 maxItemSize = storageConfiguration.maxItemSize,
