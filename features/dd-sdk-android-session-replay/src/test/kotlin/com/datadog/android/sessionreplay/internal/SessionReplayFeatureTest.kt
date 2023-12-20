@@ -635,7 +635,7 @@ internal class SessionReplayFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            SessionReplayFeature.CANNOT_STOP_RECORDING_NOT_INITIALIZED
+            SessionReplayFeature.CANNOT_START_RECORDING_NOT_INITIALIZED
         )
         verifyNoInteractions(mockRecorder)
     }
@@ -659,7 +659,7 @@ internal class SessionReplayFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            SessionReplayFeature.CANNOT_STOP_RECORDING_NOT_INITIALIZED
+            SessionReplayFeature.CANNOT_START_RECORDING_NOT_INITIALIZED
         )
         verifyNoInteractions(mockRecorder)
     }
@@ -683,7 +683,7 @@ internal class SessionReplayFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            SessionReplayFeature.CANNOT_STOP_RECORDING_NOT_INITIALIZED
+            SessionReplayFeature.CANNOT_START_RECORDING_NOT_INITIALIZED
         )
         verifyNoInteractions(mockRecorder)
     }
